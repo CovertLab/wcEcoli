@@ -449,7 +449,8 @@ class Metabolism(object):
 
 		for row in raw_data.amino_acid_pathways:
 			data = {}
-			data['enzymes'] = [e + cytoplasm_tag for e in row['Enzymes']]
+			data['enzymes'] = [e + sim_data.getter.get_compartment_tag(e) for e in row['Enzymes']]
+			data['reverse enzymes'] = [e + sim_data.getter.get_compartment_tag(e) for e in row['Reverse enzymes']]
 			data['kcat_data'] = 0 / units.s if units.isnan(row['kcat']) else row['kcat']
 			if units.isnan(row['KI, lower bound']) or units.isnan(row['KI, lower bound']):
 				data['ki'] = None
@@ -906,7 +907,8 @@ class Metabolism(object):
 		basal_supply_mapping = dict(zip(aa_ids, basal_rates))
 		with_aa_supply_mapping = dict(zip(aa_ids, with_aa_rates))
 		aa_enzymes = []
-		enzyme_to_aa = []
+		enzyme_to_aa_fwd = []
+		enzyme_to_aa_rev = []
 		aa_kcats_fwd = {}
 		aa_kcats_rev = {}
 		aa_kis = {}
@@ -959,21 +961,24 @@ class Metabolism(object):
 		# TODO: move these to a file
 		uptake_rates['ASN'] *= 1.5
 		uptake_rates['ARG'] *= 0.8
-		uptake_rates['HIS'] *= 1.8
 		uptake_rates['ILE'] *= 1.1
 		uptake_rates['L-ALPHA-ALANINE'] *= 1.3
 		uptake_rates['LEU'] *= 1.5
 		uptake_rates['LYS'] *= 4
+		uptake_rates['PHE'] *= 0.7
 		uptake_rates['MET'] *= 1.4
 		uptake_rates['TRP'] *= 1.3
 		uptake_rates['TYR'] *= 5
-		uptake_rates['VAL'] *= 1.6
+		uptake_rates['VAL'] *= 0.95
 
 		for amino_acid in ordered_aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
-			enzymes = data['enzymes']
-			fwd_enzymes_basal = basal_container.counts(enzymes).sum()
-			fwd_enzymes_with_aa = with_aa_container.counts(enzymes).sum()
+			fwd_enzymes = data['enzymes']
+			fwd_enzymes_basal = basal_container.counts(fwd_enzymes).sum()
+			fwd_enzymes_with_aa = with_aa_container.counts(fwd_enzymes).sum()
+			rev_enzymes = data['reverse enzymes']
+			rev_enzymes_basal = basal_container.counts(rev_enzymes).sum()
+			rev_enzymes_with_aa = with_aa_container.counts(rev_enzymes).sum()
 
 			aa_conc_basal = minimal_conc[amino_acid]
 			aa_conc_with_aa = with_aa_conc[amino_acid]
@@ -1023,7 +1028,6 @@ class Metabolism(object):
 
 			def calc_kcats(aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms, km_reverse, km_degradation, ki, uptake_rate):
 				# Calculate kcat value to ensure sufficient supply to double
-				rev_enzymes_basal = fwd_enzymes_basal  # TODO: get reverse counts
 				fwd_fraction_basal = units.strip_empty_units(1 / (1 + aa_conc_basal / ki) * np.prod(1 / (1 + kms / km_conc_basal)))
 				rev_fraction_basal = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_basal * (1 + aa_conc_basal / km_degradation)))
 				deg_fraction_basal = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_basal * (1 + aa_conc_basal / km_reverse)))
@@ -1031,7 +1035,6 @@ class Metabolism(object):
 				fwd_capacity_basal = fwd_enzymes_basal * fwd_fraction_basal
 				rev_capacity_basal = rev_enzymes_basal * loss_fraction_basal
 
-				rev_enzymes_with_aa = fwd_enzymes_with_aa  # TODO: get reverse counts
 				fwd_fraction_with_aa = units.strip_empty_units(1 / (1 + aa_conc_with_aa / ki) * np.prod(1 / (1 + kms / km_conc_with_aa)))
 				rev_fraction_with_aa = units.strip_empty_units(1 / (1 + km_reverse / aa_conc_with_aa * (1 + aa_conc_with_aa / km_degradation)))
 				deg_fraction_with_aa = units.strip_empty_units(1 / (1 + km_degradation / aa_conc_with_aa * (1 + aa_conc_with_aa / km_reverse)))
@@ -1131,8 +1134,9 @@ class Metabolism(object):
 				kcat_rev = o_rev
 				print(f'*** {amino_acid}: {kcat_fwd:5.1f} {kcat_rev:5.1f} ***')
 
-			aa_enzymes += enzymes
-			enzyme_to_aa += [amino_acid] * len(enzymes)
+			aa_enzymes += fwd_enzymes + rev_enzymes
+			enzyme_to_aa_fwd += [amino_acid] * len(fwd_enzymes) + [None] * len(rev_enzymes)
+			enzyme_to_aa_rev += [None] * len(fwd_enzymes) + [amino_acid] * len(rev_enzymes)
 			aa_kcats_fwd[amino_acid] = kcat_fwd
 			aa_kcats_rev[amino_acid] = kcat_rev
 			aa_kis[amino_acid] = ki.asNumber(METABOLITE_CONCENTRATION_UNITS)
@@ -1159,11 +1163,15 @@ class Metabolism(object):
 		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
 
 		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
-		self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(aa_ids)))
+		self.enzyme_to_amino_acid_fwd = np.zeros((len(self.aa_enzymes), len(aa_ids)))
+		self.enzyme_to_amino_acid_rev = np.zeros((len(self.aa_enzymes), len(aa_ids)))
 		enzyme_mapping = {e: i for i, e in enumerate(self.aa_enzymes)}
 		aa_mapping = {a: i for i, a in enumerate(aa_ids)}
-		for enzyme, aa in zip(aa_enzymes, enzyme_to_aa):
-			self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
+		for enzyme, fwd, rev in zip(aa_enzymes, enzyme_to_aa_fwd, enzyme_to_aa_rev):
+			if fwd is not None:
+				self.enzyme_to_amino_acid_fwd[enzyme_mapping[enzyme], aa_mapping[fwd]] = 1
+			if rev is not None:
+				self.enzyme_to_amino_acid_fwd[enzyme_mapping[enzyme], aa_mapping[rev]] = 1
 
 		# Concentrations for reference in analysis plot
 		conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
@@ -1208,7 +1216,8 @@ class Metabolism(object):
 
 		# Convert to appropraite arrays
 		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
-		counts_per_aa = enzyme_counts @ self.enzyme_to_amino_acid
+		counts_per_aa_fwd = enzyme_counts @ self.enzyme_to_amino_acid_fwd
+		counts_per_aa_rev = enzyme_counts @ self.enzyme_to_amino_acid_rev
 
 		# TODO: more efficient way of doing this
 		km_saturation = np.array([np.product([1 / (1 + km / aa_conc[self.aa_to_index[aa]]) for km, aa in zip(kms, aas)]) for kms, aas in zip(self.aa_upstream_kms, self.aa_upstream_aas)])
@@ -1221,12 +1230,13 @@ class Metabolism(object):
 
 		# Calculate synthesis rate
 		synthesis = (
-			self.aa_forward_stoich @ (self.aa_kcats_fwd * counts_per_aa * forward_fraction)
-			- self.aa_reverse_stoich @ (self.aa_kcats_rev * counts_per_aa * reverse_fraction)
-			- self.aa_kcats_rev * counts_per_aa * loss_fraction
+			self.aa_forward_stoich @ (self.aa_kcats_fwd * counts_per_aa_fwd * forward_fraction)
+			- self.aa_reverse_stoich @ (self.aa_kcats_rev * counts_per_aa_rev * reverse_fraction)
+			- self.aa_kcats_rev * counts_per_aa_rev * loss_fraction
 		)
 
-		return synthesis, counts_per_aa, fraction
+		# TODO: return rev counts and update signatures, listeners, plots etc
+		return synthesis, counts_per_aa_fwd, fraction
 
 	def amino_acid_export(self, aa_transporters_counts: np.ndarray, aa_conc: units.Unum, mechanistic_uptake: bool):
 		"""
