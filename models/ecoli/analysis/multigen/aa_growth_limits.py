@@ -45,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		synthesis = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_synthesis', remove_first=True)
 		imported = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_import', remove_first=True)
 		aas_used = read_stacked_columns(cell_paths, 'GrowthLimits', 'aasUsed', remove_first=True)
-		aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_aa_conc', remove_first=True).T
+		aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_conc', remove_first=True).T
 		aa_targets = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'targetAAConc', remove_first=True)
 		trna_charged = read_stacked_columns(cell_paths, 'GrowthLimits', 'trnaCharged', remove_first=True)
 
@@ -75,15 +75,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			col = i % cols
 			ax = plt.subplot(gs[row, col])
 
-			ax.plot(times, supply, label='Supply', alpha=0.5, color='blue')
-			ax.plot(times, synthesis, label='Synthesis', alpha=0.5, color='green')
+			ax.plot(times, supply, label='Supply', linewidth=0.5, alpha=0.8, color='blue')
+			ax.plot(times, synthesis, label='Synthesis', linewidth=0.5, alpha=0.5, color='green')
 			ax.plot(times, aa_conc, label='AA conc', alpha=0.5, color='orange')
-			ax.plot(times, imported, label='Imported', alpha=0.5, color='red')
-			ax.plot(times, use, label='Translation use', alpha=0.5, color='gray')
-			ax.plot(times, target, label='AA targets', alpha=0.5, color='pink')
-			ax.plot(times, charged, label='AA trna charged', alpha=0.5, color='black')
-			ax.axhline(0, linestyle='--', linewidth=0.2, color='k', alpha=0.3)
-			ax.axhline(1, linestyle='--', linewidth=0.2, color='k', alpha=0.3)
+			ax.plot(times, imported, label='Imported', linewidth=0.5, alpha=0.5, color='red')
+			ax.plot(times, use, label='Translation use', linewidth=0.5, alpha=0.5, color='gray')
+			ax.plot(times, target, label='AA targets', linewidth=0.5, alpha=0.5, color='pink')
+			ax.plot(times, charged, label='AA trna charged', linewidth=0.5, alpha=0.5, color='black')
+			ax.axhline(0, linestyle='--', linewidth=0.5, color='k', alpha=0.5)
+			ax.axhline(1, linestyle='--', linewidth=0.5, color='k', alpha=0.5)
 
 			ax.spines['right'].set_visible(False)
 			ax.spines['top'].set_visible(False)
