@@ -1171,7 +1171,7 @@ class Metabolism(object):
 			if fwd is not None:
 				self.enzyme_to_amino_acid_fwd[enzyme_mapping[enzyme], aa_mapping[fwd]] = 1
 			if rev is not None:
-				self.enzyme_to_amino_acid_fwd[enzyme_mapping[enzyme], aa_mapping[rev]] = 1
+				self.enzyme_to_amino_acid_rev[enzyme_mapping[enzyme], aa_mapping[rev]] = 1
 
 		# Concentrations for reference in analysis plot
 		conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
@@ -1216,6 +1216,7 @@ class Metabolism(object):
 
 		# Convert to appropraite arrays
 		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		# TODO: pass these in to function to speed up integration with supply
 		counts_per_aa_fwd = enzyme_counts @ self.enzyme_to_amino_acid_fwd
 		counts_per_aa_rev = enzyme_counts @ self.enzyme_to_amino_acid_rev
 
