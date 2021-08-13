@@ -20,8 +20,8 @@ def fast_nnls(A, b):
 		b: numpy.ndarray of size (M, )
 	Returns:
 		x: numpy.ndarray of size (N, ), the solution to the NNLS problem.
-		r: numpy.ndarray of size (M, ), the residual vector (||Ax - b||_2) of
-			the NNLS problem.
+		r: numpy.ndarray of size (M, ), the norm of the residual vector
+			(||Ax - b||_2) of the NNLS problem.
 	"""
 	# Divide matrix A into smaller submatrices
 	A_nonzero_row_indexes, A_nonzero_column_indexes = A.nonzero()
@@ -111,8 +111,8 @@ def fast_nnls_full(A, b):
 		b: numpy.ndarray of size (M, )
 	Returns:
 		x: numpy.ndarray of size (N, ), the solution to the NNLS problem.
-		r: numpy.ndarray of size (M, ), the residual vector (||Ax - b||_2) of
-			the NNLS problem.
+		r: numpy.ndarray of size (M, ), the norm of the residual vector
+			(||Ax - b||_2) of the NNLS problem.
 	"""
 	# Check matrix dimensions
 	if A.ndim != 2 or b.ndim != 1:
