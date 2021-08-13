@@ -421,6 +421,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.amino_acid_import = metabolism.amino_acid_import
 
 		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
+		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
@@ -450,15 +451,18 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_in_media = self.aa_environment.import_present()
 		enzyme_counts = self.aa_enzymes.total_counts()
 		transporter_counts = self.aa_transporters.total_counts()
+		export_transporter_counts = self.export_transporter_container.total_counts()
 		synthesis, enzyme_counts_per_aa, saturation = self.amino_acid_synthesis(enzyme_counts, aa_conc)
-		imported = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_uptake)
+		import_rates = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_uptake)
+		export_rates = self.amino_acid_export(aa_in_media, export_transporter_counts, aa_counts, self.counts_to_molar)
+		exchange_rates = import_rates - export_rates
 
 		# Create functions that are only dependent on amino acid concentrations for more stable
 		# charging and amino acid concentrations
 		if self.process.aa_supply_in_charging:
 			counts_to_molar = self.counts_to_molar.asNumber(CONC_UNITS)
 			if self.process.mechanistic_translation_supply:
-				supply_function = lambda aa_conc: counts_to_molar * (self.amino_acid_synthesis(enzyme_counts, aa_conc)[0] + imported)
+				supply_function = lambda aa_conc: counts_to_molar * (self.amino_acid_synthesis(enzyme_counts, aa_conc)[0] + exchange_rates)
 			else:
 				supply = self.process.aa_supply.copy()
 				supply_function = lambda aa_conc: counts_to_molar * supply * self.aa_supply_scaling(aa_conc, aa_in_media)
@@ -485,7 +489,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		else:
 			if self.process.mechanistic_translation_supply:
 				# Set supply based on mechanistic synthesis and supply
-				self.process.aa_supply = self.process.timeStepSec() * (synthesis + imported)
+				self.process.aa_supply = self.process.timeStepSec() * (synthesis + exchange_rates)
 			else:
 				# Adjust aa_supply higher if amino acid concentrations are low
 				# Improves stability of charging and mimics amino acid synthesis
@@ -518,7 +522,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
 		self.process.writeToListener('GrowthLimits', 'aa_synthesis', synthesis * self.process.timeStepSec())
-		self.process.writeToListener('GrowthLimits', 'aa_import', imported * self.process.timeStepSec())
+		self.process.writeToListener('GrowthLimits', 'aa_import', import_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts_per_aa)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
