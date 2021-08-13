@@ -716,10 +716,12 @@ class Metabolism(object):
 		counts_to_molar = ((sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) 
 			/ sim_data.constants.n_avogadro).asNumber(METABOLITE_CONCENTRATION_UNITS)
 		aa_conc = {aa: counts * counts_to_molar for aa, counts in zip(aa_names, with_aa_container.counts(aa_names))}
+
 		# KMs are in mM, while concentrations of AA are in M
 		kms = {'L-ALPHA-ALANINE[c]': {'G7399-MONOMER': 40}, 'ILE[c]': {'B4141-MONOMER': 120, 'CPLX0-7684': 21}, 
-			'LEU[c]': {'B4141-MONOMER': 60, 'G6984-MONOMER': 21}, 'LYS[c]': {'G6458-MONOMER': 20}, 'MET[c]': {'B4141-MONOMER': 70, 'G6458-MONOMER': 10},
-			'PHE[c]': {'YDDG-MONOMER': 7}, 'VAL[c]': {'CPLX0-7684': 35, 'B4141-MONOMER': 150}, 
+			'LEU[c]': {'B4141-MONOMER': 60, 'G6984-MONOMER': 21}, 'LYS[c]': {'G6458-MONOMER': 20}, 
+			'MET[c]': {'B4141-MONOMER': 70, 'G6458-MONOMER': 10},'PHE[c]': {'YDDG-MONOMER': 7}, 
+			'VAL[c]': {'CPLX0-7684': 35, 'B4141-MONOMER': 150}, 
 			'THR[c]': {'EG12134-MONOMER': 170, 'RHTB-MONOMER': 120, 'RHTC-MONOMER': 33}}
 
 		coeff_estimate_kms = 0
