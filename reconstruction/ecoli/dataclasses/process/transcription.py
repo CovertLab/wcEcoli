@@ -41,6 +41,7 @@ class Transcription(object):
 		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 
 		self._build_ppgpp_regulation(raw_data, sim_data)
+		self._build_oric_terc_coordinates(raw_data, sim_data)
 		self._build_cistron_data(raw_data, sim_data)
 		self._build_rna_data(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
@@ -176,6 +177,20 @@ class Transcription(object):
 			print('Supplement value (FC-): {:.2f}'.format(self._fit_ppgpp_fc))
 			print('Supplement value (FC+): {:.2f}'.format(average_positive_fc))
 
+	def _build_oric_terc_coordinates(self, raw_data, sim_data):
+		"""
+		Builds coordinates of oriC and terC that are used when calculating
+		genomic positions of cistrons and RNAs relative to the origin
+		"""
+		# Get coordinates of oriC and terC
+		oric_left, oric_right = sim_data.getter.get_genomic_coordinates(
+			sim_data.molecule_ids.oriC_site)
+		terc_left, terc_right = sim_data.getter.get_genomic_coordinates(
+			sim_data.molecule_ids.terC_site)
+		self._oric_coordinate = round((oric_left + oric_right)/2)
+		self._terc_coordinate = round((terc_left + terc_right)/2)
+		self._genome_length = len(raw_data.genome_sequence)
+
 	def _build_cistron_data(self, raw_data, sim_data):
 		"""
 		Build cistron-associated simulation data from raw data. Cistrons are
@@ -184,7 +199,7 @@ class Transcription(object):
 		"""
 		# Get list of all cistrons with an associated gene and right and left
 		# end positions
-		rna_id_to_gene_id = {
+		cistron_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in raw_data.genes}
 		gene_id_to_left_end_pos = {
 			gene['id']: gene['left_end_pos'] for gene in raw_data.genes
@@ -195,20 +210,35 @@ class Transcription(object):
 
 		all_cistrons = [
 			rna for rna in raw_data.rnas
-			if rna['id'] in rna_id_to_gene_id
-			   and gene_id_to_left_end_pos[rna_id_to_gene_id[rna['id']]] is not None
-			   and gene_id_to_right_end_pos[rna_id_to_gene_id[rna['id']]] is not None
+			if rna['id'] in cistron_id_to_gene_id
+			   and gene_id_to_left_end_pos[cistron_id_to_gene_id[rna['id']]] is not None
+			   and gene_id_to_right_end_pos[cistron_id_to_gene_id[rna['id']]] is not None
 			]
 
 		# Load gene IDs associated with each cistron
 		gene_id = np.array(
-			[rna_id_to_gene_id[rna['id']] for rna in all_cistrons])
+			[cistron_id_to_gene_id[rna['id']] for rna in all_cistrons])
 
 		# Calculate lengths of each cistron from their gene end positions
 		cistron_lengths = np.array([
-			np.abs(gene_id_to_right_end_pos[rna_id_to_gene_id[rna['id']]] - gene_id_to_left_end_pos[rna_id_to_gene_id[rna['id']]]) + 1
-			for rna in all_cistrons
+			np.abs(gene_id_to_right_end_pos[cistron_id_to_gene_id[cistron['id']]] - gene_id_to_left_end_pos[cistron_id_to_gene_id[cistron['id']]]) + 1
+			for cistron in all_cistrons
 			])
+
+		# Get mapping from cistron IDs to coordinate and direction
+		cistron_id_to_coordinate = {}
+		rna_id_to_direction = {}
+		for gene in raw_data.genes:
+			rna_id_to_direction[gene['rna_id']] = gene['direction']
+			if gene['direction'] == '+':
+				cistron_id_to_coordinate[gene['rna_id']] = gene['left_end_pos']
+			else:
+				cistron_id_to_coordinate[gene['rna_id']] = gene['right_end_pos']
+
+		# Get location of each cistron on the chromosome relative to the origin
+		replication_coordinate = [
+			self._get_relative_coordinates(cistron_id_to_coordinate[cistron['id']])
+			for cistron in all_cistrons]
 
 		# Construct boolean arrays for ribosomal protein and RNAP-encoding
 		# cistrons
@@ -251,6 +281,7 @@ class Transcription(object):
 				('id', 'U{}'.format(max_cistron_id_length)),
 				('gene_id', 'U{}'.format(max_gene_id_length)),
 				('length', 'i8'),
+				('replication_coordinate', 'i8'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
 				('is_rRNA', 'bool'),
@@ -266,6 +297,7 @@ class Transcription(object):
 		cistron_data['id'] = [rna['id'] for rna in all_cistrons]
 		cistron_data['gene_id'] = gene_id
 		cistron_data['length'] = cistron_lengths
+		cistron_data['replication_coordinate'] = replication_coordinate
 		cistron_data['is_mRNA'] = [
 			RNA_TYPE_TO_SUBMASS[rna["type"]] == "mRNA" for rna in all_cistrons]
 		cistron_data['is_miscRNA'] = [
@@ -284,6 +316,7 @@ class Transcription(object):
 			'id': None,
 			'gene_id': None,
 			'length': units.nt,
+			'replication_coordinate': None,
 			'is_mRNA': None,
 			'is_miscRNA': None,
 			'is_rRNA': None,
@@ -302,14 +335,14 @@ class Transcription(object):
 
 		# Load expression levels of individual cistrons from sequencing data
 		cistron_expression = []
-		rna_id_to_gene_id = {
+		cistron_id_to_gene_id = {
 			gene['rna_id']: gene['id'] for gene in raw_data.genes}
 		seq_data = {
 			x['Gene']: x[sim_data.basal_expression_condition]
 			for x in getattr(raw_data.rna_seq_data, f'rnaseq_{RNA_SEQ_ANALYSIS}_mean')}
 
 		for cistron_id in self.cistron_data['id']:
-			gene_id = rna_id_to_gene_id[cistron_id]
+			gene_id = cistron_id_to_gene_id[cistron_id]
 			# If sequencing data is not found, initialize expression to zero.
 			cistron_expression.append(seq_data.get(gene_id, 0.))
 
@@ -446,29 +479,6 @@ class Transcription(object):
 				[seq.count(letter) for letter in ntp_abbreviations])
 		nt_counts = np.array(nt_counts)
 
-		# Get coordinates of oriC and terC
-		oric_left, oric_right = sim_data.getter.get_genomic_coordinates(
-			sim_data.molecule_ids.oriC_site)
-		terc_left, terc_right = sim_data.getter.get_genomic_coordinates(
-			sim_data.molecule_ids.terC_site)
-		oric_coordinate = round((oric_left + oric_right)/2)
-		terc_coordinate = round((terc_left + terc_right)/2)
-		genome_length = len(raw_data.genome_sequence)
-
-		def get_relative_coordinates(coordinates):
-			"""
-			Returns the genomic coordinates of a given gene coordinate relative
-			to the origin of replication.
-			"""
-			if coordinates < terc_coordinate:
-				relative_coordinates = genome_length - oric_coordinate + coordinates
-			elif coordinates < oric_coordinate:
-				relative_coordinates = coordinates - oric_coordinate + 1
-			else:
-				relative_coordinates = coordinates - oric_coordinate
-
-			return relative_coordinates
-
 		# Get mapping from cistron IDs to coordinate and direction
 		rna_id_to_coordinate = {}
 		rna_id_to_direction = {}
@@ -500,7 +510,7 @@ class Transcription(object):
 		# Get location of transcription initiation relative to origin and the
 		# transcription direction for each transcription unit
 		replication_coordinate = [
-			get_relative_coordinates(rna_id_to_coordinate[rna_id])
+			self._get_relative_coordinates(rna_id_to_coordinate[rna_id])
 			for rna_id in rna_ids]
 		direction = [rna_id_to_direction[rna_id] == '+' for rna_id in rna_ids]
 
@@ -680,6 +690,20 @@ class Transcription(object):
 		"""
 		rna_exp, res = fast_nnls(self.cistron_tu_mapping_matrix, cistron_expression)
 		return rna_exp, res
+
+	def _get_relative_coordinates(self, coordinates):
+		"""
+		Returns the genomic coordinates of a given gene coordinate relative
+		to the origin of replication.
+		"""
+		if coordinates < self._terc_coordinate:
+			relative_coordinates = self._genome_length - self._oric_coordinate + coordinates
+		elif coordinates < self._oric_coordinate:
+			relative_coordinates = coordinates - self._oric_coordinate + 1
+		else:
+			relative_coordinates = coordinates - self._oric_coordinate
+
+		return relative_coordinates
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""

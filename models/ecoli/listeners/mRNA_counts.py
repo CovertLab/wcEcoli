@@ -57,14 +57,20 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 		all_TU_counts = np.bincount(
 			TU_indexes[can_translate], minlength=len(self.all_TU_ids))
 		self.mRNA_counts = all_TU_counts[self.mRNA_indexes]
-		self.full_mRNA_counts = np.bincount(
+		full_TU_counts = np.bincount(
 			TU_indexes[np.logical_and(can_translate, is_full_transcript)],
-			minlength=len(self.all_TU_ids))[self.mRNA_indexes]
+			minlength=len(self.all_TU_ids))
+		self.full_mRNA_counts = full_TU_counts[self.mRNA_indexes]
+		partial_TU_counts = all_TU_counts - full_TU_counts
 		self.partial_mRNA_counts = self.mRNA_counts - self.full_mRNA_counts
 
 		# Calculate counts of mRNA cistrons from transcription unit counts
 		self.mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
 			all_TU_counts)[self.cistron_is_mRNA]
+		self.full_mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
+			full_TU_counts)[self.cistron_is_mRNA]
+		self.partial_mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
+			partial_TU_counts)[self.cistron_is_mRNA]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
@@ -86,4 +92,6 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 			full_mRNA_counts = self.full_mRNA_counts,
 			partial_mRNA_counts = self.partial_mRNA_counts,
 			mRNA_cistron_counts = self.mRNA_cistron_counts,
+			full_mRNA_cistron_counts = self.full_mRNA_cistron_counts,
+			partial_mRNA_cistron_counts = self.partial_mRNA_cistron_counts,
 			)
