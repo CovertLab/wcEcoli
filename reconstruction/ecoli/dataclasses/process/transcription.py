@@ -227,9 +227,9 @@ class Transcription(object):
 
 		# Get mapping from cistron IDs to coordinate and direction
 		cistron_id_to_coordinate = {}
-		rna_id_to_direction = {}
+		cistron_id_to_direction = {}
 		for gene in raw_data.genes:
-			rna_id_to_direction[gene['rna_id']] = gene['direction']
+			cistron_id_to_direction[gene['rna_id']] = gene['direction']
 			if gene['direction'] == '+':
 				cistron_id_to_coordinate[gene['rna_id']] = gene['left_end_pos']
 			else:
@@ -239,6 +239,10 @@ class Transcription(object):
 		replication_coordinate = [
 			self._get_relative_coordinates(cistron_id_to_coordinate[cistron['id']])
 			for cistron in all_cistrons]
+
+		# Get direction of each cistron
+		direction = [
+			cistron_id_to_direction[cistron['id']] == '+' for cistron in all_cistrons]
 
 		# Construct boolean arrays for ribosomal protein and RNAP-encoding
 		# cistrons
@@ -282,6 +286,7 @@ class Transcription(object):
 				('gene_id', 'U{}'.format(max_gene_id_length)),
 				('length', 'i8'),
 				('replication_coordinate', 'i8'),
+				('direction', 'bool'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
 				('is_rRNA', 'bool'),
@@ -298,6 +303,7 @@ class Transcription(object):
 		cistron_data['gene_id'] = gene_id
 		cistron_data['length'] = cistron_lengths
 		cistron_data['replication_coordinate'] = replication_coordinate
+		cistron_data['direction'] = direction
 		cistron_data['is_mRNA'] = [
 			RNA_TYPE_TO_SUBMASS[rna["type"]] == "mRNA" for rna in all_cistrons]
 		cistron_data['is_miscRNA'] = [
@@ -317,6 +323,7 @@ class Transcription(object):
 			'gene_id': None,
 			'length': units.nt,
 			'replication_coordinate': None,
+			'direction': None,
 			'is_mRNA': None,
 			'is_miscRNA': None,
 			'is_rRNA': None,
@@ -499,13 +506,10 @@ class Transcription(object):
 				rna_id_to_coordinate[tu['id']] = tu['right_end_pos']
 
 		# Get mapping from cistron IDs to lengths
-		cistron_id_to_length = {}
-		for gene in raw_data.genes:
-			try:
-				cistron_id_to_length[gene['rna_id']] = np.abs(
-					gene['left_end_pos'] - gene['right_end_pos'])
-			except TypeError:
-				continue
+		cistron_id_to_length = {
+			cistron['id']: cistron['length']
+			for cistron in self.cistron_data
+			}
 
 		# Get location of transcription initiation relative to origin and the
 		# transcription direction for each transcription unit
@@ -528,7 +532,7 @@ class Transcription(object):
 				cistron_coordinate = rna_id_to_coordinate[cistron_id]
 
 				start_pos = np.abs(cistron_coordinate - rna_coordinate)
-				end_pos = start_pos + cistron_id_to_length[cistron_id]
+				end_pos = start_pos + cistron_id_to_length[cistron_id] - 1
 
 				# End position should stay within length of entire RNA
 				assert end_pos < rna_lengths[rna_idx]
