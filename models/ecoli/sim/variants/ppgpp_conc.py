@@ -10,9 +10,9 @@ Modifies:
 	sim_data.process.metabolism.force_constant_ppgpp
 
 Expected variant indices (dependent on FACTORS):
-	0-3: lower concentrations of ppGpp
-	4: control
-	5-8: higher concentrations of ppGpp
+	0-2: lower concentrations of ppGpp
+	3: control
+	4-6: higher concentrations of ppGpp
 """
 
 from wholecell.utils import units
