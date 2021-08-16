@@ -335,7 +335,12 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		effectiveFracActiveRnap = fracActiveRnap * 1/(1 - averageFractionTimeInactive)
 
 		# Return activation probability that will balance out the expected termination rate
-		return effectiveFracActiveRnap * expectedTerminationRate /(1 - effectiveFracActiveRnap)
+		activation_prob = effectiveFracActiveRnap * expectedTerminationRate /(1 - effectiveFracActiveRnap)
+
+		if activation_prob > 1:
+			activation_prob = 1.
+
+		return activation_prob
 
 
 	def _rescale_initiation_probs(
