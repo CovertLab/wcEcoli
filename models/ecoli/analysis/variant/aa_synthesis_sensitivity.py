@@ -7,6 +7,7 @@ Useful with the aa_synthesis_sensitivity variant.
 import pickle
 
 from matplotlib import colors, pyplot as plt
+import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -45,7 +46,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elong_rate = read_stacked_columns(cells, 'RibosomeData', 'effectiveElongationRate',
 				remove_first=True, ignore_exception=True).mean()
 
-			variant_data = {'Growth rate': growth_rate, 'Elongation rate': elong_rate}
+			variant_data = {'Growth rate': growth_rate, 'Elongation rate': elong_rate, 'Doubling time': np.log(2) / growth_rate / 60}
 			media_data = data.get(media_index, {})
 			param_data = media_data.get(param_label, {})
 			param_data[factor] = variant_data
@@ -53,10 +54,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			data[media_index] = media_data
 
 		# Plot data
-		plt.figure(figsize=(5, 10))
-		def subplot(label, index):
-			plt.subplot(2, 1, index)
-			glt_data = data[GLT_INDEX]  # TODO: generalize to all
+		plt.figure(figsize=(4, 16))
+		n_subplots = 4
+
+		def subplot(label, data_index, subplot_index, normalized=True):
+			plt.subplot(n_subplots, 1, subplot_index)
+			glt_data = data[data_index]  # TODO: generalize to all
 			param_labels = list(glt_data.keys())
 			label_indices = {param: i for i, param in enumerate(param_labels)}
 
@@ -66,21 +69,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for param_label, factors in glt_data.items():
 				for factor, values in factors.items():
 					x.append(label_indices[param_label])
-					y.append(values[label] / data.get(CONTROL_INDEX, {}).get(param_label, {}).get(factor, {}).get(label, 1))
+					denom = data.get(CONTROL_INDEX, {}).get(param_label, {}).get(factor, {}).get(label, 1) if normalized else 1
+					y.append(values[label] / denom)
 					scale.append(factor)
 			scatter = plt.scatter(x, y, c=scale, cmap='RdBu', alpha=0.8, norm=colors.LogNorm())
 			plt.colorbar(scatter)
 
 			## Plot formatting
+			normalized_text = '\n(Normalized to minimal media)' if normalized else ''
 			self.remove_border()
 			plt.xticks(range(len(param_labels)), param_labels, rotation=45, fontsize=6, ha='right')
 			plt.yticks(fontsize=6)
-			plt.ylabel(f'{label}\n(Normalized to minimal media)', fontsize=6)
+			plt.ylabel(f'{label}{normalized_text}', fontsize=6)
 
-		subplot('Growth rate', 1)
+		subplot('Growth rate', GLT_INDEX, 1)
 		plt.title('Effect of scaling synthesis parameters by a factor\n'
 			'Color represents parameter scale factor', fontsize=6)
-		subplot('Elongation rate', 2)
+		subplot('Doubling time', GLT_INDEX, 2, normalized=False)
+		subplot('Doubling time', CONTROL_INDEX, 3, normalized=False)
+		subplot('Elongation rate', GLT_INDEX, 4)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
