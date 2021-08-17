@@ -6,7 +6,7 @@ Useful with the aa_synthesis_sensitivity variant.
 
 import pickle
 
-from matplotlib import colors, pyplot as plt
+from matplotlib import colors, gridspec, pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
@@ -27,8 +27,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 		aa_ids = sim_data.molecule_groups.amino_acids
-
-		n_aas = 1  # TODO; generalize to all and match with the sim variant file
+		n_aas = aa_synthesis_sensitivity.get_n_aas(sim_data)
+		n_params = len(aa_synthesis_sensitivity.PARAMETERS)
 
 		# Load simulation growth rates
 		data = {}
@@ -54,40 +54,50 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			data[media_index] = media_data
 
 		# Plot data
-		plt.figure(figsize=(4, 16))
-		n_subplots = 4
+		plt.figure(figsize=(32, 32))
+		gs = gridspec.GridSpec(3, 2)
 
-		def subplot(label, data_index, subplot_index, normalized=True):
-			plt.subplot(n_subplots, 1, subplot_index)
-			glt_data = data[data_index]  # TODO: generalize to all
-			param_labels = list(glt_data.keys())
+		def subplot(label, data_index, subplot_index, ylabel=None, normalized=False):
+			plt.subplot(gs[subplot_index])
+			selected_data = data[data_index]
+			param_labels = list(selected_data.keys())
 			label_indices = {param: i for i, param in enumerate(param_labels)}
 
 			x = []
 			y = []
 			scale = []
-			for param_label, factors in glt_data.items():
+			for param_label, factors in selected_data.items():
 				for factor, values in factors.items():
 					x.append(label_indices[param_label])
 					denom = data.get(CONTROL_INDEX, {}).get(param_label, {}).get(factor, {}).get(label, 1) if normalized else 1
 					y.append(values[label] / denom)
 					scale.append(factor)
-			scatter = plt.scatter(x, y, c=scale, cmap='RdBu', alpha=0.8, norm=colors.LogNorm())
+			scale = np.array(scale)
+			edges = ['silver' if factor == 0 else 'black' for factor in scale]
+			scale[scale == 0] = 1
+			scatter = plt.scatter(x, y, c=scale, edgecolors=edges, cmap='RdBu', alpha=0.8, norm=colors.LogNorm())
 			plt.colorbar(scatter)
 
 			## Plot formatting
+			ylabel = f'\n{ylabel}' if ylabel else ''
 			normalized_text = '\n(Normalized to minimal media)' if normalized else ''
 			self.remove_border()
 			plt.xticks(range(len(param_labels)), param_labels, rotation=45, fontsize=6, ha='right')
 			plt.yticks(fontsize=6)
-			plt.ylabel(f'{label}{normalized_text}', fontsize=6)
+			plt.ylabel(f'{label}{ylabel}{normalized_text}', fontsize=6)
 
-		subplot('Growth rate', GLT_INDEX, 1)
+			for vertical in range(n_params, np.max(x), n_params):
+				plt.axvline(vertical - 0.5, color='gray', linestyle='--', linewidth=1, alpha=0.5)
+
+		subplot('Growth rate', GLT_INDEX, (0, 0), normalized=True)
 		plt.title('Effect of scaling synthesis parameters by a factor\n'
-			'Color represents parameter scale factor', fontsize=6)
-		subplot('Growth rate', GLT_INDEX, 2, normalized=False)
-		subplot('Growth rate', CONTROL_INDEX, 3, normalized=False)
-		subplot('Elongation rate', GLT_INDEX, 4)
+			'Color represents parameter scale factor\n'
+			'Light gray circles have a value of 0 for the parameter', fontsize=6)
+		subplot('Growth rate', GLT_INDEX, (1, 0), ylabel='Glt added')
+		subplot('Growth rate', CONTROL_INDEX, (2, 0), ylabel='Minimal glc')
+		subplot('Elongation rate', GLT_INDEX, (0, 1), normalized=True)
+		subplot('Elongation rate', GLT_INDEX, (1, 1), ylabel='Glt added')
+		subplot('Elongation rate', CONTROL_INDEX, (2, 1), ylabel='Minimal glc')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
