@@ -640,13 +640,12 @@ class Metabolism(object):
 			export (Boolean): if True, the parameters calculated are for mechanistic
 				export instead of uptake
 
-		Sets class attributes:
-			aa_to_transporters (Dict[str, list]): dictonary that maps aa to transporters involved
-				in uptake reactions
-			aa_to_transporters_matrix (np.ndarray[int]): correlation matrix. Columns correspond to transporter
-				enzymes and rows to amino acids
+		Returns:
+			aa_to_transporters (Dict[str, list]): dictonary that maps aa to
+				transporters involved in transport reactions
+			aa_to_transporters_matrix (np.ndarray[int]): correlation matrix.
+				Columns correspond to transporter enzymes and rows to amino acids
 			aa_transporters_names (np.ndarray[str]): names of all transporters
-
 		'''
 
 		def matches_direction(direction):
@@ -706,36 +705,38 @@ class Metabolism(object):
 				container in the basal condition
 
 		Sets class attribute:
+			aa_to_export_transporters (Dict[str, list]): dictonary that maps aa to
+				transporters involved in export reactions
+			aa_to_export_transporters_matrix (np.ndarray[int]): correlation matrix.
+				Columns correspond to exporting enzymes and rows to amino acids
+			aa_export_transporters_names (np.ndarray[str]): names of all exporters
 			aa_export_kms (np.ndarray[float]): kms corresponding to generic transport/enzyme
 				reactions for each AA in concentration units (METABOLITE_CONCENTRATION_UNITS) [M]
-
-
 		'''
+
 		aa_names = sim_data.molecule_groups.amino_acids
 
 		self.aa_to_export_transporters, self.aa_to_export_transporters_matrix, self.aa_export_transporters_names = self.get_aa_to_transporters_mapping_data(sim_data, export=True)
-		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
+		counts_to_molar = (sim_data.constants.cell_density / cell_specs['basal']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
 		aa_conc = {aa: counts * counts_to_molar for aa, counts in zip(aa_names, basal_container.counts(aa_names))}
-		transporters_per_aa = self.amino_acid_export_kms
 		aa_with_km = {}
 
 		# KMs are in mM, while concentrations of AA are in M
 		coeff_estimate_kms = 0
-		for transporters in transporters_per_aa:
-			aa_with_km[transporters['Amino Acid']] = transporters['KM']
+		for export_kms in self.amino_acid_export_kms:
+			aa_with_km[export_kms['Amino Acid']] = export_kms['KM']
 			coef_per_aa = 0
-			for t, km in transporters['KM'].items():
-				coef_per_aa += km.asUnit(METABOLITE_CONCENTRATION_UNITS) / aa_conc[transporters['Amino Acid']]
-			coeff_estimate_kms += coef_per_aa / len(transporters['KM'])
-		coeff_estimate_kms = coeff_estimate_kms / len(transporters_per_aa)
+			for km in export_kms['KM'].values():
+				coef_per_aa += km.asUnit(METABOLITE_CONCENTRATION_UNITS) / aa_conc[export_kms['Amino Acid']]
+			coeff_estimate_kms += coef_per_aa / len(export_kms['KM'])
+		coeff_estimate_kms = coeff_estimate_kms / len(self.amino_acid_export_kms)
 
 		single_kms = {}
 		for aa in aa_names:
-			if aa not in aa_with_km:
-				single_kms[aa] = coeff_estimate_kms * aa_conc[aa]
+			if aa in aa_with_km:
+				single_kms[aa] = np.mean(list(aa_with_km[aa].values()))
 			else:
-				temp = [km_val for km_val in aa_with_km[aa].values()]
-				single_kms[aa] = np.mean(temp)
+				single_kms[aa] = coeff_estimate_kms * aa_conc[aa]
 
 		self.aa_export_kms = np.array([single_kms[aa].asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in aa_names])
 
@@ -751,6 +752,11 @@ class Metabolism(object):
 				container in the with_aa condition
 
 		Sets class attribute:
+			aa_to_transporters (Dict[str, list]): dictonary that maps aa to
+				transporters involved in import reactions
+			aa_to_transporters_matrix (np.ndarray[int]): correlation matrix.
+				Columns correspond to importing enzymes and rows to amino acids
+			aa_transporters_names (np.ndarray[str]): names of all importers
 			uptake_kcats_per_aa (np.ndarray[float]): kcats corresponding to generic transport
 				reactions for each AA. Units in counts/second [1/s]
 
