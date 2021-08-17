@@ -27,7 +27,7 @@ def get_media_index(index, n_aas):
 
 def get_aa_index(index, n_aas):
 	sub_index = index % (N_PARAM_VALUES * n_aas)
-	return sub_index // N_PARAM_VALUES
+	return 5  #sub_index // N_PARAM_VALUES
 
 def get_adjustment(index):
 	sub_index = index % N_PARAM_VALUES
@@ -36,7 +36,7 @@ def get_adjustment(index):
 	return PARAMETERS[param_index], FACTORS[factor_index]
 
 def aa_synthesis_sensitivity(sim_data, index):
-	n_aas = len(sim_data.molecule_groups.amino_acids)
+	n_aas = 1  #len(sim_data.molecule_groups.amino_acids)
 
 	# Use add_one_aa variant to add a specific amino acid to the media
 	media_idx = get_media_index(index, n_aas)
