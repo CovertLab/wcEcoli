@@ -1,8 +1,14 @@
 """
-TODO
+Vary amino acid synthesis network parameters to see the effects on growth rate
+and elongation rate in different media conditions.
 
 Modifies:
-	TODO
+	Attributes from add_one_aa variant
+	sim_data.process.metabolism.aa_kcats
+	sim_data.process.metabolism.aa_kis
+	sim_data.process.metabolism.aa_upstream_kms
+	sim_data.process.metabolism.aa_reverse_kms
+	sim_data.process.metabolism.aa_degradation_kms
 
 Expected variant indices (dependent on length of FACTORS and sim_data.molecule_groups.amino_acids):
 	0-6: range of values for first parameter, first amino acid, first media condition
@@ -22,10 +28,16 @@ N_PARAM_VALUES = len(FACTORS) * len(PARAMETERS)
 MEDIA_IDS = [5, 19]  # Glt and control for now - TODO: run this for all AA additions?
 
 
-def get_media_index(index, n_aas):
+def get_n_aas(sim_data):
+	"""Get the number of amino acids to vary parameters for in case it is not all of them"""
+	return len(sim_data.molecule_groups.amino_acids)
+
+def get_media_index(index, sim_data):
+	n_aas = get_n_aas(sim_data)
 	return MEDIA_IDS[index // (N_PARAM_VALUES * n_aas)]
 
-def get_aa_index(index, n_aas):
+def get_aa_index(index, sim_data):
+	n_aas = get_n_aas(sim_data)
 	sub_index = index % (N_PARAM_VALUES * n_aas)
 	return sub_index // N_PARAM_VALUES
 
@@ -36,14 +48,12 @@ def get_adjustment(index):
 	return PARAMETERS[param_index], FACTORS[factor_index]
 
 def aa_synthesis_sensitivity(sim_data, index):
-	n_aas = len(sim_data.molecule_groups.amino_acids)
-
 	# Use add_one_aa variant to add a specific amino acid to the media
-	media_idx = get_media_index(index, n_aas)
+	media_idx = get_media_index(index, sim_data)
 	_, sim_data = add_one_aa(sim_data, media_idx)
 
 	# Change the uptake rate for that amino acid to check the sensitivity
-	aa_idx = get_aa_index(index, n_aas)
+	aa_idx = get_aa_index(index, sim_data)
 	param, factor = get_adjustment(index)
 	values = getattr(sim_data.process.metabolism, param)
 	if np.all(values[aa_idx] == values[aa_idx] * factor):
@@ -51,8 +61,9 @@ def aa_synthesis_sensitivity(sim_data, index):
 	values[aa_idx] *= factor
 
 	aa_id = sim_data.molecule_groups.amino_acids[aa_idx]
+	media_id = sim_data.molecule_groups.amino_acids[media_idx]
 
 	return dict(
-		shortName=f'TODO',
-		desc=f'TODO'
+		shortName=f'{media_id}:{aa_id} {param} {factor}x',
+		desc=f'{media_id} added to media: adjusted {aa_id} {param} by {factor}x'
 		), sim_data
