@@ -16,7 +16,7 @@ from .add_one_aa import add_one_aa
 import numpy as np
 
 
-FACTORS = [0, 0.1, 0.5, 1, 1.5, 2, 5, 10]
+FACTORS = [0, 0.1, 0.5, 1, 1.5, 2, 5, 10]  # TODO: skip factor of 1 - only run once for each media condition
 PARAMETERS = ['aa_kcats', 'aa_kis', 'aa_upstream_kms', 'aa_reverse_kms', 'aa_degradation_kms']
 N_PARAM_VALUES = len(FACTORS) * len(PARAMETERS)
 MEDIA_IDS = [5, 19]  # Glt and control for now - TODO: run this for all AA additions?
@@ -46,7 +46,7 @@ def aa_synthesis_sensitivity(sim_data, index):
 	aa_idx = get_aa_index(index, n_aas)
 	param, factor = get_adjustment(index)
 	values = getattr(sim_data.process.metabolism, param)
-	if values[aa_idx] == 0 or np.isinf(values[aa_idx]):
+	if np.all(values[aa_idx] == values[aa_idx] * factor):
 		raise ValueError('No change to params - not running variant sims.')
 	values[aa_idx] *= factor
 
