@@ -463,7 +463,15 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		if self.process.aa_supply_in_charging:
 			counts_to_molar = self.counts_to_molar.asNumber(CONC_UNITS)
 			if self.process.mechanistic_translation_supply:
-				supply_function = lambda aa_conc: counts_to_molar * (self.amino_acid_synthesis(enzyme_counts, aa_conc)[0] + exchange_rates)
+				if self.process.mechanistic_uptake:
+					supply_function = lambda aa_conc: counts_to_molar * (
+						self.amino_acid_synthesis(enzyme_counts, aa_conc)[0]
+						+ import_rates
+						- self.amino_acid_export(aa_in_media, export_transporter_counts, aa_conc, self.process.mechanistic_uptake))
+				else:
+					supply_function = lambda aa_conc: counts_to_molar * (
+						self.amino_acid_synthesis(enzyme_counts, aa_conc)[0]
+						+ exchange_rates)
 			else:
 				supply = self.process.aa_supply.copy()
 				supply_function = lambda aa_conc: counts_to_molar * supply * self.aa_supply_scaling(aa_conc, aa_in_media)
