@@ -57,6 +57,7 @@ LIST_OF_DICT_FILENAMES = (
 	"sequence_motifs.tsv",
 	"transcription_factors.tsv",
 	"transcription_units.tsv",
+	"transcription_units_modified.tsv",
 	"transcription_units_removed.tsv",
 	"transcription_units_removed_all.tsv",
 	"transcription_units_removed_single_tu.tsv",
@@ -128,6 +129,7 @@ ADDED_DATA = {
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',
 	'metabolic_reactions': 'metabolic_reactions_modified',
+	'transcription_units': 'transcription_units_modified',
 	}
 
 class DataStore(object):
