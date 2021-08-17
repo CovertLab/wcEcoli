@@ -170,7 +170,7 @@ class Metabolism(wholecell.processes.process.Process):
 				aa_in_media, dry_mass, self.aa_transporters_container.counts(),
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			export_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_export(
-				aa_in_media, self.aa_export_transporters_container.counts(),
+				self.aa_export_transporters_container.counts(),
 				counts_to_molar * self.aas.total_counts(),
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			exchange_rates = import_rates - export_rates

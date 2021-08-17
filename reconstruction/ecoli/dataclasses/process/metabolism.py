@@ -1069,12 +1069,11 @@ class Metabolism(object):
 
 		return synthesis, counts_per_aa, fraction
 
-	def amino_acid_export(self, aa_in_media: np.ndarray, aa_transporters_counts: np.ndarray, aa_conc: units.Unum, mechanistic_uptake: bool):
+	def amino_acid_export(self, aa_transporters_counts: np.ndarray, aa_conc: units.Unum, mechanistic_uptake: bool):
 		"""
 		Calculate the rate of amino acid export.
 
 		Args:
-			aa_in_media: bool for each amino acid being present in current media
 			aa_transporters_counts: counts of each transporter
 			aa_conc: concentrations of each amino acid with mol/volume units
 			mechanisitc_uptake: if true, the uptake is calculated based on transporters
@@ -1093,7 +1092,7 @@ class Metabolism(object):
 			# Export is lumped with specific uptake rates in amino_acid_import
 			# and not dependent on internal amino acid concentrations or
 			# explicitly considered here
-			export_rates = np.zeros(aa_in_media)
+			export_rates = np.zeros(len(aa_conc))
 
 		return export_rates
 
