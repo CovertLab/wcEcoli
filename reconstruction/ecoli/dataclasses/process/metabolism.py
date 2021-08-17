@@ -718,7 +718,7 @@ class Metabolism(object):
 		aa_conc = {aa: counts * counts_to_molar for aa, counts in zip(aa_names, basal_container.counts(aa_names))}
 		transporters_per_aa = self.amino_acid_export_kms
 		aa_with_km = {}
-		import ipdb; ipdb.set_trace(context=10)
+
 		# KMs are in mM, while concentrations of AA are in M
 		coeff_estimate_kms = 0
 		for transporters in transporters_per_aa:
