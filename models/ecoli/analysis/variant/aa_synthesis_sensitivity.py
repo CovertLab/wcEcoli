@@ -46,7 +46,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elong_rate = read_stacked_columns(cells, 'RibosomeData', 'effectiveElongationRate',
 				remove_first=True, ignore_exception=True).mean()
 
-			variant_data = {'Growth rate': growth_rate, 'Elongation rate': elong_rate, 'Doubling time': np.log(2) / growth_rate / 60}
+			variant_data = {'Growth rate': growth_rate * 3600, 'Elongation rate': elong_rate}
 			media_data = data.get(media_index, {})
 			param_data = media_data.get(param_label, {})
 			param_data[factor] = variant_data
@@ -85,8 +85,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		subplot('Growth rate', GLT_INDEX, 1)
 		plt.title('Effect of scaling synthesis parameters by a factor\n'
 			'Color represents parameter scale factor', fontsize=6)
-		subplot('Doubling time', GLT_INDEX, 2, normalized=False)
-		subplot('Doubling time', CONTROL_INDEX, 3, normalized=False)
+		subplot('Growth rate', GLT_INDEX, 2, normalized=False)
+		subplot('Growth rate', CONTROL_INDEX, 3, normalized=False)
 		subplot('Elongation rate', GLT_INDEX, 4)
 
 		plt.tight_layout()
