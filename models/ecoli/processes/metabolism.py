@@ -171,9 +171,10 @@ class Metabolism(wholecell.processes.process.Process):
 				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			export_rates = (counts_to_molar * self.timeStepSec() * self.amino_acid_export(
 				aa_in_media, self.aa_export_transporters_container.counts(),
-				self.aas.total_counts(), counts_to_molar)).asNumber(CONC_UNITS)
+				counts_to_molar * self.aas.total_counts(),
+				self.mechanistic_aa_uptake)).asNumber(CONC_UNITS)
 			exchange_rates = import_rates - export_rates
-			aa_uptake_package=(exchange_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
+			aa_uptake_package = (exchange_rates[aa_in_media], self.aa_exchange_names[aa_in_media], True)
 
 		# Update FBA problem based on current state
 		## Set molecule availability (internal and external)

@@ -419,7 +419,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
-		self.amino_acid_export = sim_data.process.metabolism.amino_acid_export
+		self.amino_acid_export = metabolism.amino_acid_export
 
 		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
@@ -455,7 +455,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		export_transporter_counts = self.export_transporter_container.total_counts()
 		synthesis, enzyme_counts_per_aa, saturation = self.amino_acid_synthesis(enzyme_counts, aa_conc)
 		import_rates = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_uptake)
-		export_rates = self.amino_acid_export(aa_in_media, export_transporter_counts, aa_counts, self.counts_to_molar)
+		export_rates = self.amino_acid_export(aa_in_media, export_transporter_counts, aa_conc, self.process.mechanistic_uptake)
 		exchange_rates = import_rates - export_rates
 
 		# Create functions that are only dependent on amino acid concentrations for more stable

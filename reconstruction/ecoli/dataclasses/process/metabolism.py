@@ -637,7 +637,7 @@ class Metabolism(object):
 
 		Args:
 			sim_data (SimulationData object)
-			export (Boolean): if True, the parameters calculated are for mechanistic 
+			export (Boolean): if True, the parameters calculated are for mechanistic
 				export instead of uptake
 
 		Sets class attributes:
@@ -693,10 +693,10 @@ class Metabolism(object):
 	def set_mechanistic_export_constants(self, sim_data, cell_specs, basal_container):
 		'''
 		Calls get_aa_to_transporters_mapping_data() for AA export, which calculates
-		the total amount of export transporter counts per AA. We assume kcats are 
+		the total amount of export transporter counts per AA. We assume kcats are
 		the same for import and export of aminoacids. Missing KMs are also calculated
 		based on present KMs. This is done by calculating the average factor for
-		KMs compared to estimated concentration (av_factor = sum(KM / concentration) / n_aa_with_kms). 
+		KMs compared to estimated concentration (av_factor = sum(KM / concentration) / n_aa_with_kms).
 		** KM = av_factor * concentration
 
 		Args:
@@ -712,7 +712,7 @@ class Metabolism(object):
 
 		'''
 		aa_names = sim_data.molecule_groups.amino_acids
-		
+
 		self.aa_to_export_transporters, self.aa_to_export_transporters_matrix, self.aa_export_transporters_names = self.get_aa_to_transporters_mapping_data(sim_data, export=True)
 		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
 		aa_conc = {aa: counts * counts_to_molar for aa, counts in zip(aa_names, basal_container.counts(aa_names))}
@@ -1063,26 +1063,33 @@ class Metabolism(object):
 
 		return synthesis, counts_per_aa, fraction
 
-	def amino_acid_export(self, aa_in_media: np.ndarray, aa_transporters_counts: np.ndarray, aa_counts: np.ndarray, counts_to_molar):
+	def amino_acid_export(self, aa_in_media: np.ndarray, aa_transporters_counts: np.ndarray, aa_conc: units.Unum, mechanistic_uptake: bool):
 		"""
 		Calculate the rate of amino acid export.
 
 		Args:
 			aa_in_media: bool for each amino acid being present in current media
 			aa_transporters_counts: counts of each transporter
-			aa_counts: internal aa counts
-			counts_to_molar: used to pass from counts to molar (Molar)
+			aa_conc: concentrations of each amino acid with mol/volume units
+			mechanisitc_uptake: if true, the uptake is calculated based on transporters
 
 		Returns:
 			rate of export for each amino acid. array is unitless but
 				represents counts of amino acid per second
 		"""
 
-		# Export based on mechanistic model
-		trans_counts_per_aa = self.aa_to_export_transporters_matrix.dot(aa_transporters_counts)
-		export_kms_counts = self.aa_export_kms / counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
-		export_rates = self.uptake_kcats_per_aa * trans_counts_per_aa * (aa_counts / (aa_counts + export_kms_counts))
-		return export_rates * aa_in_media
+		if mechanistic_uptake:
+			# Export based on mechanistic model
+			aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			trans_counts_per_aa = self.aa_to_export_transporters_matrix @ aa_transporters_counts
+			export_rates = self.uptake_kcats_per_aa * trans_counts_per_aa / (1 + self.aa_export_kms / aa_conc)
+		else:
+			# Export is lumped with specific uptake rates in amino_acid_import
+			# and not dependent on internal amino acid concentrations or
+			# explicitly considered here
+			export_rates = np.zeros(aa_in_media)
+
+		return export_rates
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray, mechanisitc_uptake: bool):
 		"""
@@ -1099,12 +1106,13 @@ class Metabolism(object):
 				represents counts of amino acid per second
 		"""
 
-		if not mechanisitc_uptake:
-			return aa_in_media * self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
+		if mechanisitc_uptake:
+			# Uptake based on mechanistic model
+			counts_per_aa = self.aa_to_transporters_matrix @ aa_transporters_counts
+			import_rates = self.uptake_kcats_per_aa * counts_per_aa
+		else:
+			import_rates = self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 
-		# Uptake based on mechanistic model
-		counts_per_aa = self.aa_to_transporters_matrix.dot(aa_transporters_counts)
-		import_rates = self.uptake_kcats_per_aa * counts_per_aa
 		return import_rates * aa_in_media
 
 	@staticmethod
