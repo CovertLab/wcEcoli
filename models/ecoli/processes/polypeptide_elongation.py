@@ -419,6 +419,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_aas = self.process.bulkMoleculesView(molecule_groups.amino_acids)
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
+		self.amino_acid_export = sim_data.process.metabolism.amino_acid_export
 
 		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
@@ -523,6 +524,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_supply', self.process.aa_supply)
 		self.process.writeToListener('GrowthLimits', 'aa_synthesis', synthesis * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_import', import_rates * self.process.timeStepSec())
+		self.process.writeToListener('GrowthLimits', 'aa_export', export_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts_per_aa)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
