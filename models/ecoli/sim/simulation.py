@@ -21,6 +21,7 @@ from models.ecoli.processes.transcript_elongation import TranscriptElongation
 from models.ecoli.processes.protein_degradation import ProteinDegradation
 from models.ecoli.processes.equilibrium import Equilibrium
 from models.ecoli.processes.tf_binding import TfBinding
+from models.ecoli.processes.tf_unbinding import TfUnbinding
 from models.ecoli.processes.two_component_system import TwoComponentSystem
 
 # Listeners
@@ -56,6 +57,9 @@ class EcoliSimulation(Simulation):
 		)
 
 	_processClasses = (
+		(
+			TfUnbinding,
+		),
 		(
 			RnaDegradation,
 			TranscriptInitiation,
