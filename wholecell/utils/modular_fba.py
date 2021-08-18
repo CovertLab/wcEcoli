@@ -1091,7 +1091,10 @@ class FluxBalanceAnalysis(object):
 			lb = None
 			ub = None
 			if level < 0:
-				print("Setting a negative external molecule level - be sure this is intended behavior.")
+				if level > -1.0e-5:
+					print("Setting a negative external molecule level - be sure this is intended behavior.")
+				else:
+					level = 0.
 
 				ub = -level
 				if force:
