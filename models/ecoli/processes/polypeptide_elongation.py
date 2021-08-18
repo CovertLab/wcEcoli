@@ -38,7 +38,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aa_supply_in_charging = sim._aa_supply_in_charging
 		self.adjust_timestep_for_charging = sim._adjust_timestep_for_charging
 		self.mechanistic_translation_supply = sim._mechanistic_translation_supply
-		self.mechanistic_uptake = sim._mechanistic_aa_uptake
+		self.mechanistic_aa_transport = sim._mechanistic_aa_transport
 		self.ppgpp_regulation = sim._ppgpp_regulation
 		self.variable_elongation = sim._variable_elongation_translation
 		translation_supply = sim._translationSupply
@@ -454,8 +454,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		transporter_counts = self.aa_transporters.total_counts()
 		export_transporter_counts = self.export_transporter_container.total_counts()
 		synthesis, enzyme_counts_per_aa, saturation = self.amino_acid_synthesis(enzyme_counts, aa_conc)
-		import_rates = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_uptake)
-		export_rates = self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_uptake)
+		import_rates = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_aa_transport)
+		export_rates = self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_aa_transport)
 		exchange_rates = import_rates - export_rates
 
 		# Create functions that are only dependent on amino acid concentrations for more stable
@@ -463,11 +463,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		if self.process.aa_supply_in_charging:
 			counts_to_molar = self.counts_to_molar.asNumber(CONC_UNITS)
 			if self.process.mechanistic_translation_supply:
-				if self.process.mechanistic_uptake:
+				if self.process.mechanistic_aa_transport:
 					supply_function = lambda aa_conc: counts_to_molar * (
 						self.amino_acid_synthesis(enzyme_counts, aa_conc)[0]
 						+ import_rates
-						- self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_uptake))
+						- self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_aa_transport))
 				else:
 					supply_function = lambda aa_conc: counts_to_molar * (
 						self.amino_acid_synthesis(enzyme_counts, aa_conc)[0]
