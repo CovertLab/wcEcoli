@@ -61,6 +61,13 @@ class EcoliSimulation(Simulation):
 			TfUnbinding,
 		),
 		(
+			Equilibrium,
+			TwoComponentSystem,
+		),
+		(
+			TfBinding,
+		),
+		(
 			RnaDegradation,
 			TranscriptInitiation,
 			TranscriptElongation,
@@ -69,9 +76,6 @@ class EcoliSimulation(Simulation):
 			ChromosomeReplication,
 			ProteinDegradation,
 			Complexation,
-			Equilibrium,
-			TfBinding,
-			TwoComponentSystem,
 		),
 		(
 			ChromosomeStructure,
