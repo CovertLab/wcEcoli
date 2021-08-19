@@ -745,16 +745,6 @@ class Metabolism(object):
 
 		self.aa_export_kms = np.array([single_kms[aa].asNumber(METABOLITE_CONCENTRATION_UNITS) for aa in aa_names])
 
-		# Calculate export kcats based on specific_import_rates and export transporter counts
-		exchange_rates = sim_data.process.metabolism.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
-		exporter_counts = basal_container.counts(self.aa_export_transporters_names)
-		counts_per_aa_export = self.aa_to_export_transporters_matrix.dot(exporter_counts)
-
-		# Calculate kcats based on specific_import_rates and transporters counts
-		with np.errstate(divide='ignore'):
-			self.export_kcats_per_aa = exchange_rates / counts_per_aa_export
-		self.export_kcats_per_aa[counts_per_aa_export == 0] = 0
-
 	def set_mechanistic_uptake_constants(self, sim_data, cell_specs, with_aa_container):
 		'''
 		Based on the matrix calculated in get_aa_to_transporters_mapping_data(), we calculate
@@ -779,15 +769,25 @@ class Metabolism(object):
 			- Include external amino acid concentrations and KM values
 		'''
 
+		aa_names = sim_data.molecule_groups.amino_acids
+		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
+		aa_counts = with_aa_container.counts(aa_names)
+		exchange_rates = sim_data.process.metabolism.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
+
 		self.aa_to_transporters, self.aa_to_transporters_matrix, self.aa_transporters_names = self.get_aa_to_transporters_mapping_data(sim_data)
 
-		exchange_rates = sim_data.process.metabolism.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
 		importer_counts = with_aa_container.counts(self.aa_transporters_names)
+		exporter_counts = with_aa_container.counts(self.aa_export_transporters_names)
 		counts_per_aa_import = self.aa_to_transporters_matrix.dot(importer_counts)
-
-		# Calculate kcats based on specific_import_rates, dry mass, and transporters counts
+		counts_per_aa_export = self.aa_to_export_transporters_matrix.dot(exporter_counts)
+		kms = self.aa_export_kms / counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		import ipdb; ipdb.set_trace(context=10)
+		# Calculate kcats based on specific_import_rates, dry mass, transporters counts, export kms and counts of aas
 		with np.errstate(divide='ignore'):
-			self.uptake_kcats_per_aa = exchange_rates / counts_per_aa_import
+			vmax = exchange_rates / (1 - (aa_counts/(kms + aa_counts)))
+			self.uptake_kcats_per_aa = vmax / counts_per_aa_import
+			self.export_kcats_per_aa = vmax / counts_per_aa_export
+		self.export_kcats_per_aa[counts_per_aa_export == 0] = 0
 		self.uptake_kcats_per_aa[counts_per_aa_import == 0] = 0
 
 	def set_mechanistic_supply_constants(self, sim_data, cell_specs, basal_container, with_aa_container):
