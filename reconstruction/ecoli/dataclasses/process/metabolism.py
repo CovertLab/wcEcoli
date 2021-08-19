@@ -781,7 +781,7 @@ class Metabolism(object):
 		counts_per_aa_import = self.aa_to_transporters_matrix.dot(importer_counts)
 		counts_per_aa_export = self.aa_to_export_transporters_matrix.dot(exporter_counts)
 		kms = self.aa_export_kms / counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
-		import ipdb; ipdb.set_trace(context=10)
+
 		# Calculate kcats based on specific_import_rates, dry mass, transporters counts, export kms and counts of aas
 		with np.errstate(divide='ignore'):
 			vmax = exchange_rates / (1 - (aa_counts/(kms + aa_counts)))
