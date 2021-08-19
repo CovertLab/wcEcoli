@@ -1,22 +1,18 @@
 """
-TfBinding
+TfUnbinding
 
-Bind transcription factors to DNA
+Unbind transcription factors from DNA to allow signaling processes before
+binding back to DNA.
 """
-
-from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
 import wholecell.processes.process
-from wholecell.utils.constants import REQUEST_PRIORITY_TF_BINDING
-from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
-import six
 
 
 class TfUnbinding(wholecell.processes.process.Process):
-	""" TfBinding """
+	""" TfUnbinding """
 
 	_name = "TfUnbinding"
 
@@ -40,7 +36,6 @@ class TfUnbinding(wholecell.processes.process.Process):
 			for tf_id in self.tf_ids]
 		self.active_tf_masses = (sim_data.internal_state.bulk_molecules.bulk_data[
 			"mass"][tf_indexes] / sim_data.constants.n_avogadro).asNumber(units.fg)
-
 
 	def calculateRequest(self):
 		# Request edit access to promoter molecules

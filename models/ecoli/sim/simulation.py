@@ -46,6 +46,7 @@ from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
 from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
 
+
 class EcoliSimulation(Simulation):
 	_internalStateClasses = (
 		BulkMolecules,
@@ -60,10 +61,12 @@ class EcoliSimulation(Simulation):
 		(
 			TfUnbinding,
 		),
+		# Must run after TfUnbinding and before TfBinding
 		(
 			Equilibrium,
 			TwoComponentSystem,
 		),
+		# Must run before TranscriptInitiation
 		(
 			TfBinding,
 		),
