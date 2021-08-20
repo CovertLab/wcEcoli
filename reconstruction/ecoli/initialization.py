@@ -1140,7 +1140,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 	# Calculate the lengths of the partial polypeptide, and rescale position on
 	# mRNA to be a multiple of three using this peptide length
 	peptide_lengths = np.floor_divide(positions_on_mRNA_from_cistron_start_site, 3)
-	positions_on_mRNA_from_cistron_start_site = cistron_start_positions_on_mRNA + 3*peptide_lengths
+	positions_on_mRNA = cistron_start_positions_on_mRNA + 3*peptide_lengths
 
 	# Update masses of partially translated proteins
 	sequences = proteinSequences[protein_indexes]
@@ -1156,7 +1156,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		protein_index=protein_indexes,
 		peptide_length=peptide_lengths,
 		mRNA_index=mRNA_indexes,
-		pos_on_mRNA=positions_on_mRNA_from_cistron_start_site,
+		pos_on_mRNA=positions_on_mRNA,
 		massDiff_protein=mass_increase_protein,
 		)
 
