@@ -7,12 +7,16 @@ ChromosomeStructure process
 """
 
 from __future__ import absolute_import, division, print_function
+from operator import countOf
 
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences
 from six.moves import zip
+from wholecell.utils.migration.write_json import write_json
+from wholecell.utils.migration_utils import arrays_to, add_elements
+from wholecell.utils.array_to import array_to
 
 
 class ChromosomeStructure(wholecell.processes.process.Process):
@@ -73,6 +77,14 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 			self.chromosomal_segments = self.uniqueMoleculesView(
 				'chromosomal_segment')
 
+		# Save update for migration test
+		self.chromosome_segment_index = 0
+		self.promoter_index = 60000
+		self.DnaA_box_index = 60000
+		self.save_times = [2, 4, 12, 102]
+		self.partitioned_state = {}
+		self.update_to_save = {}
+
 
 	def calculateRequest(self):
 		# Request access to delete active RNAPs, RNAs, ribosomes, chromosomal
@@ -117,7 +129,112 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 			domain_index: replisome_coordinates[replisome_domain_indexes == domain_index]
 			for domain_index in np.unique(replisome_domain_indexes)
 			}
-
+  
+		time = int(self._sim.time())
+		if time in self.save_times:
+			self.partitioned_state = {
+				'fragmentBases': array_to(self.fragmentBases._query,
+									self.fragmentBases.counts()),
+				'molecules': array_to(
+					[self.ppi._query, self.water._query,
+					self.inactive_RNAPs._query],
+					[self.ppi.count(), self.water.count(),
+					self.inactive_RNAPs.count()],),
+				'active_tfs': array_to(self.active_tfs._query,
+									self.active_tfs.counts()),
+				'subunits': array_to(
+					[self.ribosome_30S_subunit._query, self.ribosome_50S_subunit._query],
+					[self.ribosome_30S_subunit.count(), self.ribosome_50S_subunit.count()]),
+				'amino_acids': array_to(self.amino_acids._query, self.amino_acids.counts()),
+			}
+			self.partitioned_state['active_replisomes'] = {
+				str(unique_id): {
+        			'unique_index': unique_id,
+					'domain_index': domain_index,
+					'coordinates': coordinates} 
+				for unique_id, domain_index, coordinates in zip(
+					replisome_unique_indexes, replisome_domain_indexes, replisome_coordinates
+				)
+			}
+			self.partitioned_state['oriCs'] = {
+				str(unique_id): {
+					'domain_index': domain_index} 
+				for unique_id, domain_index in zip(
+					self.oriCs.attr('unique_index'), origin_domain_indexes
+				)
+			}
+			self.partitioned_state['chromosome_domains'] = {
+				str(unique_id): {
+					'domain_index': domain_index,
+					'child_domains': child_domain} 
+				for unique_id, domain_index, child_domain in zip(
+					self.chromosome_domains.attr('unique_index'), 
+					all_chromosome_domain_indexes, child_domains
+				)
+			}
+			self.partitioned_state['active_RNAPs'] = {
+				str(unique_id): {
+					'unique_index': unique_id,
+					'domain_index': domain_index,
+					'coordinates': coordinates,
+					'direction': direction} 
+				for unique_id, domain_index, coordinates, direction in zip(
+					RNAP_unique_indexes, RNAP_domain_indexes, 
+					RNAP_coordinates, RNAP_directions
+				)
+			}
+			self.partitioned_state['RNAs'] = {
+				str(unique_id): {
+					'unique_index': unique_id,
+					'TU_index': TU_index,
+					'transcript_lengths': transcript_length,
+					'RNAP_index': RNAP_index} 
+				for unique_id, TU_index, transcript_length, RNAP_index in zip(
+					RNA_unique_indexes, RNA_TU_indexes, 
+					transcript_lengths, RNA_RNAP_indexes
+				)
+			}
+			self.partitioned_state['active_ribosome'] = {
+				str(unique_id): {
+					'protein_index': protein_id,
+					'peptide_length': peptide_length,
+					'mRNA_index': mRNA_index} 
+				for unique_id, protein_id, peptide_length, mRNA_index in zip(
+					self.active_ribosomes.attr('unique_index'),
+					ribosome_protein_indexes, ribosome_peptide_lengths, 
+					ribosome_mRNA_indexes
+				)
+			}
+			self.partitioned_state['full_chromosomes'] = {
+				str(unique_id): {
+					'domain_index': domain_id} 
+				for unique_id, domain_id in zip(
+					self.full_chromosomes.attr('unique_index'),
+					mother_domain_indexes
+				)
+			}
+			self.partitioned_state['promoters'] = {
+				str(unique_id): {
+					'TU_index': TU_id,
+     				'domain_index': domain_index,
+					'coordinates': coordinates,
+					'bound_TF': bound_TF} 
+				for unique_id, TU_id, domain_index, coordinates, bound_TF in zip(
+					self.promoters.attr('unique_index'),
+					promoter_TU_indexes, promoter_domain_indexes, 
+					promoter_coordinates, promoter_bound_TFs
+				)
+			}
+			self.partitioned_state['DnaA_boxes'] = {
+				str(unique_id): {
+					'domain_index': domain_index,
+					'coordinates': coordinates,
+					'DnaA_bound': DnaA_bound} 
+				for unique_id, domain_index, coordinates, DnaA_bound in zip(
+					self.DnaA_boxes.attr('unique_index'),
+					DnaA_box_domain_indexes, DnaA_box_coordinates, DnaA_box_bound
+				)
+			}
 
 		def get_removed_molecules_mask(domain_indexes, coordinates):
 			"""
@@ -195,6 +312,32 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		self.writeToListener(
 			'RnapData', 'codirectional_collision_coordinates',
 			RNAP_coordinates[RNAP_codirectional_collision_mask])
+  
+		self.update_to_save = {
+			'listeners': {
+				'RnapData': {
+					'n_total_collisions': n_total_collisions,
+					'n_headon_collisions': n_headon_collisions,
+					'n_codirectional_collisions': n_codirectional_collisions,
+					'headon_collision_coordinates': RNAP_coordinates[RNAP_headon_collision_mask],
+					'codirectional_collision_coordinates': RNAP_coordinates[RNAP_codirectional_collision_mask]
+				}
+			},
+			'molecules': {},
+			'fragmentBases': {},
+			'active_tfs': {},
+			'subunits': {},
+			'amino_acids': {},
+			'active_replisomes': {},
+			'oriCs': {},
+			'chromosome_domains': {},
+			'active_RNAPs': {},
+			'RNAs': {},
+			'active_ribosome': {},
+			'full_chromosomes': {},
+			'promoters': {},
+			'DnaA_boxes': {}
+		}
 		
 		if self.calculate_superhelical_densities:
 			# Get attributes of existing segments
@@ -288,6 +431,9 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 			# Delete all existing chromosomal segments
 			self.chromosomal_segments.delByIndexes(
 				np.arange(self.chromosomal_segments.total_count()))
+   
+			self.update_to_save['chromosomal_segments'] = {
+       			'_delete': np.arange(self.chromosomal_segments.total_count())}
 	
 			# Add new chromosomal segments
 			n_segments = len(all_new_linking_numbers)
@@ -298,6 +444,19 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				domain_index=all_new_segment_domain_indexes,
 				linking_number=all_new_linking_numbers,
 				)
+			
+			new_chromosome_segments = arrays_to(
+				n_segments, {
+					'unique_index': np.arange(
+						self.chromosome_segment_index, self.chromosome_segment_index + 
+						n_segments).astype(str),
+					'boundary_molecule_indexes': all_new_boundary_molecule_indexes,
+					'boundary_coordinates': all_new_boundary_coordinates,
+					'domain_index': all_new_segment_domain_indexes,
+					'linking_number': all_new_linking_numbers})
+			self.update_to_save['chromosomal_segments'].update(add_elements(
+				new_chromosome_segments, 'unique_index'))
+			self.chromosome_segment_index += n_segments
 
 
 		# Get mask for RNAs that are transcribed from removed RNAPs
@@ -309,8 +468,15 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 			self.active_RNAPs.delByIndexes(np.where(removed_RNAPs_mask)[0])
 			self.RNAs.delByIndexes(np.where(removed_RNAs_mask)[0])
 
+			self.update_to_save['active_RNAPs'] = {
+				'_delete': np.where(removed_RNAPs_mask)[0]}
+			self.update_to_save['RNAs'] = {
+				'_delete': np.where(removed_RNAs_mask)[0]}
+
 			# Increment counts of inactive RNAPs
 			self.inactive_RNAPs.countInc(n_total_collisions)
+
+			self.update_to_save['molecules'][self.inactive_RNAPs._query] = n_total_collisions
 
 			# Get sequences of incomplete transcripts
 			incomplete_sequence_lengths = transcript_lengths[
@@ -333,6 +499,10 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				self.fragmentBases.countsInc(base_counts)
 				self.ppi.countInc(n_initiated_sequences)
 
+				self.update_to_save['fragmentBases'] = array_to(
+					self.fragmentBases._query, base_counts)
+				self.update_to_save['molecules'] = {self.ppi._query: n_initiated_sequences}
+
 		# Get mask for ribosomes that are bound to nonexisting mRNAs
 		remaining_RNA_unique_indexes = RNA_unique_indexes[
 			np.logical_not(removed_RNAs_mask)]
@@ -344,10 +514,17 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		if n_removed_ribosomes > 0:
 			self.active_ribosomes.delByIndexes(
 				np.where(removed_ribosomes_mask)[0])
+   
+			self.update_to_save['active_ribosome'] = {'_delete': 
+				np.where(removed_ribosomes_mask)[0]}
 
 			# Increment counts of inactive ribosomal subunits
 			self.ribosome_30S_subunit.countInc(n_removed_ribosomes)
 			self.ribosome_50S_subunit.countInc(n_removed_ribosomes)
+   
+			self.update_to_save['subunits'] = {
+				self.ribosome_30S_subunit._query: n_removed_ribosomes,
+				self.ribosome_50S_subunit._query: n_removed_ribosomes}
 
 			# Get amino acid sequences of incomplete polypeptides
 			incomplete_sequence_lengths = ribosome_peptide_lengths[
@@ -373,10 +550,16 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				self.amino_acids.countsInc(amino_acid_counts)
 				self.water.countDec(
 					incomplete_sequence_lengths.sum() - n_initiated_sequences)
+    
+				self.update_to_save['amino_acids'] = array_to(self.amino_acids._query, amino_acid_counts)
+				self.update_to_save['molecules'][self.water._query] = (
+					n_initiated_sequences - incomplete_sequence_lengths.sum())
 
 		# Write to listener
 		self.writeToListener(
 			'RnapData', 'n_removed_ribosomes', n_removed_ribosomes)
+  
+		self.update_to_save['listeners']['RnapData']['n_removed_ribosomes'] = n_removed_ribosomes
 
 
 		def get_replicated_motif_attributes(old_coordinates, old_domain_indexes):
@@ -402,10 +585,16 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		if n_new_promoters > 0:
 			# Delete original promoters
 			self.promoters.delByIndexes(np.where(removed_promoters_mask)[0])
+   
+			self.update_to_save['promoters'] = {'_delete': 
+       			np.where(removed_promoters_mask)[0]}
 
 			# Add freed active tfs
 			self.active_tfs.countsInc(
 				promoter_bound_TFs[removed_promoters_mask, :].sum(axis=0))
+   
+			self.update_to_save['active_tfs'] = array_to(
+				self.active_tfs._query, promoter_bound_TFs[removed_promoters_mask, :].sum(axis=0))
 
 			# Set up attributes for the replicated promoters
 			promoter_TU_indexes_new = np.repeat(promoter_TU_indexes[removed_promoters_mask], 2)
@@ -420,6 +609,19 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				coordinates=promoter_coordinates_new,
 				domain_index=promoter_domain_indexes_new,
 				bound_TF=np.zeros((n_new_promoters, self.n_TFs), dtype=np.bool))
+   
+			new_promoters = arrays_to(
+				n_new_promoters, {
+					'unique_index': np.arange(
+						self.promoter_index, self.promoter_index + 
+						n_new_promoters).astype(str),
+					'TU_index': promoter_TU_indexes_new,
+					'coordinates': promoter_coordinates_new,
+					'domain_index': promoter_domain_indexes_new,
+					'bound_TF': np.zeros((n_new_promoters, self.n_TFs), dtype=np.bool)})
+			self.update_to_save['promoters'].update(add_elements(
+				new_promoters, 'unique_index'))
+			self.promoter_index += n_new_promoters
 
 
 		# Replicate DnaA boxes
@@ -428,6 +630,9 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		if n_new_DnaA_boxes > 0:
 			# Delete original DnaA boxes
 			self.DnaA_boxes.delByIndexes(np.where(removed_DnaA_boxes_mask)[0])
+   
+			self.update_to_save['DnaA_boxes'] = {'_delete': 
+       			np.where(removed_DnaA_boxes_mask)[0]}
 
 			# Set up attributes for the replicated boxes
 			DnaA_box_coordinates_new, DnaA_box_domain_indexes_new = get_replicated_motif_attributes(
@@ -440,6 +645,24 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				coordinates=DnaA_box_coordinates_new,
 				domain_index=DnaA_box_domain_indexes_new,
 				DnaA_bound=np.zeros(n_new_DnaA_boxes, dtype=np.bool))
+   
+			new_DnaA_boxes = arrays_to(
+				n_new_DnaA_boxes, {
+					'unique_index': np.arange(
+						self.DnaA_box_index, self.DnaA_box_index + 
+						n_new_DnaA_boxes).astype(str),
+					'coordinates': DnaA_box_coordinates_new,
+					'domain_index': DnaA_box_domain_indexes_new,
+					'DnaA_bound': np.zeros(n_new_DnaA_boxes, dtype=np.bool)})
+			self.update_to_save['DnaA_boxes'].update(add_elements(
+				new_DnaA_boxes, 'unique_index'))
+			self.DnaA_box_index += n_new_DnaA_boxes
+   
+		if time in self.save_times:
+			write_json(f'out/migration/chromosome_structure_update_t{time}.json',
+					   self.update_to_save)
+			write_json(f'out/migration/chromosome_structure_partitioned_t{time}.json',
+              			self.partitioned_state)
 
 
 	def _compute_new_segment_attributes(self, old_boundary_molecule_indexes,

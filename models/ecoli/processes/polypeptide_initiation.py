@@ -207,10 +207,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
 		self.writeToListener("RibosomeData", "probTranslationPerTranscript", proteinInitProb)
 
-		if not self.saved and self._sim.time() >= self.save_time:
-			write_json(f'out/migration/polypeptide_initiation_update_t{int(self._sim.time())}.json',
-					   self.update_to_save)
-			self.saved = True
 		self.update_to_save = {
             'subunits': {
                 self.ribosome30S_name: -n_new_proteins.sum(),
@@ -220,6 +216,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
                 'ribosome_data': {
                     'ribosomes_initialized': n_new_proteins.sum(),
                     'prob_translation_per_transcript': proteinInitProb}}}
+		if not self.saved and self._sim.time() >= self.save_time:
+			write_json(f'out/migration/polypeptide_initiation_update_t{int(self._sim.time())}.json',
+					   self.update_to_save)
+			self.saved = True
 	
   
 
