@@ -358,8 +358,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 				reader = csv.reader(f, delimiter='\t')
 				headers = next(reader)
 				mean_col = headers.index(MEAN_COL)
+				std_col = headers.index(STD_COL)
 				for line in reader:
-					data[tuple(zip(headers, line[:-1]))] = float(line[mean_col])
+					data[tuple(zip(headers, line[:mean_col]))] = {
+						'mean': float(line[mean_col]),
+						'std': float(line[std_col]),
+						}
 
 			return data
 
@@ -369,10 +373,20 @@ class ChargingDebug(scriptBase.ScriptBase):
 		data2 = load_data(path2)
 
 		labels = list(data1.keys() | data2.keys())
-		x = np.array([data1.get(label, 0) for label in labels])
-		y = np.array([data2.get(label, 0) for label in labels])
+		x = np.array([data1.get(label, {}).get('mean', 0) for label in labels])
+		y = np.array([data2.get(label, {}).get('mean', 0) for label in labels])
+		error_x = dict(
+			type='data',
+			array=[data1.get(label, {}).get('std', 0) for label in labels],
+			visible=False,  # Need to find better way of displaying before making visible
+			)
+		error_y = dict(
+			type='data',
+			array=[data2.get(label, {}).get('std', 0) for label in labels],
+			visible=False,  # Need to find better way of displaying before making visible
+			)
 
-		fig = go.Figure(data=go.Scatter(x=x, y=y, mode='markers', text=labels))
+		fig = go.Figure(data=go.Scatter(x=x, y=y, error_x=error_x, error_y=error_y, mode='markers', text=labels))
 		fig.write_html(filename)
 
 	def interactive_debug(self, port: int):
