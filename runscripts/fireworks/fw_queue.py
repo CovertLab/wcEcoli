@@ -83,6 +83,10 @@ Modeling options:
 	D_PERIOD_DIVISION (int, "0"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
+	VARIABLE_ELONGATION_TRANCRIPTION (int, "1"): if nonzero, use variable
+		transcription elongation rates for each gene
+	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
+		translation elongation rates for each gene
 	TRANSLATION_SUPPLY (int, "1"): if nonzero, the ribosome elongation rate is
 		limited by the condition specific rate of amino acid supply; otherwise
 		the elongation rate is set by condition
@@ -90,8 +94,8 @@ Modeling options:
 		and the ribosome elongation rate is set by the amount of charged tRNA
 		present.  This option will override TRANSLATION_SUPPLY in the simulation.
 	AA_SUPPLY_IN_CHARGING (int, "0"): if nonzero, amino acid supply function is
-		used during charging for more stable charging calculations (longer sim
-		execution times).  Only has an effect if TRNA_CHARGING option is used.
+		used during charging for more stable charging calculations.  Only has an
+		effect if TRNA_CHARGING option is used.
 	PPGPP_REGULATION (int, "0"): if nonzero, ppGpp concentration is determined
 		with kinetic equations
 	SUPERHELICAL_DENSITY (int, "0"): if nonzero, dynamically compute
@@ -269,6 +273,8 @@ JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
 GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
+VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
+VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
 AA_SUPPLY_IN_CHARGING = bool(int(get_environment("AA_SUPPLY_IN_CHARGING", DEFAULT_SIMULATION_KWARGS["aa_supply_in_charging"])))
@@ -364,6 +370,8 @@ metadata = {
 	"mass_distribution": MASS_DISTRIBUTION,
 	"growth_rate_noise": GROWTH_RATE_NOISE,
 	"d_period_division": D_PERIOD_DIVISION,
+	"variable_elongation_transcription": VARIABLE_ELONGATION_TRANSCRIPTION,
+	"variable_elongation_translation": VARIABLE_ELONGATION_TRANSLATION,
 	"translation_supply": TRANSLATION_SUPPLY,
 	"trna_charging": TRNA_CHARGING,
 	"aa_supply_in_charging": AA_SUPPLY_IN_CHARGING,
@@ -728,6 +736,8 @@ for i in VARIANTS_TO_RUN:
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
 							d_period_division = D_PERIOD_DIVISION,
+							variable_elongation_transcription = VARIABLE_ELONGATION_TRANSCRIPTION,
+							variable_elongation_translation = VARIABLE_ELONGATION_TRANSLATION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
 							aa_supply_in_charging = AA_SUPPLY_IN_CHARGING,
@@ -767,6 +777,8 @@ for i in VARIANTS_TO_RUN:
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
 							d_period_division = D_PERIOD_DIVISION,
+							variable_elongation_transcription = VARIABLE_ELONGATION_TRANSCRIPTION,
+							variable_elongation_translation = VARIABLE_ELONGATION_TRANSLATION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
 							aa_supply_in_charging = AA_SUPPLY_IN_CHARGING,

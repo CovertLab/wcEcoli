@@ -10,7 +10,7 @@ TODO:
 from typing import Any, Dict, Optional, Set
 
 import numpy as np
-from scipy.integrate import odeint
+from scipy.integrate import solve_ivp
 from six.moves import range, zip
 
 import wholecell.processes.process
@@ -372,14 +372,18 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		# Cell parameters
 		self.cellDensity = constants.cell_density
 
-		# Data structures for charging
-		self.aa_from_synthetase = transcription.aa_from_synthetase
-		self.charging_stoich_matrix = transcription.charging_stoich_matrix()
-
 		# Names of molecules associated with tRNA charging
 		self.charged_trna_names = transcription.charged_trna_names
 		self.charging_molecule_names = transcription.charging_molecules
 		self.synthetase_names = transcription.synthetase_names
+
+		# Data structures for charging
+		self.aa_from_synthetase = transcription.aa_from_synthetase
+		self.charging_stoich_matrix = transcription.charging_stoich_matrix()
+		self.charging_molecules_not_aa = np.array([
+			mol not in set(self.aaNames)
+			for mol in self.charging_molecule_names
+			])
 
 		# Create views for tRNA charging molecules
 		self.uncharged_trna = self.process.bulkMoleculesView(self.uncharged_trna_names)
@@ -498,7 +502,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_counts_for_translation = v_rib * f * self.process.timeStepSec() / self.counts_to_molar.asNumber(CONC_UNITS)
 
 		total_trna = self.charged_trna.total_counts() + self.uncharged_trna.total_counts()
-		final_charged_trna = np.dot(fraction_charged, self.process.aa_from_trna * total_trna)
+		final_charged_trna = stochasticRound(self.process.randomState, np.dot(fraction_charged, self.process.aa_from_trna * total_trna))
 
 		charged_trna_request = self.charged_trna.total_counts() - final_charged_trna
 		charged_trna_request[charged_trna_request < 0] = 0
@@ -508,7 +512,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_counts_for_translation = np.array(aa_counts_for_translation)
 
 		fraction_trna_per_aa = total_trna / np.dot(np.dot(self.process.aa_from_trna, total_trna), self.process.aa_from_trna)
-		total_charging_reactions = (
+		total_charging_reactions = stochasticRound(self.process.randomState,
 				np.dot(aa_counts_for_translation, self.process.aa_from_trna)
 				* fraction_trna_per_aa + uncharged_trna_request)
 
@@ -520,12 +524,15 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
 		# Only request molecules that will be consumed in the charging reactions
-		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions)
+		aa_from_uncharging = -self.charging_stoich_matrix @ charged_trna_request
+		aa_from_uncharging[self.charging_molecules_not_aa] = 0
+		requested_molecules = -np.dot(self.charging_stoich_matrix, total_charging_reactions) - aa_from_uncharging
 		requested_molecules[requested_molecules < 0] = 0
 		self.charging_molecules.requestIs(requested_molecules)
 
 		# Request charged tRNA that will become uncharged
 		self.charged_trna.requestIs(charged_trna_request)
+		self.uncharged_trna_to_charge = uncharged_trna_request
 
 		# Request water for transfer of AA from tRNA for initial polypeptide.
 		# This is severe overestimate assuming the worst case that every
@@ -558,7 +565,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		return fraction_charged, aa_counts_for_translation
 
 	def final_amino_acids(self, total_aa_counts):
-		return np.fmin(total_aa_counts, self.aa_counts_for_translation)
+		charged_counts_to_uncharge = self.process.aa_from_trna @ self.charged_trna.counts()
+		return np.fmin(total_aa_counts + charged_counts_to_uncharge, self.aa_counts_for_translation)
 
 	def evolve(self, total_aa_counts, aas_used, next_amino_acid_count, nElongations, nInitialized):
 		# Get tRNA counts
@@ -567,15 +575,22 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		total_trna = uncharged_trna + charged_trna
 
 		# Adjust molecules for number of charging reactions that occurred
-		## Net charged is tRNA that can be charged minus allocated charged tRNA for uncharging
-		aa_for_charging = total_aa_counts - aas_used
-		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.process.aa_from_trna, uncharged_trna))
-		n_trna_charged = self.distribution_from_aa(n_aa_charged, uncharged_trna, True)
+		## Determine limitations for charging and uncharging reactions
+		charged_and_elongated_per_aa = np.fmax(0, (aas_used - self.process.aa_from_trna @ charged_trna))
+		aa_for_charging = total_aa_counts - charged_and_elongated_per_aa
+		n_aa_charged = np.fmin(aa_for_charging, np.dot(self.process.aa_from_trna, np.fmin(self.uncharged_trna_to_charge, uncharged_trna)))
+		n_uncharged_per_aa = aas_used - charged_and_elongated_per_aa
 
-		## Reactions that are charged and elongated in same time step
-		total_uncharging_reactions = self.distribution_from_aa(aas_used, total_trna)
-		trna_to_uncharge = np.fmin(charged_trna, total_uncharging_reactions)
-		charged_and_elongated = total_uncharging_reactions - trna_to_uncharge
+		## Calculate changes in tRNA based on limitations
+		n_trna_charged = self.distribution_from_aa(n_aa_charged, uncharged_trna, True)
+		n_trna_uncharged = self.distribution_from_aa(n_uncharged_per_aa, charged_trna, True)
+
+		## Determine reactions that are charged and elongated in same time step without changing
+		## charged or uncharged counts
+		charged_and_elongated = self.distribution_from_aa(charged_and_elongated_per_aa, total_trna)
+
+		## Determine total number of reactions that occur
+		total_uncharging_reactions = charged_and_elongated + n_trna_uncharged
 		total_charging_reactions = charged_and_elongated + n_trna_charged
 		net_charged = total_charging_reactions - total_uncharging_reactions
 		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
@@ -584,8 +599,16 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.charged_trna.countsDec(total_uncharging_reactions)
 		self.uncharged_trna.countsInc(total_uncharging_reactions)
 
-		# Create ppGpp
-		## Concentrations of interest
+		# Update proton counts to reflect polymerization reactions and transfer of AA from tRNA
+		# Peptide bond formation releases a water but transferring AA from tRNA consumes a OH-
+		# Net production of H+ for each elongation, consume extra water for each initialization
+		# since a peptide bond doesn't form
+		self.proton.countInc(nElongations)
+		self.water.countDec(nInitialized)
+
+		# Create or degrade ppGpp
+		# This should come after all countInc/countDec calls since it shares some molecules with
+		# other views and those counts should be updated to get the proper limits on ppGpp reactions
 		if self.process.ppgpp_regulation:
 			v_rib = (nElongations * self.counts_to_molar).asNumber(CONC_UNITS) / self.process.timeStepSec()
 			ribosome_conc = self.counts_to_molar * self.process.active_ribosomes.total_count()
@@ -616,13 +639,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.writeToListener('GrowthLimits', 'spot_deg', spot_deg)
 
 			self.ppgpp_reaction_metabolites.countsInc(delta_metabolites)
-
-		# Update proton counts to reflect polymerization reactions and transfer of AA from tRNA
-		# Peptide bond formation releases a water but transferring AA from tRNA consumes a OH-
-		# Net production of H+ for each elongation, consume extra water for each initialization
-		# since a peptide bond doesn't form
-		self.proton.countInc(nElongations)
-		self.water.countDec(nInitialized)
 
 		# Use the difference between (expected AA supply based on expected doubling time
 		# and current DCW) and AA used to charge tRNA to update the concentration target
@@ -933,7 +949,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		trna2[mask] = trna1[mask] + trna2[mask]
 		trna1[mask] = 0
 
-	def dcdt(c, t):
+	def dcdt(t, c):
 		'''
 		Function for odeint to integrate
 
@@ -995,14 +1011,14 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	n_aas_masked = len(masked_aa_conc)
 
 	# Integrate rates of charging and elongation
-	dt = 0.001
-	t = np.arange(0, time_limit, dt)
 	c_init = np.hstack((uncharged_trna_conc, charged_trna_conc, aa_conc, np.zeros(n_aas)))
-	sol = odeint(dcdt, c_init, t)
+	sol = solve_ivp(dcdt, [0, time_limit], c_init, method='BDF')
+	c_sol = sol.y.T
 
 	# Determine new values from integration results
-	uncharged_trna_conc = sol[-1, :n_aas_masked]
-	charged_trna_conc = sol[-1, n_aas_masked:2*n_aas_masked]
+	uncharged_trna_conc = c_sol[-1, :n_aas_masked]
+	charged_trna_conc = c_sol[-1, n_aas_masked:2*n_aas_masked]
+
 	negative_check(uncharged_trna_conc, charged_trna_conc)
 	negative_check(charged_trna_conc, uncharged_trna_conc)
 
@@ -1016,6 +1032,6 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	new_fraction_charged[~mask] = fraction_charged.mean()
 
 	# Amount of amino acids supplied in charging
-	total_supply = sol[-1, 2*n_aas_masked+n_aas:2*n_aas_masked+2*n_aas]
+	total_supply = c_sol[-1, 2*n_aas_masked+n_aas:2*n_aas_masked+2*n_aas]
 
 	return new_fraction_charged, v_rib, total_supply
