@@ -340,16 +340,16 @@ class ChargingDebug(scriptBase.ScriptBase):
 				if not result.successful():
 					result.get()
 
-	def plot_grid_results(self, path1: str, path2: str, filename: str):
+	def plot_grid_results(self, filename: str, path1: str, path2: str):
 		"""
 		Compares results from two different grid searches in an interactive
 		plot.  Useful for checking sets of parameters that give desired results
 		in different simulations.
 
 		Args:
+			filename: path to the html file with the comparison plot
 			path1: path to the tsv file results from one grid search
 			path2: path to the tsv file results from another grid search
-			filename: path to the html file with the comparison plot
 		"""
 
 		def load_data(path):
@@ -602,7 +602,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		if args.grid_search:
 			self.grid_search(args.output, cpus=args.cpus)
 		if args.grid_compare:
-			self.plot_grid_results(*args.grid_compare, args.output)
+			self.plot_grid_results(args.output, *args.grid_compare)
 		if args.interactive:
 			self.interactive_debug(args.port)
 
