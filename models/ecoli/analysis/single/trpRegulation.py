@@ -48,10 +48,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Get indexes of trpR and its target RNAs
 		trpRIndex = tf_ids.index("CPLX-125")
-		target_ids = [
-			rna_id for (rna_id, tf_list) in sim_data.relation.rna_id_to_target_tfs.items()
-			if 'CPLX-125' in tf_list
-			]
+		target_ids = sim_data.relation.tf_id_to_target_RNAs["CPLX-125"]
 		target_idx = np.array(
 			[rna_idx[target_id] for target_id in target_ids])
 

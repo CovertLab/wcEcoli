@@ -15,6 +15,7 @@ class Relation(object):
 		self._build_monomer_to_mRNA_cistron_mapping(raw_data, sim_data)
 		self._build_monomer_to_tu_mapping(raw_data, sim_data)
 		self._build_RNA_to_tf_mapping(raw_data, sim_data)
+		self._build_tf_to_RNA_mapping(raw_data, sim_data)
 
 	def _build_cistron_to_monomer_mapping(self, raw_data, sim_data):
 		"""
@@ -107,7 +108,7 @@ class Relation(object):
 		"""
 		cistron_ids = sim_data.process.transcription.cistron_data['id']
 
-		self.rna_id_to_target_tfs = {}
+		self.rna_id_to_regulating_tfs = {}
 		for rna_id in sim_data.process.transcription.rna_data['id']:
 			tf_list = []
 			for cistron_index in sim_data.process.transcription.rna_id_to_cistron_indexes(rna_id):
@@ -116,4 +117,19 @@ class Relation(object):
 						cistron_ids[cistron_index], []))
 
 			# Remove duplicates and sort
-			self.rna_id_to_target_tfs[rna_id] = sorted(set(tf_list))
+			self.rna_id_to_regulating_tfs[rna_id] = sorted(set(tf_list))
+
+	def _build_tf_to_RNA_mapping(self, raw_data, sim_data):
+		"""
+		Builds a dictionary that maps transcription factor IDs to a list of all
+		RNA IDs that are targeted by the given TF. All RNA transcription units
+		that contain any of the cistrons regulated by the TF are added to each
+		list.
+		"""
+		self.tf_id_to_target_RNAs = {}
+		for (rna_id, tf_list) in self.rna_id_to_regulating_tfs.items():
+			for tf_id in tf_list:
+				if tf_id in self.tf_id_to_target_RNAs:
+					self.tf_id_to_target_RNAs[tf_id].append(rna_id)
+				else:
+					self.tf_id_to_target_RNAs[tf_id] = [rna_id]

@@ -2376,7 +2376,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 				sim_data.process.transcription.rna_data['replication_coordinate'])):
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.relation.rna_id_to_target_tfs.get(rnaId, [])
+			tfs = sim_data.relation.rna_id_to_regulating_tfs.get(rnaId, [])
 			conditions = ["basal"]
 			tfsWithData = []
 
@@ -2447,7 +2447,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
+			tfs = sim_data.relation.rna_id_to_regulating_tfs[rnaId]
 			conditions = ["basal"]
 			tfsWithData = []
 
@@ -2525,7 +2525,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			rna_id_no_loc = rna_id[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.relation.rna_id_to_target_tfs[rna_id]
+			tfs = sim_data.relation.rna_id_to_regulating_tfs[rna_id]
 			tfs_with_data = []
 
 			# Get column index of the RNA's alpha column
@@ -2590,7 +2590,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 			# Get list of TFs that regulate this RNA
-			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
+			tfs = sim_data.relation.rna_id_to_regulating_tfs[rnaId]
 			tfsWithData = []
 
 			# Get list of constituent cistron IDs
@@ -2686,7 +2686,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		for idx, rnaId in enumerate(sim_data.process.transcription.rna_data["id"]):
 			rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
-			tfs = sim_data.relation.rna_id_to_target_tfs[rnaId]
+			tfs = sim_data.relation.rna_id_to_regulating_tfs[rnaId]
 			conditions = ["basal"]
 			tfsWithData = []
 
@@ -3278,7 +3278,7 @@ def calculateRnapRecruitment(sim_data, cell_specs):
 		rnaIdNoLoc = rnaId[:-3]  # Remove compartment ID from RNA ID
 
 		# Take only those TFs with active/inactive conditions data
-		for tf in sim_data.relation.rna_id_to_target_tfs.get(rnaId, []):
+		for tf in sim_data.relation.rna_id_to_regulating_tfs.get(rnaId, []):
 			if tf not in sorted(sim_data.tf_to_active_inactive_conditions):
 				continue
 
