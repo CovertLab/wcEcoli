@@ -82,6 +82,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'mechanistic_translation_supply',
 			default_key='mechanistic_translation_supply',
 			help='set if sims were run with mechanistic_translation_supply')
+		self.define_parameter_bool(parser, 'mechanistic_aa_transport',
+			default_key='mechanistic_aa_transport',
+			help='set if sims were run with mechanistic_aa_transport')
 
 		# Debug options
 		parser.add_argument('-c', '--cpus', type=int, default=1,
@@ -129,6 +132,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			sim_data = pickle.load(f)
 		self.aa_from_trna = sim_data.process.transcription.aa_from_trna
 		self.amino_acid_synthesis = sim_data.process.metabolism.amino_acid_synthesis
+		self.amino_acid_export = sim_data.process.metabolism.amino_acid_export
 		self.aa_supply_scaling = sim_data.process.metabolism.aa_supply_scaling
 		self.amino_acids = sim_data.molecule_groups.amino_acids
 
@@ -181,7 +185,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		self.aa_supply = growth_reader.readColumn('original_aa_supply')[1:, :]
 		self.enzyme_counts = growth_reader.readColumn('aa_supply_enzymes')[1:, :]
-		self.imported = growth_reader.readColumn('aa_import')[1:, :] / self.time_step_sizes.reshape(-1, 1)
+		self.aa_exporters = growth_reader.readColumn('aa_exporters')[1:, :]
+		self.aa_import = growth_reader.readColumn('aa_import')[1:, :] / self.time_step_sizes.reshape(-1, 1)
+		self.aa_exchange = self.aa_import - growth_reader.readColumn('aa_export')[1:, :] / self.time_step_sizes.reshape(-1, 1)
 		self.aa_in_media = growth_reader.readColumn('aa_in_media')[1:, :]
 
 		self.counts_to_molar = METABOLISM_CONC_UNITS * kinetics_reader.readColumn('countsToMolar')[1:]
@@ -252,9 +258,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 		# Amino acid supply function to use in charging
 		supply_function = get_charging_supply_function(
 			self.aa_supply_in_charging, self.mechanistic_translation_supply,
-			self.amino_acid_synthesis, self.aa_supply_scaling, self.counts_to_molar[timestep],
+			self.mechanistic_aa_transport, self.amino_acid_synthesis,
+			self.amino_acid_export, self.aa_supply_scaling, self.counts_to_molar[timestep],
 			self.aa_supply[timestep, :], self.enzyme_counts[timestep, :],
-			self.imported[timestep, :], self.aa_in_media[timestep, :],
+			self.aa_exporters[timestep, :], self.aa_exchange[timestep, :],
+			self.aa_import[timestep, :], self.aa_in_media[timestep, :],
 			)
 
 		# Calculate tRNA charging and resulting values
@@ -621,6 +629,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.variable_elongation = args.variable_elongation_translation
 		self.aa_supply_in_charging = args.aa_supply_in_charging
 		self.mechanistic_translation_supply = args.mechanistic_translation_supply
+		self.mechanistic_aa_transport = args.mechanistic_aa_transport
 
 		self.load_data(args.sim_data_file, args.sim_out_dir)
 		self.validation(args.validation)

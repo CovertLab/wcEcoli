@@ -32,6 +32,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.uncharged_trna_ids = sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_tRNA']].tolist()
 		self.charged_trna_ids = sim_data.process.transcription.charged_trna_names
 		self.aa_enzymes = list(sim_data.process.metabolism.aa_enzymes)
+		self.aa_exporter_names = list(sim_data.process.metabolism.aa_export_transporters_names)
 
 	# Allocate memory
 	def allocate(self):
@@ -39,6 +40,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 
 		n_aa = len(self.aaIds)
 		n_enzymes = len(self.aa_enzymes)
+		n_exporters = len(self.aa_exporter_names)
 
 		# For translation
 		self.activeRibosomeAllocated = 0
@@ -81,6 +83,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.aa_import = np.zeros(n_aa, np.float64)
 		self.aa_export = np.zeros(n_aa, np.float64)
 		self.aa_supply_enzymes = np.zeros(n_enzymes, int)
+		self.aa_exporters = np.zeros(n_exporters, int)
 		self.aa_supply_aa_conc = np.zeros(n_aa, np.float64)
 		self.aa_supply_fraction = np.zeros(n_aa, np.float64)
 		self.aa_in_media = np.zeros(n_aa, bool)
@@ -114,6 +117,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			'aa_import': 'aaIds',
 			'aa_export': 'aaIds',
 			'aa_supply_enzymes': 'aa_enzymes',
+			'aa_exporters': 'aa_exporter_names',
 			'aa_supply_aa_conc': 'aaIds',
 			'aa_supply_fraction': 'aaIds',
 			'aa_in_media': 'aaIds',
@@ -127,6 +131,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			ntpIds = self.ntpIds,
 			subcolumns = subcolumns,
 			aa_enzymes = self.aa_enzymes,
+			aa_exporter_names = self.aa_exporter_names,
 			)
 
 	def tableAppend(self, tableWriter):
@@ -162,6 +167,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			aa_import = self.aa_import,
 			aa_export = self.aa_export,
 			aa_supply_enzymes = self.aa_supply_enzymes,
+			aa_exporters = self.aa_exporters,
 			aa_supply_aa_conc = self.aa_supply_aa_conc,
 			aa_supply_fraction = self.aa_supply_fraction,
 			aa_in_media = self.aa_supply_fraction,

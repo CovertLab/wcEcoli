@@ -527,6 +527,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_import', import_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_export', export_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)  # TODO: convert places that use this to per_aa with metabolism.enzyme_to_amino_acid
+		self.process.writeToListener('GrowthLimits', 'aa_exporters', export_transporter_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
 
