@@ -326,7 +326,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 		print('Running validation to check output...')
 		for timestep in range(n_steps):
 			fraction_charged, _, _, _, _ = self.solve_timestep(timestep)
-			if np.any(fraction_charged != self.fraction_charged[timestep]):
+			# Some variability exists with certain options due to floating point differences
+			# in unit converted counts_to_molar values so need to use allclose instead of exact
+			if not np.allclose(fraction_charged, self.fraction_charged[timestep]):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
