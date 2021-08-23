@@ -1084,7 +1084,9 @@ def get_charging_supply_function(
 	"""
 
 	# Create functions that are only dependent on amino acid concentrations for more stable
-	# charging and amino acid concentrations
+	# charging and amino acid concentrations.  If supply_in_charging is not set, then
+	# setting None will maintain constant amino acid concentrations throughout charging.
+	supply_function = None
 	if supply_in_charging:
 		counts_to_molar = counts_to_molar.asNumber(CONC_UNITS)
 		if mechanistic_supply:
@@ -1097,8 +1099,5 @@ def get_charging_supply_function(
 					amino_acid_synthesis(enzyme_counts, aa_conc)[0] + exchange_rates)
 		else:
 			supply_function = lambda aa_conc: counts_to_molar * aa_supply * aa_supply_scaling(aa_conc, aa_in_media)
-	# Maintain constant amino acid concentrations throughout charging
-	else:
-		supply_function = None
 
 	return supply_function
