@@ -9,7 +9,7 @@ import argparse
 import csv
 import os
 import pickle
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import webbrowser
 
 import dash
@@ -34,6 +34,7 @@ PORT = 8050
 
 # Element IDs
 GRAPH_ID = 'graph-id'
+BUTTON_ID = 'button-id'
 LOW_TIMESTEP = 'low-timestep'
 HIGH_TIMESTEP = 'high-timestep'
 
@@ -547,6 +548,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			html.Plaintext('Timestep limits (lower, upper):'),
 			dcc.Input(id=LOW_TIMESTEP, type='number', value=0),
 			dcc.Input(id=HIGH_TIMESTEP, type='number', value=10),
+			html.Button('Update', id=BUTTON_ID),
 			sliders,
 			dcc.Graph(id=GRAPH_ID, style={'height': '750px'})
 			])
@@ -557,19 +559,20 @@ class ChargingDebug(scriptBase.ScriptBase):
 		@app.callback(
 			dash.dependencies.Output(GRAPH_ID, 'figure'),
 			[
-				dash.dependencies.Input(LOW_TIMESTEP, 'value'),
-				dash.dependencies.Input(HIGH_TIMESTEP, 'value'),
+				dash.dependencies.Input(BUTTON_ID, 'n_clicks'),
 				dash.dependencies.Input('ribosome-slider-text', 'children'),
 				dash.dependencies.Input('timestep-slider-text', 'children'),
 				*synthetase_inputs,
 				*trna_inputs,
 				*aa_inputs,
 				*param_inputs,
+			],
+			[
+				dash.dependencies.State(LOW_TIMESTEP, 'value'),
+				dash.dependencies.State(HIGH_TIMESTEP, 'value'),
 			])
-		def update_graph(
-				init_t: int, final_t: int,
-				ribosome_adjustment: str, timestep_adjustment: str,
-				*param_inputs: str,
+		def update_graph(n_clicks: int, ribosome_adjustment: str,
+				timestep_adjustment: str, *inputs: Any,
 				) -> Dict:
 			"""
 			Update the plot based on selection changes.
@@ -580,10 +583,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 			ribosome_adjustment = float(ribosome_adjustment)
 			timestep_adjustment = float(timestep_adjustment)
-			synthetase_adjustments = np.array(param_inputs[:n_aas], float)
-			trna_adjustments = np.array(param_inputs[n_aas:2*n_aas], float)
-			aa_adjustments = np.array(param_inputs[2*n_aas:3*n_aas], float)
-			param_adjustments = {param: float(value) for param, value in zip(all_param_ids, param_inputs[3*n_aas:])}
+			synthetase_adjustments = np.array(inputs[:n_aas], float)
+			trna_adjustments = np.array(inputs[n_aas:2*n_aas], float)
+			aa_adjustments = np.array(inputs[2*n_aas:3*n_aas], float)
+			param_adjustments = {param: float(value) for param, value in zip(all_param_ids, inputs[3*n_aas:-2])}
+			init_t = inputs[-2]
+			final_t = inputs[-1]
 
 			v_rib = []
 			f_charged = []
