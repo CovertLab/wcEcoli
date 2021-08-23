@@ -170,7 +170,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			aa_exporters = self.aa_exporters,
 			aa_supply_aa_conc = self.aa_supply_aa_conc,
 			aa_supply_fraction = self.aa_supply_fraction,
-			aa_in_media = self.aa_supply_fraction,
+			aa_in_media = self.aa_in_media,
 			aaCountDiff = self.aaCountDiff,
 			trnaCharged = self.trnaCharged,
 			)
