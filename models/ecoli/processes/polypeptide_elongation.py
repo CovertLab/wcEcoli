@@ -460,7 +460,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		export_rates = self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_aa_transport)
 		exchange_rates = import_rates - export_rates
 
-		# TODO: save all these inputs for debug function
 		supply_function = get_charging_supply_function(
 			self.process.aa_supply_in_charging, self.process.mechanistic_translation_supply,
 			self.process.mechanistic_aa_transport, self.amino_acid_synthesis,
@@ -526,7 +525,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_synthesis', synthesis * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_import', import_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_export', export_rates * self.process.timeStepSec())
-		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)  # TODO: convert places that use this to per_aa with metabolism.enzyme_to_amino_acid
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_exporters', export_transporter_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
