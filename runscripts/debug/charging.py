@@ -640,7 +640,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.mechanistic_aa_transport = args.mechanistic_aa_transport
 
 		# Load data and check if required
-		if args.grid_search or args.validation or args.interactive:
+		if (args.grid_search or args.validation or args.interactive) and args.sim_dir is not None:
 			self.load_data(args.sim_data_file, args.sim_out_dir)
 			self.validation(args.validation)
 
