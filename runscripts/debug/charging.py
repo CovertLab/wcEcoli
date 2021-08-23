@@ -416,6 +416,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			)
 
 		fig = go.Figure(data=go.Scatter(x=x, y=y, error_x=error_x, error_y=error_y, mode='markers', text=labels))
+		print(f'Writing to {filename}')
 		fig.write_html(filename)
 
 	def interactive_debug(self, port: int):
@@ -631,8 +632,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.mechanistic_translation_supply = args.mechanistic_translation_supply
 		self.mechanistic_aa_transport = args.mechanistic_aa_transport
 
-		self.load_data(args.sim_data_file, args.sim_out_dir)
-		self.validation(args.validation)
+		# Load data and check if required
+		if args.grid_search or args.validation or args.interactive:
+			self.load_data(args.sim_data_file, args.sim_out_dir)
+			self.validation(args.validation)
+
 		if args.grid_search:
 			self.grid_search(args.output, cpus=args.cpus)
 		if args.grid_compare:
