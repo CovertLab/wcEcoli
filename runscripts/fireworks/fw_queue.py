@@ -83,6 +83,10 @@ Modeling options:
 	D_PERIOD_DIVISION (int, "0"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
+	VARIABLE_ELONGATION_TRANCRIPTION (int, "1"): if nonzero, use variable
+		transcription elongation rates for each gene
+	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
+		translation elongation rates for each gene
 	TRANSLATION_SUPPLY (int, "1"): if nonzero, the ribosome elongation rate is
 		limited by the condition specific rate of amino acid supply; otherwise
 		the elongation rate is set by condition
@@ -102,7 +106,7 @@ Modeling options:
 		mechanistic (requires appropriate number of subunits to initiate)
 	MECHANISTIC_TRANSLATION_SUPPLY (int, "0"): if nonzero, amino acid translation supply is
 		mechanistic (depends on concentrations of enzymes and amino acids)
-	MECHANISTIC_AA_UPTAKE (int, "0"): if nonzero, amino acid uptake is
+	MECHANISTIC_AA_TRANSPORT (int, "0"): if nonzero, amino acid uptake and export are
 		mechanistic (depends on concentrations of transporter enzymes and amino acids)
 	TRNA_ATTENUATION (int, "0"): if nonzero, transcriptional attenuation by
 		charged tRNA is enabled
@@ -269,6 +273,8 @@ JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
 GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
+VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
+VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
 TRNA_CHARGING = bool(int(get_environment("TRNA_CHARGING", DEFAULT_SIMULATION_KWARGS["trna_charging"])))
 AA_SUPPLY_IN_CHARGING = bool(int(get_environment("AA_SUPPLY_IN_CHARGING", DEFAULT_SIMULATION_KWARGS["aa_supply_in_charging"])))
@@ -277,7 +283,7 @@ SUPERHELICAL_DENSITY = bool(int(get_environment("SUPERHELICAL_DENSITY", DEFAULT_
 RECYCLE_STALLED_ELONGATION = bool(int(get_environment("RECYCLE_STALLED_ELONGATION", DEFAULT_SIMULATION_KWARGS["recycle_stalled_elongation"])))
 MECHANISTIC_REPLISOME = bool(int(get_environment("MECHANISTIC_REPLISOME", DEFAULT_SIMULATION_KWARGS["mechanistic_replisome"])))
 MECHANISTIC_TRANSLATION_SUPPLY = bool(int(get_environment("MECHANISTIC_TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["mechanistic_translation_supply"])))
-MECHANISTIC_AA_UPTAKE = bool(int(get_environment("MECHANISTIC_AA_UPTAKE", DEFAULT_SIMULATION_KWARGS["mechanistic_aa_uptake"])))
+MECHANISTIC_AA_TRANSPORT = bool(int(get_environment("MECHANISTIC_AA_TRANSPORT", DEFAULT_SIMULATION_KWARGS["mechanistic_aa_transport"])))
 TRNA_ATTENUATION = bool(int(get_environment("TRNA_ATTENUATION", DEFAULT_SIMULATION_KWARGS["trna_attenuation"])))
 RAISE_ON_TIME_LIMIT = bool(int(get_environment("RAISE_ON_TIME_LIMIT", DEFAULT_SIMULATION_KWARGS["raise_on_time_limit"])))
 N_INIT_SIMS = int(get_environment("N_INIT_SIMS", "1"))
@@ -364,6 +370,8 @@ metadata = {
 	"mass_distribution": MASS_DISTRIBUTION,
 	"growth_rate_noise": GROWTH_RATE_NOISE,
 	"d_period_division": D_PERIOD_DIVISION,
+	"variable_elongation_transcription": VARIABLE_ELONGATION_TRANSCRIPTION,
+	"variable_elongation_translation": VARIABLE_ELONGATION_TRANSLATION,
 	"translation_supply": TRANSLATION_SUPPLY,
 	"trna_charging": TRNA_CHARGING,
 	"aa_supply_in_charging": AA_SUPPLY_IN_CHARGING,
@@ -372,7 +380,7 @@ metadata = {
 	"recycle_stalled_elongation": RECYCLE_STALLED_ELONGATION,
 	"mechanistic_replisome": MECHANISTIC_REPLISOME,
 	"mechanistic_translation_supply": MECHANISTIC_TRANSLATION_SUPPLY,
-	"mechanistic_aa_uptake": MECHANISTIC_AA_UPTAKE,
+	"mechanistic_aa_transport": MECHANISTIC_AA_TRANSPORT,
 	"trna_attenuation": TRNA_ATTENUATION,
 	"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 	}
@@ -728,6 +736,8 @@ for i in VARIANTS_TO_RUN:
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
 							d_period_division = D_PERIOD_DIVISION,
+							variable_elongation_transcription = VARIABLE_ELONGATION_TRANSCRIPTION,
+							variable_elongation_translation = VARIABLE_ELONGATION_TRANSLATION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
 							aa_supply_in_charging = AA_SUPPLY_IN_CHARGING,
@@ -736,7 +746,7 @@ for i in VARIANTS_TO_RUN:
 							recycle_stalled_elongation = RECYCLE_STALLED_ELONGATION,
 							mechanistic_replisome = MECHANISTIC_REPLISOME,
 							mechanistic_translation_supply = MECHANISTIC_TRANSLATION_SUPPLY,
-							mechanistic_aa_uptake = MECHANISTIC_AA_UPTAKE,
+							mechanistic_aa_transport = MECHANISTIC_AA_TRANSPORT,
 							trna_attenuation = TRNA_ATTENUATION,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
@@ -767,6 +777,8 @@ for i in VARIANTS_TO_RUN:
 							mass_distribution = MASS_DISTRIBUTION,
 							growth_rate_noise = GROWTH_RATE_NOISE,
 							d_period_division = D_PERIOD_DIVISION,
+							variable_elongation_transcription = VARIABLE_ELONGATION_TRANSCRIPTION,
+							variable_elongation_translation = VARIABLE_ELONGATION_TRANSLATION,
 							translation_supply = TRANSLATION_SUPPLY,
 							trna_charging = TRNA_CHARGING,
 							aa_supply_in_charging = AA_SUPPLY_IN_CHARGING,
@@ -775,7 +787,7 @@ for i in VARIANTS_TO_RUN:
 							recycle_stalled_elongation = RECYCLE_STALLED_ELONGATION,
 							mechanistic_replisome = MECHANISTIC_REPLISOME,
 							mechanistic_translation_supply = MECHANISTIC_TRANSLATION_SUPPLY,
-							mechanistic_aa_uptake = MECHANISTIC_AA_UPTAKE,
+							mechanistic_aa_transport = MECHANISTIC_AA_TRANSPORT,
 							trna_attenuation = TRNA_ATTENUATION,
 							raise_on_time_limit = RAISE_ON_TIME_LIMIT,
 							),
