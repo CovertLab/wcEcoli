@@ -151,7 +151,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "translationSupply", translation_supply_rate.asNumber())
 
 		# MODEL SPECIFIC: Calculate AA request
-		fraction_charged, aa_counts_for_translation = self.elongation_model.request(aasInSequences)
+		fraction_charged, aa_counts_for_translation, self.export_rates = self.elongation_model.request(aasInSequences)
 
 		# Write to listeners
 		self.writeToListener("GrowthLimits", "fraction_trna_charged", np.dot(fraction_charged, self.aa_from_trna))
@@ -576,7 +576,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.ppgpp_reaction_metabolites.requestIs(request_ppgpp_metabolites)
 			self.ppgpp.requestAll()
 
-		return fraction_charged, aa_counts_for_translation
+		return fraction_charged, aa_counts_for_translation, export_rates
 
 	def final_amino_acids(self, total_aa_counts):
 		charged_counts_to_uncharge = self.process.aa_from_trna @ self.charged_trna.counts()

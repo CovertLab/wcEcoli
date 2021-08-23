@@ -1138,7 +1138,7 @@ class FluxBalanceAnalysis(object):
 	def getReactionIDs(self):
 		return np.array(self._reactionIDs)
 
-	def setReactionFluxBounds(self, reactionIDs, lowerBounds=None, upperBounds=None, raiseForReversible=True):
+	def setReactionFluxBounds(self, reactionIDs, lowerBounds=None, upperBounds=None, raiseForReversible=True, allow_negative=False):
 		'''
 		Sets the upper and lower bounds for a group of reactions.
 		If upper or lower bounds are not specified (None), they are left as is.
@@ -1162,11 +1162,11 @@ class FluxBalanceAnalysis(object):
 		nReactions = len(reactionIDs)
 		if lowerBounds is None:
 			lowerBounds = [None] * nReactions
-		elif np.any(np.array(lowerBounds) < 0):
+		elif np.any(np.array(lowerBounds) < 0) and not allow_negative:
 			raise InvalidBoundaryError("Minimum reaction flux must be non-negative")
 		if upperBounds is None:
 			upperBounds = [None] * nReactions
-		elif np.any(np.array(upperBounds) < 0):
+		elif np.any(np.array(upperBounds) < 0) and not allow_negative:
 				raise InvalidBoundaryError("Maximum reaction flux must be non-negative")
 
 		if nReactions != len(lowerBounds) or nReactions != len(upperBounds):
