@@ -584,7 +584,7 @@ class FluxBalanceAnalysisModel(object):
 			levels, molecules, force = aa_uptake_package
 			self.fba.setReactionFluxBounds(['external exchange - ' + molecule for molecule in molecules], 
 				lowerBounds=levels * -1.0,
-				upperBounds=levels * -1.0 if force else [level * -0.97 if level > 0 else level / -0.97 for level in levels], 
+				upperBounds=levels * -1.0 if force else [level * -0.95 if level > 0 else level / -0.95 for level in levels], 
 				allow_negative=True)
 
 	def set_reaction_targets(self, kinetic_enzyme_counts,
