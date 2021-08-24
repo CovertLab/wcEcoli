@@ -105,14 +105,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.plot([start, end], [basal, basal], 'g--', linewidth=1, label='Expected, basal')
 			ax_right.plot(times, prob, 'k', alpha=0.5, linewidth=0.5, label='Average RNA synth prob (right)')
 
-			ax.spines['right'].set_visible(False)
-			ax.spines['top'].set_visible(False)
 			ax.set_title(aa_ids[i], fontsize=8)
-
 			if row == rows - 1:
-				ax.set_xlabel('Time (min)')
+				ax.set_xlabel('Time (min)', fontsize=8)
 			if col == 0:
-				ax.set_ylabel('Concentration (uM)')
+				ax.set_ylabel('Concentration (uM)', fontsize=8)
+			if col == cols - 1:
+				ax_right.set_ylabel('RNA probability', fontsize=8)
+
+			ax.tick_params(labelsize=6)
+			ax_right.tick_params(labelsize=6)
 
 		## Display legend
 		handles, labels = ax.get_legend_handles_labels()
