@@ -25,24 +25,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
+		metabolism = sim_data.process.metabolism
+		transcription = sim_data.process.transcription
+		translation = sim_data.process.translation
+		complexation = sim_data.process.complexation
 
 		# Amino acid data
 		aa_ids = sim_data.molecule_groups.amino_acids
 		n_aas = len(aa_ids)
 
 		# Expected expression from parameter calculations
-		metabolism = sim_data.process.metabolism
 		enzyme_to_amino_acid = metabolism.enzyme_to_amino_acid
 		with_aa_reference = metabolism.aa_supply_enzyme_conc_with_aa.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 		basal_reference = metabolism.aa_supply_enzyme_conc_basal.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 
 		# Get RNAs associated with each enzyme
-		monomer_to_rna = {m['id']: m['rna_id'] for m in sim_data.process.translation.monomer_data}
+		monomer_to_rna = {m['id']: m['rna_id'] for m in translation.monomer_data}
 		mat_i = []
 		mat_j = []
 		rna_mapping_indices = {}
 		for j, enzyme in enumerate(metabolism.aa_enzymes):
-			for monomer in sim_data.process.complexation.get_monomers(enzyme)['subunitIds']:
+			for monomer in complexation.get_monomers(enzyme)['subunitIds']:
 				rna = monomer_to_rna[monomer]
 				rna_mapping_indices[rna] = rna_mapping_indices.get(rna, len(rna_mapping_indices))
 				mat_i.append(rna_mapping_indices[rna])
@@ -50,8 +53,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rna_to_enzyme = np.zeros((np.max(mat_i) + 1, np.max(mat_j) + 1))
 		rna_to_enzyme[mat_i, mat_j] = 1
 		rnas = list(rna_mapping_indices.keys())
-		rna_data_indices = {rna: i for i, rna in enumerate(sim_data.process.transcription.rna_data['id'])}
+		rna_data_indices = {rna: i for i, rna in enumerate(transcription.rna_data['id'])}
 		enzyme_rna_indices = np.array([rna_data_indices[rna] for rna in rnas])
+
+		# Attenuation information
+		attenuated_indices = transcription.attenuated_rna_indices
+		n_rnas = len(transcription.rna_data)
 
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
 		cell_paths = ap.get_cells()
@@ -64,13 +71,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths, 'GrowthLimits', 'aa_supply_enzymes', remove_first=True)
 		probabilities = read_stacked_columns(
 			cell_paths, 'RnaSynthProb', 'rnaSynthProb', remove_first=True)[:, enzyme_rna_indices]
+		attenuation = read_stacked_columns(
+			cell_paths, 'TranscriptElongationListener', 'attenuation_probability', remove_first=True)
 
 		# Calculate derived quantities
 		start = times[0, 0]
 		end = times[-1, 0]
 		enzyme_conc = (enzyme_counts @ enzyme_to_amino_acid * counts_to_mol).T
+		full_attenuation = np.ones((attenuation.shape[0], n_rnas))
+		full_attenuation[:, attenuated_indices] = attenuation
+		attenuation_probabilities = full_attenuation[:, enzyme_rna_indices]
 		rnas_per_amino_acid = (rna_to_enzyme @ enzyme_to_amino_acid).sum(axis=0)
-		probability_per_amino_acid = (probabilities @ rna_to_enzyme @ enzyme_to_amino_acid / rnas_per_amino_acid).T
+		probability_per_amino_acid = (probabilities * attenuation_probabilities @ rna_to_enzyme @ enzyme_to_amino_acid / rnas_per_amino_acid).T
 
 		# Plot data
 		plt.figure(figsize=(16, 12))
