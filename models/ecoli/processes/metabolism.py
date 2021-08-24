@@ -57,8 +57,7 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.mechanistic_aa_transport = sim._mechanistic_aa_transport
 		metabolism = sim_data.process.metabolism
-
-
+	
 		# Create model to use to solve metabolism updates
 		self.model = FluxBalanceAnalysisModel(
 			sim_data,
@@ -529,7 +528,6 @@ class FluxBalanceAnalysisModel(object):
 		if aa_uptake_package:
 			levels, molecules, force = aa_uptake_package
 			self.fba.setExternalMoleculeLevels(levels, molecules=molecules, force=force, allow_export=True)
-
 
 	def set_reaction_bounds(self, catalyst_counts, counts_to_molar, coefficient,
 			gtp_to_hydrolyze):
