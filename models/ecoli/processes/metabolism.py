@@ -210,11 +210,12 @@ class Metabolism(wholecell.processes.process.Process):
 			id_to_aa_exchange = {mol: i for i, mol in enumerate(fba.getExternalMoleculeIDs()) if mol in self.aa_exchange_names}
 			id_to_aa_metabolites = {mol: i for i, mol in enumerate(self.model.metaboliteNamesFromNutrients) if mol in self.aa_names}
 			delta_exchanged = {aa: rates + exchange_fluxes[id_to_aa_exchange[aa]] for aa, rates in zip(self.aa_exchange_names[aa_in_media], exchange_rates[aa_in_media])}
-			for aa, change in delta_exchanged.items():
+			for i, (aa, change) in enumerate(delta_exchanged.items()):
 				if 'L-SELENOCYSTEINE' not in aa:
 					aa_id = aa[:-3] + '[c]'
-					delta_metabolites[id_to_aa_metabolites[aa_id]] -= int(change / counts_to_molar.asNumber(CONC_UNITS))
-					self.aa_targets[aa_id] -= change / counts_to_molar.asNumber(CONC_UNITS)
+					diff = change / counts_to_molar.asNumber(CONC_UNITS)
+					delta_metabolites[id_to_aa_metabolites[aa_id]] -= int(diff)
+					self.aa_targets[aa_id] -= diff
 
 		metabolite_counts_final = np.fmax(stochasticRound(
 			self.randomState,

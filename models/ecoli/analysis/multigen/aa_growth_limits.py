@@ -81,7 +81,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.plot(times, imported, label='Imported', alpha=0.5)
 			ax.plot(times, use, label='Translation use', alpha=0.5)
 			ax.plot(times, exported, label='Exported', alpha=0.5, color='gray')
-			ax.plot(times, target, label='AA targets', alpha=0.3, color='purple')
+			ax.plot(times, target, label='AA targets', alpha=0.5, color='purple')
 			ax.axhline(0, linestyle='--', linewidth=0.5, color='k', alpha=0.3)
 			ax.axhline(1, linestyle='--', linewidth=0.5, color='k', alpha=0.3)
 
