@@ -54,12 +54,10 @@ class Metabolism(wholecell.processes.process.Process):
 		environment = self._external_states['Environment']
 		self.use_trna_charging = sim._trna_charging
 		self.include_ppgpp = not sim._ppgpp_regulation or not self.use_trna_charging
-<<<<<<< HEAD
-		self.mechanistic_aa_uptake = sim._mechanistic_aa_uptake
-		metabolism = sim_data.process.metabolism
-=======
+
 		self.mechanistic_aa_transport = sim._mechanistic_aa_transport
->>>>>>> 84dae5931... Aa mechanistic export (#1151)
+		metabolism = sim_data.process.metabolism
+
 
 		# Create model to use to solve metabolism updates
 		self.model = FluxBalanceAnalysisModel(
@@ -114,15 +112,11 @@ class Metabolism(wholecell.processes.process.Process):
 			for aa in self.aa_exchange_names
 			])
 
-<<<<<<< HEAD
 		self.amino_acid_import = metabolism.amino_acid_import
+		self.amino_acid_export = metabolism.amino_acid_export
 		self.aa_transporters_names = metabolism.aa_transporters_names
-=======
-		self.amino_acid_import = sim_data.process.metabolism.amino_acid_import
-		self.amino_acid_export = sim_data.process.metabolism.amino_acid_export
-		self.aa_transporters_names = sim_data.process.metabolism.aa_transporters_names
-		self.aa_export_transporters_names = sim_data.process.metabolism.aa_export_transporters_names
->>>>>>> 84dae5931... Aa mechanistic export (#1151)
+		self.aa_export_transporters_names = metabolism.aa_export_transporters_names
+
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
 
