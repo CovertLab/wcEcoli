@@ -47,7 +47,7 @@ def split_index(index):
 def ppgpp_conc(sim_data, index):
 	condition_index, factor = split_index(index)
 
-	sim_data, _ = condition(sim_data, condition_index)
+	_, sim_data = condition(sim_data, condition_index)
 	control_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.doubling_time)
 	new_conc = factor * control_conc
 
