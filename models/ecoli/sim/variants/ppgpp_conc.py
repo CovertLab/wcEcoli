@@ -3,22 +3,26 @@ Set the concentration of ppGpp to be constant during simulations at different
 concentrations.
 
 Modifies:
+	attributes modified by the condition variant
 	sim_data.growth_rate_parameters.get_ppGpp_conc
 	sim_data.constants.k_RelA_ppGpp_synthesis
 	sim_data.constants.k_SpoT_ppGpp_degradation
 	sim_data.constants.k_SpoT_ppGpp_synthesis
 	sim_data.process.metabolism.force_constant_ppgpp
 
-Expected variant indices (dependent on FACTORS):
-	0-3: lower concentrations of ppGpp
-	4: control
-	5-9: higher concentrations of ppGpp
+Expected variant indices (dependent on FACTORS and CONDITIONS):
+	0-3: lower concentrations of ppGpp for first condition
+	4: control for first condtiion
+	5-9: higher concentrations of ppGpp for first condition
+	10-19: ppGpp concentrations for second condition
 """
 
+from .condition import condition
 from wholecell.utils import units
 
 
 FACTORS = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2]
+CONDITIONS = [0, 2]  # minimal and minimal+AA
 
 
 class ppGpp():
@@ -34,9 +38,17 @@ class ppGpp():
 		return self.conc
 
 
+def split_index(index):
+	n_factors = len(FACTORS)
+	condition_index = index // n_factors
+	factor_index = index % n_factors
+	return CONDITIONS[condition_index], FACTORS[factor_index]
+
 def ppgpp_conc(sim_data, index):
+	condition_index, factor = split_index(index)
+
+	sim_data, _ = condition(sim_data, condition_index)
 	control_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.doubling_time)
-	factor = FACTORS[index]
 	new_conc = factor * control_conc
 
 	# Replace function to only return the desired concentration
@@ -51,6 +63,6 @@ def ppgpp_conc(sim_data, index):
 	sim_data.process.metabolism.force_constant_ppgpp = True
 
 	return dict(
-		shortName=f'ppGpp:{factor}x',
-		desc=f'ppGpp conc adjusted by {factor}x to {new_conc.asNumber(units.umol / units.L)} uM.'
+		shortName=f'{sim_data.condition}:ppGpp:{factor}x',
+		desc=f'ppGpp conc adjusted by {factor}x to {new_conc.asNumber(units.umol / units.L)} uM in {sim_data.condition}.'
 		), sim_data
