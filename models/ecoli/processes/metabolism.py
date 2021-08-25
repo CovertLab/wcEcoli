@@ -215,7 +215,6 @@ class Metabolism(wholecell.processes.process.Process):
 				if 'L-SELENOCYSTEINE' not in aa:
 					aa_id = aa[:-3] + '[c]'
 					diff = change / counts_to_molar.asNumber(CONC_UNITS)
-					delta_metabolites[id_to_aa_metabolites[aa_id]] -= int(diff)
 					self.aa_targets[aa_id] -= diff
 
 		metabolite_counts_final = np.fmax(stochasticRound(
@@ -584,7 +583,7 @@ class FluxBalanceAnalysisModel(object):
 			levels, molecules, force = aa_uptake_package
 			self.fba.setReactionFluxBounds(['external exchange - ' + molecule for molecule in molecules], 
 				lowerBounds=levels * -1.0,
-				upperBounds=levels * -1.0 if force else [level * -0.95 if level > 0 else level / -0.95 for level in levels], 
+				upperBounds=levels * -1.0 if force else [level * -0.95 if level > 0 else -level for level in levels], 
 				allow_negative=True)
 
 	def set_reaction_targets(self, kinetic_enzyme_counts,
