@@ -998,7 +998,11 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		# Handle case when f is 0 and charged_trna_conc is 0
 		if not np.isfinite(v_rib):
 			v_rib = 0
-		v_rib = min(v_rib, v_rib_max)
+
+		# Limit v_rib to the amount of available amino acids (free and uncharged from tRNA)
+		if limit_v_rib:
+			v_rib_max = ((original_aa_conc + (original_charged_trna_conc - charged_trna_conc)) / time_limit / f).min()
+			v_rib = min(v_rib, v_rib_max)
 
 		dtrna = v_charging - v_rib*f
 		daa = np.zeros(n_aas)
@@ -1024,33 +1028,32 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	else:
 		mask = params['charging_mask']
 	synthetase_conc = synthetase_conc[mask]
-	uncharged_trna_conc = uncharged_trna_conc[mask]
-	charged_trna_conc = charged_trna_conc[mask]
-	masked_aa_conc = aa_conc[mask]
+	original_uncharged_trna_conc = uncharged_trna_conc[mask]
+	original_charged_trna_conc = charged_trna_conc[mask]
+	original_aa_conc = aa_conc[mask]
 	f = f[mask]
 
-	# Limit v_rib to the amount of available amino acids (free and charged on tRNA)
-	v_rib_max = ((masked_aa_conc + charged_trna_conc) / time_limit / f).min() if limit_v_rib else np.inf
-
 	n_aas = len(aa_conc)
-	n_aas_masked = len(masked_aa_conc)
+	n_aas_masked = len(original_aa_conc)
 
 	# Integrate rates of charging and elongation
-	c_init = np.hstack((uncharged_trna_conc, charged_trna_conc, aa_conc, np.zeros(n_aas)))
+	c_init = np.hstack((original_uncharged_trna_conc, original_charged_trna_conc, aa_conc, np.zeros(n_aas)))
 	sol = solve_ivp(dcdt, [0, time_limit], c_init, method='BDF')
 	c_sol = sol.y.T
 
 	# Determine new values from integration results
-	uncharged_trna_conc = c_sol[-1, :n_aas_masked]
-	charged_trna_conc = c_sol[-1, n_aas_masked:2*n_aas_masked]
+	final_uncharged_trna_conc = c_sol[-1, :n_aas_masked]
+	final_charged_trna_conc = c_sol[-1, n_aas_masked:2*n_aas_masked]
 
-	negative_check(uncharged_trna_conc, charged_trna_conc)
-	negative_check(charged_trna_conc, uncharged_trna_conc)
+	negative_check(final_uncharged_trna_conc, final_charged_trna_conc)
+	negative_check(final_charged_trna_conc, final_uncharged_trna_conc)
 
-	fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
-	numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
+	fraction_charged = final_charged_trna_conc / (final_uncharged_trna_conc + final_charged_trna_conc)
+	numerator_ribosome = 1 + np.sum(f * (params['krta'] / final_charged_trna_conc + final_uncharged_trna_conc / final_charged_trna_conc * params['krta'] / params['krtf']))
 	v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
-	v_rib = min(v_rib, v_rib_max)
+	if limit_v_rib:
+		v_rib_max = ((original_aa_conc + (original_charged_trna_conc - final_charged_trna_conc)) / time_limit / f).min()
+		v_rib = min(v_rib, v_rib_max)
 
 	# Replace SEL fraction charged with average
 	new_fraction_charged = np.zeros(n_total_aas)
