@@ -332,10 +332,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		allFractionTimeInactive = 1 - (
 			1. / (self.timeStepSec() * units.s) * allTranscriptionTimes).asNumber() / allTranscriptionTimestepCounts
 		averageFractionTimeInactive = np.dot(allFractionTimeInactive, synthProb)
-		effectiveFracActiveRnap = fracActiveRnap * 1/(1 - averageFractionTimeInactive)
+		effectiveFracActiveRnap = fracActiveRnap / (1 - averageFractionTimeInactive)
 
 		# Return activation probability that will balance out the expected termination rate
-		activation_prob = effectiveFracActiveRnap * expectedTerminationRate /(1 - effectiveFracActiveRnap)
+		activation_prob = effectiveFracActiveRnap * expectedTerminationRate / (1 - effectiveFracActiveRnap)
 
 		if activation_prob > 1:
 			activation_prob = 1.
