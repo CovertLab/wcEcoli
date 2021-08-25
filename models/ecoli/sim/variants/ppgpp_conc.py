@@ -10,15 +10,15 @@ Modifies:
 	sim_data.process.metabolism.force_constant_ppgpp
 
 Expected variant indices (dependent on FACTORS):
-	0-2: lower concentrations of ppGpp
-	3: control
-	4-6: higher concentrations of ppGpp
+	0-3: lower concentrations of ppGpp
+	4: control
+	5-9: higher concentrations of ppGpp
 """
 
 from wholecell.utils import units
 
 
-FACTORS = [0.2, 0.5, 0.8, 1, 1.2, 1.5, 2]
+FACTORS = [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2]
 
 
 class ppGpp():
@@ -47,7 +47,7 @@ def ppgpp_conc(sim_data, index):
 	sim_data.constants.k_SpoT_ppGpp_degradation *= 0
 	sim_data.constants.k_SpoT_ppGpp_synthesis *= 0
 
-	# Force constant ppGpp concentration in metabolism
+	# Force constant ppGpp concentration in metabolism (added to homeostatic objective)
 	sim_data.process.metabolism.force_constant_ppgpp = True
 
 	return dict(
