@@ -13,14 +13,16 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
-def plot_data(ax, ppgpp, y, yerr, ylabel):
-	ax.errorbar(ppgpp, y, yerr=yerr, fmt='o')
-
-	plt.xlabel('ppGpp conc')
-	plt.ylabel(ylabel)
-
-
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
+	def plot_data(self, ax, ppgpp, y, yerr, ylabel):
+		ax.errorbar(ppgpp, y, yerr=yerr, fmt='o')
+
+		plt.xlabel('ppGpp conc', fontsize=8)
+		plt.ylabel(ylabel, fontsize=8)
+
+		ax.tick_params(labelsize=6)
+		self.remove_border(ax)
+
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
@@ -40,7 +42,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Read data from listeners
 			ppgpp = read_stacked_columns(all_cells, 'GrowthLimits', 'ppgpp_conc')
 			elong_rate = read_stacked_columns(all_cells, 'RibosomeData', 'effectiveElongationRate')
-			growth_rate = read_stacked_columns(all_cells, 'Mass', 'instantaneous_growth_rate', remove_first=True)
+			growth_rate = read_stacked_columns(all_cells, 'Mass', 'instantaneous_growth_rate', remove_first=True) * 3600
 			rna_mass = read_stacked_columns(all_cells, 'Mass', 'rnaMass')
 			protein_mass = read_stacked_columns(all_cells, 'Mass', 'proteinMass')
 			rna_to_protein = (rna_mass / protein_mass)
@@ -60,10 +62,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		gs = gridspec.GridSpec(3, 1)
 
 		## Bar plots of cell properties
-		plot_data(plt.subplot(gs[0, 0]), ppgpp_mean, growth_rate_mean, growth_rate_std, 'Growth rate')
-		plot_data(plt.subplot(gs[1, 0]), ppgpp_mean, elong_rate_mean, elong_rate_std, 'Elongation rate (AA/s)')
-		plot_data(plt.subplot(gs[2, 0]), ppgpp_mean, rna_to_protein_mean, rna_to_protein_std, 'RNA/protein')
-		# plt.xticks(variants, xlabels, rotation=45, fontsize=6, ha='right')
+		self.plot_data(plt.subplot(gs[0, 0]), ppgpp_mean, growth_rate_mean, growth_rate_std, 'Growth rate (1/hr)')
+		self.plot_data(plt.subplot(gs[1, 0]), ppgpp_mean, elong_rate_mean, elong_rate_std, 'Elongation rate (AA/s)')
+		self.plot_data(plt.subplot(gs[2, 0]), ppgpp_mean, rna_to_protein_mean, rna_to_protein_std, 'RNA/protein')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
