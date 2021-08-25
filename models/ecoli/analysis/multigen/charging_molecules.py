@@ -108,7 +108,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
 
 		# Create plot and axes
-		n_subplots = 9
+		n_subplots = 10
 		fig = plt.figure(figsize=(5, 20))
 		growth_ax = plt.subplot(n_subplots, 1, 1)
 		growth_ax2 = growth_ax.twinx()
@@ -117,10 +117,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rela_ax = spot_ax.twinx()
 		synth_ax = plt.subplot(n_subplots, 1, 4)
 		trna_ax = plt.subplot(n_subplots, 1, 5)
-		frac_ax = plt.subplot(n_subplots, 1, 6)
-		uncharged_trna_ax = plt.subplot(n_subplots, 1, 7)
-		charged_trna_ax = plt.subplot(n_subplots, 1, 8)
-		legend_ax = plt.subplot(n_subplots, 1, 9)
+		expected_frac_ax = plt.subplot(n_subplots, 1, 6)
+		frac_ax = plt.subplot(n_subplots, 1, 7)
+		uncharged_trna_ax = plt.subplot(n_subplots, 1, 8)
+		charged_trna_ax = plt.subplot(n_subplots, 1, 9)
+		legend_ax = plt.subplot(n_subplots, 1, 10)
 
 		initial_synthetase_conc = None
 		initial_uncharged_trna_conc = None
@@ -140,6 +141,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ribosome_reader = TableReader(os.path.join(simOutDir, 'RibosomeData'))
 			mass_reader = TableReader(os.path.join(simOutDir, 'Mass'))
 			enzyme_kinetics_reader = TableReader(os.path.join(simOutDir, 'EnzymeKinetics'))
+			growth_reader = TableReader(os.path.join(simOutDir, 'GrowthLimits'))
 
 			# Load data
 			time = main_reader.readColumn('time') / 3600
@@ -150,6 +152,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			(synthetase_counts, uncharged_trna_counts, charged_trna_counts, ppgpp_mol_counts
 				) = read_bulk_molecule_counts(simOutDir,
 				(synthetase_names, uncharged_trna_names, charged_trna_names, ppgpp_molecules))
+			expected_fraction = growth_reader.readColumn('fraction_trna_charged') @ aa_from_trna / aa_from_trna.sum(0)
 
 			## Running totals for elongation and growth
 			total_elong += elong_rate.sum()
@@ -197,6 +200,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_ax(ppgpp_ax, time, ppgpp_conc)
 			plot_ax(synth_ax, time, np.log2(normalized_synthetase_conc))
 			plot_ax(trna_ax, time, np.log2(normalized_total_trna_conc))
+			plot_ax(expected_frac_ax, time, expected_fraction)
 			plot_ax(frac_ax, time, fraction_charged)
 			plot_ax(uncharged_trna_ax, time, np.log2(normalized_uncharged_trna_conc))
 			plot_ax(charged_trna_ax, time, np.log2(normalized_charged_trna_conc))
@@ -213,7 +217,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		post_plot_formatting(ppgpp_ax, division_times, 'ppGpp Conc\n(uM)', y_lim=0, draw_horizontal=ppgpp_mean)
 		post_plot_formatting(synth_ax, division_times, 'Synthetase Conc\nFold Change', draw_horizontal=0)
 		post_plot_formatting(trna_ax, division_times, 'Total tRNA Conc\nFold Change', draw_horizontal=0)
-		post_plot_formatting(frac_ax, division_times, 'Fraction\ntRNA Charged', y_lim=[0, 1])
+		post_plot_formatting(expected_frac_ax, division_times, 'Expected fraction\ntRNA Charged', y_lim=[0, 1])
+		post_plot_formatting(frac_ax, division_times, 'Actual fraction\ntRNA Charged', y_lim=[0, 1])
 		post_plot_formatting(uncharged_trna_ax, division_times, 'Uncharged tRNA Conc\nFold Change', draw_horizontal=0)
 		post_plot_formatting(charged_trna_ax, division_times, 'Charged tRNA Conc\nFold Change', draw_horizontal=0, show_x_axis=True)
 		charged_trna_ax.set_xlabel('Time (hr)', fontsize=8)

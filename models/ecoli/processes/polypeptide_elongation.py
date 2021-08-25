@@ -935,7 +935,8 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 			if False, some will be excluded as determined in initialize
 
 	Returns:
-		fraction_charged (array of floats) - fraction of total tRNA that is charged for each tRNA species
+		new_fraction_charged (array of floats) - fraction of total tRNA that is charged for each
+			amino acid species
 		v_rib (float) - ribosomal elongation rate in units of uM/s
 		total_supply (np.ndarray) - the total amount of amino acids supplied during charging
 			in units of CONC_UNITS.  Will be zeros if supply function is not given.
