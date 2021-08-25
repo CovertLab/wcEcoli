@@ -108,7 +108,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
 
 		# Create plot and axes
-		n_subplots = 10
+		n_subplots = 11
 		fig = plt.figure(figsize=(5, 20))
 		growth_ax = plt.subplot(n_subplots, 1, 1)
 		growth_ax2 = growth_ax.twinx()
@@ -119,9 +119,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		trna_ax = plt.subplot(n_subplots, 1, 5)
 		expected_frac_ax = plt.subplot(n_subplots, 1, 6)
 		frac_ax = plt.subplot(n_subplots, 1, 7)
-		uncharged_trna_ax = plt.subplot(n_subplots, 1, 8)
-		charged_trna_ax = plt.subplot(n_subplots, 1, 9)
-		legend_ax = plt.subplot(n_subplots, 1, 10)
+		diff_ax = plt.subplot(n_subplots, 1, 8)
+		uncharged_trna_ax = plt.subplot(n_subplots, 1, 9)
+		charged_trna_ax = plt.subplot(n_subplots, 1, 10)
+		legend_ax = plt.subplot(n_subplots, 1, 11)
 
 		initial_synthetase_conc = None
 		initial_uncharged_trna_conc = None
@@ -202,6 +203,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_ax(trna_ax, time, np.log2(normalized_total_trna_conc))
 			plot_ax(expected_frac_ax, time, expected_fraction)
 			plot_ax(frac_ax, time, fraction_charged)
+			plot_ax(diff_ax, time, fraction_charged - expected_fraction)
 			plot_ax(uncharged_trna_ax, time, np.log2(normalized_uncharged_trna_conc))
 			plot_ax(charged_trna_ax, time, np.log2(normalized_charged_trna_conc))
 
@@ -219,6 +221,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		post_plot_formatting(trna_ax, division_times, 'Total tRNA Conc\nFold Change', draw_horizontal=0)
 		post_plot_formatting(expected_frac_ax, division_times, 'Expected fraction\ntRNA Charged', y_lim=[0, 1])
 		post_plot_formatting(frac_ax, division_times, 'Actual fraction\ntRNA Charged', y_lim=[0, 1])
+		post_plot_formatting(diff_ax, division_times, 'Difference in fraction\ntRNA Charged')
 		post_plot_formatting(uncharged_trna_ax, division_times, 'Uncharged tRNA Conc\nFold Change', draw_horizontal=0)
 		post_plot_formatting(charged_trna_ax, division_times, 'Charged tRNA Conc\nFold Change', draw_horizontal=0, show_x_axis=True)
 		charged_trna_ax.set_xlabel('Time (hr)', fontsize=8)
