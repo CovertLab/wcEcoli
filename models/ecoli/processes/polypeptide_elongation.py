@@ -482,6 +482,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			f,
 			self.charging_params,
 			supply=supply_function,
+			limit_v_rib=True,
 			time_limit=self.process.timeStepSec())
 
 		# Use the supply calculated from each sub timestep while solving the charging steady state
@@ -920,7 +921,7 @@ def get_charging_params(
 		)
 
 def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_conc, aa_conc, ribosome_conc,
-		f, params, supply=None, time_limit=1000, use_disabled_aas=False):
+		f, params, supply=None, time_limit=1000, limit_v_rib=False, use_disabled_aas=False):
 	'''
 	Calculates the steady state value of tRNA based on charging and incorporation through polypeptide elongation.
 	The fraction of charged/uncharged is also used to determine how quickly the ribosome is elongating.
@@ -941,6 +942,8 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 			based on amino acid concentrations. If None, amino acid concentrations remain constant
 			during charging
 		time_limit (float) - time limit to reach steady state
+		limit_v_rib (bool) - if True, v_rib is limited to the number of amino acids that are
+			available
 		use_disabled_aas (bool) - if True, all amino acids will be used for charging calculations,
 			if False, some will be excluded as determined in initialize
 
@@ -995,6 +998,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		# Handle case when f is 0 and charged_trna_conc is 0
 		if not np.isfinite(v_rib):
 			v_rib = 0
+		v_rib = min(v_rib, v_rib_max)
 
 		dtrna = v_charging - v_rib*f
 		daa = np.zeros(n_aas)
@@ -1025,6 +1029,9 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	masked_aa_conc = aa_conc[mask]
 	f = f[mask]
 
+	# Limit v_rib to the amount of available amino acids (free and charged on tRNA)
+	v_rib_max = ((masked_aa_conc + charged_trna_conc) / time_limit / f).min() if limit_v_rib else np.inf
+
 	n_aas = len(aa_conc)
 	n_aas_masked = len(masked_aa_conc)
 
@@ -1043,6 +1050,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	fraction_charged = charged_trna_conc / (uncharged_trna_conc + charged_trna_conc)
 	numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
 	v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
+	v_rib = min(v_rib, v_rib_max)
 
 	# Replace SEL fraction charged with average
 	new_fraction_charged = np.zeros(n_total_aas)
