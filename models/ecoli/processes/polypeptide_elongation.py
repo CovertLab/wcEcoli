@@ -1001,7 +1001,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 
 		# Limit v_rib to the amount of available amino acids (free and uncharged from tRNA)
 		if limit_v_rib:
-			v_rib_max = ((original_aa_conc + (original_charged_trna_conc - charged_trna_conc)) / time_limit / f).min()
+			v_rib_max = max(0, ((original_aa_conc + (original_charged_trna_conc - charged_trna_conc)) / time_limit / f).min())
 			v_rib = min(v_rib, v_rib_max)
 
 		dtrna = v_charging - v_rib*f
@@ -1052,7 +1052,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	numerator_ribosome = 1 + np.sum(f * (params['krta'] / final_charged_trna_conc + final_uncharged_trna_conc / final_charged_trna_conc * params['krta'] / params['krtf']))
 	v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
 	if limit_v_rib:
-		v_rib_max = ((original_aa_conc + (original_charged_trna_conc - final_charged_trna_conc)) / time_limit / f).min()
+		v_rib_max = max(0, ((original_aa_conc + (original_charged_trna_conc - final_charged_trna_conc)) / time_limit / f).min())
 		v_rib = min(v_rib, v_rib_max)
 
 	# Replace SEL fraction charged with average
