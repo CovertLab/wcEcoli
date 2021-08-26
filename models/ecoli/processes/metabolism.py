@@ -211,9 +211,9 @@ class Metabolism(wholecell.processes.process.Process):
 			id_to_aa_exchange = {mol: i for i, mol in enumerate(fba.getExternalMoleculeIDs()) if mol in self.aa_exchange_names}
 			id_to_aa_metabolites = {mol: i for i, mol in enumerate(self.model.metaboliteNamesFromNutrients) if mol in self.aa_names}
 			delta_exchanged = {aa: rates + exchange_fluxes[id_to_aa_exchange[aa]] for aa, rates in zip(self.aa_exchange_names[aa_in_media], exchange_rates[aa_in_media])}
-			for i, (aa, change) in enumerate(delta_exchanged.items()):
-				if 'L-SELENOCYSTEINE' not in aa:
-					aa_id = aa[:-3] + '[c]'
+			for aa, change in delta_exchanged.items():
+				aa_id = aa[:-3] + '[c]'
+				if aa_id not in self.aa_targets_not_updated:
 					diff = change / counts_to_molar.asNumber(CONC_UNITS)
 					self.aa_targets[aa_id] -= diff
 
@@ -537,6 +537,7 @@ class FluxBalanceAnalysisModel(object):
 			objective, metabolite_conc, external_molecule_levels)
 		self.fba.setExternalMoleculeLevels(external_molecule_levels)
 
+		# TODO (Santiago): Remove this if bounds approach is approved
 		if aa_uptake_package:
 			levels, molecules, force = aa_uptake_package
 			self.fba.setExternalMoleculeLevels(levels, molecules=molecules, force=force, allow_export=True)
