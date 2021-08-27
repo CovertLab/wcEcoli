@@ -107,7 +107,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.ppgpp = self.bulkMoleculeView(sim_data.molecule_ids.ppGpp)
 		self.synth_prob = sim_data.process.transcription.synth_prob_from_ppgpp
 		self.copy_number = sim_data.process.replication.get_average_copy_number
-		self.get_rnap_active_fraction_from_ppGpp = sim_data.growth_rate_parameters.get_rnap_active_fraction_from_ppGpp
+		self.get_rnap_active_fraction_from_ppGpp = sim_data.process.transcription.get_rnap_active_fraction_from_ppGpp
 
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases
