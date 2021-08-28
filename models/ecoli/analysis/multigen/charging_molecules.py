@@ -30,7 +30,7 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 
 SECONDARY_COLOR = 'g'
 
-def plot_ax(ax, x, y, secondary=False):
+def plot_ax(ax, x, y, secondary=False, dashed=False):
 	'''
 	Plots data and sets some common features for the axes
 
@@ -40,13 +40,15 @@ def plot_ax(ax, x, y, secondary=False):
 		y (numpy array (1D or 2D) of floats): y values to plot
 		secondary (bool): if True, plots with secondary color, otherwise
 			defaults to a color cycle
+		dashed (bool): if True, plots a dashed line instead of solid
 	'''
 
 	if secondary:
 		ax.set_prop_cycle('color', SECONDARY_COLOR)
 	else:
 		ax.set_prop_cycle('color', COLORS_SMALL)  # Provides same color for each trace in different generations
-	ax.plot(x, y)
+	style = '--' if dashed else '-'
+	ax.plot(x, y, style)
 
 def post_plot_formatting(ax, division_times, y_label, draw_horizontal=None, y_lim=None, show_x_axis=False, secondary=False):
 	'''
@@ -108,7 +110,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
 
 		# Create plot and axes
-		n_subplots = 11
+		n_subplots = 13
 		fig = plt.figure(figsize=(5, 20))
 		growth_ax = plt.subplot(n_subplots, 1, 1)
 		growth_ax2 = growth_ax.twinx()
@@ -122,7 +124,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		diff_ax = plt.subplot(n_subplots, 1, 8)
 		uncharged_trna_ax = plt.subplot(n_subplots, 1, 9)
 		charged_trna_ax = plt.subplot(n_subplots, 1, 10)
-		legend_ax = plt.subplot(n_subplots, 1, 11)
+		ppgpp_syn_ax = plt.subplot(n_subplots, 1, 11)
+		ppgpp_syn_ax2 = ppgpp_syn_ax.twinx()
+		ppgpp_deg_ax = plt.subplot(n_subplots, 1, 12)
+		legend_ax = plt.subplot(n_subplots, 1, 13)
 
 		initial_synthetase_conc = None
 		initial_uncharged_trna_conc = None
@@ -154,6 +159,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				) = read_bulk_molecule_counts(simOutDir,
 				(synthetase_names, uncharged_trna_names, charged_trna_names, ppgpp_molecules))
 			expected_fraction = growth_reader.readColumn('fraction_trna_charged') @ aa_from_trna / aa_from_trna.sum(0)
+			rela_rxns = growth_reader.readColumn('rela_syn')
+			spot_syn_rxns = growth_reader.readColumn('spot_syn')
+			spot_deg_rxns = growth_reader.readColumn('spot_deg')
 
 			## Running totals for elongation and growth
 			total_elong += elong_rate.sum()
@@ -195,17 +203,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# Plot data
 			plot_ax(growth_ax, time[1:], elong_rate[1:])  # [1:] to remove spike down
-			plot_ax(growth_ax2, time[1:], growth_rate[1:], True)
+			plot_ax(growth_ax2, time[1:], growth_rate[1:], secondary=True)
 			plot_ax(spot_ax, time, np.log2(normalized_ppgpp_protein_conc[:, 1]))
-			plot_ax(rela_ax, time, np.log2(normalized_ppgpp_protein_conc[:, 0]), True)
-			plot_ax(ppgpp_ax, time, ppgpp_conc)
+			plot_ax(rela_ax, time, np.log2(normalized_ppgpp_protein_conc[:, 0]), secondary=True)
+			plot_ax(ppgpp_ax, time[1:], ppgpp_conc[1:])
 			plot_ax(synth_ax, time, np.log2(normalized_synthetase_conc))
 			plot_ax(trna_ax, time, np.log2(normalized_total_trna_conc))
-			plot_ax(expected_frac_ax, time, expected_fraction)
+			plot_ax(expected_frac_ax, time[1:], expected_fraction[1:, :])
 			plot_ax(frac_ax, time, fraction_charged)
 			plot_ax(diff_ax, time, fraction_charged - expected_fraction)
 			plot_ax(uncharged_trna_ax, time, np.log2(normalized_uncharged_trna_conc))
 			plot_ax(charged_trna_ax, time, np.log2(normalized_charged_trna_conc))
+			plot_ax(ppgpp_syn_ax, time[1:], rela_rxns[1:, :])
+			plot_ax(ppgpp_syn_ax2, time[1:], spot_syn_rxns[1:], secondary=True, dashed=True)
+			plot_ax(ppgpp_deg_ax, time[1:], spot_deg_rxns[1:, :])
 
 		elong_mean = total_elong / timesteps
 		growth_mean = total_growth / timesteps
@@ -223,8 +234,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		post_plot_formatting(frac_ax, division_times, 'Actual fraction\ntRNA Charged', y_lim=[0, 1])
 		post_plot_formatting(diff_ax, division_times, 'Difference in fraction\ntRNA Charged')
 		post_plot_formatting(uncharged_trna_ax, division_times, 'Uncharged tRNA Conc\nFold Change', draw_horizontal=0)
-		post_plot_formatting(charged_trna_ax, division_times, 'Charged tRNA Conc\nFold Change', draw_horizontal=0, show_x_axis=True)
-		charged_trna_ax.set_xlabel('Time (hr)', fontsize=8)
+		post_plot_formatting(charged_trna_ax, division_times, 'Charged tRNA Conc\nFold Change', draw_horizontal=0)
+		post_plot_formatting(ppgpp_syn_ax, division_times, 'ppGpp Synthesis\nby RelA (uM/s)', y_lim=0)
+		post_plot_formatting(ppgpp_syn_ax2, division_times, 'ppGpp Synthesis\nby SpoT (uM/s)', y_lim=0, secondary=True)
+		post_plot_formatting(ppgpp_deg_ax, division_times, 'ppGpp degradation\n(uM/s)', y_lim=0, show_x_axis=True)
+		ppgpp_deg_ax.set_xlabel('Time (hr)', fontsize=8)
 
 		# Format and display legend below all plots
 		legend_ax.set_prop_cycle('color', COLORS_SMALL)
