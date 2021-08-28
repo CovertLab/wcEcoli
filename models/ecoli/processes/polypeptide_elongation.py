@@ -825,7 +825,7 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
 	v_syn = v_rela_syn.sum() + v_spot_syn
 	v_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
-	v_spot_deg = v_deg * uncharged_trna_conc / uncharged_trna_conc.sum()
+	v_spot_deg = v_deg * (1 / uncharged_trna_conc) / (1 / uncharged_trna_conc).sum()
 
 	# Convert to discrete reactions
 	n_syn_reactions = stochasticRound(random_state, v_syn * time_step / counts_to_micromolar)[0]
