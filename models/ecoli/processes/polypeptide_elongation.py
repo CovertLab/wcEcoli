@@ -790,9 +790,9 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 			involved in ppGpp reactions
 		n_syn_reactions (int): the number of ppGpp synthesis reactions
 		n_deg_reactions (int): the number of ppGpp degradation reactions
-		v_rela_syn (float): rate of synthesis from RelA
-		v_spot_syn (float): rate of synthesis from SpoT
-		v_deg (float): rate of degradation from SpoT
+		v_rela_syn (np.ndarray[float]): rate of synthesis from RelA
+		v_spot_syn (np.ndarray[float]): rate of synthesis from SpoT
+		v_deg (np.ndarray[float]): rate of degradation from SpoT
 	'''
 
 	if random_state is None:
@@ -821,10 +821,11 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 
 	# Calculate rates for synthesis and degradation
 	frac_rela = 1 / (1 + ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged.sum())
-	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela
+	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela * ribosomes_bound_to_uncharged / ribosomes_bound_to_uncharged.sum()
 	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
-	v_syn = v_rela_syn + v_spot_syn
+	v_syn = v_rela_syn.sum() + v_spot_syn
 	v_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
+	v_spot_deg = v_deg * uncharged_trna_conc / uncharged_trna_conc.sum()
 
 	# Convert to discrete reactions
 	n_syn_reactions = stochasticRound(random_state, v_syn * time_step / counts_to_micromolar)[0]
@@ -867,7 +868,7 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	else:
 		raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
 
-	return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg
+	return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_spot_deg
 
 def get_charging_params(
 		sim_data,
