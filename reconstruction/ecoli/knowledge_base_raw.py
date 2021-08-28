@@ -17,6 +17,7 @@ from wholecell.utils import units  # used by eval()
 
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
+	"amino_acid_export_kms.tsv",
 	"amino_acid_pathways.tsv",
 	"biomass.tsv",
 	"compartments.tsv",
@@ -37,6 +38,7 @@ LIST_OF_DICT_FILENAMES = (
 	"growth_rate_dependent_parameters.tsv",
 	"linked_metabolites.tsv",
 	"metabolic_reactions.tsv",
+	"metabolic_reactions_added.tsv",
 	"metabolic_reactions_modified.tsv",
 	"metabolic_reactions_removed.tsv",
 	"metabolism_kinetics.tsv",
@@ -125,6 +127,7 @@ REMOVED_DATA = {
 # TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
+	'metabolic_reactions': 'metabolic_reactions_added',
 	}
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',

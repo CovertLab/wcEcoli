@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 """
 Tools and analysis to debug charging problems.
-
-TODO:
-	- add additional sim options (aa_supply_in_charging, mechanistic_translation_supply) to match sim
 """
 
 from __future__ import annotations
@@ -12,7 +9,7 @@ import argparse
 import csv
 import os
 import pickle
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import webbrowser
 
 import dash
@@ -24,9 +21,10 @@ import plotly.subplots
 
 from models.ecoli.processes.metabolism import CONC_UNITS as METABOLISM_CONC_UNITS
 from models.ecoli.processes.polypeptide_elongation import (calculate_trna_charging,
-	CONC_UNITS, get_charging_params, get_ppgpp_params, ppgpp_metabolite_changes)
+	CONC_UNITS, get_charging_params, get_charging_supply_function, get_ppgpp_params,
+	ppgpp_metabolite_changes)
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import constants, scriptBase
+from wholecell.utils import constants, scriptBase, parallelization
 
 
 # Set of charging/ppGpp parameters that should not be modified by a slider
@@ -36,9 +34,27 @@ PORT = 8050
 
 # Element IDs
 GRAPH_ID = 'graph-id'
+BUTTON_ID = 'button-id'
 LOW_TIMESTEP = 'low-timestep'
 HIGH_TIMESTEP = 'high-timestep'
 
+# Grid search columns
+MEAN_COL = 'elongation rate mean (AA/s)'
+STD_COL = 'elongation rate std'
+
+
+def run_grid_search(charging, levels, index, search_params, timesteps):
+	n_levels = len(levels)
+	params = {}
+	for i, (param, value) in enumerate(search_params.items()):
+		params[param] = levels[index // n_levels**i % n_levels]
+
+	v_ribs = []
+	for timestep in timesteps:
+		_, _, v, _, _ = charging.solve_timestep(timestep, param_adjustments=params)
+		v_ribs.append(v)
+
+	return v_ribs, params
 
 class ChargingDebug(scriptBase.ScriptBase):
 	def define_parameters(self, parser):
@@ -61,8 +77,21 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'variable_elongation_translation',
 			default_key='variable_elongation_translation',
 			help='set if sims were run with variable_elongation_translation')
+		self.define_parameter_bool(parser, 'aa_supply_in_charging',
+			default_key='aa_supply_in_charging',
+			help='set if sims were run with aa_supply_in_charging')
+		self.define_parameter_bool(parser, 'mechanistic_translation_supply',
+			default_key='mechanistic_translation_supply',
+			help='set if sims were run with mechanistic_translation_supply')
+		self.define_parameter_bool(parser, 'mechanistic_aa_transport',
+			default_key='mechanistic_aa_transport',
+			help='set if sims were run with mechanistic_aa_transport')
 
 		# Debug options
+		parser.add_argument('-c', '--cpus', type=int, default=1,
+			help='Number of CPUs to use to run in parallel.')
+		parser.add_argument('-o', '--output', default='charging-debug',
+			help='Base name of output file to save.')
 		parser.add_argument('--validation', type=int, default=1,
 			help='Number of time steps to run for validation. If < 0, will run all.')
 		parser.add_argument('--grid-search', action='store_true',
@@ -101,11 +130,15 @@ class ChargingDebug(scriptBase.ScriptBase):
 		"""
 
 		with open(sim_data_file, 'rb') as f:
-			self.sim_data = pickle.load(f)
-		self.aa_from_trna = self.sim_data.process.transcription.aa_from_trna
+			sim_data = pickle.load(f)
+		self.aa_from_trna = sim_data.process.transcription.aa_from_trna
+		self.amino_acid_synthesis = sim_data.process.metabolism.amino_acid_synthesis
+		self.amino_acid_export = sim_data.process.metabolism.amino_acid_export
+		self.aa_supply_scaling = sim_data.process.metabolism.aa_supply_scaling
+		self.amino_acids = sim_data.molecule_groups.amino_acids
 
 		# Get charging parameters and separate to ones that will be adjusted or not
-		charging_params = get_charging_params(self.sim_data,
+		charging_params = get_charging_params(sim_data,
 			variable_elongation=self.variable_elongation)
 		self.adjustable_charging_params = {
 			param: value
@@ -119,7 +152,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			}
 
 		# Get ppGpp parameters and separate to ones that will be adjusted or not
-		ppgpp_params = get_ppgpp_params(self.sim_data)
+		ppgpp_params = get_ppgpp_params(sim_data)
 		self.adjustable_ppgpp_params = {
 			param: value
 			for param, value in ppgpp_params.items()
@@ -132,11 +165,14 @@ class ChargingDebug(scriptBase.ScriptBase):
 			}
 
 		# Listeners used
+		main_reader = TableReader(os.path.join(sim_out_dir, 'Main'))
 		growth_reader = TableReader(os.path.join(sim_out_dir, 'GrowthLimits'))
 		kinetics_reader = TableReader(os.path.join(sim_out_dir, 'EnzymeKinetics'))
-		main_reader = TableReader(os.path.join(sim_out_dir, 'Main'))
 
 		# Load data
+		self.time_step_sizes = main_reader.readColumn('timeStepSec')[1:]
+		self.n_time_steps = len(self.time_step_sizes)
+
 		self.synthetase_conc = CONC_UNITS * growth_reader.readColumn('synthetase_conc')[1:, :]
 		self.uncharged_trna_conc = CONC_UNITS * growth_reader.readColumn('uncharged_trna_conc')[1:, :]
 		self.charged_trna_conc = CONC_UNITS * growth_reader.readColumn('charged_trna_conc')[1:, :]
@@ -148,10 +184,14 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.rela_conc = CONC_UNITS * growth_reader.readColumn('rela_conc')[1:]
 		self.spot_conc = CONC_UNITS * growth_reader.readColumn('spot_conc')[1:]
 
-		self.counts_to_molar = METABOLISM_CONC_UNITS * kinetics_reader.readColumn('countsToMolar')[1:]
+		self.aa_supply = growth_reader.readColumn('original_aa_supply')[1:, :]
+		self.enzyme_counts = growth_reader.readColumn('aa_supply_enzymes')[1:, :]
+		self.aa_exporters = growth_reader.readColumn('aa_exporters')[1:, :]
+		self.aa_import = growth_reader.readColumn('aa_import')[1:, :] / self.time_step_sizes.reshape(-1, 1)
+		self.aa_exchange = self.aa_import - growth_reader.readColumn('aa_export')[1:, :] / self.time_step_sizes.reshape(-1, 1)
+		self.aa_in_media = growth_reader.readColumn('aa_in_media')[1:, :]
 
-		self.time_step_sizes = main_reader.readColumn('timeStepSec')[1:]
-		self.n_time_steps = len(self.time_step_sizes)
+		self.counts_to_molar = METABOLISM_CONC_UNITS * kinetics_reader.readColumn('countsToMolar')[1:]
 
 	def solve_timestep(self,
 			timestep: int,
@@ -188,7 +228,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			Include adjustments for ppGpp, RelA, and SpoT concentrations
 		"""
 
-		n_aas = len(self.sim_data.molecule_groups.amino_acids)
+		n_aas = len(self.amino_acids)
 
 		if synthetase_adjustments is None:
 			synthetase_adjustments = np.ones(n_aas)
@@ -216,6 +256,16 @@ class ChargingDebug(scriptBase.ScriptBase):
 		f = self.fraction_aa_to_elongate[timestep, :]
 		timestep_size = self.time_step_sizes[timestep] * timestep_adjustment
 
+		# Amino acid supply function to use in charging
+		supply_function = get_charging_supply_function(
+			self.aa_supply_in_charging, self.mechanistic_translation_supply,
+			self.mechanistic_aa_transport, self.amino_acid_synthesis,
+			self.amino_acid_export, self.aa_supply_scaling, self.counts_to_molar[timestep],
+			self.aa_supply[timestep, :], self.enzyme_counts[timestep, :],
+			self.aa_exporters[timestep, :], self.aa_exchange[timestep, :],
+			self.aa_import[timestep, :], self.aa_in_media[timestep, :],
+			)
+
 		# Calculate tRNA charging and resulting values
 		fraction_charged, v_rib, _ = calculate_trna_charging(
 			self.synthetase_conc[timestep, :] * synthetase_adjustments,
@@ -225,6 +275,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			ribosome_conc,
 			f,
 			charging_params,
+			supply=supply_function,
 			time_limit=timestep_size,
 			)
 		fraction_charged_per_aa = fraction_charged @ self.aa_from_trna
@@ -275,11 +326,13 @@ class ChargingDebug(scriptBase.ScriptBase):
 		print('Running validation to check output...')
 		for timestep in range(n_steps):
 			fraction_charged, _, _, _, _ = self.solve_timestep(timestep)
-			if np.any(fraction_charged != self.fraction_charged[timestep]):
+			# Some variability exists with certain options due to floating point differences
+			# in unit converted counts_to_molar values so need to use allclose instead of exact
+			if not np.allclose(fraction_charged, self.fraction_charged[timestep]):
 				raise ValueError(f'Charging fraction does not match for time step {timestep}')
 		print('All {} timesteps match the results from the whole-cell model.'.format(n_steps))
 
-	def grid_search(self, filename='grid.tsv', t_start=200, t_end=205, n_levels=9, low_level=-1, high_level=1):
+	def grid_search(self, filename, n_steps=20, n_levels=9, low_level=-1, high_level=1, cpus=1):
 		"""
 		Perform a grid search on the charging parameters to determine the effect
 		on elongation rate.  Results are saved to a tsv file that can be used
@@ -289,41 +342,46 @@ class ChargingDebug(scriptBase.ScriptBase):
 			accept args from the command line
 		"""
 
+		filename = f'{filename}.tsv'
+
 		levels = np.logspace(low_level, high_level, n_levels)
 		search_params = {k: v for k, v in self.adjustable_charging_params.items() if k != 'max_elong_rate'}
 		n_params = len(search_params)
-		timesteps = list(range(t_start, t_end))
+		timesteps = np.arange(self.n_time_steps)[::int(np.ceil(self.n_time_steps / n_steps))]
 		n_samples = n_levels**n_params
-		v_rib_key = 'elongation rate (AA/s)'
 
 		with open(filename, 'w') as f:
-			writer = csv.DictWriter(f, fieldnames=list(search_params.keys()) + [v_rib_key], delimiter='\t')
+			writer = csv.DictWriter(f, fieldnames=list(search_params.keys()) + [MEAN_COL, STD_COL], delimiter='\t')
 			writer.writeheader()
 
-			for i in range(n_samples):
-				if i % 100 == 0:
-					print(i)
-				params = {}
-				for j, (param, value) in enumerate(search_params.items()):
-					params[param] = levels[i // n_levels**j % n_levels]
+			def callback(result):
+				v_ribs, params = result
+				writer.writerow({MEAN_COL: np.mean(v_ribs), STD_COL: np.std(v_ribs), **params})
 
-				v_ribs = []
-				for timestep in timesteps:
-					_, _, v, _, _ = self.solve_timestep(timestep, param_adjustments=params)
-					v_ribs.append(v)
+			# Run timesteps in parallel
+			pool = parallelization.pool(num_processes=cpus)
+			results = [
+				pool.apply_async(run_grid_search, (self, levels, index, search_params, timesteps), callback=callback)
+				for index in range(n_samples)
+				]
+			pool.close()
+			pool.join()
 
-				writer.writerow({v_rib_key: np.mean(v_ribs), **params})
+			# Check for errors
+			for result in results:
+				if not result.successful():
+					result.get()
 
-	def plot_grid_results(self, path1: str, path2: str, output: str = 'grid.html'):
+	def plot_grid_results(self, filename: str, path1: str, path2: str):
 		"""
 		Compares results from two different grid searches in an interactive
 		plot.  Useful for checking sets of parameters that give desired results
 		in different simulations.
 
 		Args:
+			filename: path to the html file with the comparison plot
 			path1: path to the tsv file results from one grid search
 			path2: path to the tsv file results from another grid search
-			output: path to the html file with the comparison plot
 		"""
 
 		def load_data(path):
@@ -331,20 +389,38 @@ class ChargingDebug(scriptBase.ScriptBase):
 			with open(path) as f:
 				reader = csv.reader(f, delimiter='\t')
 				headers = next(reader)
+				mean_col = headers.index(MEAN_COL)
+				std_col = headers.index(STD_COL)
 				for line in reader:
-					data[tuple(zip(headers, line[:-1]))] = float(line[-1])
+					data[tuple(zip(headers, line[:mean_col]))] = {
+						'mean': float(line[mean_col]),
+						'std': float(line[std_col]),
+						}
 
 			return data
+
+		filename = f'{filename}.html'
 
 		data1 = load_data(path1)
 		data2 = load_data(path2)
 
 		labels = list(data1.keys() | data2.keys())
-		x = np.array([data1.get(label, 0) for label in labels])
-		y = np.array([data2.get(label, 0) for label in labels])
+		x = np.array([data1.get(label, {}).get('mean', 0) for label in labels])
+		y = np.array([data2.get(label, {}).get('mean', 0) for label in labels])
+		error_x = dict(
+			type='data',
+			array=[data1.get(label, {}).get('std', 0) for label in labels],
+			visible=False,  # Need to find better way of displaying before making visible
+			)
+		error_y = dict(
+			type='data',
+			array=[data2.get(label, {}).get('std', 0) for label in labels],
+			visible=False,  # Need to find better way of displaying before making visible
+			)
 
-		fig = go.Figure(data=go.Scatter(x=x, y=y, mode='markers', text=labels))
-		fig.write_html(output)
+		fig = go.Figure(data=go.Scatter(x=x, y=y, error_x=error_x, error_y=error_y, mode='markers', text=labels))
+		print(f'Writing to {filename}')
+		fig.write_html(filename)
 
 	def interactive_debug(self, port: int):
 		"""
@@ -365,7 +441,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		charging_param_ids = sorted(self.adjustable_charging_params)
 		ppgpp_param_ids = sorted(self.adjustable_ppgpp_params)
 		all_param_ids = charging_param_ids + ppgpp_param_ids
-		aa_ids = self.sim_data.molecule_groups.amino_acids
+		aa_ids = self.amino_acids
 		n_aas = len(aa_ids)
 
 		# Slider elements
@@ -474,6 +550,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			html.Plaintext('Timestep limits (lower, upper):'),
 			dcc.Input(id=LOW_TIMESTEP, type='number', value=0),
 			dcc.Input(id=HIGH_TIMESTEP, type='number', value=10),
+			html.Button('Update', id=BUTTON_ID),
 			sliders,
 			dcc.Graph(id=GRAPH_ID, style={'height': '750px'})
 			])
@@ -484,19 +561,20 @@ class ChargingDebug(scriptBase.ScriptBase):
 		@app.callback(
 			dash.dependencies.Output(GRAPH_ID, 'figure'),
 			[
-				dash.dependencies.Input(LOW_TIMESTEP, 'value'),
-				dash.dependencies.Input(HIGH_TIMESTEP, 'value'),
+				dash.dependencies.Input(BUTTON_ID, 'n_clicks'),
 				dash.dependencies.Input('ribosome-slider-text', 'children'),
 				dash.dependencies.Input('timestep-slider-text', 'children'),
 				*synthetase_inputs,
 				*trna_inputs,
 				*aa_inputs,
 				*param_inputs,
+			],
+			[
+				dash.dependencies.State(LOW_TIMESTEP, 'value'),
+				dash.dependencies.State(HIGH_TIMESTEP, 'value'),
 			])
-		def update_graph(
-				init_t: int, final_t: int,
-				ribosome_adjustment: str, timestep_adjustment: str,
-				*param_inputs: str,
+		def update_graph(n_clicks: int, ribosome_adjustment: str,
+				timestep_adjustment: str, *inputs: Any,
 				) -> Dict:
 			"""
 			Update the plot based on selection changes.
@@ -507,10 +585,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 			ribosome_adjustment = float(ribosome_adjustment)
 			timestep_adjustment = float(timestep_adjustment)
-			synthetase_adjustments = np.array(param_inputs[:n_aas], float)
-			trna_adjustments = np.array(param_inputs[n_aas:2*n_aas], float)
-			aa_adjustments = np.array(param_inputs[2*n_aas:3*n_aas], float)
-			param_adjustments = {param: float(value) for param, value in zip(all_param_ids, param_inputs[3*n_aas:])}
+			synthetase_adjustments = np.array(inputs[:n_aas], float)
+			trna_adjustments = np.array(inputs[n_aas:2*n_aas], float)
+			aa_adjustments = np.array(inputs[2*n_aas:3*n_aas], float)
+			param_adjustments = {param: float(value) for param, value in zip(all_param_ids, inputs[3*n_aas:-2])}
+			init_t = inputs[-2]
+			final_t = inputs[-1]
 
 			v_rib = []
 			f_charged = []
@@ -553,13 +633,21 @@ class ChargingDebug(scriptBase.ScriptBase):
 		return app
 
 	def run(self, args: argparse.Namespace) -> None:
+		# Sim options
 		self.variable_elongation = args.variable_elongation_translation
-		self.load_data(args.sim_data_file, args.sim_out_dir)
-		self.validation(args.validation)
+		self.aa_supply_in_charging = args.aa_supply_in_charging
+		self.mechanistic_translation_supply = args.mechanistic_translation_supply
+		self.mechanistic_aa_transport = args.mechanistic_aa_transport
+
+		# Load data and check if required
+		if (args.grid_search or args.validation or args.interactive) and args.sim_dir is not None:
+			self.load_data(args.sim_data_file, args.sim_out_dir)
+			self.validation(args.validation)
+
 		if args.grid_search:
-			self.grid_search()
+			self.grid_search(args.output, cpus=args.cpus)
 		if args.grid_compare:
-			self.plot_grid_results(*args.grid_compare)
+			self.plot_grid_results(args.output, *args.grid_compare)
 		if args.interactive:
 			self.interactive_debug(args.port)
 
