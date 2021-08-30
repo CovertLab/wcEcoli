@@ -981,9 +981,6 @@ class Transcription(object):
 		# Calculate constant for stop probability
 		self.attenuation_k = np.zeros_like(self._attenuation_rna_fold_changes)
 		for i, j in zip(*np.where(self._attenuation_rna_fold_changes != 1)):
-			k = aa_conc[i] / np.log(self._attenuation_rna_fold_changes[i, j])
-		self.attenuation_k = np.zeros_like(self._attenuation_rna_fold_changes)
-		for i, j in zip(*np.where(self._attenuation_rna_fold_changes != 1)):
 			k = trna_conc[i] / np.log(self._attenuation_rna_fold_changes[i, j])
 			self.attenuation_k[i, j] = 1/k
 		self.attenuation_k = 1 / k_units * self.attenuation_k
