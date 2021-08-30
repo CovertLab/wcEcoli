@@ -979,16 +979,18 @@ class Transcription(object):
 			sim_data.process.replication.get_average_copy_number)
 
 		# Calculate the average expected effect of TFs in basal condition
-		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
 		p_promoter_bound = np.array([
 			sim_data.pPromoterBound[condition][tf]
 			for tf in sim_data.process.transcription_regulation.tf_ids
 			])
-		delta = old_prob * (delta_prob @ p_promoter_bound)
+		delta_prob_no_ppgpp = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=False)
+		delta_prob_with_ppgpp = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
+		delta_no_ppgpp = delta_prob_no_ppgpp @ p_promoter_bound
+		delta_with_ppgpp = delta_prob_with_ppgpp @ p_promoter_bound
 
 		# Calculate the required probability to match expression without ppGpp
-		new_prob = normalize(self.rna_expression[condition] * factor) - delta
-		new_prob[new_prob < 0] = 0
+		new_prob = (normalize(self.rna_expression[condition] * factor) + delta_no_ppgpp / sim_data.process.transcription_regulation.basal_prob.sum()) / (1 + delta_with_ppgpp)
+		new_prob[new_prob < 0] = old_prob[new_prob < 0]
 		new_prob = normalize(new_prob)
 
 		# Determine adjustments to the current ppGpp expression to scale
