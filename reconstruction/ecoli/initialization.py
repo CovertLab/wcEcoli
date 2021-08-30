@@ -610,6 +610,7 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 	n_RNAPs_to_activate = np.int64(fracActiveRnap * inactive_RNAP_counts)
 
 	# Parameters for rnaSynthProb
+	# TODO: update for ppGpp - basal_prob and delta_prob
 	basal_prob = sim_data.process.transcription_regulation.basal_prob.copy()
 	if trna_attenuation:
 		basal_prob[sim_data.process.transcription.attenuated_rna_indices] += sim_data.process.transcription.attenuation_basal_prob_adjustments
