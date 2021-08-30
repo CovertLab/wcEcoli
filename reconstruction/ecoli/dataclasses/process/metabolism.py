@@ -863,6 +863,28 @@ class Metabolism(object):
 		aa_ids = sim_data.molecule_groups.amino_acids
 		conc = self.concentration_updates.concentrations_based_on_nutrients
 
+		# Allosteric inhibition constants to match required supply rate
+		rates = (
+			sim_data.translation_supply_rate['minimal']
+			* sim_data.mass.avg_cell_dry_mass_init * sim_data.constants.n_avogadro
+			)
+		supply = {
+			aa: rate
+			for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
+			}
+		aa_enzymes = []
+		enzyme_to_aa = []
+		aa_kcats = {}
+		aa_kis = {}
+		upstream_aas_for_km = {}
+		upstream_aas = {}
+		reverse_aas = {}
+		aa_upstream_kms = {}
+		aa_reverse_kms = {}
+		aa_degradation_kms = {}
+		degradation_rates = {}
+		minimal_conc = conc('minimal')
+
 		# Get order of amino acids to calculate parameters for to ensure that
 		# parameters that are dependent on other amino acids are run after
 		# those calculations have completed
@@ -883,183 +905,148 @@ class Metabolism(object):
 			raise RuntimeError('Could not determine amino acid order to calculate dependencies first.'
 				' Make sure there are no cyclical pathways for amino acids that can degrade.')
 
+		for amino_acid in ordered_aa_ids:
+			data = self.aa_synthesis_pathways[amino_acid]
+			enzymes = data['enzymes']
+			enzyme_counts = basal_container.counts(enzymes).sum()
 
-		for aa_adjust in aa_ids:
-			for param in ['ki', 'km_degradation', 'km_reverse', 'kms']:
-				for value in [0.05, 0.1, 0.15, 0.2, 0.5, 2, 5, 8, 10, 15]:
-					# Allosteric inhibition constants to match required supply rate
-					rates = (
-						sim_data.translation_supply_rate['minimal']
-						* sim_data.mass.avg_cell_dry_mass_init * sim_data.constants.n_avogadro
-						)
-					supply = {
-						aa: rate
-						for aa, rate in zip(sim_data.molecule_groups.amino_acids, rates)
-						}
-					aa_enzymes = []
-					enzyme_to_aa = []
-					aa_kcats = {}
-					aa_kis = {}
-					upstream_aas_for_km = {}
-					upstream_aas = {}
-					reverse_aas = {}
-					aa_upstream_kms = {}
-					aa_reverse_kms = {}
-					aa_degradation_kms = {}
-					degradation_rates = {}
-					minimal_conc = conc('minimal')
+			aa_conc = minimal_conc[amino_acid]
+			if data['ki'] is None:
+				ki = np.inf * units.mol / units.L
+			else:
+				# Get largest dynamic range possible given the range of measured KIs
+				lower_limit, upper_limit = data['ki']
+				if aa_conc < lower_limit:
+					ki = lower_limit
+				elif aa_conc > upper_limit:
+					ki = upper_limit
+				else:
+					ki = aa_conc
+			upstream_aa = [aa for aa in data['upstream']]
+			km_conc = METABOLITE_CONCENTRATION_UNITS * np.array([
+				minimal_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for aa in upstream_aa
+				])
+			kms_upstream = data['km, upstream']
+			kms = METABOLITE_CONCENTRATION_UNITS * np.array([
+				kms_upstream.get(aa, minimal_conc[aa]).asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for aa in upstream_aa
+				])  # TODO: better way to fill in this missing data
+			if data['reverse']:
+				if np.isnan(data['km, reverse'].asNumber()):
+					km_reverse = minimal_conc[amino_acid] * 10  # TODO: better way to fill in this missing data
+				else:
+					km_reverse = data['km, reverse']
+			else:
+				km_reverse = np.inf * units.mol / units.L
+			km_degradation = data['km, degradation']
 
-					new_adjustments = self.aa_synthesis_pathway_adjustments.copy()
-					new_adjustments[aa_adjust] = dict(**new_adjustments.get(aa_adjust, {}))
-					new_adjustments[aa_adjust].update({param: value})
+			total_supply = supply[amino_acid]
+			for aa, stoich in data['downstream'].items():
+				total_supply += stoich * supply[aa]
+				total_supply += stoich * degradation_rates.get(aa, 0 / units.min)
 
-					for amino_acid in ordered_aa_ids:
-						data = self.aa_synthesis_pathways[amino_acid]
-						enzymes = data['enzymes']
-						enzyme_counts = basal_container.counts(enzymes).sum()
+			# Make required adjustments in order to get positive kcats and import rates
+			for parameter, factor in self.aa_synthesis_pathway_adjustments.get(amino_acid, {}).items():
+				if parameter == 'ki':
+					ki *= factor
+				elif parameter == 'km_degradation':
+					km_degradation *= factor
+				elif parameter == 'km_reverse':
+					km_reverse *= factor
+				elif parameter == 'kms':
+					kms *= factor
+				else:
+					raise ValueError(f'Unexpected parameter adjustment ({parameter}) for {amino_acid}.')
 
-						aa_conc = minimal_conc[amino_acid]
-						if data['ki'] is None:
-							ki = np.inf * units.mol / units.L
-						else:
-							# Get largest dynamic range possible given the range of measured KIs
-							lower_limit, upper_limit = data['ki']
-							if aa_conc < lower_limit:
-								ki = lower_limit
-							elif aa_conc > upper_limit:
-								ki = upper_limit
-							else:
-								ki = aa_conc
-						upstream_aa = [aa for aa in data['upstream']]
-						km_conc = METABOLITE_CONCENTRATION_UNITS * np.array([
-							minimal_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
-							for aa in upstream_aa
-							])
-						kms_upstream = data['km, upstream']
-						kms = METABOLITE_CONCENTRATION_UNITS * np.array([
-							kms_upstream.get(aa, minimal_conc[aa]).asNumber(METABOLITE_CONCENTRATION_UNITS)
-							for aa in upstream_aa
-							])  # TODO: better way to fill in this missing data
-						if data['reverse']:
-							if np.isnan(data['km, reverse'].asNumber()):
-								km_reverse = minimal_conc[amino_acid] * 10  # TODO: better way to fill in this missing data
-							else:
-								km_reverse = data['km, reverse']
-						else:
-							km_reverse = np.inf * units.mol / units.L
-						km_degradation = data['km, degradation']
+			# Calculate kcat value to ensure sufficient supply to double
+			kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc) - 1 / (1 + km_degradation / aa_conc)))
+			data['kcat'] = kcat
 
-						total_supply = supply[amino_acid]
-						for aa, stoich in data['downstream'].items():
-							total_supply += stoich * supply[aa]
-							total_supply += stoich * degradation_rates.get(aa, 0 / units.min)
+			aa_enzymes += enzymes
+			enzyme_to_aa += [amino_acid] * len(enzymes)
+			aa_kcats[amino_acid] = kcat.asNumber(K_CAT_UNITS)
+			aa_kis[amino_acid] = ki.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			upstream_aas_for_km[amino_acid] = upstream_aa
+			upstream_aas[amino_acid] = data['upstream']
+			reverse_aas[amino_acid] = data['reverse']
+			aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
+			degradation_rates[amino_acid] = kcat * enzyme_counts / (1 + km_degradation / aa_conc)
 
-						# Make required adjustments in order to get positive kcats and import rates
-						for parameter, factor in new_adjustments.get(amino_acid, {}).items():
-							if parameter == 'ki':
-								ki *= factor
-							elif parameter == 'km_degradation':
-								km_degradation *= factor
-							elif parameter == 'km_reverse':
-								km_reverse *= factor
-							elif parameter == 'kms':
-								kms *= factor
-							else:
-								raise ValueError(f'Unexpected parameter adjustment ({parameter}) for {amino_acid}.')
+		self.aa_enzymes = np.unique(aa_enzymes)
+		self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
+		self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
+		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
+		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
+		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
 
-						# Calculate kcat value to ensure sufficient supply to double
-						kcat = total_supply / (enzyme_counts * (1 / (1 + aa_conc / ki) * np.prod(1 / (1 + kms / km_conc)) - 1 / (1 + km_reverse / aa_conc) - 1 / (1 + km_degradation / aa_conc)))
-						data['kcat'] = kcat
+		# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
+		aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 
-						aa_enzymes += enzymes
-						enzyme_to_aa += [amino_acid] * len(enzymes)
-						aa_kcats[amino_acid] = kcat.asNumber(K_CAT_UNITS)
-						aa_kis[amino_acid] = ki.asNumber(METABOLITE_CONCENTRATION_UNITS)
-						upstream_aas_for_km[amino_acid] = upstream_aa
-						upstream_aas[amino_acid] = data['upstream']
-						reverse_aas[amino_acid] = data['reverse']
-						aa_upstream_kms[amino_acid] = kms.asNumber(METABOLITE_CONCENTRATION_UNITS)
-						aa_reverse_kms[amino_acid] = km_reverse.asNumber(METABOLITE_CONCENTRATION_UNITS)
-						aa_degradation_kms[amino_acid] = km_degradation.asNumber(METABOLITE_CONCENTRATION_UNITS)
-						degradation_rates[amino_acid] = kcat * enzyme_counts / (1 + km_degradation / aa_conc)
+		# TODO: better way of handling this that is efficient computationally
+		self.aa_to_index = aa_to_index
+		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
 
-					self.aa_enzymes = np.unique(aa_enzymes)
-					self.aa_kcats = np.array([aa_kcats[aa] for aa in aa_ids])
-					self.aa_kis = np.array([aa_kis[aa] for aa in aa_ids])
-					self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
-					self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
-					self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
+		# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
+		self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(aa_ids)))
+		enzyme_mapping = {e: i for i, e in enumerate(self.aa_enzymes)}
+		aa_mapping = {a: i for i, a in enumerate(aa_ids)}
+		for enzyme, aa in zip(aa_enzymes, enzyme_to_aa):
+			self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
 
-					# Convert aa_conc to array with upstream aa_conc via indexing (aa_conc[self.aa_upstream_mapping])
-					aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
+		# Convert individual supply calculations to overall supply based on dependencies
+		# via dot product (self.aa_forward_stoich @ supply)
+		# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
+		# TODO: check this makes sense with new format
+		self.aa_forward_stoich = np.eye(len(aa_ids))
+		for aa, upstream in upstream_aas.items():
+			for upstream_aa, stoich in upstream.items():
+				self.aa_forward_stoich[aa_to_index[upstream_aa], aa_to_index[aa]] = -stoich
+		self.aa_reverse_stoich = np.eye(len(aa_ids))
+		for aa, reverse in reverse_aas.items():
+			for reverse_aa, stoich in reverse.items():
+				self.aa_reverse_stoich[aa_to_index[reverse_aa], aa_to_index[aa]] = -stoich
 
-					# TODO: better way of handling this that is efficient computationally
-					self.aa_to_index = aa_to_index
-					self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
+		# Calculate import rates to match supply in amino acid conditions
+		with_aa_rates = (
+			sim_data.translation_supply_rate['minimal_plus_amino_acids']
+			* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
+			).asNumber(K_CAT_UNITS)
+		with_aa_supply = {
+			aa: rate
+			for aa, rate in zip(sim_data.molecule_groups.amino_acids, with_aa_rates)
+			}
+		enzyme_counts = with_aa_container.counts(self.aa_enzymes)
+		aa_conc = units.mol / units.L * np.array([
+			conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
+			for aa in aa_ids
+			])
 
-					# Convert enzyme counts to an amino acid basis via dot product (counts @ self.enzyme_to_amino_acid)
-					self.enzyme_to_amino_acid = np.zeros((len(self.aa_enzymes), len(aa_ids)))
-					enzyme_mapping = {e: i for i, e in enumerate(self.aa_enzymes)}
-					aa_mapping = {a: i for i, a in enumerate(aa_ids)}
-					for enzyme, aa in zip(aa_enzymes, enzyme_to_aa):
-						self.enzyme_to_amino_acid[enzyme_mapping[enzyme], aa_mapping[aa]] = 1
+		supply = np.array([with_aa_supply[aa] for aa in aa_ids])  # TODO: check that this is ok and do not need other adjustments for downstream
+		synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
+		self.specific_import_rates = (supply - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
 
-					# Convert individual supply calculations to overall supply based on dependencies
-					# via dot product (self.aa_forward_stoich @ supply)
-					# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
-					# TODO: check this makes sense with new format
-					self.aa_forward_stoich = np.eye(len(aa_ids))
-					for aa, upstream in upstream_aas.items():
-						for upstream_aa, stoich in upstream.items():
-							self.aa_forward_stoich[aa_to_index[upstream_aa], aa_to_index[aa]] = -stoich
-					self.aa_reverse_stoich = np.eye(len(aa_ids))
-					for aa, reverse in reverse_aas.items():
-						for reverse_aa, stoich in reverse.items():
-							self.aa_reverse_stoich[aa_to_index[reverse_aa], aa_to_index[aa]] = -stoich
+		# Concentrations for reference in analysis plot
+		conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
+		basal_counts = basal_container.counts(self.aa_enzymes)
+		self.aa_supply_enzyme_conc_with_aa = conversion * enzyme_counts / cell_specs['with_aa']['avgCellDryMassInit']
+		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
 
-					# Calculate import rates to match supply in amino acid conditions
-					with_aa_rates = (
-						sim_data.translation_supply_rate['minimal_plus_amino_acids']
-						* cell_specs['with_aa']['avgCellDryMassInit'] * sim_data.constants.n_avogadro
-						).asNumber(K_CAT_UNITS)
-					with_aa_supply = {
-						aa: rate
-						for aa, rate in zip(sim_data.molecule_groups.amino_acids, with_aa_rates)
-						}
-					enzyme_counts = with_aa_container.counts(self.aa_enzymes)
-					aa_conc = units.mol / units.L * np.array([
-						conc('minimal_plus_amino_acids')[aa].asNumber(units.mol/units.L)
-						for aa in aa_ids
-						])
-
-					supply_rate = np.array([with_aa_supply[aa] for aa in aa_ids])  # TODO: check that this is ok and do not need other adjustments for downstream
-					synthesis, _, _ = self.amino_acid_synthesis(enzyme_counts, aa_conc)
-					self.specific_import_rates = (supply_rate - synthesis) / cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS)
-
-					# Concentrations for reference in analysis plot
-					conversion = sim_data.constants.cell_density / sim_data.constants.n_avogadro * sim_data.mass.cell_dry_mass_fraction
-					basal_counts = basal_container.counts(self.aa_enzymes)
-					self.aa_supply_enzyme_conc_with_aa = conversion * enzyme_counts / cell_specs['with_aa']['avgCellDryMassInit']
-					self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
-
-					# Check calculations that could end up negative
-					try:
-						neg_idx = np.where(self.aa_kcats < 0)[0]
-						if len(neg_idx):
-							aas = ', '.join([aa_ids[idx] for idx in neg_idx])
-							# print(f'{self.aa_kcats = }')
-							raise ValueError(f'kcat value was determined to be negative for {aas}.'
-								' Check input parameters like KM and KI or the concentration.')
-						neg_idx = np.where(self.specific_import_rates < 0)[0]
-						if len(neg_idx):
-							aas = ', '.join([aa_ids[idx] for idx in neg_idx])
-							# print(f'{self.specific_import_rates = }')
-							raise ValueError(f'Import rate was determined to be negative for {aas}.'
-								' Check input parameters like supply and synthesis or enzyme expression.')
-					except:
-						continue
-
-					print(aa_adjust, param, value)
+		# Check calculations that could end up negative
+		neg_idx = np.where(self.aa_kcats < 0)[0]
+		if len(neg_idx):
+			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			print(f'{self.aa_kcats = }')
+			raise ValueError(f'kcat value was determined to be negative for {aas}.'
+				' Check input parameters like KM and KI or the concentration.')
+		neg_idx = np.where(self.specific_import_rates < 0)[0]
+		if len(neg_idx):
+			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
+			print(f'{self.specific_import_rates = }')
+			raise ValueError(f'Import rate was determined to be negative for {aas}.'
+				' Check input parameters like supply and synthesis or enzyme expression.')
 
 	def amino_acid_synthesis(self, enzyme_counts: np.ndarray, aa_conc: units.Unum):
 		"""
