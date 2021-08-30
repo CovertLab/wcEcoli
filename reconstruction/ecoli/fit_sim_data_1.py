@@ -368,7 +368,7 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
 	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
-	# sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
+	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
 
 	# Set supply constants for amino acids based on condition supply requirements
 	average_basal_container = create_bulk_container(sim_data, n_seeds=5)
