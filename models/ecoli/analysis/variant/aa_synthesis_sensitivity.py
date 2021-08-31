@@ -15,6 +15,7 @@ from models.ecoli.sim.variants import aa_synthesis_sensitivity
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
+# These are set in the variant and will need to be updated if there are changes to the media
 GLT_INDEX = 5
 CONTROL_INDEX = 19
 
@@ -78,7 +79,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			scatter = plt.scatter(x, y, c=scale, edgecolors=edges, cmap='RdBu', alpha=0.8, norm=colors.LogNorm())
 			plt.colorbar(scatter)
 
-			## Plot formatting
+			# Plot formatting
 			ylabel = f'\n{ylabel}' if ylabel else ''
 			normalized_text = '\n(Normalized to minimal media)' if normalized else ''
 			self.remove_border()
@@ -86,6 +87,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.yticks(fontsize=6)
 			plt.ylabel(f'{label}{ylabel}{normalized_text}', fontsize=6)
 
+			# Divide parameters by amino acid
 			for vertical in range(n_params, np.max(x), n_params):
 				plt.axvline(vertical - 0.5, color='gray', linestyle='--', linewidth=1, alpha=0.5)
 
