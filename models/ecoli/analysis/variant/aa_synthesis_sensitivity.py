@@ -28,14 +28,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 		aa_ids = sim_data.molecule_groups.amino_acids
-		n_aas = aa_synthesis_sensitivity.get_n_aas(sim_data)
 		n_params = len(aa_synthesis_sensitivity.PARAMETERS)
 
 		# Load simulation growth rates
 		data = {}
 		for variant in variants:
-			media_index = aa_synthesis_sensitivity.get_media_index(variant, n_aas)
-			aa_index = aa_synthesis_sensitivity.get_aa_index(variant, n_aas)
+			media_index = aa_synthesis_sensitivity.get_media_index(variant, sim_data)
+			aa_index = aa_synthesis_sensitivity.get_aa_index(variant, sim_data)
 			param, factor = aa_synthesis_sensitivity.get_adjustment(variant)
 			aa_adjusted = aa_ids[aa_index][:-3]
 			param_label = f'{aa_adjusted} {param}'
@@ -59,6 +58,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		gs = gridspec.GridSpec(3, 2)
 
 		def subplot(label, data_index, subplot_index, ylabel=None, normalized=False):
+			if data_index not in data:
+				return
+
 			plt.subplot(gs[subplot_index])
 			selected_data = data[data_index]
 			param_labels = list(selected_data.keys())
