@@ -127,6 +127,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ppgpp_syn_ax = plt.subplot(n_subplots, 1, 11)
 		ppgpp_syn_ax2 = ppgpp_syn_ax.twinx()
 		ppgpp_deg_ax = plt.subplot(n_subplots, 1, 12)
+		ppgpp_deg_ax2 = ppgpp_deg_ax.twinx()
 		legend_ax = plt.subplot(n_subplots, 1, 13)
 
 		initial_synthetase_conc = None
@@ -162,6 +163,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rela_rxns = growth_reader.readColumn('rela_syn')
 			spot_syn_rxns = growth_reader.readColumn('spot_syn')
 			spot_deg_rxns = growth_reader.readColumn('spot_deg')
+			spot_deg_inhibited = growth_reader.readColumn('spot_deg_inhibited')
 
 			## Running totals for elongation and growth
 			total_elong += elong_rate.sum()
@@ -216,7 +218,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_ax(charged_trna_ax, time, np.log2(normalized_charged_trna_conc))
 			plot_ax(ppgpp_syn_ax, time[1:], rela_rxns[1:, :])
 			plot_ax(ppgpp_syn_ax2, time[1:], spot_syn_rxns[1:], secondary=True, dashed=True)
-			plot_ax(ppgpp_deg_ax, time[1:], spot_deg_rxns[1:, :])
+			plot_ax(ppgpp_deg_ax, time[1:], spot_deg_inhibited[1:, :])
+			plot_ax(ppgpp_deg_ax2, time[1:], spot_deg_rxns[1:], secondary=True, dashed=True)
 
 		elong_mean = total_elong / timesteps
 		growth_mean = total_growth / timesteps
@@ -237,7 +240,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		post_plot_formatting(charged_trna_ax, division_times, 'Charged tRNA Conc\nFold Change', draw_horizontal=0)
 		post_plot_formatting(ppgpp_syn_ax, division_times, 'ppGpp Synthesis\nby RelA (uM/s)', y_lim=0)
 		post_plot_formatting(ppgpp_syn_ax2, division_times, 'ppGpp Synthesis\nby SpoT (uM/s)', y_lim=0, secondary=True)
-		post_plot_formatting(ppgpp_deg_ax, division_times, 'ppGpp degradation\n(uM/s)', y_lim=0, show_x_axis=True)
+		post_plot_formatting(ppgpp_deg_ax, division_times, 'ppGpp degradation\ninhibited (uM/s)', y_lim=0, show_x_axis=True)
+		post_plot_formatting(ppgpp_deg_ax2, division_times, 'ppGpp degradation\n(uM/s)', y_lim=0, show_x_axis=True, secondary=True)
 		ppgpp_deg_ax.set_xlabel('Time (hr)', fontsize=8)
 
 		# Format and display legend below all plots
