@@ -51,7 +51,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		reaction_rates = np.vstack((
 			read_stacked_columns(cell_paths, 'GrowthLimits', 'rela_syn').sum(axis=1),
 			read_stacked_columns(cell_paths, 'GrowthLimits', 'spot_syn').squeeze(),
-			read_stacked_columns(cell_paths, 'GrowthLimits', 'spot_deg').sum(axis=1),
+			read_stacked_columns(cell_paths, 'GrowthLimits', 'spot_deg').squeeze(),
 			)).T
 		ppgpp_count, = read_stacked_bulk_molecules(cell_paths, [sim_data.molecule_ids.ppGpp])
 		ppgpp_conc = ppgpp_count * counts_to_molar * 1000  # uM
