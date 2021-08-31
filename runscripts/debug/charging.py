@@ -287,7 +287,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		updated_charged_trna_conc = total_trna_conc * fraction_charged
 
 		# Calculate ppGpp reaction rates
-		_, n_synthesis, n_degradation, _, _, _ = ppgpp_metabolite_changes(
+		_, n_synthesis, n_degradation, *_ = ppgpp_metabolite_changes(
 			updated_uncharged_trna_conc,
 			updated_charged_trna_conc,
 			ribosome_conc,

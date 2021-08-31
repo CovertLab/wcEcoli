@@ -74,7 +74,8 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 		self.rela_conc = 0.
 		self.spot_conc = 0.
 		self.rela_syn = np.zeros(n_aa)
-		self.spot_deg = np.zeros(n_aa)
+		self.spot_deg_inhibited = np.zeros(n_aa)
+		self.spot_deg = 0.
 		self.spot_syn = 0.
 
 		self.original_aa_supply = np.zeros(n_aa, np.float64)
@@ -112,7 +113,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			'ntpAllocated': 'ntpIds',
 			'ntpUsed': 'ntpIds',
 			'rela_syn': 'aa_ids',
-			'spot_deg': 'aa_ids',
+			'spot_deg_inhibited': 'aa_ids',
 			'original_aa_supply': 'aaIds',
 			'aa_supply': 'aaIds',
 			'aa_synthesis': 'aaIds',
@@ -163,6 +164,7 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			rela_syn = self.rela_syn,
 			spot_syn = self.spot_syn,
 			spot_deg = self.spot_deg,
+			spot_deg_inhibited = self.spot_deg_inhibited,
 			original_aa_supply = self.aa_supply,
 			aa_supply = self.aa_supply,
 			aa_synthesis = self.aa_synthesis,

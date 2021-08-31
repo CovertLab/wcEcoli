@@ -558,7 +558,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			total_trna_conc = self.counts_to_molar * (uncharged_trna_counts + charged_trna_counts)
 			updated_charged_trna_conc = total_trna_conc * fraction_charged
 			updated_uncharged_trna_conc = total_trna_conc - updated_charged_trna_conc
-			delta_metabolites, _, _, _, _, _ = ppgpp_metabolite_changes(
+			delta_metabolites, *_ = ppgpp_metabolite_changes(
 				updated_uncharged_trna_conc, updated_charged_trna_conc, ribosome_conc,
 				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
 				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
@@ -634,7 +634,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			aa_at_ribosome = aas_used + next_amino_acid_count
 			f = aa_at_ribosome / aa_at_ribosome.sum()
 			limits = self.ppgpp_reaction_metabolites.counts()
-			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg = ppgpp_metabolite_changes(
+			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg, spot_deg_inhibited = ppgpp_metabolite_changes(
 				uncharged_trna_conc, charged_trna_conc,	ribosome_conc, f, rela_conc,
 				spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
 				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
@@ -644,6 +644,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.writeToListener('GrowthLimits', 'rela_syn', rela_syn)
 			self.process.writeToListener('GrowthLimits', 'spot_syn', spot_syn)
 			self.process.writeToListener('GrowthLimits', 'spot_deg', spot_deg)
+			self.process.writeToListener('GrowthLimits', 'spot_deg_inhibited', spot_deg_inhibited)
 
 			self.ppgpp_reaction_metabolites.countsInc(delta_metabolites)
 
@@ -790,9 +791,12 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 			involved in ppGpp reactions
 		n_syn_reactions (int): the number of ppGpp synthesis reactions
 		n_deg_reactions (int): the number of ppGpp degradation reactions
-		v_rela_syn (np.ndarray[float]): rate of synthesis from RelA
-		v_spot_syn (np.ndarray[float]): rate of synthesis from SpoT
-		v_deg (np.ndarray[float]): rate of degradation from SpoT
+		v_rela_syn (np.ndarray[float]): rate of synthesis from RelA per amino
+			acid tRNA species
+		v_spot_syn (float): rate of synthesis from SpoT
+		v_deg (float): rate of degradation from SpoT
+		v_deg_inhibited (np.ndarray[float]): rate of degradation from SpoT per
+			amino acid tRNA species
 	'''
 
 	if random_state is None:
@@ -824,8 +828,9 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela * ribosomes_bound_to_uncharged / ribosomes_bound_to_uncharged.sum()
 	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
 	v_syn = v_rela_syn.sum() + v_spot_syn
-	v_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
-	v_spot_deg = v_deg * (1 / uncharged_trna_conc) / (1 / uncharged_trna_conc).sum()
+	max_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc
+	v_deg =  max_deg / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
+	v_deg_inhibited = (max_deg - v_deg) * uncharged_trna_conc / uncharged_trna_conc.sum()
 
 	# Convert to discrete reactions
 	n_syn_reactions = stochasticRound(random_state, v_syn * time_step / counts_to_micromolar)[0]
@@ -868,7 +873,7 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	else:
 		raise ValueError('Failed to meet molecule limits with ppGpp reactions.')
 
-	return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_spot_deg
+	return delta_metabolites, n_syn_reactions, n_deg_reactions, v_rela_syn, v_spot_syn, v_deg, v_deg_inhibited
 
 def get_charging_params(
 		sim_data,
