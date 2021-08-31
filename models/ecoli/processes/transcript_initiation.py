@@ -129,7 +129,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				if self.trna_attenuation:
 					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 				self.fracActiveRnap = self.get_rnap_active_fraction_from_ppGpp(ppgpp_conc)
-				ppgpp_scale = basal_prob
+				ppgpp_scale = basal_prob[TU_index]
 			else:
 				basal_prob = self.basal_prob
 				self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
