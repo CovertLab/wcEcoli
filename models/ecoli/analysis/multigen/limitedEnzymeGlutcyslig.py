@@ -39,9 +39,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		all_mRNA_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
 		enzyme_rna_cistron_index = all_mRNA_ids.index(enzyme_rna_cistron_id)
 
+		# TODO (ggsun): Should be tweaked with operons
 		rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
 		rnap_data_rna_ids = rnapDataReader.readAttribute('rnaIds')
-		enzyme_RNA_index_rnap_data = rnap_data_rna_ids.index(enzyme_rna_cistron_id)
+		enzyme_RNA_index_rnap_data = rnap_data_rna_ids.index(enzyme_rna_cistron_id + '[c]')
 
 		time = []
 		enzymeFluxes = []

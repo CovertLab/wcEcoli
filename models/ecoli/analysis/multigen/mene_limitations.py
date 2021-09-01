@@ -117,7 +117,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			enzymeFluxes += reactionFluxes[:, np.where(reactionIDs == reactionId)[0][0]].tolist()
 
 			rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
-			rnaInitEventsInThisGen = rnapDataReader.readColumn("rnaInitEvent")[:, np.where(rnaIds == enzyme_rna_cistron_id)[0][0]].tolist()
+			rnaInitEventsInThisGen = rnapDataReader.readColumn("rnaInitEvent")[:, np.where(rnaIds == enzyme_rna_cistron_id + '[c]')[0][0]].tolist()
 
 			enzymeRnaInitEvent += rnaInitEventsInThisGen
 			nTranscriptionInitEventsPerGen.append(np.sum(rnaInitEventsInThisGen))

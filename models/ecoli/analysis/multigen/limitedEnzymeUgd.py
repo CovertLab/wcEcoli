@@ -45,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
 		rnap_data_rna_ids = rnapDataReader.readAttribute('rnaIds')
-		enzyme_RNA_index_rnap_data = rnap_data_rna_ids.index(enzyme_rna_cistron_id)
+		enzyme_RNA_index_rnap_data = rnap_data_rna_ids.index(enzyme_rna_cistron_id + '[c]')
 
 		time = []
 		enzymeFluxes = []
