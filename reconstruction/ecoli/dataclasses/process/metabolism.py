@@ -959,17 +959,16 @@ class Metabolism(object):
 				' Make sure there are no cyclical pathways for amino acids that can degrade.')
 
 		# TODO: move these to a file
-		uptake_rates['ASN'] *= 1.5
-		uptake_rates['ARG'] *= 0.8
-		uptake_rates['ILE'] *= 1.1
-		uptake_rates['L-ALPHA-ALANINE'] *= 1.3
-		uptake_rates['LEU'] *= 1.5
-		uptake_rates['LYS'] *= 4
-		uptake_rates['PHE'] *= 0.7
-		uptake_rates['MET'] *= 1.4
+		uptake_rates['ASN'] *= 1.3
+		uptake_rates['HIS'] *= 1.6
+		uptake_rates['L-ALPHA-ALANINE'] *= 1.1
+		uptake_rates['LEU'] *= 1.6
+		uptake_rates['LYS'] *= 3.5
+		uptake_rates['MET'] *= 1.5
 		uptake_rates['TRP'] *= 1.3
 		uptake_rates['TYR'] *= 5
-		uptake_rates['VAL'] *= 0.95
+		uptake_rates['VAL'] *= 1.6
+		uptake_rates['GLN'] *= 1.1
 
 		for amino_acid in ordered_aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
@@ -1008,23 +1007,16 @@ class Metabolism(object):
 				for aa in upstream_aa
 				])  # TODO: better way to fill in this missing data
 			if data['reverse']:
-				if np.isnan(data['km, reverse'].asNumber()):
+				if units.isnan(data['km, reverse']):
 					km_reverse = minimal_conc[amino_acid] * 10  # TODO: better way to fill in this missing data
 				else:
 					km_reverse = data['km, reverse']
+			# TODO: remove this if separating reverse and deg enzymes
+			elif data['reverse enzymes'] and not np.isfinite(data['km, degradation'].asNumber()) and amino_acid != 'L-SELENOCYSTEINE[c]':
+				km_reverse = minimal_conc[amino_acid] * 10  # TODO: better way to fill in this missing data
 			else:
 				km_reverse = np.inf * units.mol / units.L
 			km_degradation = data['km, degradation']
-
-			# Needed to get positive forward kcat, TODO: move to file
-			if amino_acid == 'SER[c]':
-				km_degradation = minimal_conc[amino_acid] * 10
-			if amino_acid == 'CYS[c]':
-				ki *= 10
-				kms *= 0.1
-			if amino_acid == 'MET[c]':
-				km_degradation *= 3
-
 
 			def calc_kcats(aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms, km_reverse, km_degradation, ki, uptake_rate):
 				# Calculate kcat value to ensure sufficient supply to double
