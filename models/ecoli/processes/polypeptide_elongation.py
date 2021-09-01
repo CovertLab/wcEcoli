@@ -813,8 +813,11 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	numerator = 1 + charged_trna_conc / charging_params['krta'] + uncharged_trna_conc / charging_params['krtf']
 	saturated_charged = charged_trna_conc / charging_params['krta'] / numerator
 	saturated_uncharged = uncharged_trna_conc / charging_params['krtf'] / numerator
-	fraction_a_site = f * v_rib / (saturated_charged * charging_params['max_elong_rate'])
-	ribosomes_bound_to_uncharged = fraction_a_site * saturated_uncharged
+	if v_rib == 0:
+		ribosome_conc_a_site = f * ribosome_conc
+	else:
+		ribosome_conc_a_site = f * v_rib / (saturated_charged * charging_params['max_elong_rate'])
+	ribosomes_bound_to_uncharged = ribosome_conc_a_site * saturated_uncharged
 
 	# Handle rare cases when tRNA concentrations are 0
 	# Can result in inf and nan so assume a fraction of ribosomes
