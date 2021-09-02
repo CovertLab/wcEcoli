@@ -999,9 +999,12 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		if not np.isfinite(v_rib):
 			v_rib = 0
 
-		# Limit v_rib to the amount of available amino acids (free and uncharged from tRNA)
+		# Limit v_rib and v_charging to the amount of available amino acids
 		if limit_v_rib:
-			v_rib_max = max(0, ((original_aa_conc + (original_charged_trna_conc - charged_trna_conc)) / time_limit / f).min())
+			aa_rate = original_aa_conc / time_limit
+			trna_rate = original_charged_trna_conc / time_limit
+			v_charging = np.fmin(v_charging, aa_rate)
+			v_rib_max = max(0, ((aa_rate + trna_rate) / f).min())
 			v_rib = min(v_rib, v_rib_max)
 
 		dtrna = v_charging - v_rib*f
