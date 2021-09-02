@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
+	"aa_synthesis_sensitivity.py",
 	"aa_uptake_sensitivity.py",
 	"adder_sizer.py",
 	"cell_growth.py",
@@ -15,6 +16,7 @@ ACTIVE = [
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
 	"param_sensitivity.py",
+	"ppgpp_conc.py",
 	"remove_aa_inhibition.py",
 	"tfFit.py",
 	"tfFitComparison.py",
@@ -38,6 +40,9 @@ TAGS = {
 		'growth_rate_time_series',
 		],
 	# Variant analyses to run with a specific simulation variant (key)
+	'AA_SYNTHESIS_SENSITIVITY': [
+		'aa_synthesis_sensitivity',
+		],
 	'AA_UPTAKE_SENSITIVITY': [
 		'aa_uptake_sensitivity',
 		],
@@ -57,6 +62,9 @@ TAGS = {
 		],
 	'PARAM_SENSITIVITY': [
 		'param_sensitivity.py',
+		],
+	'PPGPP_CONC': [
+		'ppgpp_conc',
 		],
 	'REMOVE_AA_INHIBITION': [
 		'remove_aa_inhibition.py',

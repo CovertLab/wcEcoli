@@ -2,6 +2,7 @@ import importlib
 
 
 variants = [
+	'aa_synthesis_sensitivity',
 	'aa_uptake_sensitivity',
 	'add_one_aa',
 	'add_one_aa_shift',
@@ -13,6 +14,7 @@ variants = [
 	'metabolism_secretion_penalty',
 	'monomer_deg_rate_shuffle_params',
 	'param_sensitivity',
+	'ppgpp_conc',
 	'remove_aa_inhibition',
 	'remove_one_aa',
 	'remove_one_aa_shift',
