@@ -52,7 +52,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 		cellDensity = sim_data.constants.cell_density
 
-		rnaIds = sim_data.process.transcription.rna_data["id"]
+		cistron_ids = sim_data.process.transcription.cistron_data["id"]
 
 		simOutDir = os.path.join(allDir[0], "simOut")
 		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
@@ -117,7 +117,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			enzymeFluxes += reactionFluxes[:, np.where(reactionIDs == reactionId)[0][0]].tolist()
 
 			rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
-			rnaInitEventsInThisGen = rnapDataReader.readColumn("rnaInitEvent")[:, np.where(rnaIds == enzyme_rna_cistron_id + '[c]')[0][0]].tolist()
+			rnaInitEventsInThisGen = rnapDataReader.readColumn("rna_init_event_per_cistron")[:, np.where(cistron_ids == enzyme_rna_cistron_id)[0][0]].tolist()
 
 			enzymeRnaInitEvent += rnaInitEventsInThisGen
 			nTranscriptionInitEventsPerGen.append(np.sum(rnaInitEventsInThisGen))
