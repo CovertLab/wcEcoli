@@ -14,6 +14,8 @@ from reconstruction.spreadsheets import read_tsv
 from wholecell.io import tsv
 from wholecell.utils import units  # used by eval()
 
+# TODO (ggsun): Replace this with new ParCa variant framework
+WITH_OPERONS = False
 
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
@@ -62,7 +64,6 @@ LIST_OF_DICT_FILENAMES = (
 	"transcription_units_modified.tsv",
 	"transcription_units_removed.tsv",
 	"transcription_units_removed_all.tsv",
-	"transcription_units_removed_single_tu.tsv",
 	"transcriptional_attenuation.tsv",
 	"transcriptional_attenuation_removed.tsv",
 	"tf_one_component_bound.tsv",
@@ -113,26 +114,44 @@ LIST_OF_PARAMETER_FILENAMES = (
 	"mass_parameters.tsv",
 	)
 
-REMOVED_DATA = {
-	'complexation_reactions': 'complexation_reactions_removed',
-	'equilibrium_reactions': 'equilibrium_reactions_removed',
-	'fold_changes': 'fold_changes_removed',
-	'fold_changes_nca': 'fold_changes_removed',
-	'metabolic_reactions': 'metabolic_reactions_removed',
-	'metabolite_concentrations': 'metabolite_concentrations_removed',
-	'transcription_units': 'transcription_units_removed',
-	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
-	'trna_charging_reactions': 'trna_charging_reactions_removed',
-	}
+if WITH_OPERONS:
+	REMOVED_DATA = {
+		'complexation_reactions': 'complexation_reactions_removed',
+		'equilibrium_reactions': 'equilibrium_reactions_removed',
+		'fold_changes': 'fold_changes_removed',
+		'fold_changes_nca': 'fold_changes_removed',
+		'metabolic_reactions': 'metabolic_reactions_removed',
+		'metabolite_concentrations': 'metabolite_concentrations_removed',
+		'transcription_units': 'transcription_units_removed',
+		'transcriptional_attenuation': 'transcriptional_attenuation_removed',
+		'trna_charging_reactions': 'trna_charging_reactions_removed',
+		}
+	MODIFIED_DATA = {
+		'complexation_reactions': 'complexation_reactions_modified',
+		'metabolic_reactions': 'metabolic_reactions_modified',
+		'transcription_units': 'transcription_units_modified',
+		}
+else:
+	REMOVED_DATA = {
+		'complexation_reactions': 'complexation_reactions_removed',
+		'equilibrium_reactions': 'equilibrium_reactions_removed',
+		'fold_changes': 'fold_changes_removed',
+		'fold_changes_nca': 'fold_changes_removed',
+		'metabolic_reactions': 'metabolic_reactions_removed',
+		'metabolite_concentrations': 'metabolite_concentrations_removed',
+		'transcription_units': 'transcription_units_removed_all',
+		'transcriptional_attenuation': 'transcriptional_attenuation_removed',
+		'trna_charging_reactions': 'trna_charging_reactions_removed',
+		}
+	MODIFIED_DATA = {
+		'complexation_reactions': 'complexation_reactions_modified',
+		'metabolic_reactions': 'metabolic_reactions_modified',
+		}
+
 # TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
 	'metabolic_reactions': 'metabolic_reactions_added',
-	}
-MODIFIED_DATA = {
-	'complexation_reactions': 'complexation_reactions_modified',
-	'metabolic_reactions': 'metabolic_reactions_modified',
-	'transcription_units': 'transcription_units_modified',
 	}
 
 class DataStore(object):
