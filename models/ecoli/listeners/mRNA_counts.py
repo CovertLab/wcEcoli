@@ -65,6 +65,8 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 		self.partial_mRNA_counts = self.mRNA_counts - self.full_mRNA_counts
 
 		# Calculate counts of mRNA cistrons from transcription unit counts
+		# TODO (ggsun): Partial mRNA cistron counts should take into account
+		# 	the lengths of each mRNA transcript.
 		self.mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
 			all_TU_counts)[self.cistron_is_mRNA]
 		self.full_mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(

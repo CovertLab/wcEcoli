@@ -3334,7 +3334,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	model endoRNAse activity, we need to determine an affinity (Michaelis-Menten constant) for each
 	RNA that is consistent with experimentally observed half-lives.  The Michaelis-Menten constants
 	must be determined simultaneously, as the RNAs must compete for the active site of the
-	endoRNAse.  (See the RnaDegradation KmcountsCachedProcess class for more information about the dynamical
+	endoRNAse.  (See the RnaDegradation Process class for more information about the dynamical
 	model.)  The parameters are estimated using a root solver (scipy.optimize.fsolve).  (See the
 	sim_data.process.rna_decay.kmLossFunction method for more information about the optimization
 	problem.)
