@@ -8,7 +8,6 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import six
 from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader

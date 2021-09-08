@@ -2318,7 +2318,7 @@ def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs
 	return expression
 
 def fitPromoterBoundProbability(sim_data, cell_specs):
-	"""
+	r"""
 	Calculates the probabilities (P) that each transcription factor will bind
 	to its target RNA. This function initially calculates these probabilities
 	from the bulk average counts of the TFs and ligands calculated from
@@ -2641,7 +2641,7 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		return T
 
 	def build_matrix_H(sim_data, col_name_to_index, pPromoterBound, r, fixedTFs, cell_specs):
-		"""
+		r"""
 		Construct matrix H that contains values of vector r as elements.
 		Each row of the matrix is named "[RNA]__[condition]", where
 		there are two conditions [active/inactive] for each TF that regulates

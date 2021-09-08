@@ -115,41 +115,30 @@ LIST_OF_PARAMETER_FILENAMES = (
 	"mass_parameters.tsv",
 	)
 
+REMOVED_DATA = {
+	'complexation_reactions': 'complexation_reactions_removed',
+	'equilibrium_reactions': 'equilibrium_reactions_removed',
+	'fold_changes': 'fold_changes_removed',
+	'fold_changes_nca': 'fold_changes_removed',
+	'metabolic_reactions': 'metabolic_reactions_removed',
+	'metabolite_concentrations': 'metabolite_concentrations_removed',
+	'ppgpp_regulation': 'ppgpp_regulation_removed',
+	'transcription_units': 'transcription_units_removed_all',
+	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
+	'trna_charging_reactions': 'trna_charging_reactions_removed',
+	}
+MODIFIED_DATA = {
+	'complexation_reactions': 'complexation_reactions_modified',
+	'metabolic_reactions': 'metabolic_reactions_modified',
+	}
+
 if WITH_OPERONS:
-	REMOVED_DATA = {
-		'complexation_reactions': 'complexation_reactions_removed',
-		'equilibrium_reactions': 'equilibrium_reactions_removed',
-		'fold_changes': 'fold_changes_removed',
-		'fold_changes_nca': 'fold_changes_removed',
-		'metabolic_reactions': 'metabolic_reactions_removed',
-		'metabolite_concentrations': 'metabolite_concentrations_removed',
-		'ppgpp_regulation': 'ppgpp_regulation_removed',
+	REMOVED_DATA.update({
 		'transcription_units': 'transcription_units_removed',
-		'transcriptional_attenuation': 'transcriptional_attenuation_removed',
-		'trna_charging_reactions': 'trna_charging_reactions_removed',
-		}
-	MODIFIED_DATA = {
-		'complexation_reactions': 'complexation_reactions_modified',
-		'metabolic_reactions': 'metabolic_reactions_modified',
+		})
+	MODIFIED_DATA.update({
 		'transcription_units': 'transcription_units_modified',
-		}
-else:
-	REMOVED_DATA = {
-		'complexation_reactions': 'complexation_reactions_removed',
-		'equilibrium_reactions': 'equilibrium_reactions_removed',
-		'fold_changes': 'fold_changes_removed',
-		'fold_changes_nca': 'fold_changes_removed',
-		'metabolic_reactions': 'metabolic_reactions_removed',
-		'metabolite_concentrations': 'metabolite_concentrations_removed',
-		'ppgpp_regulation': 'ppgpp_regulation_removed',
-		'transcription_units': 'transcription_units_removed_all',
-		'transcriptional_attenuation': 'transcriptional_attenuation_removed',
-		'trna_charging_reactions': 'trna_charging_reactions_removed',
-		}
-	MODIFIED_DATA = {
-		'complexation_reactions': 'complexation_reactions_modified',
-		'metabolic_reactions': 'metabolic_reactions_modified',
-		}
+		})
 
 # TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {

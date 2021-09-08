@@ -28,6 +28,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Read from sim_data
 		rna_replication_coordinates = sim_data.process.transcription.rna_data[
 			"replication_coordinate"]
+		rna_ids = sim_data.process.transcription.rna_data["id"]
 		forward_sequence_length = sim_data.process.replication.replichore_lengths[0]
 		reverse_sequence_length = sim_data.process.replication.replichore_lengths[1]
 
@@ -81,7 +82,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			ax2.set_xlabel("Time [s]")
 			ax2.set_ylabel("Gene dosage (copy number)")
 			ax2.set_ylim([0, 10])
-			ax2.set_title("%s, position = %.2f" % (sim_data.process.transcription.rna_data["id"][rna_index], rna_relative_positions[rna_index]))
+			ax2.set_title(
+				"%s, position = %.2f"
+				% (rna_ids[rna_index], rna_relative_positions[rna_index]))
 			ax2.plot(time, gene_copy_numbers[:, i], color='r', label="Gene dosage")
 			ax2.legend(loc=1)
 

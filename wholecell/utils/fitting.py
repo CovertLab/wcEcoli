@@ -178,8 +178,8 @@ def calcProteinTotalCounts(sim_data, monomerMass, monomerExpression):
 
 def calcProteinDistribution(sim_data):
 	return normalize(
-        sim_data.process.transcription.rna_data["expression"][sim_data.relation.cistron_to_monomer_mapping] /
-        (np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s))
+		sim_data.process.transcription.rna_data["expression"][sim_data.relation.cistron_to_monomer_mapping] /
+		(np.log(2) / sim_data.doubling_time.asNumber(units.s) + sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s))
 		)
 
 def cosine_similarity(samples):

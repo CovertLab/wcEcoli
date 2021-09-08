@@ -1052,10 +1052,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 	TU_index_to_mRNA_lengths = {}
 	for (TU_index, length) in zip(TU_index_incomplete_mRNAs, length_incomplete_mRNAs):
-		if TU_index in TU_index_to_mRNA_lengths:
-			TU_index_to_mRNA_lengths[TU_index].append(length)
-		else:
-			TU_index_to_mRNA_lengths[TU_index] = [length]
+		TU_index_to_mRNA_lengths.setdefault(TU_index, []).append(length)
 
 	for (TU_index, available_lengths) in TU_index_to_mRNA_lengths.items():
 		cistron_indexes = sim_data.process.transcription.rna_id_to_cistron_indexes(

@@ -163,7 +163,7 @@ class GetterFunctions(object):
 		"""
 		genome_sequence = raw_data.genome_sequence
 
-		def parse_sequence(left_end_pos, right_end_pos, direction):
+		def parse_sequence(tu_id, left_end_pos, right_end_pos, direction):
 			"""
 			Parses genome sequence to get transcription unit sequence, given
 			left and right end positions and transcription direction (Note:
@@ -176,7 +176,7 @@ class GetterFunctions(object):
 				return genome_sequence[left_end_pos - 1 : right_end_pos].reverse_complement().transcribe()
 			else:
 				raise TranscriptionDirectionError(
-					f"Unidentified transcription direction given for {tu['id']}")
+					f"Unidentified transcription direction given for {tu_id}")
 
 		# Get set of valid gene IDs that have positions on the chromosome
 		valid_gene_ids = {
@@ -203,7 +203,7 @@ class GetterFunctions(object):
 				all_tu_common_names.add(tu['common_name'])
 
 			# Skip TUs that cover any gene without specified positions
-			if len(set(tu['genes']) - valid_gene_ids) > 0:
+			if not set(tu['genes']) < valid_gene_ids:
 				continue
 
 			left_end_pos = tu['left_end_pos']
@@ -211,11 +211,10 @@ class GetterFunctions(object):
 			assert left_end_pos is not None and right_end_pos is not None
 
 			# Keep track of genes that are covered
-			for gene in tu['genes']:
-				covered_gene_ids.add(gene)
+			covered_gene_ids |= set(tu['genes'])
 
 			self._sequences[tu['id']] = parse_sequence(
-				left_end_pos, right_end_pos, tu['direction'])
+				tu['id'], left_end_pos, right_end_pos, tu['direction'])
 
 		# Add sequences of individual RNAs that are not part of any
 		# transcription unit (these genes are assumed to be transcribed as
@@ -253,7 +252,7 @@ class GetterFunctions(object):
 			right_end_pos = gene_id_to_right_end_pos[gene_id]
 
 			self._sequences[rna_id] = parse_sequence(
-				left_end_pos, right_end_pos, gene_id_to_direction[gene_id])
+				rna_id, left_end_pos, right_end_pos, gene_id_to_direction[gene_id])
 
 	def _build_protein_sequences(self, raw_data):
 		"""

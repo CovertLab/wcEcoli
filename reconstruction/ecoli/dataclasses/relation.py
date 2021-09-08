@@ -129,7 +129,4 @@ class Relation(object):
 		self.tf_id_to_target_RNAs = {}
 		for (rna_id, tf_list) in self.rna_id_to_regulating_tfs.items():
 			for tf_id in tf_list:
-				if tf_id in self.tf_id_to_target_RNAs:
-					self.tf_id_to_target_RNAs[tf_id].append(rna_id)
-				else:
-					self.tf_id_to_target_RNAs[tf_id] = [rna_id]
+				self.tf_id_to_target_RNAs.setdefault(tf_id, []).append(rna_id)

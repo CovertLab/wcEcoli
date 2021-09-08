@@ -184,8 +184,8 @@ class Transcription(object):
 		fraction_active = sim_data.growth_rate_parameters.get_fraction_active_rnap(doubling_times)
 		fraction_bound = self.fraction_rnap_bound_ppgpp(ppgpp)
 		A = np.vstack((fraction_bound, 1 - fraction_bound)).T
-		self.fraction_active_rnap_bound, self.fraction_active_rnap_free = \
-		np.linalg.lstsq(A, fraction_active, rcond=None)[0]
+		self.fraction_active_rnap_bound, self.fraction_active_rnap_free = (
+			np.linalg.lstsq(A, fraction_active, rcond=None)[0])
 		assert 0 < self.fraction_active_rnap_bound < 1
 		assert 0 < self.fraction_active_rnap_free < 1
 
@@ -466,7 +466,7 @@ class Transcription(object):
 		# Calculate the half life of each transcription unit. For polycistronic
 		# transcription units, take the average of all constituent cistrons.
 		rna_half_lives = np.divide(
-			self.cistron_tu_mapping_matrix.T.dot(cistron_half_lives),
+			cistron_half_lives @ self.cistron_tu_mapping_matrix,
 			np.array(self.cistron_tu_mapping_matrix.sum(axis=0)).flatten())
 
 		# Convert to degradation rates
@@ -560,14 +560,18 @@ class Transcription(object):
 		# 	cistrons to accomodate more transcription units. Currently no
 		# 	"hybrid" transcription units containing two or distinct types of
 		# 	cistrons are included in the model so this approach works.
-		is_mRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_mRNA']).astype(np.bool)
-		is_miscRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_miscRNA']).astype(np.bool)
-		is_rRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_rRNA']).astype(np.bool)
-		is_tRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_tRNA']).astype(np.bool)
+		is_mRNA = (
+			self.cistron_data['is_mRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_miscRNA = (
+			self.cistron_data['is_miscRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_rRNA = (
+			self.cistron_data['is_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_tRNA = (
+			self.cistron_data['is_tRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
 
 		# Confirm there are no hybrid or unclassified RNAs
 		assert np.all(is_mRNA | is_miscRNA | is_rRNA | is_tRNA)
@@ -575,16 +579,21 @@ class Transcription(object):
 
 		# Determine if each RNA contains cistrons that encode for special
 		# components
-		is_23S_rRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_23S_rRNA']).astype(np.bool)
-		is_16S_rRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_16S_rRNA']).astype(np.bool)
-		is_5S_rRNA = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_5S_rRNA']).astype(np.bool)
-		includes_ribosomal_protein = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_ribosomal_protein']).astype(np.bool)
-		includes_RNAP = self.cistron_tu_mapping_matrix.T.dot(
-			self.cistron_data['is_RNAP']).astype(np.bool)
+		is_23S_rRNA = (
+			self.cistron_data['is_23S_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_16S_rRNA = (
+			self.cistron_data['is_16S_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_5S_rRNA = (
+			self.cistron_data['is_5S_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		includes_ribosomal_protein = (
+			self.cistron_data['is_ribosomal_protein']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		includes_RNAP = (
+			self.cistron_data['is_RNAP']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
 
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
