@@ -9,13 +9,11 @@ from __future__ import absolute_import, division, print_function
 import io
 import os
 import json
+from typing import List
 
 from reconstruction.spreadsheets import read_tsv
 from wholecell.io import tsv
 from wholecell.utils import units  # used by eval()
-
-# TODO (ggsun): Replace this with new ParCa variant framework
-WITH_OPERONS = False
 
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
@@ -132,14 +130,6 @@ MODIFIED_DATA = {
 	'metabolic_reactions': 'metabolic_reactions_modified',
 	}
 
-if WITH_OPERONS:
-	REMOVED_DATA.update({
-		'transcription_units': 'transcription_units_removed',
-		})
-	MODIFIED_DATA.update({
-		'transcription_units': 'transcription_units_modified',
-		})
-
 # TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
@@ -153,8 +143,19 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self):
-		self.compartments = []  # mypy can't track setattr(self, attr_name, rows)
+	def __init__(self, operons_on: bool):
+		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
+		self.operons_on = operons_on
+
+		if self.operons_on:
+			REMOVED_DATA.update({
+				'transcription_units': 'transcription_units_removed',
+				})
+			MODIFIED_DATA.update({
+				'transcription_units': 'transcription_units_modified',
+				})
+		# TODO(jerry): Else do `self.transcription_units = []` after loading
+		#  instead of maintaining & processing transcription_units_removed.csv?
 
 		# Load raw data from TSV files
 		for filename in LIST_OF_DICT_FILENAMES:

@@ -83,7 +83,9 @@ Modeling options:
 	D_PERIOD_DIVISION (int, "0"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
-	VARIABLE_ELONGATION_TRANCRIPTION (int, "1"): if nonzero, use variable
+	OPERONS (str, "off"): turn operons "off" or "on" (monocistronic/polycistronic)
+		or [future] run "both"
+	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
 		translation elongation rates for each gene
@@ -218,7 +220,7 @@ from wholecell.fireworks.firetasks import AnalysisCohortTask
 from wholecell.fireworks.firetasks import AnalysisSingleTask
 from wholecell.fireworks.firetasks import AnalysisMultiGenTask
 from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
-from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS, DEFAULT_PARCA_KWARGS
 from wholecell.utils import constants
 from wholecell.utils import filepath
 from six.moves import range
@@ -273,6 +275,7 @@ JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
 GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
+OPERONS = get_environment("OPERONS", DEFAULT_PARCA_KWARGS["operons"])
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
@@ -361,6 +364,7 @@ metadata = {
 	"git_hash": filepath.git_hash(),
 	"git_branch": filepath.git_branch(),
 	"description": os.environ.get("DESC", ""),
+	"operons": OPERONS,
 	"time": SUBMISSION_TIME,
 	"python": sys.version.splitlines()[0],
 	"total_gens": N_GENS,
@@ -417,6 +421,7 @@ log_info("Queueing {}".format(fw_name))
 
 fw_init_raw_data = Firework(
 	InitRawDataTask(
+		operons = OPERONS,
 		output = os.path.join(KB_DIRECTORY, filename_raw_data)
 		),
 	name = fw_name,
