@@ -83,8 +83,8 @@ Modeling options:
 	D_PERIOD_DIVISION (int, "0"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
-	OPERONS (str, "off"): turn operons "off" or "on" (monocistronic/polycistronic)
-		or [future] run "both"
+	OPERONS (str, "off"): turn operons "off" or "on" (actually monocistronic or
+		polycistronic), or [future] run "both"
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
@@ -220,7 +220,7 @@ from wholecell.fireworks.firetasks import AnalysisCohortTask
 from wholecell.fireworks.firetasks import AnalysisSingleTask
 from wholecell.fireworks.firetasks import AnalysisMultiGenTask
 from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
-from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS, DEFAULT_PARCA_KWARGS
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
 from wholecell.utils import filepath
 from six.moves import range
@@ -275,7 +275,8 @@ JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
 GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
-OPERONS = get_environment("OPERONS", DEFAULT_PARCA_KWARGS["operons"])
+OPERONS = get_environment("OPERONS", constants.DEFAULT_OPERON_OPTION)
+assert OPERONS in constants.OPERON_OPTIONS, f'{OPERONS=} needs to be in {constants.OPERON_OPTIONS}'
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))

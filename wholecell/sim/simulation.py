@@ -81,9 +81,6 @@ ALTERNATE_KWARG_NAMES = {
 	"d_period_division": "dPeriodDivision",
 	"translation_supply": "translationSupply",
 	}
-DEFAULT_PARCA_KWARGS = dict(
-	operons='off',
-)
 
 def _orderedAbstractionReference(iterableOfClasses):
 	return collections.OrderedDict(

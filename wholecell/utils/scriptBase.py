@@ -20,7 +20,8 @@ import traceback
 from typing import Any, Callable, cast, Iterable, List, Optional, Tuple
 
 import wholecell.utils.filepath as fp
-from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS, DEFAULT_PARCA_KWARGS
+from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
+from wholecell.utils import constants
 from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 
 
@@ -364,12 +365,11 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				 ' Usually set this consistently between runParca and runSim.')
 
 	def define_parameter_operons(self, parser: argparse.ArgumentParser) -> None:
-		name = 'operons'
 		self.define_option(parser,
-			name, str,
-			default=DEFAULT_PARCA_KWARGS[name],
-			choices=('off', 'on'),  # TODO(jerry): 'both'
-			help='Turn operons off/on (monocistronic/polycistronic).')
+			'operons', str,
+			default=constants.DEFAULT_OPERON_OPTION,
+			choices=constants.OPERON_OPTIONS,
+			help='Turn operons off/on (actually monocistronic/polycistronic).')
 
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None
