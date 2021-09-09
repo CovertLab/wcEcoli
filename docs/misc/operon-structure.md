@@ -3,9 +3,7 @@ Summary of changes made to key files to support the addition of polycistronic RN
 
 * Raw flat files (`reconstruction/ecoli/flat/transcription_units.tsv`)
 
-A single flat file named `transcription_units.tsv` that is directly sourced from EcoCyc contains all the data that would be necessary to build structures of transcription units for the model. By default (`WITH_OPERONS = False`), the `transcription_units_removed_all.tsv` file, which lists out the IDs of all transcription units in the `transcription_units.tsv` file, will be used to remove all polycistronic RNAs and thus have all transcripts be monocistronic. Here's a snapshot of what the `transcription_units.tsv` file looks like:
-
-![Screenshot from 2021-09-02 16-24-53](https://user-images.githubusercontent.com/32276711/131928478-ad74281f-5769-4627-9486-a181d52bc32a.png)
+A single flat file named `transcription_units.tsv` that is directly sourced from EcoCyc contains all the data that would be necessary to build structures of transcription units for the model. By default (`WITH_OPERONS = False`), the `transcription_units_removed_all.tsv` file, which lists out the IDs of all transcription units in the `transcription_units.tsv` file, will be used to remove all polycistronic RNAs and thus have all transcripts be monocistronic.
 
 The `transcription_units_removed.tsv` and `transcription_units_modified.tsv` files are each used to remove and modify some problematic operons in EcoCyc's file when the `WITH_OPERONS` option is set to `True`. Explanations on why each operon had to be removed/modified are provided in the files themselves.
 
@@ -77,10 +75,4 @@ A utils function that performs an optimized version of non-negative least square
 
 * Analysis scripts
 
-Many existing analysis scripts that used the mRNA counts / RNA data listener outputs had to be edited to use the "per-cistron" values if the per-cistron values were what those plots required instead of the per-RNA ones. Two new analysis scripts have been added, with the first one being a ParCa analysis script (`expression_least_square_residuals.py`) that I've mostly used for debugging purposes:
-
-![expression_least_square_residuals](https://user-images.githubusercontent.com/32276711/131934914-f499480e-9f65-4717-8477-cc3c5500b732.png)
-
-The second script is a simple multigen analysis script (`polycistonic_transcription.py`) that confirms polycistronic transcripts are being transcribed, and the listeners are outputting the correct values. This sample is from a sim run where transcription units were actually added: 
-
-![polycistronic_transcription](https://user-images.githubusercontent.com/32276711/131934988-13aa87ba-4c26-4e69-9977-3ca01a87b563.png)
+Many existing analysis scripts that used the mRNA counts / RNA data listener outputs had to be edited to use the "per-cistron" values if the per-cistron values were what those plots required instead of the per-RNA ones.
