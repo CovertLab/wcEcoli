@@ -59,10 +59,9 @@ LIST_OF_DICT_FILENAMES = (
 	"secretions.tsv",
 	"sequence_motifs.tsv",
 	"transcription_factors.tsv",
-	"transcription_units.tsv",
+	# "transcription_units.tsv",  # special cased in the constructor
 	"transcription_units_modified.tsv",
 	"transcription_units_removed.tsv",
-	"transcription_units_removed_all.tsv",
 	"transcriptional_attenuation.tsv",
 	"transcriptional_attenuation_removed.tsv",
 	"tf_one_component_bound.tsv",
@@ -121,7 +120,6 @@ REMOVED_DATA = {
 	'metabolic_reactions': 'metabolic_reactions_removed',
 	'metabolite_concentrations': 'metabolite_concentrations_removed',
 	'ppgpp_regulation': 'ppgpp_regulation_removed',
-	'transcription_units': 'transcription_units_removed_all',
 	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
@@ -144,18 +142,20 @@ class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
 	def __init__(self, operons_on: bool):
-		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
 		self.operons_on = operons_on
 
+		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
+		self.transcription_units: List[dict] = []
+
 		if self.operons_on:
+			global LIST_OF_DICT_FILENAMES
+			LIST_OF_DICT_FILENAMES += ('transcription_units.tsv',)
 			REMOVED_DATA.update({
 				'transcription_units': 'transcription_units_removed',
 				})
 			MODIFIED_DATA.update({
 				'transcription_units': 'transcription_units_modified',
 				})
-		# TODO(jerry): Else do `self.transcription_units = []` after loading
-		#  instead of maintaining & processing transcription_units_removed.csv?
 
 		# Load raw data from TSV files
 		for filename in LIST_OF_DICT_FILENAMES:
