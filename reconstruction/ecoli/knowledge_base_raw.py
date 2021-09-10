@@ -16,7 +16,7 @@ from wholecell.io import tsv
 from wholecell.utils import units  # used by eval()
 
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
-LIST_OF_DICT_FILENAMES = (
+LIST_OF_DICT_FILENAMES = [
 	"amino_acid_export_kms.tsv",
 	"amino_acid_pathways.tsv",
 	"biomass.tsv",
@@ -104,7 +104,7 @@ LIST_OF_DICT_FILENAMES = (
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
-	)
+	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = (
 	"dna_supercoiling.tsv",
@@ -148,8 +148,7 @@ class KnowledgeBaseEcoli(object):
 		self.transcription_units: List[dict] = []
 
 		if self.operons_on:
-			global LIST_OF_DICT_FILENAMES
-			LIST_OF_DICT_FILENAMES += ('transcription_units.tsv',)
+			LIST_OF_DICT_FILENAMES.append('transcription_units.tsv')
 			REMOVED_DATA.update({
 				'transcription_units': 'transcription_units_removed',
 				})
