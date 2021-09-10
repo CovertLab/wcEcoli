@@ -116,8 +116,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			x_jitter[cotranscribed_mask],
 			excess_monomer_index[cotranscribed_mask],
 			s=5, label='cotranscribed')
+
 		plt.violinplot(excess_monomer_index[~cotranscribed_mask])
-		plt.violinplot(excess_monomer_index[cotranscribed_mask])
+		if np.any(cotranscribed_mask):
+			plt.violinplot(excess_monomer_index[cotranscribed_mask])
+
 		plt.legend()
 		plt.xticks([])
 		plt.ylabel('Excess monomer index')
