@@ -22,6 +22,7 @@ LIST_OF_DICT_FILENAMES = [
 	"biomass.tsv",
 	"compartments.tsv",
 	"complexation_reactions.tsv",
+	"complexation_reactions_added.tsv",
 	"complexation_reactions_modified.tsv",
 	"complexation_reactions_removed.tsv",
 	"disabled_kinetic_reactions.tsv",
@@ -30,6 +31,7 @@ LIST_OF_DICT_FILENAMES = [
 	"endoRNases.tsv",
 	"equilibrium_reaction_rates.tsv",
 	"equilibrium_reactions.tsv",
+	"equilibrium_reactions_added.tsv",
 	"equilibrium_reactions_removed.tsv",
 	"fold_changes.tsv",
 	"fold_changes_nca.tsv",
@@ -45,6 +47,7 @@ LIST_OF_DICT_FILENAMES = [
 	"metabolite_concentrations.tsv",
 	"metabolite_concentrations_removed.tsv",
 	"metabolites.tsv",
+	"metabolites_added.tsv",
 	"modified_proteins.tsv",
 	"molecular_weight_keys.tsv",
 	"ppgpp_fc.tsv",
@@ -128,10 +131,12 @@ MODIFIED_DATA = {
 	'metabolic_reactions': 'metabolic_reactions_modified',
 	}
 
-# TODO: move added rows from some flat files to new files and add here
 ADDED_DATA = {
-	'trna_charging_reactions': 'trna_charging_reactions_added',
+	'complexation_reactions': 'complexation_reactions_added',
+	'equilibrium_reactions': 'equilibrium_reactions_added',
 	'metabolic_reactions': 'metabolic_reactions_added',
+	'metabolites': 'metabolites_added',
+	'trna_charging_reactions': 'trna_charging_reactions_added',
 	}
 
 class DataStore(object):
