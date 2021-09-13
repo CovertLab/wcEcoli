@@ -15,7 +15,7 @@ from wholecell.utils.filepath import ROOT_PATH
 BASE_API_URL = 'https://websvc.biocyc.org/wc-get?type='
 BIOCYC_FILE_IDS = [
     'complexation_reactions',
-    # 'dna_sites',
+    'dna_sites',
     'equilibrium_reactions',
     'genes',
     'metabolic_reactions',
