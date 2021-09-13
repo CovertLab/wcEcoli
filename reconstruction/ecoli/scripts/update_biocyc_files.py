@@ -34,10 +34,7 @@ def update_biocyc_files():
     # Get files from BioCyc webservices
     for file_id in BIOCYC_FILE_IDS:
         response = requests.get(BASE_API_URL + file_id)
-
-        if response.status_code != OK_STATUS_CODE:
-            raise Exception(
-                f'An error occurred while requesting file {file_id} from the BioCyc server')
+        response.raise_for_status()
 
         file_id_to_text[file_id] = response.text
         time.sleep(1)
