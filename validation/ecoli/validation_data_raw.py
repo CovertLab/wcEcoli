@@ -18,7 +18,7 @@ LIST_OF_DICT_FILENAMES = (
 	"essential_genes.tsv",
 	"geneFunctions.tsv",
 	"houser2015_javier_table.tsv",
-	"li-rates.tsv",
+	# "li-rates.tsv",
 	"schmidt2015_javier_table.tsv",
 	"taniguichi2010_table_6.tsv",
 	"toya_2010_central_carbon_fluxes.tsv",
