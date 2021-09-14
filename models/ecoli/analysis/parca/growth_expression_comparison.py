@@ -1,5 +1,10 @@
 """
 Template for parca analysis plots
+
+TODO:
+	plot positive/negative directionality matches
+	show absolute number (matched/unmatched) instead of fraction of matches
+	compare different init options (no ppGpp, no attenuation etc)
 """
 
 import pickle
@@ -12,14 +17,19 @@ from reconstruction.ecoli.initialization import create_bulk_container
 from wholecell.analysis.analysis_tools import exportFigure
 
 
+def get_mw(mw, molecules):
+	return np.array([mw.get(mol) for mol in molecules])
+
 def get_monomers(molecules, get_stoich):
 	return [monomer for mol in molecules for monomer in get_stoich(mol)['subunitIds']]
 
-def get_container_counts(container, molecules):
-	return [container.counts(mol) for mol in molecules]
+def get_container_counts(container, molecules, mw):
+	total_mass = container.counts(mw.keys()) @ np.array(list(mw.values()))
+	return [container.counts(mol) * get_mw(mw, mol) / total_mass for mol in molecules]
 
-def get_validation_counts(counts, molecules):
-	return [np.array([counts.get(mol, 0) for mol in molecule_group]) for molecule_group in molecules]
+def get_validation_counts(counts, molecules, mw):
+	total_mass = np.sum([count * mw.get(mol, 0) for mol, count in counts.items()])
+	return [np.array([counts.get(mol, 0) * mw.get(mol, 0) for mol in molecule_group]) / total_mass for molecule_group in molecules]
 
 def compare_counts(condition1, condition2):
 	return [np.sign(c1 - c2) for c1, c2 in zip(condition1, condition2)]
@@ -39,6 +49,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# sim_data attributes used
 		metabolism = sim_data.process.metabolism
 		transcription = sim_data.process.transcription
+		translation = sim_data.process.translation
 		mol_ids = sim_data.molecule_ids
 		get_stoich = sim_data.process.complexation.get_monomers
 
@@ -57,27 +68,34 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			'ppGpp molecules',
 		]
 
+		mw = {monomer['id']: monomer['mw'] for monomer in translation.monomer_data}
+
 		# Expected bulk containers in different conditions
-		rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False)
-		basal_container = create_bulk_container(sim_data, form_complexes=False)
-		rich_counts = get_container_counts(rich_container, monomer_ids)
-		basal_counts = get_container_counts(basal_container, monomer_ids)
+		options = {'ppgpp_regulation': True, 'trna_attenuation': True}  # TODO: iterate on different options
+		rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
+		basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
+		rich_counts = get_container_counts(rich_container, monomer_ids, mw)
+		basal_counts = get_container_counts(basal_container, monomer_ids, mw)
 		parca_compare = compare_counts(rich_counts, basal_counts)
 
-		# TODO: get mass fraction from validation
+		# Validation mass fractions
 		rich_validation = {}
 		basal_validation = {}
 		for monomer, rich, minimal in zip(proteomics['monomerId'], proteomics['LB_counts'], proteomics['glucoseCounts']):
 			rich_validation[monomer] = rich
 			basal_validation[monomer] = minimal
-		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids)
-		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids)
+		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, mw)
+		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, mw)
 		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
 
 		comparison = compare_to_validation(parca_compare, validation_compare)
 
 		plt.figure()
+
 		plt.bar(group_labels, comparison)
+		plt.ylim([0, 1])
+		self.remove_border(plt.gca())
+
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
