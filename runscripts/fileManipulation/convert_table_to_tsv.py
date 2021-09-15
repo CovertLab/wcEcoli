@@ -17,7 +17,7 @@ import sys
 
 import numpy as np
 
-from wholecell.io.tablereader import TableReader
+from wholecell.io.tablereader import TableReader, SUBCOLUMNS_KEY
 
 
 DATA = [
@@ -31,7 +31,7 @@ DATA = [
 
 
 def get_labels(reader, column):
-	subcolumns = reader.readAttribute('subcolumns')
+	subcolumns = reader.readAttribute(SUBCOLUMNS_KEY)
 	return np.array(reader.readAttribute(subcolumns[column]))
 
 def save_data(out_dir, t, data, labels, column):
