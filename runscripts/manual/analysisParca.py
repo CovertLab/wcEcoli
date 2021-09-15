@@ -18,7 +18,7 @@ class AnalysisParca(AnalysisBase):
 	"""Runs some or all the ACTIVE parca analysis plots for a given sim."""
 
 	def run(self, args):
-		input_dir = os.path.join(args.sim_path, ParcaTask.OUTPUT_SUBDIR)
+		input_dir = os.path.join(args.sim_path, constants.KB_DIR)
 		output_dir = os.path.join(args.sim_path, constants.KB_PLOT_OUTPUT_DIR)
 		input_sim_data = os.path.join(input_dir, constants.SERIALIZED_SIM_DATA_FILENAME)
 
