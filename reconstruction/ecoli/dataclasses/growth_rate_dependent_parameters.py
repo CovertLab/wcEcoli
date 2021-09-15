@@ -213,15 +213,21 @@ class Mass(object):
 		massFraction = self.get_mass_fractions(doubling_time)
 
 		diff = 0
+		removed_fraction = 0
 		if protein is not None:
+			removed_fraction += protein
 			diff += massFraction['protein'] - protein
 		if rna is not None:
+			removed_fraction += rna
 			diff += massFraction['rna'] - rna
 		if dna is not None:
+			removed_fraction += dna
 			diff += massFraction['dna'] - dna
-		adjustment = 1 - diff
-		for fraction in massFraction:
-			massFraction[fraction] /= adjustment
+		if removed_fraction > 0:
+			remaining_fraction = 1 - removed_fraction
+			adjustment = (remaining_fraction - diff) / remaining_fraction
+			for fraction in massFraction:
+				massFraction[fraction] /= adjustment
 
 		metaboliteIDs = []
 		metaboliteConcentrations = []
