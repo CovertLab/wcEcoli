@@ -10,7 +10,6 @@ import os
 
 from runscripts.manual.analysisBase import AnalysisBase
 from wholecell.fireworks.firetasks.analysisParca import AnalysisParcaTask
-from wholecell.fireworks.firetasks.parca import ParcaTask
 from wholecell.utils import constants
 
 

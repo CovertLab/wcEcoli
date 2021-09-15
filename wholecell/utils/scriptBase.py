@@ -369,7 +369,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			'operons', str,
 			default=constants.DEFAULT_OPERON_OPTION,
 			choices=constants.OPERON_OPTIONS,
-			help='Turn operons off/on (actually monocistronic/polycistronic).')
+			help='Run operons off/on (actually monocistronic/polycistronic).')
 
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None

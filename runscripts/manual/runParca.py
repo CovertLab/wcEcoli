@@ -2,8 +2,6 @@
 Run the Parameter Calculator (Parca).
 The output goes into the named subdirectory of wcEcoli/out/, defaulting to "manual".
 
-TODO: Share lots of code with fw_queue.py and AnalysisPaths.py.
-
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
@@ -64,8 +62,6 @@ class RunParca(scriptBase.ScriptBase):
 		return args
 
 	def run(self, args):
-		kb_directory = os.path.join(args.sim_path, constants.KB_DIR)
-
 		# Write the metadata file.
 		metadata = {
 			'git_hash': fp.git_hash(),
@@ -81,6 +77,20 @@ class RunParca(scriptBase.ScriptBase):
 
 		if args.debug_parca:
 			print('DEBUG Parca')
+
+		# Run the Parca one or both ways.
+		if args.operons == 'both':
+			args.operons = 'off'
+			self._run_parca(args, constants.KB_DIR)
+
+			args.operons = 'on'
+			self._run_parca(args, constants.PKB_DIR)
+
+		else:
+			self._run_parca(args, constants.KB_DIR)
+
+	def _run_parca(self, args, kb_dir):
+		kb_directory = os.path.join(args.sim_path, kb_dir)
 
 		python_args = data.select_keys(
 			vars(args),
