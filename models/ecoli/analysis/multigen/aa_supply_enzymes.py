@@ -40,7 +40,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		basal_reference = metabolism.aa_supply_enzyme_conc_basal.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 
 		# Get RNAs associated with each enzyme
-		# TODO (ggsun): This part may need to be adjusted for operons
 		monomer_to_cistron = {m['id']: m['cistron_id'] for m in translation.monomer_data}
 		mat_i = []
 		mat_j = []
@@ -51,11 +50,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				cistron_mapping_indices[cistron] = cistron_mapping_indices.get(cistron, len(cistron_mapping_indices))
 				mat_i.append(cistron_mapping_indices[cistron])
 				mat_j.append(j)
-		rna_to_enzyme = np.zeros((np.max(mat_i) + 1, np.max(mat_j) + 1))
-		rna_to_enzyme[mat_i, mat_j] = 1
+		cistron_to_enzyme = np.zeros((np.max(mat_i) + 1, np.max(mat_j) + 1))
+		cistron_to_enzyme[mat_i, mat_j] = 1
 		cistrons = list(cistron_mapping_indices.keys())
-		rna_data_indices = {rna: i for i, rna in enumerate(transcription.rna_data['id'])}
-		enzyme_rna_indices = np.array([rna_data_indices[cistron + '[c]'] for cistron in cistrons])
+		cistron_synth_prob_data_indices = {cistron: i for i, cistron in enumerate(transcription.cistron_data['id'])}
+		enzyme_cistron_indices = np.array([cistron_synth_prob_data_indices[cistron] for cistron in cistrons])
 
 		# Attenuation information
 		attenuated_indices = transcription.attenuated_rna_indices
@@ -71,7 +70,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		enzyme_counts = read_stacked_columns(
 			cell_paths, 'GrowthLimits', 'aa_supply_enzymes', remove_first=True)
 		probabilities = read_stacked_columns(
-			cell_paths, 'RnaSynthProb', 'rnaSynthProb', remove_first=True)[:, enzyme_rna_indices]
+			cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron', remove_first=True)[:, enzyme_cistron_indices]
 		attenuation = read_stacked_columns(
 			cell_paths, 'TranscriptElongationListener', 'attenuation_probability', remove_first=True)
 
@@ -81,9 +80,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		enzyme_conc = (enzyme_counts @ enzyme_to_amino_acid * counts_to_mol).T
 		full_attenuation = np.ones((attenuation.shape[0], n_rnas))
 		full_attenuation[:, attenuated_indices] = attenuation
-		attenuation_probabilities = full_attenuation[:, enzyme_rna_indices]
-		rnas_per_amino_acid = (rna_to_enzyme @ enzyme_to_amino_acid).sum(axis=0)
-		probability_per_amino_acid = (probabilities * attenuation_probabilities @ rna_to_enzyme @ enzyme_to_amino_acid / rnas_per_amino_acid).T
+		attenuation_probabilities = full_attenuation[:, enzyme_cistron_indices]
+		rnas_per_amino_acid = (cistron_to_enzyme @ enzyme_to_amino_acid).sum(axis=0)
+		probability_per_amino_acid = (probabilities * attenuation_probabilities @ cistron_to_enzyme @ enzyme_to_amino_acid / rnas_per_amino_acid).T
 
 		# Plot data
 		plt.figure(figsize=(16, 12))
