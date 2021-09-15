@@ -120,6 +120,8 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
+		self.doubling_time_from_ppgpp = sim_data.process.transcription.doubling_time_from_ppgpp
+		self.ppgpp = self.bulkMoleculeView(sim_data.molecule_ids.ppGpp)
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -139,7 +141,11 @@ class Metabolism(wholecell.processes.process.Process):
 		kinetic_substrate_counts = self.kineticsSubstrates.counts()
 		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
-		dry_mass = self.readFromListener("Mass", "dryMass") * units.fg
+		dry_mass_unitless = self.readFromListener("Mass", "dryMass")
+		dry_mass = dry_mass_unitless * units.fg
+		protein_fraction = self.readFromListener('Mass', 'proteinMass') / dry_mass_unitless
+		rna_fraction = self.readFromListener('Mass', 'rnaMass') / dry_mass_unitless
+		dna_fraction = self.readFromListener('Mass', 'dnaMass') / dry_mass_unitless
 
 		## Get environment updates
 		environment = self._external_states['Environment']
@@ -154,8 +160,15 @@ class Metabolism(wholecell.processes.process.Process):
 		coefficient = dry_mass / cell_mass * self.cellDensity * time_step
 
 		## Determine updates to concentrations depending on the current state
+		# if self.include_ppgpp:
+		# 	doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
+		# else:
+		# 	ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
+		# 	doubling_time = self.doubling_time_from_ppgpp(ppgpp_conc)
+
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
-		conc_updates = self.model.getBiomassAsConcentrations(doubling_time)
+
+		conc_updates = self.model.getBiomassAsConcentrations(doubling_time, protein=protein_fraction, rna=rna_fraction, dna=dna_fraction)
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
 		if self.include_ppgpp:
@@ -332,7 +345,7 @@ class FluxBalanceAnalysisModel(object):
 		self.exchange_constraints = metabolism.exchange_constraints
 
 		self._biomass_concentrations = {}  # type: dict
-		self._getBiomassAsConcentrations = mass.getBiomassAsConcentrations
+		self.getBiomassAsConcentrations = mass.getBiomassAsConcentrations
 
 		# Include ppGpp concentration target in objective if not handled kinetically in other processes
 		self.ppgpp_id = sim_data.molecule_ids.ppGpp
@@ -427,25 +440,25 @@ class FluxBalanceAnalysisModel(object):
 		self.metabolite_names = {met: i for i, met in enumerate(self.fba.getOutputMoleculeIDs())}
 		self.aa_names_no_location = [x[:-3] for x in sorted(sim_data.amino_acid_code_to_id_ordered.values())]
 
-	def getBiomassAsConcentrations(self, doubling_time):
-		"""
-		Caches the result of the sim_data function to improve performance since
-		function requires computation but won't change for a given doubling_time.
-
-		Args:
-			doubling_time (float with time units): doubling time of the cell to
-				get the metabolite concentrations for
-
-		Returns:
-			dict {str : float with concentration units}: dictionary with metabolite
-				IDs as keys and concentrations as values
-		"""
-
-		minutes = doubling_time.asNumber(units.min)  # hashable
-		if minutes not in self._biomass_concentrations:
-			self._biomass_concentrations[minutes] = self._getBiomassAsConcentrations(doubling_time)
-
-		return self._biomass_concentrations[minutes]
+	# def getBiomassAsConcentrations(self, doubling_time):
+	# 	"""
+	# 	Caches the result of the sim_data function to improve performance since
+	# 	function requires computation but won't change for a given doubling_time.
+	#
+	# 	Args:
+	# 		doubling_time (float with time units): doubling time of the cell to
+	# 			get the metabolite concentrations for
+	#
+	# 	Returns:
+	# 		dict {str : float with concentration units}: dictionary with metabolite
+	# 			IDs as keys and concentrations as values
+	# 	"""
+	#
+	# 	minutes = doubling_time.asNumber(units.min)  # hashable
+	# 	if minutes not in self._biomass_concentrations:
+	# 		self._biomass_concentrations[minutes] = self._getBiomassAsConcentrations(doubling_time)
+	#
+	# 	return self._biomass_concentrations[minutes]
 
 	def update_external_molecule_levels(self, objective,
 			metabolite_concentrations, external_molecule_levels):

@@ -198,7 +198,7 @@ class Mass(object):
 			'mrna': self._mrna_mass_sub_fraction,
 			}
 
-	def getBiomassAsConcentrations(self, doubling_time):
+	def getBiomassAsConcentrations(self, doubling_time, protein=None, rna=None, dna=None):
 
 		avgCellDryMassInit = self.get_avg_cell_dry_mass(doubling_time) / self.avg_cell_to_initial_cell_conversion_factor
 		avgCellWaterMassInit = (avgCellDryMassInit / self.cell_dry_mass_fraction) * self.cell_water_mass_fraction
@@ -211,6 +211,17 @@ class Mass(object):
 		initCellVolume = initCellMass / self._cellDensity.asNumber(units.g / units.L) # L
 
 		massFraction = self.get_mass_fractions(doubling_time)
+
+		diff = 0
+		if protein is not None:
+			diff += massFraction['protein'] - protein
+		if rna is not None:
+			diff += massFraction['rna'] - rna
+		if dna is not None:
+			diff += massFraction['dna'] - dna
+		adjustment = 1 - diff
+		for fraction in massFraction:
+			massFraction[fraction] /= adjustment
 
 		metaboliteIDs = []
 		metaboliteConcentrations = []
