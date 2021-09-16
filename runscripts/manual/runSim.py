@@ -73,14 +73,25 @@ class RunSimulation(scriptBase.ScriptBase):
 	def define_parameters(self, parser):
 		super(RunSimulation, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
+		self.define_parameter_operons(parser)
 		self.define_sim_loop_options(parser, manual_script=True)
 		self.define_sim_options(parser)
 		self.define_elongation_options(parser)
 
 	def run(self, args):
-		kb_directory = os.path.join(args.sim_path, constants.KB_DIR)
-		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
-		fp.verify_file_exists(sim_data_file, 'Run runParca?')
+		def sim_data_path(monocistronic: bool, both: bool):
+			sim_data_file = os.path.join(
+				args.sim_path,
+				constants.KB_DIR if monocistronic else constants.PKB_DIR,
+				constants.SERIALIZED_SIM_DATA_FILENAME)
+			if monocistronic or both:
+				fp.verify_file_exists(sim_data_file,
+					f"Run runParca (with operons={args.operons})?")
+			return sim_data_file
+
+		both_operons = args.operons == 'both'
+		sim_data_file = sim_data_path(True, both_operons)
+		poly_sim_data_file = sim_data_path(False, both_operons)
 
 		timestamp, description = parse_timestamp_description(args.sim_path)
 
@@ -96,6 +107,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			git_hash=fp.git_hash(),
 			git_branch=fp.git_branch(),
 			description=description,
+			operons=args.operons,
 			time=timestamp,
 			python=sys.version.splitlines()[0],
 			analysis_type=None,
@@ -108,7 +120,8 @@ class RunSimulation(scriptBase.ScriptBase):
 
 
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
-		for i, subdir in fp.iter_variants(*variant_spec):
+		for base_index, index, subdir in fp.iter_variants3(*variant_spec, both_operons):
+			monocistronic = base_index == index
 			variant_directory = os.path.join(args.sim_path, subdir)
 			variant_sim_data_directory = os.path.join(variant_directory,
 				constants.VKB_DIR)
@@ -124,8 +137,8 @@ class RunSimulation(scriptBase.ScriptBase):
 					constants.METADATA_DIR)
 				task = VariantSimDataTask(
 					variant_function=variant_type,
-					variant_index=i,
-					input_sim_data=sim_data_file,
+					variant_index=base_index,
+					input_sim_data=sim_data_file if monocistronic else poly_sim_data_file,
 					output_sim_data=variant_sim_data_modified_file,
 					variant_metadata_directory=variant_metadata_directory,
 					)
