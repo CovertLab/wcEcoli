@@ -49,18 +49,18 @@ def calcInitialConditions(sim, sim_data):
 		massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
 	cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
 	print(cell_mass)
-	init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
-		massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
-	cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
-	print(cell_mass)
-	init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
-		massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
-	cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
-	print(cell_mass)
-	init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
-		massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
-	cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
-	print(cell_mass)
+	# init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
+	# 	massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
+	# cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
+	# print(cell_mass)
+	# init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
+	# 	massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
+	# cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
+	# print(cell_mass)
+	# init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
+	# 	massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
+	# cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
+	# print(cell_mass)
 
 def initialize_trna_charging(sim_data, states, variable_elongation):
 	'''

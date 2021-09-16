@@ -221,7 +221,7 @@ def set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
 			'dna': mass_fractions[sim_data.submass_name_to_index["DNA"]] / dry_fraction,
 			}
 	print(fraction_args)
-	concDict.update(sim_data.mass.getBiomassAsConcentrations(doubling_time, **fraction_args))
+	concDict.update(sim_data.mass.getBiomassAsConcentrations(doubling_time))
 	concDict[sim_data.molecule_ids.ppGpp] = sim_data.growth_rate_parameters.get_ppGpp_conc(doubling_time)
 	moleculeIds = sorted(concDict)
 	moleculeConcentrations = (units.mol / units.L) * np.array([concDict[key].asNumber(units.mol / units.L) for key in moleculeIds])
