@@ -342,8 +342,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 
 		Call this in overridden define_parameters() methods as needed.
 		"""
-		int1 = int  # type: Callable
-		parser.add_argument('-v', dashize('--variant_index'), type=int1,
+		parser.add_argument('-v', dashize('--variant_index'), type=int,
 			help='The simulation variant number (int), e.g. 1 to find a'
 				 ' subdirectory like "condition_000001".')
 

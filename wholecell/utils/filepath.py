@@ -189,3 +189,10 @@ def iter_variants3(variant_type, first_index, last_index, both_operons=False):
 		base_index = i % OPERON_PART
 		index = base_index + p
 		yield base_index, index, f'{variant_type}_{index:06d}'
+
+def is_primary_variant_index(variant_index: int) -> bool:
+	"""Return True if the combined variant index is in the primary variant group
+	[first .. last], which uses the primary simData file in KB_DIR. It's True
+	iff `base_index == index` from iter_variants3().
+	"""
+	return (variant_index // OPERON_PART) == 0

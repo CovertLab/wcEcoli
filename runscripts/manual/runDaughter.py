@@ -5,8 +5,6 @@ Prerequisite: Run the parameter calculator (runParca.py).
 
 Prerequisite: Run the parent generations (runSim.py, runDaughter.py).
 
-TODO: Share more code with fw_queue.py.
-
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
@@ -57,7 +55,9 @@ class RunDaughter(scriptBase.ScriptBase):
 		args.variant_dir_name, variant_type, variant_index = args.variant_dir
 		input_variant_directory = os.path.join(args.sim_path, args.variant_dir_name)
 
-		kb_directory = os.path.join(args.sim_path, constants.KB_DIR)
+		is_primary = fp.is_primary_variant_index(variant_index)
+		kb_directory = os.path.join(args.sim_path,
+			constants.KB_DIR if is_primary else constants.PKB_DIR)
 		sim_data_file = os.path.join(kb_directory, constants.SERIALIZED_SIM_DATA_FILENAME)
 		fp.verify_file_exists(sim_data_file, 'Run runParca?')
 
