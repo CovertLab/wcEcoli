@@ -88,7 +88,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if transcriptionEventsOrdered[:, i].sum() == 0:
 				v = [-1]
 
-			if mRNA_cistron_ids_ordered[i] + '[c]' in essential_cistrons:
+			if mRNA_cistron_ids_ordered[i] in essential_cistrons:
 				alwaysTranscriptionEvents_E.append(v)
 			else:
 				alwaysTranscriptionEvents_N.append(v)
