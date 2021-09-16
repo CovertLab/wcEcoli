@@ -365,11 +365,20 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				 ' Usually set this consistently between runParca and runSim.')
 
 	def define_parameter_operons(self, parser: argparse.ArgumentParser) -> None:
+		"""Define the operons=off/on/both parameter."""
 		self.define_option(parser,
 			'operons', str,
 			default=constants.DEFAULT_OPERON_OPTION,
 			choices=constants.OPERON_OPTIONS,
-			help='Run operons off/on (actually monocistronic/polycistronic).')
+			help='Run operons off/on/both (actually monocistronic/polycistronic/both).'
+				 ' To keep things simple, the idea is to set --operons the same'
+				 ' in all pipeline steps: "both" in the Parca writes both mono-'
+				 ' and polycistronic simData files while "both" in downstream'
+				 ' steps uses both; "off" or "on" in the Parca writes one'
+				 ' simData file while "off" or "on" in downstream steps uses'
+				 ' that file. NOTE: In downstream steps the choice is really'
+				 ' "both" or not; "off/on" do not select between mono/poly even'
+				 ' if the Parca wrote two files.')
 
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None

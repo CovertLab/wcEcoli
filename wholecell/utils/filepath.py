@@ -3,29 +3,20 @@ filepath.py
 File and filename path utilities.
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import datetime
 import errno
+import itertools
 import json
 import io
 import os
-import sys
-from six.moves import range
-if os.name == 'posix' and sys.version_info[0] < 3:
-	# noinspection PyPackageRequirements
-	import subprocess32 as subprocess2
-	subprocess = subprocess2
-else:
-	import subprocess as subprocess3
-	subprocess = subprocess3
+import subprocess
 from typing import Any, Generator, Optional, Sequence, Tuple
 
-import six
-
 import wholecell
-from wholecell.utils.py3 import String
 
+OPERON_PART = 100_000  # high order part for operons=on combined variant index
 
 TIMEOUT = 60  # seconds
 
@@ -159,10 +150,10 @@ def git_branch():
 					   fallback=os.environ.get("IMAGE_GIT_BRANCH", '--'))
 
 def write_file(filename, content):
-	# type: (str, String) -> None
+	# type: (str, str) -> None
 	"""Write text string `content` as a utf-8 text file."""
 	with io.open(filename, 'w', encoding='utf-8') as f:
-		f.write(six.text_type(content))
+		f.write(str(content))
 
 def write_json_file(filename, obj, indent=4):
 	# type: (str, Any, int) -> None
@@ -181,6 +172,28 @@ def read_json_file(filename):
 def iter_variants(variant_type, first_index, last_index):
 	# type: (str, int, int) -> Generator[Tuple[int, str], None, None]
 	"""Generate Variant subdirs (index, name) over [first .. last] inclusive."""
-	# TODO(jerry): Return a list instead of generating items?
 	for i in range(first_index, last_index + 1):
 		yield i, os.path.join('{}_{:06d}'.format(variant_type, i))
+
+def iter_variants3(variant_type, first_index, last_index, both_operons=False):
+	# type: (str, int, int, bool) -> Generator[Tuple[int, int, str], None, None]
+	"""Generate Variant subdirs (base_index, index, name) over [first .. last],
+	inclusive. base_index is in [first .. last], per apply_variant(). If both_operons
+	then the combined index ranges over [first .. last] ∪ [H+first .. H+last] in
+	order to compose the Parca (monocistronic, polycistronic) variations with
+	the variant range.
+	"""
+	operon_parts = (0, OPERON_PART) if both_operons else (0,)
+
+	for p, i in itertools.product(operon_parts, range(first_index, last_index + 1)):
+		base_index = i % OPERON_PART
+		index = base_index + p
+		yield base_index, index, f'{variant_type}_{index:06d}'
+
+def is_monocistronic_index(variant_index: int) -> bool:
+	"""Return True if the combined variant index is for monocistronic operons."""
+	return (variant_index // OPERON_PART) == 0
+
+def base_variant_index(variant_index: int) -> int:
+	"""Return the base part of the variant index which apply_variant() uses."""
+	return variant_index % OPERON_PART

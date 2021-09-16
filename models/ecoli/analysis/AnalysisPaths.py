@@ -46,9 +46,9 @@ class AnalysisPaths(object):
 			variant_out_dirs = []
 			# Consider only those directories which are variant directories
 			for directory in all_dirs:
-				# Accept directories which have a string, an underscore, and then a string
-				# of digits exactly 6 units long
-				if match(r'.*_\d{6}$', directory):
+				# Accept directories which have a variant type, an underscore, and
+				# a 6-digit variant index
+				if match(r'.+_\d{6}$', directory):
 					variant_out_dirs.append(join(out_dir, directory))
 
 			# Check to see if only wildtype variants exist that didn't match the pattern
@@ -110,7 +110,6 @@ class AnalysisPaths(object):
 				raise Exception("Expected only one match for generation!")
 			generations.append(int(matches[0][-6:]))
 
-			# TODO(jerry): Parse the path instead of using hardwired string offsets.
 			gen_subdir_index = filePath.rfind('generation_')
 
 			# Extract the seed index
@@ -169,6 +168,10 @@ class AnalysisPaths(object):
 
 	def _get_generations(self, directory):
 		# type: (str) -> List[List[str]]
+		"""Get a sorted list of the directory's generation paths, each as a list
+		of daughter cell paths.
+		ASSUMES: directory contains "generation_000000" thru "generation_GGGGGG".
+		"""
 		generation_files = [
 			join(directory, f) for f in listdir(directory)
 			if isdir(join(directory, f)) and "generation" in f]  # type: List[str]
@@ -179,6 +182,10 @@ class AnalysisPaths(object):
 
 	def _get_individuals(self, directory):
 		# type: (str) -> List[str]
+		"""Get a sorted list of the directory's daughter cell paths.
+		(Those paths are holders for simOut/ and plotOut/ subdirs.)
+		ASSUMES: directory contains numbered subdirs "000000" thru "DDDDDD".
+		"""
 		individual_files = [
 			join(directory, f) for f in listdir(directory)
 			if isdir(join(directory, f))]  # type: List[str]

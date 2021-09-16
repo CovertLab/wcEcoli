@@ -2,7 +2,7 @@
 Test the filepath utility.
 """
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 import os
 import shutil
@@ -12,8 +12,6 @@ import unittest
 import pytest
 
 from wholecell.utils import filepath
-import six
-from six.moves import range
 
 
 class Test_filepath(unittest.TestCase):
@@ -66,7 +64,7 @@ class Test_filepath(unittest.TestCase):
 		self.assertTrue(timestamp.startswith('20'),
 			'Timestamp "{}" starts with "20"'.format(timestamp))
 		self.assertEqual(len(timestamp), 15, 'len(timestamp)')
-		six.assertRegex(self, timestamp, filepath.TIMESTAMP_PATTERN)
+		self.assertRegex(timestamp, filepath.TIMESTAMP_PATTERN)
 
 	def test_json_files(self):
 		"""Test read_json_file(), write_json_file."""
@@ -81,6 +79,27 @@ class Test_filepath(unittest.TestCase):
 		self.assertEqual(
 			[(123, 'XYZ_000123'), (124, 'XYZ_000124'), (125, 'XYZ_000125')],
 			results)
+
+	def test_iter_variants3(self):
+		def expected(add):
+			return [(i, i + add, f'XYZ_{i + add:06d}') for i in (123, 124, 125)]
+
+		results = list(filepath.iter_variants3('XYZ', 123, 125))
+		assert results == expected(0)
+
+		results = list(filepath.iter_variants3('XYZ', 123, 125, False))
+		assert results == expected(0)
+
+		expected2 = expected(0) + expected(100_000)
+		results = list(filepath.iter_variants3('XYZ', 123, 125, True))
+		assert results == expected2
+
+	def test_variant_indexes(self):
+		assert filepath.is_monocistronic_index( 12_345) == True
+		assert filepath.is_monocistronic_index(112_345) == False
+
+		assert filepath.base_variant_index(     31) == 31
+		assert filepath.base_variant_index(100_031) == 31
 
 
 if __name__ == '__main__':
