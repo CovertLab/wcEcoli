@@ -94,13 +94,6 @@ class Test_filepath(unittest.TestCase):
 		results = list(filepath.iter_variants3('XYZ', 123, 125, True))
 		assert results == expected2
 
-	def test_variant_indexes(self):
-		assert filepath.is_monocistronic_index( 12_345) == True
-		assert filepath.is_monocistronic_index(112_345) == False
-
-		assert filepath.base_variant_index(     31) == 31
-		assert filepath.base_variant_index(100_031) == 31
-
 
 if __name__ == '__main__':
 	unittest.main()

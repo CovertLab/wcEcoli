@@ -146,6 +146,27 @@ def find_sim_path(directory=None, makedirs=False):
 
 	return input_dir
 
+def sim_data_paths(sim_path: str) -> Tuple[str, str]:
+	"""Return the paths to the primary and secondary simData files ('' if the
+	secondary file doesn't exist).
+
+	Raise an IOError if the primary file doesn't exist.
+
+	Running Parca with --operons=both creates 2 simData files (with monocistronic
+	and polycistronic operons, respectively). Running Parca with --operons=on or
+	off creates only the primary file.
+	"""
+	sim_data1 = os.path.join(
+		sim_path, constants.KB_DIR, constants.SERIALIZED_SIM_DATA_FILENAME)
+	fp.verify_file_exists(sim_data1, "Run runParca?")
+
+	sim_data2 = os.path.join(
+		sim_path, constants.PKB_DIR, constants.SERIALIZED_SIM_DATA_FILENAME)
+	if not os.path.isfile(sim_data2):
+		sim_data2 = ''
+
+	return sim_data1, sim_data2
+
 def str_to_bool(s):
 	# type: (str) -> bool
 	"""Convert a string command line parameter value to a bool. This ignores
@@ -370,15 +391,8 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			'operons', str,
 			default=constants.DEFAULT_OPERON_OPTION,
 			choices=constants.OPERON_OPTIONS,
-			help='Run operons off/on/both (actually monocistronic/polycistronic/both).'
-				 ' To keep things simple, the idea is to set --operons the same'
-				 ' in all pipeline steps: "both" in the Parca writes both mono-'
-				 ' and polycistronic simData files while "both" in downstream'
-				 ' steps uses both; "off" or "on" in the Parca writes one'
-				 ' simData file while "off" or "on" in downstream steps uses'
-				 ' that file. NOTE: In downstream steps the choice is really'
-				 ' "both" or not; "off/on" do not select between mono/poly even'
-				 ' if the Parca wrote two files.')
+			help='Turn operons off/on/both by writing one simData file with'
+				 ' monocistronic or polycistronic operons or writing both files.')
 
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None

@@ -10,11 +10,6 @@ See models/ecoli/sim/variants/*.py for the variant choices.
 
 Prerequisite: Run the parameter calculator (runParca.py).
 
-TODO(jerry): Write the SIM_PATH/metadata.json file here instead of in runSim?
-Write it in runParca, then update it here and in runSim?
-
-TODO: Share more code with fw_queue.py.
-
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
@@ -43,7 +38,6 @@ class MakeVariants(scriptBase.ScriptBase):
 		super(MakeVariants, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
 
-		self.define_parameter_operons(parser)
 		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
 			help='''The variant type name, first index, and last index to make.
@@ -54,27 +48,15 @@ class MakeVariants(scriptBase.ScriptBase):
 				Default = wildtype 0 0''')
 
 	def run(self, args):
-		def sim_data_path(monocistronic: bool, both: bool):
-			sim_data_file = os.path.join(
-				args.sim_path,
-				constants.KB_DIR if monocistronic else constants.PKB_DIR,
-				constants.SERIALIZED_SIM_DATA_FILENAME)
-			if monocistronic or both:
-				fp.verify_file_exists(sim_data_file,
-					f"Run runParca (with operons={args.operons})?")
-			return sim_data_file
+		sim_data1, sim_data2 = scriptBase.sim_data_paths(args.sim_path)
 
-		both_operons = args.operons == 'both'
-		sim_data_file = sim_data_path(True, both_operons)
-		poly_sim_data_file = sim_data_path(False, both_operons)
-
-		variant_arg = args.variant
-		variant_spec = (variant_arg[0], int(variant_arg[1]), int(variant_arg[2]))
-		variant_type = variant_spec[0]
+		variant_type = args.variant[0]
+		variant_spec = (variant_type, int(args.variant[1]), int(args.variant[2]))
 
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
-		for base_index, index, subdir in fp.iter_variants3(*variant_spec, both_operons):
-			monocistronic = base_index == index
+		for base_index, index, subdir in fp.iter_variants3(
+				*variant_spec, both_operons=bool(sim_data2)):
+			sim_data_file = sim_data1 if base_index == index else sim_data2
 			variant_sim_data_directory = os.path.join(args.sim_path, subdir,
 				constants.VKB_DIR)
 			variant_metadata_directory = os.path.join(args.sim_path, subdir,
@@ -86,7 +68,7 @@ class MakeVariants(scriptBase.ScriptBase):
 			task = VariantSimDataTask(
 				variant_function=variant_type,
 				variant_index=base_index,
-				input_sim_data=sim_data_file if monocistronic else poly_sim_data_file,
+				input_sim_data=sim_data_file,
 				output_sim_data=variant_sim_data_modified_file,
 				variant_metadata_directory=variant_metadata_directory,
 				)

@@ -177,11 +177,11 @@ def iter_variants(variant_type, first_index, last_index):
 
 def iter_variants3(variant_type, first_index, last_index, both_operons=False):
 	# type: (str, int, int, bool) -> Generator[Tuple[int, int, str], None, None]
-	"""Generate Variant subdirs (base_index, index, name) over [first .. last],
-	inclusive. base_index is in [first .. last], per apply_variant(). If both_operons
-	then the combined index ranges over [first .. last] ∪ [H+first .. H+last] in
-	order to compose the Parca (monocistronic, polycistronic) variations with
-	the variant range.
+	"""Generate Variant subdirs (base_index, index, name) over [first .. last]
+	indexes, inclusive. `base_index` is in [first .. last], for apply_variant().
+	If `both_operons` then generate combined `index` values that range over
+	[first .. last] ∪ [OPERON_PART+first .. OPERON_PART+last], thus composing
+	the Parca variations with the given variant range.
 	"""
 	operon_parts = (0, OPERON_PART) if both_operons else (0,)
 
@@ -189,11 +189,3 @@ def iter_variants3(variant_type, first_index, last_index, both_operons=False):
 		base_index = i % OPERON_PART
 		index = base_index + p
 		yield base_index, index, f'{variant_type}_{index:06d}'
-
-def is_monocistronic_index(variant_index: int) -> bool:
-	"""Return True if the combined variant index is for monocistronic operons."""
-	return (variant_index // OPERON_PART) == 0
-
-def base_variant_index(variant_index: int) -> int:
-	"""Return the base part of the variant index which apply_variant() uses."""
-	return variant_index % OPERON_PART

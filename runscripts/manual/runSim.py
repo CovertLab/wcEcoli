@@ -11,8 +11,6 @@ Prerequisite: Generate the sim_data variant (makeVariants.py) before running
 * Fancy usage: runParca.py, makeVariants.py, lots of runSim.py and
   runDaughter.py runs, and analysis*.py, in a parallel workflow.
 
-TODO: Share more code with fw_queue.py.
-
 Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
@@ -73,27 +71,14 @@ class RunSimulation(scriptBase.ScriptBase):
 	def define_parameters(self, parser):
 		super(RunSimulation, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
-		self.define_parameter_operons(parser)
 		self.define_sim_loop_options(parser, manual_script=True)
 		self.define_sim_options(parser)
 		self.define_elongation_options(parser)
 
 	def run(self, args):
-		def sim_data_path(monocistronic: bool, both: bool):
-			sim_data_file = os.path.join(
-				args.sim_path,
-				constants.KB_DIR if monocistronic else constants.PKB_DIR,
-				constants.SERIALIZED_SIM_DATA_FILENAME)
-			if monocistronic or both:
-				fp.verify_file_exists(sim_data_file,
-					f"Run runParca (with operons={args.operons})?")
-			return sim_data_file
-
-		both_operons = args.operons == 'both'
-		sim_data_file = sim_data_path(True, both_operons)
-		poly_sim_data_file = sim_data_path(False, both_operons)
-
 		timestamp, description = parse_timestamp_description(args.sim_path)
+
+		sim_data1, sim_data2 = scriptBase.sim_data_paths(args.sim_path)
 
 		variant_type = args.variant[0]
 		variant_spec = (variant_type, int(args.variant[1]), int(args.variant[2]))
@@ -107,7 +92,6 @@ class RunSimulation(scriptBase.ScriptBase):
 			git_hash=fp.git_hash(),
 			git_branch=fp.git_branch(),
 			description=description,
-			operons=args.operons,
 			time=timestamp,
 			python=sys.version.splitlines()[0],
 			analysis_type=None,
@@ -120,8 +104,9 @@ class RunSimulation(scriptBase.ScriptBase):
 
 
 		# args.sim_path is called INDIV_OUT_DIRECTORY in fw_queue.
-		for base_index, index, subdir in fp.iter_variants3(*variant_spec, both_operons):
-			monocistronic = base_index == index
+		for base_index, index, subdir in fp.iter_variants3(
+				*variant_spec, both_operons=bool(sim_data2)):
+			sim_data_file = sim_data1 if base_index == index else sim_data2
 			variant_directory = os.path.join(args.sim_path, subdir)
 			variant_sim_data_directory = os.path.join(variant_directory,
 				constants.VKB_DIR)
@@ -138,7 +123,7 @@ class RunSimulation(scriptBase.ScriptBase):
 				task = VariantSimDataTask(
 					variant_function=variant_type,
 					variant_index=base_index,
-					input_sim_data=sim_data_file if monocistronic else poly_sim_data_file,
+					input_sim_data=sim_data_file,
 					output_sim_data=variant_sim_data_modified_file,
 					variant_metadata_directory=variant_metadata_directory,
 					)
