@@ -39,7 +39,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		with_aa_reference = metabolism.aa_supply_enzyme_conc_with_aa.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 		basal_reference = metabolism.aa_supply_enzyme_conc_basal.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 
-		# Get RNAs associated with each enzyme
+		# Get RNA cistrons associated with each enzyme
 		monomer_to_cistron = {m['id']: m['cistron_id'] for m in translation.monomer_data}
 		mat_i = []
 		mat_j = []
@@ -75,12 +75,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths, 'TranscriptElongationListener', 'attenuation_probability', remove_first=True)
 
 		# Calculate derived quantities
+		# TODO (ggsun): Multiply RNA synth probabilities to RNA attenuation first, then map to cistron
 		start = times[0, 0]
 		end = times[-1, 0]
 		enzyme_conc = (enzyme_counts @ enzyme_to_amino_acid * counts_to_mol).T
 		full_attenuation = np.ones((attenuation.shape[0], n_rnas))
 		full_attenuation[:, attenuated_indices] = attenuation
-		attenuation_probabilities = full_attenuation[:, enzyme_cistron_indices]
+		attenuation_probabilities = (full_attenuation @ transcription.cistron_tu_mapping_matrix.T)[
+			:, enzyme_cistron_indices]
 		rnas_per_amino_acid = (cistron_to_enzyme @ enzyme_to_amino_acid).sum(axis=0)
 		probability_per_amino_acid = (probabilities * attenuation_probabilities @ cistron_to_enzyme @ enzyme_to_amino_acid / rnas_per_amino_acid).T
 
