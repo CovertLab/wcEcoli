@@ -36,7 +36,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rna_ids = rna_synth_prob_reader.readAttribute("rnaIds")
 
 		trpRIndex = tf_ids.index("CPLX-125")
-		target_ids = sim_data.relation.tf_id_to_target_RNAs["MONOMER0-162"]
+		target_ids = sim_data.relation.tf_id_to_target_RNAs["CPLX-125"]
 		target_idx = np.array([rna_ids.index(target_id) for target_id in target_ids])
 
 		plt.figure(figsize = (10, 15))
