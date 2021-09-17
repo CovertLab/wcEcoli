@@ -39,6 +39,7 @@ def calcInitialConditions(sim, sim_data):
 
 	# Adjust small molecule concentrations again after other mass adjustments
 	# for more stable metabolism solution at beginning of sims
+	# TODO: clean this up and include small molecule fraction to match sim?
 	cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
 	print(cell_mass)
 	init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
@@ -49,18 +50,6 @@ def calcInitialConditions(sim, sim_data):
 		massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
 	cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
 	print(cell_mass)
-	# init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
-	# 	massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
-	# cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
-	# print(cell_mass)
-	# init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
-	# 	massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
-	# cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
-	# print(cell_mass)
-	# init.set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
-	# 	massCoeff, cell_mass=cell_mass, mass_fractions=mass_fractions)
-	# cell_mass, mass_fractions = init.calculate_cell_mass(sim.internal_states)
-	# print(cell_mass)
 
 def initialize_trna_charging(sim_data, states, variable_elongation):
 	'''

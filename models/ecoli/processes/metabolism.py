@@ -121,8 +121,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
-		self.doubling_time_from_ppgpp = sim_data.process.transcription.doubling_time_from_ppgpp
-		self.ppgpp = self.bulkMoleculeView(sim_data.molecule_ids.ppGpp)
 		biomass_molecules.pop(biomass_molecules.index('WATER[c]'))
 		self.biomass_molecules = biomass_molecules
 		self.biomass_molecules_view = self.bulkMoleculesView(biomass_molecules)
@@ -156,10 +154,10 @@ class Metabolism(wholecell.processes.process.Process):
 		protein_fraction = self.readFromListener('Mass', 'proteinMass') / dry_mass_unitless
 		rna_fraction = self.readFromListener('Mass', 'rnaMass') / dry_mass_unitless
 		dna_fraction = self.readFromListener('Mass', 'dnaMass') / dry_mass_unitless
-		biomass_mass1 = self.biomass_molecules_view.total_counts() @ self.biomass_mw.asNumber(units.fg / units.count)
 		biomass_mass = (CONC_UNITS * np.array([self.model.homeostatic_objective[m] for m in self.biomass_molecules]) @ self.biomass_mw * cellVolume).asNumber(units.fg)
-		print(biomass_mass, biomass_mass1)
+		print(self.model.homeostatic_objective[self.biomass_molecules[0]])
 		small_mol_fraction = (self.readFromListener('Mass', 'smallMoleculeMass') - biomass_mass) / dry_mass_unitless
+		print(small_mol_fraction+protein_fraction+rna_fraction+dna_fraction, (dry_mass_unitless - biomass_mass) / dry_mass_unitless)
 		# TODO: calculate the scale factor here and use cached values instead of passing to getBiomassAsCocnentrations
 		# TODO: decide between counts and using targets
 
@@ -168,19 +166,9 @@ class Metabolism(wholecell.processes.process.Process):
 		current_media_id = environment.current_media_id
 		unconstrained, constrained = environment.get_exchange_data()
 
-
 		## Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dry_mass / cell_mass * self.cellDensity * time_step
-
-		## Determine updates to concentrations depending on the current state
-		# if self.include_ppgpp:
-		# 	doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
-		# else:
-		# 	ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
-		# 	doubling_time = self.doubling_time_from_ppgpp(ppgpp_conc)
-
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
-
 		conc_updates = self.model.getBiomassAsConcentrations(doubling_time, protein=protein_fraction, rna=rna_fraction, dna=dna_fraction, small_molecule=small_mol_fraction)
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
@@ -543,7 +531,7 @@ class FluxBalanceAnalysisModel(object):
 			current_media_id, unconstrained, constrained, conc_updates,
 			)
 		self.fba.update_homeostatic_targets(objective)
-
+		print(objective['glycogen-monomer[c]'])
 		# Internal concentrations
 		metabolite_conc = counts_to_molar * metabolite_counts
 		self.fba.setInternalMoleculeLevels(metabolite_conc.asNumber(CONC_UNITS))

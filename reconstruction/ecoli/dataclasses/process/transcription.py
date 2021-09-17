@@ -1399,12 +1399,6 @@ class Transcription(object):
 
 		return prob, factor
 
-	def doubling_time_from_ppgpp(self, ppgpp):
-		ppgpp = ppgpp.asNumber(PPGPP_CONC_UNITS)
-		y = fitting.interpolate_linearized_fit(ppgpp, *self._ppgpp_growth_parameters)
-		growth = max(cast(float, y), 0.0)
-		return units.s * np.log(2) / growth
-
 	def get_rnap_active_fraction_from_ppGpp(self, ppgpp):
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return self.fraction_active_rnap_bound * f_ppgpp + self.fraction_active_rnap_free * (1 - f_ppgpp)
