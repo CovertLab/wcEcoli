@@ -93,8 +93,7 @@ class Metabolism(wholecell.processes.process.Process):
 		doubling_time = self.nutrientToDoublingTime.get(
 			environment.current_media_id,
 			self.nutrientToDoublingTime["minimal"])
-		biomass_molecules = list(self.model.getBiomassAsConcentrations(doubling_time).keys())
-		update_molecules = list(biomass_molecules)
+		update_molecules = list(self.model.getBiomassAsConcentrations(doubling_time).keys())
 		if self.use_trna_charging:
 			update_molecules += [aa for aa in self.aa_names if aa not in self.aa_targets_not_updated]
 			update_molecules += list(self.linked_metabolites.keys())
@@ -121,10 +120,6 @@ class Metabolism(wholecell.processes.process.Process):
 
 		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
 		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
-		biomass_molecules.pop(biomass_molecules.index('WATER[c]'))
-		self.biomass_molecules = biomass_molecules
-		self.biomass_molecules_view = self.bulkMoleculesView(biomass_molecules)
-		self.biomass_mw = sim_data.getter.get_masses(biomass_molecules)
 
 	def calculateRequest(self):
 		self.metabolites.requestAll()
@@ -144,32 +139,24 @@ class Metabolism(wholecell.processes.process.Process):
 		kinetic_substrate_counts = self.kineticsSubstrates.counts()
 		translation_gtp = self._sim.processes["PolypeptideElongation"].gtp_to_hydrolyze
 		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
-		dry_mass_unitless = self.readFromListener("Mass", "dryMass")
-		dry_mass = dry_mass_unitless * units.fg
+		dry_mass = self.readFromListener("Mass", "dryMass") * units.fg
 
-		## Calculate state values
-		cellVolume = cell_mass / self.cellDensity
-		counts_to_molar = (1 / (self.nAvogadro * cellVolume)).asUnit(CONC_UNITS)
-
-		protein_fraction = self.readFromListener('Mass', 'proteinMass') / dry_mass_unitless
-		rna_fraction = self.readFromListener('Mass', 'rnaMass') / dry_mass_unitless
-		dna_fraction = self.readFromListener('Mass', 'dnaMass') / dry_mass_unitless
-		biomass_mass = (CONC_UNITS * np.array([self.model.homeostatic_objective[m] for m in self.biomass_molecules]) @ self.biomass_mw * cellVolume).asNumber(units.fg)
-		print(self.model.homeostatic_objective[self.biomass_molecules[0]])
-		small_mol_fraction = (self.readFromListener('Mass', 'smallMoleculeMass') - biomass_mass) / dry_mass_unitless
-		print(small_mol_fraction+protein_fraction+rna_fraction+dna_fraction, (dry_mass_unitless - biomass_mass) / dry_mass_unitless)
-		# TODO: calculate the scale factor here and use cached values instead of passing to getBiomassAsCocnentrations
-		# TODO: decide between counts and using targets
+		rp_ratio = self.readFromListener('Mass', 'rnaMass') / self.readFromListener('Mass', 'proteinMass')
+		# TODO: have a scaling for rp ratio and use cached getBiomassAsConc
 
 		## Get environment updates
 		environment = self._external_states['Environment']
 		current_media_id = environment.current_media_id
 		unconstrained, constrained = environment.get_exchange_data()
 
+		## Calculate state values
+		cellVolume = cell_mass / self.cellDensity
+		counts_to_molar = (1 / (self.nAvogadro * cellVolume)).asUnit(CONC_UNITS)
+
 		## Coefficient to convert between flux (mol/g DCW/hr) basis and concentration (M) basis
 		coefficient = dry_mass / cell_mass * self.cellDensity * time_step
 		doubling_time = self.nutrientToDoublingTime.get(current_media_id, self.nutrientToDoublingTime["minimal"])
-		conc_updates = self.model.getBiomassAsConcentrations(doubling_time, protein=protein_fraction, rna=rna_fraction, dna=dna_fraction, small_molecule=small_mol_fraction)
+		conc_updates = self.model.getBiomassAsConcentrations(doubling_time, rp_ratio=rp_ratio)
 		if self.use_trna_charging:
 			conc_updates.update(self.update_amino_acid_targets(counts_to_molar))
 		if self.include_ppgpp:
