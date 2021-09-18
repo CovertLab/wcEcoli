@@ -80,20 +80,16 @@ class RunParca(scriptBase.ScriptBase):
 
 		# Run the Parca one or both ways.
 		if args.operons == 'both':
-			args.operons = 'off'
-			self._run_parca(args, constants.KB_DIR)
-
-			args.operons = 'on'
-			self._run_parca(args, constants.PKB_DIR)
-
+			self._run_parca(args, 'off', constants.KB_DIR)
+			self._run_parca(args, 'on', constants.PKB_DIR)
 		else:
-			self._run_parca(args, constants.KB_DIR)
+			self._run_parca(args, args.operons, constants.KB_DIR)
 
-	def _run_parca(self, args, kb_dir):
+	def _run_parca(self, args, operons, kb_dir):
 		kb_directory = os.path.join(args.sim_path, kb_dir)
 
 		python_args = data.select_keys(
-			vars(args),
+			dict(vars(args), operons=operons),
 			scriptBase.PARCA_KEYS,
 			debug=args.debug_parca,
 			load_intermediate=args.load_intermediate,

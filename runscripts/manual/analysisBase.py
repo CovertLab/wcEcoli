@@ -12,7 +12,8 @@ import sys
 from typing import Any, Dict, Optional
 
 from models.ecoli.analysis.analysisPlot import AnalysisPlot
-from wholecell.utils import constants, data, scriptBase, parallelization, filepath
+from wholecell.utils import constants, data, scriptBase, parallelization
+from wholecell.utils import filepath as fp
 
 
 class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
@@ -82,11 +83,13 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 		# type: (argparse.Namespace) -> None
 		"""Update the command line args in an `argparse.Namespace`, including
 		the `sim_dir` and `sim_path` args; sanitize args.plot; attach the
-		`args.input_validation_data` path, the `args.metadata_path` path
-		"<sim_path>/metadata/metadata.json", and the `args.metadata` dict
-		loaded from `metadata_path`. If the superclass set `args.variant_dir`,
-		also set `args.variant_dir_name` and metadata fields `variant_function`
-		and `variant_index`.
+		`args.metadata_path` path "<sim_path>/metadata/metadata.json", and the
+		`args.metadata` dict loaded from `metadata_path`. Limit `args.cpus` to
+		the usable number of worker processes.
+
+		If the super() call sets `args.variant_dir` then use that info to set
+		the `args.variant_dir_name` and `args.input_validation_data` paths, and
+		set metadata fields `variant_function` and `variant_index`.
 
 		Overrides should first call super().
 		"""
@@ -95,12 +98,9 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 		if self.plot_name:
 			args.plot = [self.plot_name]
 
-		args.input_validation_data = os.path.join(
-			args.sim_path, constants.KB_DIR, constants.SERIALIZED_VALIDATION_DATA)
-
 		args.metadata_path = os.path.join(
 			args.sim_path, constants.METADATA_DIR, constants.JSON_METADATA_FILE)
-		args.metadata = filepath.read_json_file(args.metadata_path)
+		args.metadata = fp.read_json_file(args.metadata_path)
 
 		if 'variant_dir' in args:
 			args.variant_dir_name, variant_type, variant_index = args.variant_dir
@@ -108,20 +108,9 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 			metadata['variant_function'] = variant_type
 			metadata['variant_index'] = variant_index
 
+			is_primary = fp.is_primary_variant_index(variant_index)
+			kb_dir = constants.KB_DIR if is_primary else constants.PKB_DIR
+			args.input_validation_data = os.path.join(
+				args.sim_path, kb_dir, constants.SERIALIZED_VALIDATION_DATA)
+
 		args.cpus = parallelization.cpus(args.cpus)
-
-
-class TestAnalysis(AnalysisBase):
-	"""To test out the command line parser."""
-
-	def __init__(self):
-		self.plot = AnalysisPlot()
-		super(TestAnalysis, self).__init__(analysis_plotter=self.plot)
-
-	def run(self, analysis_args):
-		print("[TEST] Analysis args:", analysis_args)
-
-
-if __name__ == '__main__':
-	analysis = TestAnalysis()
-	analysis.cli()

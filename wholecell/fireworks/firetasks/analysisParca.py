@@ -15,6 +15,9 @@ import models.ecoli.analysis.parca
 
 @explicit_serialize
 class AnalysisParcaTask(AnalysisBase):
+	"""Run the Parca analysis plots on both the primary (kb/) dir and (if
+	requested) the secondary (kb-poly/) dir.
+	"""
 
 	_fw_name = "AnalysisParcaTask"
 	required_params = [
@@ -22,25 +25,46 @@ class AnalysisParcaTask(AnalysisBase):
 		"input_sim_data",
 		"input_validation_data",
 		"output_plots_directory",
-		"metadata",
-		]
-	optional_params = [
-		"plot",  # absent or empty => run all active analysis plots
 		"output_filename_prefix",
+		"metadata",
+
+		"plot",
 		"cpus",
 		"compile",
+		]
+	optional_params = [
+		"input_directory2",  # if specified, the other secondary params are required
+		"input_sim_data2",
+		"input_validation_data2",
 		]
 	MODULE_PATH = 'models.ecoli.analysis.parca'
 	TAGS = models.ecoli.analysis.parca.TAGS
 
-	def plotter_args(self, module_filename):
+	def run_task(self, fw_spec):
 		self["metadata"] = dict(self["metadata"], analysis_type="parca")
 
+		# Run with the primary params.
+		self["_params"] = ''
+		super().run_task(fw_spec)
+
+		# If requested, run with the secondary params.
+		if self.get("input_directory2"):
+			self["_params"] = '2'
+			super().run_task(fw_spec)
+
+	def plotter_args(self, module_filename):
+		params = self.get("_params", '')  # select primary or secondary params
+		prefix = 'polycistronic_' if params else ''
+
 		return (
-			self["input_directory"],
+			self["input_directory" + params],
 			self["output_plots_directory"],
-			self['output_filename_prefix'] + module_filename[:-3],
-			self['input_sim_data'],
-			self['input_validation_data'],
+			self["output_filename_prefix"] + prefix + module_filename[:-3],
+			self["input_sim_data" + params],
+			self["input_validation_data" + params],
 			self["metadata"],
 			)
+
+	def description(self):
+		params = self.get("_params", '')
+		return f'{type(self).__name__} on {self["input_directory" + params]}'

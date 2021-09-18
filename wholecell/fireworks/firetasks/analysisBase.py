@@ -74,6 +74,10 @@ class AnalysisBase(FiretaskBase):
 		"""
 		raise NotImplementedError
 
+	def description(self):
+		"""Describe this analysis Firetask."""
+		return type(self).__name__
+
 	def expand_plot_names(self, plot_names, name_dict):
 		'''Recursively expand TAGS and plot names that lack the '.py' suffix,
 		adding the names to name_dict. name_dict is an OrderedDict doing the
@@ -151,8 +155,7 @@ class AnalysisBase(FiretaskBase):
 
 	def run_task(self, fw_spec):
 		start_real_sec = monotonic_seconds()
-		print("\n{}: --- Starting {} ---".format(
-			time.ctime(), type(self).__name__))
+		print(f"\n{time.ctime()}: --- Starting {self.description()} ---")
 
 		plot_names = self.get("plot", [])
 		fileList = self.list_plot_files(plot_names)
