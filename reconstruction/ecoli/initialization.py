@@ -91,16 +91,12 @@ def calculate_cell_mass(states):
 		float with mass units: total mass of the current cell state
 	"""
 
-	def get_mass():
-		for state in states.values():
-			state.calculateMass()
-			yield state.mass()
+	mass = 0
+	for state in states.values():
+		state.calculateMass()
+		mass += np.sum(state.mass())
 
-	mass = np.sum([m for m in get_mass()], axis=0)
-	cell_mass = mass.sum()
-	mass_fractions = mass / cell_mass
-
-	return units.fg * cell_mass, mass_fractions
+	return units.fg * mass
 
 def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation, trna_attenuation):
 
@@ -201,26 +197,12 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting
-def set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules, massCoeff, cell_mass=None, mass_fractions=None):
+def set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules, massCoeff, cell_mass=None):
 	doubling_time = sim_data.condition_to_doubling_time[sim_data.condition]
 
 	concDict = sim_data.process.metabolism.concentration_updates.concentrations_based_on_nutrients(
 		media_id=media_id, imports=import_molecules
 		)
-	if mass_fractions is None:
-		fraction_args = {}
-	else:
-		rna_indices = np.array([
-			sim_data.submass_name_to_index[name]
-			for name in ["rRNA", "tRNA", "mRNA", "miscRNA", "nonspecific_RNA"]
-			])
-		dry_fraction = 1 - mass_fractions[sim_data.submass_name_to_index["water"]]
-		fraction_args = {
-			'protein': mass_fractions[sim_data.submass_name_to_index["protein"]] / dry_fraction,
-			'rna': mass_fractions[rna_indices].sum() / dry_fraction,
-			'dna': mass_fractions[sim_data.submass_name_to_index["DNA"]] / dry_fraction,
-			}
-	print(fraction_args)
 	concDict.update(sim_data.mass.getBiomassAsConcentrations(doubling_time))
 	concDict[sim_data.molecule_ids.ppGpp] = sim_data.growth_rate_parameters.get_ppGpp_conc(doubling_time)
 	moleculeIds = sorted(concDict)

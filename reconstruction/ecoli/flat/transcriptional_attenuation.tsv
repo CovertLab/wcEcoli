@@ -16,7 +16,7 @@
 "tRNA-Ile"	"thrA"	-2.47
 "tRNA-Ile"	"thrB"	-2.34
 "tRNA-Ile"	"thrC"	-2.39
-#"tRNA-Leu"	"ilvA"	-1.24
+"tRNA-Leu"	"ilvA"	-1.24
 "tRNA-Leu"	"ilvB"	-2.73
 "tRNA-Leu"	"ilvD"	-0.41
 "tRNA-Leu"	"ilvE"	-0.9
@@ -40,7 +40,7 @@
 "tRNA-Trp"	"trpC"	-2.84
 "tRNA-Trp"	"trpD"	-2.74
 "tRNA-Trp"	"trpE"	-2.58
-#"tRNA-Val"	"ilvA"	-1.46
+"tRNA-Val"	"ilvA"	-1.46
 "tRNA-Val"	"ilvB"	-1.55
 "tRNA-Val"	"ilvD"	-1.54
 "tRNA-Val"	"ilvE"	-1.58
