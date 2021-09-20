@@ -56,6 +56,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cistron_synth_prob_data_indices = {cistron: i for i, cistron in enumerate(transcription.cistron_data['id'])}
 		enzyme_cistron_indices = np.array([cistron_synth_prob_data_indices[cistron] for cistron in cistrons])
 
+		# Mapping matrix from cistrons to RNAs
+		cistron_tu_mapping_matrix = transcription.cistron_tu_mapping_matrix
+
 		# Attenuation information
 		attenuated_indices = transcription.attenuated_rna_indices
 		n_rnas = len(transcription.rna_data)
@@ -81,9 +84,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		full_attenuation = np.zeros((attenuation.shape[0], n_rnas))
 		full_attenuation[:, attenuated_indices] = attenuation
 		no_attenuation_probabilities = 1 - full_attenuation
+		probabilities_post_attenuation = probabilities * no_attenuation_probabilities
 		rnas_per_amino_acid = (cistron_to_enzyme @ enzyme_to_amino_acid).sum(axis=0)
 		probability_per_amino_acid = (
-			transcription.cistron_tu_mapping_matrix.dot((probabilities * no_attenuation_probabilities).T).T[:, enzyme_cistron_indices]
+			(probabilities_post_attenuation @ cistron_tu_mapping_matrix.T)[:, enzyme_cistron_indices]
 			@ cistron_to_enzyme @ enzyme_to_amino_acid / rnas_per_amino_acid).T
 
 		# Plot data
