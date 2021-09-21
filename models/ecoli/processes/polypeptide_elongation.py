@@ -19,6 +19,7 @@ import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
+from reconstruction.ecoli.initialization import create_bulk_container
 
 
 CONC_UNITS = units.umol / units.L
@@ -406,6 +407,12 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.charging_params = get_charging_params(sim_data,
 			variable_elongation=self.process.variable_elongation)
 		self.ppgpp_params = get_ppgpp_params(sim_data)
+
+		# TODO: move to parca
+		init_container = create_bulk_container(sim_data)
+		trna_counts = self.process.aa_from_trna @ init_container.counts(self.uncharged_trna_names)
+		trna_ratio = trna_counts / trna_counts.sum()
+		self.ppgpp_params['KD_RelA'] *= trna_ratio / trna_ratio.mean()
 
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
@@ -844,9 +851,13 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
 		uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
 
+	# Calculate active fraction of RelA
+	competitive_inhibition = 1 + ribosomes_bound_to_uncharged / ppgpp_params['KD_RelA']
+	inhibition_product = np.product(competitive_inhibition)
+	frac_rela = 1 / (ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged * inhibition_product / competitive_inhibition + 1)
+
 	# Calculate rates for synthesis and degradation
-	frac_rela = 1 / (1 + ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged.sum())
-	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela * ribosomes_bound_to_uncharged / ribosomes_bound_to_uncharged.sum()
+	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela
 	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
 	v_syn = v_rela_syn.sum() + v_spot_syn
 	max_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc
