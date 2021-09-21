@@ -277,6 +277,7 @@ GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULA
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 OPERONS = get_environment("OPERONS", constants.DEFAULT_OPERON_OPTION)
 assert OPERONS in constants.OPERON_OPTIONS, f'{OPERONS=} needs to be in {constants.OPERON_OPTIONS}'
+assert OPERONS != 'both', '--operons=both is not implemented'
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))

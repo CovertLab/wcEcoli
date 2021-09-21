@@ -458,6 +458,7 @@ class RunWcm(scriptBase.ScriptBase):
 		args = super().parse_args()
 		args.cpus = max(args.cpus, 1)
 
+		assert args.operons != 'both', '--operons=both is not implemented'
 		assert args.generations >= 0
 		assert args.init_sims > 0
 		assert args.length_sec > 0
