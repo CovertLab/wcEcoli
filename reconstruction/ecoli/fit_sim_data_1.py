@@ -2297,19 +2297,36 @@ def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs
 		cistron_indexes.append(cistron_id_to_index[cistron_id])
 		cistron_fcs.append(fc_value)
 
-	# Sort fold changes and indices for the bool array indexing to work properly
-	cistron_fcs = [fc for (cistron_idx, fc) in
-		sorted(zip(cistron_indexes, cistron_fcs), key = lambda pair: pair[0])]
-	cistron_indexes = [cistron_idx for (cistron_idx, fc) in
-		sorted(zip(cistron_indexes, cistron_fcs), key = lambda pair: pair[0])]
+	def apply_fcs_to_expression(expression, indexes, fcs):
+		"""
+		Applys the fold-change values to an expression vector while keeping the
+		sum of expression values at one.
 
-	# Adjust expression based on fold change and normalize
-	cistron_indexes_bool = np.zeros(len(cistron_ids), dtype = np.bool)
-	cistron_indexes_bool[cistron_indexes] = 1
-	cistron_fcs = np.array(cistron_fcs)
-	scaleTheRestBy = (1. - (cistron_expression[cistron_indexes] * cistron_fcs).sum()) / (1. - (cistron_expression[cistron_indexes]).sum())
-	cistron_expression[cistron_indexes_bool] *= cistron_fcs
-	cistron_expression[~cistron_indexes_bool] *= scaleTheRestBy
+		Args:
+			expression (np.ndarray of floats): Original expression vector of
+				cistrons or RNAs
+			indexes (List of floats): Indexes of cistrons/RNAs that the
+				fold-changes should be applied to
+			fcs (List of floats): Fold-changes of cistron/RNA expression
+		"""
+		fcs = [fc for (idx, fc) in
+			sorted(zip(indexes, fcs), key=lambda pair: pair[0])]
+		indexes = [idx for (idx, fc) in
+			sorted(zip(indexes, fcs), key=lambda pair: pair[0])]
+
+		# Adjust expression based on fold change and normalize
+		indexes_bool = np.zeros(len(expression), dtype=np.bool)
+		indexes_bool[indexes] = 1
+		fcs = np.array(fcs)
+		scaleTheRestBy = (1. - (expression[indexes] * fcs).sum()) / (
+			1. - (expression[indexes]).sum())
+		expression[indexes_bool] *= fcs
+		expression[~indexes_bool] *= scaleTheRestBy
+
+		return expression
+
+	cistron_expression = apply_fcs_to_expression(
+		cistron_expression, cistron_indexes, cistron_fcs)
 
 	# Use NNLS to map new cistron expression to RNA expression
 	expression, _ = transcription.fit_rna_expression(cistron_expression)
@@ -2318,25 +2335,20 @@ def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs
 	# Apply genotype perturbations to all RNAs that contain each cistron
 	rna_indexes = []
 	rna_fcs = []
+	cistron_perturbation_indexes = []
+	cistron_perturbation_values = []
 
 	for cistron_id, perturbation_value in condPerturbations.items():
 		rna_indexes_with_cistron = transcription.cistron_id_to_rna_indexes(cistron_id)
 		rna_indexes.extend(rna_indexes_with_cistron)
 		rna_fcs.extend([perturbation_value] * len(rna_indexes_with_cistron))
+		cistron_perturbation_indexes.append(cistron_id_to_index[cistron_id])
+		cistron_perturbation_values.append(perturbation_value)
 
-	# Sort fold changes and indices for the bool array indexing to work properly
-	rna_fcs = [fc for (cistron_idx, fc) in
-		sorted(zip(rna_indexes, rna_fcs), key=lambda pair: pair[0])]
-	rna_indexes = [cistron_idx for (cistron_idx, fc) in
-		sorted(zip(rna_indexes, rna_fcs), key=lambda pair: pair[0])]
-
-	# Adjust expression based on fold change and normalize
-	rna_indexes_bool = np.zeros(len(transcription.rna_data), dtype=np.bool)
-	rna_indexes_bool[rna_indexes] = 1
-	rna_fcs = np.array(rna_fcs)
-	scaleTheRestBy = (1. - (expression[rna_indexes] * rna_fcs).sum()) / (1. - (expression[rna_indexes]).sum())
-	expression[rna_indexes_bool] *= rna_fcs
-	expression[~rna_indexes_bool] *= scaleTheRestBy
+	expression = apply_fcs_to_expression(expression, rna_indexes, rna_fcs)
+	# Also apply perturbations to cistrons for bookkeeping purposes
+	cistron_expression = apply_fcs_to_expression(
+		cistron_expression, cistron_perturbation_indexes, cistron_perturbation_values)
 
 	return expression, cistron_expression
 
