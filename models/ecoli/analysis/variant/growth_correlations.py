@@ -5,25 +5,18 @@ TODO:
 	add labels for variants
 	add labels for bar plot
 	add x labels
+	2D density plot instead of points
 """
 
 import pickle
 
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
-import numpy as np
 from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
-
-
-def density_plot(x, y, n_bins=200):
-	k = stats.kde.gaussian_kde([x, y])
-	xi, yi = np.mgrid[x.min():x.max():n_bins * 1j, y.min():y.max():n_bins * 1j]
-	zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-	plt.contour(xi, yi, zi.reshape(xi.shape))
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -55,7 +48,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			r = []
 			for col, conc in enumerate(uncharged_trna):
 				ax = plt.subplot(gs[row, col])
-				density_plot(conc, growth)
+				ax.plot(conc, growth, 'o', alpha=0.2, markersize=2)
 
 				self.remove_border(ax)
 				ax.tick_params(labelsize=6)
