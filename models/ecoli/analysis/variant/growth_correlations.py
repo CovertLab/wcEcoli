@@ -65,7 +65,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(labelsize=6)
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata, extension='.png')
 		plt.close('all')
 
 
