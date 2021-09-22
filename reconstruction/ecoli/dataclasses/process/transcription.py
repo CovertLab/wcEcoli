@@ -1213,7 +1213,7 @@ class Transcription(object):
 		# Since fold changes are reported for each cistron (gene), the FCs are
 		# applied first to the expression levels of individual cistrons which
 		# are converted back to TU expression levels through NNLS
-		cistron_exp = self.cistron_expression['basal']
+		cistron_exp = self.fit_cistron_expression['basal']
 
 		fcs = np.zeros(len(self.cistron_data))
 		for cistron_id, fc in zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes):

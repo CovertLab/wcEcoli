@@ -2,8 +2,11 @@
 Plots the differences bewteen the expected expression levels of each RNA cistron
 vs the actual expression levels of each cistron calculated by multiplying the
 cistron-TU mapping matrix with the expression levels of each transcription unit.
-Any difference between the two are residuals from the nonnegative least squares
-problem that was used to solve for the cistron expression levels.
+Any differences between the two are residuals from the last nonnegative least
+squares problem that was used to solve for the final RNA expression levels in
+the iterative fitting process of the ParCa. Note that the cistron expression
+levels being used here are "fit" expression levels and are different from the
+original cistron expression levels calculated from RNAseq and fold change data.
 """
 
 import pickle
