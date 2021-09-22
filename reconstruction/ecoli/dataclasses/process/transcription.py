@@ -407,6 +407,10 @@ class Transcription(object):
 		self.cistron_expression = {}
 		self.cistron_expression['basal'] = cistron_expression / cistron_expression.sum()
 
+		# Initialize dictionary for fitted cistron expression levels. Values for
+		# this dictionary are set in the parca.
+		self.fit_cistron_expression = {}
+
 
 	def _build_rna_data(self, raw_data, sim_data):
 		"""
