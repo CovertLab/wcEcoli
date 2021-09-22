@@ -47,6 +47,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			expected_cistron_exp = sim_data.process.transcription.fit_cistron_expression[condition]
 			rna_exp = sim_data.process.transcription.rna_expression[condition]
 			actual_cistron_exp = cistron_tu_mapping_matrix.dot(rna_exp)
+			actual_cistron_exp /= actual_cistron_exp.sum()
 
 			condition_plt.scatter(
 				expected_cistron_exp, actual_cistron_exp, c='#bbbbbb', s=2)
@@ -62,7 +63,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 				label='RNAP subunits')
 
 			condition_plt.set_title(condition)
-			condition_plt.set_xlabel('Expected cistron expression (b)')
+			condition_plt.set_xlabel('Expected cistron expression post-fit (b)')
 			condition_plt.set_ylabel('Actual cistron expression (Ax)')
 			condition_plt.set_xscale('log')
 			condition_plt.set_yscale('log')
