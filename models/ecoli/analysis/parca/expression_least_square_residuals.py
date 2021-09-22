@@ -7,6 +7,12 @@ squares problem that was used to solve for the final RNA expression levels in
 the iterative fitting process of the ParCa. Note that the cistron expression
 levels being used here are "fit" expression levels and are different from the
 original cistron expression levels calculated from RNAseq and fold change data.
+Since the iterative fitting process effectively adjusts the cistron expression
+levels at every step such that they match RNA expression, with the exception of
+genes encoding for RNAP or ribosomal subunits, most genes are expected to fall
+on the y=x line. Any RNAP/ribosomal genes falling significantly outside the y=x
+line indicates their operon structure constrains stoichiometric production of
+these subunits that meets demand.
 """
 
 import pickle
@@ -33,12 +39,12 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# Plot residuals for each condition
 		fig = plt.figure()
 		n_plots = len(all_conditions)
-		fig.set_size_inches(23, 5.5 * np.ceil(n_plots/4))
+		fig.set_size_inches(15, 3.5 * np.ceil(n_plots/4))
 		gs = gridspec.GridSpec(int(np.ceil(n_plots/4)), 4)
 
 		for (i, condition) in enumerate(all_conditions):
 			condition_plt = plt.subplot(gs[i//4, i%4])
-			expected_cistron_exp = sim_data.process.transcription.cistron_expression[condition]
+			expected_cistron_exp = sim_data.process.transcription.fit_cistron_expression[condition]
 			rna_exp = sim_data.process.transcription.rna_expression[condition]
 			actual_cistron_exp = cistron_tu_mapping_matrix.dot(rna_exp)
 
