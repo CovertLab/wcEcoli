@@ -425,7 +425,9 @@ class GrowthRateParameters(object):
 		self.per_dry_mass_to_per_volume = sim_data.constants.cell_density * (1. - raw_data.mass_parameters['cell_water_mass_fraction'])
 		doubling_time = _loadRow('doublingTime', raw_data.growth_rate_dependent_parameters)
 		ppgpp_conc = _loadRow('ppGpp_conc', raw_data.growth_rate_dependent_parameters) * self.per_dry_mass_to_per_volume
+		ribosome_elongation_rate = _loadRow('ribosomeElongationRate', raw_data.growth_rate_dependent_parameters)
 		self._ppGpp_concentration = _get_linearized_fit(doubling_time, ppgpp_conc)
+		self._ribosome_elongation_rate_by_ppgpp = _get_linearized_fit(ppgpp_conc, ribosome_elongation_rate)
 
 	def get_ribosome_elongation_rate(self, doubling_time):
 		return _useFitParameters(doubling_time, **self.ribosome_elongation_rate_params)
@@ -441,6 +443,9 @@ class GrowthRateParameters(object):
 
 	def get_ppGpp_conc(self, doubling_time):
 		return _use_linearized_fit(doubling_time, self._ppGpp_concentration)
+
+	def get_ribosome_elongation_rate_by_ppgpp(self, ppgpp):
+		return _use_linearized_fit(ppgpp, self._ribosome_elongation_rate_by_ppgpp) * 1.1
 
 def _get_fit_parameters(list_of_dicts, key):
 	# Load rows of data

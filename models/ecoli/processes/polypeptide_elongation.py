@@ -108,6 +108,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		## Variable for metabolism to read to consume required energy
 		self.gtp_to_hydrolyze = 0
 
+		self.cell_density = constants.cell_density
+
 	def calculateRequest(self):
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
@@ -117,8 +119,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		current_media_id = self._external_states['Environment'].current_media_id
 
+
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		cell_volume = cell_mass / self.cell_density
+		counts_to_molar = 1 / (self.n_avogadro * cell_volume)
+
 		# MODEL SPECIFIC: get ribosome elongation rate
-		self.ribosomeElongationRate = self.elongation_model.elongation_rate(current_media_id)
+		self.ribosomeElongationRate = self.elongation_model.elongation_rate(current_media_id, counts_to_molar)
 
 		# If there are no active ribosomes, return immediately
 		if self.active_ribosomes.total_count() == 0:
@@ -427,6 +434,13 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
 
+		self.f_rela_active = None
+		self.elong_rate_by_ppgpp = sim_data.growth_rate_parameters.get_ribosome_elongation_rate_by_ppgpp
+
+	def elongation_rate(self, current_media_id, counts_to_molar):
+		ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
+		return self.elong_rate_by_ppgpp(ppgpp_conc).asNumber(units.aa / units.s)
+
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
 
@@ -435,6 +449,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		dry_mass = self.process.readFromListener("Mass", "dryMass") * units.fg
 		cell_volume = cell_mass / self.cellDensity
 		self.counts_to_molar = 1 / (self.process.n_avogadro * cell_volume)
+
+		# ppGpp related concentrations
+		ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
+		rela_conc = self.counts_to_molar * self.rela.total_count()
+		spot_conc = self.counts_to_molar * self.spot.total_count()
 
 		# Get counts and convert synthetase and tRNA to a per AA basis
 		synthetase_counts = np.dot(self.aa_from_synthetase, self.synthetases.total_counts())
@@ -471,6 +490,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		self.process.writeToListener('GrowthLimits', 'original_aa_supply', self.process.aa_supply)
 		self.process.writeToListener('GrowthLimits', 'aa_in_media', aa_in_media)
+
+		self.charging_params['max_elong_rate'] = self.elong_rate_by_ppgpp(ppgpp_conc).asNumber(units.aa / units.s)
 
 		# Calculate steady state tRNA levels and resulting elongation rate
 		fraction_charged, v_rib, supplied_in_charging = calculate_trna_charging(
@@ -549,9 +570,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.water.requestIs(aa_counts_for_translation.sum())
 
 		# ppGpp reactions based on charged tRNA
-		ppgpp_conc = self.counts_to_molar * self.ppgpp.total_count()
-		rela_conc = self.counts_to_molar * self.rela.total_count()
-		spot_conc = self.counts_to_molar * self.spot.total_count()
 		self.process.writeToListener('GrowthLimits', 'ppgpp_conc', ppgpp_conc.asNumber(CONC_UNITS))
 		self.process.writeToListener('GrowthLimits', 'rela_conc', rela_conc.asNumber(CONC_UNITS))
 		self.process.writeToListener('GrowthLimits', 'spot_conc', spot_conc.asNumber(CONC_UNITS))
