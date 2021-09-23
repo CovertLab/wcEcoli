@@ -47,7 +47,8 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			if len(cistron_indexes) > 1:
 				polycistronic_cistron_indexes.extend(cistron_indexes)
 		is_polycistronic = np.zeros(len(cistron_ids), bool)
-		is_polycistronic[np.array(list(set(polycistronic_cistron_indexes)))] = True
+		if len(polycistronic_cistron_indexes) > 0:
+			is_polycistronic[np.array(list(set(polycistronic_cistron_indexes)))] = True
 		mRNA_cistron_is_polycistronic = is_polycistronic[cistron_is_mRNA]
 
 		# Get expression
