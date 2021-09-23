@@ -914,7 +914,7 @@ class Metabolism(object):
 			diffs = np.array([
 				uptake_rates[aa] - uptake,
 				fwd_kcat_targets.get(aa, default_fwd_target) - kcat_fwd,
-				rev_kcat_targets.get(aa, kcat_rev) - kcat_rev,
+				rev_kcat_targets.get(aa, kcat_rev if np.isfinite(km_reverse.asNumber()) else 0) - kcat_rev,
 				])
 			weights = np.array([1000, 1, 1])
 			return np.linalg.norm(weights*diffs)
