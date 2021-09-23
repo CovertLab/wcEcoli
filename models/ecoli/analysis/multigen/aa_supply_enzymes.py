@@ -35,7 +35,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		n_aas = len(aa_ids)
 
 		# Expected expression from parameter calculations
-		enzyme_to_amino_acid = metabolism.enzyme_to_amino_acid
+		enzyme_to_amino_acid = metabolism.enzyme_to_amino_acid_fwd  # TODO: include enzyme_to_amino_acid_rev
 		with_aa_reference = metabolism.aa_supply_enzyme_conc_with_aa.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 		basal_reference = metabolism.aa_supply_enzyme_conc_basal.asNumber(PLOT_UNITS) @ enzyme_to_amino_acid
 
