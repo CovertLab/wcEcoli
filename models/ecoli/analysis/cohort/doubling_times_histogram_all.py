@@ -52,6 +52,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		analysis_paths = AnalysisPaths(variantDir, cohort_plot = True)
 
 		n_gens = analysis_paths.n_generation
+		print(f'{n_gens=}')
 
 		if n_gens - 1 < FIRST_GENERATION:
 			print('Not enough generations to plot.')

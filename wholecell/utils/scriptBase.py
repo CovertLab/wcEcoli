@@ -344,7 +344,9 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		"""
 		parser.add_argument('-v', dashize('--variant_index'), type=int,
 			help='The simulation variant number (int), e.g. 1 to find a'
-				 ' subdirectory like "condition_000001".')
+				 ' subdirectory like "condition_000001", or 100002 to find a'
+				 ' subdirectory like "condition_100002" (operons ON with'
+				 ' condition 2 when used with Parca option `--operons=both`).')
 
 	def find_variant_dir(self, sim_path, index=None):
 		# type: (str, Optional[int]) -> Tuple[str, str, int]
@@ -420,14 +422,10 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				 ' the other TFs at their input levels for faster Parca debugging.'
 				 ' DO NOT USE THIS FOR A MEANINGFUL SIMULATION.')
 
-	def define_sim_loop_options(self, parser, manual_script=False):
-		# type: (argparse.ArgumentParser, bool) -> None
-		"""Define options for running a series of sims."""
-
-		# Variant
+	def define_make_variants_option(self, parser):
 		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
 			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
-			help='''The variant type name, first index, and last index.
+			help=f'''The variant type name, first index, and last index.
 				See models/ecoli/sim/variants/__init__.py for the variant
 				type choices and their supported index ranges, e.g.: wildtype,
 				condition, meneParams, metabolism_kinetic_objective_weight,
@@ -435,7 +433,18 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				The meaning of the index values depends on the variant type. With
 				wildtype, every index does the same thing, so it's a way to test
 				that the simulation is repeatable.
-				Default = ''' + ' '.join(DEFAULT_VARIANT))
+				When used with the Parca option `--operons=both`, --variant will
+				repeat the variant range for the operons OFF and ON cases, so e.g.
+				`--variant condition 2 2` will construct variant directories
+				"condition_000002" and "condition_100002" (1 meaning operons ON).
+				Default = {' '.join(DEFAULT_VARIANT)}.''')
+
+	def define_sim_loop_options(self, parser, manual_script=False):
+		# type: (argparse.ArgumentParser, bool) -> None
+		"""Define options for running a series of sims."""
+
+		# Variant
+		self.define_make_variants_option(parser)
 		if manual_script:
 			self.define_parameter_bool(parser, 'require_variants', False,
 				help='''true => require the sim_data variant(s) specified by the
@@ -551,9 +560,16 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			option = '{}_range'.format(key)
 			upper = key.upper()
 			override = dashize('--{}'.format(RANGE_ARGS[option]))
-			parser.add_argument(dashize('--{}'.format(option)), nargs=2, default=None, type=int,
+			name = dashize(f'--{option}')
+			extra = f''' When used with the Parca option `--operons=both`, this
+				range parameter spans both the operons ON/OFF 100000 digit and
+				the 5-digit base variant index, e.g. `{name} 2 100004` will span
+				(000000, 100000) × (2, 3, 4), iterating over variants
+				(2, 3, 4, 100002, 100003, 100004).''' if key == "variant" else ""
+			parser.add_argument(name, nargs=2, default=None, type=int,
 				metavar=('START_{}'.format(upper), 'END_{}'.format(upper)),
-				help='The range of variants to run.  Will override {} option.'.format(override))
+				help=f'The range of variants to run.  Will override the'
+					 f' {override} option.{extra}')
 			self.range_options.append(option)
 
 	def parse_args(self):
@@ -608,7 +624,16 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		for range_option in self.range_options:
 			if getattr(args, range_option):
 				start, end = getattr(args, range_option)
-				values = list(range(start, end+1))
+				if range_option == 'variant_range':
+					# Make the cross-product of the high- and low-order spans.
+					# E.g. [2 .. 100004] -> 2, 3, 4, 100002, 100003, 100004.
+					start_operon, start_index = fp.split_variant_index(start)
+					end_operon, end_index = fp.split_variant_index(end)
+					ranges = itertools.product(range(start_operon, end_operon + 1),
+											   range(start_index, end_index + 1))
+					values = [op * fp.OPERON_PART + b for op, b in ranges]
+				else:
+					values = list(range(start, end+1))
 			else:
 				values = [getattr(args, RANGE_ARGS[range_option])]
 

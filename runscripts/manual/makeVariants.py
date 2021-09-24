@@ -37,15 +37,7 @@ class MakeVariants(scriptBase.ScriptBase):
 	def define_parameters(self, parser):
 		super(MakeVariants, self).define_parameters(parser)
 		self.define_parameter_sim_dir(parser)
-
-		parser.add_argument('-v', '--variant', nargs=3, default=DEFAULT_VARIANT,
-			metavar=('VARIANT_TYPE', 'FIRST_INDEX', 'LAST_INDEX'),
-			help='''The variant type name, first index, and last index to make.
-				See models/ecoli/sim/variants/__init__.py for the variant
-				type choices and their supported index ranges, e.g.: wildtype,
-				condition, meneParams, metabolism_kinetic_objective_weight,
-				nutrientTimeSeries, and param_sensitivity.
-				Default = wildtype 0 0''')
+		self.define_make_variants_option(parser)
 
 	def run(self, args):
 		sim_data1, sim_data2 = scriptBase.sim_data_paths(args.sim_path)

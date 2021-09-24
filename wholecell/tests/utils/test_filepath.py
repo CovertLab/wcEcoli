@@ -90,9 +90,17 @@ class Test_filepath(unittest.TestCase):
 		results = list(filepath.iter_variants3('XYZ', 123, 125, False))
 		assert results == expected(0)
 
+		assert filepath.OPERON_PART == 100_000
 		expected2 = expected(0) + expected(100_000)
 		results = list(filepath.iter_variants3('XYZ', 123, 125, True))
 		assert results == expected2
+
+	def test_split_variant_index(self):
+		for v in range(3):
+			assert filepath.is_primary_variant_index(v)
+			assert not filepath.is_primary_variant_index(v + filepath.OPERON_PART)
+			assert filepath.split_variant_index(v) == (0, v)
+			assert filepath.split_variant_index(v + filepath.OPERON_PART) == (1, v)
 
 
 if __name__ == '__main__':

@@ -196,3 +196,9 @@ def is_primary_variant_index(variant_index: int) -> bool:
 	iff `base_index == index` from iter_variants3().
 	"""
 	return (variant_index // OPERON_PART) == 0
+
+def split_variant_index(variant_index: int) -> Tuple[int, int]:
+	"""Split a combined variant index into the operon part and the base variant
+	index.
+	"""
+	return variant_index // OPERON_PART, variant_index % OPERON_PART

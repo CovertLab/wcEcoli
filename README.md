@@ -79,19 +79,19 @@ These scripts have command line interfaces built on `argparse`, so you can use s
 
 To run the parameter calculator (ParCa), which is needed to prepare data for the simulation:
 ```bash
-python runscripts/manual/runParca.py [-h] [--cpus CPUS] [--cached] [sim_outdir]
+python runscripts/manual/runParca.py [-h] [--cpus CPUS] [sim_outdir]
 ```
 
 To simulate one or more cell generations with optional variants:
 
 ```bash
-python runscripts/manual/runSim.py [-h] [--variant VARIANT_TYPE FIRST_INDEX LAST_INDEX] [--generations GENERATIONS] [--seed SEED] [sim_dir]
+python runscripts/manual/runSim.py [-h] [--variant VARIANT_TYPE FIRST_INDEX LAST_INDEX] [--generations GENERATIONS] [--init-sims INIT_SIMS] [--seed SEED] [sim_dir]
 ```
 
 To interactively select from the data that is saved during a simulation for visualization:
 
 ```bash
-python runscripts/manual/analysis_interactive.py [-h] [--verbose] [sim_dir]
+python runscripts/manual/analysis_interactive.py [-h] [sim_dir]
 ```
 
 Running the command without any arguments will populate drop down menus for
@@ -105,22 +105,26 @@ To run predefined analysis plots on the simulation output in a given `sim_dir`
 (use the `-h` parameter to get complete help on the command line options):
 
 ```bash
+python runscripts/manual/analysisParca.py [-h] [--verbose] [-p PLOT [PLOT ...]] [--cpus CPUS] [sim_dir]
+
+python runscripts/manual/analysisSingle.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--variant-index VARIANT_INDEX] [--variant-range START_VARIANT END_VARIANT] [--seed SEED] [--generation GENERATION] [--daughter DAUGHTER] [sim_dir]
+
+python runscripts/manual/analysisMultigen.py [-h] [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--variant-index VARIANT_INDEX] [--variant-range START_VARIANT END_VARIANT] [--seed SEED] [--seed-range START_SEED END_SEED] [sim_dir]
+
+python runscripts/manual/analysisCohort.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--variant-index VARIANT_INDEX] [--variant-range START_VARIANT END_VARIANT] [sim_dir]
+
 python runscripts/manual/analysisVariant.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [sim_dir]
 
-python runscripts/manual/analysisCohort.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--variant-index VARIANT_INDEX] [sim_dir]
-
-python runscripts/manual/analysisMultigen.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--variant-index VARIANT_INDEX] [--seed SEED] [sim_dir]
-
-python runscripts/manual/analysisSingle.py [-h] [--plot PLOT [PLOT ...]] [--cpus CPUS] [--variant-index VARIANT_INDEX] [--seed SEED] [--generation GENERATION] [--daughter DAUGHTER] [sim_dir]
+python runscripts/manual/buildCausalityNetwork.py [-h] [--show] [sim_dir]
 ```
 
 If you default the analysis parameters, these scripts will pick the latest simulation directory, the first variant, the first generation, and so on.
 To get _full_ analyses across all variants, generations, etc., run:
 
 * `analysisVariant.py`
-* `analysisCohort.py` for each `--variant_index` you simulated
-* `analysisMultigen.py` for each combination of `--variant_index` and `--seed` you simulated
-* `analysisSingle.py` for each combination of `--variant_index`, `--seed`, and `--generation` you simulated
+* `analysisCohort.py` with the full `--variant-range` that you simulated
+* `analysisMultigen.py` with the full `--variant-range` and `--seed-range` that you simulated
+* `analysisSingle.py` with the full `--variant-range`, `--seed-range` and `--generation-range` that you simulated
 
 The `--plot` (or `-p`) optional parameter lets you pick one or more specific PLOTS to run.
 The list of PLOTs can include analysis class filenames like `aaCounts` (or `aaCounts.py`)
