@@ -345,8 +345,8 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		parser.add_argument('-v', dashize('--variant_index'), type=int,
 			help='The simulation variant number (int), e.g. 1 to find a'
 				 ' subdirectory like "condition_000001", or 100002 to find a'
-				 ' subdirectory like "condition_100002" (operons ON with'
-				 ' condition 2 when used with Parca option `--operons=both`).')
+				 ' subdirectory like "condition_100002" (condition 2 with'
+				 ' operons ON when used with Parca option `--operons=both`).')
 
 	def find_variant_dir(self, sim_path, index=None):
 		# type: (str, Optional[int]) -> Tuple[str, str, int]
@@ -431,12 +431,14 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				condition, meneParams, metabolism_kinetic_objective_weight,
 				nutrientTimeSeries, and param_sensitivity.
 				The meaning of the index values depends on the variant type. With
-				wildtype, every index does the same thing, so it's a way to test
-				that the simulation is repeatable.
-				When used with the Parca option `--operons=both`, --variant will
-				repeat the variant range for the operons OFF and ON cases, so e.g.
-				`--variant condition 2 2` will construct variant directories
-				"condition_000002" and "condition_100002" (1 meaning operons ON).
+				"wildtype", every index does the same thing, so it's a way to
+				test that the simulation is repeatable.
+				The Parca option "--operons=both" creates primary (w/operons OFF)
+				and secondary (w/operons ON) simData files. "--variant" will
+				repeat its variant range for both simData files present, so e.g.
+				"--variant condition 2 2" will make variant directories
+				"condition_000002" and "condition_100002", where the 0/1 digit
+				indexes primary/secondary simData files).
 				Default = {' '.join(DEFAULT_VARIANT)}.''')
 
 	def define_sim_loop_options(self, parser, manual_script=False):
@@ -559,17 +561,20 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		for key in range_keys:
 			option = '{}_range'.format(key)
 			upper = key.upper()
+			metavar = f'START_{upper}', f'END_{upper}'
 			override = dashize('--{}'.format(RANGE_ARGS[option]))
 			name = dashize(f'--{option}')
-			extra = f''' When used with the Parca option `--operons=both`, this
-				range parameter spans both the operons ON/OFF 100000 digit and
-				the 5-digit base variant index, e.g. `{name} 2 100004` will span
-				(000000, 100000) × (2, 3, 4), iterating over variants
-				(2, 3, 4, 100002, 100003, 100004).''' if key == "variant" else ""
+			extra = f''' To support the Parca option `--operons=both`, this
+				splits the {metavar[0]} and {metavar[1]} values into their
+				1xxxxx digit (selecting the operons OFF/ON simData) and 5-digit
+				base variant index, and covers all combinations. E.g.
+				`{name} 2 100004` will span (000000, 100000) × (2, 3, 4),
+				spanning variants (2, 3, 4, 100002, 100003, 100004).
+				''' if key == "variant" else ''
 			parser.add_argument(name, nargs=2, default=None, type=int,
-				metavar=('START_{}'.format(upper), 'END_{}'.format(upper)),
-				help=f'The range of variants to run.  Will override the'
-					 f' {override} option.{extra}')
+				metavar=metavar,
+				help=f'The range of variants to run.  Overrides the {override}'
+					 f' option.{extra}')
 			self.range_options.append(option)
 
 	def parse_args(self):
