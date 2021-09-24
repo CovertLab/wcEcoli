@@ -439,7 +439,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 	def elongation_rate(self, current_media_id, counts_to_molar):
 		ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
-		return self.elong_rate_by_ppgpp(ppgpp_conc).asNumber(units.aa / units.s)
+		return self.elong_rate_by_ppgpp(ppgpp_conc, self.basal_elongation_rate).asNumber(units.aa / units.s)
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)
