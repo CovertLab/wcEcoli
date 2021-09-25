@@ -111,7 +111,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		aa_ids = sim_data.molecule_groups.amino_acids
-		glc_mw = sim_data.getter.get_mass(GLC_ID)
+		# glc_mw = sim_data.getter.get_mass(GLC_ID)
 
 		variant_lengths = []
 		variant_counts = []

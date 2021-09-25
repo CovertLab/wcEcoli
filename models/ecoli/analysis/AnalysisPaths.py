@@ -3,16 +3,22 @@ AnalysisPaths: object for easily accessing file paths to simulations based on
 variants, seeds, and generation.
 '''
 
-from __future__ import absolute_import, division, print_function
+from __future__ import annotations
 
 from os import listdir
-from os.path import isdir, join
-from re import match, findall
+from os.path import dirname, isdir, isfile, join
+import pickle
+import re
 from itertools import chain
-from typing import cast, Iterable, List, Optional, Union
+from typing import cast, Iterable, List, Optional, Tuple, Union
+
 import numpy as np
 
+from reconstruction.ecoli.simulation_data import SimulationDataEcoli
+from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.utils import constants
+from wholecell.utils import filepath as fp
+
 
 class AnalysisPaths(object):
 	'''
@@ -30,32 +36,36 @@ class AnalysisPaths(object):
 	it is assumed that all values for that field are desired. If all
 	fields are left blank all cells will be returned.
 
-	For a variant_plot, out_dir should be a top level simulation output dir.
-	For a cohort_plot, out_dir should be a variant output dir.
-	For a multi_gen_plot, out_dir should be a seed output dir.
+	* For an all_variant_plot, out_dir must be a top level simulation output
+	  dir. It runs over all variant directories, including those with the high
+	  order variant digit (1xxxxx) created for the Parca "--operons=both"
+	  secondary simData case. These variant analysis classes must:
+	  * not assume that variant indexes are contiguous;
+	  * use the high order variant index digit to select the correct simData and
+	    variantData for each variant.
+	  AnalysisPaths has support methods for all_variant_plot classes.
+	* For a variant_plot, out_dir must be a top level simulation output dir.
+	  This plot type skips the secondary simData case for compatibility with
+	  existing variant analysis classes.
+	* For a cohort_plot, out_dir must be a variant output dir.
+	* For a multi_gen_plot, out_dir must be a seed output dir.
 	'''
 
-	def __init__(self, out_dir, variant_plot = False, multi_gen_plot = False, cohort_plot = False):
-		# type: (str, bool, bool, bool) -> None
-		assert sum((variant_plot, multi_gen_plot, cohort_plot)) == 1, "Must specify exactly one plot type!"
+	def __init__(self, out_dir, *,
+				 all_variant_plot: bool = False, variant_plot: bool = False,
+				 multi_gen_plot: bool = False, cohort_plot: bool = False) -> None:
+		assert (all_variant_plot + variant_plot + multi_gen_plot + cohort_plot
+				) == 1, "Must specify exactly one plot type!"
 
 		generation_dirs = []  # type: List[str]
-		if variant_plot:
-			# Find all variant directories in the given simulation output dir
+		if variant_plot or all_variant_plot:
+			# Find suitable variant directories in the given simulation output dir
+			variant_pattern = re.compile(r'.+_0\d{5}' if variant_plot else r'.+_\d{6}')
 			all_dirs = listdir(out_dir)
 			variant_out_dirs = []
-			# Consider only those directories which are variant directories
 			for directory in all_dirs:
-				# Accept directories which have a variant type, an underscore, and
-				# a 6-digit variant index
-				if match(r'.+_\d{6}$', directory):
+				if variant_pattern.fullmatch(directory):
 					variant_out_dirs.append(join(out_dir, directory))
-
-			# Check to see if only wildtype variants exist that didn't match the pattern
-			if len(variant_out_dirs) == 0:
-				for directory in all_dirs:
-					if directory.startswith("wildtype_"):
-						variant_out_dirs.append(join(out_dir, directory))
 
 			if len(variant_out_dirs) == 0:
 				raise Exception("Variant out_dir doesn't contain variants!")
@@ -65,7 +75,7 @@ class AnalysisPaths(object):
 			for variant_dir in variant_out_dirs:
 				all_dirs = listdir(variant_dir)
 				for directory in all_dirs:
-					if match(r'^\d{6}$', directory):
+					if re.match(r'^\d{6}$', directory):
 						seed_out_dirs.append(join(variant_dir, directory))
 
 			# Get all generation files for each seed
@@ -78,7 +88,7 @@ class AnalysisPaths(object):
 			seed_out_dirs = []
 			all_dirs = listdir(out_dir)
 			for directory in all_dirs:
-				if match(r'^\d{6}$', directory):
+				if re.match(r'^\d{6}$', directory):
 					seed_out_dirs.append(join(out_dir, directory))
 
 			# Get all generation files for each seed
@@ -105,7 +115,7 @@ class AnalysisPaths(object):
 		variant_kb = []
 		for filePath in generation_dirs:
 			# Find generation
-			matches = findall(r'generation_\d{6}', filePath)
+			matches = re.findall(r'generation_\d{6}', filePath)
 			if len(matches) > 1:
 				raise Exception("Expected only one match for generation!")
 			generations.append(int(matches[0][-6:]))
@@ -131,14 +141,25 @@ class AnalysisPaths(object):
 		self._path_data["generation"] = generations
 		self._path_data["variantkb"] = variant_kb
 
+		self.variants = sorted(set(variants))
+		operons = set()
+		base_variants = set()
+		for variant_index in self.variants:
+			operon, base_variant = fp.split_variant_index(variant_index)
+			operons.add(operon)
+			base_variants.add(base_variant)
+		self.operons = sorted(operons)  # unique operon indexes
+		self.base_variants = sorted(base_variants)  # unique base variant indexes
+
 		self.n_generation = len(set(generations))
-		self.n_variant = len(set(variants))
+		self.n_variant = len(self.variants)  # CAUTION: variant indexes are discontiguous when operons=both
 		self.n_seed = len(set(seeds))
 
 	def get_cells(self, variant = None, seed = None, generation = None):
 		# type: (Optional[Iterable[Union[int, str]]], Optional[Iterable[int]], Optional[Iterable[int]]) -> np.ndarray
-		"""Returns file paths for all the simulated cells."""
-		# TODO: Rename this to get_cell_paths()?
+		"""Returns file paths for all the simulated cells matching the given
+		indexes.
+		"""
 		if variant is None:
 			variantBool = np.ones(self._path_data.shape)
 		else:
@@ -164,7 +185,66 @@ class AnalysisPaths(object):
 
 	def get_variants(self):
 		# type: () -> List[Union[int, str]]
+		"""Return all the variants (like self.variants)."""
 		return sorted(np.unique(self._path_data["variant"]))
+
+	def get_cell_variant(self, path: str) -> int:
+		"""Return the variant index for the given get_cells() path."""
+		return self._path_data['variant'][self._path_index(path)]
+
+	def get_cell_seed(self, path: str) -> int:
+		"""Return the seed for the given get_cells() path."""
+		return self._path_data['seed'][self._path_index(path)]
+
+	def get_cell_generation(self, path: str) -> int:
+		"""Return the generation number for the given get_cells() path."""
+		return self._path_data['generation'][self._path_index(path)]
+
+	def get_cell_variant_kb(self, path: str) -> str:
+		"""Return the variant kb path for the given get_cells() path."""
+		return self._path_data['variantkb'][self._path_index(path)]
+
+	def _path_index(self, path: str) -> int:
+		"""Return the index into _path_data of the given get_cells() path."""
+		indexes = np.where(self._path_data['path'] == path)[0]
+		assert indexes.size == 1
+		return indexes[0]
+
+	def read_sim_data_files(self, simDataFile: str) -> Tuple[
+			SimulationDataEcoli, SimulationDataEcoli]:
+		"""Return the primary sim_data object read from simDataFile and the
+		secondary sim_data object read from the adjacent kb-poly/ directory,
+		or the primary one if there isn't a secondary.
+		"""
+		with open(simDataFile, 'rb') as f:
+			sim_data1 = sim_data2 = pickle.load(f)
+
+		sim_path = dirname(dirname(simDataFile))
+		secondary_sim_data_file = join(
+			sim_path, constants.PKB_DIR, constants.SERIALIZED_SIM_DATA_FILENAME)
+		if isfile(secondary_sim_data_file):
+			with open(secondary_sim_data_file, 'rb') as f:
+				sim_data2 = pickle.load(f)
+
+		return sim_data1, sim_data2
+
+	def read_validation_data_files(self, validationDataFile: str) -> Tuple[
+			ValidationDataEcoli, ValidationDataEcoli]:
+		"""Return the primary validation_data object read from validationDataFile
+		and the secondary validation_data object read from the adjacent kb-poly/
+		directory, or the primary one if there isn't a secondary.
+		"""
+		with open(validationDataFile, 'rb') as f:
+			validation_data1 = validation_data2 = pickle.load(f)
+
+		sim_path = dirname(dirname(validationDataFile))
+		secondary_validation_data_file = join(
+			sim_path, constants.PKB_DIR, constants.SERIALIZED_VALIDATION_DATA)
+		if isfile(secondary_validation_data_file):
+			with open(secondary_validation_data_file, 'rb') as f:
+				validation_data2 = pickle.load(f)
+
+		return validation_data1, validation_data2
 
 	def _get_generations(self, directory):
 		# type: (str) -> List[List[str]]
@@ -182,9 +262,10 @@ class AnalysisPaths(object):
 
 	def _get_individuals(self, directory):
 		# type: (str) -> List[str]
-		"""Get a sorted list of the directory's daughter cell paths.
-		(Those paths are holders for simOut/ and plotOut/ subdirs.)
-		ASSUMES: directory contains numbered subdirs "000000" thru "DDDDDD".
+		"""Get a sorted list of the directory's daughter cell paths, each of
+		them a place for simOut/ and plotOut/ subdirs.
+		ASSUMES: directory is a generation directory like "generation_000001",
+		each containing numbered daughter subdirs "000000" thru "DDDDDD".
 		"""
 		individual_files = [
 			join(directory, f) for f in listdir(directory)

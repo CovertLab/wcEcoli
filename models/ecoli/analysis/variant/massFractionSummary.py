@@ -34,7 +34,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					"DNA\nmass"
 					]
 
-		ap = AnalysisPaths(inputDir, variant_plot = True)
+		ap = AnalysisPaths(inputDir, all_variant_plot = True)
 		all_cells = ap.get_cells()
 
 		# Build a mapping from variant id to color

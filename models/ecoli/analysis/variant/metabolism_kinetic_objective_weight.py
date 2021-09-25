@@ -199,7 +199,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_sims = ap.n_seed * ap.n_generation
 
 		if n_variants <= 1:
-			print('This plot {} only runs for multiple variants'.format(__name__))
+			print(f"Plot {__name__} only runs for multiple variants")
 			return
 
 		# Load validation data

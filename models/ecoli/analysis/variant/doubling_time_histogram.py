@@ -11,17 +11,17 @@ from wholecell.io.tablereader import TableReader, TableReaderError
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import variantAnalysisPlot
-from six.moves import range
+from wholecell.utils import filepath as fp
 
 FONT_SIZE=9
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		ap = AnalysisPaths(inputDir, variant_plot = True)
+		ap = AnalysisPaths(inputDir, all_variant_plot = True)
 
-		if ap.n_generation == 1:
-			print("Need more data to create plot")
+		if ap.n_generation <= 1:
+			print(f"Plot {__name__} needs more generations of data to plot.")
 			return
 
 		fig = plt.figure()
@@ -30,21 +30,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		doublingTimeVariants = [44, 100, 22]
 
-		for varIdx in range(ap.n_variant):
+		for variant_composite_index in ap.variants:
+			op, varIdx = fp.split_variant_index(variant_composite_index)
 
 			if varIdx == 0:
 				plotIdx = 1
-				gen = [2,3]
 			elif varIdx == 1:
 				plotIdx = 0
-				gen = [2,3]
 			elif varIdx == 2:
 				plotIdx = 2
-				gen = [6,7]
 			else:
 				continue
 
-			all_cells = ap.get_cells(generation=[2,3], variant=[varIdx])
+			all_cells = ap.get_cells(
+				generation=[2, 3],
+				variant=[op * fp.OPERON_PART + varIdx])
 			if len(all_cells) == 0:
 				continue
 

@@ -162,7 +162,7 @@ def headers(labels, name):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if metadata.get('variant', '') != 'param_sensitivity':
-			print('This plot only runs for the param_sensitivity variant.')
+			print(f"Plot {__name__} only runs for the param_sensitivity variant.")
 			return
 
 		global ap

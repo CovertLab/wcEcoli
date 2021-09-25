@@ -25,7 +25,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		ap = AnalysisPaths(inputDir, variant_plot = True)
+		ap = AnalysisPaths(inputDir, all_variant_plot = True)
 		all_cells = ap.get_cells()
 
 		rnaToProteinDict = {}
@@ -34,14 +34,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		stableRnaFractionDict = {}
 		doublingPerHourDict = {}
 
-		variantSimDataFile = ap.get_variant_kb(ap.get_variants()[0])
-		sim_data = cPickle.load(open(variantSimDataFile, "rb"))
-		nAvogadro = sim_data.constants.n_avogadro.asNumber()
-		chromMass = (sim_data.getter.get_mass(sim_data.molecule_ids.full_chromosome) / sim_data.constants.n_avogadro).asNumber()
-
 		for simDir in all_cells:
 			simOutDir = os.path.join(simDir, "simOut")
-			variant = int(simDir[simDir.rfind('generation_')-14:simDir.rfind('generation_')-8])
+			variantSimDataFile = ap.get_cell_variant_kb(simDir)
+			sim_data = cPickle.load(open(variantSimDataFile, "rb"))
+			nAvogadro = sim_data.constants.n_avogadro.asNumber()
+			chromMass = (sim_data.getter.get_mass(
+				sim_data.molecule_ids.full_chromosome) / sim_data.constants.n_avogadro).asNumber()
+			variant = ap.get_cell_variant(simDir)
 
 			mass = TableReader(os.path.join(simOutDir, "Mass"))
 

@@ -26,11 +26,11 @@ NUMERICAL_ZERO = 1e-12
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		if metadata["variant"] != "tf_activity":
-			print("This plot only runs for the 'tf_activity' variant.")
+			print(f"Plot {__name__} only runs for the 'tf_activity' variant.")
 			return
 
 		ap = AnalysisPaths(inputDir, variant_plot = True)
-		variants = sorted(ap._path_data['variant'].tolist()) # Sorry for accessing private data
+		variants = sorted(ap.variants)
 
 		if 0 in variants:
 			variants.remove(0)

@@ -17,18 +17,28 @@ from wholecell.io.tablereader import TableReader
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		with open(simDataFile, 'rb') as f:
-			sim_data = pickle.load(f)
-		with open(validationDataFile, 'rb') as f:
-			validation_data = pickle.load(f)
-
 		ap = AnalysisPaths(inputDir, variant_plot=True)
+
+		# To handle the --operons=both case, a variant analysis class needs to
+		# * Call ap = AnalysisPaths(all_variant_plot=True).
+		#   *OR* call ap = AnalysisPaths(variant_plot=True) and handle only the
+		#   primary case, which in an --operons=both run is operons OFF.
+		# * Don't assume the combined variant index values are contiguous, e.g.
+		#   don't use range(ap.n_variant).
+		# * Call filepath.split_variant_index() to split the combined variant
+		#   index (each element of ap.get_variants()) into the operon part and
+		#   the base variant index.
+		# * Use the primary (kb/) or secondary (kb-poly/) sim_data files and
+		#   validation_data files as appropriate per variant.
+		# * See AnalysisPaths utilities .variants, .base_variants, .operons,
+		#   .get_cell_seed(), .get_cell_generation(), etc.
+		sim_data1, sim_data2 = ap.read_sim_data_files(simDataFile)
+		validation_data1, validation_data2 = ap.read_validation_data_files(
+			validationDataFile)
 		variants = ap.get_variants()
 
 		for variant in variants:
 			# Load modified variant sim_data
-			## Consider calculating variant difference and only loading
-			## sim_data once above for better performance.
 			with open(ap.get_variant_kb(variant), 'rb') as f:
 				variant_sim_data = pickle.load(f)
 
@@ -52,6 +62,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				(counts,) = read_bulk_molecule_counts(simOutDir, (names,))
 
+			_ = time, counts  # Avoid "unused" warnings in this template.
+
 		plt.figure()
 
 		### Create Plot ###
@@ -59,6 +71,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
+
+		# Avoid "unused" warnings in this template.
+		_ = np, sim_data1, sim_data2, validation_data1, validation_data2
+		_ = variant_sim_data
 
 
 if __name__ == "__main__":

@@ -4,8 +4,6 @@ amino acid to see how sensitive growth rate is to a range of parameters.
 Useful with the aa_synthesis_sensitivity variant.
 """
 
-import pickle
-
 from matplotlib import colors, gridspec, pyplot as plt
 import numpy as np
 
@@ -13,6 +11,7 @@ from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants import aa_synthesis_sensitivity
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.utils import filepath as fp
 
 
 # These are set in the variant and will need to be updated if there are changes to the media
@@ -22,20 +21,21 @@ CONTROL_INDEX = 19
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		ap = AnalysisPaths(inputDir, variant_plot=True)
+		ap = AnalysisPaths(inputDir, all_variant_plot=True)
 		variants = ap.get_variants()
 
-		with open(simDataFile, 'rb') as f:
-			sim_data = pickle.load(f)
-		aa_ids = sim_data.molecule_groups.amino_acids
+		sim_data_objects = ap.read_sim_data_files(simDataFile)
 		n_params = len(aa_synthesis_sensitivity.PARAMETERS)
 
 		# Load simulation growth rates
 		data = {}
 		for variant in variants:
-			media_index = aa_synthesis_sensitivity.get_media_index(variant, sim_data)
-			aa_index = aa_synthesis_sensitivity.get_aa_index(variant, sim_data)
-			param, factor = aa_synthesis_sensitivity.get_adjustment(variant)
+			operon, base_variant = fp.split_variant_index(variant)
+			sim_data = sim_data_objects[operon]
+			aa_ids = sim_data.molecule_groups.amino_acids
+			media_index = aa_synthesis_sensitivity.get_media_index(base_variant, sim_data)
+			aa_index = aa_synthesis_sensitivity.get_aa_index(base_variant, sim_data)
+			param, factor = aa_synthesis_sensitivity.get_adjustment(base_variant)
 			aa_adjusted = aa_ids[aa_index][:-3]
 			param_label = f'{aa_adjusted} {param}'
 

@@ -5,7 +5,6 @@ for processes.
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
 
 from matplotlib import pyplot as plt
@@ -17,6 +16,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants.time_step import TIME_STEP_FACTOR
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import filepath as fp
 
 
 def remove_border(ax):
@@ -47,13 +47,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = ap.get_variants()
 		n_variants = len(variants)
 
-		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
-		inactive_rnap_id = [sim_data.molecule_ids.full_RNAP]
-		ribosome_subunit_ids = [
-			sim_data.molecule_ids.s50_full_complex,
-			sim_data.molecule_ids.s30_full_complex,
-			]
+		sim_data1, sim_data2 = ap.read_sim_data_files(simDataFile)
+		inactive_rnap_ids = [
+			[sim_data1.molecule_ids.full_RNAP],
+			[sim_data2.molecule_ids.full_RNAP]]
+		ribosome_subunit_idss = [[
+			sim_data1.molecule_ids.s50_full_complex,
+			sim_data1.molecule_ids.s30_full_complex], [
+			sim_data2.molecule_ids.s50_full_complex,
+			sim_data2.molecule_ids.s30_full_complex]]
 
 		all_time_steps = np.zeros(n_variants)
 		all_doubling_times = np.zeros(n_variants)
@@ -74,6 +76,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if variant > len(TIME_STEP_FACTOR):
 				continue
 			x_vals.append(variant)
+			operon, base_variant = fp.split_variant_index(variant)
 
 			time_steps = []
 			doubling_times = []
@@ -116,7 +119,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				rrna_mass = mass_reader.readColumn('rRnaMass')
 				mrna_mass = mass_reader.readColumn('mRnaMass')
 				(inactive_rnap_counts, inactive_ribosome_counts) = read_bulk_molecule_counts(
-					simOutDir, (inactive_rnap_id, ribosome_subunit_ids))
+					simOutDir, (inactive_rnap_ids[operon], ribosome_subunit_idss[operon]))
 
 				# Calculate derived values
 				rnap_elong_rate = rnap_elongations / active_rnap_counts / time_step
