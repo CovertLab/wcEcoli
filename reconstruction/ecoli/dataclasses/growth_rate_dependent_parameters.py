@@ -463,7 +463,7 @@ class GrowthRateParameters(object):
 	def get_ribosome_elongation_rate_by_ppgpp(self, ppgpp, max_rate=None):
 		ppgpp_units, rate_units, fit_vmax, KI, H = self._ribosome_elongation_rate_by_ppgpp
 		vmax = fit_vmax if max_rate is None else max_rate
-		return rate_units * vmax / (1 + (ppgpp.asNumber(ppgpp_units) / KI)**H)
+		return rate_units * vmax / (1 + (ppgpp.asNumber(ppgpp_units) / KI)**H) * 1.1
 
 def _get_fit_parameters(list_of_dicts, key):
 	# Load rows of data
