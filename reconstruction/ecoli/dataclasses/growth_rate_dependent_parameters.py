@@ -430,6 +430,12 @@ class GrowthRateParameters(object):
 		self._ppGpp_concentration = _get_linearized_fit(doubling_time, ppgpp_conc)
 		self._ribosome_elongation_rate_by_ppgpp = self._fit_ribosome_elongation_rate_by_ppgpp(ppgpp_conc, ribosome_elongation_rate)
 
+		# Estimate of the amount that the max elongation rate is reduced by having
+		# charging at less than 100% since measured data is not the max elongation
+		# rate but the observed elongation rate
+		# TODO (travis): calculate this value based on expected charging
+		self._charging_fraction_of_max_elong_rate = 0.9
+
 	def _fit_ribosome_elongation_rate_by_ppgpp(self, ppgpp, rate):
 		ppgpp_units = units.umol / units.L
 		rate_units = units.getUnit(rate)
@@ -463,7 +469,7 @@ class GrowthRateParameters(object):
 	def get_ribosome_elongation_rate_by_ppgpp(self, ppgpp, max_rate=None):
 		ppgpp_units, rate_units, fit_vmax, KI, H = self._ribosome_elongation_rate_by_ppgpp
 		vmax = fit_vmax if max_rate is None else max_rate
-		return rate_units * vmax / (1 + (ppgpp.asNumber(ppgpp_units) / KI)**H) * 1.1
+		return rate_units * vmax / (1 + (ppgpp.asNumber(ppgpp_units) / KI)**H) / self._charging_fraction_of_max_elong_rate
 
 def _get_fit_parameters(list_of_dicts, key):
 	# Load rows of data
