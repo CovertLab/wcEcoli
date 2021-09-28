@@ -430,11 +430,15 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
 
 	def elongation_rate(self):
-		cell_mass = self.process.readFromListener("Mass", "cellMass") * units.fg
-		cell_volume = cell_mass / self.cellDensity
-		counts_to_molar = 1 / (self.process.n_avogadro * cell_volume)
-		ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
-		return self.elong_rate_by_ppgpp(ppgpp_conc, self.basal_elongation_rate).asNumber(units.aa / units.s)
+		if self.process.ppgpp_regulation:
+			cell_mass = self.process.readFromListener("Mass", "cellMass") * units.fg
+			cell_volume = cell_mass / self.cellDensity
+			counts_to_molar = 1 / (self.process.n_avogadro * cell_volume)
+			ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
+			rate = self.elong_rate_by_ppgpp(ppgpp_conc, self.basal_elongation_rate).asNumber(units.aa / units.s)
+		else:
+			rate = super().elongation_rate()
+		return rate
 
 	def request(self, aasInSequences):
 		self.max_time_step = min(self.process.max_time_step, self.max_time_step * self.time_step_increase)

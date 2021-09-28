@@ -86,6 +86,9 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.define_parameter_bool(parser, 'mechanistic_aa_transport',
 			default_key='mechanistic_aa_transport',
 			help='set if sims were run with mechanistic_aa_transport')
+		self.define_parameter_bool(parser, 'ppgpp_regulation',
+			default_key='ppgpp_regulation',
+			help='set if sims were run with ppgpp_regulation')
 
 		# Debug options
 		parser.add_argument('-c', '--cpus', type=int, default=1,
@@ -245,8 +248,11 @@ class ChargingDebug(scriptBase.ScriptBase):
 		charging_params = {}
 		for param, value in self.adjustable_charging_params.items():
 			charging_params[param] = value * param_adjustments.get(param, 1)
-		charging_params['max_elong_rate'] = self.elong_rate(self.ppgpp_conc[timestep],
-			self.basal_elong_rate).asNumber(units.aa / units.s)
+		if self.ppgpp_regulation:
+			charging_params['max_elong_rate'] = self.elong_rate(self.ppgpp_conc[timestep],
+				self.basal_elong_rate).asNumber(units.aa / units.s)
+		else:
+			charging_params['max_elong_rate'] = self.basal_elong_rate
 		charging_params.update(self.constant_charging_params)
 		ppgpp_params = {}
 		for param, value in self.adjustable_ppgpp_params.items():
@@ -642,6 +648,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		self.aa_supply_in_charging = args.aa_supply_in_charging
 		self.mechanistic_translation_supply = args.mechanistic_translation_supply
 		self.mechanistic_aa_transport = args.mechanistic_aa_transport
+		self.ppgpp_regulation = args.ppgpp_regulation
 
 		# Load data and check if required
 		if (args.grid_search or args.validation or args.interactive) and args.sim_dir is not None:
