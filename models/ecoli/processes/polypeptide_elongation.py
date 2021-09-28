@@ -1001,10 +1001,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 
 		# Limit v_rib and v_charging to the amount of available amino acids
 		if limit_v_rib:
-			aa_rate = original_aa_conc / time_limit
-			trna_rate = original_charged_trna_conc / time_limit
-			v_charging = np.fmin(v_charging, aa_rate)
-			v_rib_max = max(0, ((aa_rate + trna_rate) / f).min())
+			v_charging = np.fmin(v_charging, aa_rate_limit)
 			v_rib = min(v_rib, v_rib_max)
 
 		dtrna = v_charging - v_rib*f
@@ -1039,6 +1036,11 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	n_aas = len(aa_conc)
 	n_aas_masked = len(original_aa_conc)
 
+	# Limits for integration
+	aa_rate_limit = original_aa_conc / time_limit
+	trna_rate_limit = original_charged_trna_conc / time_limit
+	v_rib_max = max(0, ((aa_rate_limit + trna_rate_limit) / f).min())
+
 	# Integrate rates of charging and elongation
 	c_init = np.hstack((original_uncharged_trna_conc, original_charged_trna_conc, aa_conc, np.zeros(n_aas)))
 	sol = solve_ivp(dcdt, [0, time_limit], c_init, method='BDF')
@@ -1047,6 +1049,7 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	# Determine new values from integration results
 	final_uncharged_trna_conc = c_sol[-1, :n_aas_masked]
 	final_charged_trna_conc = c_sol[-1, n_aas_masked:2*n_aas_masked]
+	total_supply = c_sol[-1, 2*n_aas_masked+n_aas:2*n_aas_masked+2*n_aas]
 
 	negative_check(final_uncharged_trna_conc, final_charged_trna_conc)
 	negative_check(final_charged_trna_conc, final_uncharged_trna_conc)
@@ -1062,9 +1065,6 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	new_fraction_charged = np.zeros(n_total_aas)
 	new_fraction_charged[mask] = fraction_charged
 	new_fraction_charged[~mask] = fraction_charged.mean()
-
-	# Amount of amino acids supplied in charging
-	total_supply = c_sol[-1, 2*n_aas_masked+n_aas:2*n_aas_masked+2*n_aas]
 
 	return new_fraction_charged, v_rib, total_supply
 
