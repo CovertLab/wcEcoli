@@ -486,10 +486,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'original_aa_supply', self.process.aa_supply)
 		self.process.writeToListener('GrowthLimits', 'aa_in_media', aa_in_media)
 
-		# TODO (travis): save this in a listener and load in charging debug script
-		self.charging_params['max_elong_rate'] = self.elongation_rate()
-
 		# Calculate steady state tRNA levels and resulting elongation rate
+		self.charging_params['max_elong_rate'] = self.elongation_rate()
 		fraction_charged, v_rib, supplied_in_charging = calculate_trna_charging(
 			synthetase_conc,
 			uncharged_trna_conc,
