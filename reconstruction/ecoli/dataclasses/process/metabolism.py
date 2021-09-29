@@ -476,6 +476,13 @@ class Metabolism(object):
 			adjustments[parameter] = factor
 			self.aa_synthesis_pathway_adjustments[aa] = adjustments
 
+		self.amino_acid_uptake_rates = {}
+		for row in raw_data.amino_acid_uptake_rates:
+			rates = {}
+			rates['uptake'] = row['Uptake']
+			rates['LB'] = row['Uptake, LB']
+			rates['UB'] = row['Uptake, UB']
+			self.amino_acid_uptake_rates[row['Amino acid']] = rates
 
 	def get_kinetic_constraints(self, enzymes, substrates):
 		# type: (units.Unum, units.Unum) -> units.Unum
@@ -865,63 +872,20 @@ class Metabolism(object):
 			Consider multiple reaction steps
 		"""
 
-		# TODO: load from file, mmol/g/hr
-		# TODO: handle SEL and maybe set CYS to 0
-		uptake_rates = {
-			"L-ALPHA-ALANINE": 0.28,
-			"ARG": 0.55,
-			"ASN": 0.14,
-			"L-ASPARTATE": 2.97,
-			"CYS": 0,  # 0.0017,
-			"GLN": 0.10,
-			"GLT": 2.25,
-			"GLY": 2.78,
-			"HIS": 0.064,
-			"ILE": 0.31,
-			"LEU": 0.31,
-			"LYS": 0.12,
-			"MET": 0.11,
-			"PHE": 0.14,
-			"PRO": 0.19,
-			"SER": 5.42,
-			"THR": 0.74,
-			"TRP": 0.049,
-			"TYR": 0.038,
-			"VAL": 0.28,
-			'L-SELENOCYSTEINE': 0,
-			}
-
-		fwd_kcat_targets = {
-			"ARG": 654,
-			"L-ASPARTATE": 670,
-			"CYS": 772,
-			"GLN": 36,
-			"GLY": 11,
-			"LYS": 104,
-			"MET": 22,
-			"PHE": 32,
-			"PRO": 53,
-			"SER": 29,
-			"TYR": 71,
-			"VAL": 38.5,
-			}
-		rev_kcat_targets = {
-			}
-		default_fwd_target = np.mean(list(fwd_kcat_targets.values()))
-
-		def objective(aa, uptake, kcat_fwd, kcat_rev):
-			aa = aa[:-3]
-			diffs = np.array([
-				uptake_rates[aa] - uptake,
-				fwd_kcat_targets.get(aa, default_fwd_target) - kcat_fwd,
-				rev_kcat_targets.get(aa, kcat_rev if np.isfinite(km_reverse.asNumber()) else 0) - kcat_rev,
-				])
-			weights = np.array([1000, 1, 1])
-			return np.linalg.norm(weights*diffs)
-
 		aa_ids = sim_data.molecule_groups.amino_acids
 		self.aa_to_index = {aa: i for i, aa in enumerate(aa_ids)}
 		conc = self.concentration_updates.concentrations_based_on_nutrients
+
+		# Measured data used as targets for calculations
+		uptake_rates = {}
+		fwd_kcat_targets = {}
+		for aa in aa_ids:
+			aa_no_tag = aa[:-3]
+			uptake_rates[aa_no_tag] = self.amino_acid_uptake_rates[aa_no_tag]['uptake'].asNumber(
+				units.mmol / units.g / units.h) if aa_no_tag in self.amino_acid_uptake_rates else 0
+			if (kcat := self.aa_synthesis_pathways[aa]['kcat_data'].asNumber(K_CAT_UNITS)) > 0:
+				fwd_kcat_targets[aa_no_tag] = kcat
+		default_fwd_target = np.mean(list(fwd_kcat_targets.values()))
 
 		# Allosteric inhibition constants to match required supply rate
 		basal_rates = (
@@ -1086,6 +1050,16 @@ class Metabolism(object):
 				return kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake
 
 			# Fit forward and reverse kcats by adjusting the uptake rate
+			def objective(aa, uptake, kcat_fwd, kcat_rev):
+				aa = aa[:-3]
+				diffs = np.array([
+					uptake_rates[aa] - uptake,
+					fwd_kcat_targets.get(aa, default_fwd_target) - kcat_fwd,
+					0 if np.isfinite(km_reverse.asNumber()) else kcat_rev,  # no penalty if reverse, minimize if degradation
+					])
+				weights = np.array([1000, 1, 1])
+				return np.linalg.norm(weights*diffs)
+
 			best_objective = None
 			kcat_fwd = None
 			n_factors = 500
