@@ -960,19 +960,17 @@ class Metabolism(object):
 		for aa in aa_ids:
 			for downstream_aa in self.aa_synthesis_pathways[aa]['downstream']:
 				if np.isfinite(self.aa_synthesis_pathways[downstream_aa]['km, degradation'].asNumber()):
-					dependencies[aa] = dependencies.get(aa, set()) | {downstream_aa}
+					dependencies.setdefault(aa, set()).add(downstream_aa)
 
 			# Convert individual supply calculations to overall supply based on dependencies
 			# via dot product (self.aa_forward_stoich @ supply)
-			# TODO: check for loops (eg ser dependent on glt, glt dependent on ser)
-			# TODO: check this makes sense with new format
 			for upstream_aa, stoich in self.aa_synthesis_pathways[aa]['upstream'].items():
 				self.aa_forward_stoich[self.aa_to_index[upstream_aa], self.aa_to_index[aa]] = -stoich
-				dependencies[upstream_aa] = dependencies.get(upstream_aa, set()) | {aa}
+				dependencies.setdefault(upstream_aa, set()).add(aa)
 
 			for reverse_aa, stoich in self.aa_synthesis_pathways[aa]['reverse'].items():
 				self.aa_reverse_stoich[self.aa_to_index[reverse_aa], self.aa_to_index[aa]] = -stoich
-				dependencies[reverse_aa] = dependencies.get(reverse_aa, set()) | {aa}
+				dependencies.setdefault(reverse_aa, set()).add(aa)
 
 		ordered_aa_ids = []
 		for _ in aa_ids:  # limit number of iterations number of amino acids in case there are cyclic links
@@ -985,18 +983,6 @@ class Metabolism(object):
 		if len(ordered_aa_ids) != len(aa_ids):
 			raise RuntimeError('Could not determine amino acid order to calculate dependencies first.'
 				' Make sure there are no cyclical pathways for amino acids that can degrade.')
-
-		# TODO: move these to a file
-		# uptake_rates['ASN'] *= 1.3
-		# uptake_rates['HIS'] *= 1.6
-		# uptake_rates['L-ALPHA-ALANINE'] *= 1.1
-		# uptake_rates['LEU'] *= 1.6
-		# uptake_rates['LYS'] *= 3.5
-		# uptake_rates['MET'] *= 1.5
-		# uptake_rates['TRP'] *= 1.3
-		# uptake_rates['TYR'] *= 5
-		# uptake_rates['VAL'] *= 1.6
-		# uptake_rates['GLN'] *= 1.1
 
 		for amino_acid in ordered_aa_ids:
 			data = self.aa_synthesis_pathways[amino_acid]
@@ -1086,7 +1072,8 @@ class Metabolism(object):
 				try:
 					kcat_fwd, kcat_rev = np.linalg.solve(A, b)
 				except np.linalg.LinAlgError:
-					print(f'Warning: could not solve directly for {amino_acid} kcats - switching to least squares')
+					if VERBOSE:
+						print(f'Warning: could not solve directly for {amino_acid} kcats - switching to least squares')
 					kcat_fwd, kcat_rev = np.linalg.lstsq(A, b, rcond=None)[0]
 
 				fwd_rate = (kcat_fwd * fwd_enzymes_basal * fwd_fraction_basal,
@@ -1098,70 +1085,66 @@ class Metabolism(object):
 
 				return kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake
 
-			kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake = calc_kcats(
-				aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
-				km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
-			data['kcat'] = kcat_fwd * K_CAT_UNITS
-
-			# TODO: turn into optional function for debugging
-			# TODO: check very high kcats
+			# Fit forward and reverse kcats by adjusting the uptake rate
 			best_objective = None
-			if kcat_fwd < 0 or kcat_rev < 0:  # or kcat_fwd > 1e5 or kcat_rev > kcat_fwd:
-				o_fwd = kcat_fwd
-				o_rev = kcat_rev
-				n_factors = 500
-				# print(f'*** {amino_acid}: {kcat_fwd:5.1f} {kcat_rev:5.1f} ***')
-				# print('KMs:')
-				# for factor in np.logspace(-1, 1, n_factors):
-				# 	kcat_fwd, kcat_rev, *_ = calc_kcats(
-				# 		aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, factor * kms,
-				# 		km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
-				#
-				# 	print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
-				#
-				# print('km_reverse:')
-				# for factor in np.logspace(-1, 1, n_factors):
-				# 	kcat_fwd, kcat_rev, *_ = calc_kcats(
-				# 		aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
-				# 		factor * km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
-				#
-				# 	print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
-				#
-				# print('km_degradation:')
-				# for factor in np.logspace(-1, 1, n_factors):
-				# 	kcat_fwd, kcat_rev, *_ = calc_kcats(
-				# 		aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
-				# 		km_reverse, factor * km_degradation, ki, uptake_rates[amino_acid[:-3]])
-				#
-				# 	print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
-				#
-				# print('ki:')
-				# for factor in np.logspace(-1, 1, n_factors):
-				# 	kcat_fwd, kcat_rev, *_ = calc_kcats(
-				# 		aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
-				# 		km_reverse, km_degradation, factor * ki, uptake_rates[amino_acid[:-3]])
-				#
-				# 	print(f'\t{factor:.2f}:\t{kcat_fwd:5.1f}\t{kcat_rev:5.1f}')
-
+			kcat_fwd = None
+			n_factors = 500
+			if VERBOSE:
 				print('uptake:')
-				for factor in np.logspace(-1, 1, n_factors):
-					results = calc_kcats(
-						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
-						km_reverse, km_degradation, ki, factor * uptake_rates[amino_acid[:-3]])
+			for factor in np.logspace(-1, 1, n_factors):
+				results = calc_kcats(
+					aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+					km_reverse, km_degradation, ki, factor * uptake_rates[amino_acid[:-3]])
 
-					new_kcat_fwd, new_kcat_rev, *_ = results
+				new_kcat_fwd, new_kcat_rev, *_ = results
+				if VERBOSE:
 					print(f'\t{factor:.2f}:\t{new_kcat_fwd:5.1f}\t{new_kcat_rev:5.1f}')
-					if new_kcat_fwd > 0 and new_kcat_rev > 0:
-						new_objective = objective(amino_acid, factor * uptake_rates[amino_acid[:-3]], new_kcat_fwd, new_kcat_rev)
-						print(new_objective)
-						if best_objective is None or new_objective < best_objective:
-							kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake = results
-							data['kcat'] = kcat_fwd * K_CAT_UNITS
-							best_objective = new_objective
+				if new_kcat_fwd >= 0 and new_kcat_rev >= 0:
+					new_objective = objective(amino_acid, factor * uptake_rates[amino_acid[:-3]], new_kcat_fwd, new_kcat_rev)
+					if best_objective is None or new_objective < best_objective:
+						kcat_fwd, kcat_rev, fwd_rate, rev_rate, deg_rate, uptake = results
+						data['kcat'] = kcat_fwd * K_CAT_UNITS
+						best_objective = new_objective
 
-				# kcat_fwd = o_fwd
-				# kcat_rev = o_rev
+			# Vary input parameters for kcat calculations for debugging purposes
+			if VERBOSE:
+				print('KMs:')
+				for factor in np.logspace(-1, 1, n_factors):
+					new_kcat_fwd, new_kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, factor * kms,
+						km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{new_kcat_fwd:5.1f}\t{new_kcat_rev:5.1f}')
+
+				print('km_reverse:')
+				for factor in np.logspace(-1, 1, n_factors):
+					new_kcat_fwd, new_kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						factor * km_reverse, km_degradation, ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{new_kcat_fwd:5.1f}\t{new_kcat_rev:5.1f}')
+
+				print('km_degradation:')
+				for factor in np.logspace(-1, 1, n_factors):
+					new_kcat_fwd, new_kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						km_reverse, factor * km_degradation, ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{new_kcat_fwd:5.1f}\t{new_kcat_rev:5.1f}')
+
+				print('ki:')
+				for factor in np.logspace(-1, 1, n_factors):
+					new_kcat_fwd, new_kcat_rev, *_ = calc_kcats(
+						aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms,
+						km_reverse, km_degradation, factor * ki, uptake_rates[amino_acid[:-3]])
+
+					print(f'\t{factor:.2f}:\t{new_kcat_fwd:5.1f}\t{new_kcat_rev:5.1f}')
 				print(f'*** {amino_acid}: {kcat_fwd:5.1f} {kcat_rev:5.1f} ***')
+
+			if kcat_fwd is None:
+				raise ValueError('Could not find positive foward and reverse'
+					f' kcat for {amino_acid}. Run with VERBOSE to check input'
+					' parameters like KM and KI or check concentrations.')
 
 			aa_enzymes += fwd_enzymes + rev_enzymes
 			enzyme_to_aa_fwd += [amino_acid] * len(fwd_enzymes) + [None] * len(rev_enzymes)
@@ -1210,18 +1193,6 @@ class Metabolism(object):
 		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
 
 		# Check calculations that could end up negative
-		neg_idx = np.where(self.aa_kcats_fwd < 0)[0]
-		if len(neg_idx):
-			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
-			print(f'{self.aa_kcats_fwd = }')
-			raise ValueError(f'Forward kcat value was determined to be negative for {aas}.'
-				' Check input parameters like KM and KI or the concentration.')
-		neg_idx = np.where(self.aa_kcats_rev < 0)[0]
-		if len(neg_idx):
-			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
-			print(f'{self.aa_kcats_rev = }')
-			raise ValueError(f'Reverse kcat value was determined to be negative for {aas}.'
-				' Check input parameters like KM and KI or the concentration.')
 		neg_idx = np.where(self.specific_import_rates < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
