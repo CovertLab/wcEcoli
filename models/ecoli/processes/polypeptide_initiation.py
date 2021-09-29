@@ -76,9 +76,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.ribosome_index = 0
         
         # Save updates
-		self.save_time = 2
+		self.save_times= [2, 12, 102]
 		self.update_to_save = {}
-		self.saved = False
 
 	def calculateRequest(self):
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -215,11 +214,11 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
             'listeners': {
                 'ribosome_data': {
                     'ribosomes_initialized': n_new_proteins.sum(),
-                    'prob_translation_per_transcript': proteinInitProb}}}
-		if not self.saved and self._sim.time() >= self.save_time:
+                    'prob_translation_per_transcript': proteinInitProb,
+                    'ribosomeElongationRate': self.ribosomeElongationRate}}}
+		if self._sim.time() in self.save_times:
 			write_json(f'out/migration/polypeptide_initiation_update_t{int(self._sim.time())}.json',
 					   self.update_to_save)
-			self.saved = True
 	
   
 
