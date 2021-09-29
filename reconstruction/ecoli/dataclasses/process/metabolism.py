@@ -791,7 +791,7 @@ class Metabolism(object):
 		kms = self.aa_export_kms / counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
 
 		# Calculate kcats based on specific_import_rates, dry mass, transporters counts, export kms and counts of aas
-		with np.errstate(divide='ignore'):
+		with np.errstate(invalid='ignore'):
 			vmax = exchange_rates / (1 - (aa_counts/(kms + aa_counts)))
 			self.uptake_kcats_per_aa = vmax / counts_per_aa_import
 			self.export_kcats_per_aa = vmax / counts_per_aa_export
