@@ -25,6 +25,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Load data from sim_data
 		all_cistron_ids = sim_data.process.transcription.cistron_data['id']
+		all_rna_ids = sim_data.process.transcription.rna_data['id']
 		cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
 		cistron_is_mRNA = sim_data.process.transcription.cistron_data['is_mRNA']
 		is_ribosomal_protein = sim_data.process.transcription.cistron_data['is_ribosomal_protein']
@@ -35,9 +36,20 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# ii) Does not encode for ribosomal proteins or RNAPs
 		# iii) not manually overexpressed
 		# to isolate the effects of operons on expression levels.
-		is_adjusted = np.array([
-			(x in sim_data.adjustments.rna_deg_rates_adjustments) for x in all_cistron_ids
-			], dtype=bool)
+		is_adjusted = np.zeros_like(cistron_is_mRNA, dtype=bool)
+		for adjusted_cistron_id in sim_data.adjustments.rna_expression_adjustments.keys():
+			# Include cistrons whose expression is adjusted because they belong
+			# to the same TU as the cistron that is bumped up
+			adjusted_rna_indexes = sim_data.process.transcription.cistron_id_to_rna_indexes(
+				adjusted_cistron_id)
+			adjusted_cistron_indexes = []
+			for adjusted_rna_index in adjusted_rna_indexes:
+				adjusted_cistron_indexes.extend(
+					sim_data.process.transcription.rna_id_to_cistron_indexes(
+						all_rna_ids[adjusted_rna_index]))
+
+			is_adjusted[adjusted_cistron_indexes] = True
+
 		mask = cistron_is_mRNA & ~is_ribosomal_protein & ~is_rnap & ~is_adjusted
 		plotted_cistron_ids = all_cistron_ids[mask]
 
