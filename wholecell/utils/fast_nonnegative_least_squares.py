@@ -91,7 +91,7 @@ def fast_nnls(A, b):
 					A_nonzero_row_indexes[mask],
 					A_nonzero_column_indexes[mask],
 					A.data[mask]):
-				submatrix[np.where(row_indexes == i)[0][0], np.where(column_indexes == j)[0][0]] = 1
+				submatrix[np.where(row_indexes == i)[0][0], np.where(column_indexes == j)[0][0]] = v
 
 			# Solve the subproblem
 			x_subproblem, _ = nnls(submatrix, b[row_indexes])
