@@ -1,5 +1,5 @@
 """
-Test fast nonnegative least squares (NNLS)
+Test the fast nonnegative least squares (NNLS) utils function
 
 	cd wcEcoli
 	pytest wholecell/tests/utils/test_fast_nnls.py
@@ -17,7 +17,8 @@ import time
 
 def time_this(code_to_measure):
 	"""
-	Time the execution of code_to_measure() and return elapsed time.
+	Time the execution of code_to_measure() and return elapsed time in
+	fractional seconds.
 	"""
 	elapsed_start = time.monotonic()
 	code_to_measure()
@@ -28,22 +29,9 @@ def time_this(code_to_measure):
 
 
 class Test_fast_nnls(unittest.TestCase):
-
-	@classmethod
-	def setUpClass(cls):
-		pass
-
-	@classmethod
-	def tearDownClass(cls):
-		pass
-
 	def setUp(self):
 		self.default_array_size = 10
 		np.random.seed(0)
-
-	def tearDown(self):
-		pass
-
 
 	def test_return_value_dimensions(self):
 		"""
@@ -56,8 +44,8 @@ class Test_fast_nnls(unittest.TestCase):
 		b = np.random.rand(m)
 
 		x, r = fast_nnls(sA, b)
-		self.assertTupleEqual((n, ), x.shape)
-		self.assertTupleEqual((m, ), b.shape)
+		assert x.shape == (n, )
+		assert b.shape == (m, )
 
 	def test_type_error(self):
 		"""
@@ -72,13 +60,13 @@ class Test_fast_nnls(unittest.TestCase):
 		sb = sparse.csr_matrix(b)
 		b_wrongsize = np.random.rand(n)
 
-		with self.assertRaises(TypeError):
+		with self.assertRaisesRegex(TypeError, r'two-dimensional'):
 			fast_nnls(A, b)
-		with self.assertRaises(TypeError):
+		with self.assertRaisesRegex(TypeError, r'two-dimensional'):
 			fast_nnls(A, sb)
-		with self.assertRaises(TypeError):
+		with self.assertRaisesRegex(TypeError, r'one-dimensional'):
 			fast_nnls(sA, sb)
-		with self.assertRaises(TypeError):
+		with self.assertRaisesRegex(TypeError, r'Dimensions of'):
 			fast_nnls(sA, b_wrongsize)
 
 	def test_identity_matrix(self):
