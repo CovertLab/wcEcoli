@@ -306,11 +306,12 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		"""
 		parser.add_argument('sim_dir', nargs='?',
 			default=default,
-			help='''The simulation "out/" subdirectory to read from (optionally
-				starting with "out/"), or an absolute directory name, or
-				default to the "out/" subdirectory name that starts with
-				the latest timestamp or else the one that's first
-				alphabetically.''')
+			help='''The simulation root directory, i.e. the directory for the
+				"kb/" and all simulation variants and generations. The argument
+				can name a subdirectory of "out/" (optionally starting with
+				"out/") or an absolute path. It defaults to the "out/"
+				subdirectory name that begins with the latest timestamp or else
+				the one that's first alphabetically.''')
 
 	def define_parameter_variant_index(self, parser):
 		# type: (argparse.ArgumentParser) -> None

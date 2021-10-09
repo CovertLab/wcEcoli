@@ -222,6 +222,7 @@ from wholecell.fireworks.firetasks import AnalysisVariantTask
 from wholecell.fireworks.firetasks import AnalysisCohortTask
 from wholecell.fireworks.firetasks import AnalysisSingleTask
 from wholecell.fireworks.firetasks import AnalysisMultiGenTask
+from wholecell.fireworks.firetasks import AnalysisComparisonTask
 from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
@@ -381,7 +382,8 @@ class WorkflowBuilder:
 		file compression).
 		"""
 		self.operons = operons
-		self.name_suffix = '_operons' if OPERONS == 'both' and operons == 'on' else ''
+		self.name_suffix = (
+			constants.OPERON_SUFFIX if OPERONS == 'both' and operons == 'on' else '')
 
 		log_info(f"\n--- Building a WCM workflow with {operons=} ---")
 		self.make_output_directories()
