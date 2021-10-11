@@ -408,13 +408,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			variable_elongation=self.process.variable_elongation)
 		self.ppgpp_params = get_ppgpp_params(sim_data)
 
-		# TODO: move to parca
-		init_container = create_bulk_container(sim_data)
-		trna_counts = self.process.aa_from_trna @ init_container.counts(self.uncharged_trna_names)
-		trna_ratio = trna_counts / trna_counts.sum()
-		self.ppgpp_params['KD_RelA'] *= trna_ratio / trna_ratio.mean()
-		self.ppgpp_params['KI_SpoT'] *= trna_ratio / trna_ratio.mean()
-
 		# Amino acid supply calculations
 		self.aa_supply_scaling = metabolism.aa_supply_scaling
 		self.aa_environment = self.process.environmentView([aa[:-3] for aa in self.aaNames])
@@ -762,13 +755,14 @@ def get_ppgpp_params(sim_data) -> Dict[str, Any]:
 
 	constants = sim_data.constants
 	metabolism = sim_data.process.metabolism
+	transcription = sim_data.process.transcription
 
 	return dict(
-		KD_RelA=constants.KD_RelA_ribosome.asNumber(CONC_UNITS),
+		KD_RelA=transcription.KD_RelA.asNumber(CONC_UNITS),
 		k_RelA=constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s),
 		k_SpoT_syn=constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s),
 		k_SpoT_deg=constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s)),
-		KI_SpoT=constants.KI_SpoT_ppGpp_degradation.asNumber(CONC_UNITS),
+		KI_SpoT=transcription.KI_SpoT.asNumber(CONC_UNITS),
 		ppgpp_reaction_stoich=metabolism.ppgpp_reaction_stoich,
 		synthesis_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_synthesis_reaction),
 		degradation_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_degradation_reaction),
