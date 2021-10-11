@@ -996,6 +996,19 @@ class Metabolism(object):
 				km_reverse = np.inf * units.mol / units.L
 			km_degradation = data['km, degradation']
 
+			# Make required adjustments in order to get positive kcats and import rates
+			for parameter, factor in self.aa_synthesis_pathway_adjustments.get(amino_acid, {}).items():
+				if parameter == 'ki':
+					ki *= factor
+				elif parameter == 'km_degradation':
+					km_degradation *= factor
+				elif parameter == 'km_reverse':
+					km_reverse *= factor
+				elif parameter == 'kms':
+					kms *= factor
+				else:
+					raise ValueError(f'Unexpected parameter adjustment ({parameter}) for {amino_acid}.')
+
 			if units.isfinite(km_reverse) and units.isfinite(km_degradation):
 				raise ValueError('Currently cannot have a reverse and degradation KM for amino acid'
 					f' synthesis pathways ({amino_acid}).  Consider a method to solve for separate'
