@@ -861,13 +861,10 @@ class Metabolism(object):
 
 		Assumptions:
 			- Only one reaction is limiting in an amino acid pathway (typically
-			the first and one with KI)
-			- kcat applies to forward and reverse reaction and multiple enzymes
-			catalyzing the same pathway will have the same kcat and saturation
-			terms
+			the first and one with KI) and the kcat for forward or reverse
+			directions will apply to all enzymes that can catalyze that step
 
 		TODO:
-			Handle different kcats (or enzymes) for reverse reactions
 			Search for new kcat/KM values in literature or use metabolism_kinetics.tsv
 			Consider multiple reaction steps
 		"""
@@ -995,6 +992,8 @@ class Metabolism(object):
 			else:
 				km_reverse = np.inf * units.mol / units.L
 			km_degradation = data['km, degradation']
+
+			# TODO: check only deg or only rev or else update function to match fraction calc for rev and deg below
 
 			def calc_kcats(aa_conc_basal, km_conc_basal, aa_conc_with_aa, km_conc_with_aa, kms, km_reverse, km_degradation, ki, uptake_rate):
 				# Calculate kcat value to ensure sufficient supply to double
@@ -1133,6 +1132,7 @@ class Metabolism(object):
 			fwd_rates[amino_acid] = fwd_rate
 			rev_rates[amino_acid] = rev_rate
 			deg_rates[amino_acid] = deg_rate
+			# TODO: rename from specific to uptake
 			specific_import_rates[amino_acid] = uptake
 
 		self.aa_enzymes = np.unique(aa_enzymes)
@@ -1174,25 +1174,30 @@ class Metabolism(object):
 			raise ValueError(f'Import rate was determined to be negative for {aas}.'
 				' Check input parameters like supply and synthesis or enzyme expression.')
 
-	def amino_acid_synthesis(self, enzyme_counts: np.ndarray, aa_conc: units.Unum):
+	def get_pathway_enzyme_counts_per_aa(self, enzyme_counts):
+		counts_per_aa_fwd = enzyme_counts @ self.enzyme_to_amino_acid_fwd
+		counts_per_aa_rev = enzyme_counts @ self.enzyme_to_amino_acid_rev
+		return counts_per_aa_fwd, counts_per_aa_rev
+
+	def amino_acid_synthesis(self, counts_per_aa_fwd: np.ndarray, counts_per_aa_rev: np.ndarray, aa_conc: units.Unum):
 		"""
 		Calculate the net rate of synthesis for amino acid pathways (can be
 		negative with reverse reactions).
 
 		Args:
-			enzyme_counts: counts for each enzyme accounted for in pathways
+			counts_per_aa_fwd: counts for enzymes in forward reactions for each amino acid
+			counts_per_aa_rev: counts for enzymes in loss reactions for each amino acid
 			aa_conc: concentrations of each amino acid with mol/volume units
 
 		Returns:
 			synthesis: net rate of synthesis for each amino acid pathway.
 				array is unitless but represents counts of amino acid per second
+			forward_fraction: saturated fraction for forward reactions
+			loss_fraction: saturated fraction for loss reactions
 		"""
 
 		# Convert to appropraite arrays
 		aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
-		# TODO: pass these in to function to speed up integration with supply
-		counts_per_aa_fwd = enzyme_counts @ self.enzyme_to_amino_acid_fwd
-		counts_per_aa_rev = enzyme_counts @ self.enzyme_to_amino_acid_rev
 
 		# TODO: more efficient way of doing this
 		km_saturation = np.array([np.product([1 / (1 + km / aa_conc[self.aa_to_index[aa]]) for km, aa in zip(kms, aas)]) for kms, aas in zip(self.aa_upstream_kms, self.aa_upstream_aas)])
@@ -1200,18 +1205,17 @@ class Metabolism(object):
 		# Determine saturation fraction for reactions
 		forward_fraction = 1 / (1 + aa_conc / self.aa_kis) * km_saturation
 		reverse_fraction = 1 / (1 + self.aa_reverse_kms / aa_conc)
-		loss_fraction = 1 / (1 + self.aa_degradation_kms / aa_conc)
-		fraction = forward_fraction - reverse_fraction - loss_fraction
+		deg_fraction = 1 / (1 + self.aa_degradation_kms / aa_conc)
+		loss_fraction = reverse_fraction + deg_fraction
 
 		# Calculate synthesis rate
 		synthesis = (
 			self.aa_forward_stoich @ (self.aa_kcats_fwd * counts_per_aa_fwd * forward_fraction)
 			- self.aa_reverse_stoich @ (self.aa_kcats_rev * counts_per_aa_rev * reverse_fraction)
-			- self.aa_kcats_rev * counts_per_aa_rev * loss_fraction
+			- self.aa_kcats_rev * counts_per_aa_rev * deg_fraction
 		)
 
-		# TODO: return rev counts and update signatures, listeners, plots etc
-		return synthesis, counts_per_aa_fwd, fraction
+		return synthesis, forward_fraction, loss_fraction
 
 	def amino_acid_export(self, aa_transporters_counts: np.ndarray, aa_conc: units.Unum, mechanistic_uptake: bool):
 		"""
