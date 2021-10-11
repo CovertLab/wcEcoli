@@ -26,7 +26,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			sim_data = pickle.load(f)
 
 		# Amino acid data
-		enzyme_to_amino_acid = sim_data.process.metabolism.enzyme_to_amino_acid_fwd  # TODO: include enzyme_to_amino_acid_rev
 		aa_ids = sim_data.molecule_groups.amino_acids
 		n_aas = len(aa_ids)
 
