@@ -36,7 +36,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_yticks(list(ax.get_ylim()))
 			ax.set_ylabel(self.mass_labels[idx])
 
-		self.axs[0].set_title("Cell mass fractions")
+		self.axs[0].set_title("Cell mass fraction comparisons")
 		plt.legend(bbox_to_anchor=(.8, 5), loc=2, borderaxespad=0., prop={'size': 6})
 		self.axs[-1].set_xlabel("Time (hr)")
 		plt.subplots_adjust(hspace=0.2, wspace=0.5)
