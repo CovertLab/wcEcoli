@@ -12,17 +12,19 @@ from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
+from wholecell.analysis.analysis_tools import exportFigure
+# noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, inputDir1, plotOutDir, plotOutFileName, inputDir2, unused, metadata):
+		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(inputDir1)
+		# noinspection PyUnusedLocal
 		ap2, sim_data2, validation_data2 = self.setup(inputDir2)
 
-		# TODO(jerry): Process data from ap1 and ap2 cells.
+		# TODO: Process data from ap1 and ap2 cells...
 
 		plt.figure()
 

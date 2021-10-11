@@ -169,8 +169,32 @@ class AnalysisPaths(object):
 
 	def get_variants(self):
 		# type: () -> List[Union[int, str]]
-		"""Return all the variants."""
+		"""Return all the variant indexes."""
 		return sorted(np.unique(self._path_data["variant"]))
+
+	def get_cell_variant(self, path: str) -> int:
+		"""Return the variant index for the given get_cells() sim path."""
+		return self._path_data['variant'][self._path_index(path)]
+
+	def get_cell_seed(self, path: str) -> int:
+		"""Return the seed for the given get_cells() sim path."""
+		return self._path_data['seed'][self._path_index(path)]
+
+	def get_cell_generation(self, path: str) -> int:
+		"""Return the generation number for the given get_cells() sim path."""
+		return self._path_data['generation'][self._path_index(path)]
+
+	def get_cell_variant_kb(self, path: str) -> str:
+		"""Return the variant kb path (simData_Modified.cPickle) for the given
+		get_cells() sim path.
+		"""
+		return self._path_data['variantkb'][self._path_index(path)]
+
+	def _path_index(self, path: str) -> int:
+		"""Return the index into _path_data for the given get_cells() sim path."""
+		indexes = np.where(self._path_data['path'] == path)[0]
+		assert indexes.size == 1
+		return indexes[0]
 
 	def _get_generations(self, directory):
 		# type: (str) -> List[List[str]]
