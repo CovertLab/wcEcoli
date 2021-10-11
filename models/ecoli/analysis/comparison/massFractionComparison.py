@@ -12,11 +12,10 @@ from wholecell.utils import constants
 
 COLORS = [
 	'tab:cyan', 'tab:blue',
-	'tab:olive', 'tab:green',
-	'tab:gray', 'tab:red',
-	'tab:pink', 'tab:purple',
 	'tab:orange', 'tab:brown',
-	]
+	'tab:pink', 'tab:purple',
+	'tab:olive', 'tab:green',
+	'tab:gray', 'tab:red']
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
