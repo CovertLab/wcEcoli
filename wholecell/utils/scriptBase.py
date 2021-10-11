@@ -130,7 +130,7 @@ def find_sim_path(directory=None, makedirs=False):
 	name that starts with out/, or (if None) call
 	default_wcecoli_out_subdir_path().
 	"""
-	if directory is None:
+	if not directory:
 		input_dir = default_wcecoli_out_subdir_path()
 	elif os.path.isabs(directory):
 		input_dir = directory
