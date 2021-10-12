@@ -1,2 +1,3 @@
 "tRNA"	"Target"	"_notes"
+"tRNA-Leu"	"ilvA"	"Leu can regulate expression through Lrp so attenuation is removed to make ilvA more responsive to low Ile charging."
 "tRNA-Val"	"ilvA"	"Val activates enzyme activity which is not included in the model so high Val should have a neutral impact on IlvA activity not just repressing from attenuation."
