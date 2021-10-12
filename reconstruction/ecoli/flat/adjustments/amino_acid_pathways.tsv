@@ -1,1 +1,2 @@
 "Amino acid"	"Parameter"	"Factor"	"_comments"
+"TRP"	"km_reverse"	10	"Fit for positive kcat for GLN"
