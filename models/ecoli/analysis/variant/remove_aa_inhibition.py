@@ -168,29 +168,49 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		labels = [WILDTYPE] + list(AA_TO_ENZYME.values())
 
 		# Create figure
-		plt.figure(figsize=(10, 15))
-		gs = gridspec.GridSpec(nrows=5, ncols=3)
+		plt.figure(figsize=(10, 25))
+		gs = gridspec.GridSpec(nrows=8, ncols=3)
 
 		## Plot heatmap for all amino acids
 		heatmap_data = np.vstack((control_conc, conc[:, :, 0].T))
 		heatmap(gs[:2, :], aa_idx, heatmap_data, labels)
 
-		## Plot subplots for each amino acid
-		subplot(gs[2, 0], aa_idx, control_conc, control_var, conc, variance, labels,
+		## Plot subplots for each amino acid with only the inhibition removed to match paper
+		no_inhibition_conc = conc[:, :, :1]
+		no_inhibition_var = variance[:, :, :1]
+		subplot(gs[2, 0], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Arginine', ['ARG[c]'])
+		subplot(gs[2, 1], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Tryptophan', ['TRP[c]'])
+		subplot(gs[2, 2], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Histidine', ['HIS[c]'])
+		subplot(gs[3, 0], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, '(Iso-)leucine', ['ILE[c]', 'LEU[c]'])  # group isoforms like paper
+		subplot(gs[3, 1], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Threonine', ['THR[c]'])
+		subplot(gs[3, 2], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Proline', ['PRO[c]'])
+		subplot(gs[4, 0], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Isoleucine', ['ILE[c]'])  # also plot single isoforms since model allows granularity
+		subplot(gs[4, 1], aa_idx, control_conc, control_var, no_inhibition_conc,
+			no_inhibition_var, labels, 'Leucine', ['LEU[c]'])  # also plot single isoforms since model allows granularity
+
+		## Plot subplots for each amino acid and show results each KI factor
+		subplot(gs[5, 0], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Arginine', ['ARG[c]'])
-		subplot(gs[2, 1], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[5, 1], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Tryptophan', ['TRP[c]'])
-		subplot(gs[2, 2], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[5, 2], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Histidine', ['HIS[c]'])
-		subplot(gs[3, 0], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[6, 0], aa_idx, control_conc, control_var, conc, variance, labels,
 			'(Iso-)leucine', ['ILE[c]', 'LEU[c]'])  # group isoforms like paper
-		subplot(gs[3, 1], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[6, 1], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Threonine', ['THR[c]'])
-		subplot(gs[3, 2], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[6, 2], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Proline', ['PRO[c]'])
-		subplot(gs[4, 0], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[7, 0], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Isoleucine', ['ILE[c]'])  # also plot single isoforms since model allows granularity
-		subplot(gs[4, 1], aa_idx, control_conc, control_var, conc, variance, labels,
+		subplot(gs[7, 1], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Leucine', ['LEU[c]'])  # also plot single isoforms since model allows granularity
 
 		## Format and save figure
