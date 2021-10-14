@@ -70,6 +70,7 @@ def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, titl
 			yerr=np.sqrt(variance[idx, :, i].sum(axis=0)), error_kw=error_kw)
 
 	# Format subplot
+	ax.set_yscale('log')
 	ax.set_xticks([0] + list(x))
 	ax.set_xticklabels(xlabels, fontsize=8, rotation=45)
 	ax.set_ylabel('Conc (mM)', fontsize=8)
