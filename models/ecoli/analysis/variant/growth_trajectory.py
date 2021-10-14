@@ -2,23 +2,23 @@
 Template for variant analysis plots
 """
 
-import pickle
-import os
-
 from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
-from wholecell.io.tablereader import TableReader
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
-def plot(ax, x, y, xlabel, ylabel):
-	ax.plot(x[0], y[0], 'og')
-	ax.plot(x[-1], y[-1], 'or')
-	ax.plot(x, y)
+def plot(ax, x, y, xlabel=None, ylabel=None, background=False):
+	if background:
+		kwargs = {'alpha': 0.3, 'linewidth': 0.8}
+	else:
+		kwargs = {'alpha': 0.7, 'color': 'black'}
+		ax.plot(x[0], y[0], 'og', markersize=3)
+		ax.plot(x[-1], y[-1], 'or', markersize=3)
+
+	ax.plot(x, y, **kwargs)
 
 	ax.set_xlabel(xlabel, fontsize=8)
 	ax.set_ylabel(ylabel, fontsize=8)
@@ -34,6 +34,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		_, axes = plt.subplots(3, 1, figsize=(4, 12))
 
 		for variant in variants:
+			all_mass_means = []
+			all_growth_means = []
+			all_ratio_means = []
+			all_ratio_ma = []
+			all_growth_ma = []
 			for seed in ap.get_seeds(variant):
 				cell_paths = ap.get_cells(variant=[variant], seed=[seed])
 
@@ -48,13 +53,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# Process data
 				ratio = rna / protein
+				ratio_means = rna_means / protein_means
 				growth_ma = np.convolve(growth, np.ones(200) / 200, mode='valid')
 				ratio_ma = np.convolve(ratio, np.ones(200) / 200, mode='valid')
 
-				plot(axes[0], mass_means, growth_means, 'Cell cycle mass', 'Cell cycle growth')
-				plot(axes[1], rna_means / protein_means, growth_means, 'Cell cycle RNA/protein', 'Cell cycle growth')
-				# plot(axes[2], ratio, growth, 'RNA/protein', 'Growth')
-				plot(axes[2], ratio_ma, growth_ma, 'RNA/protein', 'Growth')
+				plot(axes[0], mass_means, growth_means, background=True)
+				plot(axes[1], ratio_means, growth_means, background=True)
+				plot(axes[2], ratio_ma, growth_ma, background=True)
+				# plot(axes[2], ratio, growth, background=True)  # Include this?  Should plot on new axes
+
+				all_mass_means.append(mass_means)
+				all_growth_means.append(growth_means)
+				all_ratio_means.append(ratio_means)
+				all_ratio_ma.append(ratio_ma)
+				all_growth_ma.append(growth_ma)
+
+			min_length = min([len(data) for data in all_growth_means])
+			stacked_mass_means = np.vstack([data[:min_length] for data in all_mass_means]).mean(0)
+			stacked_growth_means = np.vstack([data[:min_length] for data in all_growth_means]).mean(0)
+			stacked_ratio_means = np.vstack([data[:min_length] for data in all_ratio_means]).mean(0)
+
+			min_length_ma = min([len(data) for data in all_growth_ma])
+			stacked_ratio_ma = np.vstack([data[:min_length_ma] for data in all_ratio_ma]).mean(0)
+			stacked_growth_ma = np.vstack([data[:min_length_ma] for data in all_growth_ma]).mean(0)
+
+			plot(axes[0], stacked_mass_means, stacked_growth_means, 'Cell cycle mass', 'Cell cycle growth')
+			plot(axes[1], stacked_ratio_means, stacked_growth_means, 'Cell cycle RNA/protein', 'Cell cycle growth')
+			plot(axes[2], stacked_ratio_ma, stacked_growth_ma, 'RNA/protein', 'Growth')
 
 		for ax in axes:
 			self.remove_border(ax)
