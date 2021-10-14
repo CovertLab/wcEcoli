@@ -45,7 +45,6 @@ wheel>=0.34.2
 # Direct dependendencies, frozen at the latest version 2020-07-08, except bokeh is
 # frozen at the latest version that's compatible with Python 2.
 #
-# confluent-kafka is for vivarium-core.
 # dnspython is for pymongo to access server clusters.
 # pytest-cov is for `pytest --cov`.
 #
@@ -57,7 +56,6 @@ aesara==2.0.8
 biopython==1.77
 bokeh==1.4.0
 borealis-fireworks==0.11.0
-confluent-kafka==1.4.2
 cvxpy==1.1.10
 Cython==0.29.21
 dash==1.18.1
@@ -85,8 +83,6 @@ stochastic-arrow==0.4.3
 swiglpk==4.65.1
 sympy==1.6.1
 Unum==4.1.4
-vivarium-core==0.0.23
-vivarium-cell==0.0.22
 
 ## The following requirements were added by pip freeze:
 alphashape==1.1.0
