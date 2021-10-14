@@ -51,7 +51,7 @@ HEATMAP_COLS = [
 ]
 
 
-def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, title, amino_acids):
+def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, title, amino_acids, factors=None, legend=None):
 	ax = plt.subplot(gs)
 	_, n_variants, n_factors = data.shape
 	x = np.array(list(range(n_variants))) + 1
@@ -61,9 +61,10 @@ def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, titl
 
 	# Plot an amino acid concentration (or sum of multiple amino acids)
 	# for each mutant (variant)
-	ax.bar(0, control[idx].sum(), width, yerr=np.sqrt(control_variance[idx].sum()))
+	ax.bar(0, control[idx].sum(), width, yerr=np.sqrt(control_variance[idx].sum()), label=WILDTYPE)
 	for i, offset in enumerate(offsets):
-		ax.bar(x + offset, data[idx, :, i].sum(axis=0), width, yerr=np.sqrt(variance[idx, :, i].sum(axis=0)))
+		label = None if factors is None else f'KI x {factors[i]}'
+		ax.bar(x + offset, data[idx, :, i].sum(axis=0), width, yerr=np.sqrt(variance[idx, :, i].sum(axis=0)), label=label)
 
 	# Format subplot
 	ax.set_xticks([0] + list(x))
@@ -72,6 +73,12 @@ def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, titl
 	ax.set_title(title, fontsize=8)
 	ax.spines['right'].set_visible(False)
 	ax.spines['top'].set_visible(False)
+
+	if legend:
+		handles, labels = ax.get_legend_handles_labels()
+		legend_ax = plt.subplot(legend, frameon=False)
+		legend_ax.axis('off')
+		legend_ax.legend(handles, labels, loc='center', frameon=False)
 
 def heatmap(gs, aa_idx, data, enzyme_order):
 	ax = plt.subplot(gs)
@@ -193,7 +200,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		subplot(gs[4, 0], aa_idx, control_conc, control_var, no_inhibition_conc,
 			no_inhibition_var, labels, 'Isoleucine', ['ILE[c]'])  # also plot single isoforms since model allows granularity
 		subplot(gs[4, 1], aa_idx, control_conc, control_var, no_inhibition_conc,
-			no_inhibition_var, labels, 'Leucine', ['LEU[c]'])  # also plot single isoforms since model allows granularity
+			no_inhibition_var, labels, 'Leucine', ['LEU[c]'], factors=ki_factors, legend=gs[4, 2])  # also plot single isoforms since model allows granularity
 
 		## Plot subplots for each amino acid and show results each KI factor
 		subplot(gs[5, 0], aa_idx, control_conc, control_var, conc, variance, labels,
@@ -211,7 +218,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		subplot(gs[7, 0], aa_idx, control_conc, control_var, conc, variance, labels,
 			'Isoleucine', ['ILE[c]'])  # also plot single isoforms since model allows granularity
 		subplot(gs[7, 1], aa_idx, control_conc, control_var, conc, variance, labels,
-			'Leucine', ['LEU[c]'])  # also plot single isoforms since model allows granularity
+			'Leucine', ['LEU[c]'], factors=ki_factors, legend=gs[7, 2])  # also plot single isoforms since model allows granularity
 
 		## Format and save figure
 		plt.tight_layout()
