@@ -56,7 +56,7 @@ def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, titl
 	_, n_variants, n_factors = data.shape
 	x = np.array(list(range(n_variants))) + 1
 	width = 0.8 / n_factors
-	offsets = np.array(list(range(n_factors))) * width - 0.4
+	offsets = np.array(list(range(n_factors))) * width - 0.4 + width/2
 	idx = np.array([aa_idx[aa] for aa in amino_acids])
 
 	# Plot an amino acid concentration (or sum of multiple amino acids)
