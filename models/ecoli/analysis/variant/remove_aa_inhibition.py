@@ -61,10 +61,13 @@ def subplot(gs, aa_idx, control, control_variance, data, variance, xlabels, titl
 
 	# Plot an amino acid concentration (or sum of multiple amino acids)
 	# for each mutant (variant)
-	ax.bar(0, control[idx].sum(), width, yerr=np.sqrt(control_variance[idx].sum()), label=WILDTYPE)
+	error_kw = dict(elinewidth=2*width)
+	ax.bar(0, control[idx].sum(), width, label=WILDTYPE,
+		yerr=np.sqrt(control_variance[idx].sum()), error_kw=error_kw)
 	for i, offset in enumerate(offsets):
 		label = None if factors is None else f'KI x {factors[i]}'
-		ax.bar(x + offset, data[idx, :, i].sum(axis=0), width, yerr=np.sqrt(variance[idx, :, i].sum(axis=0)), label=label)
+		ax.bar(x + offset, data[idx, :, i].sum(axis=0), width, label=label,
+			yerr=np.sqrt(variance[idx, :, i].sum(axis=0)), error_kw=error_kw)
 
 	# Format subplot
 	ax.set_xticks([0] + list(x))
