@@ -91,6 +91,7 @@ appnope==0.1.0
 Arpeggio==1.9.2
 attrs==19.3.0
 backcall==0.2.0
+backports.entry-points-selectable==1.1.0
 Brotli==1.0.9
 cachetools==4.1.1
 certifi==2020.6.20
@@ -145,6 +146,7 @@ pexpect==4.8.0
 pickleshare==0.7.5
 Pint==0.14
 pipdeptree==1.0.0
+platformdirs==2.4.0
 pluggy==0.13.1
 prompt-toolkit==3.0.5
 proto-plus==1.18.1
