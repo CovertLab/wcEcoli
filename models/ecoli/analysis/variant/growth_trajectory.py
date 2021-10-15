@@ -10,11 +10,11 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
-def plot(ax, x, y, xlabel=None, ylabel=None, background=False):
+def plot(ax, x, y, xlabel=None, ylabel=None, label=None, background=False):
 	if background:
-		kwargs = {'alpha': 0.3, 'linewidth': 0.8}
+		kwargs = {'alpha': 0.3, 'linewidth': 0.8, 'color': 'black'}
 	else:
-		kwargs = {'alpha': 0.7, 'color': 'black'}
+		kwargs = {'alpha': 0.7, 'label': label}
 		ax.plot(x[0], y[0], 'og', markersize=3)
 		ax.plot(x[-1], y[-1], 'or', markersize=3)
 
@@ -77,12 +77,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			stacked_ratio_ma = np.vstack([data[:min_length_ma] for data in all_ratio_ma]).mean(0)
 			stacked_growth_ma = np.vstack([data[:min_length_ma] for data in all_growth_ma]).mean(0)
 
-			plot(axes[0], stacked_mass_means, stacked_growth_means, 'Cell cycle mass', 'Cell cycle growth')
-			plot(axes[1], stacked_ratio_means, stacked_growth_means, 'Cell cycle RNA/protein', 'Cell cycle growth')
-			plot(axes[2], stacked_ratio_ma, stacked_growth_ma, 'RNA/protein', 'Growth')
+			plot(axes[0], stacked_mass_means, stacked_growth_means,
+				 xlabel='Cell cycle mass', ylabel='Cell cycle growth', label=variant)
+			plot(axes[1], stacked_ratio_means, stacked_growth_means,
+				 xlabel='Cell cycle RNA/protein', ylabel='Cell cycle growth', label=variant)
+			plot(axes[2], stacked_ratio_ma, stacked_growth_ma,
+				 xlabel='RNA/protein', ylabel='Growth', label=variant)
 
 		for ax in axes:
 			self.remove_border(ax)
+			if len(variants) > 1:
+				ax.legend(fontsize=6)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
