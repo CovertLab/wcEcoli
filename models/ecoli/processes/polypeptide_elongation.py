@@ -19,6 +19,7 @@ import wholecell.processes.process
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
+from reconstruction.ecoli.initialization import create_bulk_container
 
 
 CONC_UNITS = units.umol / units.L
@@ -43,6 +44,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.mechanistic_aa_transport = sim._mechanistic_aa_transport
 		self.ppgpp_regulation = sim._ppgpp_regulation
 		self.variable_elongation = sim._variable_elongation_translation
+		self.variable_polymerize = self.ppgpp_regulation or self.variable_elongation
 		translation_supply = sim._translationSupply
 		trna_charging = sim._trna_charging
 
@@ -207,7 +209,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			aa_counts_for_translation,
 			10000000, # Set to a large number, the limit is now taken care of in metabolism
 			self.randomState,
-			self.elongation_rates[protein_indexes])
+			self.elongation_rates[protein_indexes],
+			variable_elongation=self.variable_polymerize,
+			)
 
 		sequence_elongations = result.sequenceElongation
 		aas_used = result.monomerUsages
@@ -425,6 +429,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.amino_acid_synthesis = metabolism.amino_acid_synthesis
 		self.amino_acid_import = metabolism.amino_acid_import
 		self.amino_acid_export = metabolism.amino_acid_export
+		self.get_pathway_enzyme_counts_per_aa = metabolism.get_pathway_enzyme_counts_per_aa
 
 		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
 		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
@@ -471,10 +476,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 
 		# Calculate amino acid supply
 		aa_in_media = self.aa_environment.import_present()
-		enzyme_counts = self.aa_enzymes.total_counts()
+		fwd_enzyme_counts, rev_enzyme_counts = self.get_pathway_enzyme_counts_per_aa(
+			self.aa_enzymes.total_counts())
 		transporter_counts = self.aa_transporters.total_counts()
 		export_transporter_counts = self.export_transporter_container.total_counts()
-		synthesis, enzyme_counts_per_aa, saturation = self.amino_acid_synthesis(enzyme_counts, aa_conc)
+		synthesis, fwd_saturation, rev_saturation = self.amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)
 		import_rates = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_aa_transport)
 		export_rates = self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_aa_transport)
 		exchange_rates = import_rates - export_rates
@@ -483,8 +489,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.aa_supply_in_charging, self.process.mechanistic_translation_supply,
 			self.process.mechanistic_aa_transport, self.amino_acid_synthesis,
 			self.amino_acid_export, self.aa_supply_scaling, self.counts_to_molar,
-			self.process.aa_supply, enzyme_counts, export_transporter_counts,
-			exchange_rates, import_rates, aa_in_media,
+			self.process.aa_supply, fwd_enzyme_counts, rev_enzyme_counts,
+			export_transporter_counts, exchange_rates, import_rates, aa_in_media,
 			)
 
 		self.process.writeToListener('GrowthLimits', 'original_aa_supply', self.process.aa_supply)
@@ -546,10 +552,12 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_synthesis', synthesis * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_import', import_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_export', export_rates * self.process.timeStepSec())
-		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes', enzyme_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes_fwd', fwd_enzyme_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes_rev', rev_enzyme_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_exporters', export_transporter_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
-		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction', saturation)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction_fwd', fwd_saturation)
+		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction_rev', rev_saturation)
 
 		# Only request molecules that will be consumed in the charging reactions
 		aa_from_uncharging = -self.charging_stoich_matrix @ charged_trna_request
@@ -754,13 +762,14 @@ def get_ppgpp_params(sim_data) -> Dict[str, Any]:
 
 	constants = sim_data.constants
 	metabolism = sim_data.process.metabolism
+	transcription = sim_data.process.transcription
 
 	return dict(
-		KD_RelA=constants.KD_RelA_ribosome.asNumber(CONC_UNITS),
+		KD_RelA=transcription.KD_RelA.asNumber(CONC_UNITS),
 		k_RelA=constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s),
 		k_SpoT_syn=constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s),
 		k_SpoT_deg=constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s)),
-		KI_SpoT=constants.KI_SpoT_ppGpp_degradation.asNumber(CONC_UNITS),
+		KI_SpoT=transcription.KI_SpoT.asNumber(CONC_UNITS),
 		ppgpp_reaction_stoich=metabolism.ppgpp_reaction_stoich,
 		synthesis_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_synthesis_reaction),
 		degradation_index=metabolism.ppgpp_reaction_names.index(metabolism.ppgpp_degradation_reaction),
@@ -844,14 +853,20 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 	ribosomes_bound_to_uncharged[mask] = ribosome_conc * f[mask] * np.array(
 		uncharged_trna_conc[mask] + charged_trna_conc[mask] > 0)
 
+	# Calculate active fraction of RelA
+	competitive_inhibition = 1 + ribosomes_bound_to_uncharged / ppgpp_params['KD_RelA']
+	inhibition_product = np.product(competitive_inhibition)
+	with np.errstate(divide='ignore'):
+		frac_rela = 1 / (ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged * inhibition_product / competitive_inhibition + 1)
+
 	# Calculate rates for synthesis and degradation
-	frac_rela = 1 / (1 + ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged.sum())
-	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela * ribosomes_bound_to_uncharged / ribosomes_bound_to_uncharged.sum()
+	v_rela_syn = ppgpp_params['k_RelA'] * rela_conc * frac_rela
 	v_spot_syn = ppgpp_params['k_SpoT_syn'] * spot_conc
 	v_syn = v_rela_syn.sum() + v_spot_syn
 	max_deg = ppgpp_params['k_SpoT_deg'] * spot_conc * ppgpp_conc
-	v_deg =  max_deg / (1 + uncharged_trna_conc.sum() / ppgpp_params['KI_SpoT'])
-	v_deg_inhibited = (max_deg - v_deg) * uncharged_trna_conc / uncharged_trna_conc.sum()
+	fractions = uncharged_trna_conc / ppgpp_params['KI_SpoT']
+	v_deg =  max_deg / (1 + fractions.sum())
+	v_deg_inhibited = (max_deg - v_deg) * fractions / fractions.sum()
 
 	# Convert to discrete reactions
 	n_syn_reactions = stochasticRound(random_state, v_syn * time_step / counts_to_micromolar)[0]
@@ -917,6 +932,7 @@ def get_charging_params(
 	"""
 
 	constants = sim_data.constants
+	transcription = sim_data.process.transcription
 	if aa_removed_from_charging is None:
 		aa_removed_from_charging = REMOVED_FROM_CHARGING
 	aa_charging_mask = np.array([
@@ -928,8 +944,8 @@ def get_charging_params(
 
 	return dict(
 		kS=constants.synthetase_charging_rate.asNumber(1 / units.s),
-		KMaa=constants.Km_synthetase_amino_acid.asNumber(CONC_UNITS),
-		KMtf=constants.Km_synthetase_uncharged_trna.asNumber(CONC_UNITS),
+		KMaa=transcription.aa_kms.asNumber(CONC_UNITS),
+		KMtf=transcription.trna_kms.asNumber(CONC_UNITS),
 		krta=constants.Kdissociation_charged_trna_ribosome.asNumber(CONC_UNITS),
 		krtf=constants.Kdissociation_uncharged_trna_ribosome.asNumber(CONC_UNITS),
 		max_elong_rate=float(elongation_max.asNumber(units.aa / units.s)),
@@ -1005,8 +1021,8 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 		aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
 		masked_aa_conc = aa_conc[mask]
 
-		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (params['KMaa'] * params['KMtf'])
-			/ (1 + uncharged_trna_conc/params['KMtf'] + masked_aa_conc/params['KMaa'] + uncharged_trna_conc*masked_aa_conc/params['KMtf']/params['KMaa']))
+		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (params['KMaa'][mask] * params['KMtf'][mask])
+			/ (1 + uncharged_trna_conc/params['KMtf'][mask] + masked_aa_conc/params['KMaa'][mask] + uncharged_trna_conc*masked_aa_conc/params['KMtf'][mask]/params['KMaa'][mask]))
 		with np.errstate(divide='ignore'):
 			numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
 		v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
@@ -1093,7 +1109,8 @@ def get_charging_supply_function(
 		aa_supply_scaling: Callable,
 		counts_to_molar: units.Unum,
 		aa_supply: np.ndarray,
-		enzyme_counts: np.ndarray,
+		fwd_enzyme_counts: np.ndarray,
+		rev_enzyme_counts: np.ndarray,
 		exporter_counts: np.ndarray,
 		exchange_rates: np.ndarray,
 		import_rates: np.ndarray,
@@ -1113,7 +1130,8 @@ def get_charging_supply_function(
 			on the internal state
 		counts_to_molar: conversion factor for counts to molar in units of counts/volume
 		aa_supply: rate of amino acid supply expected
-		enzyme_counts: counts for amino acid synthesis enzymes
+		fwd_enzyme_counts: counts for enzymes in forward reactions for each amino acid
+		rev_enzyme_counts: counts for enzymes in loss reactions for each amino acid
 		exporter_counts: counts for amino acid exporters
 		exchange_rates: rates of amino acid transport (import - export)
 		import_rates: rates of amino acid import
@@ -1133,11 +1151,11 @@ def get_charging_supply_function(
 		if mechanistic_supply:
 			if mechanistic_aa_transport:
 				supply_function = lambda aa_conc: counts_to_molar * (
-					amino_acid_synthesis(enzyme_counts, aa_conc)[0] + import_rates
+					amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)[0] + import_rates
 					- amino_acid_export(exporter_counts, aa_conc, mechanistic_aa_transport))
 			else:
 				supply_function = lambda aa_conc: counts_to_molar * (
-					amino_acid_synthesis(enzyme_counts, aa_conc)[0] + exchange_rates)
+					amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)[0] + exchange_rates)
 		else:
 			supply_function = lambda aa_conc: counts_to_molar * aa_supply * aa_supply_scaling(aa_conc, aa_in_media)
 
