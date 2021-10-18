@@ -2,6 +2,8 @@
 Template for variant analysis plots
 """
 
+import pickle
+
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -10,7 +12,18 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
-def plot(ax, x, y, sim_time=None, xlabel=None, ylabel=None, label=None, background=False, markersize=3):
+def plot(ax, x, y, sim_time=None, timeline=None, ma_time=None, xlabel=None, ylabel=None,
+		label=None, background=False, markersize=3):
+	# Markers for any timeline shifts
+	if sim_time is not None and timeline is not None:
+		for t, media in timeline:
+			times_after_shift = (sim_time > t)[:len(x)]
+			marker_x = x[times_after_shift][:1]
+			marker_y = y[times_after_shift][:1]
+			ax.plot(marker_x, marker_y, 'rx')
+			ax.text(marker_x, marker_y, media, fontsize=6)
+
+	# Settings for different plots and start/end markers for main plot
 	if background:
 		kwargs = {'alpha': 0.2, 'linewidth': 0.6, 'color': 'black'}
 	else:
@@ -18,12 +31,14 @@ def plot(ax, x, y, sim_time=None, xlabel=None, ylabel=None, label=None, backgrou
 		ax.plot(x[0], y[0], 'og', markersize=markersize)
 		ax.plot(x[-1], y[-1], 'or', markersize=markersize)
 
+	# Plot trace and time markers
 	trace, = ax.plot(x, y, **kwargs)
-	if sim_time is not None:
-		time_hr = np.floor(sim_time / 3600)
+	if ma_time is not None:
+		time_hr = np.floor(ma_time / 3600)
 		hour_markers = np.where(np.diff(time_hr))[0] + 1
 		ax.plot(x[hour_markers], y[hour_markers], 'o', alpha=kwargs['alpha'], markersize=markersize, color=trace.get_color())
 
+	# Format axes
 	ax.set_xlabel(xlabel, fontsize=8)
 	ax.set_ylabel(ylabel, fontsize=8)
 	ax.tick_params(labelsize=6)
@@ -39,6 +54,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
 		for variant in variants:
+			with open(ap.get_variant_kb(variant), 'rb') as f:
+				sim_data = pickle.load(f)
+			timeline = sim_data.external_state.saved_timelines[sim_data.external_state.current_timeline_id]
+
 			all_mass_means = []
 			all_growth_means = []
 			all_ratio_means = []
@@ -48,6 +67,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_rna_growth_ma = []
 			all_small_mol_growth_ma = []
 			all_times = []
+			all_times_ma = []
 			for seed in ap.get_seeds(variant):
 				cell_paths = ap.get_cells(variant=[variant], seed=[seed])
 
@@ -96,7 +116,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_protein_growth_ma.append(protein_growth_ma)
 				all_rna_growth_ma.append(rna_growth_ma)
 				all_small_mol_growth_ma.append(small_mol_growth_ma)
-				all_times.append(time_ma)
+				all_times.append(sim_time[moving_window-1:])  # offset to get first contribution of time point in ma for timeline shift
+				all_times_ma.append(time_ma)
 
 			min_length = min([len(data) for data in all_growth_means])
 			stacked_mass_means = np.vstack([data[:min_length] for data in all_mass_means]).mean(0)
@@ -110,18 +131,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			stacked_rna_growth_ma = np.vstack([data[:min_length_ma] for data in all_rna_growth_ma]).mean(0)
 			stacked_small_mol_growth_ma = np.vstack([data[:min_length_ma] for data in all_small_mol_growth_ma]).mean(0)
 			stacked_times = np.vstack([data[:min_length_ma] for data in all_times]).mean(0)
+			stacked_times_ma = np.vstack([data[:min_length_ma] for data in all_times_ma]).mean(0)
 
 			plot(axes[0, 0], stacked_mass_means, stacked_growth_means,
 				xlabel='Cell cycle mass', ylabel='Cell cycle growth', label=variant)
 			plot(axes[1, 0], stacked_ratio_means, stacked_growth_means,
 				xlabel='Cell cycle RNA/protein', ylabel='Cell cycle growth', label=variant)
-			plot(axes[2, 0], stacked_ratio_ma, stacked_growth_ma, sim_time=stacked_times,
+			plot(axes[2, 0], stacked_ratio_ma, stacked_growth_ma,
+				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
 				xlabel='RNA/protein', ylabel='Growth', label=variant)
-			plot(axes[0, 1], stacked_ratio_ma, stacked_protein_growth_ma, sim_time=stacked_times,
+			plot(axes[0, 1], stacked_ratio_ma, stacked_protein_growth_ma,
+				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
 				xlabel='RNA/protein', ylabel='Protein growth', label=variant)
-			plot(axes[1, 1], stacked_ratio_ma, stacked_rna_growth_ma, sim_time=stacked_times,
+			plot(axes[1, 1], stacked_ratio_ma, stacked_rna_growth_ma,
+				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
 				xlabel='RNA/protein', ylabel='RNA growth', label=variant)
-			plot(axes[2, 1], stacked_ratio_ma, stacked_small_mol_growth_ma, sim_time=stacked_times,
+			plot(axes[2, 1], stacked_ratio_ma, stacked_small_mol_growth_ma,
+				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
 				xlabel='RNA/protein', ylabel='Small molecule growth', label=variant)
 
 		for ax in axes.reshape(-1):
