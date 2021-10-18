@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
-	def plot_time_series(self, gs, t_flat, y_flat, ylabel):
+	def plot_time_series(self, gs, t_flat, y_flat, ylabel, timeline):
 		ax = plt.subplot(gs)
 
 		data = {}
@@ -46,6 +46,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		else:
 			ax.fill_between(t, mean - std, mean + std, alpha=0.1)
 
+		t_max = t.max()
+		y_max = ax.get_ylim()[1]
+		for i, (t_media, media) in enumerate(timeline):
+			t_media /= 60
+			if t_media < t_max:
+				ax.axvline(t_media, color='k', linestyle='--', linewidth=0.5, alpha=0.3)
+				ax.text(t_media, y_max * (1 - i * 0.02), media, fontsize=6)
+
 		ax.set_xlabel('Time (min)', fontsize=8)
 		ax.set_ylabel(ylabel, fontsize=8)
 		ax.tick_params(labelsize=6)
@@ -60,6 +68,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
+		timeline = sim_data.external_state.saved_timelines[
+			sim_data.external_state.current_timeline_id]
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells()
@@ -86,10 +96,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.figure(figsize=(5, 15))
 		gs = gridspec.GridSpec(4, 1)
 
-		self.plot_time_series(gs[0, 0], time, growth_rate, 'Growth rate\n(1/hr)')
-		self.plot_time_series(gs[1, 0], time, elong_rate, 'Elongation rate\n(AA/s)')
-		self.plot_time_series(gs[2, 0], time, ppgpp_conc, 'ppGpp concentration\n(uM)')
-		self.plot_time_series(gs[3, 0], time, fraction_charged, 'Fraction charged')
+		self.plot_time_series(gs[0, 0], time, growth_rate, 'Growth rate\n(1/hr)', timeline)
+		self.plot_time_series(gs[1, 0], time, elong_rate, 'Elongation rate\n(AA/s)', timeline)
+		self.plot_time_series(gs[2, 0], time, ppgpp_conc, 'ppGpp concentration\n(uM)', timeline)
+		self.plot_time_series(gs[3, 0], time, fraction_charged, 'Fraction charged', timeline)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
