@@ -239,7 +239,7 @@ def read_stacked_bulk_molecules(
 				data[i].append(counts[_remove_first(remove_first)])
 		except Exception as e:
 			if ignore_exception:
-				print(f'Ignored exception in read_stacked_bulk_molecules: {e!r}')
+				print(f'Ignored exception in read_stacked_bulk_molecules for {sim_out_dir}: {e!r}')
 				continue
 			else:
 				raise
@@ -286,7 +286,7 @@ def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 			data.append(fun(reader.readColumn(column, squeeze=False)[_remove_first(remove_first)]))
 		except Exception as e:
 			if ignore_exception:
-				print(f'Ignored exception in read_stacked_columns: {e!r}')
+				print(f'Ignored exception in read_stacked_columns for {sim_out_dir}: {e!r}')
 				continue
 			else:
 				raise
