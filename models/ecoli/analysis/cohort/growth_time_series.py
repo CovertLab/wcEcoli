@@ -18,7 +18,7 @@ from wholecell.io.tablereader import TableReader
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
-	def plot_time_series(self, gs, t_flat, y_flat, ylabel, timeline):
+	def plot_time_series(self, gs, t_flat, y_flat, ylabel, timeline, log_scale=False):
 		ax = plt.subplot(gs)
 
 		# Extract y data for each time point (assumes time step lines up across samples)
@@ -51,6 +51,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		else:
 			ax.fill_between(t, mean - std, mean + std, alpha=0.1)
 
+		# Format axes
+		if log_scale:
+			ax.set_yscale('log')
+		ax.set_xlabel('Time (min)', fontsize=8)
+		ax.set_ylabel(ylabel, fontsize=8)
+		ax.tick_params(labelsize=6)
+		self.remove_border(ax)
+
 		# Show any media changes
 		t_max = t.max()
 		y_min, y_max = ax.get_ylim()
@@ -58,13 +66,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			t_media /= 60
 			if t_media < t_max:
 				ax.axvline(t_media, color='k', linestyle='--', linewidth=0.5, alpha=0.3)
-				ax.text(t_media, y_min + (y_max - y_min) * (1 - i * 0.03), media, fontsize=6)
-
-		# Format axes
-		ax.set_xlabel('Time (min)', fontsize=8)
-		ax.set_ylabel(ylabel, fontsize=8)
-		ax.tick_params(labelsize=6)
-		self.remove_border(ax)
+				if log_scale:
+					y_pos = 10**(np.log10(y_max) - (np.log10(y_max) - np.log10(y_min)) * i * 0.03)
+				else:
+					y_pos = y_max - (y_max - y_min) * i * 0.03
+				ax.text(t_media, y_pos, media, fontsize=6)
 
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -143,7 +149,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_time_series(gs[3, 1], time, ribosome_fraction_active, 'Ribosome active fraction', timeline)
 		self.plot_time_series(gs[0, 2], time, ppgpp_conc, 'ppGpp concentration\n(uM)', timeline)
 		self.plot_time_series(gs[1, 2], time, fraction_charged, 'Fraction charged', timeline)
-		self.plot_time_series(gs[2, 2], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline)
+		self.plot_time_series(gs[2, 2], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, log_scale=True)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
