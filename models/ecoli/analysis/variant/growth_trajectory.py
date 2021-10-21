@@ -1,5 +1,9 @@
 """
-Template for variant analysis plots
+Show the trajectory of growth rates and cell composition measurements.  Useful
+for variants with a shift.
+
+TODO:
+	- shares a lot of code with the multigen plot with the same name (make into a function?)
 """
 
 import pickle
