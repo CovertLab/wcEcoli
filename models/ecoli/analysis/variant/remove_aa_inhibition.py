@@ -7,9 +7,7 @@ Associated variant to run:
 	remove_aa_inhibition
 
 TODO:
-	- add legend for KI factors
-	- add reference conc
-	- log scale if conc too high?
+	- add reference conc from Sander et al
 """
 
 import os
@@ -175,6 +173,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					conc[:, i, j] = aa_conc[key]
 					variance[:, i, j] = aa_var[key]
 
+		# Skip plotting if data does not exist
+		if len(aa_variants) == 0 or len(ki_factors) == 0:
+			print(f'Not enough data to plot for {plotOutFileName}')
+			return
+
 		# xtick labels
 		labels = [WILDTYPE] + list(AA_TO_ENZYME.values())
 
@@ -182,9 +185,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.figure(figsize=(10, 25))
 		gs = gridspec.GridSpec(nrows=8, ncols=3)
 
-		## Plot heatmap for all amino acids
-		heatmap_data = np.vstack((control_conc, conc[:, :, 0].T))
-		heatmap(gs[:2, :], aa_idx, heatmap_data, labels)
+		## Plot heatmap for all amino acids only if data exists for all mutants
+		if conc.shape[1] == len(AA_TO_ENZYME):
+			heatmap_data = np.vstack((control_conc, conc[:, :, 0].T))
+			heatmap(gs[:2, :], aa_idx, heatmap_data, labels)
+		else:
+			print(f'Not enough data to plot for the heatmap in {plotOutFileName}')
 
 		## Plot subplots for each amino acid with only the inhibition removed to match paper
 		no_inhibition_conc = conc[:, :, :1]
