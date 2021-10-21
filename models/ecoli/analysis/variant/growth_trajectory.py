@@ -76,14 +76,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# Load data
 				sim_time = read_stacked_columns(cell_paths, 'Main', 'time', remove_first=True).squeeze()
-				time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec', remove_first=True).squeeze()
-				growth = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate', remove_first=True).squeeze()
+				time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec', remove_first=True).squeeze() / 3600  # hr
+				growth = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate', remove_first=True).squeeze() * 3600  # 1/hr
 				protein = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', remove_first=True).squeeze()
 				rna = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', remove_first=True).squeeze()
 				protein_growth = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', fun=growth_function).squeeze() / time_step
 				rna_growth = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', fun=growth_function).squeeze() / time_step
 				small_mol_growth = read_stacked_columns(cell_paths, 'Mass', 'smallMoleculeMass', fun=growth_function).squeeze() / time_step
-				growth_means = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate', remove_first=True, fun=np.mean).reshape(-1)
+				growth_means = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate', remove_first=True, fun=np.mean).reshape(-1) * 3600
 				protein_means = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', remove_first=True, fun=np.mean).reshape(-1)
 				rna_means = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', remove_first=True, fun=np.mean).reshape(-1)
 				mass_means = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True, fun=np.mean).reshape(-1)
@@ -137,21 +137,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			stacked_times_ma = np.vstack([data[:min_length_ma] for data in all_times_ma]).mean(0)
 
 			plot(axes[0, 0], stacked_mass_means, stacked_growth_means,
-				xlabel='Cell cycle mass', ylabel='Cell cycle growth', label=variant)
+				xlabel='Average cell cycle mass (fg)', ylabel='Average cell cycle growth rate (1/hr)', label=variant)
 			plot(axes[1, 0], stacked_ratio_means, stacked_growth_means,
-				xlabel='Cell cycle RNA/protein', ylabel='Cell cycle growth', label=variant)
+				xlabel='Average cell cycle RNA/protein', ylabel='Average cell cycle growth rate (1/hr)', label=variant)
 			plot(axes[2, 0], stacked_ratio_ma, stacked_growth_ma,
 				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='Growth', label=variant)
+				xlabel='RNA/protein', ylabel='Growth rate (1/hr)', label=variant)
 			plot(axes[0, 1], stacked_ratio_ma, stacked_protein_growth_ma,
 				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='Protein growth', label=variant)
+				xlabel='RNA/protein', ylabel='Protein growth rate (1/hr)', label=variant)
 			plot(axes[1, 1], stacked_ratio_ma, stacked_rna_growth_ma,
 				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='RNA growth', label=variant)
+				xlabel='RNA/protein', ylabel='RNA growth rate (1/hr)', label=variant)
 			plot(axes[2, 1], stacked_ratio_ma, stacked_small_mol_growth_ma,
 				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='Small molecule growth', label=variant)
+				xlabel='RNA/protein', ylabel='Small molecule growth rate (1/hr)', label=variant)
 
 		for ax in axes.reshape(-1):
 			self.remove_border(ax)
