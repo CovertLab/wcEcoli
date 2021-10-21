@@ -495,6 +495,15 @@ class Transcription(object):
 			self._cistron_half_lives @ self.cistron_tu_mapping_matrix,
 			np.array(self.cistron_tu_mapping_matrix.sum(axis=0)).flatten())
 
+		# If a measured half-life for a polycistronic transcription unit exists,
+		# replace calculated value with the measured value
+		rna_id_to_index = {
+			rna_id: i for (i, rna_id) in enumerate(rna_ids)}
+		for rna in raw_data.rna_half_lives:
+			# If RNA is polycistronic, replace half-life with measured value
+			if rna['id'] in rna_id_to_index and rna['id'] not in cistron_id_to_index:
+				rna_half_lives[rna_id_to_index[rna['id']]] = rna['half_life'].asNumber(units.s)
+
 		# Convert to degradation rates
 		rna_deg_rates = np.log(2) / rna_half_lives
 
