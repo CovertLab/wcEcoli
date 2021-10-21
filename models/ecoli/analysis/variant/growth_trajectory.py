@@ -56,7 +56,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for variant in variants:
 			with open(ap.get_variant_kb(variant), 'rb') as f:
 				sim_data = pickle.load(f)
-			timeline = sim_data.external_state.saved_timelines[sim_data.external_state.current_timeline_id]
+			if sim_data.external_state.current_timeline_id:
+				timeline = sim_data.external_state.saved_timelines[sim_data.external_state.current_timeline_id]
+			else:
+				timeline = []
 
 			all_mass_means = []
 			all_growth_means = []
@@ -80,10 +83,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				protein_growth = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', fun=growth_function).squeeze() / time_step
 				rna_growth = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', fun=growth_function).squeeze() / time_step
 				small_mol_growth = read_stacked_columns(cell_paths, 'Mass', 'smallMoleculeMass', fun=growth_function).squeeze() / time_step
-				growth_means = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate', remove_first=True, fun=np.mean).squeeze()
-				protein_means = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', remove_first=True, fun=np.mean).squeeze()
-				rna_means = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', remove_first=True, fun=np.mean).squeeze()
-				mass_means = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True, fun=np.mean).squeeze()
+				growth_means = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate', remove_first=True, fun=np.mean).reshape(-1)
+				protein_means = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', remove_first=True, fun=np.mean).reshape(-1)
+				rna_means = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', remove_first=True, fun=np.mean).reshape(-1)
+				mass_means = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True, fun=np.mean).reshape(-1)
 
 				if len(np.unique(time_step)) > 1:
 					raise ValueError('Check plot implementation to handle variable time step across sims.')
