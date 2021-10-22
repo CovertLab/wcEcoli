@@ -37,7 +37,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mean = np.array(mean).squeeze()
 		std = np.array(std).squeeze()
 
-		# # Plot all single traces
+		# # Plot all single traces - might be too much for large sets of seeds so commented for now
 		# new_cell = np.where(t_flat[:-1] > t_flat[1:])[0] + 1
 		# splits = [0] + list(new_cell) + [None]
 		# for start, end in zip(splits[:-1], splits[1:]):
@@ -84,8 +84,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
-		timeline = sim_data.external_state.saved_timelines[
-			sim_data.external_state.current_timeline_id]
+		if sim_data.external_state.current_timeline_id:
+			timeline = sim_data.external_state.saved_timelines[
+				sim_data.external_state.current_timeline_id]
+		else:
+			timeline = []
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells()
@@ -105,11 +108,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		growth_rate = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate',
 			remove_first=True, ignore_exception=True).squeeze() * 3600
 		protein_growth = read_stacked_columns(cell_paths, 'Mass', 'proteinMass',
-			fun=growth_function, ignore_exception=True).squeeze() / time_step
+			fun=growth_function, ignore_exception=True).squeeze() / time_step * 3600
 		rna_growth = read_stacked_columns(cell_paths, 'Mass', 'rnaMass',
-			fun=growth_function, ignore_exception=True).squeeze() / time_step
+			fun=growth_function, ignore_exception=True).squeeze() / time_step * 3600
 		small_mol_growth = read_stacked_columns(cell_paths, 'Mass', 'smallMoleculeMass',
-			fun=growth_function, ignore_exception=True).squeeze() / time_step
+			fun=growth_function, ignore_exception=True).squeeze() / time_step * 3600
 		ribosome_elong_rate = read_stacked_columns(cell_paths, 'RibosomeData', 'effectiveElongationRate',
 			remove_first=True, ignore_exception=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
@@ -138,7 +141,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.figure(figsize=(15, 15))
 		gs = gridspec.GridSpec(4, 3)
 
-		# mass fractions?
 		self.plot_time_series(gs[0, 0], time, growth_rate, 'Growth rate\n(1/hr)', timeline)
 		self.plot_time_series(gs[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)', timeline)
 		self.plot_time_series(gs[2, 0], time, protein_growth, 'Protein growth rate\n(1/hr)', timeline)
