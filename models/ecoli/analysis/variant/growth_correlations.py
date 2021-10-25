@@ -1,11 +1,13 @@
 """
-Template for variant analysis plots
+Show the correlation between cell properties related to growth and the growth
+rate.  Calculates the moving average of the growth rate for multiple windows
+to show the time scale that some of these properties might act on when affecting
+growth.  Many properties are correlated with each other so high correlation
+with growth does not imply a direct effect and higher or lower levels of growth
+might also affect the cell properties.
 
 TODO:
-	add labels for variants
-	add labels for bar plot
-	add x labels
-	2D density plot instead of points
+	show scatter or 2D density plot for any attributes vs growth
 """
 
 import os
@@ -24,6 +26,8 @@ from wholecell.io.tablereader import TableReader
 
 # +1 to make the window balanced on either side of the point of interest
 MA_WINDOWS = np.array([10, 30, 60, 100, 300, 600, 1000, 3000]) + 1
+REPLACEMENT_NAMES = {'L-ASPARTATE': 'ASP', 'L-ALPHA-ALANINE': 'ALA'}
+REMOVED_NAMES = {'L-SELENOCYSTEINE'}
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -53,13 +57,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		aa_ids = [aa[:-3] for aa in sim_data.molecule_groups.amino_acids]
+		aa_ids = np.array([aa[:-3] for aa in sim_data.molecule_groups.amino_acids])
+		for original, replacement in REPLACEMENT_NAMES.items():
+			aa_ids[aa_ids == original] = replacement
+		removed_mask = np.array([aa not in REMOVED_NAMES for aa in aa_ids], dtype=bool)
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
 		variants = ap.get_variants()
 		n_variants = len(variants)
 
-		# TODO: add plots for ppGpp, ribosomes, RNAP etc
 		scaling = 3
 		n_cols = 9
 		plt.figure(figsize=(scaling*n_cols, scaling*n_variants))
@@ -106,16 +112,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			active_rnap_conc = unique_mol_counts[:, rnap_idx] * counts_to_molar
 
 			# Apply moving average to growth to calculate correlation between current value and future growth
+			windows = [window for window in MA_WINDOWS if len(growth) > window]
 			all_growth = [growth] + [
 				np.convolve(growth, np.ones(window) / window, mode='valid')
-				for window in MA_WINDOWS
+				for window in windows
 				]
 			ma_labels = ['Current growth'] + [
 				f'{np.convolve(time_step, np.ones(window-1), mode="valid").mean():.0f} sec window'
-				for window in MA_WINDOWS
+				for window in windows
 				]
 
 			# Create subplots for this variant
+			## Plot combined data
 			combined_data = np.vstack((ppgpp_conc, active_ribosome_conc, active_rnap_conc, sim_time))
 			combined_labels = ['ppGpp', 'Ribosome', 'RNAP', 'Time']
 			ax = plt.subplot(gs[row, 0])
@@ -123,11 +131,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'Other conc', combined_labels, growth_labels=ma_labels)
 			ax.set_ylabel(f'Variant {variant}\nGrowth correlation', fontsize=8)
 
+			## Show legend for each moving average window of growth rates
 			ax = plt.subplot(gs[row, -1])
 			ax.axis('off')
 			ax.legend(handles, labels, loc='center', frameon=False, fontsize=8)
 
-			plot_data = [
+			## Plot cell properties that exist for all amino acids
+			per_aa_plot_data = [
 				(aa_conc, 'Amino acid conc'),
 				(uncharged_trna, 'Uncharged tRNA conc'),
 				(charged_trna, 'Charged tRNA conc'),
@@ -136,9 +146,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				(aa_supply_enzymes_fwd, 'Forward enzyme conc'),
 				(aa_supply_enzymes_rev, 'Reverse enzyme conc'),
 				]
-			for col, (property, label) in enumerate(plot_data):
-				self.plot_bar(plt.subplot(gs[row, col + 1]), property, all_growth, label, aa_ids)
-
+			for col, (property, label) in enumerate(per_aa_plot_data):
+				self.plot_bar(plt.subplot(gs[row, col + 1]), property[removed_mask, :], all_growth, label, aa_ids[removed_mask])
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
