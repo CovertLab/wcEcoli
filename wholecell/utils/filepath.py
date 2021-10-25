@@ -92,7 +92,7 @@ def run_cmd2(tokens, trim=True, timeout=TIMEOUT, env=None, input_=None):
 		timeout: timeout in seconds; None for no timeout.
 		env: optional environment variables for the new process to use instead
 			of inheriting the current process' environment.
-		input_: input for any prompts that may appear
+		input_: input for any prompts that may appear (passed to the subprocess' stdin)
 	Returns:
 		The command's stdout and stderr strings.
 	Raises:
@@ -133,7 +133,7 @@ def run_cmdline(line, trim=True, timeout=TIMEOUT, input_=None, fallback=None):
 		trim: Whether to trim off trailing whitespace. This is useful
 			because the subprocess output usually ends with a newline.
 		timeout: timeout in seconds; None for no timeout.
-		input_: input for any prompts that may appear
+		input_: input for any prompts that may appear (passed to the subprocess' stdin)
 		fallback: Return this if the subprocess fails, e.g. trying to run git
 			in a Docker Image that has no git repo.
 	Returns:
