@@ -8,6 +8,7 @@ TODO:
 	2D density plot instead of points
 """
 
+import os
 import pickle
 
 from matplotlib import pyplot as plt
@@ -18,6 +19,7 @@ from scipy import stats
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.io.tablereader import TableReader
 
 
 # +1 to make the window balanced on either side of the point of interest
@@ -44,7 +46,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xticks(x)
 		ax.set_xticklabels(tick_labels, fontsize=6, rotation=45, ha='right')
 		ax.set_xlabel(xlabel, fontsize=8)
-		ax.set_ylabel('Growth correlation', fontsize=8)
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -57,14 +58,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# TODO: add plots for ppGpp, ribosomes, RNAP etc
 		scaling = 3
-		n_cols = 7
+		n_cols = 8
 		plt.figure(figsize=(scaling*n_cols, scaling*n_variants))
 		gs = gridspec.GridSpec(nrows=n_variants, ncols=n_cols)
 
 		for row, variant in enumerate(variants):
 			cell_paths = ap.get_cells(variant=[variant])
 
+			# Load attributes
+			unique_molecule_reader = TableReader(os.path.join(cell_paths[0], 'simOut', 'UniqueMoleculeCounts'))
+			unique_molecule_ids = unique_molecule_reader.readAttribute('uniqueMoleculeIds')
+			rnap_idx = unique_molecule_ids.index('active_RNAP')
+			ribosome_idx = unique_molecule_ids.index('active_ribosome')
+
 			# Load data
+			sim_time = read_stacked_columns(cell_paths, 'Main', 'time',
+				remove_first=True).squeeze()
 			counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar',
 				remove_first=True).squeeze()
 			growth = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate',
@@ -81,9 +90,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				remove_first=True).T * counts_to_molar
 			aa_supply_enzymes_rev = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_enzymes_rev',
 				remove_first=True).T * counts_to_molar
+			ppgpp_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'ppgpp_conc',
+				remove_first=True).squeeze()
+			unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+				remove_first=True)
 
 			# Derived values
 			fraction_charged = charged_trna / (uncharged_trna + charged_trna)
+			active_ribosome_conc = unique_mol_counts[:, ribosome_idx] * counts_to_molar
+			active_rnap_conc = unique_mol_counts[:, rnap_idx] * counts_to_molar
 
 			# Apply moving average to growth to calculate correlation between current value and future growth
 			all_growth = [growth] + [
@@ -92,6 +107,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				]
 
 			# Create subplots for this variant
+			combined_data = np.vstack((ppgpp_conc, active_ribosome_conc, active_rnap_conc, sim_time))
+			combined_labels = ['ppGpp', 'Ribosome', 'RNAP', 'Time']
+			ax = plt.subplot(gs[row, 0])
+			self.plot_bar(ax, combined_data, all_growth, 'Other conc', combined_labels)
+			ax.set_ylabel('Growth correlation', fontsize=8)
+
 			plot_data = [
 				(aa_conc, 'Amino acid conc'),
 				(uncharged_trna, 'Uncharged tRNA conc'),
@@ -102,7 +123,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				(aa_supply_enzymes_rev, 'Reverse enzyme conc'),
 				]
 			for col, (property, label) in enumerate(plot_data):
-				self.plot_bar(plt.subplot(gs[row, col]), property, all_growth, label, aa_ids)
+				self.plot_bar(plt.subplot(gs[row, col + 1]), property, all_growth, label, aa_ids)
+
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
