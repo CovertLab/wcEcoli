@@ -121,7 +121,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax = plt.subplot(gs[row, 0])
 			handles, labels = self.plot_bar(ax, combined_data, all_growth,
 				'Other conc', combined_labels, growth_labels=ma_labels)
-			ax.set_ylabel('Growth correlation', fontsize=8)
+			ax.set_ylabel(f'Variant {variant}\nGrowth correlation', fontsize=8)
 
 			ax = plt.subplot(gs[row, -1])
 			ax.axis('off')
