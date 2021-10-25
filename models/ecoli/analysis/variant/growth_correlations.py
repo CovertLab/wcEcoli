@@ -30,13 +30,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for j, growth in enumerate(growth_rates):
 				r[i, j] = stats.pearsonr(property[:len(growth)], growth)[0]
 
-		ax.bar(range(r.shape[0]), r[:, 0])
+		x = np.arange(r.shape[0])
+		ax.bar(x, r[:, 0])
+
 		self.remove_border(ax)
+		ax.tick_params(labelsize=6)
+		ax.set_xticks(x)
+		ax.set_xticklabels(tick_labels, fontsize=6, rotation=45, ha='right')
+		ax.set_xlabel(xlabel, fontsize=8)
+		ax.set_ylabel('Growth correlation', fontsize=8)
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		aa_ids = sim_data.molecule_groups.amino_acids
+		aa_ids = [aa[:-3] for aa in sim_data.molecule_groups.amino_acids]
 		n_aas = len(aa_ids)
 
 		ap = AnalysisPaths(inputDir, variant_plot=True)
@@ -60,11 +67,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				remove_first=True).squeeze()
 			growth = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate',
 				remove_first=True).squeeze() * 3600
+			aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_conc',
+				remove_first=True).T
 			uncharged_trna = read_stacked_columns(cell_paths, 'GrowthLimits', 'uncharged_trna_conc',
 				remove_first=True).T
 			charged_trna = read_stacked_columns(cell_paths, 'GrowthLimits', 'charged_trna_conc',
-				remove_first=True).T
-			aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_conc',
 				remove_first=True).T
 			synthetase_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'synthetase_conc',
 				remove_first=True).T
@@ -77,36 +84,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			fraction_charged = charged_trna / (uncharged_trna + charged_trna)
 
 			all_growth = [growth, growth_ma]
-			self.plot_bar(plt.subplot(gs[row, 0]), uncharged_trna, all_growth, '', aa_ids)
-			self.plot_bar(plt.subplot(gs[row, 1]), charged_trna, all_growth, '', aa_ids)
-			self.plot_bar(plt.subplot(gs[row, 2]), fraction_charged, all_growth, '', aa_ids)
-			self.plot_bar(plt.subplot(gs[row, 3]), aa_conc, all_growth, '', aa_ids)
-			self.plot_bar(plt.subplot(gs[row, 4]), synthetase_conc, all_growth, '', aa_ids)
-			self.plot_bar(plt.subplot(gs[row, 5]), aa_supply_enzymes_fwd, all_growth, '', aa_ids)
-			self.plot_bar(plt.subplot(gs[row, 6]), aa_supply_enzymes_rev, all_growth, '', aa_ids)
-			# # Plot scatter plot and format axes
-			# r = []
-			# for col, conc in enumerate(aa_supply_enzymes_rev):
-			# 	ax = plt.subplot(gs[row, col])
-			# 	ax.plot(conc, growth, 'o', alpha=0.2, markersize=2)
-			#
-			# 	self.remove_border(ax)
-			# 	ax.tick_params(labelsize=6)
-			# 	if col != 0:
-			# 		ax.set_yticklabels([])
-			#
-			# 	# TODO: r for multiple window sizes - should see effect decrease as window increases
-			# 	r.append(stats.pearsonr(conc[:len(growth_ma)], growth_ma)[0])
-			#
-			# # Plot bar plot of correlations
-			# ax = plt.subplot(gs[row, -1])
-			# plt.bar(range(len(r)), r)
-			#
-			# self.remove_border(ax)
-			# ax.tick_params(labelsize=6)
+
+			plot_data = [
+				(aa_conc, 'Amino acid conc'),
+				(uncharged_trna, 'Uncharged tRNA conc'),
+				(charged_trna, 'Charged tRNA conc'),
+				(fraction_charged, 'Fraction charged'),
+				(synthetase_conc, 'Synthetase conc'),
+				(aa_supply_enzymes_fwd, 'Forward enzyme conc'),
+				(aa_supply_enzymes_rev, 'Reverse enzyme conc'),
+				]
+			for col, (property, label) in enumerate(plot_data):
+				self.plot_bar(plt.subplot(gs[row, col]), property, all_growth, label, aa_ids)
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata, extension='.png')
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
 
