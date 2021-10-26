@@ -82,29 +82,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Load data
 			time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec',
-				remove_first=True).squeeze()
+				remove_first=True, ignore_exception=True).squeeze()
 			sim_time = read_stacked_columns(cell_paths, 'Main', 'time',
-				remove_first=True).squeeze()
+				remove_first=True, ignore_exception=True).squeeze()
 			counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar',
-				remove_first=True).squeeze()
+				remove_first=True, ignore_exception=True).squeeze()
 			growth = read_stacked_columns(cell_paths, 'Mass', 'instantaneous_growth_rate',
-				remove_first=True).squeeze() * 3600
+				remove_first=True, ignore_exception=True).squeeze() * 3600
 			aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_conc',
-				remove_first=True).T
+				remove_first=True, ignore_exception=True).T
 			uncharged_trna = read_stacked_columns(cell_paths, 'GrowthLimits', 'uncharged_trna_conc',
-				remove_first=True).T
+				remove_first=True, ignore_exception=True).T
 			charged_trna = read_stacked_columns(cell_paths, 'GrowthLimits', 'charged_trna_conc',
-				remove_first=True).T
+				remove_first=True, ignore_exception=True).T
 			synthetase_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'synthetase_conc',
-				remove_first=True).T
+				remove_first=True, ignore_exception=True).T
 			aa_supply_enzymes_fwd = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_enzymes_fwd',
-				remove_first=True).T * counts_to_molar
+				remove_first=True, ignore_exception=True).T * counts_to_molar
 			aa_supply_enzymes_rev = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_supply_enzymes_rev',
-				remove_first=True).T * counts_to_molar
+				remove_first=True, ignore_exception=True).T * counts_to_molar
 			ppgpp_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'ppgpp_conc',
-				remove_first=True).squeeze()
+				remove_first=True, ignore_exception=True).squeeze()
 			unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
-				remove_first=True)
+				remove_first=True, ignore_exception=True)
 
 			# Derived values
 			fraction_charged = charged_trna / (uncharged_trna + charged_trna)
