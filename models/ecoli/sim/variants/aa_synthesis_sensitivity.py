@@ -64,7 +64,7 @@ def aa_synthesis_sensitivity(sim_data, index):
 	aa_idx = get_aa_index(index, sim_data)
 	param, factor = get_adjustment(index)
 	values = getattr(sim_data.process.metabolism, param)
-	if np.all(values[aa_idx] == values[aa_idx] * factor):
+	if np.all(~np.isfinite(values[aa_idx])) or np.all(values[aa_idx] == 0):
 		# Skip sims for parameters that are 0 or inf and will not be updated
 		raise ValueError('No change to params - not running variant sims.')
 	values[aa_idx] *= factor
