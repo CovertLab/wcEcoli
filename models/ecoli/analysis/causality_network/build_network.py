@@ -330,31 +330,18 @@ class BuildNetwork(object):
 		ntp_ids = self.sim_data.molecule_groups.ntps
 		ppi_id = self.sim_data.molecule_ids.ppi
 		rnap_id = self.sim_data.molecule_ids.full_RNAP
+		all_gene_ids = self.sim_data.process.transcription.cistron_data['gene_id']
 
-		# Loop through all genes (in the order listed in transcription)
-		for rna_id, gene_id, is_mrna in zip(
-				self.sim_data.process.transcription.cistron_data["id"],
-				self.sim_data.process.transcription.cistron_data['gene_id'],
-				self.sim_data.process.transcription.cistron_data['is_mRNA']):
-
+		# Loop through all transcripts (in the order listed in transcription)
+		for rna_id in self.sim_data.process.transcription.rna_data["id"]:
 			# Initialize a single transcript node
 			rna_node = Node()
 
 			# Add attributes to the node
 			# Add common name and synonyms
-			# Remove compartment tag
 			rna_id_no_compartment = rna_id[:-3]
-			gene_name = self.common_names.get_common_name(gene_id)
-			gene_synonyms = self.common_names.get_synonyms(gene_id)
-
-			rna_synonyms = []  # TODO(jerry): what default value to use?
-			if is_mrna:
-				rna_name = gene_name + " mRNA"
-				if isinstance(gene_synonyms, list):
-					rna_synonyms = [x + " mRNA" for x in gene_synonyms]
-			else:
-				rna_name = self.common_names.get_common_name(rna_id_no_compartment)
-				rna_synonyms = self.common_names.get_synonyms(rna_id_no_compartment)
+			rna_name = self.common_names.get_common_name(rna_id_no_compartment)
+			rna_synonyms = self.common_names.get_synonyms(rna_id_no_compartment)
 
 			attr = {
 				'node_class': 'State',
@@ -362,7 +349,6 @@ class BuildNetwork(object):
 				'node_id': rna_id,
 				'name': rna_name,
 				'synonyms': rna_synonyms,
-				'url': URL_TEMPLATE.format(gene_id),
 				'location': molecule_compartment(rna_id),
 				}
 
@@ -371,16 +357,16 @@ class BuildNetwork(object):
 			# Append transcript node to node_list
 			self.node_list.append(rna_node)
 
-			# Initialize a single transcription node for each gene
+			# Initialize a single transcription node for each TU
 			transcription_node = Node()
 
 			# Add attributes to the node
-			transcription_id = gene_id + NODE_ID_SUFFIX["transcription"]
-			transcription_name = gene_name + " transcription"
-			if isinstance(gene_synonyms, list):
-				transcription_synonyms = [x + " transcription" for x in gene_synonyms]
+			transcription_id = rna_id_no_compartment + NODE_ID_SUFFIX["transcription"]
+			transcription_name = rna_name + " transcription"
+			if isinstance(rna_synonyms, list):
+				transcription_synonyms = [x + " transcription" for x in rna_synonyms]
 			else:
-				transcription_synonyms = [gene_synonyms]
+				transcription_synonyms = [rna_synonyms]
 
 			attr = {
 				'node_class': 'Process',
@@ -388,7 +374,6 @@ class BuildNetwork(object):
 				'node_id': transcription_id,
 				'name': transcription_name,
 				'synonyms': transcription_synonyms,
-				'url': URL_TEMPLATE.format(gene_id),
 				'location': molecule_compartment(transcription_id),
 				}
 			transcription_node.read_attributes(**attr)
@@ -396,8 +381,14 @@ class BuildNetwork(object):
 			# Append transcription node to node_list
 			self.node_list.append(transcription_node)
 
+			# Get IDs of genes that constitute the transcript
+			constituent_gene_ids = [
+				all_gene_ids[i] for i
+				in self.sim_data.process.transcription.rna_id_to_cistron_indexes(rna_id)]
+
 			# Add edge from gene to transcription node
-			self._append_edge("Transcription", gene_id, transcription_id)
+			for gene_id in constituent_gene_ids:
+				self._append_edge("Transcription", gene_id, transcription_id)
 
 			# Add edge from transcription to transcript node
 			self._append_edge("Transcription", transcription_id, rna_id)
@@ -428,8 +419,9 @@ class BuildNetwork(object):
 
 		ribosome_subunit_ids = [self.sim_data.molecule_ids.s30_full_complex,
 			self.sim_data.molecule_ids.s50_full_complex]
+		all_rna_ids = self.sim_data.process.transcription.rna_data['id']
 
-		# Construct dictionary to get corrensponding gene IDs from RNA IDs
+		# Construct dictionary to get corresponding gene IDs from RNA IDs
 		rna_id_to_gene_id = {}
 		for cistron_id, gene_id in zip(
 				self.sim_data.process.transcription.cistron_data["id"],
@@ -493,8 +485,15 @@ class BuildNetwork(object):
 			# Append translation node to node_list
 			self.node_list.append(translation_node)
 
-			# Add edge from transcript to translation node
-			self._append_edge("Translation", cistron_id, translation_id)
+			# Add edges from all transcript that encode for the protein to
+			# the translation node
+			rna_ids = [
+				all_rna_ids[i] for i
+				in self.sim_data.process.transcription.cistron_id_to_rna_indexes(cistron_id)
+				]
+
+			for rna_id in rna_ids:
+				self._append_edge("Translation", rna_id, translation_id)
 
 			# Add edge from translation to monomer node
 			self._append_edge("Translation", translation_id, monomer_id)
