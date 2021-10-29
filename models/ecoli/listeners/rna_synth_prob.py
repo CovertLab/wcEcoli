@@ -43,7 +43,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		super(RnaSynthProb, self).allocate()
 
 		self.rnaSynthProb = np.zeros(self.n_TU, np.float64)
-		self.gene_copy_number = np.zeros(self.n_TU, np.int16)
+		self.promoter_copy_number = np.zeros(self.n_TU, np.int16)
 		self.rna_synth_prob_per_cistron = np.zeros(self.n_cistron, np.float64)
 
 		self.pPromoterBound = np.zeros(self.n_TF, np.float64)
@@ -51,9 +51,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.nActualBound = np.zeros(self.n_TF, np.float64)
 		self.n_available_promoters = np.zeros(self.n_TF, np.float64)
 
-		# This array gets flattened at tableAppend(). Resulting array should
+		# These arrays gets flattened at tableAppend(). Resulting array should
 		# be reshaped before use.
 		self.n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), np.int16)
+		self.n_bound_TF_per_cistron = np.zeros((self.n_TU, self.n_cistron), np.int16)
 
 		# Properties of bound TFs
 		self.bound_TF_indexes = np.array([], np.int64)
@@ -67,7 +68,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			"TU_index", "coordinates", "domain_index", "bound_TF"
 			)
 
-		self.gene_copy_number = np.bincount(TU_indexes, minlength=self.n_TU)
+		self.promoter_copy_number = np.bincount(TU_indexes, minlength=self.n_TU)
 
 		bound_promoter_indexes, TF_indexes = np.where(bound_TFs)
 
@@ -77,18 +78,22 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 
 		self.rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.rnaSynthProb)
+		self.n_bound_TF_per_cistron = self.cistron_tu_mapping_matrix.dot(
+			self.n_bound_TF_per_TU).astype(np.int16).T
 
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'gene_copy_number': 'rnaIds',
+			'promoter_copy_number': 'rnaIds',
 			'rnaSynthProb': 'rnaIds',
 			'rna_synth_prob_per_cistron': 'cistron_ids',
 			'pPromoterBound': 'tf_ids',
 			'nPromoterBound': 'tf_ids',
 			'nActualBound': 'tf_ids',
 			'n_available_promoters': 'tf_ids',
-			'n_bound_TF_per_TU': 'rnaIds'}
+			'n_bound_TF_per_TU': 'rnaIds',
+			'n_bound_TF_per_cistron': 'cistron_ids'
+			}
 
 		tableWriter.writeAttributes(
 			rnaIds = list(self.rna_ids),
@@ -109,12 +114,13 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			rnaSynthProb = self.rnaSynthProb,
 			rna_synth_prob_per_cistron = self.rna_synth_prob_per_cistron,
-			gene_copy_number = self.gene_copy_number,
+			promoter_copy_number = self.promoter_copy_number,
 			pPromoterBound = self.pPromoterBound,
 			nPromoterBound = self.nPromoterBound,
 			nActualBound = self.nActualBound,
 			n_available_promoters = self.n_available_promoters,
 			n_bound_TF_per_TU = self.n_bound_TF_per_TU,
+			n_bound_TF_per_cistron = self.n_bound_TF_per_cistron,
 			bound_TF_indexes = self.bound_TF_indexes,
 			bound_TF_coordinates = self.bound_TF_coordinates,
 			bound_TF_domains = self.bound_TF_domains,
