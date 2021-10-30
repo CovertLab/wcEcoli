@@ -31,6 +31,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.rna_ids = sim_data.process.transcription.rna_data["id"]
 		self.n_TU = len(self.rna_ids)
 		self.cistron_ids = sim_data.process.transcription.cistron_data["id"]
+		self.gene_ids = sim_data.process.transcription.cistron_data['gene_id']
 		self.n_cistron = len(self.cistron_ids)
 		self.cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
 
@@ -67,8 +68,11 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		TU_indexes, all_coordinates, all_domains, bound_TFs = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF"
 			)
+		genes = self.uniqueMolecules.container.objectsInCollection('gene')
+		cistron_indexes = genes.attr("cistron_index")
 
 		self.promoter_copy_number = np.bincount(TU_indexes, minlength=self.n_TU)
+		self.gene_copy_number = np.bincount(cistron_indexes, minlength=self.n_cistron)
 
 		bound_promoter_indexes, TF_indexes = np.where(bound_TFs)
 
@@ -85,6 +89,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'promoter_copy_number': 'rnaIds',
+			'gene_copy_number': 'gene_ids',
 			'rnaSynthProb': 'rnaIds',
 			'rna_synth_prob_per_cistron': 'cistron_ids',
 			'pPromoterBound': 'tf_ids',
@@ -99,6 +104,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			rnaIds = list(self.rna_ids),
 			cistron_ids = list(self.cistron_ids),
 			tf_ids = list(self.tf_ids),
+			gene_ids = list(self.gene_ids),
 			subcolumns = subcolumns)
 
 		tableWriter.set_variable_length_columns(
@@ -115,6 +121,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			rnaSynthProb = self.rnaSynthProb,
 			rna_synth_prob_per_cistron = self.rna_synth_prob_per_cistron,
 			promoter_copy_number = self.promoter_copy_number,
+			gene_copy_number = self.gene_copy_number,
 			pPromoterBound = self.pPromoterBound,
 			nPromoterBound = self.nPromoterBound,
 			nActualBound = self.nActualBound,

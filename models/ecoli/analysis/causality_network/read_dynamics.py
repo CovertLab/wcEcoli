@@ -30,7 +30,7 @@ REQUIRED_COLUMNS = [
 	("Mass", "cellMass"),
 	("Mass", "dryMass"),
 	("mRNACounts", "mRNA_counts"),
-	# ("ReplicationData", "gene_copy_number"),
+	("RnaSynthProb", "gene_copy_number"),
 	("RnaSynthProb", "pPromoterBound"),
 	("RnaSynthProb", "rna_synth_prob_per_cistron"),
 	("RnaSynthProb", "promoter_copy_number"),
@@ -231,7 +231,7 @@ def read_gene_dynamics(sim_data, node, node_id, columns, indexes, volume):
 
 	dynamics = {
 		"transcription probability": columns[("RnaSynthProb", "rna_synth_prob_per_cistron")][:, gene_index],
-		# "gene copy number": columns[("ReplicationData", "gene_copy_number")][:, gene_index],
+		"gene copy number": columns[("RnaSynthProb", "gene_copy_number")][:, gene_index],
 		}
 	dynamics_units = {
 		"transcription probability": PROB_UNITS,
