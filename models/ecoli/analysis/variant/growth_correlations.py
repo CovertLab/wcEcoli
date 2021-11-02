@@ -25,8 +25,8 @@ from wholecell.io.tablereader import TableReader
 
 
 # +1 to make the window balanced on either side of the point of interest
-MA_WINDOWS = np.array([10, 30, 60, 100, 300, 600]) + 1
-MA_START = np.array([0, 10, 30, 60, 100, 300, 600, 1000, 3000])
+MA_WINDOWS = np.array([10, 100, 1000]) + 1
+MA_START = np.array([10, 50, 100, 500, 1000, 5000])
 REPLACEMENT_NAMES = {'L-ASPARTATE': 'ASP', 'L-ALPHA-ALANINE': 'ALA'}
 REMOVED_NAMES = {'L-SELENOCYSTEINE'}
 
@@ -84,8 +84,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ribosome_idx = unique_molecule_ids.index('active_ribosome')
 
 			# Load data
-			time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec',
-				remove_first=True, ignore_exception=True).squeeze()
+			average_time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec',
+				remove_first=True, ignore_exception=True).mean()
 			sim_time = read_stacked_columns(cell_paths, 'Main', 'time',
 				remove_first=True, ignore_exception=True).squeeze()
 			counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar',
@@ -118,14 +118,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			conv_arrays = []
 			ma_labels = ['Current growth']
 			for window in MA_WINDOWS:
+				# Create spacing on bar plots
+				conv_arrays.append(None)
+				ma_labels.append('')
+
 				for start in MA_START:
 					if start + window < len(growth):
 						ar = np.ones(start+window)
 						ar[:start] = 0
 						conv_arrays.append(ar)
-						ma_labels.append(f'Start: {start}, window: {window}')
+						ma_labels.append(f'Start: +{start*average_time_step:.0f} s, window: {(window-1)*average_time_step:.0f} s')
 			all_growth = [growth] + [
-				np.convolve(growth, conv / conv.sum(), mode='valid')
+				np.convolve(growth, conv / conv.sum(), mode='valid') if conv is not None else np.array([])
 				for conv in conv_arrays
 				]
 
@@ -141,7 +145,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			## Show legend for each moving average window of growth rates
 			ax = plt.subplot(gs[row, -1])
 			ax.axis('off')
-			ax.legend(handles, labels, loc='center', frameon=False, fontsize=5)
+			ax.legend(handles, labels, loc='center', frameon=False, fontsize=5, ncol=2)
 
 			## Plot cell properties that exist for all amino acids
 			per_aa_plot_data = [
