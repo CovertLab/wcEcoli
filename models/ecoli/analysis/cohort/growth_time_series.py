@@ -84,11 +84,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
+		cistron_data = transcription.cistron_data
 		if sim_data.external_state.current_timeline_id:
 			timeline = sim_data.external_state.saved_timelines[
 				sim_data.external_state.current_timeline_id]
 		else:
 			timeline = []
+		rna_fractions = ['is_rRNA', 'is_tRNA', 'is_mRNA']
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells()
@@ -121,6 +123,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			remove_first=True, ignore_exception=True)
 		unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
 			remove_first=True, ignore_exception=True)
+		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron',
+			remove_first=True, ignore_exception=True)
 		(ppgpp_counts, uncharged_trna_counts, charged_trna_counts, aa_counts,
 			inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,
 				([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
@@ -137,6 +141,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rnap_elong_rate = rnap_elongations / time_step / active_rnap_counts
 		rnap_fraction_active = active_rnap_counts / (active_rnap_counts + inactive_rnap_counts)
 		ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + ribosome_subunit_counts.min(1))
+		rna_fraction_prob = np.vstack([
+			synth_prob_per_cistron[:, cistron_data[fraction]].sum(1)
+			for fraction in rna_fractions
+			]).T
 
 		plt.figure(figsize=(15, 15))
 		gs = gridspec.GridSpec(4, 3)
@@ -152,6 +160,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_time_series(gs[0, 2], time, ppgpp_conc, 'ppGpp concentration\n(uM)', timeline)
 		self.plot_time_series(gs[1, 2], time, fraction_charged, 'Fraction charged', timeline)
 		self.plot_time_series(gs[2, 2], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, log_scale=True)
+		self.plot_time_series(gs[3, 2], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability', timeline)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
