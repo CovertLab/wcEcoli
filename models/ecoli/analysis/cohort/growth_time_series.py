@@ -7,7 +7,6 @@ import os
 import pickle
 
 from matplotlib import pyplot as plt
-from matplotlib import gridspec
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -21,9 +20,7 @@ PLOT_SINGLE = False
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
-	def plot_time_series(self, gs, t_flat, y_flat, ylabel, timeline, log_scale=False):
-		ax = plt.subplot(gs)
-
+	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, log_scale=False):
 		# Extract y data for each time point (assumes time step lines up across samples)
 		data = {}
 		for t, y in zip(t_flat, y_flat):
@@ -150,24 +147,38 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for fraction in rna_fractions
 			]).T
 
-		plt.figure(figsize=(15, 15))
-		gs = gridspec.GridSpec(4, 3)
+		_, axes = plt.subplots(4, 3, figsize=(15, 15))
 
-		self.plot_time_series(gs[0, 0], time, growth_rate, 'Growth rate\n(1/hr)', timeline)
-		self.plot_time_series(gs[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)', timeline)
-		self.plot_time_series(gs[2, 0], time, protein_growth, 'Protein growth rate\n(1/hr)', timeline)
-		self.plot_time_series(gs[3, 0], time, small_mol_growth, 'Small mol growth rate\n(1/hr)', timeline)
-		self.plot_time_series(gs[0, 1], time, rnap_elong_rate, 'RNAP elongation rate\n(nt/s)', timeline)
-		self.plot_time_series(gs[1, 1], time, rnap_fraction_active, 'RNAP active fraction', timeline)
-		self.plot_time_series(gs[2, 1], time, ribosome_elong_rate, 'Ribosome elongation rate\n(AA/s)', timeline)
-		self.plot_time_series(gs[3, 1], time, ribosome_fraction_active, 'Ribosome active fraction', timeline)
-		self.plot_time_series(gs[0, 2], time, ppgpp_conc, 'ppGpp concentration\n(uM)', timeline)
-		self.plot_time_series(gs[1, 2], time, fraction_charged, 'Fraction charged', timeline)
-		self.plot_time_series(gs[2, 2], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, log_scale=True)
-		self.plot_time_series(gs[3, 2], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability', timeline)
+		self.plot_time_series(axes[0, 0], time, growth_rate, 'Growth rate\n(1/hr)', timeline)
+		self.plot_time_series(axes[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)', timeline)
+		self.plot_time_series(axes[2, 0], time, protein_growth, 'Protein growth rate\n(1/hr)', timeline)
+		self.plot_time_series(axes[3, 0], time, small_mol_growth, 'Small mol growth rate\n(1/hr)', timeline)
+		self.plot_time_series(axes[0, 1], time, rnap_elong_rate, 'RNAP elongation rate\n(nt/s)', timeline)
+		self.plot_time_series(axes[1, 1], time, rnap_fraction_active, 'RNAP active fraction', timeline)
+		self.plot_time_series(axes[2, 1], time, ribosome_elong_rate, 'Ribosome elongation rate\n(AA/s)', timeline)
+		self.plot_time_series(axes[3, 1], time, ribosome_fraction_active, 'Ribosome active fraction', timeline)
+		self.plot_time_series(axes[0, 2], time, ppgpp_conc, 'ppGpp concentration\n(uM)', timeline)
+		self.plot_time_series(axes[1, 2], time, fraction_charged, 'Fraction charged', timeline)
+		self.plot_time_series(axes[2, 2], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, log_scale=True)
+		self.plot_time_series(axes[3, 2], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability', timeline)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		# Fix axes limits for easier comparison across runs
+		axes[0, 0].set_ylim(0, 2)
+		axes[1, 0].set_ylim(0, 2)
+		axes[2, 0].set_ylim(0, 2)
+		axes[3, 0].set_ylim(0, 2)
+		axes[0, 1].set_ylim(0, 100)
+		axes[1, 1].set_ylim(0, 1)
+		axes[2, 1].set_ylim(0, 25)
+		axes[3, 1].set_ylim(0, 1)
+		axes[0, 2].set_ylim(0, 300)
+		axes[1, 2].set_ylim(0, 1.2)
+		axes[2, 2].set_ylim(1e-4, 100)
+		axes[3, 2].set_ylim(0, 1)
+		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
 		plt.close('all')
 
 
