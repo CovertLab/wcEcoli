@@ -17,6 +17,9 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 
+PLOT_SINGLE = False
+
+
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, gs, t_flat, y_flat, ylabel, timeline, log_scale=False):
 		ax = plt.subplot(gs)
@@ -37,11 +40,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mean = np.array(mean).squeeze()
 		std = np.array(std).squeeze()
 
-		# # Plot all single traces - might be too much for large sets of seeds so commented for now
-		# new_cell = np.where(t_flat[:-1] > t_flat[1:])[0] + 1
-		# splits = [0] + list(new_cell) + [None]
-		# for start, end in zip(splits[:-1], splits[1:]):
-		# 	ax.plot(t_flat[start:end], y_flat[start:end], 'k', alpha=0.05, linewidth=0.5)
+		# Plot all single traces
+		if PLOT_SINGLE:
+			new_cell = np.where(t_flat[:-1] > t_flat[1:])[0] + 1
+			splits = [0] + list(new_cell) + [None]
+			for start, end in zip(splits[:-1], splits[1:]):
+				ax.plot(t_flat[start:end], y_flat[start:end], 'k', alpha=0.05, linewidth=0.5)
 
 		# Plot mean as a trace and standard deviation as a shaded area
 		ax.plot(t, mean)
