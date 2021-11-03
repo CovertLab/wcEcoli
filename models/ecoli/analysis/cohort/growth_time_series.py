@@ -73,6 +73,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					y_pos = y_max - (y_max - y_min) * i * 0.03
 				ax.text(t_media, y_pos, media, fontsize=6)
 
+	def plot_hist(self, ax, data, min_val, max_val, label, n_bins=40):
+		def plot(d):
+			levels, bins, _ = ax.hist(d, bins=n_bins, range=(min_val, max_val), alpha=0.7, histtype='step')
+
+		if len(data.shape) > 1:
+			for d in data.T:
+				plot(d)
+		else:
+			plot(data)
+
+		self.remove_border(ax)
+		ax.tick_params(labelsize=6)
+		ax.set_xlabel(label, fontsize=8)
+		ax.set_ylabel('Count', fontsize=8)
+
+
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -179,6 +195,24 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		axes[2, 2].set_ylim(1e-4, 100)
 		axes[3, 2].set_ylim(0, 1)
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
+
+		# Plot histograms of data
+		_, axes = plt.subplots(4, 3, figsize=(15, 15))
+		self.plot_hist(axes[0, 0], growth_rate, 0, 2, 'Growth rate\n(1/hr)')
+		self.plot_hist(axes[1, 0], rna_growth, 0, 2, 'RNA growth rate\n(1/hr)')
+		self.plot_hist(axes[2, 0], protein_growth, 0, 2, 'Protein growth rate\n(1/hr)')
+		self.plot_hist(axes[3, 0], small_mol_growth, 0, 2, 'Small mol growth rate\n(1/hr)')
+		self.plot_hist(axes[0, 1], rnap_elong_rate, 0, 100, 'RNAP elongation rate\n(nt/s)')
+		self.plot_hist(axes[1, 1], rnap_fraction_active, 0, 1, 'RNAP active fraction')
+		self.plot_hist(axes[2, 1], ribosome_elong_rate, 0, 25, 'Ribosome elongation rate\n(AA/s)')
+		self.plot_hist(axes[3, 1], ribosome_fraction_active, 0, 1, 'Ribosome active fraction')
+		self.plot_hist(axes[0, 2], ppgpp_conc, 0, 300, 'ppGpp concentration\n(uM)', n_bins=100)
+		self.plot_hist(axes[1, 2], fraction_charged, 0, 1, 'Fraction charged')
+		self.plot_hist(axes[2, 2], aa_conc, 0, 100, 'Amino acid concentrations\n(mM)')  # TODO: handle log scale and variable ranges
+		self.plot_hist(axes[3, 2], rna_fraction_prob, 0, 1, 'RNA fraction\nsynthesis probability')
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, f'{plotOutFileName}_hist', metadata)
 		plt.close('all')
 
 
