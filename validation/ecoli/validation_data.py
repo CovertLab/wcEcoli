@@ -274,23 +274,25 @@ class Protein(object):
 	def _load_li(self, validation_data_raw):
 		monomers = []
 		rich_rates = []
-		# minimal_rates = []
-		# # for line in validation_data_raw.li_rates:
-		# # 	monomers.append(self.geneSymbolToMonomerId.get(line[0]))
-		# # 	rich_rates.append(int(line[1].strip('[]')))
-		# # 	minimal_rates.append(int(line[2].strip('[]')))
-		# #
-		# self.li_2014 = np.zeros(
-		# 	len(monomers),
-		# 	dtype = [
-		# 		('monomer', max([len(monomer) for monomer in monomers])),
-		# 		('rich_rate', 'f8'),
-		# 		('minimal_rate', 'f8'),
-		# 	])
-		#
-		# self.li_2014["monomer"] = monomers
-		# self.li_2014["rich_rate"] = rich_rates
-		# self.li_2014["minimal_rate"] = minimal_rates
+		minimal_rates = []
+		for line in validation_data_raw.li_rates:
+			gene = line['Gene']
+			if (symbol := self.geneSymbolToMonomerId.get(gene)) is not None:
+				monomers.append(symbol)
+				rich_rates.append(int(str(line['MOPS complete']).strip('[]')))
+				minimal_rates.append(int(str(line['MOPS minimal']).strip('[]')))
+
+		self.li_2014 = np.zeros(
+			len(monomers),
+			dtype = [
+				('monomer', f'U{max([len(monomer) for monomer in monomers])}'),
+				('rich_rate', 'f8'),
+				('minimal_rate', 'f8'),
+			])
+
+		self.li_2014["monomer"] = monomers
+		self.li_2014["rich_rate"] = rich_rates
+		self.li_2014["minimal_rate"] = minimal_rates
 
 class ReactionFlux(object):
 	""" ReactionFlux """
