@@ -23,19 +23,19 @@ def get_mw(mw, molecules):
 def get_monomers(molecules, get_stoich):
 	return [monomer for mol in molecules for monomer in get_stoich(mol)['subunitIds']]
 
-def get_container_counts(container, molecules, mw):
-	total_mass = container.counts(mw.keys()) @ np.array(list(mw.values()))
-	return [container.counts(mol) * get_mw(mw, mol) / total_mass for mol in molecules]
+def get_container_counts(container, molecules, ids):
+	total_counts = container.counts(ids).sum()
+	return [container.counts(mol) / total_counts for mol in molecules]
 
-def get_validation_counts(counts, molecules, mw):
-	total_mass = np.sum([count * mw.get(mol, 0) for mol, count in counts.items()])
-	return [np.array([counts.get(mol, 0) * mw.get(mol, 0) for mol in molecule_group]) / total_mass for molecule_group in molecules]
+def get_validation_counts(counts, molecules):
+	total_counts = np.sum(list(counts.values()))
+	return [np.array([counts.get(mol, 0) / total_counts for mol in molecule_group]) for molecule_group in molecules]
 
 def compare_counts(condition1, condition2):
 	return [np.sign(c1 - c2) for c1, c2 in zip(condition1, condition2)]
 
 def compare_to_validation(parca, validation):
-	matches = [p == v for p, v in zip(parca, validation)]
+	matches = [(p == v)[(p != 0) & (v != 0)] for p, v in zip(parca, validation)]
 	return [match.sum() / match.shape[0] for match in matches]
 
 
@@ -69,14 +69,12 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			'ppGpp molecules',
 		]
 
-		mw = {monomer['id']: monomer['mw'] for monomer in translation.monomer_data}
-
 		# Expected bulk containers in different conditions
 		options = {'ppgpp_regulation': True, 'trna_attenuation': True}  # TODO: iterate on different options
 		rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
 		basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
-		rich_counts = get_container_counts(rich_container, monomer_ids, mw)
-		basal_counts = get_container_counts(basal_container, monomer_ids, mw)
+		rich_counts = get_container_counts(rich_container, monomer_ids, translation.monomer_data['id'])
+		basal_counts = get_container_counts(basal_container, monomer_ids, translation.monomer_data['id'])
 		parca_compare = compare_counts(rich_counts, basal_counts)
 
 		# Validation mass fractions
@@ -86,8 +84,8 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			monomer = p['monomerId']
 			rich_validation[monomer] = p['LB_counts']
 			basal_validation[monomer] = p['glucoseCounts']
-		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, mw)
-		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, mw)
+		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids)
+		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids)
 		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
 
 		comparison = compare_to_validation(parca_compare, validation_compare)
