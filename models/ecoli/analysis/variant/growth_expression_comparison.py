@@ -120,7 +120,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			scat_ax.plot(p, v, 'x')
 		scat_ax.axhline(0, color='k', linestyle='--', linewidth=0.5)
 		scat_ax.axvline(0, color='k', linestyle='--', linewidth=0.5)
-		scat_ax.set_xlabel('Sim log2 fold change\nfrom minimal to rich', fontsize=6)
+		scat_ax.set_xlabel('Sim log2 fold change\nfrom minimal to rich', fontsize=8)
 		scat_ax.set_ylabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
 		scat_ax.tick_params(labelsize=6)
 		self.remove_border(scat_ax)
