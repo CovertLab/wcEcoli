@@ -52,13 +52,14 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		translation = sim_data.process.translation
 		mol_ids = sim_data.molecule_ids
 		get_stoich = sim_data.process.complexation.get_monomers
+		aa_enzymes = [e for e in metabolism.aa_enzymes if e != 'PUTA-CPLXBND[c]']  # PutA is already accounted for as PUTA-CPLX and no easy way to get monomers from both complexes and equilibrium molecules (like PUTA-CPLXBND)
 
 		# Validation data
 		proteomics = validation_data.protein.schmidt2015Data
 
 		# Select molecule groups of interest
 		monomer_ids = (
-			get_monomers(metabolism.aa_enzymes, get_stoich),
+			get_monomers(aa_enzymes, get_stoich),
 			get_monomers(transcription.synthetase_names, get_stoich),
 			get_monomers([mol_ids.RelA, mol_ids.SpoT], get_stoich),
 		)
@@ -81,9 +82,10 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# Validation mass fractions
 		rich_validation = {}
 		basal_validation = {}
-		for monomer, rich, minimal in zip(proteomics['monomerId'], proteomics['LB_counts'], proteomics['glucoseCounts']):
-			rich_validation[monomer] = rich
-			basal_validation[monomer] = minimal
+		for p in proteomics:
+			monomer = p['monomerId']
+			rich_validation[monomer] = p['LB_counts']
+			basal_validation[monomer] = p['glucoseCounts']
 		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, mw)
 		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, mw)
 		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
