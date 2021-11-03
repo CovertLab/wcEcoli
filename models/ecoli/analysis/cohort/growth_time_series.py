@@ -75,7 +75,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	def plot_hist(self, ax, data, min_val, max_val, label, n_bins=40):
 		def plot(d):
-			levels, bins, _ = ax.hist(d, bins=n_bins, range=(min_val, max_val), alpha=0.7, histtype='step')
+			ax.hist(d, bins=n_bins, range=(min_val, max_val), alpha=0.7, histtype='step')
 
 		if len(data.shape) > 1:
 			for d in data.T:
