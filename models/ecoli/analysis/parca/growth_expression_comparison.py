@@ -5,6 +5,7 @@ TODO:
 	plot positive/negative directionality matches
 	show absolute number (matched/unmatched) instead of fraction of matches
 	compare different init options (no ppGpp, no attenuation etc)
+	use li data or new proteome data
 """
 
 import pickle
@@ -27,15 +28,15 @@ def get_container_counts(container, molecules, ids):
 	total_counts = container.counts(ids).sum()
 	return [container.counts(mol) / total_counts for mol in molecules]
 
-def get_validation_counts(counts, molecules):
-	total_counts = np.sum(list(counts.values()))
+def get_validation_counts(counts, molecules, ids):
+	total_counts = np.sum([counts[m] for m in ids])
 	return [np.array([counts.get(mol, 0) / total_counts for mol in molecule_group]) for molecule_group in molecules]
 
 def compare_counts(condition1, condition2):
-	return [np.sign(c1 - c2) for c1, c2 in zip(condition1, condition2)]
+	return [np.log2(c1 / c2) for c1, c2 in zip(condition1, condition2)]
 
 def compare_to_validation(parca, validation):
-	matches = [(p == v)[(p != 0) & (v != 0)] for p, v in zip(parca, validation)]
+	matches = [(np.sign(p) == np.sign(v))[np.isfinite(p) & np.isfinite(v)] for p, v in zip(parca, validation)]
 	return [match.sum() / match.shape[0] for match in matches]
 
 
@@ -55,7 +56,14 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		aa_enzymes = [e for e in metabolism.aa_enzymes if e != 'PUTA-CPLXBND[c]']  # PutA is already accounted for as PUTA-CPLX and no easy way to get monomers from both complexes and equilibrium molecules (like PUTA-CPLXBND)
 
 		# Validation data
-		proteomics = validation_data.protein.schmidt2015Data
+		rich_validation = {}
+		basal_validation = {}
+		for p in validation_data.protein.schmidt2015Data:
+			monomer = p['monomerId']
+			rich_validation[monomer] = p['LB_counts']
+			basal_validation[monomer] = p['glucoseCounts']
+
+		common_monomers = [m for m in translation.monomer_data['id'] if rich_validation.get(m, 0) != 0 and basal_validation.get(m, 0) != 0]
 
 		# Select molecule groups of interest
 		monomer_ids = (
@@ -73,28 +81,31 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		options = {'ppgpp_regulation': True, 'trna_attenuation': True}  # TODO: iterate on different options
 		rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
 		basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
-		rich_counts = get_container_counts(rich_container, monomer_ids, translation.monomer_data['id'])
-		basal_counts = get_container_counts(basal_container, monomer_ids, translation.monomer_data['id'])
+		rich_counts = get_container_counts(rich_container, monomer_ids, common_monomers)
+		basal_counts = get_container_counts(basal_container, monomer_ids, common_monomers)
 		parca_compare = compare_counts(rich_counts, basal_counts)
 
 		# Validation mass fractions
-		rich_validation = {}
-		basal_validation = {}
-		for p in proteomics:
-			monomer = p['monomerId']
-			rich_validation[monomer] = p['LB_counts']
-			basal_validation[monomer] = p['glucoseCounts']
-		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids)
-		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids)
+		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, common_monomers)
+		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, common_monomers)
 		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
 
 		comparison = compare_to_validation(parca_compare, validation_compare)
 
-		plt.figure()
+		_, (bar_ax, scat_ax) = plt.subplots(2, 1, figsize=(5, 10))
 
-		plt.bar(group_labels, comparison)
-		plt.ylim([0, 1])
-		self.remove_border(plt.gca())
+		bar_ax.bar(group_labels, comparison)
+		bar_ax.set_ylim([0, 1])
+		self.remove_border(bar_ax)
+
+		for p, v in zip(parca_compare, validation_compare):
+			scat_ax.plot(p, v, 'x')
+		scat_ax.axhline(0, color='k', linestyle='--', linewidth=0.5)
+		scat_ax.axvline(0, color='k', linestyle='--', linewidth=0.5)
+		scat_ax.set_xlabel('Sim log2 fold change\nfrom minimal to rich', fontsize=6)
+		scat_ax.set_ylabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
+		scat_ax.tick_params(labelsize=6)
+		self.remove_border(scat_ax)
 
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
