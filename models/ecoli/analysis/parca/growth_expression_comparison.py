@@ -71,12 +71,15 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		mw = {monomer['id']: monomer['mw'] for monomer in translation.monomer_data}
 
 		# Select molecule groups of interest
+		# TODO: add regulated monomers as subgroup
 		monomer_ids = (
+			translation.monomer_data['id'],
 			get_monomers(aa_enzymes, get_stoich),
 			get_monomers(transcription.synthetase_names, get_stoich),
 			get_monomers([mol_ids.RelA, mol_ids.SpoT], get_stoich),
 		)
 		group_labels = [
+			'All',
 			'AA enzymes',
 			'Synthetases',
 			'ppGpp molecules',
