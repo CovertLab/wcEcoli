@@ -83,10 +83,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# sim_data attributes used
 		metabolism = sim_data.process.metabolism
 		transcription = sim_data.process.transcription
+		delta_prob = sim_data.process.transcription_regulation.delta_prob
 		translation = sim_data.process.translation
 		mol_ids = sim_data.molecule_ids
 		get_stoich = sim_data.process.complexation.get_monomers
 		aa_enzymes = [e for e in metabolism.aa_enzymes if e != 'PUTA-CPLXBND[c]']  # PutA is already accounted for as PUTA-CPLX and no easy way to get monomers from both complexes and equilibrium molecules (like PUTA-CPLXBND)
+
+		# Get regulated subgroup
+		tf_regulated_indices = np.unique([
+			i for i, v in zip(delta_prob['deltaI'], delta_prob['deltaV'])
+			if v != 0
+			])
+		cistron_id_to_idx = {
+			cistron: i
+			for i, cistron in enumerate(transcription.cistron_data['id'])
+			}
+		ppgpp_regulated_indices = np.array([
+			cistron_id_to_idx[cistron]
+			for cistron in transcription.ppgpp_regulated_genes
+			])
+		regulated_cistrons = np.zeros(len(transcription.cistron_data), bool)
+		regulated_cistrons[tf_regulated_indices] = True
+		regulated_cistrons[ppgpp_regulated_indices] = True
+		regulated_cistrons[transcription.attenuated_rna_indices] = True
+		regulated_monomers = regulated_cistrons[sim_data.relation.cistron_to_monomer_mapping]
 
 		# Validation data
 		rich_validation = {}
@@ -99,15 +119,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mw = {monomer['id']: monomer['mw'] for monomer in translation.monomer_data}
 
 		# Select molecule groups of interest
-		# TODO: add regulated monomers as subgroup
 		monomer_ids = (
 			translation.monomer_data['id'],
+			translation.monomer_data['id'][regulated_monomers],
 			get_monomers(aa_enzymes, get_stoich),
 			get_monomers(transcription.synthetase_names, get_stoich),
 			get_monomers([mol_ids.RelA, mol_ids.SpoT], get_stoich),
 		)
 		group_labels = [
 			'All',
+			'Regulated',
 			'AA enzymes',
 			'Synthetases',
 			'ppGpp molecules',
@@ -139,7 +160,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			mask = np.isfinite(val) & np.isfinite(parca)
 			n = np.sum(mask)
 			_, r = stats.pearsonr(val[mask], parca[mask])
-			scat_ax.plot(val, parca, 'o', alpha=0.05 if n > 200 else 0.5, label=f'{label} (r={r:.3f}, n={n})')
+			if n > 200:
+				options = {'alpha': 0.2, 'markersize': 1}
+			else:
+				options = {'alpha': 0.5, 'markersize': 2}
+			scat_ax.plot(val, parca, 'o', label=f'{label} (r={r:.3f}, n={n})', **options)
 		scat_ax.axhline(0, color='k', linestyle='--', linewidth=0.5)
 		scat_ax.axvline(0, color='k', linestyle='--', linewidth=0.5)
 		scat_ax.set_xlabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
