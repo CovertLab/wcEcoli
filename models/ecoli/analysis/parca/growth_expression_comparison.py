@@ -35,7 +35,9 @@ def get_validation_counts(counts, molecules, mw):
 	return [np.array([counts.get(mol, 0) * mw.get(mol, 0) / total_mass for mol in molecule_group]) for molecule_group in molecules]
 
 def compare_counts(condition1, condition2):
-	return [np.log2(c1 / c2) for c1, c2 in zip(condition1, condition2)]
+	with np.errstate(divide='ignore', invalid='ignore'):
+		fc = [np.log2(c1 / c2) for c1, c2 in zip(condition1, condition2)]
+	return fc
 
 def compare_to_validation(parca, validation):
 	matches = [(np.sign(p) == np.sign(v))[np.isfinite(p) & np.isfinite(v)] for p, v in zip(parca, validation)]
