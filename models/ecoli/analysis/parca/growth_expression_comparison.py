@@ -1,13 +1,12 @@
 """
-Template for parca analysis plots
+Compare the directionality of expression changes for all proteins and groups
+related to growth in the model to validation.
 
 TODO:
 	plot positive/negative directionality matches
 	show absolute number (matched/unmatched) instead of fraction of matches
-	compare different init options (no ppGpp, no attenuation etc)
-	use li data or new proteome data
-	convert to a concentration? not sure how to apply to validation data
-	show correlation - for monomers of interest, all fold changes and individual conditions
+	scatter plots for each set of regulation options
+	compare more environments than just minimal to rich
 """
 
 import pickle
@@ -27,15 +26,15 @@ def get_mw(mw, molecules):
 def get_monomers(molecules, get_stoich):
 	return [monomer for mol in molecules for monomer in get_stoich(mol)['subunitIds']]
 
-def get_container_counts(container, molecules, mw):
+def get_container_fractions(container, molecules, mw):
 	total_mass = container.counts(mw.keys()) @ np.array(list(mw.values()))
 	return [container.counts(mol) * get_mw(mw, mol) / total_mass for mol in molecules]
 
-def get_validation_counts(counts, molecules, mw):
+def get_validation_fractions(counts, molecules, mw):
 	total_mass = np.sum([count * mw.get(mol, 0) for mol, count in counts.items()])
 	return [np.array([counts.get(mol, 0) * mw.get(mol, 0) / total_mass for mol in molecule_group]) for molecule_group in molecules]
 
-def compare_counts(condition1, condition2):
+def compare_fractions(condition1, condition2):
 	with np.errstate(divide='ignore', invalid='ignore'):
 		fc = [np.log2(c1 / c2) for c1, c2 in zip(condition1, condition2)]
 	return fc
@@ -96,17 +95,18 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		for label, options in option_choices.items():
 			rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
 			basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
-			rich_counts = get_container_counts(rich_container, monomer_ids, mw)
-			basal_counts = get_container_counts(basal_container, monomer_ids, mw)
-			parca_compare[label] = compare_counts(rich_counts, basal_counts)
+			rich_fractions = get_container_fractions(rich_container, monomer_ids, mw)
+			basal_fractions = get_container_fractions(basal_container, monomer_ids, mw)
+			parca_compare[label] = compare_fractions(rich_fractions, basal_fractions)
 
 		# Validation mass fractions
-		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, mw)
-		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, mw)
-		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
+		rich_fractions_validation = get_validation_fractions(rich_validation, monomer_ids, mw)
+		basal_fractions_validation = get_validation_fractions(basal_validation, monomer_ids, mw)
+		validation_compare = compare_fractions(rich_fractions_validation, basal_fractions_validation)
 
 		_, (bar_ax, scat_ax) = plt.subplots(2, 1, figsize=(5, 10))
 
+		# Plot bar for fraction of matches between parca and validation changes
 		x = np.arange(len(group_labels))
 		width = 0.8 / len(parca_compare)
 		offset = width / 2 - 0.4
@@ -114,21 +114,23 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			comparison = compare_to_validation(parca, validation_compare)
 			bar_ax.bar(x + offset + width * i, comparison, width, label=label)
 		bar_ax.set_xticks(x)
-		bar_ax.set_xticklabels(group_labels, fontsize=8)
+		bar_ax.set_xticklabels(group_labels)
+		bar_ax.tick_params(labelsize=6)
 		bar_ax.set_ylim([0, 1])
 		self.remove_border(bar_ax)
 		bar_ax.legend(fontsize=6, frameon=False)
 		bar_ax.set_ylabel('Fraction direction matches validation', fontsize=8)
 
-		# TODO: scatter for each set of options
-		for parca, val, label in zip(parca_compare['Both'], validation_compare, group_labels):
-			mask = np.isfinite(parca) & np.isfinite(val)
-			_, r = stats.pearsonr(parca[mask], val[mask])
-			scat_ax.plot(parca, val, 'o', alpha=0.2, label=f'{label} (r={r:.3f}, n={np.sum(mask)})')
+		# Plot scatter plot of changes in the parca vs validation
+		for val, parca, label in zip(validation_compare, parca_compare['Both'], group_labels):
+			mask = np.isfinite(val) & np.isfinite(parca)
+			n = np.sum(mask)
+			_, r = stats.pearsonr(val[mask], parca[mask])
+			scat_ax.plot(val, parca, 'o', alpha=0.05 if n > 200 else 0.5, label=f'{label} (r={r:.3f}, n={n})')
 		scat_ax.axhline(0, color='k', linestyle='--', linewidth=0.5)
 		scat_ax.axvline(0, color='k', linestyle='--', linewidth=0.5)
-		scat_ax.set_xlabel('Sim log2 fold change\nfrom minimal to rich', fontsize=8)
-		scat_ax.set_ylabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
+		scat_ax.set_xlabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
+		scat_ax.set_ylabel('Sim log2 fold change\nfrom minimal to rich', fontsize=8)
 		scat_ax.tick_params(labelsize=6)
 		self.remove_border(scat_ax)
 		scat_ax.legend(fontsize=6, frameon=False)
