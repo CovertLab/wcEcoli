@@ -86,27 +86,42 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		]
 
 		# Expected bulk containers in different conditions
-		options = {'ppgpp_regulation': True, 'trna_attenuation': True}  # TODO: iterate on different options
-		rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
-		basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
-		rich_counts = get_container_counts(rich_container, monomer_ids, mw)
-		basal_counts = get_container_counts(basal_container, monomer_ids, mw)
-		parca_compare = compare_counts(rich_counts, basal_counts)
+		option_choices = {
+			'Both': {'ppgpp_regulation': True, 'trna_attenuation': True},
+			'No attenuation': {'ppgpp_regulation': True, 'trna_attenuation': False},
+			'No ppGpp': {'ppgpp_regulation': False, 'trna_attenuation': True},
+			'Neither': {'ppgpp_regulation': False, 'trna_attenuation': False},
+			}
+		parca_compare = {}
+		for label, options in option_choices.items():
+			rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
+			basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
+			rich_counts = get_container_counts(rich_container, monomer_ids, mw)
+			basal_counts = get_container_counts(basal_container, monomer_ids, mw)
+			parca_compare[label] = compare_counts(rich_counts, basal_counts)
 
 		# Validation mass fractions
 		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, mw)
 		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, mw)
 		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
 
-		comparison = compare_to_validation(parca_compare, validation_compare)
-
 		_, (bar_ax, scat_ax) = plt.subplots(2, 1, figsize=(5, 10))
 
-		bar_ax.bar(group_labels, comparison)
+		x = np.arange(len(group_labels))
+		width = 0.8 / len(parca_compare)
+		offset = width / 2 - 0.4
+		for i, (label, parca) in enumerate(parca_compare.items()):
+			comparison = compare_to_validation(parca, validation_compare)
+			bar_ax.bar(x + offset + width * i, comparison, width, label=label)
+		bar_ax.set_xticks(x)
+		bar_ax.set_xticklabels(group_labels, fontsize=8)
 		bar_ax.set_ylim([0, 1])
 		self.remove_border(bar_ax)
+		bar_ax.legend(fontsize=6, frameon=False)
+		bar_ax.set_ylabel('Fraction direction matches validation', fontsize=8)
 
-		for parca, val, label in zip(parca_compare, validation_compare, group_labels):
+		# TODO: scatter for each set of options
+		for parca, val, label in zip(parca_compare['Both'], validation_compare, group_labels):
 			mask = np.isfinite(parca) & np.isfinite(val)
 			_, r = stats.pearsonr(parca[mask], val[mask])
 			scat_ax.plot(parca, val, 'o', alpha=0.2, label=f'{label} (r={r:.3f}, n={np.sum(mask)})')
