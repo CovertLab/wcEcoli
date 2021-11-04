@@ -1,3 +1,9 @@
+# Data from Li et al. Quantifying Absolute Protein Synthesis Rates
+# Reveals Principles Underlying Allocation of Cellular Resources. 2014.
+# Table S1. Absolute Protein Synthesis Rates. Downloaded from:
+# https://www.cell.com/cms/10.1016/j.cell.2014.02.033/attachment/de4645b4-4bea-4197-abd2-d45249e51aaa/mmc1.xlsx
+# Note: translation efficiency data also comes from this paper so not
+# a completely independent validation dataset
 "Gene"	"MOPS complete"	"MOPS minimal"	"MOPS complete without methionine"
 "aaeA"	62	5	"[21]"
 "aaeB"	16	"[2]"	"[0]"

@@ -275,7 +275,7 @@ class Protein(object):
 		monomers = []
 		rich_rates = []
 		minimal_rates = []
-		for line in validation_data_raw.li_rates:
+		for line in validation_data_raw.li_protein_synthesis_rates_2014:
 			gene = line['Gene']
 			if (symbol := self.geneSymbolToMonomerId.get(gene)) is not None:
 				monomers.append(symbol)
