@@ -176,7 +176,7 @@ def save_genes(raw_data, sim_data, output):
 
 	# Get gene names for each monomer implemented
 	rnaIdToSymbol = {x['rna_ids'][0]: x['symbol'] for x in raw_data.genes}
-	monomerToRna = {x['id'][:-3]: x['rna_id'][:-3] for x in sim_data.process.translation.monomer_data}
+	monomerToRna = {x['id'][:-3]: x['cistron_id'] for x in sim_data.process.translation.monomer_data}
 	geneNames = [rnaIdToSymbol[monomerToRna[monomer[:-3]]] for monomer in monomers]
 
 	# Save data to output tsv file
@@ -218,7 +218,7 @@ def save_metabolites(raw_data, sim_data, output):
 	Args:
 		raw_data (KnowledgeBaseEcoli object): raw data for simulations
 		sim_data (SimulationDataEcoli object): simulation data
-		output (str): path to tsv file with list of implemented genes
+		output (str): path to tsv file with list of metabolites with a concentration
 	"""
 
 	metabolites = list(sim_data.process.metabolism.conc_dict.keys())
@@ -256,7 +256,7 @@ def save_kinetics(raw_data, sim_data, output):
 	Args:
 		raw_data (KnowledgeBaseEcoli object): raw data
 		sim_data (SimulationDataEcoli object): simulation data
-		output (str): path to tsv file with list of implemented genes
+		output (str): path to tsv file with list of kinetic constraints
 	"""
 
 	kinetic_constraints = sim_data.process.metabolism.extract_kinetic_constraints(
