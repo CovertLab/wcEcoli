@@ -1,5 +1,9 @@
 """
-Template for variant analysis plots
+Compare the directionality of expression changes for all proteins and groups
+related to growth in the model to validation.
+
+TODO:
+	shares a lot of code with the parca analysis plot of the same name
 """
 
 import pickle
@@ -7,11 +11,11 @@ import os
 
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
 
@@ -26,15 +30,21 @@ def get_mw(mw, molecules):
 def get_monomers(molecules, get_stoich):
 	return [monomer for mol in molecules for monomer in get_stoich(mol)['subunitIds']]
 
-def get_sim_counts(counts, molecules, ids):
-	total_counts = np.sum([counts[m] for m in ids], axis=0)
-	return [np.array([counts.get(mol, np.zeros_like(total_counts)) / total_counts for mol in molecule_group]).mean(1) for molecule_group in molecules]
+def get_sim_fractions(counts, molecules, mw):
+	total_mass = np.sum([count * mw.get(mol, 0) for mol, count in counts.items()], axis=0)
+	return [
+		np.array([counts.get(mol, np.zeros_like(total_mass)) * mw.get(mol, 0) / total_mass for mol in molecule_group]).mean(1)
+		for molecule_group in molecules
+		]
 
-def get_validation_counts(counts, molecules, ids):
-	total_counts = np.sum([counts[m] for m in ids])
-	return [np.array([counts.get(mol, 0) / total_counts for mol in molecule_group]) for molecule_group in molecules]
+def get_validation_fractions(counts, molecules, mw):
+	total_mass = np.sum([count * mw.get(mol, 0) for mol, count in counts.items()])
+	return [
+		np.array([counts.get(mol, 0) * mw.get(mol, 0) / total_mass for mol in molecule_group])
+		for molecule_group in molecules
+		]
 
-def compare_counts(condition1, condition2):
+def compare_fractions(condition1, condition2):
 	with np.errstate(divide='ignore', invalid='ignore'):
 		fc = [np.log2(c1 / c2) for c1, c2 in zip(condition1, condition2)]
 	return fc
@@ -62,7 +72,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				rich_sim = read_counts(cell_paths)
 
 		if minimal_sim is None or rich_sim is None:
-			print(f'Do not have minimal and rich variant for {plotOutFileName} - skipping...')
+			print(f'Do not have a minimal and rich variant for {plotOutFileName} - skipping...')
 			return
 
 		with open(simDataFile, 'rb') as f:
@@ -81,51 +91,62 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Validation data
 		rich_validation = {}
 		basal_validation = {}
-		for p in validation_data.protein.schmidt2015Data:
-			monomer = p['monomerId']
-			rich_validation[monomer] = p['LB_counts']
-			basal_validation[monomer] = p['glucoseCounts']
+		for p in validation_data.protein.li_2014:
+			monomer = p['monomer']
+			rich_validation[monomer] = p['rich_rate']
+			basal_validation[monomer] = p['minimal_rate']
 
-		common_monomers = [m for m in translation.monomer_data['id'] if rich_validation.get(m, 0) != 0 and basal_validation.get(m, 0) != 0]
+		mw = {monomer['id']: monomer['mw'] for monomer in translation.monomer_data}
 
 		# Select molecule groups of interest
+		# TODO: add regulated monomers as subgroup
 		monomer_ids = (
+			translation.monomer_data['id'],
 			get_monomers(aa_enzymes, get_stoich),
 			get_monomers(transcription.synthetase_names, get_stoich),
 			get_monomers([mol_ids.RelA, mol_ids.SpoT], get_stoich),
 		)
 		group_labels = [
+			'All',
 			'AA enzymes',
 			'Synthetases',
 			'ppGpp molecules',
 		]
 
 		# Expected bulk containers in different conditions
-		rich_counts = get_sim_counts(rich_sim, monomer_ids, common_monomers)
-		basal_counts = get_sim_counts(minimal_sim, monomer_ids, common_monomers)
-		parca_compare = compare_counts(rich_counts, basal_counts)
+		rich_fractions = get_sim_fractions(rich_sim, monomer_ids, mw)
+		basal_fractions = get_sim_fractions(minimal_sim, monomer_ids, mw)
+		parca_compare = compare_fractions(rich_fractions, basal_fractions)
 
 		# Validation mass fractions
-		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, common_monomers)
-		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, common_monomers)
-		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
+		rich_fractions_validation = get_validation_fractions(rich_validation, monomer_ids, mw)
+		basal_fractions_validation = get_validation_fractions(basal_validation, monomer_ids, mw)
+		validation_compare = compare_fractions(rich_fractions_validation, basal_fractions_validation)
 
 		comparison = compare_to_validation(parca_compare, validation_compare)
 
 		_, (bar_ax, scat_ax) = plt.subplots(2, 1, figsize=(5, 10))
 
+		# Plot bar for fraction of matches between sim and validation changes
 		bar_ax.bar(group_labels, comparison)
+		bar_ax.tick_params(labelsize=6)
 		bar_ax.set_ylim([0, 1])
 		self.remove_border(bar_ax)
+		bar_ax.set_ylabel('Fraction direction matches validation', fontsize=8)
 
-		for p, v in zip(parca_compare, validation_compare):
-			scat_ax.plot(p, v, 'x')
+		# Plot scatter plot of changes in the sim vs validation
+		for val, parca, label in zip(validation_compare, parca_compare, group_labels):
+			mask = np.isfinite(val) & np.isfinite(parca)
+			n = np.sum(mask)
+			_, r = stats.pearsonr(val[mask], parca[mask])
+			scat_ax.plot(val, parca, 'o', alpha=0.05 if n > 200 else 0.5, label=f'{label} (r={r:.3f}, n={n})')
 		scat_ax.axhline(0, color='k', linestyle='--', linewidth=0.5)
 		scat_ax.axvline(0, color='k', linestyle='--', linewidth=0.5)
-		scat_ax.set_xlabel('Sim log2 fold change\nfrom minimal to rich', fontsize=8)
-		scat_ax.set_ylabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
+		scat_ax.set_xlabel('Validation log2 fold change\nfrom minimal to rich', fontsize=8)
+		scat_ax.set_ylabel('Sim log2 fold change\nfrom minimal to rich', fontsize=8)
 		scat_ax.tick_params(labelsize=6)
 		self.remove_border(scat_ax)
+		scat_ax.legend(fontsize=6, frameon=False)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

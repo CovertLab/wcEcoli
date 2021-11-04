@@ -7,6 +7,7 @@ TODO:
 	show absolute number (matched/unmatched) instead of fraction of matches
 	scatter plots for each set of regulation options
 	compare more environments than just minimal to rich
+	shares a lot of code with the variant analysis plot of the same name
 """
 
 import pickle
