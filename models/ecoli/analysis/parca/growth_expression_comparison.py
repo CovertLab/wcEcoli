@@ -6,6 +6,8 @@ TODO:
 	show absolute number (matched/unmatched) instead of fraction of matches
 	compare different init options (no ppGpp, no attenuation etc)
 	use li data or new proteome data
+	convert to a concentration? not sure how to apply to validation data
+	show correlation - for monomers of interest, all fold changes and individual conditions
 """
 
 import pickle
@@ -24,13 +26,13 @@ def get_mw(mw, molecules):
 def get_monomers(molecules, get_stoich):
 	return [monomer for mol in molecules for monomer in get_stoich(mol)['subunitIds']]
 
-def get_container_counts(container, molecules, ids):
-	total_counts = container.counts(ids).sum()
-	return [container.counts(mol) / total_counts for mol in molecules]
+def get_container_counts(container, molecules, mw):
+	total_mass = container.counts(mw.keys()) @ np.array(list(mw.values()))
+	return [container.counts(mol) * get_mw(mw, mol) / total_mass for mol in molecules]
 
-def get_validation_counts(counts, molecules, ids):
-	total_counts = np.sum([counts[m] for m in ids])
-	return [np.array([counts.get(mol, 0) / total_counts for mol in molecule_group]) for molecule_group in molecules]
+def get_validation_counts(counts, molecules, mw):
+	total_mass = np.sum([count * mw.get(mol, 0) for mol, count in counts.items()])
+	return [np.array([counts.get(mol, 0) * mw.get(mol, 0) / total_mass for mol in molecule_group]) for molecule_group in molecules]
 
 def compare_counts(condition1, condition2):
 	return [np.log2(c1 / c2) for c1, c2 in zip(condition1, condition2)]
@@ -58,12 +60,12 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# Validation data
 		rich_validation = {}
 		basal_validation = {}
-		for p in validation_data.protein.schmidt2015Data:
-			monomer = p['monomerId']
-			rich_validation[monomer] = p['LB_counts']
-			basal_validation[monomer] = p['glucoseCounts']
+		for p in validation_data.protein.li_2014:
+			monomer = p['monomer']
+			rich_validation[monomer] = p['rich_rate']
+			basal_validation[monomer] = p['minimal_rate']
 
-		common_monomers = [m for m in translation.monomer_data['id'] if rich_validation.get(m, 0) != 0 and basal_validation.get(m, 0) != 0]
+		mw = {monomer['id']: monomer['mw'] for monomer in translation.monomer_data}
 
 		# Select molecule groups of interest
 		monomer_ids = (
@@ -81,13 +83,13 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		options = {'ppgpp_regulation': True, 'trna_attenuation': True}  # TODO: iterate on different options
 		rich_container = create_bulk_container(sim_data, condition='with_aa', form_complexes=False, **options)
 		basal_container = create_bulk_container(sim_data, form_complexes=False, **options)
-		rich_counts = get_container_counts(rich_container, monomer_ids, common_monomers)
-		basal_counts = get_container_counts(basal_container, monomer_ids, common_monomers)
+		rich_counts = get_container_counts(rich_container, monomer_ids, mw)
+		basal_counts = get_container_counts(basal_container, monomer_ids, mw)
 		parca_compare = compare_counts(rich_counts, basal_counts)
 
 		# Validation mass fractions
-		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, common_monomers)
-		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, common_monomers)
+		rich_counts_validation = get_validation_counts(rich_validation, monomer_ids, mw)
+		basal_counts_validation = get_validation_counts(basal_validation, monomer_ids, mw)
 		validation_compare = compare_counts(rich_counts_validation, basal_counts_validation)
 
 		comparison = compare_to_validation(parca_compare, validation_compare)
