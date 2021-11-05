@@ -19,6 +19,7 @@ from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
 def mean_std(data):
+	data = np.hstack(data)
 	return np.mean(data), np.std(data)
 
 def plot(ax, x, y, sim_time=None, timeline=None, ma_time=None, xlabel=None, ylabel=None,
@@ -85,6 +86,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_ratio = []
 			for seed in ap.get_seeds(variant):
 				cell_paths = ap.get_cells(variant=[variant], seed=[seed])
+				if not np.all([ap.get_successful(path) for path in cell_paths]):
+					continue
 
 				# Load data
 				sim_time = read_stacked_columns(cell_paths, 'Main', 'time', remove_first=True).squeeze()
