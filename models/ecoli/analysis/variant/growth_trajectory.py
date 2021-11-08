@@ -84,9 +84,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_times_ma = []
 			all_growth = []
 			all_ratio = []
+			data_to_plot = False
 			for seed in ap.get_seeds(variant):
 				cell_paths = ap.get_cells(variant=[variant], seed=[seed])
-				if not np.all([ap.get_successful(path) for path in cell_paths]):
+				if len(cell_paths) == 0 or not ap.get_successful(cell_paths[-1]):
 					continue
 
 				# Load data
@@ -138,6 +139,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_times_ma.append(time_ma)
 				all_growth.append(growth)
 				all_ratio.append(ratio)
+				data_to_plot = True
+
+			if not data_to_plot:
+				continue
 
 			min_length = min([len(data) for data in all_growth_means])
 			stacked_mass_means = np.vstack([data[:min_length] for data in all_mass_means]).mean(0)
