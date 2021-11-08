@@ -8,6 +8,7 @@ import pickle
 
 from matplotlib import colors, gridspec, pyplot as plt
 import numpy as np
+from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -18,6 +19,25 @@ from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # These are set in the variant and will need to be updated if there are changes to the media
 GLT_INDEX = 5
 CONTROL_INDEX = 19
+
+
+def calculate_sensitivity(data, variant, factors, attr):
+	params = []
+	values = []
+	slopes = []
+	if variant in data:
+		for param, factor_results in data[variant].items():
+			attrs = []
+			for factor in factors:
+				if factor not in factor_results or not np.isfinite(value := factor_results[factor][attr]):
+					break
+				attrs.append(value)
+			else:
+				params.append(param)
+				values.append(np.array(attrs))
+				slopes.append(stats.linregress(np.log10(factors), attrs).slope)
+
+	return np.array(params), np.array(values), np.array(slopes)
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -105,6 +125,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
+		params, all_rates, slopes = calculate_sensitivity(data, CONTROL_INDEX, factors, 'Growth rate')
+		slope_sort_idx = np.argsort(slopes)
+		mean = slopes.mean()
+		std = slopes.std()
+		upper_limit = mean + std
+		lower_limit = mean - std
+
+		plt.figure(figsize=(5, 10))
+
+		self.remove_border(plt.subplot(2, 1, 1))
+		plt.bar(range(len(slopes)), slopes[slope_sort_idx])
+
+		self.remove_border(plt.subplot(2, 1, 2))
+		for param, rates, slope in zip(params, all_rates, slopes):
+			if slope > upper_limit or slope < lower_limit:
+				style = dict(alpha=0.6, linewidth=1, markersize=2, label=param)
+			else:
+				style = dict(color='k', alpha=0.3, linewidth=0.5, markersize=1)
+			plt.plot(np.log10(factors), rates, 'o-', **style)
+		plt.legend(fontsize=6, frameon=False)
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, f'{plotOutFileName}_slopes', metadata)
 		plt.close('all')
 
 
