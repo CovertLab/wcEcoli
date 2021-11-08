@@ -126,27 +126,45 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-		factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
-		params, all_rates, slopes = calculate_sensitivity(data, CONTROL_INDEX, factors, 'Growth rate')
-		slope_sort_idx = np.argsort(slopes)
-		mean = slopes.mean()
-		std = slopes.std()
-		upper_limit = mean + std
-		lower_limit = mean - std
+		# TODO: should include no parameter change in sims to get better slopes for increase/decrease
+		nonzero_factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
+		increase_factors = [f for f in nonzero_factors if f >= 1]
+		decrease_factors = [f for f in nonzero_factors if f <= 1]
 
-		plt.figure(figsize=(5, 10))
+		# TODO: include bar subplot of highest/lowest param change instead of slope?
+		def slopes_plot(variant, factors, attr, axes):
+			params, all_rates, slopes = calculate_sensitivity(data, variant, factors, attr)
+			slope_sort_idx = np.argsort(slopes)
+			mean = slopes.mean()
+			std = slopes.std()
+			upper_limit = mean + std
+			lower_limit = mean - std
 
-		self.remove_border(plt.subplot(2, 1, 1))
-		plt.bar(range(len(slopes)), slopes[slope_sort_idx])
+			bar_ax, trace_ax = axes
 
-		self.remove_border(plt.subplot(2, 1, 2))
-		for param, rates, slope in zip(params, all_rates, slopes):
-			if slope > upper_limit or slope < lower_limit:
-				style = dict(alpha=0.6, linewidth=1, markersize=2, label=param)
-			else:
-				style = dict(color='k', alpha=0.3, linewidth=0.5, markersize=1)
-			plt.plot(np.log10(factors), rates, 'o-', **style)
-		plt.legend(fontsize=6, frameon=False)
+			# TODO: label params on x
+			bar_ax.bar(range(len(slopes)), slopes[slope_sort_idx])
+			bar_ax.set_ylabel(f'{attr} / change in param', fontsize=8)
+			bar_ax.tick_params(labelsize=8)
+			self.remove_border(bar_ax)
+
+			for param, rates, slope in zip(params, all_rates, slopes):
+				if slope > upper_limit or slope < lower_limit:
+					style = dict(alpha=0.6, linewidth=1, markersize=2, label=param)
+				else:
+					style = dict(color='k', alpha=0.3, linewidth=0.5, markersize=1)
+				trace_ax.plot(np.log10(factors), rates, 'o-', **style)
+			trace_ax.set_xlabel('log10 change in param', fontsize=8)
+			trace_ax.set_ylabel(f'{attr}', fontsize=8)
+			trace_ax.legend(fontsize=6, frameon=False)
+			trace_ax.tick_params(labelsize=8)
+			self.remove_border(trace_ax)
+
+		_, axes = plt.subplots(2, 3, figsize=(15, 10))
+
+		slopes_plot(CONTROL_INDEX, nonzero_factors, 'Growth rate', axes[:, 0])
+		slopes_plot(CONTROL_INDEX, increase_factors, 'Growth rate', axes[:, 1])
+		slopes_plot(CONTROL_INDEX, decrease_factors, 'Growth rate', axes[:, 2])
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_slopes', metadata)
