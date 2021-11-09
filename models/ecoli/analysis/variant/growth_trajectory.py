@@ -61,7 +61,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = ap.get_variants()
 
 		# Create plot
-		_, axes = plt.subplots(3, 2, figsize=(8, 12))
+		_, main_axes = plt.subplots(3, 2, figsize=(8, 12))
+		main_fig = plt.gcf().number
+		_, trimmed_axes = plt.subplots(3, 2, figsize=(8, 12))
+		trimmed_fig = plt.gcf().number
+
 
 		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
 		average_data = {}
@@ -121,12 +125,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				small_mol_growth_ma = np.convolve(small_mol_growth, convolution_array, mode='valid')
 				time_ma = np.convolve(sim_time, convolution_array, mode='valid')
 
-				plot(axes[0, 0], mass_means, growth_means, background=True)
-				plot(axes[1, 0], ratio_means, growth_means, background=True)
-				plot(axes[2, 0], ratio_ma, growth_ma, background=True)
-				plot(axes[0, 1], ratio_ma, protein_growth_ma, background=True)
-				plot(axes[1, 1], ratio_ma, rna_growth_ma, background=True)
-				plot(axes[2, 1], ratio_ma, small_mol_growth_ma, background=True)
+				plot(main_axes[0, 0], mass_means, growth_means, background=True)
+				plot(main_axes[1, 0], ratio_means, growth_means, background=True)
+				plot(main_axes[2, 0], ratio_ma, growth_ma, background=True)
+				plot(main_axes[0, 1], ratio_ma, protein_growth_ma, background=True)
+				plot(main_axes[1, 1], ratio_ma, rna_growth_ma, background=True)
+				plot(main_axes[2, 1], ratio_ma, small_mol_growth_ma, background=True)
 
 				all_mass_means.append(mass_means)
 				all_growth_means.append(growth_means)
@@ -159,22 +163,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			stacked_times = np.vstack([data[:min_length_ma] for data in all_times]).mean(0)
 			stacked_times_ma = np.vstack([data[:min_length_ma] for data in all_times_ma]).mean(0)
 
-			plot(axes[0, 0], stacked_mass_means, stacked_growth_means,
-				xlabel='Average cell cycle mass (fg)', ylabel='Average cell cycle growth rate (1/hr)', label=variant)
-			plot(axes[1, 0], stacked_ratio_means, stacked_growth_means,
-				xlabel='Average cell cycle RNA/protein', ylabel='Average cell cycle growth rate (1/hr)', label=variant)
-			plot(axes[2, 0], stacked_ratio_ma, stacked_growth_ma,
-				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='Growth rate (1/hr)', label=variant)
-			plot(axes[0, 1], stacked_ratio_ma, stacked_protein_growth_ma,
-				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='Protein growth rate (1/hr)', label=variant)
-			plot(axes[1, 1], stacked_ratio_ma, stacked_rna_growth_ma,
-				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='RNA growth rate (1/hr)', label=variant)
-			plot(axes[2, 1], stacked_ratio_ma, stacked_small_mol_growth_ma,
-				ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
-				xlabel='RNA/protein', ylabel='Small molecule growth rate (1/hr)', label=variant)
+			for axes in [main_axes, trimmed_axes]:
+				plot(axes[0, 0], stacked_mass_means, stacked_growth_means,
+					xlabel='Average cell cycle mass (fg)', ylabel='Average cell cycle growth rate (1/hr)', label=variant)
+				plot(axes[1, 0], stacked_ratio_means, stacked_growth_means,
+					xlabel='Average cell cycle RNA/protein', ylabel='Average cell cycle growth rate (1/hr)', label=variant)
+				plot(axes[2, 0], stacked_ratio_ma, stacked_growth_ma,
+					ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
+					xlabel='RNA/protein', ylabel='Growth rate (1/hr)', label=variant)
+				plot(axes[0, 1], stacked_ratio_ma, stacked_protein_growth_ma,
+					ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
+					xlabel='RNA/protein', ylabel='Protein growth rate (1/hr)', label=variant)
+				plot(axes[1, 1], stacked_ratio_ma, stacked_rna_growth_ma,
+					ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
+					xlabel='RNA/protein', ylabel='RNA growth rate (1/hr)', label=variant)
+				plot(axes[2, 1], stacked_ratio_ma, stacked_small_mol_growth_ma,
+					ma_time=stacked_times_ma, sim_time=stacked_times, timeline=timeline,
+					xlabel='RNA/protein', ylabel='Small molecule growth rate (1/hr)', label=variant)
 
 			# Save average/std for output to a tsv
 			average_data[variant] = {
@@ -182,13 +187,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'R/P ratio': mean_std(all_ratio),
 				}
 
-		for ax in axes.reshape(-1):
-			self.remove_border(ax)
-			if len(variants) > 1:
-				ax.legend(fontsize=6)
+		for axes in [main_axes, trimmed_axes]:
+			for ax in axes.reshape(-1):
+				self.remove_border(ax)
+				if len(variants) > 1:
+					ax.legend(fontsize=6)
 
+		plt.figure(main_fig)
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		plt.figure(trimmed_fig)
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_trimmed', metadata)
+
 		plt.close('all')
 
 		# Save average data for comparison across runs
