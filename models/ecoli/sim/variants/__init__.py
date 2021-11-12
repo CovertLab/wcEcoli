@@ -8,6 +8,7 @@ variants = [
 	'add_one_aa_shift',
 	'all_shuffle_params',
 	'condition',
+	'double_knockout',
 	'gene_knockout',
 	'mene_params',
 	'metabolism_kinetic_objective_weight',
