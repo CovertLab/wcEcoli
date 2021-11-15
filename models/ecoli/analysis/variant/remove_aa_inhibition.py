@@ -134,7 +134,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ki_factors = []
 		for i, variant in enumerate(variants):
 			variant_conc = []
-			for sim_dir in ap.get_cells(variant=[variant]):
+			for sim_dir in ap.get_cells(variant=[variant], only_successful=True):
 				simOutDir = os.path.join(sim_dir, "simOut")
 
 				# Listeners used
