@@ -187,6 +187,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 		# Fix axes limits for easier comparison across runs
+		for ax in axes.flatten():
+			for text in ax.texts:
+				text.set_visible(False)
 		axes[0, 0].set_ylim(0, 2)
 		axes[1, 0].set_ylim(0, 2)
 		axes[2, 0].set_ylim(0, 2)
