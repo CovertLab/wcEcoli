@@ -107,7 +107,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		self.plot_hist(axes[3, 1], ribosome_fraction_active, 0, 1, 'Ribosome active fraction')
 		self.plot_hist(axes[0, 2], fraction_charged[:, 0], 0, 1, f'Fraction charged\n{aa_ids[0][:-3]} tRNA')
 		self.plot_hist(axes[1, 2], fraction_charged[:, 10], 0, 1, f'Fraction charged\n{aa_ids[10][:-3]} tRNA')
-		self.plot_hist(axes[2, 2], aa_conc[:, 0], 0, 5, f'{aa_ids[0][:-3]} concentration\n(mM)')
+		self.plot_hist(axes[2, 2], aa_conc[:, 0], 0, 10, f'{aa_ids[0][:-3]} concentration\n(mM)')
 		self.plot_hist(axes[3, 2], aa_conc[:, 10], 0, 1, f'{aa_ids[10][:-3]} concentration\n(mM)')
 		self.plot_hist(axes[0, 3], ppgpp_conc, 0, 300, 'ppGpp concentration\n(uM)', sf=1)
 		self.plot_hist(axes[1, 3], rrna_fraction_prob, 0, 1, 'rRNA fraction\nsynthesis probability')
