@@ -65,10 +65,12 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			is_polycistronic[np.array(list(set(polycistronic_cistron_indexes)))] = True
 		is_polycistronic = is_polycistronic[mask]
 
+
 		# Get expression
 		expected_mRNA_cistron_exp = sim_data.process.transcription.cistron_expression[CONDITION][mask]
 		rna_exp = sim_data.process.transcription.rna_expression[CONDITION]
 		actual_mRNA_cistron_exp = cistron_tu_mapping_matrix.dot(rna_exp)[mask]
+
 
 		# Normalize expression
 		expected_mRNA_cistron_exp /= expected_mRNA_cistron_exp.sum()
@@ -78,6 +80,14 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# expected expression
 		exp_diff = np.log10(actual_mRNA_cistron_exp + NUMERICAL_ZERO) - np.log10(expected_mRNA_cistron_exp + NUMERICAL_ZERO)
 		largest_diff_indexes = np.where(np.abs(exp_diff) > np.log10(LABEL_BOUNDARY))[0]
+
+
+		masked_cistron_tu_mapping_matrix = cistron_tu_mapping_matrix[mask]
+		largest_diff_mask = np.zeros(masked_cistron_tu_mapping_matrix.shape[0], dtype=bool)
+		largest_diff_mask[largest_diff_indexes] = True
+
+		import ipdb; ipdb.set_trace()
+
 
 		plt.figure(figsize=(12, 12))
 		ls = np.logspace(-8, -1, 8)
