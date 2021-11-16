@@ -45,6 +45,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
 		cistron_data = transcription.cistron_data
+		rna_fractions = ['is_rRNA', 'is_tRNA', 'is_mRNA']
+		convert_to_fraction = lambda x: np.vstack([
+			x[:, cistron_data[fraction]].sum(1)
+			for fraction in rna_fractions
+			]).T
 
 		ap = AnalysisPaths(input_dir, variant_plot=True)
 		for variant in ap.get_variants():
@@ -76,8 +81,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				remove_first=True, ignore_exception=True)
 			unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
 				remove_first=True, ignore_exception=True)
-			synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron',
-				remove_first=True, ignore_exception=True)
+			rrna_fraction_prob, trna_fraction_prob, mrna_fraction_prob = read_stacked_columns(
+				cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron',
+				remove_first=True, ignore_exception=True, fun=convert_to_fraction).T
 			(ppgpp_counts, uncharged_trna_counts, charged_trna_counts, aa_counts,
 				inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,
 					([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
@@ -94,9 +100,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			rnap_elong_rate = rnap_elongations / time_step / active_rnap_counts
 			rnap_fraction_active = active_rnap_counts / (active_rnap_counts + inactive_rnap_counts)
 			ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + ribosome_subunit_counts.min(1))
-			rrna_fraction_prob = synth_prob_per_cistron[:, cistron_data['is_rRNA']].sum(1)
-			trna_fraction_prob = synth_prob_per_cistron[:, cistron_data['is_tRNA']].sum(1)
-			mrna_fraction_prob = synth_prob_per_cistron[:, cistron_data['is_mRNA']].sum(1)
 
 			label = f'Sim {sim_label}, var {variant}'
 			self.plot_hist(axes[0, 0], growth_rate, 0, 2, 'Growth rate\n(1/hr)', label)
