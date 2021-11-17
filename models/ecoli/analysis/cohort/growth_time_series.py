@@ -14,6 +14,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 
 
 PLOT_SINGLE = False
@@ -117,6 +118,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			x[:, cistron_data[fraction]].sum(1)
 			for fraction in rna_fractions
 			]).T
+		aa_mw = np.array([sim_data.getter.get_mass(aa[:-3]).asNumber(units.fg / units.count) for aa in aa_ids])
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells(only_successful=True)
@@ -141,6 +143,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			fun=growth_function).squeeze() / time_step * 3600
 		small_mol_growth = read_stacked_columns(cell_paths, 'Mass', 'smallMoleculeMass',
 			fun=growth_function).squeeze() / time_step * 3600
+		protein_mass = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', remove_first=True).squeeze()
+		rna_mass = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', remove_first=True).squeeze()
+		cell_mass = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True).squeeze()
 		ribosome_elong_rate = read_stacked_columns(cell_paths, 'RibosomeData', 'effectiveElongationRate',
 			remove_first=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
@@ -167,8 +172,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rnap_elong_rate = rnap_elongations / time_step / active_rnap_counts
 		rnap_fraction_active = active_rnap_counts / (active_rnap_counts + inactive_rnap_counts)
 		ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + ribosome_subunit_counts.min(1))
+		aa_mass = aa_counts @ aa_mw
+		rp_ratio = rna_mass / (protein_mass + aa_mass)
+		protein_fraction = protein_mass / cell_mass
+		rna_fraction = rna_mass / cell_mass
+		aa_fraction = aa_mass / cell_mass
 
-		_, axes = plt.subplots(4, 4, figsize=(15, 15))
+		_, axes = plt.subplots(4, 5, figsize=(20, 15))
 
 		self.plot_time_series(axes[0, 0], time, growth_rate, 'Growth rate\n(1/hr)', timeline)
 		self.plot_time_series(axes[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)', timeline)
@@ -186,6 +196,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_time_series(axes[1, 3], time, fraction_charged, 'Fraction charged', timeline)
 		self.plot_time_series(axes[2, 3], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, log_scale=True)
 		self.plot_time_series(axes[3, 3], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability', timeline)
+		self.plot_time_series(axes[0, 4], time, rp_ratio, 'RNA/protein\nmass fraction', timeline)
+		self.plot_time_series(axes[1, 4], time, rna_fraction, 'RNA mass fraction', timeline)
+		self.plot_time_series(axes[2, 4], time, protein_fraction, 'Protein mass fraction', timeline)
+		self.plot_time_series(axes[3, 4], time, aa_fraction, 'Amino acid mass fraction', timeline)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -210,6 +224,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		axes[1, 3].set_ylim(0, 1.2)
 		axes[2, 3].set_ylim(1e-4, 100)
 		axes[3, 3].set_ylim(0, 1)
+		# TODO: trim last column
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
 
 		# Plot histograms of data
@@ -230,6 +245,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_hist(axes[1, 3], fraction_charged, 0, 1, 'Fraction charged')
 		self.plot_hist(axes[2, 3], aa_conc, 0, 100, 'Amino acid concentrations\n(mM)')  # TODO: handle log scale and variable ranges
 		self.plot_hist(axes[3, 3], rna_fraction_prob, 0, 1, 'RNA fraction\nsynthesis probability')
+		# TODO: add last column?
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_hist', metadata)
