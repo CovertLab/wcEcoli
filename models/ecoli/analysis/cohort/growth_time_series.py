@@ -230,8 +230,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		axes[2, 3].set_ylim(1e-4, 100)
 		axes[3, 3].set_ylim(0, 1)
 		axes[0, 4].set_ylim(0, 1)
-		axes[1, 4].set_ylim(0, 0.3)
-		axes[2, 4].set_ylim(0, 0.15)
+		axes[1, 4].set_ylim(0, 0.15)
+		axes[2, 4].set_ylim(0, 0.3)
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
 
 		# Plot histograms of data
@@ -253,8 +253,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_hist(axes[2, 3], aa_conc, 0, 100, 'Amino acid concentrations\n(mM)')  # TODO: handle log scale and variable ranges
 		self.plot_hist(axes[3, 3], rna_fraction_prob, 0, 1, 'RNA fraction\nsynthesis probability')
 		self.plot_hist(axes[0, 4], rp_ratio, 0, 1, 'RNA/protein\nmass fraction')
-		self.plot_hist(axes[1, 4], rna_fraction, 0, 0.3, 'RNA mass fraction')
-		self.plot_hist(axes[2, 4], protein_fraction, 0, 0.15, 'Protein mass fraction')
+		self.plot_hist(axes[1, 4], rna_fraction, 0, 0.15, 'RNA mass fraction')
+		self.plot_hist(axes[2, 4], protein_fraction, 0, 0.3, 'Protein mass fraction')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_hist', metadata)
