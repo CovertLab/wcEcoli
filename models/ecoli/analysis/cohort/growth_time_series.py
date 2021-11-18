@@ -119,7 +119,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			x[:, cistron_data[fraction]].sum(1)
 			for fraction in rna_fractions
 			]).T
-		aa_mw = np.array([sim_data.getter.get_mass(aa[:-3]).asNumber(units.fg / units.count) for aa in aa_ids])
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells(only_successful=True)
@@ -173,11 +172,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rnap_elong_rate = rnap_elongations / time_step / active_rnap_counts
 		rnap_fraction_active = active_rnap_counts / (active_rnap_counts + inactive_rnap_counts)
 		ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + ribosome_subunit_counts.min(1))
-		aa_mass = aa_counts @ aa_mw
-		rp_ratio = rna_mass / (protein_mass + aa_mass)  # TODO: include aa_mass?
+		rp_ratio = rna_mass / protein_mass
 		protein_fraction = protein_mass / cell_mass
 		rna_fraction = rna_mass / cell_mass
-		aa_fraction = aa_mass / cell_mass
 		unique_time, cell_count = np.unique(time, return_counts=True)
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
@@ -206,12 +203,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plt.tight_layout()
 			return axes
 
-		# Plot all data
+		# Plot all time series data
 		subplots(set())
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-		# Fix axes limits for easier comparison across runs and filter time points without all cells
-		# for smoother traces
+		# Set axes limits for easier comparison across runs and filter time
+		# points without all cells for smoother traces
 		axes = subplots(filtered)
 		for ax in axes.flatten():
 			for text in ax.texts:
@@ -255,7 +252,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_hist(axes[1, 3], fraction_charged, 0, 1, 'Fraction charged')
 		self.plot_hist(axes[2, 3], aa_conc, 0, 100, 'Amino acid concentrations\n(mM)')  # TODO: handle log scale and variable ranges
 		self.plot_hist(axes[3, 3], rna_fraction_prob, 0, 1, 'RNA fraction\nsynthesis probability')
-		self.plot_hist(axes[0, 4], rp_ratio, 0, 1 'RNA/protein\nmass fraction')
+		self.plot_hist(axes[0, 4], rp_ratio, 0, 1, 'RNA/protein\nmass fraction')
 		self.plot_hist(axes[1, 4], rna_fraction, 0, 0.3, 'RNA mass fraction')
 		self.plot_hist(axes[2, 4], protein_fraction, 0, 0.15, 'Protein mass fraction')
 
