@@ -150,6 +150,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			remove_first=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
 			remove_first=True).squeeze()
+		aas_elongated = read_stacked_columns(cell_paths, 'GrowthLimits', 'aasUsed', remove_first=True)
+		ntps_elongated = read_stacked_columns(cell_paths, 'GrowthLimits', 'ntpUsed', remove_first=True)
 		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar',
 			remove_first=True)
 		unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
@@ -162,7 +164,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				remove_first=True)
 
 		# Derived quantities
-		ppgpp_conc = ppgpp_counts * counts_to_molar.squeeze() * 1000
+		counts_to_molar_squeezed = counts_to_molar.squeeze()
+		ppgpp_conc = ppgpp_counts * counts_to_molar_squeezed * 1000
 		charged_trna_counts = charged_trna_counts @ aa_from_trna
 		uncharged_trna_counts = uncharged_trna_counts @ aa_from_trna
 		fraction_charged = charged_trna_counts / (uncharged_trna_counts + charged_trna_counts)
@@ -171,7 +174,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		active_ribosome_counts = unique_mol_counts[:, ribosome_idx]
 		rnap_elong_rate = rnap_elongations / time_step / active_rnap_counts
 		rnap_fraction_active = active_rnap_counts / (active_rnap_counts + inactive_rnap_counts)
-		ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + ribosome_subunit_counts.min(1))
+		inactive_ribosome_counts = ribosome_subunit_counts.min(1)
+		ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + inactive_ribosome_counts)
+		rnap_conc = counts_to_molar_squeezed * (active_rnap_counts + inactive_rnap_counts) * 1000
+		ribosome_conc = counts_to_molar_squeezed * (active_ribosome_counts + inactive_ribosome_counts) * 1000
+		rnap_output = counts_to_molar_squeezed * ntps_elongated.sum(1) / time_step
+		ribosome_output = counts_to_molar_squeezed * aas_elongated.sum(1) / time_step
 		rp_ratio = rna_mass / protein_mass
 		protein_fraction = protein_mass / cell_mass
 		rna_fraction = rna_mass / cell_mass
@@ -179,7 +187,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
 		def subplots(filtered):
-			_, axes = plt.subplots(4, 5, figsize=(20, 15))
+			_, axes = plt.subplots(4, 6, figsize=(20, 15))
 			self.plot_time_series(axes[0, 0], time, growth_rate, 'Growth rate\n(1/hr)', timeline, filtered)
 			self.plot_time_series(axes[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)', timeline, filtered)
 			self.plot_time_series(axes[2, 0], time, protein_growth, 'Protein growth rate\n(1/hr)', timeline, filtered)
@@ -200,6 +208,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.plot_time_series(axes[1, 4], time, rna_fraction, 'RNA mass fraction', timeline, filtered)
 			self.plot_time_series(axes[2, 4], time, protein_fraction, 'Protein mass fraction', timeline, filtered)
 			self.plot_time_series(axes[3, 4], unique_time, cell_count, '# cells', timeline, filtered)
+			self.plot_time_series(axes[0, 5], time, rnap_conc, 'RNAP conc\n(uM)', timeline, filtered)
+			self.plot_time_series(axes[1, 5], time, rnap_output, 'RNAP output\n(mM NTPs/s)', timeline, filtered)
+			self.plot_time_series(axes[2, 5], time, ribosome_conc, 'Ribosome conc\n(uM)', timeline, filtered)
+			self.plot_time_series(axes[3, 5], time, ribosome_output, 'Ribosome output\n(mM AA/s)', timeline, filtered)
 			plt.tight_layout()
 			return axes
 
@@ -232,10 +244,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		axes[0, 4].set_ylim(0, 1)
 		axes[1, 4].set_ylim(0, 0.15)
 		axes[2, 4].set_ylim(0, 0.3)
+		axes[0, 5].set_ylim(0, 10)
+		axes[1, 5].set_ylim(0, 0.2)
+		axes[2, 5].set_ylim(0, 40)
+		axes[3, 5].set_ylim(0, 1)
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
 
 		# Plot histograms of data
-		_, axes = plt.subplots(4, 5, figsize=(20, 15))
+		_, axes = plt.subplots(4, 6, figsize=(20, 15))
 		self.plot_hist(axes[0, 0], growth_rate, 0, 2, 'Growth rate\n(1/hr)')
 		self.plot_hist(axes[1, 0], rna_growth, 0, 2, 'RNA growth rate\n(1/hr)')
 		self.plot_hist(axes[2, 0], protein_growth, 0, 2, 'Protein growth rate\n(1/hr)')
@@ -255,6 +271,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_hist(axes[0, 4], rp_ratio, 0, 1, 'RNA/protein\nmass fraction')
 		self.plot_hist(axes[1, 4], rna_fraction, 0, 0.15, 'RNA mass fraction')
 		self.plot_hist(axes[2, 4], protein_fraction, 0, 0.3, 'Protein mass fraction')
+		self.plot_hist(axes[0, 5], rnap_conc, 0, 10, 'RNAP conc\n(uM)')
+		self.plot_hist(axes[1, 5], rnap_output, 0, 0.2, 'RNAP output\n(mM NTPs/s)')
+		self.plot_hist(axes[2, 5], ribosome_conc, 0, 40, 'Ribosome conc\n(uM)')
+		self.plot_hist(axes[3, 5], ribosome_output, 0, 1, 'Ribosome output\n(mM AA/s)')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_hist', metadata)
