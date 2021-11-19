@@ -120,6 +120,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			x[:, cistron_data[fraction]].sum(1)
 			for fraction in rna_fractions
 			]).T
+		aa_mw = np.array([sim_data.getter.get_mass(aa[:-3]).asNumber(units.fg / units.count) for aa in aa_ids])
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells(only_successful=True)
@@ -182,8 +183,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rnap_output = counts_to_molar_squeezed * ntps_elongated.sum(1) / time_step
 		ribosome_output = counts_to_molar_squeezed * aas_elongated.sum(1) / time_step
 		rp_ratio = rna_mass / protein_mass
+		aa_mass = aa_counts @ aa_mw
+		rpa_ratio = rna_mass / (protein_mass + aa_mass)
+		ribosome_fraction_active = active_ribosome_counts / (active_ribosome_counts + ribosome_subunit_counts.min(1))
 		protein_fraction = protein_mass / cell_mass
 		rna_fraction = rna_mass / cell_mass
+		aa_fraction = (protein_mass + aa_mass) / cell_mass
 		unique_time, cell_count = np.unique(time, return_counts=True)
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
@@ -206,8 +211,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.plot_time_series(axes[2, 3], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, filtered, log_scale=True)
 			self.plot_time_series(axes[3, 3], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability', timeline, filtered)
 			self.plot_time_series(axes[0, 4], time, rp_ratio, 'RNA/protein\nmass fraction', timeline, filtered)
+			self.plot_time_series(axes[0, 4], time, rpa_ratio, 'RNA/protein\nmass fraction', [], filtered)
 			self.plot_time_series(axes[1, 4], time, rna_fraction, 'RNA mass fraction', timeline, filtered)
 			self.plot_time_series(axes[2, 4], time, protein_fraction, 'Protein mass fraction', timeline, filtered)
+			self.plot_time_series(axes[2, 4], time, aa_fraction, 'Protein mass fraction', [], filtered)
 			self.plot_time_series(axes[3, 4], unique_time, cell_count, '# cells', timeline, filtered)
 			self.plot_time_series(axes[0, 5], time, rnap_conc, 'RNAP conc\n(uM)', timeline, filtered)
 			self.plot_time_series(axes[1, 5], time, rnap_output, 'RNAP output\n(mM NTPs/s)', timeline, filtered)
