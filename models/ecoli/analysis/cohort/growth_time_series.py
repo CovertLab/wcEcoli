@@ -52,6 +52,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for m, s in zip(mean.T, std.T):
 				ax.fill_between(t, m - s, m + s, alpha=0.1)
 		else:
+			ax.axhline(mean.mean(), linestyle='--', color='k', linewidth=0.5)
 			ax.fill_between(t, mean - std, mean + std, alpha=0.1)
 
 		# Format axes
