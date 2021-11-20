@@ -87,6 +87,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			complex_id_to_is_cotranscribed[complex_id] = is_cotranscribed(
 				subunit_ids)
 
+		# Get whether the stoichiometries of each complexes are unknown
+		complex_id_to_stoich_unknown = {
+			complex_id: is_unknown for (complex_id, is_unknown)
+			in zip(all_complex_ids, sim_data1.process.complexation.reaction_stoichiometry_unknown)
+		}
+
 		def read_sims(ap):
 			all_monomer_counts = read_stacked_columns(
 				ap.get_cells(), 'MonomerCounts', 'monomerCounts')
@@ -137,11 +143,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		gini_coeff2 = read_sims(ap2)
 
 		# Select complexes that have Gini coefficients calculated for both sims
-		# and has cotranscribed subunits
+		# and has cotranscribed subunits and known stoichiometries
 		complexes_to_plot = [
 			complex_id for complex_id in gini_coeff1.keys()
 			if complex_id in gini_coeff2
 			   and complex_id_to_is_cotranscribed[complex_id]
+			   and not complex_id_to_stoich_unknown[complex_id]
 			]
 		complex_ids_increased_gini = []
 
