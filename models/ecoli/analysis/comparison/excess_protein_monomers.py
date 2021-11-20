@@ -89,7 +89,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		def read_sims(ap):
 			all_monomer_counts = read_stacked_columns(
-				ap.get_cells(), 'MonomerCounts', 'monomerCounts', remove_first=True)
+				ap.get_cells(), 'MonomerCounts', 'monomerCounts')
 
 			# Take averages across all sims and timepoints
 			all_monomer_counts_mean = all_monomer_counts.mean(axis=0)
