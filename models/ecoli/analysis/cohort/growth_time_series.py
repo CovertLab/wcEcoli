@@ -20,6 +20,35 @@ from wholecell.utils import units
 PLOT_SINGLE = False
 
 
+def trim_axes(axes):
+	for ax in axes.flatten():
+		for text in ax.texts:
+			text.set_visible(False)
+	axes[0, 0].set_ylim(0, 2)
+	axes[1, 0].set_ylim(0, 2)
+	axes[2, 0].set_ylim(0, 2)
+	axes[3, 0].set_ylim(0, 2)
+	axes[0, 1].set_ylim(0, 100)
+	axes[1, 1].set_ylim(0, 1)
+	axes[2, 1].set_ylim(0, 25)
+	axes[3, 1].set_ylim(0, 1)
+	axes[0, 2].set_ylim(0, 1)
+	axes[1, 2].set_ylim(0, 1)
+	axes[2, 2].set_ylim(0, 10)
+	axes[3, 2].set_ylim(0, 1)
+	axes[0, 3].set_ylim(0, 300)
+	axes[1, 3].set_ylim(0, 1.2)
+	axes[2, 3].set_ylim(1e-4, 100)
+	axes[3, 3].set_ylim(0, 1)
+	axes[0, 4].set_ylim(0, 1)
+	axes[1, 4].set_ylim(0, 0.15)
+	axes[2, 4].set_ylim(0, 0.3)
+	axes[0, 5].set_ylim(0, 10)
+	axes[1, 5].set_ylim(0, 0.2)
+	axes[2, 5].set_ylim(0, 40)
+	axes[3, 5].set_ylim(0, 1)
+
+
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t, log_scale=False):
 		# Extract y data for each time point (assumes time step lines up across samples)
@@ -210,11 +239,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.plot_time_series(axes[1, 3], time, fraction_charged, 'Fraction charged', timeline, filtered)
 			self.plot_time_series(axes[2, 3], time, aa_conc, 'Amino acid concentrations\n(mM)', timeline, filtered, log_scale=True)
 			self.plot_time_series(axes[3, 3], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability', timeline, filtered)
-			self.plot_time_series(axes[0, 4], time, rp_ratio, 'RNA/protein\nmass fraction', timeline, filtered)
-			self.plot_time_series(axes[0, 4], time, rpa_ratio, 'RNA/protein\nmass fraction', [], filtered)
+			self.plot_time_series(axes[0, 4], time, rp_ratio, '', timeline, filtered)
+			self.plot_time_series(axes[0, 4], time, rpa_ratio, 'RNA/protein mass fraction\n(with and without free AA)', [], filtered)
 			self.plot_time_series(axes[1, 4], time, rna_fraction, 'RNA mass fraction', timeline, filtered)
-			self.plot_time_series(axes[2, 4], time, protein_fraction, 'Protein mass fraction', timeline, filtered)
-			self.plot_time_series(axes[2, 4], time, aa_fraction, 'Protein mass fraction', [], filtered)
+			self.plot_time_series(axes[2, 4], time, protein_fraction, '', timeline, filtered)
+			self.plot_time_series(axes[2, 4], time, aa_fraction, 'Protein mass fraction\n(with and without free AA)', [], filtered)
 			self.plot_time_series(axes[3, 4], unique_time, cell_count, '# cells', timeline, filtered)
 			self.plot_time_series(axes[0, 5], time, rnap_conc, 'RNAP conc\n(uM)', timeline, filtered)
 			self.plot_time_series(axes[1, 5], time, rnap_output, 'RNAP output\n(mM NTPs/s)', timeline, filtered)
@@ -224,39 +253,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return axes
 
 		# Plot all time series data
-		subplots(set())
+		axes = subplots(set())
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+
+		# Trim axes from all data for easier comparison across runs
+		trim_axes(axes)
+		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
 
 		# Set axes limits for easier comparison across runs and filter time
 		# points without all cells for smoother traces
 		axes = subplots(filtered)
-		for ax in axes.flatten():
-			for text in ax.texts:
-				text.set_visible(False)
-		axes[0, 0].set_ylim(0, 2)
-		axes[1, 0].set_ylim(0, 2)
-		axes[2, 0].set_ylim(0, 2)
-		axes[3, 0].set_ylim(0, 2)
-		axes[0, 1].set_ylim(0, 100)
-		axes[1, 1].set_ylim(0, 1)
-		axes[2, 1].set_ylim(0, 25)
-		axes[3, 1].set_ylim(0, 1)
-		axes[0, 2].set_ylim(0, 1)
-		axes[1, 2].set_ylim(0, 1)
-		axes[2, 2].set_ylim(0, 10)
-		axes[3, 2].set_ylim(0, 1)
-		axes[0, 3].set_ylim(0, 300)
-		axes[1, 3].set_ylim(0, 1.2)
-		axes[2, 3].set_ylim(1e-4, 100)
-		axes[3, 3].set_ylim(0, 1)
-		axes[0, 4].set_ylim(0, 1)
-		axes[1, 4].set_ylim(0, 0.15)
-		axes[2, 4].set_ylim(0, 0.3)
-		axes[0, 5].set_ylim(0, 10)
-		axes[1, 5].set_ylim(0, 0.2)
-		axes[2, 5].set_ylim(0, 40)
-		axes[3, 5].set_ylim(0, 1)
-		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
+		trim_axes(axes)
+		exportFigure(plt, plotOutDir, f'{plotOutFileName}_filtered', metadata)
 
 		# Plot histograms of data
 		_, axes = plt.subplots(4, 6, figsize=(20, 15))
