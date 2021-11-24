@@ -6,6 +6,7 @@ Modifies:
 	sim_data.process.transcription.rna_expression
 	sim_data.process.transcription.exp_free
 	sim_data.process.transcription.exp_ppgpp
+	sim_data.process.transcription.attenuation_basal_prob_adjustments
 	sim_data.process.transcription_regulation.basal_prob
 	sim_data.process.transcription_regulation.delta_prob
 
@@ -44,6 +45,7 @@ def gene_knockout(sim_data, index):
 		exp[geneIndex] *= factor
 	transcription.exp_free[geneIndex] *= factor
 	transcription.exp_ppgpp[geneIndex] *= factor
+	transcription.attenuation_basal_prob_adjustments[transcription.attenuated_rna_indices == geneIndex] *= factor
 	transcription_regulation.basal_prob[geneIndex] *= factor
 	transcription_regulation.delta_prob['deltaV'][recruitment_mask] *= factor
 
