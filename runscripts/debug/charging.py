@@ -280,7 +280,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			)
 
 		# Calculate tRNA charging and resulting values
-		fraction_charged, v_rib, _ = calculate_trna_charging(
+		fraction_charged, v_rib, *_ = calculate_trna_charging(
 			self.synthetase_conc[timestep, :] * synthetase_adjustments,
 			uncharged_trna_conc,
 			charged_trna_conc,
