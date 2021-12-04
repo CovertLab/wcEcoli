@@ -16,11 +16,11 @@ from wholecell.utils import units
 
 RNA_TYPE_TO_SUBMASS = {
 	'tRNA': 'tRNA',
-	'mRNA': 'mRNA',
-	'pseudo': 'miscRNA',
-	'miscRNA': 'miscRNA',
 	'rRNA': 'rRNA',
-	'phantom': 'miscRNA',
+	'mRNA': 'mRNA',
+	'pseudo': 'mRNA',
+	'miscRNA': 'mRNA',
+	'phantom': 'mRNA',
 	}
 
 # Mapping of compartment IDs to abbreviations for compartments undefined in
