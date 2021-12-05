@@ -7,7 +7,7 @@ Modifies:
 
 Expected variant indices (depends on the enzymes in sim_data.process.metabolism.synthesis_enzymes):
 	0: control
-	1-58: enzyme to knockout
+	1-31: enzyme to knockout
 """
 
 from .condition import condition
@@ -23,7 +23,7 @@ def aa_synthesis_ko(sim_data, index):
 	transcription = sim_data.process.transcription
 
 	# Enzymes involved in mechanistic amino acid synthesis
-	synthesis_enzymes = metabolism.aa_enzymes
+	synthesis_enzymes = metabolism.aa_enzymes[metabolism.enzyme_to_amino_acid_fwd.sum(1).astype(bool)]
 	synthesis_monomers = [
 		subunit
 		for enzyme in synthesis_enzymes
