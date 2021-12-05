@@ -17,6 +17,7 @@ variants = [
 	'param_sensitivity',
 	'ppgpp_conc',
 	'remove_aa_inhibition',
+	'remove_aas_shift',
 	'remove_one_aa',
 	'remove_one_aa_shift',
 	'rna_deg_rate_shuffle_params',
