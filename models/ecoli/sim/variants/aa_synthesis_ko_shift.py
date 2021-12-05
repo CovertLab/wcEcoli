@@ -7,38 +7,38 @@ Modifies:
 
 Expected variant indices (depends on SYNTHESIS_GENES):
 	0: control
-	1-7: enzyme to knockout
+	1-7: enzyme knockouts shifted to minimal
+	8-14: enzyme knockouts shifted to minimal plus corresponding AA
 """
 
 from .gene_knockout import gene_knockout
+from .remove_aas_shift import remove_aas_shift
 
 
-SYNTHESIS_GENES = [
-	'alaC', 'alaA',  # Ala synthesis
-	'asnA', 'asnB',  # Asn synthesis
-	'gltB', 'gltD', 'gdhA',  # Glt synthesis
-	]
+# TODO: generalize index based on remove_aas_shift file
+SYNTHESIS_GENES = {
+	'alaC': 4, 'alaA': 4,  # Ala synthesis
+	'asnA': 6, 'asnB': 6,  # Asn synthesis
+	'gltB': 8, 'gltD': 8, 'gdhA': 8,  # Glt synthesis
+	}
 SHIFT_TIME = 2 * 3600  # 2 hrs
 
 
 def aa_synthesis_ko_shift(sim_data, index):
-	timeline_id = 'remove_aa'
-	sim_data.condition = 'with_aa'
-	sim_data.external_state.current_timeline_id = timeline_id
-	sim_data.external_state.saved_timelines[timeline_id] = [
-		(0, 'minimal_plus_amino_acids'), (SHIFT_TIME, 'minimal')
-	]
-
 	# Map genes to RNA for a knockout
 	replication = sim_data.process.replication
 	transcription = sim_data.process.transcription
 	symbol_to_cistron = {gene['symbol']: gene['cistron_id'] for gene in replication.gene_data}
 	cistron_to_index = {cistron['id']: i for i, cistron in enumerate(transcription.cistron_data)}
 
-	n_variants = len(SYNTHESIS_GENES) + 1
-	if index > n_variants:
+	n_variants = 2 * len(SYNTHESIS_GENES) + 1
+	if index >= n_variants:
 		raise ValueError(f'Variant index {index} is not supported. Choose between 0 and {n_variants}')
 
-	rna_index = cistron_to_index[symbol_to_cistron[SYNTHESIS_GENES[index]]] + 1 if index > 0 else 0
+	gene = list(SYNTHESIS_GENES.keys())[(index - 1) % len(SYNTHESIS_GENES)]
+	shift_index = SYNTHESIS_GENES[gene]
+	rna_index = cistron_to_index[symbol_to_cistron[gene]] + 1 if index > 0 else 0
+	_, sim_data = remove_aas_shift(sim_data, shift_index)
 
+	# TODO: change description returns?
 	return gene_knockout(sim_data, rna_index)
