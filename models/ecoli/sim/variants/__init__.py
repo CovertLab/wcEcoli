@@ -2,6 +2,7 @@ import importlib
 
 
 variants = [
+	'aa_synthesis_ko',
 	'aa_synthesis_sensitivity',
 	'aa_uptake_sensitivity',
 	'add_one_aa',
