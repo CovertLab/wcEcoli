@@ -31,14 +31,22 @@ def aa_synthesis_ko_shift(sim_data, index):
 	symbol_to_cistron = {gene['symbol']: gene['cistron_id'] for gene in replication.gene_data}
 	cistron_to_index = {cistron['id']: i for i, cistron in enumerate(transcription.cistron_data)}
 
-	n_variants = 2 * len(SYNTHESIS_GENES) + 1
+	n_genes = len(SYNTHESIS_GENES)
+	n_variants = 2 * n_genes + 1
 	if index >= n_variants:
 		raise ValueError(f'Variant index {index} is not supported. Choose between 0 and {n_variants}')
 
-	gene = list(SYNTHESIS_GENES.keys())[(index - 1) % len(SYNTHESIS_GENES)]
-	shift_index = SYNTHESIS_GENES[gene]
-	rna_index = cistron_to_index[symbol_to_cistron[gene]] + 1 if index > 0 else 0
+	gene = list(SYNTHESIS_GENES.keys())[(index - 1) % n_genes]
+	shift_index = SYNTHESIS_GENES[gene] if index > n_genes else 23  # TODO: not hardcoded index
+	rna_index = cistron_to_index[symbol_to_cistron[gene]] + 1 if index > 0 else 0  # TODO: not hardcoded index
+
+	# Shift to new media
+	# TODO: make this less hacky (make a function that is used by both remove_aas_shift and here)
+	old_timelines = set(sim_data.external_state.saved_timelines.keys())
 	_, sim_data = remove_aas_shift(sim_data, shift_index)
+	new_timeline_id = list(set(sim_data.external_state.saved_timelines.keys()) - old_timelines)[0]
+	new_timeline = sim_data.external_state.saved_timelines[new_timeline_id]
+	new_timeline[1] = (SHIFT_TIME, new_timeline[1][1])
 
 	# TODO: change description returns?
 	return gene_knockout(sim_data, rna_index)
