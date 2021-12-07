@@ -113,12 +113,8 @@ class Metabolism(wholecell.processes.process.Process):
 			for aa in self.aa_exchange_names
 			])
 
-		self.amino_acid_import = metabolism.amino_acid_import
-		self.amino_acid_export = metabolism.amino_acid_export
-		self.aa_transporters_names = metabolism.aa_transporters_names
 		self.aa_export_transporters_names = metabolism.aa_export_transporters_names
-
-		self.aa_transporters_container = self.bulkMoleculesView(self.aa_transporters_names)
+		self.aa_transporters_container = self.bulkMoleculesView(metabolism.aa_transporters_names)
 		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
 
 	def calculateRequest(self):
