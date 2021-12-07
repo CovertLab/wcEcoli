@@ -779,8 +779,8 @@ class Metabolism(object):
 
 		aa_names = sim_data.molecule_groups.amino_acids
 		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
-		aa_counts = with_aa_container.counts(aa_names)
-		exchange_rates = self.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
+		aa_conc = with_aa_container.counts(aa_names) * counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		exchange_rates = self.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg) * 1 / (1 + aa_conc / self.aa_import_kis)
 
 		self.aa_to_transporters, self.aa_to_transporters_matrix, self.aa_transporters_names = self.get_aa_to_transporters_mapping_data(sim_data)
 
@@ -788,11 +788,13 @@ class Metabolism(object):
 		exporter_counts = with_aa_container.counts(self.aa_export_transporters_names)
 		counts_per_aa_import = self.aa_to_transporters_matrix.dot(importer_counts)
 		counts_per_aa_export = self.aa_to_export_transporters_matrix.dot(exporter_counts)
-		kms = self.aa_export_kms / counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
 
-		# Calculate kcats based on specific_import_rates, dry mass, transporters counts, export kms and counts of aas
+		# Calculate kcats with the assumption that vmax of import and export is
+		# the same so that import will not be significantly greater than the
+		# max export rate to prevent runaway amino acid concentrations. The
+		# previously calculated exchange rate is a combination of import and export.
 		with np.errstate(invalid='ignore'):
-			vmax = exchange_rates / (1 - (aa_counts/(kms + aa_counts)))
+			vmax = exchange_rates / (1 - 1 / (1 + self.aa_export_kms / aa_conc))
 			self.uptake_kcats_per_aa = vmax / counts_per_aa_import
 			self.export_kcats_per_aa = vmax / counts_per_aa_export
 		self.export_kcats_per_aa[counts_per_aa_export == 0] = 0
@@ -1164,7 +1166,15 @@ class Metabolism(object):
 		self.aa_upstream_kms = [aa_upstream_kms[aa] for aa in aa_ids]
 		self.aa_reverse_kms = np.array([aa_reverse_kms[aa] for aa in aa_ids])
 		self.aa_degradation_kms = np.array([aa_degradation_kms[aa] for aa in aa_ids])
-		self.specific_import_rates = (np.array([calculated_uptake_rates[aa] for aa in aa_ids])
+
+		# Import inhibition of transporters
+		rich_conc = np.array([
+				with_aa_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+				for aa in aa_ids
+				])
+		self.aa_import_kis = rich_conc.copy()  # Assume this is the inhibition constant
+		saturation = 1 / (1 + rich_conc / self.aa_import_kis)
+		self.specific_import_rates = (np.array([calculated_uptake_rates[aa] for aa in aa_ids]) / (1 - saturation)
 			/ cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS))
 
 		# TODO: better way of handling this that is efficient computationally
@@ -1284,13 +1294,15 @@ class Metabolism(object):
 
 		return export_rates
 
-	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum, aa_transporters_counts: np.ndarray, mechanisitc_uptake: bool):
+	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum,
+			internal_aa_conc: units.Unum, aa_transporters_counts: np.ndarray, mechanisitc_uptake: bool):
 		"""
 		Calculate the rate of amino acid uptake.
 
 		Args:
 			aa_in_media: bool for each amino acid being present in current media
 			dry_mass: current dry mass of the cell, with mass units
+			internal_aa_conc: internal concentrations of amino acids
 			aa_transporters_counts: counts of each transporter
 			mechanisitc_uptake: if true, the uptake is calculated based on transporters
 
@@ -1299,6 +1311,7 @@ class Metabolism(object):
 				represents counts of amino acid per second
 		"""
 
+		saturation = 1 / (1 + internal_aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS) / self.aa_import_kis)
 		if mechanisitc_uptake:
 			# Uptake based on mechanistic model
 			counts_per_aa = self.aa_to_transporters_matrix @ aa_transporters_counts
@@ -1306,7 +1319,7 @@ class Metabolism(object):
 		else:
 			import_rates = self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 
-		return import_rates * aa_in_media
+		return import_rates * saturation * aa_in_media
 
 	@staticmethod
 	def extract_reactions(raw_data, sim_data):

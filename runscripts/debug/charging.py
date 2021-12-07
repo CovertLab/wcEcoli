@@ -269,6 +269,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		timestep_size = self.time_step_sizes[timestep] * timestep_adjustment
 
 		# Amino acid supply function to use in charging
+		# TODO: update signature
 		supply_function = get_charging_supply_function(
 			self.aa_supply_in_charging, self.mechanistic_translation_supply,
 			self.mechanistic_aa_transport, self.amino_acid_synthesis,

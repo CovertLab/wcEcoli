@@ -57,7 +57,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Attributes from sim_data
 		wcm_aa_ids = sim_data.molecule_groups.amino_acids
-		specific_import_rates = sim_data.process.metabolism.specific_import_rates
+		specific_import_rates = sim_data.process.metabolism.specific_import_rates  # TODO: account for KI term
 		amino_acid_uptake_rates = sim_data.process.metabolism.amino_acid_uptake_rates
 		aa_supply_rates = sim_data.translation_supply_rate['minimal_plus_amino_acids']
 

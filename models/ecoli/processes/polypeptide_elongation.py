@@ -481,16 +481,16 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		transporter_counts = self.aa_transporters.total_counts()
 		export_transporter_counts = self.export_transporter_container.total_counts()
 		synthesis, fwd_saturation, rev_saturation = self.amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)
-		import_rates = self.amino_acid_import(aa_in_media, dry_mass, transporter_counts, self.process.mechanistic_aa_transport)
+		import_rates = self.amino_acid_import(aa_in_media, dry_mass, aa_conc, transporter_counts, self.process.mechanistic_aa_transport)
 		export_rates = self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_aa_transport)
 		exchange_rates = import_rates - export_rates
 
 		supply_function = get_charging_supply_function(
 			self.process.aa_supply_in_charging, self.process.mechanistic_translation_supply,
 			self.process.mechanistic_aa_transport, self.amino_acid_synthesis,
-			self.amino_acid_export, self.aa_supply_scaling, self.counts_to_molar,
-			self.process.aa_supply, fwd_enzyme_counts, rev_enzyme_counts,
-			export_transporter_counts, exchange_rates, import_rates, aa_in_media,
+			self.amino_acid_import, self.amino_acid_export, self.aa_supply_scaling,
+			self.counts_to_molar, self.process.aa_supply, fwd_enzyme_counts, rev_enzyme_counts,
+			dry_mass, transporter_counts, export_transporter_counts, aa_in_media,
 			)
 
 		self.process.writeToListener('GrowthLimits', 'original_aa_supply', self.process.aa_supply)
@@ -1120,15 +1120,16 @@ def get_charging_supply_function(
 		mechanistic_supply: bool,
 		mechanistic_aa_transport: bool,
 		amino_acid_synthesis: Callable,
+		amino_acid_import: Callable,
 		amino_acid_export: Callable,
 		aa_supply_scaling: Callable,
 		counts_to_molar: units.Unum,
 		aa_supply: np.ndarray,
 		fwd_enzyme_counts: np.ndarray,
 		rev_enzyme_counts: np.ndarray,
+		dry_mass: units.Unum,
+		importer_counts: np.ndarray,
 		exporter_counts: np.ndarray,
-		exchange_rates: np.ndarray,
-		import_rates: np.ndarray,
 		aa_in_media: np.ndarray,
 		) -> Optional[Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]]:
 	"""
@@ -1141,15 +1142,19 @@ def get_charging_supply_function(
 		mechanistic_aa_transport: True if using the mechanistic_aa_transport option
 		amino_acid_synthesis: function to provide rates of synthesis for amino
 			acids based on the internal state
+		amino_acid_import: function to provide import rates for amino
+			acids based on the internal and external state
+		amino_acid_export: function to provide export rates for amino
+			acids based on the internal state
 		aa_supply_scaling: function to scale the amino acid supply based
 			on the internal state
 		counts_to_molar: conversion factor for counts to molar in units of counts/volume
 		aa_supply: rate of amino acid supply expected
 		fwd_enzyme_counts: counts for enzymes in forward reactions for each amino acid
 		rev_enzyme_counts: counts for enzymes in loss reactions for each amino acid
+		dry_mass: dry mass of the cell with mass units
+		importer_counts: counts for amino acid importers
 		exporter_counts: counts for amino acid exporters
-		exchange_rates: rates of amino acid transport (import - export)
-		import_rates: rates of amino acid import
 		aa_in_media: True for each amino acid that is present in the media
 
 	Returns:
@@ -1168,13 +1173,13 @@ def get_charging_supply_function(
 			if mechanistic_aa_transport:
 				supply_function = lambda aa_conc: (
 					counts_to_molar * amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)[0],
-					counts_to_molar * import_rates,
+					counts_to_molar * amino_acid_import(aa_in_media, dry_mass, aa_conc, importer_counts, mechanistic_aa_transport),
 					counts_to_molar * amino_acid_export(exporter_counts, aa_conc, mechanistic_aa_transport),
 					)
 			else:
 				supply_function = lambda aa_conc: (
 					counts_to_molar * amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)[0],
-					counts_to_molar * exchange_rates,
+					counts_to_molar * amino_acid_import(aa_in_media, dry_mass, aa_conc, importer_counts, mechanistic_aa_transport),
 					zeros,
 					)
 		else:
