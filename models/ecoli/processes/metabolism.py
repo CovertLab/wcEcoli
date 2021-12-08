@@ -113,15 +113,9 @@ class Metabolism(wholecell.processes.process.Process):
 			for aa in self.aa_exchange_names
 			])
 
-		self.aa_export_transporters_names = metabolism.aa_export_transporters_names
-		self.aa_transporters_container = self.bulkMoleculesView(metabolism.aa_transporters_names)
-		self.aa_export_transporters_container = self.bulkMoleculesView(self.aa_export_transporters_names)
-
 	def calculateRequest(self):
 		self.metabolites.requestAll()
 		self.catalysts.requestAll()
-		self.aa_transporters_container.requestAll()
-		self.aa_export_transporters_container.requestAll()
 		self.kineticsEnzymes.requestAll()
 		self.kineticsSubstrates.requestAll()
 

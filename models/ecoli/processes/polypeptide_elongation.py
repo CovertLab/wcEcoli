@@ -431,8 +431,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.amino_acid_export = metabolism.amino_acid_export
 		self.get_pathway_enzyme_counts_per_aa = metabolism.get_pathway_enzyme_counts_per_aa
 
-		self.aa_transporters = self.process.bulkMoleculesView(metabolism.aa_transporters_names)
-		self.export_transporter_container = self.process.bulkMoleculesView(metabolism.aa_export_transporters_names)
+		self.aa_importers = self.process.bulkMoleculesView(metabolism.aa_importer_names)
+		self.aa_exporters = self.process.bulkMoleculesView(metabolism.aa_exporter_names)
 
 	def elongation_rate(self):
 		if self.process.ppgpp_regulation:
@@ -478,11 +478,11 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		aa_in_media = self.aa_environment.import_present()
 		fwd_enzyme_counts, rev_enzyme_counts = self.get_pathway_enzyme_counts_per_aa(
 			self.aa_enzymes.total_counts())
-		transporter_counts = self.aa_transporters.total_counts()
-		export_transporter_counts = self.export_transporter_container.total_counts()
+		importer_counts = self.aa_importers.total_counts()
+		exporter_counts = self.aa_exporters.total_counts()
 		synthesis, fwd_saturation, rev_saturation = self.amino_acid_synthesis(fwd_enzyme_counts, rev_enzyme_counts, aa_conc)
-		import_rates = self.amino_acid_import(aa_in_media, dry_mass, aa_conc, transporter_counts, self.process.mechanistic_aa_transport)
-		export_rates = self.amino_acid_export(export_transporter_counts, aa_conc, self.process.mechanistic_aa_transport)
+		import_rates = self.amino_acid_import(aa_in_media, dry_mass, aa_conc, importer_counts, self.process.mechanistic_aa_transport)
+		export_rates = self.amino_acid_export(exporter_counts, aa_conc, self.process.mechanistic_aa_transport)
 		exchange_rates = import_rates - export_rates
 
 		supply_function = get_charging_supply_function(
@@ -490,7 +490,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.mechanistic_aa_transport, self.amino_acid_synthesis,
 			self.amino_acid_import, self.amino_acid_export, self.aa_supply_scaling,
 			self.counts_to_molar, self.process.aa_supply, fwd_enzyme_counts, rev_enzyme_counts,
-			dry_mass, transporter_counts, export_transporter_counts, aa_in_media,
+			dry_mass, importer_counts, exporter_counts, aa_in_media,
 			)
 
 		self.process.writeToListener('GrowthLimits', 'original_aa_supply', self.process.aa_supply)
@@ -559,8 +559,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.process.writeToListener('GrowthLimits', 'aa_export', export_rates * self.process.timeStepSec())
 		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes_fwd', fwd_enzyme_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_enzymes_rev', rev_enzyme_counts)
-		self.process.writeToListener('GrowthLimits', 'aa_importers', transporter_counts)
-		self.process.writeToListener('GrowthLimits', 'aa_exporters', export_transporter_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_importers', importer_counts)
+		self.process.writeToListener('GrowthLimits', 'aa_exporters', exporter_counts)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_aa_conc', aa_conc.asNumber(units.mmol/units.L))
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction_fwd', fwd_saturation)
 		self.process.writeToListener('GrowthLimits', 'aa_supply_fraction_rev', rev_saturation)
