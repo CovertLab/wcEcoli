@@ -789,15 +789,19 @@ class Metabolism(object):
 		counts_per_aa_import = self.aa_to_transporters_matrix.dot(importer_counts)
 		counts_per_aa_export = self.aa_to_export_transporters_matrix.dot(exporter_counts)
 
-		# Calculate kcats with the assumption that vmax of import and export is
-		# the same so that import will not be significantly greater than the
-		# max export rate to prevent runaway amino acid concentrations. The
-		# previously calculated exchange rate is a combination of import and export.
+		# Calculate kcats with the assumption that import is 100x the rate of
+		# export at the expected amion acid concentration in rich media.
+		# Import will decrease and export will increase with higher amino acids
+		# for stable amino acid concentrations.
+		import_vs_export = 100
+		export_saturation = 1 / (1 + self.aa_export_kms / aa_conc)
+		import_saturation = 1 / (1 + aa_conc / self.aa_import_kis)
+		self.export_kcats_per_aa = exchange_rates / ((import_vs_export - 1)
+			* counts_per_aa_export * export_saturation)
 		with np.errstate(invalid='ignore'):
-			vmax = exchange_rates / (1 - 1 / (1 + self.aa_export_kms / aa_conc))
-			self.uptake_kcats_per_aa = vmax / counts_per_aa_import
-			self.export_kcats_per_aa = vmax / counts_per_aa_export
-		self.export_kcats_per_aa[counts_per_aa_export == 0] = 0
+			self.uptake_kcats_per_aa = (import_vs_export * self.export_kcats_per_aa
+				* counts_per_aa_export * export_saturation
+				/ (counts_per_aa_import * import_saturation))
 		self.uptake_kcats_per_aa[counts_per_aa_import == 0] = 0
 
 	def set_mechanistic_supply_constants(self, sim_data, cell_specs, basal_container, with_aa_container):
