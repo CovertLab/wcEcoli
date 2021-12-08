@@ -780,7 +780,7 @@ class Metabolism(object):
 		aa_names = sim_data.molecule_groups.amino_acids
 		counts_to_molar = (sim_data.constants.cell_density / cell_specs['with_aa']['avgCellDryMassInit']) / sim_data.constants.n_avogadro
 		aa_conc = with_aa_container.counts(aa_names) * counts_to_molar.asNumber(METABOLITE_CONCENTRATION_UNITS)
-		exchange_rates = self.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg) * 1 / (1 + aa_conc / self.aa_import_kis)
+		exchange_rates = self.specific_import_rates * cell_specs['with_aa']['avgCellDryMassInit'].asNumber(units.fg)
 
 		self.aa_to_transporters, self.aa_to_transporters_matrix, self.aa_transporters_names = self.get_aa_to_transporters_mapping_data(sim_data)
 
@@ -860,10 +860,17 @@ class Metabolism(object):
 				m upstream).  Will contain a -1 if the amino acid associated
 				with the row is produced through a reverse reaction from
 				the amino acid associated with the column
+			aa_import_kis (np.ndarray[float]): inhibition constants for amino
+				acid import based on the internal amino acid concentration
 			specific_import_rates (np.ndarray[float]): import rates expected
 				in rich media conditions for each amino acid normalized by dry
 				cell mass in units of K_CAT_UNITS / DRY_MASS_UNITS,
 				ordered by amino acid molecule group
+			max_specific_import_rates (np.ndarray[float]): max import rates
+				for each amino acid without including internal concentration
+				inhibition normalized by dry cell mass in units of
+				K_CAT_UNITS / DRY_MASS_UNITS, ordered by amino acid molecule
+				group
 
 		Assumptions:
 			- Only one reaction is limiting in an amino acid pathway (typically
@@ -876,6 +883,10 @@ class Metabolism(object):
 		TODO:
 			Search for new kcat/KM values in literature or use metabolism_kinetics.tsv
 			Consider multiple reaction steps
+			Include mulitple amino acid inhibition on importers (currently
+				amino acids only inhibit their own import but some transporters
+				import multiple amino acids and will be inhibited by all of the
+				amino acids for the import of each amino acid)
 		"""
 
 		aa_ids = sim_data.molecule_groups.amino_acids
@@ -1176,10 +1187,11 @@ class Metabolism(object):
 				with_aa_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
 				for aa in aa_ids
 				])
-		self.aa_import_kis = rich_conc.copy()  # Assume this is the inhibition constant
+		self.aa_import_kis = rich_conc.copy()  # Assume this conc is the inhibition constant: TODO: find KIs
 		saturation = 1 / (1 + rich_conc / self.aa_import_kis)
-		self.specific_import_rates = (np.array([calculated_uptake_rates[aa] for aa in aa_ids]) / (1 - saturation)
+		self.specific_import_rates = (np.array([calculated_uptake_rates[aa] for aa in aa_ids])
 			/ cell_specs['with_aa']['avgCellDryMassInit'].asNumber(DRY_MASS_UNITS))
+		self.max_specific_import_rates = self.specific_import_rates / saturation
 
 		# TODO: better way of handling this that is efficient computationally
 		self.aa_upstream_aas = [upstream_aas_for_km[aa] for aa in aa_ids]
@@ -1203,10 +1215,10 @@ class Metabolism(object):
 		self.aa_supply_enzyme_conc_basal = conversion * basal_counts / cell_specs['basal']['avgCellDryMassInit']
 
 		# Check calculations that could end up negative
-		neg_idx = np.where(self.specific_import_rates < 0)[0]
+		neg_idx = np.where(self.max_specific_import_rates < 0)[0]
 		if len(neg_idx):
 			aas = ', '.join([aa_ids[idx] for idx in neg_idx])
-			print(f'{self.specific_import_rates = }')
+			print(f'{self.max_specific_import_rates = }')
 			raise ValueError(f'Import rate was determined to be negative for {aas}.'
 				' Check input parameters like supply and synthesis or enzyme expression.')
 
@@ -1321,7 +1333,7 @@ class Metabolism(object):
 			counts_per_aa = self.aa_to_transporters_matrix @ aa_transporters_counts
 			import_rates = self.uptake_kcats_per_aa * counts_per_aa
 		else:
-			import_rates = self.specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
+			import_rates = self.max_specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
 
 		return import_rates * saturation * aa_in_media
 
