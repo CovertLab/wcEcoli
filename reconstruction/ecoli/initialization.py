@@ -62,13 +62,13 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, r
 	if form_complexes:
 		initializeComplexation(bulkMolCntr, sim_data, randomState)
 
-def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
+def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, randomState,
 		superhelical_density, ppgpp_regulation, trna_attenuation):
 	# Initialize counts of full chromosomes
 	initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data)
 
 	# Initialize unique molecules relevant to replication
-	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data)
+	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass)
 
 	# Initialize bound transcription factors
 	initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
@@ -277,7 +277,7 @@ def initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data):
 		)
 
 
-def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
+def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 	"""
 	Initializes replication by creating an appropriate number of replication
 	forks given the cell growth rate. This also initializes the gene dosage
@@ -289,6 +289,8 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	C = sim_data.process.replication.c_period
 	D = sim_data.process.replication.d_period
 	tau = sim_data.condition_to_doubling_time[sim_data.condition].asUnit(units.min)
+	critical_mass = sim_data.mass.get_dna_critical_mass(tau)
+	replication_rate = sim_data.process.replication.basal_elongation_rate
 
 	# Calculate length of replichore
 	genome_length = sim_data.process.replication.genome_length
@@ -303,7 +305,8 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data):
 	# Generate arrays specifying appropriate initial replication conditions
 	oric_state, replisome_state, domain_state = determine_chromosome_state(
 		C, D, tau, replichore_length, n_max_replisomes,
-		sim_data.process.replication.no_child_place_holder)
+		sim_data.process.replication.no_child_place_holder,
+		cell_mass, critical_mass, replication_rate)
 
 	n_oric = oric_state["domain_index"].size
 	n_replisome = replisome_state["domain_index"].size
@@ -1192,7 +1195,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 
 
 def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
-		place_holder):
+		place_holder, cell_mass, critical_mass, replication_rate):
 	"""
 	Calculates the attributes of oriC's, replisomes, and chromosome domains on
 	the chromosomes at the beginning of the cell cycle.
@@ -1251,10 +1254,7 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 	n_max_rounds = int(np.log2(n_max_replisomes/2 + 1))
 
 	# Calculate the number of active replication rounds
-	n_rounds = min(n_max_rounds,
-		int(np.floor(
-		(C.asNumber(units.min) + D.asNumber(units.min))/tau.asNumber(units.min)
-		)))
+	n_rounds = min(n_max_rounds, int(np.floor(cell_mass / critical_mass)))
 
 	# Initialize arrays for replisomes
 	n_replisomes = 2*(2**n_rounds - 1)
@@ -1284,10 +1284,10 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 	for round_idx in np.arange(n_rounds):
 		# Determine at which location (base) of the chromosome the replication
 		# forks should be initialized to
-		rel_location = 1.0 - (((round_idx + 1.0)*tau - D)/C)
-		rel_location = units.strip_empty_units(rel_location)
-		fork_location = np.floor(rel_location*(
-			replichore_length.asNumber(units.nt)))
+		round_critical_mass = (round_idx + 1) * critical_mass
+		growth_rate = np.log(2) / tau.asNumber(units.s)
+		replication_time = np.log(units.strip_empty_units(cell_mass / round_critical_mass)) / growth_rate
+		fork_location = np.floor(replication_time * replication_rate)
 
 		# Add 2^n initiation events per round. A single initiation event
 		# generates two replication forks.
