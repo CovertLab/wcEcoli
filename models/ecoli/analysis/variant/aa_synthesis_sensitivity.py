@@ -129,85 +129,88 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-		# Identify groups of factors to split into subplots
-		nonzero_factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
-		increase_factors = [1] + [f for f in nonzero_factors if f > 1]
-		decrease_factors = [f for f in nonzero_factors if f < 1] + [1]
+		if CONTROL_INDEX in data:
+			# Identify groups of factors to split into subplots
+			nonzero_factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
+			increase_factors = [1] + [f for f in nonzero_factors if f > 1]
+			decrease_factors = [f for f in nonzero_factors if f < 1] + [1]
 
-		# Calculate the control growth rate
-		params, all_rates, _ = calculate_sensitivity(data, CONTROL_INDEX, nonzero_factors, 'Growth rate')
-		control_growth = all_rates[params == PARAM_CONTROL_LABEL, :]
-		control_growth_rate = control_growth.mean()
-		if not np.all(control_growth == control_growth_rate):
-			raise ValueError('Control parameter results in variable growth rates.'
-				' Run sims with no modified parameter or consider the mean.')
+			# Calculate the control growth rate
+			params, all_rates, _ = calculate_sensitivity(data, CONTROL_INDEX, nonzero_factors, 'Growth rate')
+			control_growth = all_rates[params == PARAM_CONTROL_LABEL, :]
+			control_growth_rate = control_growth.mean()
+			if not np.all(control_growth == control_growth_rate):
+				raise ValueError('Control parameter results in variable growth rates.'
+					' Run sims with no modified parameter or consider the mean.')
 
-		# Calculate changes from baseline and max growth rates for each parameter
-		highest_param_rates = all_rates[:, -1]
-		lowest_param_rates = all_rates[:, 0]
-		diff = highest_param_rates - lowest_param_rates
-		highest_param_change = highest_param_rates - control_growth_rate
-		lowest_param_change = lowest_param_rates - control_growth_rate
-		max_rates = np.max(all_rates, 1)
+			# Calculate changes from baseline and max growth rates for each parameter
+			highest_param_rates = all_rates[:, -1]
+			lowest_param_rates = all_rates[:, 0]
+			diff = highest_param_rates - lowest_param_rates
+			highest_param_change = highest_param_rates - control_growth_rate
+			lowest_param_change = lowest_param_rates - control_growth_rate
+			max_rates = np.max(all_rates, 1)
 
-		def slopes_plot(variant, factors, attr, axes, control=None):
-			params, all_rates, slopes = calculate_sensitivity(data, variant, factors, attr, default=control)
+			def slopes_plot(variant, factors, attr, axes, control=None):
+				params, all_rates, slopes = calculate_sensitivity(data, variant, factors, attr, default=control)
 
-			slope_sort_idx = np.argsort(slopes)
-			mean = slopes.mean()
-			std = slopes.std()
-			upper_limit = mean + std
-			lower_limit = mean - std
+				slope_sort_idx = np.argsort(slopes)
+				mean = slopes.mean()
+				std = slopes.std()
+				upper_limit = mean + std
+				lower_limit = mean - std
 
-			bar_ax, trace_ax = axes
+				bar_ax, trace_ax = axes
 
-			# TODO: label params on x
-			bar_ax.bar(range(len(slopes)), slopes[slope_sort_idx])
-			bar_ax.set_ylabel(f'Slope of {attr} vs change in param', fontsize=8)
-			bar_ax.tick_params(labelsize=8)
-			self.remove_border(bar_ax)
+				# TODO: label params on x
+				bar_ax.bar(range(len(slopes)), slopes[slope_sort_idx])
+				bar_ax.set_ylabel(f'Slope of {attr} vs change in param', fontsize=8)
+				bar_ax.tick_params(labelsize=8)
+				self.remove_border(bar_ax)
 
-			for param, rates, slope in zip(params, all_rates, slopes):
-				if slope > upper_limit or slope < lower_limit:
-					style = dict(alpha=0.6, linewidth=1, markersize=2, label=param)
-				else:
-					style = dict(color='k', alpha=0.3, linewidth=0.5, markersize=1)
-				trace_ax.plot(np.log10(factors), rates, 'o-', **style)
-			trace_ax.set_xlabel('log10 change in param', fontsize=8)
-			trace_ax.set_ylabel(f'{attr}', fontsize=8)
-			trace_ax.legend(fontsize=6, frameon=False)
-			trace_ax.tick_params(labelsize=8)
-			self.remove_border(trace_ax)
+				for param, rates, slope in zip(params, all_rates, slopes):
+					if slope > upper_limit or slope < lower_limit:
+						style = dict(alpha=0.6, linewidth=1, markersize=2, label=param)
+					else:
+						style = dict(color='k', alpha=0.3, linewidth=0.5, markersize=1)
+					trace_ax.plot(np.log10(factors), rates, 'o-', **style)
+				trace_ax.set_xlabel('log10 change in param', fontsize=8)
+				trace_ax.set_ylabel(f'{attr}', fontsize=8)
+				trace_ax.legend(fontsize=6, frameon=False)
+				trace_ax.tick_params(labelsize=8)
+				self.remove_border(trace_ax)
 
-		_, axes = plt.subplots(2, 4, figsize=(20, 10))
+			_, axes = plt.subplots(2, 4, figsize=(20, 10))
 
-		# Slopes of growth vs change in parameter
-		slopes_plot(CONTROL_INDEX, nonzero_factors, 'Growth rate', axes[:, 0])
-		slopes_plot(CONTROL_INDEX, increase_factors, 'Growth rate', axes[:, 1], control=control_growth_rate)
-		slopes_plot(CONTROL_INDEX, decrease_factors, 'Growth rate', axes[:, 2], control=control_growth_rate)
+			# Slopes of growth vs change in parameter
+			slopes_plot(CONTROL_INDEX, nonzero_factors, 'Growth rate', axes[:, 0])
+			slopes_plot(CONTROL_INDEX, increase_factors, 'Growth rate', axes[:, 1], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, decrease_factors, 'Growth rate', axes[:, 2], control=control_growth_rate)
 
-		# Greatest changes from baseline in positive and negative directions
-		ax = axes[0, 3]
-		sort_idx = np.argsort(diff)
-		x = np.arange(len(diff))
-		ax.bar(x, highest_param_change[sort_idx])
-		ax.bar(x, lowest_param_change[sort_idx])
-		ax.set_ylabel('Change in growth from baseline (1/hr)', fontsize=8)
-		ax.tick_params(labelsize=8)
-		self.remove_border(ax)
+			# Greatest changes from baseline in positive and negative directions
+			ax = axes[0, 3]
+			sort_idx = np.argsort(diff)
+			x = np.arange(len(diff))
+			ax.bar(x, highest_param_change[sort_idx])
+			ax.bar(x, lowest_param_change[sort_idx])
+			ax.set_ylabel('Change in growth from baseline (1/hr)', fontsize=8)
+			ax.tick_params(labelsize=8)
+			self.remove_border(ax)
 
-		# Highest growth rates possible per param change
-		ax = axes[1, 3]
-		sort_idx = np.argsort(max_rates)
-		x = np.arange(len(max_rates))
-		ax.bar(x, max_rates[sort_idx])
-		ax.set_ylabel('Highest growth rate per parameter (1/hr)', fontsize=8)
-		ax.tick_params(labelsize=8)
-		self.remove_border(ax)
+			# Highest growth rates possible per param change
+			ax = axes[1, 3]
+			sort_idx = np.argsort(max_rates)
+			x = np.arange(len(max_rates))
+			ax.bar(x, max_rates[sort_idx])
+			ax.set_ylabel('Highest growth rate per parameter (1/hr)', fontsize=8)
+			ax.tick_params(labelsize=8)
+			self.remove_border(ax)
 
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, f'{plotOutFileName}_aggregated', metadata)
-		plt.close('all')
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, f'{plotOutFileName}_aggregated', metadata)
+			plt.close('all')
+		else:
+			print('Need to run additional variants for the aggregated plot.')
 
 
 if __name__ == "__main__":
