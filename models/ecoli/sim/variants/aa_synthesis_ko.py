@@ -24,11 +24,11 @@ def aa_synthesis_ko(sim_data, index):
 
 	# Enzymes involved in mechanistic amino acid synthesis
 	synthesis_enzymes = metabolism.aa_enzymes[metabolism.enzyme_to_amino_acid_fwd.sum(1).astype(bool)]
-	synthesis_monomers = [
+	synthesis_monomers = sorted({
 		subunit
 		for enzyme in synthesis_enzymes
 		for subunit in complexation.get_monomers(enzyme)['subunitIds']
-		]
+		})
 
 	# Map monomers to RNA for a knockout
 	monomer_to_cistron = {monomer['id']: monomer['cistron_id'] for monomer in translation.monomer_data}
