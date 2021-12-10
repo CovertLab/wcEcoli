@@ -11,7 +11,6 @@ Expected variant indices (depends on the enzymes in sim_data.process.metabolism.
 """
 
 from .condition import condition
-from .gene_knockout import gene_knockout
 
 
 def aa_synthesis_ko(sim_data, index):
@@ -43,6 +42,12 @@ def aa_synthesis_ko(sim_data, index):
 	if index > n_variants:
 		raise ValueError(f'Variant index {index} is not supported. Choose between 0 and {n_variants}')
 
-	rna_index = cistron_to_index[cistrons[index - 1]] + 1 if index > 0 else 0
+	if index > 0:
+		rna_index = cistron_to_index[cistrons[index - 1]]
+		sim_data.adjust_final_expression([rna_index], [0])
 
-	return gene_knockout(sim_data, rna_index)
+	# TODO: add description
+	return dict(
+		shortName='',
+		desc=''
+		), sim_data
