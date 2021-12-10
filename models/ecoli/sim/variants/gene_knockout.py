@@ -26,7 +26,6 @@ CONTROL_OUTPUT = dict(
 
 def gene_knockout(sim_data, index):
 	transcription = sim_data.process.transcription
-	transcription_regulation = sim_data.process.transcription_regulation
 
 	nGenes = len(transcription.rna_data)
 	nConditions = nGenes + 1
@@ -35,28 +34,8 @@ def gene_knockout(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	geneIndex = (index - 1) % nConditions
-
 	factor = 0  # Knockout expression
-	recruitment_mask = np.array([i == geneIndex
-		for i in transcription_regulation.delta_prob['deltaI']])
-	for synth_prob in transcription.rna_synth_prob.values():
-		synth_prob[geneIndex] *= factor
-	for exp in transcription.rna_expression.values():
-		exp[geneIndex] *= factor
-	transcription.exp_free[geneIndex] *= factor
-	transcription.exp_ppgpp[geneIndex] *= factor
-	transcription.attenuation_basal_prob_adjustments[transcription.attenuated_rna_indices == geneIndex] *= factor
-	transcription_regulation.basal_prob[geneIndex] *= factor
-	transcription_regulation.delta_prob['deltaV'][recruitment_mask] *= factor
-
-	# Renormalize parameters
-	for synth_prob in transcription.rna_synth_prob.values():
-		synth_prob /= synth_prob.sum()
-	for exp in transcription.rna_expression.values():
-		exp /= exp.sum()
-	transcription.exp_free /= transcription.exp_free.sum()
-	transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
-
+	sim_data.adjust_final_expression([geneIndex], [factor])
 	geneID = transcription.rna_data["id"][geneIndex]
 
 	return dict(
