@@ -14,14 +14,7 @@ import numpy as np
 from reconstruction.ecoli.dataclasses.molecule_groups import POLYMERIZED_FRAGMENT_PREFIX
 from wholecell.utils import units
 
-RNA_TYPE_TO_SUBMASS = {
-	'tRNA': 'tRNA',
-	'mRNA': 'mRNA',
-	'pseudo': 'miscRNA',
-	'miscRNA': 'miscRNA',
-	'rRNA': 'rRNA',
-	'phantom': 'miscRNA',
-	}
+EXCLUDED_RNA_TYPES = {'pseudo', 'phantom'}
 
 # Mapping of compartment IDs to abbreviations for compartments undefined in
 # flat/compartments.tsv
@@ -186,11 +179,15 @@ class GetterFunctions(object):
 				raise TranscriptionDirectionError(
 					f"Unidentified transcription direction given for {tu_id}")
 
-		# Get set of valid gene IDs that have positions on the chromosome
+		# Get set of valid gene IDs that have positions on the chromosome, and
+		# is not a pseudogene or a phantom gene
+		gene_id_to_rna_type = {
+			rna['gene_id']: rna['type'] for rna in raw_data.rnas}
 		valid_gene_ids = {
 			gene['id'] for gene in raw_data.genes
 			if gene['left_end_pos'] is not None
-			and gene['right_end_pos'] is not None
+				and gene['right_end_pos'] is not None
+				and gene_id_to_rna_type[gene['id']] not in EXCLUDED_RNA_TYPES
 			}
 
 		# Set of gene IDs that are covered by listed transcription units
@@ -204,16 +201,20 @@ class GetterFunctions(object):
 
 		# Add sequences from transcription_units file
 		for tu in raw_data.transcription_units:
+			# Get list of genes in TU after excluding invalid genes
+			gene_tuple = tuple(sorted(
+				[gene_id for gene_id in tu['genes'] if gene_id in valid_gene_ids]
+				))
+
+			# Skip TUs with only invalid genes
+			if len(gene_tuple) == 0:
+				continue
+
 			# Skip duplicate TUs
-			gene_tuple = tuple(sorted(tu['genes']))
 			if gene_tuple in all_tu_gene_tuples:
 				continue
 			else:
 				all_tu_gene_tuples.add(gene_tuple)
-
-			# Skip TUs that cover any gene without specified positions
-			if not set(tu['genes']) < valid_gene_ids:
-				continue
 
 			left_end_pos = tu['left_end_pos']
 			right_end_pos = tu['right_end_pos']
@@ -253,7 +254,7 @@ class GetterFunctions(object):
 			if gene_id in covered_gene_ids:
 				continue
 
-			# Skip RNAs without gene end positions
+			# Skip excluded genes
 			if gene_id not in valid_gene_ids:
 				continue
 
@@ -403,8 +404,7 @@ class GetterFunctions(object):
 			rna_id_to_type[tu['id']] = tu_rna_types[0]
 
 		return {
-			rna_id: self._build_submass_array(
-				mw, RNA_TYPE_TO_SUBMASS[rna_id_to_type[rna_id]])
+			rna_id: self._build_submass_array(mw, rna_id_to_type[rna_id])
 			for (rna_id, mw) in zip(rnas_with_seqs, mws)
 			}
 
