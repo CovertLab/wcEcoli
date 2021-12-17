@@ -195,8 +195,8 @@ class GetterFunctions(object):
 
 		# Keep track of gene tuples of TUs to remove duplicate TUs that cover
 		# the same set of genes but have different left & right end coordinates.
-		# The first TU that covers the given set of genes is always selected.
-		# TODO (ggsun): consider picking longest?
+		# The first TU in the list that covers the given set of genes is always
+		# selected over later TUs.
 		all_tu_gene_tuples = set()
 
 		# Add sequences from transcription_units file
@@ -250,12 +250,12 @@ class GetterFunctions(object):
 
 			gene_id = rna_id_to_gene_id[rna_id]
 
-			# Skip RNAs that are already covered by transcription units
-			if gene_id in covered_gene_ids:
-				continue
-
 			# Skip excluded genes
 			if gene_id not in valid_gene_ids:
+				continue
+
+			# Skip RNAs that are already covered by transcription units
+			if gene_id in covered_gene_ids:
 				continue
 
 			left_end_pos = gene_id_to_left_end_pos[gene_id]
@@ -387,20 +387,26 @@ class GetterFunctions(object):
 
 		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
 
-		gene_id_to_rna_id = {
-			gene['id']: gene['rna_ids'][0] for gene in raw_data.genes
-			}
+		# Map monocistronic RNA IDs to RNA types
 		rna_id_to_type = {rna['id']: rna['type'] for rna in raw_data.rnas}
+
+		# Add polycistronic RNAs to mapping
+		gene_id_to_rna_id = {
+			gene['id']: gene['rna_ids'][0] for gene in raw_data.genes}
+
 		for tu in raw_data.transcription_units:
+			if tu['id'] not in self._sequences:
+				continue
 			tu_rna_types = [
-				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']]
+				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']
+				if rna_id_to_type[gene_id_to_rna_id[gene]] not in EXCLUDED_RNA_TYPES]
 
 			if len(set(tu_rna_types)) > 1:
 				raise ValueError(f'Transcription unit {tu["id"]} includes '
 					f'cistrons that encode for two or more different types of '
 					f'RNAs, which is not supported by this version of the '
 					f'model and thus should be removed.')
-			
+
 			rna_id_to_type[tu['id']] = tu_rna_types[0]
 
 		return {
