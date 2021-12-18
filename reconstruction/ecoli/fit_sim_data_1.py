@@ -2297,8 +2297,6 @@ def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs
 	for cistron_id, fc_value in tfFCs.items():
 		if cistron_id in condPerturbations:
 			continue
-		if cistron_id not in cistron_id_to_index:
-			continue
 		cistron_indexes.append(cistron_id_to_index[cistron_id])
 		cistron_fcs.append(fc_value)
 
@@ -3203,8 +3201,6 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 			continue
 
 		for cistron in cistrons:
-			if cistron not in cistron_id_to_tu_indexes:
-				continue
 			for tu_index in cistron_id_to_tu_indexes[cistron]:
 				regulation_i.append(tf_idx[tf])
 				regulation_j.append(tu_index)
