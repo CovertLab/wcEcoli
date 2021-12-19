@@ -286,8 +286,6 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 	# Determine the number and location of replication forks at the start of
 	# the cell cycle
 	# Get growth rate constants
-	C = sim_data.process.replication.c_period
-	D = sim_data.process.replication.d_period
 	tau = sim_data.condition_to_doubling_time[sim_data.condition].asUnit(units.min)
 	critical_mass = sim_data.mass.get_dna_critical_mass(tau)
 	replication_rate = sim_data.process.replication.basal_elongation_rate
@@ -304,7 +302,7 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 
 	# Generate arrays specifying appropriate initial replication conditions
 	oric_state, replisome_state, domain_state = determine_chromosome_state(
-		C, D, tau, replichore_length, n_max_replisomes,
+		tau, replichore_length, n_max_replisomes,
 		sim_data.process.replication.no_child_place_holder,
 		cell_mass, critical_mass, replication_rate)
 
@@ -1194,7 +1192,7 @@ def initialize_translation(bulkMolCntr, uniqueMolCntr, sim_data, randomState):
 		[sim_data.molecule_ids.s50_full_complex])
 
 
-def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
+def determine_chromosome_state(tau, replichore_length, n_max_replisomes,
 		place_holder, cell_mass, critical_mass, replication_rate):
 	"""
 	Calculates the attributes of oriC's, replisomes, and chromosome domains on
@@ -1202,17 +1200,16 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 
 	Inputs
 	--------
-	- C: the C period of the cell, the length of time between replication
-	initiation and replication termination.
-	- D: the D period of the cell, the length of time between completing
-	replication of the chromosome and division of the cell.
 	- tau: the doubling time of the cell
-	- n_max_replisomes: the maximum number of replisomes that can be formed
-	given the initial counts of replisome subunits
 	- replichore_length: the amount of DNA to be replicated per fork, usually
 	half of the genome, in base-pairs
+	- n_max_replisomes: the maximum number of replisomes that can be formed
+	given the initial counts of replisome subunits
 	- place_holder: placeholder value for chromosome domains without child
 	domains
+	- cell_mass: total mass of the cell with mass units
+	- critical_mass: mass per oriC before replication is initiated with mass units
+	- replication_rate: rate of nucleotide elongation (in nt/s)
 
 	Returns
 	--------
@@ -1239,22 +1236,21 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 	"""
 
 	# All inputs must be positive numbers
-	assert C.asNumber(units.min) >= 0, "C value can't be negative."
-	assert D.asNumber(units.min) >= 0, "D value can't be negative."
-	assert tau.asNumber(units.min) >= 0, "tau value can't be negative."
-	assert replichore_length.asNumber(units.nt) >= 0, "replichore_length value can't be negative."
+	unitless_tau = tau.asNumber(units.s)
+	unitless_replichore_length = replichore_length.asNumber(units.nt)
+	assert unitless_tau >= 0, "tau value can't be negative."
+	assert unitless_replichore_length >= 0, "replichore_length value can't be negative."
 
-	# Require that D is shorter than tau - time between completing DNA
-	# replication and cell division must be shorter than the time between two
-	# cell divisions.
-	assert D.asNumber(units.min) < tau.asNumber(units.min), "The D period must be shorter than the doubling time tau."
+	# Convert to unitless
+	unitless_cell_mass = cell_mass.asNumber(units.fg)
+	unitless_critical_mass = critical_mass.asNumber(units.fg)
 
 	# Calculate the maximum number of replication rounds given the maximum
 	# count of replisomes
 	n_max_rounds = int(np.log2(n_max_replisomes/2 + 1))
 
 	# Calculate the number of active replication rounds
-	n_rounds = min(n_max_rounds, int(np.floor(cell_mass / critical_mass)))
+	n_rounds = min(n_max_rounds, int(np.ceil(np.log2(unitless_cell_mass / unitless_critical_mass))))
 
 	# Initialize arrays for replisomes
 	n_replisomes = 2*(2**n_rounds - 1)
@@ -1284,10 +1280,12 @@ def determine_chromosome_state(C, D, tau, replichore_length, n_max_replisomes,
 	for round_idx in np.arange(n_rounds):
 		# Determine at which location (base) of the chromosome the replication
 		# forks should be initialized to
-		round_critical_mass = (round_idx + 1) * critical_mass
-		growth_rate = np.log(2) / tau.asNumber(units.s)
-		replication_time = np.log(units.strip_empty_units(cell_mass / round_critical_mass)) / growth_rate
-		fork_location = np.floor(replication_time * replication_rate)
+		round_critical_mass = 2**round_idx * unitless_critical_mass
+		growth_rate = np.log(2) / unitless_tau
+		replication_time = np.log(unitless_cell_mass / round_critical_mass) / growth_rate
+		# TODO: this should handle completed replication (instead of taking min)
+		# for accuracy but will likely never start with multiple chromosomes
+		fork_location = min(np.floor(replication_time * replication_rate), unitless_replichore_length)
 
 		# Add 2^n initiation events per round. A single initiation event
 		# generates two replication forks.
