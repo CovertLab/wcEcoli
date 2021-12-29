@@ -1239,7 +1239,7 @@ def determine_chromosome_state(tau, replichore_length, n_max_replisomes,
 	unitless_tau = tau.asNumber(units.s)
 	unitless_replichore_length = replichore_length.asNumber(units.nt)
 	assert unitless_tau >= 0, "tau value can't be negative."
-	assert unitless_replichore_length >= 0, "replichore_length value can't be negative."
+	assert unitless_replichore_length > 0, "replichore_length must be positive."
 
 	# Convert to unitless
 	unitless_cell_mass = cell_mass.asNumber(units.fg)
@@ -1250,7 +1250,7 @@ def determine_chromosome_state(tau, replichore_length, n_max_replisomes,
 	n_max_rounds = int(np.log2(n_max_replisomes/2 + 1))
 
 	# Calculate the number of active replication rounds
-	n_rounds = min(n_max_rounds, int(np.ceil(np.log2(unitless_cell_mass / unitless_critical_mass))))
+	n_rounds = min(n_max_rounds, max(0, int(np.ceil(np.log2(unitless_cell_mass / unitless_critical_mass)))))
 
 	# Initialize arrays for replisomes
 	n_replisomes = 2*(2**n_rounds - 1)
@@ -1285,7 +1285,7 @@ def determine_chromosome_state(tau, replichore_length, n_max_replisomes,
 		replication_time = np.log(unitless_cell_mass / round_critical_mass) / growth_rate
 		# TODO: this should handle completed replication (instead of taking min)
 		# for accuracy but will likely never start with multiple chromosomes
-		fork_location = min(np.floor(replication_time * replication_rate), unitless_replichore_length)
+		fork_location = min(np.floor(replication_time * replication_rate), unitless_replichore_length-1)
 
 		# Add 2^n initiation events per round. A single initiation event
 		# generates two replication forks.
