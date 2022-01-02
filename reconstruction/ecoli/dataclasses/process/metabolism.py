@@ -791,20 +791,34 @@ class Metabolism(object):
 		counts_per_aa_import = self.aa_to_importers_matrix.dot(importer_counts)
 		counts_per_aa_export = self.aa_to_exporters_matrix.dot(exporter_counts)
 
-		# Calculate kcats with the assumption that import is 100x the rate of
-		# export at the expected amion acid concentration in rich media.
+		# Solve for the two unknown kcats with the calculated net exchange rate
+		# in rich media conditions and the assumption that import and export
+		# rates are equal at the export KM based on how the export KM values
+		# were curated.
 		# Import will decrease and export will increase with higher amino acids
 		# for stable amino acid concentrations.
-		import_vs_export = 100
-		export_saturation = 1 / (1 + self.aa_export_kms / aa_conc)
-		import_saturation = 1 / (1 + aa_conc / self.aa_import_kis)
-		self.export_kcats_per_aa = exchange_rates / ((import_vs_export - 1)
-			* counts_per_aa_export * export_saturation)
-		with np.errstate(invalid='ignore'):
-			self.import_kcats_per_aa = (import_vs_export * self.export_kcats_per_aa
-				* counts_per_aa_export * export_saturation
-				/ (counts_per_aa_import * import_saturation))
-		self.import_kcats_per_aa[counts_per_aa_import == 0] = 0
+		import_saturation_in_rich = 1 / (1 + aa_conc / self.aa_import_kis)
+		export_saturation_in_rich = 1 / (1 + self.aa_export_kms / aa_conc)
+		import_saturation_at_km = 1 / (1 + self.aa_export_kms / self.aa_import_kis)
+		export_saturation_at_km = 0.5
+
+		import_capacity_at_km = counts_per_aa_import * import_saturation_at_km
+		export_capacity_at_km = counts_per_aa_export * export_saturation_at_km
+		with np.errstate(divide='ignore', invalid='ignore'):
+			import_vs_export_kcat = export_capacity_at_km / import_capacity_at_km
+			kcat_export = exchange_rates / (
+				import_vs_export_kcat * counts_per_aa_import * import_saturation_in_rich
+				- counts_per_aa_export * export_saturation_in_rich)
+			kcat_export[~np.isfinite(kcat_export)] = 0
+			kcat_import = import_vs_export_kcat * kcat_export
+			kcat_import[~np.isfinite(kcat_import)] = 0
+
+		if np.any(kcat_export < 0) or np.any(kcat_import < 0):
+			raise ValueError('Could not solve for positive transport kcat.'
+				' Check assumptions or amino acid concentrations compared to KMs.')
+
+		self.export_kcats_per_aa = kcat_export
+		self.import_kcats_per_aa = kcat_import
 
 	def set_mechanistic_supply_constants(self, sim_data, cell_specs, basal_container, with_aa_container):
 		"""
@@ -1186,9 +1200,9 @@ class Metabolism(object):
 
 		# Import inhibition of transporters
 		rich_conc = np.array([
-				with_aa_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
-				for aa in aa_ids
-				])
+			with_aa_conc[aa].asNumber(METABOLITE_CONCENTRATION_UNITS)
+			for aa in aa_ids
+			])
 		self.aa_import_kis = rich_conc.copy()  # Assume this conc is the inhibition constant: TODO: find KIs
 		saturation = 1 / (1 + rich_conc / self.aa_import_kis)
 		self.specific_import_rates = (np.array([calculated_uptake_rates[aa] for aa in aa_ids])
