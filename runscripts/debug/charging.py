@@ -661,34 +661,26 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		n_adjust = 7
 		n_aa_adjust = 7
-		rib_output_sensitivity_to_enzymes = np.ones((n_adjust, n_aa_adjust))
-		aa_output_sensitivity_to_enzymes = np.ones((n_adjust, n_aa_adjust))
-		rib_output_sensitivity_to_ribosomes = np.ones((n_adjust, n_aa_adjust))
-		aa_output_sensitivity_to_ribosomes = np.ones((n_adjust, n_aa_adjust))
+		rib_output_sensitivity_to_enzymes = np.zeros((n_adjust, n_aa_adjust))
+		aa_output_sensitivity_to_enzymes = np.zeros((n_adjust, n_aa_adjust))
+		rib_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
+		aa_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
 		for timestep in range(self.n_time_steps):
 			for i, enz_adjustment in enumerate(np.linspace(0.7, 1.3, n_adjust)):
-				*_, rib_output_original, aa_output_original = self.solve_timestep(
-					timestep, enzyme_adjustment=enz_adjustment)
 				for j, adjustment in enumerate(np.linspace(0.9, 1.1, n_aa_adjust)):
-					if adjustment == 1:
-						continue
 					*_, rib_output_aa_adjust, aa_output_aa_adjust = self.solve_timestep(
 						timestep, enzyme_adjustment=enz_adjustment, aa_adjustments=adjustment)
 
-					rib_output_sensitivity_to_enzymes[i, j] = rib_output_aa_adjust / rib_output_original
-					aa_output_sensitivity_to_enzymes[i, j] = aa_output_aa_adjust / aa_output_original
+					rib_output_sensitivity_to_enzymes[i, j] = rib_output_aa_adjust
+					aa_output_sensitivity_to_enzymes[i, j] = aa_output_aa_adjust
 
 			for i, rib_adjustment in enumerate(np.linspace(0.7, 1.3, n_adjust)):
-				*_, rib_output_original, aa_output_original = self.solve_timestep(
-					timestep, ribosome_adjustment=rib_adjustment)
 				for j, adjustment in enumerate(np.linspace(0.9, 1.1, n_aa_adjust)):
-					if adjustment == 1:
-						continue
 					*_, rib_output_aa_adjust, aa_output_aa_adjust = self.solve_timestep(
 						timestep, ribosome_adjustment=rib_adjustment, aa_adjustments=adjustment)
 
-					rib_output_sensitivity_to_ribosomes[i, j] = rib_output_aa_adjust / rib_output_original
-					aa_output_sensitivity_to_ribosomes[i, j] = aa_output_aa_adjust / aa_output_original
+					rib_output_sensitivity_to_ribosomes[i, j] = rib_output_aa_adjust
+					aa_output_sensitivity_to_ribosomes[i, j] = aa_output_aa_adjust
 
 		print(f'{rib_output_sensitivity_to_enzymes=}')
 		print(f'{aa_output_sensitivity_to_enzymes=}')
