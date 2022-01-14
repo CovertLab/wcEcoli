@@ -15,9 +15,6 @@ Expected variant indices (depends on length of sim_data.process.transcription.rn
 	1-4692: gene index to knockout
 """
 
-import numpy as np
-
-
 CONTROL_OUTPUT = dict(
 	shortName = "control",
 	desc = "Control simulation"
@@ -25,9 +22,9 @@ CONTROL_OUTPUT = dict(
 
 
 def gene_knockout(sim_data, index):
-	transcription = sim_data.process.transcription
+	rna_data = sim_data.process.transcription.rna_data
 
-	nGenes = len(transcription.rna_data)
+	nGenes = len(rna_data)
 	nConditions = nGenes + 1
 
 	if index % nConditions == 0:
@@ -36,7 +33,7 @@ def gene_knockout(sim_data, index):
 	geneIndex = (index - 1) % nConditions
 	factor = 0  # Knockout expression
 	sim_data.adjust_final_expression([geneIndex], [factor])
-	geneID = transcription.rna_data["id"][geneIndex]
+	geneID = rna_data["id"][geneIndex]
 
 	return dict(
 		shortName = "{}_KO".format(geneID),
