@@ -1336,7 +1336,7 @@ class Metabolism(object):
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum,
 			internal_aa_conc: Union[units.Unum, np.ndarray], aa_transporters_counts: np.ndarray,
-			mechanisitc_uptake: bool):
+			mechanisitic_uptake: bool):
 		"""
 		Calculate the rate of amino acid uptake.
 
@@ -1345,7 +1345,7 @@ class Metabolism(object):
 			dry_mass: current dry mass of the cell, with mass units
 			internal_aa_conc: internal concentrations of amino acids
 			aa_transporters_counts: counts of each transporter
-			mechanisitc_uptake: if true, the uptake is calculated based on transporters
+			mechanisitic_uptake: if true, the uptake is calculated based on transporters
 
 		Returns:
 			rate of uptake for each amino acid. array is unitless but
@@ -1356,7 +1356,7 @@ class Metabolism(object):
 			internal_aa_conc = internal_aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
 
 		saturation = 1 / (1 + internal_aa_conc / self.aa_import_kis)
-		if mechanisitc_uptake:
+		if mechanisitic_uptake:
 			# Uptake based on mechanistic model
 			counts_per_aa = self.aa_to_importers_matrix @ aa_transporters_counts
 			import_rates = self.import_kcats_per_aa * counts_per_aa
