@@ -17,6 +17,7 @@ variants = [
 	'monomer_deg_rate_shuffle_params',
 	'param_sensitivity',
 	'ppgpp_conc',
+	'ppgpp_limitations',
 	'remove_aa_inhibition',
 	'remove_aas_shift',
 	'remove_one_aa',
