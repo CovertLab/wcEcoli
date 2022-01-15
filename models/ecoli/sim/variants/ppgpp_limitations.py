@@ -1,18 +1,25 @@
 """
-TODO
+Adjusts amino acid synthesis parameters and enzymes as well as ribosomes at
+different fixed ppGpp concentrations to compare which ones are limiting growth
+at low or high ppGpp concentrations.
 
-Modifies (TODO):
+Modifies:
+	Attributes from ppgpp_conc variant
+	Attributes from adjust_final_expression
+	sim_data.ppgpp_ramp: added class to include a ppGpp concentration ramp
+	sim_data.process.metabolism.aa_kcats_fwd
+	sim_data.process.metabolism.aa_kis
 
-Expected variant indices (depends on TODO):
-	0: control
-	TODO
-
-DESC="Mechanistic transport - ppGpp limitations" PARALLEL_PARCA=1 RUN_AGGREGATE_ANALYSIS=0 \
-  N_GENS=8 N_INIT_SIMS=1 \
-  VARIANT=ppgpp_limitations FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=98 \
-  TRNA_ATTENUATION=1 PPGPP_REGULATION=1 MECHANISTIC_TRANSLATION_SUPPLY=1 MECHANISTIC_AA_TRANSPORT=1 AA_SUPPLY_IN_CHARGING=1 \
-  D_PERIOD_DIVISION=1 MECHANISTIC_REPLISOME=0 TIMESTEP_MAX=1 \
-  python runscripts/fireworks/fw_queue.py
+Expected variant indices (depends on PPGPP_VARIANTS and FACTORS):
+	0: control at low ppGpp concentration
+	1-9: adjust amino acid KIs at low ppGpp concentration
+	10-18: adjust amino acid kcats at low ppGpp concentration
+	19-27: adjust amino acid enzyme expression at low ppGpp concentration
+	28-36: adjust ribosome expression at low ppGpp concentration
+	37: control at normal ppGpp concentration
+	38-73: adjustments at normal ppGpp concentration
+	74: control at high ppGpp concentration
+	75-110: adjustments at high ppGpp concentration
 """
 
 import numpy as np
@@ -23,10 +30,10 @@ from wholecell.utils import units
 
 PPGPP_VARIANTS = [1, 4, 8]  # Corresponds to low, control and high ppGpp from ppgpp_conc variant
 FACTORS = [
-	[0.96, 0.97, 0.98, 0.99, 1.01, 1.02, 1.03, 1.04],
-	[0.01, 0.1, 0.5, 0.8, 1.25, 2, 10, 100],
-	[0.5, 0.75, 0.9, 0.95, 1.05, 1.1, 1.25, 1.5],
-	[0.5, 0.75, 0.9, 0.95, 1.05, 1.1, 1.25, 1.5],
+	[0.001, 0.01, 0.1, 0.5, 2, 10, 100, 1000, np.inf],
+	[0.96, 0.97, 0.98, 0.99, 1.01, 1.02, 1.03, 1.04, 1.05],
+	[0.5, 0.75, 0.9, 0.95, 1.05, 1.1, 1.25, 1.5, 2],
+	[0.5, 0.75, 0.9, 0.95, 1.05, 1.1, 1.25, 1.5, 2],
 ]
 
 
@@ -45,7 +52,8 @@ class ppGpp():
 		have the same function signature but we want to fix the output
 		conentration to a new value.
 		"""
-		# TODO: handle this error from sim side
+		# TODO (travis): handle this error from sim side so that self.time()
+		# never raises an error even if called during process initialization
 		try:
 			t = self.time()
 		except Exception:
@@ -99,8 +107,8 @@ def adjust_ribosomes(sim_data, factor):
 	sim_data.adjust_final_expression(cistron_indices, factors)
 
 ADJUSTMENTS = [
-	adjust_amino_acids,
 	adjust_amino_acid_kis,
+	adjust_amino_acids,
 	adjust_enzymes,
 	adjust_ribosomes,
 	]
@@ -127,10 +135,12 @@ def ppgpp_limitations(sim_data, index):
 
 	ppgpp_desc, sim_data = ppgpp_conc(sim_data, ppgpp_index)
 
+	# Get the new concentration after ppgpp_conc updates get_ppGpp_conc function
 	ppgpp_rate = 0.00001 * units.mmol / units.L  # per s
 	ppgpp_new = sim_data.growth_rate_parameters.get_ppGpp_conc(sim_data.doubling_time)
 
-	sim_data.ppgpp_class = ppGpp(ppgpp_original, ppgpp_new, ppgpp_rate)
+	# Set a concentration ramp for a gradual change over time for better stability
+	sim_data.ppgpp_ramp = ppGpp(ppgpp_original, ppgpp_new, ppgpp_rate)
 
 	if control:
 		short_name = 'control'
