@@ -18,8 +18,9 @@ def aa_synthesis_ko(sim_data, index):
 
 	metabolism = sim_data.process.metabolism
 	complexation = sim_data.process.complexation
-	translation = sim_data.process.translation
-	transcription = sim_data.process.transcription
+	monomer_data = sim_data.process.translation.monomer_data
+	cistron_data = sim_data.process.transcription.cistron_data
+	gene_data = sim_data.process.replication.gene_data
 
 	# Enzymes involved in mechanistic amino acid synthesis
 	synthesis_enzymes = metabolism.aa_enzymes[metabolism.enzyme_to_amino_acid_fwd.sum(1).astype(bool)]
@@ -30,8 +31,9 @@ def aa_synthesis_ko(sim_data, index):
 		})
 
 	# Map monomers to RNA for a knockout
-	monomer_to_cistron = {monomer['id']: monomer['cistron_id'] for monomer in translation.monomer_data}
-	cistron_to_index = {cistron['id']: i for i, cistron in enumerate(transcription.cistron_data)}
+	monomer_to_cistron = {monomer['id']: monomer['cistron_id'] for monomer in monomer_data}
+	cistron_to_index = {cistron['id']: i for i, cistron in enumerate(cistron_data)}
+	cistron_to_symbol = {gene['cistron_id']: gene['symbol'] for gene in gene_data}
 	cistrons = [
 		monomer_to_cistron[monomer]
 		for monomer in synthesis_monomers
@@ -43,11 +45,15 @@ def aa_synthesis_ko(sim_data, index):
 		raise ValueError(f'Variant index {index} is not supported. Choose between 0 and {n_variants}')
 
 	if index > 0:
-		rna_index = cistron_to_index[cistrons[index - 1]]
+		cistron = cistrons[index - 1]
+		rna_index = cistron_to_index[cistron]
 		sim_data.adjust_final_expression([rna_index], [0])
 
-	# TODO: add description
-	return dict(
-		shortName='',
-		desc=''
-		), sim_data
+		symbol = cistron_to_symbol[cistron]
+		name=f'{symbol} KO'
+		desc=f'{symbol} KO in rich media'
+	else:
+		name='control'
+		desc='Control in rich media'
+
+	return dict(shortName=name, desc=desc), sim_data
