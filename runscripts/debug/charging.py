@@ -656,37 +656,49 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		return app
 
-	def sensitivity(self):
+	def sensitivity(self, output_dir):
 		print('Running sensitivity with inputs...')
 
 		n_adjust = 7
 		n_aa_adjust = 7
+		expression_adjustments = np.linspace(0.7, 1.3, n_adjust)
+		aa_adjustments = np.linspace(0.9, 1.1, n_aa_adjust)
 		rib_output_sensitivity_to_enzymes = np.zeros((n_adjust, n_aa_adjust))
 		aa_output_sensitivity_to_enzymes = np.zeros((n_adjust, n_aa_adjust))
 		rib_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
 		aa_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
 		for timestep in range(self.n_time_steps):
-			for i, enz_adjustment in enumerate(np.linspace(0.7, 1.3, n_adjust)):
-				for j, adjustment in enumerate(np.linspace(0.9, 1.1, n_aa_adjust)):
+			for i, enz_adjustment in enumerate(expression_adjustments):
+				for j, adjustment in enumerate(aa_adjustments):
 					*_, rib_output_aa_adjust, aa_output_aa_adjust = self.solve_timestep(
 						timestep, enzyme_adjustment=enz_adjustment, aa_adjustments=adjustment)
 
 					rib_output_sensitivity_to_enzymes[i, j] = rib_output_aa_adjust
 					aa_output_sensitivity_to_enzymes[i, j] = aa_output_aa_adjust
 
-			for i, rib_adjustment in enumerate(np.linspace(0.7, 1.3, n_adjust)):
-				for j, adjustment in enumerate(np.linspace(0.9, 1.1, n_aa_adjust)):
+			for i, rib_adjustment in enumerate(expression_adjustments):
+				for j, adjustment in enumerate(aa_adjustments):
 					*_, rib_output_aa_adjust, aa_output_aa_adjust = self.solve_timestep(
 						timestep, ribosome_adjustment=rib_adjustment, aa_adjustments=adjustment)
 
 					rib_output_sensitivity_to_ribosomes[i, j] = rib_output_aa_adjust
 					aa_output_sensitivity_to_ribosomes[i, j] = aa_output_aa_adjust
 
-		print(f'{rib_output_sensitivity_to_enzymes=}')
-		print(f'{aa_output_sensitivity_to_enzymes=}')
-		print(f'{rib_output_sensitivity_to_ribosomes=}')
-		print(f'{aa_output_sensitivity_to_ribosomes=}')
-		# TODO: cleanup - add text to output or make a bar plot
+		def save_output(data, name):
+			filename = os.path.join(output_dir, f'{name}.tsv')
+			with open(filename, 'w') as f:
+				writer = csv.writer(f, delimiter='\t')
+				writer.writerow([''] + list(aa_adjustments))
+				for adjustment, row in zip(expression_adjustments, data):
+					writer.writerow([adjustment] + list(row))
+
+			print(f'Saved sensitivity output to {filename}')
+
+		# TODO: plot data?
+		save_output(rib_output_sensitivity_to_enzymes, 'rib_output_sensitivity_to_enzymes')
+		save_output(aa_output_sensitivity_to_enzymes, 'aa_output_sensitivity_to_enzymes')
+		save_output(rib_output_sensitivity_to_ribosomes, 'rib_output_sensitivity_to_ribosomes')
+		save_output(aa_output_sensitivity_to_ribosomes, 'aa_output_sensitivity_to_ribosomes')
 
 	def run(self, args: argparse.Namespace) -> None:
 		# Sim options
@@ -708,7 +720,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		if args.interactive:
 			self.interactive_debug(args.port)
 		if args.sensitivity:
-			self.sensitivity()
+			self.sensitivity(args.sim_out_dir)
 
 
 if __name__ == '__main__':
