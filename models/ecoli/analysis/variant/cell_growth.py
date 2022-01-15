@@ -279,7 +279,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			reference_variant, normalized=mean_growth_rates, xlabels=xlabels)
 
 		## Validation comparison for each amino acid addition
-		if 'add_one_aa' in metadata.get('variant', '') or 'remove_aas_shift' in metadata.get('variant', ''):
+		# TODO: this could run for remove_aas_shift variant as well if labels are properly matched
+		if 'add_one_aa' in metadata.get('variant', ''):
 			ax = plt.subplot(gs[:, 3:])
 			highlight = {
 				label: count != max(variant_counts)
