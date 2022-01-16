@@ -9,9 +9,8 @@ if [ -d "${PYENV_ROOT}" ]; then
     eval "$(pyenv virtualenv-init -)"
 fi
 
-echo $PATH  # revert this back
-
 ### Edit this line to make this branch use another pyenv like wcEcoli3-staging
 pyenv local wcEcoli3-staging
+pyenv activate
 
 make clean compile
