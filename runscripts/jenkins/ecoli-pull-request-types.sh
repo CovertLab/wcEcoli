@@ -6,4 +6,4 @@ set -e
 ### merging the PR into master to prevent changing it for other Jenkins builds.
 ### ---------------------------------------------------------------------------
 source runscripts/jenkins/setup-environment.sh
-runscripts/debug/mypy.sh
+mypy
