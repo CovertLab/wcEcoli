@@ -8,6 +8,7 @@ set -e
 source runscripts/jenkins/setup-environment.sh
 
 echo pyenv version: $(pyenv version)
+echo pyenv root: $(pyenv root)
 echo mypy: $(which mypy)
 mypy -V
 
