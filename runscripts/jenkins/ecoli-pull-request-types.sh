@@ -6,4 +6,9 @@ set -e
 ### merging the PR into master to prevent changing it for other Jenkins builds.
 ### ---------------------------------------------------------------------------
 source runscripts/jenkins/setup-environment.sh
+
+echo pyenv version: $(pyenv version)
+echo mypy: $(which mypy)
+mypy -V
+
 mypy
