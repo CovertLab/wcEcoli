@@ -659,6 +659,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 	def sensitivity(self, output_dir):
 		print('Running sensitivity with inputs...')
 
+		n_time_steps = self.n_time_steps  # TODO: select as an arg
 		n_adjust = 7
 		n_aa_adjust = 7
 		expression_adjustments = np.linspace(0.7, 1.3, n_adjust)
@@ -667,22 +668,27 @@ class ChargingDebug(scriptBase.ScriptBase):
 		aa_output_sensitivity_to_enzymes = np.zeros((n_adjust, n_aa_adjust))
 		rib_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
 		aa_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
-		for timestep in range(self.n_time_steps):
+		for timestep in range(n_time_steps):
 			for i, enz_adjustment in enumerate(expression_adjustments):
 				for j, adjustment in enumerate(aa_adjustments):
 					*_, rib_output_aa_adjust, aa_output_aa_adjust = self.solve_timestep(
 						timestep, enzyme_adjustment=enz_adjustment, aa_adjustments=adjustment)
 
-					rib_output_sensitivity_to_enzymes[i, j] = rib_output_aa_adjust
-					aa_output_sensitivity_to_enzymes[i, j] = aa_output_aa_adjust
+					rib_output_sensitivity_to_enzymes[i, j] += rib_output_aa_adjust
+					aa_output_sensitivity_to_enzymes[i, j] += aa_output_aa_adjust
 
 			for i, rib_adjustment in enumerate(expression_adjustments):
 				for j, adjustment in enumerate(aa_adjustments):
 					*_, rib_output_aa_adjust, aa_output_aa_adjust = self.solve_timestep(
 						timestep, ribosome_adjustment=rib_adjustment, aa_adjustments=adjustment)
 
-					rib_output_sensitivity_to_ribosomes[i, j] = rib_output_aa_adjust
-					aa_output_sensitivity_to_ribosomes[i, j] = aa_output_aa_adjust
+					rib_output_sensitivity_to_ribosomes[i, j] += rib_output_aa_adjust
+					aa_output_sensitivity_to_ribosomes[i, j] += aa_output_aa_adjust
+
+		rib_output_sensitivity_to_enzymes /= n_time_steps
+		aa_output_sensitivity_to_enzymes /= n_time_steps
+		rib_output_sensitivity_to_ribosomes /= n_time_steps
+		aa_output_sensitivity_to_ribosomes /= n_time_steps
 
 		def save_output(data, name):
 			filename = os.path.join(output_dir, f'{name}.tsv')
