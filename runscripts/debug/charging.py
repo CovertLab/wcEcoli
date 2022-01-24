@@ -125,6 +125,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 			help='If set, runs sensitivity analysis.')
 		parser.add_argument('-p', '--port', type=int, default=PORT,
 			help='The localhost port to use for the interactive webpage.')
+		parser.add_argument('-t', '--time-steps', type=int,
+			help='Number of time steps to run for sensitivity.')
 
 	def update_args(self, args):
 		super().update_args(args)
@@ -674,7 +676,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		return app
 
-	def sensitivity(self, output_dir):
+	def sensitivity(self, output_dir, n_time_steps=None, cpus=1, output=''):
 		def callback_enzymes(result):
 			rib_output_aa_adjust, aa_output_aa_adjust, i = result
 			rib_output_sensitivity_to_enzymes[i, :] = rib_output_aa_adjust
@@ -687,8 +689,8 @@ class ChargingDebug(scriptBase.ScriptBase):
 
 		print('Running sensitivity with inputs...')
 
-		cpus = 8  # TODO, min with n_adjust and passed
-		n_time_steps = self.n_time_steps  # TODO: select as an arg
+		if n_time_steps is None:
+			n_time_steps = self.n_time_steps
 		n_adjust = 7
 		n_aa_adjust = 7
 		expression_adjustments = np.linspace(0.7, 1.3, n_adjust)
@@ -698,7 +700,6 @@ class ChargingDebug(scriptBase.ScriptBase):
 		rib_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
 		aa_output_sensitivity_to_ribosomes = np.zeros((n_adjust, n_aa_adjust))
 
-		# TODO: run both adjustments in one pool
 		# Run timesteps in parallel
 		pool = parallelization.pool(num_processes=cpus)
 		results = [
@@ -717,7 +718,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 				result.get()
 
 		def save_output(data, name):
-			filename = os.path.join(output_dir, f'{name}.tsv')
+			filename = os.path.join(output_dir, f'{output}{name}.tsv')
 			with open(filename, 'w') as f:
 				writer = csv.writer(f, delimiter='\t')
 				writer.writerow([''] + list(aa_adjustments))
@@ -752,7 +753,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 		if args.interactive:
 			self.interactive_debug(args.port)
 		if args.sensitivity:
-			self.sensitivity(args.sim_out_dir)
+			self.sensitivity(args.sim_out_dir, n_time_steps=args.time_steps, cpus=args.cpus, output=args.output)
 
 
 if __name__ == '__main__':
