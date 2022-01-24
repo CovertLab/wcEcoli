@@ -2,19 +2,18 @@
 Save data to share with EcoCyc to display on the simulation tab page.
 
 TODO:
-	specific form of metadata to share
-	media condition labeled filename
-	header describing columns
+	save a specific form of simulation metadata to share? (or existing metadata file?)
 	other values
 		TPM for transcripts
-		weighted average for counts
-		exponential/stochastic/constant?
+		weighted average for counts (time step weighted and cell cycle progress weighted)
+		exponential/stochastic/constant determination
 	other molecules
 		values for complexes?
 		charged/uncharged tRNA
 		rRNA including in ribosomes/complexes
 """
 
+import csv
 import os
 import pickle
 
@@ -23,6 +22,24 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
+
+
+def save_file(out_dir, filename, ids, counts, concentrations, relative_counts, relative_masses):
+	"""
+	TODO:
+		generalize the data passed into this function to allow for arbitrary columns and labels for each column
+		print header and column descriptions
+	"""
+
+	output_file = os.path.join(out_dir, filename)
+	print(f'Saving data to {output_file}')
+	with open(output_file, 'w') as f:
+		writer = csv.writer(f, delimiter='\t')
+
+		for id_, count, conc, rel_count, rel_mass in zip(ids, counts.T,
+				concentrations.T, relative_counts.T, relative_masses.T):
+			writer.writerow([id_, count.mean(), count.std(), conc.mean(), conc.std(),
+				rel_count.mean(), rel_count.std(), rel_mass.mean(), rel_mass.std()])
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -60,7 +77,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_masses = monomer_counts * monomer_mw
 		monomer_relative_masses = monomer_masses / monomer_masses.sum(1).reshape(-1, 1)
 
-		# TODO: save mrna_ and monomer_ data (mean/std): _counts, _conc, _relative_counts, relative_masses
+		# Save data in tables
+		mrna_ecocyc_ids = [rna[:-7] for rna in mrna_ids]  # strip _RNA[c]
+		monomer_ecocyc_ids = [monomer[:-3] for monomer in monomer_ids]  # strip [*]
+		media_id = 'MIX0-51'  # TODO: have a map of condition to EcoCyc media ID (temporarily hard-coded for minimal glc)
+		save_file(plotOutDir, f'wcm-mrna-data-{media_id}.tsv', mrna_ecocyc_ids,
+			mrna_counts, mrna_conc, mrna_relative_counts, mrna_relative_masses)
+		save_file(plotOutDir, f'wcm-monomer-data-{media_id}.tsv', monomer_ecocyc_ids,
+			monomer_counts, monomer_conc, monomer_relative_counts, monomer_relative_masses)
 
 
 if __name__ == '__main__':
