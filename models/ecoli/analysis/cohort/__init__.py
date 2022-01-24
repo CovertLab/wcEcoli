@@ -7,6 +7,7 @@ ACTIVE = [
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
 	"doubling_times_histogram_all.py",
+	"ecocyc_table.py",
 	"expression_dynamics.py",
 	"growthDynamics.py",
 	"growth_time_series.py",
@@ -32,6 +33,9 @@ TAGS = {
 		],
 	'DIVISION': [
 		"initialVsFinalMass.py",
+		],
+	'ECOCYC': [
+		"ecocyc_table.py",
 		],
 	'GROWTH': [
 		"aa_conc.py",
