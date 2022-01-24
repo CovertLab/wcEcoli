@@ -3,10 +3,14 @@ Save data to share with EcoCyc to display on the simulation tab page.
 
 TODO:
 	save a specific form of simulation metadata to share? (or existing metadata file?)
+	save output as one file?
+		stacked rows
+		combine monomer values on the same row with a map of monomer to mRNA
 	other values
 		TPM for transcripts
 		weighted average for counts (time step weighted and cell cycle progress weighted)
 		exponential/stochastic/constant determination
+		max/min
 	other molecules
 		values for complexes?
 		charged/uncharged tRNA
