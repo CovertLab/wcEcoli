@@ -24,11 +24,10 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 
-def save_file(out_dir, filename, ids, counts, concentrations, relative_counts, relative_masses):
+def save_file(out_dir, filename, ids, counts, concentrations, relative_counts, relative_masses, aerobic=True):
 	"""
 	TODO:
 		generalize the data passed into this function to allow for arbitrary columns and labels for each column
-		print header and column descriptions
 	"""
 
 	output_file = os.path.join(out_dir, filename)
@@ -36,6 +35,26 @@ def save_file(out_dir, filename, ids, counts, concentrations, relative_counts, r
 	with open(output_file, 'w') as f:
 		writer = csv.writer(f, delimiter='\t')
 
+		# Header for columns
+		writer.writerow([f'# {"aerobic" if aerobic else "anaerobic"} condition'])
+		writer.writerow(['# Column descriptions:'])
+		columns = {
+			'id': 'Object ID, according to EcoCyc',
+			# 'change-symbol': 'One of: constant, exponential, or stochastic',  TODO
+			'avg-count': 'A floating point number',
+			'count, standard deviation': 'A floating point number',
+			'avg-concentration': 'A floating point number in mM units',
+			'concentration, standard deviation': 'A floating point number in mM units',
+			'avg-relative-count': 'A floating point number',
+			'relative count, standard deviation': 'A floating point number',
+			'avg-relative-mass-count': 'A floating point number',
+			'relative mass count, standard deviation': 'A floating point number',
+			}
+		for col, desc in columns.items():
+			writer.writerow([f'# {col}', desc])
+		writer.writerow(list(columns.keys()))
+
+		# Data rows
 		for id_, count, conc, rel_count, rel_mass in zip(ids, counts.T,
 				concentrations.T, relative_counts.T, relative_masses.T):
 			writer.writerow([id_, count.mean(), count.std(), conc.mean(), conc.std(),
@@ -65,12 +84,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True)
 		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True)
 
+		# Derived mRNA values
 		mrna_conc = mrna_counts * counts_to_molar
 		mrna_relative_counts = mrna_counts / mrna_counts.sum(1).reshape(-1, 1)
 		mrna_mw = sim_data.getter.get_masses(mrna_ids).asNumber(units.g / units.mol)
 		mrna_masses = mrna_counts * mrna_mw
 		mrna_relative_masses = mrna_masses / mrna_masses.sum(1).reshape(-1, 1)
 
+		# Derived monomer values
 		monomer_conc = monomer_counts * counts_to_molar
 		monomer_relative_counts = monomer_counts / monomer_counts.sum(1).reshape(-1, 1)
 		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.g / units.mol)
