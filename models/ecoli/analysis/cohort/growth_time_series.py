@@ -161,6 +161,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for fraction in rna_fractions
 			]).T
 		aa_mw = np.array([sim_data.getter.get_mass(aa[:-3]).asNumber(units.fg / units.count) for aa in aa_ids])
+		rna_mw = transcription.rna_data['mw'].asNumber(units.fg / units.count)
+		is_mrna = transcription.rna_data['is_mRNA']
+		is_rrna = transcription.rna_data['is_rRNA']
+		is_trna = transcription.rna_data['is_tRNA']
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells(only_successful=True)
@@ -187,7 +191,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			fun=growth_function).squeeze() / time_step * 3600
 		protein_mass = read_stacked_columns(cell_paths, 'Mass', 'proteinMass', remove_first=True).squeeze()
 		rna_mass = read_stacked_columns(cell_paths, 'Mass', 'rnaMass', remove_first=True).squeeze()
+		mrna_mass = read_stacked_columns(cell_paths, 'Mass', 'mRnaMass', remove_first=True).squeeze()
+		rrna_mass = read_stacked_columns(cell_paths, 'Mass', 'rRnaMass', remove_first=True).squeeze()
+		trna_mass = read_stacked_columns(cell_paths, 'Mass', 'tRnaMass', remove_first=True).squeeze()
 		cell_mass = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True).squeeze()
+		count_rna_degraded = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded', remove_first=True)
 		ribosome_elong_rate = read_stacked_columns(cell_paths, 'RibosomeData', 'effectiveElongationRate',
 			remove_first=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
@@ -229,11 +237,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		protein_fraction = protein_mass / cell_mass
 		rna_fraction = rna_mass / cell_mass
 		aa_fraction = (protein_mass + aa_mass) / cell_mass
+		mrna_rrna_ratio = mrna_mass / rrna_mass
+		mrna_fraction = mrna_mass / rna_mass
+		rrna_fraction = rrna_mass / rna_mass
+		trna_fraction = trna_mass / rna_mass
+		rna_deg_masses = count_rna_degraded * rna_mw
+		total_rna_deg_mass = rna_deg_masses.sum(1)
+		rna_deg_rate = total_rna_deg_mass / rna_mass / time_step * 3600
+		mrna_deg_ratio = rna_deg_masses[:, is_mrna].sum(1) / total_rna_deg_mass
+		rrna_deg_ratio = rna_deg_masses[:, is_rrna].sum(1) / total_rna_deg_mass
+		trna_deg_ratio = rna_deg_masses[:, is_trna].sum(1) / total_rna_deg_mass
 		unique_time, cell_count = np.unique(time, return_counts=True)
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
 		def subplots(filtered, downsample=5):
-			_, axes = plt.subplots(4, 6, figsize=(20, 15))
+			_, axes = plt.subplots(4, 7, figsize=(25, 15))
 			self.plot_time_series(axes[0, 0], time, growth_rate, 'Growth rate\n(1/hr)',
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)',
@@ -285,6 +303,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.plot_time_series(axes[2, 5], time, ribosome_conc, 'Ribosome conc\n(uM)',
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[3, 5], time, ribosome_output, 'Ribosome output\n(mM AA/s)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[0, 6], time, mrna_rrna_ratio, 'mRNA:rRNA ratio',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1, 6], time, mrna_fraction, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1, 6], time, rrna_fraction, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1, 6], time, trna_fraction, 'RNA mass fractions',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[2, 6], time, rna_deg_rate, 'RNA deg rate',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3, 6], time, mrna_deg_ratio, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3, 6], time, rrna_deg_ratio, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3, 6], time, trna_deg_ratio, 'RNA deg ratio',
 				timeline, filtered, downsample=downsample)
 			plt.tight_layout()
 			return axes
