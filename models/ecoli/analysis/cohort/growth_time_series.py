@@ -177,6 +177,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load data
 		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
+		def rna_decay(mask):
+			return lambda x: (x[:, mask] @ rna_mw[mask]).reshape(-1, 1)
 		time = read_stacked_columns(cell_paths, 'Main', 'time',
 			remove_first=True).squeeze() / 60
 		time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec',
@@ -195,7 +197,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rrna_mass = read_stacked_columns(cell_paths, 'Mass', 'rRnaMass', remove_first=True).squeeze()
 		trna_mass = read_stacked_columns(cell_paths, 'Mass', 'tRnaMass', remove_first=True).squeeze()
 		cell_mass = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True).squeeze()
-		count_rna_degraded = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded', remove_first=True)
+		total_rna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
+			remove_first=True, fun=rna_decay(slice(None))).squeeze()
+		mrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
+			remove_first=True, fun=rna_decay(is_mrna)).squeeze()
+		rrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
+			remove_first=True, fun=rna_decay(is_rrna)).squeeze()
+		trna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
+			remove_first=True, fun=rna_decay(is_trna)).squeeze()
 		ribosome_elong_rate = read_stacked_columns(cell_paths, 'RibosomeData', 'effectiveElongationRate',
 			remove_first=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
@@ -241,12 +250,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mrna_fraction = mrna_mass / rna_mass
 		rrna_fraction = rrna_mass / rna_mass
 		trna_fraction = trna_mass / rna_mass
-		rna_deg_masses = count_rna_degraded * rna_mw
-		total_rna_deg_mass = rna_deg_masses.sum(1)
 		rna_deg_rate = total_rna_deg_mass / rna_mass / time_step * 3600
-		mrna_deg_ratio = rna_deg_masses[:, is_mrna].sum(1) / total_rna_deg_mass
-		rrna_deg_ratio = rna_deg_masses[:, is_rrna].sum(1) / total_rna_deg_mass
-		trna_deg_ratio = rna_deg_masses[:, is_trna].sum(1) / total_rna_deg_mass
+		mrna_deg_ratio = mrna_deg_mass / total_rna_deg_mass
+		rrna_deg_ratio = rrna_deg_mass / total_rna_deg_mass
+		trna_deg_ratio = trna_deg_mass / total_rna_deg_mass
 		unique_time, cell_count = np.unique(time, return_counts=True)
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
