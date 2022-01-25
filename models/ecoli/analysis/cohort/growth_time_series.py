@@ -47,6 +47,10 @@ def trim_axes(axes):
 	axes[1, 5].set_ylim(0, 0.2)
 	axes[2, 5].set_ylim(0, 40)
 	axes[3, 5].set_ylim(0, 1)
+	axes[0, 6].set_ylim(0, 0.1)
+	axes[1, 6].set_ylim(0, 1)
+	axes[2, 6].set_ylim(0, 1)
+	axes[3, 6].set_ylim(0, 1)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -155,7 +159,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				sim_data.external_state.current_timeline_id]
 		else:
 			timeline = []
-		rna_fractions = ['is_rRNA', 'is_tRNA', 'is_mRNA']
+		rna_fractions = ['is_mRNA', 'is_rRNA', 'is_tRNA']
 		convert_to_fraction = lambda x: np.vstack([
 			x[:, cistron_data[fraction]].sum(1)
 			for fraction in rna_fractions
