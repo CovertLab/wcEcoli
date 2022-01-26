@@ -11,6 +11,7 @@ import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.analysis.single.ribosome_limitation import calculate_ribosome_excesses
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -171,7 +172,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		is_trna = transcription.rna_data['is_tRNA']
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
-		cell_paths = ap.get_cells(only_successful=True)
+		cell_paths = ap.get_cells(only_successful=True, seed=[0])
 
 		# Load attributes
 		unique_molecule_reader = TableReader(os.path.join(cell_paths[0], 'simOut', 'UniqueMoleculeCounts'))
@@ -225,6 +226,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,
 				([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
 				remove_first=True)
+		excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction = calculate_ribosome_excesses(
+			sim_data, cell_paths)
 
 		# Derived quantities
 		counts_to_molar_squeezed = counts_to_molar.squeeze()
@@ -262,7 +265,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
 		def subplots(filtered, downsample=5):
-			_, axes = plt.subplots(4, 7, figsize=(25, 15))
+			_, axes = plt.subplots(4, 8, figsize=(25, 15))
 			self.plot_time_series(axes[0, 0], time, growth_rate, 'Growth rate\n(1/hr)',
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[1, 0], time, rna_growth, 'RNA growth rate\n(1/hr)',
@@ -330,6 +333,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.plot_time_series(axes[3, 6], time, rrna_deg_ratio, '',
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[3, 6], time, trna_deg_ratio, 'RNA deg ratio',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[0, 7], time, excess_rna, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[0, 7], time, excess_protein, 'Excess ribosome RNA/protein',
 				timeline, filtered, downsample=downsample)
 			plt.tight_layout()
 			return axes
