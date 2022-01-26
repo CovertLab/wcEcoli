@@ -12,6 +12,7 @@ import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.analysis.single.ribosome_limitation import calculate_ribosome_excesses
 from models.ecoli.sim.variants.ppgpp_conc import BASE_FACTOR, CONDITIONS, split_index
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, read_stacked_bulk_molecules
 from wholecell.io.tablereader import TableReader
@@ -81,6 +82,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		aa_saturation_std = np.zeros(n_variants)
 		aa_conc_mean = np.zeros(n_variants)
 		aa_conc_std = np.zeros(n_variants)
+		excess_rna_mean = np.zeros(n_variants)
+		excess_rna_std = np.zeros(n_variants)
+		excess_protein_mean = np.zeros(n_variants)
+		excess_protein_std = np.zeros(n_variants)
+		rna_fraction_mean = np.zeros(n_variants)
+		rna_fraction_std = np.zeros(n_variants)
+		protein_fraction_mean = np.zeros(n_variants)
+		protein_fraction_std = np.zeros(n_variants)
+		enzyme_fraction_mean = np.zeros(n_variants)
+		enzyme_fraction_std = np.zeros(n_variants)
 		for i, variant in enumerate(variants):
 			all_cells = ap.get_cells(variant=[variant], only_successful=True)
 			conditions[i], factors[i] = split_index(variant)
@@ -103,6 +114,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			unique_mol_counts = read_stacked_columns(all_cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts', remove_first=True)
 			enzymes, ribosome_subunits, aas = read_stacked_bulk_molecules(
 				all_cells, (aa_enzyme_ids, ribosome_subunit_ids, aa_ids), remove_first=True)
+			excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction = calculate_ribosome_excesses(
+				sim_data, all_cells)
 
 			rna_to_protein = (rna_mass / protein_mass)
 			ribosome_output = counts_to_molar * aas_elongated.sum(1) / time_step
@@ -139,11 +152,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			aa_saturation_std[i] = aa_saturation.std()
 			aa_conc_mean[i] = aa_conc.mean()
 			aa_conc_std[i] = aa_conc.std()
+			excess_rna_mean[i] = excess_rna.mean()
+			excess_rna_std[i] = excess_rna.std()
+			excess_protein_mean[i] = excess_protein.mean()
+			excess_protein_std[i] = excess_protein.std()
+			rna_fraction_mean[i] = rna_fraction.mean()
+			rna_fraction_std[i] = rna_fraction.std()
+			protein_fraction_mean[i] = protein_fraction.mean()
+			protein_fraction_std[i] = protein_fraction.std()
+			enzyme_fraction_mean[i] = enzyme_fraction.mean()
+			enzyme_fraction_std[i] = enzyme_fraction.std()
 
 		condition_labels = sim_data.ordered_conditions
 
 		# Create plots
-		_, axes = plt.subplots(10, 2, figsize=(6, 25))
+		_, axes = plt.subplots(15, 2, figsize=(6, 30))
 
 		## Bar plots of cell properties
 		self.plot_data(axes[0, :], ppgpp_mean, growth_rate_mean, growth_rate_std,
@@ -166,6 +189,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'AA synthesis average saturation', condition_labels, conditions, factors)
 		self.plot_data(axes[9, :], ppgpp_mean, aa_conc_mean, aa_conc_std,
 			'AA conc (uM)', condition_labels, conditions, factors)
+		self.plot_data(axes[10, :], ppgpp_mean, excess_rna_mean, excess_rna_std,
+			'rRNA excess', condition_labels, conditions, factors)
+		self.plot_data(axes[11, :], ppgpp_mean, excess_protein_mean, excess_protein_std,
+			'rProtein excess', condition_labels, conditions, factors)
+		self.plot_data(axes[12, :], ppgpp_mean, rna_fraction_mean, rna_fraction_std,
+			'rRNA fraction', condition_labels, conditions, factors)
+		self.plot_data(axes[13, :], ppgpp_mean, protein_fraction_mean, protein_fraction_std,
+			'rProtein fraction', condition_labels, conditions, factors)
+		self.plot_data(axes[14, :], ppgpp_mean, enzyme_fraction_mean, enzyme_fraction_std,
+			'Enzyme fraction', condition_labels, conditions, factors)
 
 		plt.legend(fontsize=6)
 		plt.tight_layout()
