@@ -52,10 +52,15 @@ def trim_axes(axes):
 	axes[1, 6].set_ylim(0, 1)
 	axes[2, 6].set_ylim(0, 1)
 	axes[3, 6].set_ylim(0, 1)
+	axes[0, 7].set_ylim(0, 1)
+	axes[1, 7].set_ylim(0, 1)
+	axes[2, 7].set_ylim(0, 15)
+	axes[3, 7].set_ylim(0, 1)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t, downsample=5, log_scale=False):
+		# TODO: add trace labels as arg
 		# Extract y data for each time point (assumes time step lines up across samples)
 		data = {}
 		for t, y in zip(t_flat, y_flat):
@@ -182,8 +187,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load data
 		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
-		def rna_decay(mask):
+		def reduce_rna(mask):
 			return lambda x: (x[:, mask] @ rna_mw[mask]).reshape(-1, 1)
+		axis_sum = lambda x: x.sum(1).reshape(-1, 1)
 		time = read_stacked_columns(cell_paths, 'Main', 'time',
 			remove_first=True).squeeze() / 60
 		time_step = read_stacked_columns(cell_paths, 'Main', 'timeStepSec',
@@ -202,14 +208,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rrna_mass = read_stacked_columns(cell_paths, 'Mass', 'rRnaMass', remove_first=True).squeeze()
 		trna_mass = read_stacked_columns(cell_paths, 'Mass', 'tRnaMass', remove_first=True).squeeze()
 		cell_mass = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True).squeeze()
-		total_rna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=rna_decay(slice(None))).squeeze()
+		rna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
+			remove_first=True, fun=reduce_rna(slice(None))).squeeze()
 		mrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=rna_decay(is_mrna)).squeeze()
+			remove_first=True, fun=reduce_rna(is_mrna)).squeeze()
 		rrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=rna_decay(is_rrna)).squeeze()
+			remove_first=True, fun=reduce_rna(is_rrna)).squeeze()
 		trna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=rna_decay(is_trna)).squeeze()
+			remove_first=True, fun=reduce_rna(is_trna)).squeeze()
 		ribosome_elong_rate = read_stacked_columns(cell_paths, 'RibosomeData', 'effectiveElongationRate',
 			remove_first=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
@@ -226,8 +232,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,
 				([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
 				remove_first=True)
-		excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction = calculate_ribosome_excesses(
+		excess_rna, excess_protein, synthesis_rna_fraction, synthesis_protein_fraction, synthesis_enzyme_fraction = calculate_ribosome_excesses(
 			sim_data, cell_paths)
+		mrna_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
+		rna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
+			remove_first=True, fun=reduce_rna(slice(None)))
+		mrna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
+			remove_first=True, fun=reduce_rna(is_mrna))
+		rrna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
+			remove_first=True, fun=reduce_rna(is_rrna))
+		trna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
+			remove_first=True, fun=reduce_rna(is_trna))
 
 		# Derived quantities
 		counts_to_molar_squeezed = counts_to_molar.squeeze()
@@ -257,10 +272,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mrna_fraction = mrna_mass / rna_mass
 		rrna_fraction = rrna_mass / rna_mass
 		trna_fraction = trna_mass / rna_mass
-		rna_deg_rate = total_rna_deg_mass / rna_mass / time_step * 3600
-		mrna_deg_ratio = mrna_deg_mass / total_rna_deg_mass
-		rrna_deg_ratio = rrna_deg_mass / total_rna_deg_mass
-		trna_deg_ratio = trna_deg_mass / total_rna_deg_mass
+		mrna_conc = mrna_counts / cell_mass
+		rna_deg_rate = rna_deg_mass / rna_mass / time_step * 3600
+		mrna_deg_ratio = mrna_deg_mass / rna_deg_mass
+		rrna_deg_ratio = rrna_deg_mass / rna_deg_mass
+		trna_deg_ratio = trna_deg_mass / rna_deg_mass
+		mrna_fraction_produced = mrna_produced_mass / rna_produced_mass
+		rrna_fraction_produced = rrna_produced_mass / rna_produced_mass
+		trna_fraction_produced = trna_produced_mass / rna_produced_mass
 		unique_time, cell_count = np.unique(time, return_counts=True)
 		filtered = set(unique_time[cell_count != cell_count.max()])
 
@@ -337,6 +356,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.plot_time_series(axes[0, 7], time, excess_rna, '',
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[0, 7], time, excess_protein, 'Excess ribosome RNA/protein',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1, 7], time, synthesis_rna_fraction, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1, 7], time, synthesis_protein_fraction, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1, 7], time, synthesis_enzyme_fraction, 'Synthesis fraction RNA/protein/enzymes',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[2, 7], time, mrna_conc, 'mRNA conc\n(count/fg)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3, 7], time, mrna_fraction_produced, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3, 7], time, rrna_fraction_produced, '',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3, 7], time, trna_fraction_produced, 'RNA mass fraction produced',
 				timeline, filtered, downsample=downsample)
 			plt.tight_layout()
 			return axes
