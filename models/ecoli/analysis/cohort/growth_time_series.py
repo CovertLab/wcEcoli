@@ -177,7 +177,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		is_trna = transcription.rna_data['is_tRNA']
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
-		cell_paths = ap.get_cells(only_successful=True, seed=[0])
+		cell_paths = ap.get_cells(only_successful=True)
 
 		# Load attributes
 		unique_molecule_reader = TableReader(os.path.join(cell_paths[0], 'simOut', 'UniqueMoleculeCounts'))
