@@ -703,10 +703,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 		# Run timesteps in parallel
 		pool = parallelization.pool(num_processes=cpus)
 		results = [
-			pool.apply_async(run_sensitivity, (self, n_time_steps, {'enzyme_adjustment': enz_adjustment}, aa_adjustments, i), callback=callback_enzymes)
+			pool.apply_async(run_sensitivity, (self, n_time_steps,
+				{'enzyme_adjustment': enz_adjustment}, aa_adjustments, i), callback=callback_enzymes)
 			for i, enz_adjustment in enumerate(expression_adjustments)
 			] + [
-			pool.apply_async(run_sensitivity, (self, n_time_steps, {'ribosome_adjustment': rib_adjustment}, aa_adjustments, i), callback=callback_ribosomes)
+			pool.apply_async(run_sensitivity, (self, n_time_steps,
+				{'ribosome_adjustment': rib_adjustment}, aa_adjustments, i), callback=callback_ribosomes)
 			for i, rib_adjustment in enumerate(expression_adjustments)
 			]
 		pool.close()
