@@ -46,7 +46,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				continue
 
 			doubling_times[variant] = read_stacked_columns(all_cells, 'Main', 'time',
-				fun=lambda x: (x[-1] - x[0]) / 60.)
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 			growth_rates[variant] = read_stacked_columns(all_cells, 'Mass', 'instantaneous_growth_rate',
 				remove_first=True, fun=downsample).squeeze() * 3600.
 
