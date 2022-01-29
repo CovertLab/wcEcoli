@@ -1,9 +1,11 @@
 """
-Template for single analysis plots
+Dynamics of limitations related to growth.  Excess ribosomal RNA or proteins
+compared to fully formed ribosomes can show if more RNA or more protein needs
+to be produced.  Comparing the ribosome fraction to amino acid synthesis fraction
+can also show if supply or demand is limiting.
 
 TODO:
-- move function to another file?
-- add to __init__.py
+- move function to another file (more general analysis helpers)?
 - single analysis or something else?
 - rename file if enzyme fraction doesn't make sense here
 """
@@ -115,7 +117,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
 
 		# Load data
-		sim_time = main_reader.readColumn('time')[1:]
+		sim_time = main_reader.readColumn('time')[1:] / 3600
 		excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction = calculate_ribosome_excesses(
 			sim_data, [os.path.dirname(simOutDir)])
 
@@ -126,6 +128,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		excess_ax.plot(sim_time, excess_rna, label='rRNA')
 		excess_ax.plot(sim_time, excess_protein, label='rProtein')
 		excess_ax.legend(fontsize=6, frameon=False)
+		excess_ax.set_ylabel('Mass fraction excess of ribosome components')
 		self.remove_border(excess_ax)
 
 		## Plot fractions
@@ -133,9 +136,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		fraction_ax.plot(sim_time, protein_fraction, label='rProtein')
 		fraction_ax.plot(sim_time, enzyme_fraction, label='Enzymes')
 		fraction_ax.legend(fontsize=6, frameon=False)
+		fraction_ax.set_xlabel('Time (hr)')
+		fraction_ax.set_ylabel('Mass fractions of synthesis fractions')
 		self.remove_border(fraction_ax)
-
-		# TODO: add axes labels
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
