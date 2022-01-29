@@ -21,14 +21,10 @@ from wholecell.utils import units
 
 
 def calculate_ribosome_excesses(sim_data, paths):
-	# TODO: clean up line lengths
 	# TODO: separate out sim_data processing from data loading for plots that might iterate over multiple variants/other groups
 	complexation = sim_data.process.complexation
 	metabolism = sim_data.process.metabolism
-
-	aa_enzyme_ids = metabolism.aa_enzymes
-	ribosome_subunit_ids = [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex]
-	aa_ids = sim_data.molecule_groups.amino_acids
+	rna_data = sim_data.process.transcription.rna_data
 
 	# Get complexation data
 	complex_stoich = -complexation.stoich_matrix_monomers().astype(int)
@@ -36,9 +32,12 @@ def calculate_ribosome_excesses(sim_data, paths):
 	complex_ids = {id_: i for i, id_ in enumerate(complexation.ids_complexes)}
 
 	# Get molecules of interest
-	rnas = [rna for rna in sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_rRNA']] if rna in monomer_ids]
+	rnas = [rna for rna in rna_data['id'][rna_data['is_rRNA']] if rna in monomer_ids]
 	proteins = sim_data.molecule_groups.ribosomal_proteins
-	complexes = sim_data.molecule_groups.s50_protein_complexes + [sim_data.molecule_ids.s50_full_complex] + [sim_data.molecule_ids.s30_full_complex]
+	complexes = ([sim_data.molecule_ids.s50_full_complex]
+		+ [sim_data.molecule_ids.s30_full_complex]
+		+ sim_data.molecule_groups.s50_protein_complexes)
+	ribosome_subunit_indices = 2  # the indices in complexes that directly form the ribosome (ie 30S and 50S)
 
 	# Enzymes involved in mechanistic amino acid synthesis
 	synthesis_enzymes = metabolism.aa_enzymes[metabolism.enzyme_to_amino_acid_fwd.sum(1).astype(bool)]
@@ -74,17 +73,16 @@ def calculate_ribosome_excesses(sim_data, paths):
 	protein_ids = {monomer: i for i, monomer in enumerate(monomers_reader.readAttribute('monomerIds'))}
 	synthesis_idx = np.array([protein_ids[m] for m in synthesis_monomers])
 
-	dry_mass = read_stacked_columns(paths, 'Mass', 'dryMass', remove_first=True).squeeze()
-	enzyme_counts = read_stacked_columns(paths, 'MonomerCounts', 'monomerCounts', remove_first=True)[:, synthesis_idx]
-	unique_mol_counts = read_stacked_columns(paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts', remove_first=True)
-	enzymes, ribosome_subunits, aas, rna_counts, protein_counts, complex_counts = read_stacked_bulk_molecules(
-		paths, (aa_enzyme_ids, ribosome_subunit_ids, aa_ids, rnas, proteins, complexes), remove_first=True)
+	enzyme_mass = read_stacked_columns(paths, 'MonomerCounts', 'monomerCounts',
+		remove_first=True, fun=lambda x: (x[:, synthesis_idx] @ mw_enzymes).reshape(-1, 1)).squeeze()
+	active_ribosome_counts = read_stacked_columns(paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+		remove_first=True, fun=lambda x: x[:, ribosome_idx].reshape(-1, 1)).squeeze()
+	rna_counts, protein_counts, complex_counts = read_stacked_bulk_molecules(
+		paths, (rnas, proteins, complexes), remove_first=True)
 
 	# Add complex counts to RNA/protein
-	# TODO: less hacky way of setting this that doesn't depend on hard coded index
-	active_ribosome_counts = unique_mol_counts[:, ribosome_idx]
-	inactive_ribosomes = complex_counts[:, 1:].min(1).reshape(-1, 1)
-	complex_counts[:, 1:] -= inactive_ribosomes  # remove fraction of inactive ribosomes
+	inactive_ribosomes = complex_counts[:, :ribosome_subunit_indices].min(1).reshape(-1, 1)
+	complex_counts[:, :ribosome_subunit_indices] -= inactive_ribosomes  # remove fraction of inactive ribosomes
 	rna_counts += complex_counts @ rna_stoich
 	protein_counts += complex_counts @ protein_stoich
 
@@ -92,13 +90,11 @@ def calculate_ribosome_excesses(sim_data, paths):
 	rna_mass = rna_counts @ mw_rnas
 	protein_mass = protein_counts @ mw_proteins
 	ribosome_mass = (active_ribosome_counts + inactive_ribosomes.squeeze()) * mw_ribosome
-	enzyme_mass = enzyme_counts @ mw_enzymes
 	rna_in_ribosome_mass = ribosome_fraction_rna * ribosome_mass
 	protein_in_ribosome_mass = ribosome_fraction_protein * ribosome_mass
 	total_mass = rna_mass + protein_mass + enzyme_mass + rna_in_ribosome_mass + protein_in_ribosome_mass
 
 	# Excess mass for ribosomal RNA/protein
-	# TODO: turn all of this into a function that can be shared across analysis plots
 	excess_rna = rna_mass / ribosome_mass
 	excess_protein = protein_mass / ribosome_mass
 
