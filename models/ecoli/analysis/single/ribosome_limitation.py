@@ -75,6 +75,8 @@ def calculate_ribosome_excesses(sim_data, paths):
 	protein_ids = {monomer: i for i, monomer in enumerate(monomers_reader.readAttribute('monomerIds'))}
 	synthesis_idx = np.array([protein_ids[m] for m in synthesis_monomers])
 
+	total_protein_mass = read_stacked_columns(paths, 'Mass', 'proteinMass',
+		remove_first=True).squeeze()
 	enzyme_mass = read_stacked_columns(paths, 'MonomerCounts', 'monomerCounts',
 		remove_first=True, fun=lambda x: (x[:, synthesis_idx] @ mw_enzymes).reshape(-1, 1)).squeeze()
 	active_ribosome_counts = read_stacked_columns(paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
@@ -100,12 +102,19 @@ def calculate_ribosome_excesses(sim_data, paths):
 	excess_rna = rna_mass / ribosome_mass
 	excess_protein = protein_mass / ribosome_mass
 
-	# Fractions
+	# Fractions by synthesis components (ribosome and amino acid synthesis enzymes)
 	rna_fraction = (rna_mass + rna_in_ribosome_mass) / total_mass
 	protein_fraction = (protein_mass + protein_in_ribosome_mass) / total_mass
 	enzyme_fraction = enzyme_mass / total_mass
 
-	return excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction
+	# Fractions by protein
+	rprotein_protein_fraction = (protein_mass + protein_in_ribosome_mass) / total_protein_mass
+	enzyme_protein_fraction = enzyme_mass / total_protein_mass
+
+	excess = np.vstack((excess_rna, excess_protein)).T
+	synth_fractions = np.vstack((rna_fraction, protein_fraction, enzyme_fraction)).T
+	protein_fractions = np.vstack((rprotein_protein_fraction, enzyme_protein_fraction)).T
+	return excess, synth_fractions, protein_fractions
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -118,27 +127,30 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Load data
 		sim_time = main_reader.readColumn('time')[1:] / 3600
-		excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction = calculate_ribosome_excesses(
+		excess, synth_fractions, protein_fractions = calculate_ribosome_excesses(
 			sim_data, [os.path.dirname(simOutDir)])
 
 		# Plot data
-		_, (excess_ax, fraction_ax) = plt.subplots(2, 1, figsize=(5, 10))
+		_, (excess_ax, synth_ax, protein_ax) = plt.subplots(3, 1, figsize=(5, 15))
 
 		## Plot excess ribosomes
-		excess_ax.plot(sim_time, excess_rna, label='rRNA')
-		excess_ax.plot(sim_time, excess_protein, label='rProtein')
-		excess_ax.legend(fontsize=6, frameon=False)
+		excess_ax.plot(sim_time, excess)
+		excess_ax.legend(['rRNA', 'rProtein'], fontsize=6, frameon=False)
 		excess_ax.set_ylabel('Mass fraction excess of ribosome components')
 		self.remove_border(excess_ax)
 
-		## Plot fractions
-		fraction_ax.plot(sim_time, rna_fraction, label='rRNA')
-		fraction_ax.plot(sim_time, protein_fraction, label='rProtein')
-		fraction_ax.plot(sim_time, enzyme_fraction, label='Enzymes')
-		fraction_ax.legend(fontsize=6, frameon=False)
-		fraction_ax.set_xlabel('Time (hr)')
-		fraction_ax.set_ylabel('Mass fractions of synthesis fractions')
-		self.remove_border(fraction_ax)
+		## Plot synthesis fractions
+		synth_ax.plot(sim_time, synth_fractions)
+		synth_ax.legend(['rRNA', 'rProtein', 'Enzymes'], fontsize=6, frameon=False)
+		synth_ax.set_ylabel('Mass fractions of synthesis components')
+		self.remove_border(synth_ax)
+
+		## Plot protein fractions
+		protein_ax.plot(sim_time, protein_fractions)
+		protein_ax.legend(['rProtein', 'Enzymes'], fontsize=6, frameon=False)
+		protein_ax.set_xlabel('Time (hr)')
+		protein_ax.set_ylabel('Mass fractions of all protein')
+		self.remove_border(protein_ax)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

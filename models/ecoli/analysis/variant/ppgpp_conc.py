@@ -120,8 +120,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			unique_mol_counts = read_stacked_columns(all_cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts', remove_first=True)
 			enzymes, ribosome_subunits, aas, uncharged_trna_counts, charged_trna_counts = read_stacked_bulk_molecules(
 				all_cells, (aa_enzyme_ids, ribosome_subunit_ids, aa_ids, uncharged_trna_names, charged_trna_names), remove_first=True)
-			excess_rna, excess_protein, rna_fraction, protein_fraction, enzyme_fraction = calculate_ribosome_excesses(
-				sim_data, all_cells)
+			excess, synth_fractions, _ = calculate_ribosome_excesses(sim_data, all_cells)
 
 			rna_to_protein = (rna_mass / protein_mass)
 			ribosome_output = counts_to_molar * aas_elongated.sum(1) / time_step
@@ -164,16 +163,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			aa_saturation_std[i] = aa_saturation.std()
 			aa_conc_mean[i] = aa_conc.mean()
 			aa_conc_std[i] = aa_conc.std()
-			excess_rna_mean[i] = excess_rna.mean()
-			excess_rna_std[i] = excess_rna.std()
-			excess_protein_mean[i] = excess_protein.mean()
-			excess_protein_std[i] = excess_protein.std()
-			rna_fraction_mean[i] = rna_fraction.mean()
-			rna_fraction_std[i] = rna_fraction.std()
-			protein_fraction_mean[i] = protein_fraction.mean()
-			protein_fraction_std[i] = protein_fraction.std()
-			enzyme_fraction_mean[i] = enzyme_fraction.mean()
-			enzyme_fraction_std[i] = enzyme_fraction.std()
+			excess_rna_mean[i] = excess[:, 0].mean()
+			excess_rna_std[i] = excess[:, 0].std()
+			excess_protein_mean[i] = excess[:, 1].mean()
+			excess_protein_std[i] = excess[:, 1].std()
+			rna_fraction_mean[i] = synth_fractions[:, 0].mean()
+			rna_fraction_std[i] = synth_fractions[:, 0].std()
+			protein_fraction_mean[i] = synth_fractions[:, 1].mean()
+			protein_fraction_std[i] = synth_fractions[:, 1].std()
+			enzyme_fraction_mean[i] = synth_fractions[:, 2].mean()
+			enzyme_fraction_std[i] = synth_fractions[:, 2].std()
 
 		condition_labels = sim_data.ordered_conditions
 

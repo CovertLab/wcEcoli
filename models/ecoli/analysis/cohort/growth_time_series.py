@@ -232,8 +232,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,
 				([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
 				remove_first=True)
-		excess_rna, excess_protein, synthesis_rna_fraction, synthesis_protein_fraction, synthesis_enzyme_fraction = calculate_ribosome_excesses(
-			sim_data, cell_paths)
+		excess, synth_fractions, _ = calculate_ribosome_excesses(sim_data, cell_paths)
 		mrna_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
 		rna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
 			remove_first=True, fun=reduce_rna(slice(None)))
@@ -353,15 +352,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[3, 6], time, trna_deg_ratio, 'RNA deg ratio',
 				timeline, filtered, downsample=downsample)
-			self.plot_time_series(axes[0, 7], time, excess_rna, '',
+			self.plot_time_series(axes[0, 7], time, excess, 'Excess ribosome RNA/protein',
 				timeline, filtered, downsample=downsample)
-			self.plot_time_series(axes[0, 7], time, excess_protein, 'Excess ribosome RNA/protein',
-				timeline, filtered, downsample=downsample)
-			self.plot_time_series(axes[1, 7], time, synthesis_rna_fraction, '',
-				timeline, filtered, downsample=downsample)
-			self.plot_time_series(axes[1, 7], time, synthesis_protein_fraction, '',
-				timeline, filtered, downsample=downsample)
-			self.plot_time_series(axes[1, 7], time, synthesis_enzyme_fraction, 'Synthesis fraction RNA/protein/enzymes',
+			self.plot_time_series(axes[1, 7], time, synth_fractions, 'Synthesis fraction RNA/protein/enzymes',
 				timeline, filtered, downsample=downsample)
 			self.plot_time_series(axes[2, 7], time, mrna_conc, 'mRNA conc\n(count/fg)',
 				timeline, filtered, downsample=downsample)
