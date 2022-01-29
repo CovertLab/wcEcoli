@@ -56,9 +56,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.hist(axes[1], growth_rates, 'Growth rates (1/hr)', bin_width=0.05)
 
 		plt.tight_layout()
-
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
+		axes[0].set_xlim([15, 90])
+		axes[1].set_xlim([0, 2.5])
+		exportFigure(plt, plotOutDir, plotOutFileName + '_trimmed', metadata)
 
 if __name__ == "__main__":
 	Plot().cli()
