@@ -42,8 +42,8 @@ class AnalysisPaths(object):
 	def __init__(self, out_dir, *,
 				 variant_plot: bool = False, multi_gen_plot: bool = False,
 				 cohort_plot: bool = False) -> None:
-		assert variant_plot + multi_gen_plot + cohort_plot == 1, (
-			"Must specify exactly one plot type!")
+		assert variant_plot + multi_gen_plot + cohort_plot <= 1, (
+			"Can only specify one analysis type!")
 
 		generation_dirs = []  # type: List[str]
 		if variant_plot:
