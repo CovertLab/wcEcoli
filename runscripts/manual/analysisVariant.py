@@ -17,6 +17,10 @@ from wholecell.utils import constants
 class AnalysisVariant(AnalysisBase):
 	"""Runs some or all the ACTIVE variant analysis plots for a given sim."""
 
+	def define_parameters(self, parser):
+		super().define_parameters(parser)
+		self.define_path_selection(parser, 'variant', 'seed', 'generation')
+
 	def update_args(self, args):
 		super(AnalysisVariant, self).update_args(args)
 

@@ -20,6 +20,7 @@ class AnalysisCohort(AnalysisBase):
 		super(AnalysisCohort, self).define_parameters(parser)
 		self.define_parameter_variant_index(parser)
 		self.define_range_options(parser, 'variant')
+		self.define_path_selection(parser, 'seed', 'generation')
 
 	def run(self, args):
 		sim_path = args.sim_path

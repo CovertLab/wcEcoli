@@ -73,19 +73,22 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 
 		self.define_parameter_bool(parser, 'compile', False,
 			'Compiles output images into one file (only for .png).')
-		self.define_path_selection(parser)
 
 	def select_analysis_keys(self, args):
 		# type: (argparse.Namespace) -> Dict[str, Any]
 		"""Select key/value pairs specific to analysis tasks"""
 		return data.select_keys(vars(args), scriptBase.ANALYSIS_KEYS)
 
-	def define_path_selection(self, parser):
-		# type: (argparse.ArgumentParser) -> None
-		"""Adds options to the arg parser for path selections based on variant,
-		seed, generation, or successful completion of sims."""
+	def define_path_selection(self, parser, *selections):
+		# type: (argparse.ArgumentParser, List[str]) -> None
+		"""
+		Adds options to the arg parser for path selections based on variant,
+		seed, generation, or successful completion of sims.
 
-		for selection in ['variant', 'seed', 'generation']:
+		selections should take the options: ['variant', 'seed', 'generation']
+		"""
+
+		for selection in selections:
 			option = '{}_path'.format(selection)
 			upper = selection.upper()
 			parser.add_argument(scriptBase.dashize('--{}'.format(option + '_range')), nargs=2, default=None, type=int,
@@ -112,10 +115,10 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 
 		def analysis_paths(path, path_range):
 			values = set()
-			if path_range:
-				values.update(range(path_range[0], path_range[1]))
-			if path:
-				values.update(path)
+			if arg := getattr(args, path, None):
+				values.update(arg)
+			if arg := getattr(args, path_range, None):
+				values.update(range(arg[0], arg[1]))
 
 			return sorted(values) if values else None
 
@@ -139,6 +142,6 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 
 		args.cpus = parallelization.cpus(args.cpus)
 
-		args.variant_paths = analysis_paths(args.variant_path, args.variant_path_range)
-		args.seed_paths = analysis_paths(args.seed_path, args.seed_path_range)
-		args.generation_paths = analysis_paths(args.generation_path, args.generation_path_range)
+		args.variant_paths = analysis_paths('variant_path', 'variant_path_range')
+		args.seed_paths = analysis_paths('seed_path', 'seed_path_range')
+		args.generation_paths = analysis_paths('generation_path', 'generation_path_range')

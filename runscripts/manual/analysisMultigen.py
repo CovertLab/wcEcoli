@@ -24,6 +24,7 @@ class AnalysisMultigen(AnalysisBase):
 			help='The initial simulation number (int). The value will get'
 				 ' formatted as a subdirectory name like "000000". Default = 0.')
 		self.define_range_options(parser, 'variant', 'seed')
+		self.define_path_selection(parser, 'generation')
 
 	def update_args(self, args):
 		super(AnalysisMultigen, self).update_args(args)
