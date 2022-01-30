@@ -170,8 +170,16 @@ class AnalysisBase(FiretaskBase):
 		if cpus > 1:
 			pool = parallelization.pool(cpus)
 
-		analysis_paths = AnalysisPaths(self.plotter_args('')[0], **self.analysis_path_options)
-		analysis_paths.update_cells(variant=None, seed=None, generation=None, only_successful=False)  # TODO: args
+		# Set analysis paths from args
+		input_dir = self.plotter_args('')[0]
+		variant_paths = self.get('variant_paths')
+		seed_paths = self.get('seed_paths')
+		generation_paths = self.get('generation_paths')
+		only_successful = self.get('only_successful', False)
+		analysis_paths = AnalysisPaths(input_dir, **self.analysis_path_options)
+		analysis_paths.update_cells(variant=variant_paths, seed=seed_paths,
+			generation=generation_paths, only_successful=only_successful)
+
 		exceptionFileList = []
 		for f in fileList:
 			try:

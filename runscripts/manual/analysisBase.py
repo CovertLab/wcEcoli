@@ -73,11 +73,29 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 
 		self.define_parameter_bool(parser, 'compile', False,
 			'Compiles output images into one file (only for .png).')
+		self.define_path_selection(parser)
 
 	def select_analysis_keys(self, args):
 		# type: (argparse.Namespace) -> Dict[str, Any]
 		"""Select key/value pairs specific to analysis tasks"""
 		return data.select_keys(vars(args), scriptBase.ANALYSIS_KEYS)
+
+	def define_path_selection(self, parser):
+		# type: (argparse.ArgumentParser) -> None
+		"""Adds options to the arg parser for path selections based on variant,
+		seed, generation, or successful completion of sims."""
+
+		for selection in ['variant', 'seed', 'generation']:
+			option = '{}_path'.format(selection)
+			upper = selection.upper()
+			parser.add_argument(scriptBase.dashize('--{}'.format(option + '_range')), nargs=2, default=None, type=int,
+				metavar=('START_{}'.format(upper), 'END_{}'.format(upper)),
+				help=f'The range of {selection} paths to include for analysis.')
+			parser.add_argument(scriptBase.dashize('--{}'.format(option)), nargs='*', default=None, type=int,
+				metavar=selection.upper(),
+				help=f'Specific {selection} paths to include for analysis.')
+
+		self.define_parameter_bool(parser, 'only_successful', help='Only include successful sims in analysis.')
 
 	def update_args(self, args):
 		# type: (argparse.Namespace) -> None
@@ -91,6 +109,16 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 
 		Overrides should first call super().
 		"""
+
+		def analysis_paths(path, path_range):
+			values = set()
+			if path_range:
+				values.update(range(path_range[0], path_range[1]))
+			if path:
+				values.update(path)
+
+			return sorted(values) if values else None
+
 		super(AnalysisBase, self).update_args(args)
 
 		if self.plot_name:
@@ -110,3 +138,7 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 			metadata['variant_index'] = variant_index
 
 		args.cpus = parallelization.cpus(args.cpus)
+
+		args.variant_paths = analysis_paths(args.variant_path, args.variant_path_range)
+		args.seed_paths = analysis_paths(args.seed_path, args.seed_path_range)
+		args.generation_paths = analysis_paths(args.generation_path, args.generation_path_range)

@@ -30,6 +30,10 @@ class AnalysisVariantTask(AnalysisBase):
 		"output_filename_prefix",
 		"cpus",
 		"compile",
+		"variant_paths",
+		"seed_paths",
+		"generation_paths",
+		"only_successful",
 		]
 	MODULE_PATH = 'models.ecoli.analysis.variant'
 	TAGS = models.ecoli.analysis.variant.TAGS

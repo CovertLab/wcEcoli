@@ -50,6 +50,8 @@ class AnalysisMultigen(AnalysisBase):
 			output_plots_directory=output_dir,
 			metadata=args.metadata,
 			output_filename_prefix=args.output_prefix,
+			generation_paths=args.generation_paths,
+			only_successful=args.only_successful,
 			**self.select_analysis_keys(args)
 			)
 		task.run_task({})

@@ -29,6 +29,9 @@ class AnalysisCohortTask(AnalysisBase):
 		"output_filename_prefix",
 		"cpus",
 		"compile",
+		"seed_paths",
+		"generation_paths",
+		"only_successful",
 		]
 	MODULE_PATH = 'models.ecoli.analysis.cohort'
 	TAGS = models.ecoli.analysis.cohort.TAGS

@@ -29,6 +29,8 @@ class AnalysisMultiGenTask(AnalysisBase):
 		"output_filename_prefix",
 		"cpus",
 		"compile",
+		"generation_paths",
+		"only_successful",
 		]
 	MODULE_PATH = 'models.ecoli.analysis.multigen'
 	TAGS = models.ecoli.analysis.multigen.TAGS
