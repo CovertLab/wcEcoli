@@ -9,7 +9,7 @@ import abc
 import argparse
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from models.ecoli.analysis.analysisPlot import AnalysisPlot
 from wholecell.utils import constants, data, scriptBase, parallelization
@@ -80,7 +80,7 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 		return data.select_keys(vars(args), scriptBase.ANALYSIS_KEYS)
 
 	def define_path_selection(self, parser, *selections):
-		# type: (argparse.ArgumentParser, List[str]) -> None
+		# type: (argparse.ArgumentParser, *str) -> None
 		"""
 		Adds options to the arg parser for path selections based on variant,
 		seed, generation, or successful completion of sims.

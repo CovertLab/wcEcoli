@@ -14,7 +14,7 @@ import os
 import sys
 import time
 import traceback
-from typing import List
+from typing import Dict, List
 
 from fireworks import FiretaskBase
 import matplotlib as mpl
@@ -68,7 +68,7 @@ class AnalysisBase(FiretaskBase):
 	Optional params include plot, output_filename_prefix, cpus.
 	"""
 
-	analysis_path_options = {}
+	analysis_path_options = {}  # type: Dict[str, bool]
 
 	@abc.abstractmethod
 	def plotter_args(self, module_filename):
