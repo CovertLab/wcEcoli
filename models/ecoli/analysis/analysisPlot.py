@@ -158,8 +158,9 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 
 	@classmethod
 	def main(cls, inputDir, plotOutDir, plotOutFileName, simDataFile,
-			validationDataFile=None, metadata=None, cpus=0):
+			validationDataFile=None, metadata=None, cpus=0, analysis_paths=None):
 		"""Run an analysis plot for a Firetask."""
 		instance = cls(cpus)
+		instance.analysis_paths = analysis_paths
 		instance.plot(inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata)

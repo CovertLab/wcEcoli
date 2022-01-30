@@ -33,6 +33,7 @@ class AnalysisVariantTask(AnalysisBase):
 		]
 	MODULE_PATH = 'models.ecoli.analysis.variant'
 	TAGS = models.ecoli.analysis.variant.TAGS
+	analysis_path_options = {'variant_plot': True}
 
 	def plotter_args(self, module_filename):
 		self["metadata"] = dict(self["metadata"], analysis_type = "variant")

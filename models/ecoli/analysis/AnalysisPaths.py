@@ -142,11 +142,14 @@ class AnalysisPaths(object):
 		self._path_data["variantkb"] = variant_kb
 		self._path_data["successful"] = successful
 
-		self.n_generation = len(set(generations))
-		self.n_variant = len(set(variants))
-		self.n_seed = len(set(seeds))
+		self._calculate_n()
 
-	def get_cells(self, variant = None, seed = None, generation = None, only_successful=False):
+	def _calculate_n(self):
+		self.n_generation = len(set(self._path_data["generation"]))
+		self.n_variant = len(set(self._path_data["variant"]))
+		self.n_seed = len(set(self._path_data["seed"]))
+
+	def _get_cells(self, variant=None, seed=None, generation=None, only_successful=False):
 		# type: (Optional[Iterable[int]], Optional[Iterable[int]], Optional[Iterable[int]], bool) -> np.ndarray
 		"""Returns file paths for all the simulated cells matching the given
 		variant number, seed number, and generation number collections, where
@@ -172,7 +175,19 @@ class AnalysisPaths(object):
 		else:
 			successful_bool = np.ones(self._path_data.shape)
 
-		return self._path_data['path'][np.logical_and.reduce((variantBool, seedBool, generationBool, successful_bool))]
+		return np.logical_and.reduce((variantBool, seedBool, generationBool, successful_bool))
+
+	def get_cells(self, variant=None, seed=None, generation=None, only_successful=False):
+		mask = self._get_cells(variant=variant, seed=seed,
+			generation=generation, only_successful=only_successful)
+		return self._path_data['path'][mask]
+
+	def update_cells(self, variant=None, seed=None, generation=None, only_successful=False):
+		mask = self._get_cells(variant=variant, seed=seed,
+			generation=generation, only_successful=only_successful)
+
+		self._path_data = self._path_data[mask]
+		self._calculate_n()
 
 	def get_variant_kb(self, variant):
 		# type: (Union[int, str]) -> str

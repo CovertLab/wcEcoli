@@ -21,6 +21,7 @@ import matplotlib as mpl
 from PIL import Image
 from six.moves import zip
 
+from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils import data
 from wholecell.utils import parallelization
 import wholecell.utils.filepath as fp
@@ -66,6 +67,8 @@ class AnalysisBase(FiretaskBase):
 
 	Optional params include plot, output_filename_prefix, cpus.
 	"""
+
+	analysis_path_options = {}
 
 	@abc.abstractmethod
 	def plotter_args(self, module_filename):
@@ -167,6 +170,8 @@ class AnalysisBase(FiretaskBase):
 		if cpus > 1:
 			pool = parallelization.pool(cpus)
 
+		analysis_paths = AnalysisPaths(self.plotter_args('')[0], **self.analysis_path_options)
+		analysis_paths.update_cells(variant=None, seed=None, generation=None, only_successful=False)  # TODO: args
 		exceptionFileList = []
 		for f in fileList:
 			try:
@@ -179,12 +184,12 @@ class AnalysisBase(FiretaskBase):
 			args = self.plotter_args(f)
 
 			if pool:
-				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f))
+				results[f] = pool.apply_async(run_plot, args=(mod.Plot, args, f, analysis_paths))
 			else:
 				print("{}: Running {}".format(time.ctime(), f))
 				# noinspection PyBroadException
 				try:
-					mod.Plot.main(*args)
+					mod.Plot.main(*args, analysis_paths=analysis_paths)
 				except Exception:
 					traceback.print_exc()
 					exceptionFileList.append(f)
@@ -212,14 +217,14 @@ class AnalysisBase(FiretaskBase):
 			print('Completed analysis in {}'.format(duration))
 
 
-def run_plot(plot_class, args, name):
+def run_plot(plot_class, args, name, analysis_paths):
 	"""Run the given plot class in a Pool worker.
 	Since this Firetask is running multiple plot classes in parallel, ask them
 	to use just 1 CPU core each.
 	"""
 	try:
 		print("{}: Running {}".format(time.ctime(), name))
-		plot_class.main(*args, cpus=1)
+		plot_class.main(*args, cpus=1, analysis_paths=analysis_paths)
 	except KeyboardInterrupt:
 		sys.exit(1)
 	except Exception as e:
