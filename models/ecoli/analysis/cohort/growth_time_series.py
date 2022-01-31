@@ -35,7 +35,7 @@ def trim_axes(axes):
 	axes[0, 2].set_ylim(0, 1)
 	axes[1, 2].set_ylim(0, 1)
 	axes[2, 2].set_ylim(0, 10)
-	axes[3, 2].set_ylim(0, 1)
+	axes[3, 2].set_ylim(0, 2)
 	axes[0, 3].set_ylim(0, 300)
 	axes[1, 3].set_ylim(0, 1.2)
 	axes[2, 3].set_ylim(1e-4, 100)
@@ -55,6 +55,19 @@ def trim_axes(axes):
 	axes[1, 7].set_ylim(0, 1)
 	axes[2, 7].set_ylim(0, 15)
 	axes[3, 7].set_ylim(0, 1)
+
+def trim_paper_axes(axes):
+	for ax in axes.flatten():
+		for text in ax.texts:
+			text.set_visible(False)
+	axes[0].set_ylim(0, 2)
+	axes[1].set_ylim(0, 100)
+	axes[2].set_ylim(0, 1)
+	axes[3].set_ylim(0, 25)
+	axes[4].set_ylim(0, 1)
+	axes[5].set_ylim(0, 2)
+	axes[6].set_ylim(0, 300)
+	axes[7].set_ylim(0, 1)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -278,7 +291,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rrna_fraction_produced = rrna_produced_mass / rna_produced_mass
 		trna_fraction_produced = trna_produced_mass / rna_produced_mass
 		unique_time, cell_count = np.unique(time, return_counts=True)
-		filtered = set(unique_time[cell_count != cell_count.max()])
+		filtered = set(unique_time[cell_count < cell_count.max() / 2.])
 
 		def subplots(filtered, downsample=5):
 			_, axes = plt.subplots(4, 8, figsize=(25, 15))
@@ -365,9 +378,32 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plt.tight_layout()
 			return axes
 
+		# TODO: generalize this function to take data and labels
+		def paper_subplots(filtered, downsample=10):
+			_, axes = plt.subplots(8, 1, figsize=(3, 24))
+			self.plot_time_series(axes[0], time, growth_rate, 'Growth rate\n(1/hr)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[1], time, rnap_elong_rate, 'RNAP elongation rate\n(nt/s)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[2], time, rnap_fraction_active, 'RNAP active fraction',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[3], time, ribosome_elong_rate, 'Ribosome elongation rate\n(AA/s)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[4], time, fraction_charged[:, 10], f'Fraction charged\n{aa_ids[10][:-3]} tRNA',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[5], time, aa_conc[:, 10], f'{aa_ids[10][:-3]} concentration\n(mM)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[6], time, ppgpp_conc, 'ppGpp concentration\n(uM)',
+				timeline, filtered, downsample=downsample)
+			self.plot_time_series(axes[7], time, rna_fraction_prob, 'RNA fraction\nsynthesis probability',
+				timeline, filtered, downsample=downsample)
+			plt.tight_layout()
+			return axes
+
 		# Plot all time series data
 		subplots(set(), downsample=1)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
 
 		# Downsample for less data and better illustrator load
 		axes = subplots(set())
@@ -376,12 +412,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Trim axes from all data for easier comparison across runs
 		trim_axes(axes)
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
+		plt.close('all')
 
 		# Set axes limits for easier comparison across runs and filter time
 		# points without all cells for smoother traces
 		axes = subplots(filtered)
 		trim_axes(axes)
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_filtered', metadata)
+		plt.close('all')
+
+		# Plots specific for figure in paper
+		axes = paper_subplots(filtered)
+		trim_paper_axes(axes)
+		exportFigure(plt, plotOutDir, f'{plotOutFileName}_paper', metadata)
+		plt.close('all')
 
 		# Plot histograms of data
 		_, axes = plt.subplots(4, 6, figsize=(20, 15))
