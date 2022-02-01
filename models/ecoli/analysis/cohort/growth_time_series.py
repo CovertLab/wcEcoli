@@ -248,29 +248,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'RNA growth rate\n(1/hr)': {'y': [rna_growth], 'lim': [0, 2]},
 			'Protein growth rate\n(1/hr)': {'y': [protein_growth], 'lim': [0, 2]},
 			'Small mol growth rate\n(1/hr)': {'y': [small_mol_growth], 'lim': [0, 2]},
-			'RNAP elongation rate\n(nt/s)': {'y': [rnap_elong_rate], 'lim': [0, 100]},
-			'RNAP active fraction': {'y': [rnap_fraction_active], 'lim': [0, 1]},
+			'RNAP elongation rate\n(nt/s)': {'y': [rnap_elong_rate], 'lim': [40, 80]},
+			'RNAP active fraction': {'y': [rnap_fraction_active], 'lim': [0, 0.5]},
 			'Ribosome elongation rate\n(AA/s)': {'y': [ribosome_elong_rate], 'lim': [0, 25]},
-			'Ribosome active fraction': {'y': [ribosome_fraction_active], 'lim': [0, 1]},
+			'Ribosome active fraction': {'y': [ribosome_fraction_active], 'lim': [0.75, 0.9]},
 			f'Fraction charged\n{aa_ids[0][:-3]} tRNA': {'y': [fraction_charged[:, 0]], 'lim': [0, 1]},
 			f'Fraction charged\n{aa_ids[10][:-3]} tRNA': {'y': [fraction_charged[:, 10]], 'lim': [0, 1]},
 			f'{aa_ids[0][:-3]} concentration\n(mM)': {'y': [aa_conc[:, 0]], 'lim': [0, 10]},
 			f'{aa_ids[10][:-3]} concentration\n(mM)': {'y': [aa_conc[:, 10]], 'lim': [0, 2]},
 			'ppGpp concentration\n(uM)': {'y': [ppgpp_conc], 'lim': [0, 300]},
 			'Fraction charged': {'y': [fraction_charged], 'lim': [0, 1.2]},
-			'Amino acid concentrations\n(mM)': {'y': [aa_conc], 'lim': [1e-4, 100], 'log': True},
+			'Amino acid concentrations\n(mM)': {'y': [aa_conc], 'lim': [1e-4, 500], 'log': True},
 			'RNA fraction\nsynthesis probability': {'y': [rna_fraction_prob], 'lim': [0, 1]},
 			'RNA/protein mass fraction\n(with and without free AA)': {'y': [rp_ratio, rpa_ratio], 'lim': [0, 1]},
 			'RNA mass fraction': {'y': [rna_fraction], 'lim': [0, 0.15]},
 			'Protein mass fraction\n(with and without free AA)': {'y': [protein_fraction, aa_fraction], 'lim': [0, 0.3]},
 			'# cells': {'x': unique_time, 'y': [cell_count]},
 			'RNAP conc\n(uM)': {'y': [rnap_conc], 'lim': [0, 10]},
-			'RNAP output\n(mM NTPs/s)': {'y': [rnap_output], 'lim': [0, 0.2]},
+			'RNAP output\n(mM NTPs/s)': {'y': [rnap_output], 'lim': [0, 0.16]},
 			'Ribosome conc\n(uM)': {'y': [ribosome_conc], 'lim': [0, 40]},
 			'Ribosome output\n(mM AA/s)': {'y': [ribosome_output], 'lim': [0, 1]},
 			'mRNA:rRNA ratio': {'y': [mrna_rrna_ratio], 'lim': [0, 0.1]},
 			'RNA mass fractions': {'y': [mrna_fraction, rrna_fraction, trna_fraction], 'lim': [0, 1]},
-			'RNA deg rate': {'y': [rna_deg_rate], 'lim': [0, 1]},
+			'RNA deg rate': {'y': [rna_deg_rate], 'lim': [0, 0.8]},
 			'RNA deg ratio': {'y': [mrna_deg_ratio, rrna_deg_ratio, trna_deg_ratio], 'lim': [0, 1]},
 			'Excess ribosome RNA/protein': {'y': [excess], 'lim': [0, 1]},
 			'Synthesis fraction RNA/protein/enzymes': {'y': [synth_fractions], 'lim': [0, 1]},
@@ -351,7 +351,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.close('all')
 
 		# Plots specific for figure in paper
-		subplots(paper_keys, filtered, trim=True, cols=1)
+		subplots(paper_keys, filtered, downsample=10, trim=True, cols=1)
 		exportFigure(plt, plotOutDir, f'{plotOutFileName}_paper', metadata)
 		plt.close('all')
 
