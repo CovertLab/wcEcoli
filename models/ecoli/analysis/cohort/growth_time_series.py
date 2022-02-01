@@ -278,7 +278,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'RNA mass fraction produced': {'y': [mrna_fraction_produced, rrna_fraction_produced, trna_fraction_produced], 'lim': [0, 1]},
 			}
 		# Subset of the data to plot for the paper
-		paper_keys = [
+		paper_2_keys = [
 			'Growth rate\n(1/hr)',
 			f'{aa_ids[10][:-3]} concentration\n(mM)',
 			f'Fraction charged\n{aa_ids[10][:-3]} tRNA',
@@ -288,8 +288,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'RNAP active fraction',
 			'Ribosome elongation rate\n(AA/s)',
 			]
+		paper_5_keys = [
+			'Growth rate\n(1/hr)',
+			'RNA fraction\nsynthesis probability',
+			'RNAP elongation rate\n(nt/s)',
+			'RNA deg rate',
+			'RNAP output\n(mM NTPs/s)',
+			'mRNA:rRNA ratio',
+			'ppGpp concentration\n(uM)',
+			]
 
-		def subplots(keys, filtered, rows=None, cols=None, downsample=5, trim=False):
+		def subplots(filename, keys, filtered, rows=None, cols=None, downsample=5, trim=False):
 			# Determine layout
 			if rows:
 				cols = int(np.ceil(len(keys) / rows))
@@ -328,34 +337,30 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						text.set_visible(False)
 
 			plt.tight_layout()
+			exportFigure(plt, plotOutDir, filename, metadata)
+			plt.close('all')
 
 		# Plot all time series data
-		subplots(data.keys(), set(), downsample=1, rows=4)
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-		plt.close('all')
+		subplots(plotOutFileName, data.keys(), set(), downsample=1, rows=4)
 
 		# Downsample for less data and better illustrator load
-		subplots(data.keys(), set(), rows=4)
-		exportFigure(plt, plotOutDir, f'{plotOutFileName}_downsampled', metadata)
-		plt.close('all')
+		subplots(f'{plotOutFileName}_downsampled', data.keys(), set(), rows=4)
 
 		# Trim axes from all data for easier comparison across runs
-		subplots(data.keys(), set(), trim=True, rows=4)
-		exportFigure(plt, plotOutDir, f'{plotOutFileName}_trimmed', metadata)
-		plt.close('all')
+		subplots(f'{plotOutFileName}_trimmed', data.keys(), set(), trim=True, rows=4)
 
 		# Set axes limits for easier comparison across runs and filter time
 		# points without all cells for smoother traces
-		subplots(data.keys(), filtered, trim=True, rows=4)
-		exportFigure(plt, plotOutDir, f'{plotOutFileName}_filtered', metadata)
-		plt.close('all')
+		subplots(f'{plotOutFileName}_filtered', data.keys(), filtered, trim=True, rows=4)
 
-		# Plots specific for figure in paper
-		subplots(paper_keys, filtered, downsample=10, trim=True, cols=1)
-		exportFigure(plt, plotOutDir, f'{plotOutFileName}_paper', metadata)
-		plt.close('all')
+		# Plots specific for figure 2 in paper
+		subplots(f'{plotOutFileName}_fig2', paper_2_keys, filtered, downsample=10, trim=True, cols=1)
+
+		# Plots specific for figure 5 in paper
+		subplots(f'{plotOutFileName}_fig5', paper_5_keys, filtered, downsample=10, trim=True, cols=1)
 
 		# Plot histograms of data
+		# TODO: use data dict from above to generalize this to match any changes in time series traces
 		_, axes = plt.subplots(4, 6, figsize=(20, 15))
 		self.plot_hist(axes[0, 0], growth_rate, 0, 2, 'Growth rate\n(1/hr)')
 		self.plot_hist(axes[1, 0], rna_growth, 0, 2, 'RNA growth rate\n(1/hr)')
