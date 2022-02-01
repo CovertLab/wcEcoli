@@ -185,8 +185,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Save average/std for output to a tsv
 			average_data[variant] = {
-				'Growth': mean_std(all_growth),
-				'R/P ratio': mean_std(all_ratio),
+				'Growth': mean_std(all_growth_ma),
+				'R/P ratio': mean_std(all_ratio_ma),
 				}
 
 		for axes in [main_axes, trimmed_axes]:
