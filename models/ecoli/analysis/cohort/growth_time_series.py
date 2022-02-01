@@ -289,7 +289,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'Ribosome elongation rate\n(AA/s)',
 			]
 		paper_5_keys = [
-			'Growth rate\n(1/hr)',
+			'RNA growth rate\n(1/hr)',
 			'RNA fraction\nsynthesis probability',
 			'RNAP elongation rate\n(nt/s)',
 			'RNA deg rate',
