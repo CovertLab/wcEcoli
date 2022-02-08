@@ -17,11 +17,9 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 
-PLOT_SINGLE = False
-
-
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
-	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t, downsample=5, log_scale=False):
+	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t,
+			downsample=5, log_scale=False, single_cells=False):
 		# TODO: add trace labels as arg
 		# Extract y data for each time point (assumes time step lines up across samples)
 		data = {}
@@ -52,11 +50,34 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		std = np.array(std).squeeze()
 
 		# Plot all single traces
-		if PLOT_SINGLE:
+		if single_cells:
 			new_cell = np.where(t_flat[:-1] > t_flat[1:])[0] + 1
+			n_cells = len(new_cell) + 1
 			splits = [0] + list(new_cell) + [None]
+
+			# Scale transparency and width with number of cells to make more
+			# readable with many traces
+			alpha = 1 / (1 + n_cells)
+			linewidth = 1 / (1 + np.log(n_cells))
+
+			# Plot each cell trace
 			for start, end in zip(splits[:-1], splits[1:]):
-				ax.plot(t_flat[start:end], y_flat[start:end], 'k', alpha=0.05, linewidth=0.5)
+				# Select cell specific trace
+				t_single = t_flat[start:end]
+				y_single = y_flat[start:end]
+
+				# Downsample data
+				n_dropped = len(t_single) % downsample
+				drop_slice = -n_dropped if n_dropped else None
+				t_single = t_single[:drop_slice].reshape(-1, downsample).mean(axis=1)
+				if len(dim := y_flat.shape) > 1:
+					y_single = y_single[:drop_slice].reshape(-1, downsample, dim[1]).mean(axis=1)
+				else:
+					y_single = y_single[:drop_slice].reshape(-1, downsample).mean(axis=1)
+
+				# Plot single trace
+				ax.plot(t_single, y_single, 'k',
+					alpha=alpha, linewidth=linewidth)
 
 		# Plot mean as a trace and standard deviation as a shaded area
 		ax.plot(t, mean)
@@ -277,6 +298,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'mRNA conc\n(count/fg)': {'y': [mrna_conc], 'lim': [0, 15]},
 			'RNA mass fraction produced': {'y': [mrna_fraction_produced, rrna_fraction_produced, trna_fraction_produced], 'lim': [0, 1]},
 			}
+		data_4 = {
+			f'{aa_ids[i][:-3]} concentration\n(mM)': {'y': [aa_conc[:, i]]}
+			for i in range(len(aa_ids))
+			}
 		# Subset of the data to plot for the paper
 		paper_2_keys = [
 			'Growth rate\n(1/hr)',
@@ -288,6 +313,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'RNAP active fraction',
 			'Ribosome elongation rate\n(AA/s)',
 			]
+		paper_4_keys = [f'{aa_id[:-3]} concentration\n(mM)' for aa_id in aa_ids]
 		paper_5_keys = [
 			'RNA growth rate\n(1/hr)',
 			'RNA fraction\nsynthesis probability',
@@ -298,7 +324,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'ppGpp concentration\n(uM)',
 			]
 
-		def subplots(filename, keys, filtered, rows=None, cols=None, downsample=5, trim=False):
+		def subplots(filename, data, keys, filtered, rows=None, cols=None,
+				downsample=5, trim=False, single_cells=False):
 			# Determine layout
 			if rows:
 				cols = int(np.ceil(len(keys) / rows))
@@ -325,7 +352,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				for j, y in enumerate(entry['y']):
 					self.plot_time_series(ax, x, y, key,
 						timeline if j == 0 else [], filtered,
-						log_scale=entry.get('log', False), downsample=downsample)
+						log_scale=entry.get('log', False), downsample=downsample,
+						single_cells=single_cells)
 
 				if trim and (lim := entry.get('lim')):
 					ax.set_ylim(lim)
@@ -341,23 +369,33 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plt.close('all')
 
 		# Plot all time series data
-		subplots(plotOutFileName, data.keys(), set(), downsample=1, rows=4)
+		subplots(plotOutFileName, data, data.keys(), set(), downsample=1, rows=4)
 
 		# Downsample for less data and better illustrator load
-		subplots(f'{plotOutFileName}_downsampled', data.keys(), set(), rows=4)
+		subplots(f'{plotOutFileName}_downsampled', data, data.keys(), set(), rows=4)
 
 		# Trim axes from all data for easier comparison across runs
-		subplots(f'{plotOutFileName}_trimmed', data.keys(), set(), trim=True, rows=4)
+		subplots(f'{plotOutFileName}_trimmed', data, data.keys(), set(), trim=True, rows=4)
 
 		# Set axes limits for easier comparison across runs and filter time
 		# points without all cells for smoother traces
-		subplots(f'{plotOutFileName}_filtered', data.keys(), filtered, trim=True, rows=4)
+		subplots(f'{plotOutFileName}_filtered', data, data.keys(), filtered, trim=True, rows=4)
 
 		# Plots specific for figure 2 in paper
-		subplots(f'{plotOutFileName}_fig2', paper_2_keys, filtered, downsample=10, trim=True, cols=1)
+		subplots(f'{plotOutFileName}_fig2', data, paper_2_keys, filtered,
+			downsample=10, trim=True, cols=1)
+		subplots(f'{plotOutFileName}_fig2_single', data, paper_2_keys, filtered,
+			downsample=10, trim=True, cols=1, single_cells=True)
+
+		# Plots specific for figure 4 in paper
+		subplots(f'{plotOutFileName}_fig4_single', data_4, paper_4_keys, filtered,
+			downsample=10, trim=True, cols=1, single_cells=True)
 
 		# Plots specific for figure 5 in paper
-		subplots(f'{plotOutFileName}_fig5', paper_5_keys, filtered, downsample=10, trim=True, cols=1)
+		subplots(f'{plotOutFileName}_fig5', data, paper_5_keys, filtered,
+			downsample=10, trim=True, cols=1)
+		subplots(f'{plotOutFileName}_fig5_single', data, paper_5_keys, filtered,
+			downsample=10, trim=True, cols=1, single_cells=True)
 
 		# Plot histograms of data
 		# TODO: use data dict from above to generalize this to match any changes in time series traces
