@@ -17,16 +17,15 @@ from wholecell.analysis.analysis_tools import (exportFigure, read_stacked_column
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
 
-
 TU_ID = 'TU0-13388[c]'
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, inputDir1, plotOutDir, plotOutFileName, inputDir2, unused, metadata):
-		# operons="on"
-		ap1, sim_data, _ = self.setup(inputDir1)
 		# operons="off"
-		ap2, _, _ = self.setup(inputDir2)
+		ap1, _, _ = self.setup(inputDir1)
+		# operons="on"
+		ap2, sim_data, _ = self.setup(inputDir2)
 
 		cistron_ids = [
 			sim_data.process.transcription.cistron_data['id'][i]
@@ -75,8 +74,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			return time, cistron_counts, monomer_counts
 
-		time_on, cistron_counts_on, monomer_counts_on = read_sims(ap1)
-		time_off, cistron_counts_off, monomer_counts_off = read_sims(ap2)
+		time_off, cistron_counts_off, monomer_counts_off = read_sims(ap1)
+		time_on, cistron_counts_on, monomer_counts_on = read_sims(ap2)
 
 		plt.figure(figsize=(8.5, 4))
 
