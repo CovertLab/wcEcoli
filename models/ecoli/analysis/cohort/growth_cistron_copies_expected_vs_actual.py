@@ -18,9 +18,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 
 
-# First generation (counting from zero) from which to gather RNA counts.
-FIRST_GENERATION = 0
-
 FIGSIZE = (4, 4)
 BOUNDS = [1e-3, 1e-1]
 NUMERICAL_ZERO = 1e-10
@@ -33,10 +30,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		n_gens = self.ap.n_generation
-		cell_paths = self.ap.get_cells(
-			generation=list(range(FIRST_GENERATION, n_gens))
-			)
+		cell_paths = self.ap.get_cells()
 
 		simOutDir = os.path.join(cell_paths[0], 'simOut')
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
