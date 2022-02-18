@@ -96,6 +96,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.figure(figsize=FIGSIZE)
 
+		plt.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
 		plt.scatter(
 			expected_rprotein_counts + NUMERICAL_ZERO,
 			actual_rprotein_counts + NUMERICAL_ZERO,
