@@ -14,7 +14,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.analysis_tools import (
+	exportFigure, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
 
@@ -64,24 +65,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		assert np.all(
 			mRNA_cistron_ids == sim_data.process.transcription.cistron_data['id'][is_mRNA])
 
-		# Initialize array for actual counts
-		all_actual_rprotein_counts = np.zeros((len(rprotein_indexes), len(cell_paths)))
-		all_actual_rnap_counts = np.zeros((len(rnap_indexes), len(cell_paths)))
-
-		# Load data
-		for i, sim_dir in enumerate(cell_paths):
-			simOutDir = os.path.join(sim_dir, 'simOut')
-
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-			mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-
-			# Get average count across all timesteps
-			all_actual_rprotein_counts[:, i] = mRNA_cistron_counts[:, rprotein_indexes].mean(axis=0)
-			all_actual_rnap_counts[:, i] = mRNA_cistron_counts[:, rnap_indexes].mean(axis=0)
+		# Read actual counts
+		all_actual_counts = read_stacked_columns(
+			cell_paths, 'mRNACounts', 'mRNA_cistron_counts', fun=lambda x: x.mean(axis=0))
+		all_actual_rprotein_counts = all_actual_counts[:, rprotein_indexes]
+		all_actual_rnap_counts = all_actual_counts[:, rnap_indexes]
 
 		# Get average count across all sims
-		actual_rprotein_counts = all_actual_rprotein_counts.mean(axis=1)
-		actual_rnap_counts = all_actual_rnap_counts.mean(axis=1)
+		actual_rprotein_counts = all_actual_rprotein_counts.mean(axis=0)
+		actual_rnap_counts = all_actual_rnap_counts.mean(axis=0)
 
 		# Normalize counts to total sum
 		t = actual_rprotein_counts.sum() + actual_rnap_counts.sum()

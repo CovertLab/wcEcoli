@@ -13,7 +13,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.analysis.analysis_tools import (
+	exportFigure, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
 
@@ -45,21 +46,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Normalize counts
 		expected_counts /= expected_counts.sum()
 
-		# Initialize array for actual counts
-		all_actual_counts = np.zeros((len(mRNA_cistron_ids), len(cell_paths)))
-
-		# Load data
-		for i, sim_dir in enumerate(cell_paths):
-			simOutDir = os.path.join(sim_dir, 'simOut')
-
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-			mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-
-			# Get average count across all timesteps
-			all_actual_counts[:, i] = mRNA_cistron_counts.mean(axis=0)
+		# Read actual counts
+		all_actual_counts = read_stacked_columns(
+			cell_paths, 'mRNACounts', 'mRNA_cistron_counts', fun=lambda x: x.mean(axis=0))
 
 		# Get average count across all sims
-		actual_counts = all_actual_counts.mean(axis=1)
+		actual_counts = all_actual_counts.mean(axis=0)
 
 		# Normalize counts
 		actual_counts /= actual_counts.sum()
