@@ -19,7 +19,7 @@ from wholecell.utils import units
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t,
-			downsample=5, log_scale=False, single_cells=False):
+			downsample=5, log_scale=False, single_cells=False, show_x_labels=True):
 		# TODO: add trace labels as arg
 		# Extract y data for each time point (assumes time step lines up across samples)
 		data = {}
@@ -91,7 +91,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Format axes
 		if log_scale:
 			ax.set_yscale('log')
-		ax.set_xlabel('Time (min)', fontsize=8)
+		if show_x_labels:
+			ax.set_xlabel('Time (min)', fontsize=8)
+		else:
+			ax.xaxis.set_ticklabels([])
 		ax.set_ylabel(ylabel, fontsize=8)
 		ax.tick_params(labelsize=6)
 		self.remove_border(ax)
@@ -325,7 +328,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			]
 
 		def subplots(filename, data, keys, filtered, rows=None, cols=None,
-				downsample=5, trim=False, single_cells=False):
+				downsample=5, trim=False, single_cells=False,
+				row_scale=3., col_scale=3., all_x_labeled=True):
 			# Determine layout
 			if rows:
 				cols = int(np.ceil(len(keys) / rows))
@@ -336,7 +340,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				cols = int(np.ceil(len(keys) / rows))
 
 			# Plot data on subplots
-			_, axes = plt.subplots(rows, cols, figsize=(3*cols, 3*rows))
+			_, axes = plt.subplots(rows, cols, figsize=(col_scale*cols, row_scale*rows))
 			for i, key in enumerate(keys):
 				row = i % rows
 				col = i // rows
@@ -347,13 +351,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				else:
 					ax = axes[row, col]
 
+				show_x_labels = (row == rows - 1) or all_x_labeled
+
 				entry = data[key]
 				x = entry.get('x', time)
 				for j, y in enumerate(entry['y']):
 					self.plot_time_series(ax, x, y, key,
 						timeline if j == 0 else [], filtered,
 						log_scale=entry.get('log', False), downsample=downsample,
-						single_cells=single_cells)
+						single_cells=single_cells, show_x_labels=show_x_labels)
 
 				if trim and (lim := entry.get('lim')):
 					ax.set_ylim(lim)
@@ -383,7 +389,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Plots specific for figure 2 in paper
 		subplots(f'{plotOutFileName}_fig2', data, paper_2_keys, filtered,
-			downsample=10, trim=True, cols=1)
+			downsample=10, trim=True, cols=1, row_scale=1.5, all_x_labeled=False)
 		subplots(f'{plotOutFileName}_fig2_single', data, paper_2_keys, filtered,
 			downsample=10, trim=True, cols=1, single_cells=True)
 
@@ -393,7 +399,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Plots specific for figure 5 in paper
 		subplots(f'{plotOutFileName}_fig5', data, paper_5_keys, filtered,
-			downsample=10, trim=True, cols=1)
+			downsample=10, trim=True, cols=1, row_scale=1.5, all_x_labeled=False)
 		subplots(f'{plotOutFileName}_fig5_single', data, paper_5_keys, filtered,
 			downsample=10, trim=True, cols=1, single_cells=True)
 
