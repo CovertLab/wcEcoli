@@ -95,7 +95,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			ax.set_xlabel('Time (min)', fontsize=8)
 		else:
 			ax.xaxis.set_ticklabels([])
-		ax.set_ylabel(ylabel, fontsize=8)
+		ax.set_ylabel(ylabel, fontsize=6)
 		ax.tick_params(labelsize=6)
 		self.remove_border(ax)
 
@@ -272,8 +272,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'RNA growth rate\n(1/hr)': {'y': [rna_growth], 'lim': [0, 2]},
 			'Protein growth rate\n(1/hr)': {'y': [protein_growth], 'lim': [0, 2]},
 			'Small mol growth rate\n(1/hr)': {'y': [small_mol_growth], 'lim': [0, 2]},
-			'RNAP elongation rate\n(nt/s)': {'y': [rnap_elong_rate], 'lim': [40, 80]},
-			'RNAP active fraction': {'y': [rnap_fraction_active], 'lim': [0, 0.5]},
+			'RNAP elongation rate\n(nt/s)': {'y': [rnap_elong_rate], 'lim': [50, 70]},
+			'RNAP active fraction': {'y': [rnap_fraction_active], 'lim': [0.1, 0.4]},
 			'Ribosome elongation rate\n(AA/s)': {'y': [ribosome_elong_rate], 'lim': [0, 25]},
 			'Ribosome active fraction': {'y': [ribosome_fraction_active], 'lim': [0.75, 0.9]},
 			f'Fraction charged\n{aa_ids[0][:-3]} tRNA': {'y': [fraction_charged[:, 0]], 'lim': [0, 1]},
