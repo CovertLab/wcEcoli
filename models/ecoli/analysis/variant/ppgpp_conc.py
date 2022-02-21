@@ -12,7 +12,7 @@ import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.single.ribosome_limitation import calculate_ribosome_excesses
-from models.ecoli.sim.variants.ppgpp_conc import BASE_FACTOR, CONDITIONS, split_index
+from models.ecoli.sim.variants import ppgpp_conc, ppgpp_limitations
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, read_stacked_bulk_molecules
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.plotting_tools import COLORS_SMALL
@@ -23,26 +23,25 @@ STD = 'std'
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def plot_data(self, axes, ppgpp, y, yerr, ylabel, condition_labels, conditions, factors):
-		condition_base_factor = dict(zip(CONDITIONS, BASE_FACTOR))
-
+	def plot_data(self, axes, x, y, yerr, xlabel, ylabel, condition_labels, conditions,
+			factors, condition_base_factor):
 		raw_ax, norm_ax = axes
 		for condition, color in zip(np.unique(conditions), COLORS_SMALL):
 			mask = conditions == condition
-			raw_ax.errorbar(ppgpp[mask], y[mask], yerr=yerr[mask], fmt='o', color=color,
+			raw_ax.errorbar(x[mask], y[mask], yerr=yerr[mask], fmt='o', color=color,
 				label=condition_labels[condition])
 
-			if condition_base_factor[condition] in factors[mask]:
+			if condition_base_factor is not None and condition_base_factor.get(condition) in factors[mask]:
 				ref_idx = factors[mask] == condition_base_factor[condition]
 				ref_val = y[mask][ref_idx]
-				norm_ax.errorbar(ppgpp[mask], y[mask] / ref_val, yerr=yerr[mask] / ref_val,
+				norm_ax.errorbar(x[mask], y[mask] / ref_val, yerr=yerr[mask] / ref_val,
 					fmt='o', color=color, label=condition_labels[condition])
 				norm_ax.axhline(1, linestyle='--', color='k', linewidth=0.5)
 
 		raw_ax.set_ylabel(ylabel, fontsize=8)
 		norm_ax.set_ylabel(f'Normalized\n{ylabel}', fontsize=8)
 		for ax in axes:
-			ax.set_xlabel('ppGpp conc', fontsize=8)
+			ax.set_xlabel(xlabel, fontsize=8)
 			ax.tick_params(labelsize=6)
 			self.remove_border(ax)
 
@@ -67,6 +66,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		conditions = np.zeros(n_variants, int)
 		factors = np.zeros(n_variants)
 		data = {}
+		if metadata.get('variant') == 'ppgpp_limitations':
+			split_index = ppgpp_limitations.plot_split
+		else:
+			split_index = ppgpp_conc.split_index
+
 		for i, variant in enumerate(variants):
 			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			conditions[i], factors[i] = split_index(variant)
@@ -134,8 +138,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			add_data('rprotein_protein_fraction', protein_fractions[:, 0])
 			add_data('enzyme_protein_fraction', protein_fractions[:, 1])
 
-		condition_labels = sim_data.ordered_conditions
-
 		# Create plots
 		labels = {
 			'growth_rate': 'Growth rate (1/hr)',
@@ -161,10 +163,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		_, axes = plt.subplots(n_subplots, 2, figsize=(8, 2.5 * n_subplots))
 
 		## Bar plots of cell properties
-		x = data['ppgpp'][MEAN]
-		for i, (key, label) in enumerate(labels.items()):
+		if metadata.get('variant') == 'ppgpp_limitations':
+			x = factors
+			xlabel = 'Adjustment factor'
+			condition_labels = {c: c for c in conditions}
+			condition_base_factor = None
+		else:
+			x = data['ppgpp'][MEAN]
+			xlabel = 'ppGpp conc (uM)'
+			condition_labels = {i: c for i, c in enumerate(sim_data.ordered_conditions)}
+			condition_base_factor = dict(zip(ppgpp_conc.CONDITIONS, ppgpp_conc.BASE_FACTOR))
+		for i, (key, ylabel) in enumerate(labels.items()):
 			self.plot_data(axes[i, :], x, data[key][MEAN], data[key][STD],
-			label, condition_labels, conditions, factors)
+			xlabel, ylabel, condition_labels, conditions, factors, condition_base_factor)
 
 		axes[0, 0].legend(fontsize=6)
 		plt.tight_layout()
