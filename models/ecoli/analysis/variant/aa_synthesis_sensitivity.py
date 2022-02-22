@@ -11,7 +11,6 @@ import numpy as np
 from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants import aa_synthesis_sensitivity
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
@@ -45,8 +44,7 @@ def calculate_sensitivity(data, variant, factors, attr, default=None):
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		ap = AnalysisPaths(inputDir, variant_plot=True)
-		variants = ap.get_variants()
+		variants = self.ap.get_variants()
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -55,6 +53,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Load simulation growth rates
 		data = {}
+		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
 		for variant in variants:
 			media_index = aa_synthesis_sensitivity.get_media_index(variant, sim_data)
 			aa_index = aa_synthesis_sensitivity.get_aa_index(variant, sim_data)
@@ -63,13 +62,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			param_label = f'{aa_adjusted} {param}'
 
 			# Load data
-			cells = ap.get_cells(variant=[variant])
+			cells = self.ap.get_cells(variant=[variant])
+			time_step = read_stacked_columns(cells, 'Main', 'timeStepSec',
+				remove_first=True, ignore_exception=True).squeeze()
 			growth_rate = read_stacked_columns(cells, 'Mass', 'instantaneous_growth_rate',
-				remove_first=True, ignore_exception=True).mean()
+				remove_first=True, ignore_exception=True).mean() * 3600
 			elong_rate = read_stacked_columns(cells, 'RibosomeData', 'effectiveElongationRate',
 				remove_first=True, ignore_exception=True).mean()
+			protein_growth = (read_stacked_columns(cells, 'Mass', 'proteinMass',
+				fun=growth_function, ignore_exception=True).squeeze() / time_step).mean() * 3600
+			rna_growth = (read_stacked_columns(cells, 'Mass', 'rnaMass',
+				fun=growth_function, ignore_exception=True).squeeze() / time_step).mean() * 3600
 
-			variant_data = {'Growth rate': growth_rate * 3600, 'Elongation rate': elong_rate}
+			variant_data = {
+				'Growth rate': growth_rate,
+				'Elongation rate': elong_rate,
+				'Protein growth rate': protein_growth,
+				'RNA growth rate': rna_growth,
+				}
 			media_data = data.get(media_index, {})
 			param_data = media_data.get(param_label, {})
 			param_data[factor] = variant_data
@@ -132,14 +142,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if CONTROL_INDEX in data:
 			# Identify groups of factors to split into subplots
 			nonzero_factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
-			increase_factors = [1] + [f for f in nonzero_factors if f > 1]
-			decrease_factors = [f for f in nonzero_factors if f < 1] + [1]
+			nonzero_factors_with_control = sorted(nonzero_factors + [1])
+			increase_factors = [f for f in nonzero_factors_with_control if f >= 1]
+			decrease_factors = [f for f in nonzero_factors_with_control if f <= 1]
 
 			# Calculate the control growth rate
 			params, all_rates, _ = calculate_sensitivity(data, CONTROL_INDEX, nonzero_factors, 'Growth rate')
 			control_growth = all_rates[params == PARAM_CONTROL_LABEL, :]
 			control_growth_rate = control_growth.mean()
-			if not np.all(control_growth == control_growth_rate):
+			if not np.allclose(control_growth, control_growth_rate):
 				raise ValueError('Control parameter results in variable growth rates.'
 					' Run sims with no modified parameter or consider the mean.')
 
@@ -151,14 +162,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			lowest_param_change = lowest_param_rates - control_growth_rate
 			max_rates = np.max(all_rates, 1)
 
-			def slopes_plot(variant, factors, attr, axes, control=None):
+			def slopes_plot(variant, factors, attr, axes, n_labeled=5, stds=1., control=None):
 				params, all_rates, slopes = calculate_sensitivity(data, variant, factors, attr, default=control)
 
 				slope_sort_idx = np.argsort(slopes)
 				mean = slopes.mean()
 				std = slopes.std()
-				upper_limit = mean + std
-				lower_limit = mean - std
+				upper_limit = max(mean + std * stds, slopes[slope_sort_idx[-n_labeled-1]])
+				lower_limit = min(mean - std * stds, slopes[slope_sort_idx[n_labeled]])
 
 				bar_ax, trace_ax = axes
 
@@ -180,15 +191,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				trace_ax.tick_params(labelsize=8)
 				self.remove_border(trace_ax)
 
-			_, axes = plt.subplots(2, 4, figsize=(20, 10))
+			_, axes = plt.subplots(2, 6, figsize=(30, 10))
 
 			# Slopes of growth vs change in parameter
-			slopes_plot(CONTROL_INDEX, nonzero_factors, 'Growth rate', axes[:, 0])
-			slopes_plot(CONTROL_INDEX, increase_factors, 'Growth rate', axes[:, 1], control=control_growth_rate)
-			slopes_plot(CONTROL_INDEX, decrease_factors, 'Growth rate', axes[:, 2], control=control_growth_rate)
+			# TODO: control growth rates for RNA and protein instead of overall growth rate
+			slopes_plot(CONTROL_INDEX, nonzero_factors_with_control, 'Growth rate', axes[:, 0], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, nonzero_factors_with_control, 'Protein growth rate', axes[:, 1], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, nonzero_factors_with_control, 'RNA growth rate', axes[:, 2], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, increase_factors, 'Growth rate', axes[:, 3], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, decrease_factors, 'Growth rate', axes[:, 4], control=control_growth_rate)
 
 			# Greatest changes from baseline in positive and negative directions
-			ax = axes[0, 3]
+			ax = axes[0, 5]
 			sort_idx = np.argsort(diff)
 			x = np.arange(len(diff))
 			ax.bar(x, highest_param_change[sort_idx])
@@ -198,7 +212,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.remove_border(ax)
 
 			# Highest growth rates possible per param change
-			ax = axes[1, 3]
+			ax = axes[1, 5]
 			sort_idx = np.argsort(max_rates)
 			x = np.arange(len(max_rates))
 			ax.bar(x, max_rates[sort_idx])

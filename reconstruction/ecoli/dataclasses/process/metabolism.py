@@ -673,7 +673,7 @@ class Metabolism(object):
 				if aa in self.reaction_stoich[reaction] and matches_direction(self.reaction_stoich[reaction][aa]):
 					if aa not in aa_to_transporters:
 						aa_to_transporters[aa] = []
-					aa_to_transporters[aa] += self.reaction_catalysts[reaction]
+					aa_to_transporters[aa] += self.reaction_catalysts.get(reaction, [])
 
 		aa_to_transporters = {aa: aa_to_transporters[aa] for aa in sim_data.molecule_groups.amino_acids}
 
@@ -1172,7 +1172,7 @@ class Metabolism(object):
 				print(f'*** {amino_acid}: {kcat_fwd:5.1f} {kcat_rev:5.1f} ***')
 
 			if kcat_fwd is None:
-				raise ValueError('Could not find positive foward and reverse'
+				raise ValueError('Could not find positive forward and reverse'
 					f' kcat for {amino_acid}. Run with VERBOSE to check input'
 					' parameters like KM and KI or check concentrations.')
 

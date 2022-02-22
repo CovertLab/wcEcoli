@@ -19,7 +19,6 @@ import numpy as np
 from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
@@ -36,11 +35,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		n_subproperties = cell_property.shape[0]
 		n_growth_rates = len(growth_rates)
 		all_r = np.zeros((n_subproperties, n_growth_rates))
-		for i, property in enumerate(cell_property):
+		for i, property_ in enumerate(cell_property):
 			for j, growth in enumerate(growth_rates):
-				filter_mask = np.isfinite(property[:len(growth)]) & np.isfinite(growth)  # filter to prevent pearsonr ValueError
+				filter_mask = np.isfinite(property_[:len(growth)]) & np.isfinite(growth)  # filter to prevent pearsonr ValueError
 				if np.any(filter_mask):
-					all_r[i, j] = stats.pearsonr(property[:len(growth)][filter_mask], growth[filter_mask])[0]
+					all_r[i, j] = stats.pearsonr(property_[:len(growth)][filter_mask], growth[filter_mask])[0]
 
 		width = 0.8 / n_growth_rates
 		offsets = np.arange(n_growth_rates) * width - 0.4 + width / 2
@@ -65,8 +64,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			aa_ids[aa_ids == original] = replacement
 		removed_mask = np.array([aa not in REMOVED_NAMES for aa in aa_ids], dtype=bool)
 
-		ap = AnalysisPaths(inputDir, variant_plot=True)
-		variants = ap.get_variants()
+		variants = self.ap.get_variants()
 		n_variants = len(variants)
 
 		scaling = 3
@@ -75,7 +73,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		gs = gridspec.GridSpec(nrows=n_variants, ncols=n_cols)
 
 		for row, variant in enumerate(variants):
-			cell_paths = ap.get_cells(variant=[variant])
+			cell_paths = self.ap.get_cells(variant=[variant])
 
 			# Load attributes
 			unique_molecule_reader = TableReader(os.path.join(cell_paths[0], 'simOut', 'UniqueMoleculeCounts'))
@@ -157,8 +155,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				(aa_supply_enzymes_fwd, 'Forward enzyme conc'),
 				(aa_supply_enzymes_rev, 'Reverse enzyme conc'),
 				]
-			for col, (property, label) in enumerate(per_aa_plot_data):
-				self.plot_bar(plt.subplot(gs[row, col + 1]), property[removed_mask, :], all_growth, label, aa_ids[removed_mask])
+			for col, (property_, label) in enumerate(per_aa_plot_data):
+				self.plot_bar(plt.subplot(gs[row, col + 1]), property_[removed_mask, :], all_growth, label, aa_ids[removed_mask])
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

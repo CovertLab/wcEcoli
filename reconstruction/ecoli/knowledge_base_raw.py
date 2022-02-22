@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 import io
 import os
 import json
-from typing import List
+from typing import List, Dict
 
 from reconstruction.spreadsheets import read_tsv
 from wholecell.io import tsv
@@ -111,6 +111,7 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
+	os.path.join('transcription_unit_prototypes', 'transcription_units_modified_v1.tsv'),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = (
@@ -146,6 +147,14 @@ ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
 	}
 
+# Dictionary mapping operon option names to the name of the modification file
+# corresponding to the option. Must be specified for every operon option except
+# "off".
+OPERON_OPTION_TO_MODIFIED_DATA = {
+	'v1': 'transcription_unit_prototypes.transcription_units_modified_v1',
+	'on': 'transcription_units_modified',
+	}
+
 class DataStore(object):
 	def __init__(self):
 		pass
@@ -153,23 +162,30 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool):
-		self.operons_on = operons_on
+	def __init__(self, operon_option: str):
+		self.operon_option = operon_option
 
 		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
 		self.transcription_units: List[dict] = []
 
-		if self.operons_on:
-			LIST_OF_DICT_FILENAMES.append('transcription_units.tsv')
-			REMOVED_DATA.update({
+		# Make copies to prevent issues with sticky global variables when
+		# running multiple operon workflows through Fireworks
+		self.list_of_dict_filenames: List[str] = LIST_OF_DICT_FILENAMES.copy()
+		self.removed_data: Dict[str, str] = REMOVED_DATA.copy()
+		self.modified_data: Dict[str, str] = MODIFIED_DATA.copy()
+		self.added_data: Dict[str, str] = ADDED_DATA.copy()
+
+		if self.operon_option != "off":
+			self.list_of_dict_filenames.append('transcription_units.tsv')
+			self.removed_data.update({
 				'transcription_units': 'transcription_units_removed',
 				})
-			MODIFIED_DATA.update({
-				'transcription_units': 'transcription_units_modified',
+			self.modified_data.update({
+				'transcription_units': OPERON_OPTION_TO_MODIFIED_DATA[self.operon_option],
 				})
 
 		# Load raw data from TSV files
-		for filename in LIST_OF_DICT_FILENAMES:
+		for filename in self.list_of_dict_filenames:
 			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
 
 		for filename in LIST_OF_PARAMETER_FILENAMES:
@@ -228,21 +244,32 @@ class KnowledgeBaseEcoli(object):
 		"""
 
 		# Check each pair of files to be removed
-		for data_attr, attr_to_remove in REMOVED_DATA.items():
+		for data_attr, attr_to_remove in self.removed_data.items():
 			# Build the set of data to identify rows to be removed
 			data_to_remove = getattr(self, attr_to_remove)
 			removed_cols = list(data_to_remove[0].keys())
-			removed_ids = set()
+			ids_to_remove = set()
 			for row in data_to_remove:
-				removed_ids.add(tuple([row[col] for col in removed_cols]))
+				ids_to_remove.add(tuple([row[col] for col in removed_cols]))
 
 			# Remove any matching rows
 			data = getattr(self, data_attr)
 			n_entries = len(data)
+			removed_ids = set()
 			for i, row in enumerate(data[::-1]):
 				checked_id = tuple([row[col] for col in removed_cols])
-				if checked_id in removed_ids:
+				if checked_id in ids_to_remove:
 					data.pop(n_entries - i - 1)
+					removed_ids.add(checked_id)
+
+			# Print warnings for entries that were marked to be removed that
+			# does not exist in the original data file. Fold changes are
+			# excluded since the original entries are split between two files.
+			if not data_attr.startswith('fold_changes'):
+				for unremoved_id in (ids_to_remove - removed_ids):
+					print(f'Warning: Could not remove row {unremoved_id} '
+						  f'in flat file {data_attr} because the row does not '
+						  f'exist.')
 
 	def _join_data(self):
 		"""
@@ -251,7 +278,7 @@ class KnowledgeBaseEcoli(object):
 		"""
 
 		# Join data for each file with data to be added
-		for data_attr, attr_to_add in ADDED_DATA.items():
+		for data_attr, attr_to_add in self.added_data.items():
 			# Get datasets to join
 			data = getattr(self, data_attr)
 			added_data = getattr(self, attr_to_add)
@@ -272,9 +299,11 @@ class KnowledgeBaseEcoli(object):
 		identified by their entries in the first column (usually the ID column).
 		"""
 		# Check each pair of files to be modified
-		for data_attr, modify_attr in MODIFIED_DATA.items():
+		for data_attr, modify_attr in self.modified_data.items():
 			# Build the set of data to identify rows to be modified
-			data_to_modify = getattr(self, modify_attr)
+			data_to_modify = getattr(self, modify_attr.split('.')[0])
+			for attr in modify_attr.split('.')[1:]:
+				data_to_modify = getattr(data_to_modify, attr)
 			id_col_name = list(data_to_modify[0].keys())[0]
 
 			id_to_modified_cols = {}
