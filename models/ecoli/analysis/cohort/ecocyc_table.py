@@ -28,10 +28,14 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 
-def save_file(out_dir, filename, ids, counts, concentrations, relative_counts, relative_masses, aerobic=True):
+def save_file(out_dir, filename, ids,
+	counts, concentrations, relative_counts, relative_masses_to_total_type_mass,
+	relative_masses_to_total_cell_dry_mass,
+	aerobic=True):
 	"""
 	TODO:
-		generalize the data passed into this function to allow for arbitrary columns and labels for each column
+		generalize the data passed into this function to allow for arbitrary
+		columns and labels for each column
 	"""
 
 	output_file = os.path.join(out_dir, filename)
@@ -49,20 +53,20 @@ def save_file(out_dir, filename, ids, counts, concentrations, relative_counts, r
 			'count, standard deviation': 'A floating point number',
 			'avg-concentration': 'A floating point number in mM units',
 			'concentration, standard deviation': 'A floating point number in mM units',
-			'avg-relative-count': 'A floating point number',
-			'relative count, standard deviation': 'A floating point number',
-			'avg-relative-mass-count': 'A floating point number',
-			'relative mass count, standard deviation': 'A floating point number',
+			'avg-relative-count-to-total-counts': 'A floating point number',
+			'avg-relative-mass-to-total-molecule-type-mass': 'A floating point number',
+			'avg-relative-mass-to-total-cell-dry-mass': 'A floating point number',
 			}
 		for col, desc in columns.items():
 			writer.writerow([f'# {col}', desc])
 		writer.writerow(list(columns.keys()))
 
 		# Data rows
-		for id_, count, conc, rel_count, rel_mass in zip(ids, counts.T,
-				concentrations.T, relative_counts.T, relative_masses.T):
+		for id_, count, conc, rel_count, rel_mass1, rel_mass2 in zip(
+				ids, counts.T, concentrations.T, relative_counts.T,
+				relative_masses_to_total_type_mass.T, relative_masses_to_total_cell_dry_mass.T):
 			writer.writerow([id_, count.mean(), count.std(), conc.mean(), conc.std(),
-				rel_count.mean(), rel_count.std(), rel_mass.mean(), rel_mass.std()])
+				rel_count.mean(), rel_mass1.mean(), rel_mass2.mean()])
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -75,41 +79,64 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load listener data
 		## Tables
-		mrna_reader = TableReader(os.path.join(cell_paths[0], 'simOut', 'mRNACounts'))
-		monomer_reader = TableReader(os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
+		mrna_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'mRNACounts'))
+		monomer_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
+		mass_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'Mass'))
 
 		## Attributes
 		mrna_ids = mrna_reader.readAttribute('mRNA_ids')
 		monomer_ids = monomer_reader.readAttribute('monomerIds')
+		mass_unit =	mass_reader.readAttribute('cellDry_units')
+		assert mass_unit == 'fg'
 
 		## Columns
 		## remove_first=True because countsToMolar is 0 at first time step
-		mrna_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True)
-		monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True)
-		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True)
+		mrna_counts = read_stacked_columns(
+			cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True)
+		monomer_counts = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True)
+		counts_to_molar = read_stacked_columns(
+			cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True)
+		dry_masses = read_stacked_columns(
+			cell_paths, 'Mass', 'dryMass', remove_first=True)
+
 
 		# Derived mRNA values
 		mrna_conc = mrna_counts * counts_to_molar
-		mrna_relative_counts = mrna_counts / mrna_counts.sum(1).reshape(-1, 1)
-		mrna_mw = sim_data.getter.get_masses(mrna_ids).asNumber(units.g / units.mol)
+		mrna_counts_relative_to_total_mrna_counts = mrna_counts / mrna_counts.sum(1).reshape(-1, 1)
+		mrna_mw = sim_data.getter.get_masses(mrna_ids).asNumber(units.fg / units.count)
 		mrna_masses = mrna_counts * mrna_mw
-		mrna_relative_masses = mrna_masses / mrna_masses.sum(1).reshape(-1, 1)
+		mrna_masses_relative_to_total_mrna_mass = mrna_masses / mrna_masses.sum(1).reshape(-1, 1)
+		mrna_masses_relative_to_total_dcw = mrna_masses / dry_masses
 
 		# Derived monomer values
 		monomer_conc = monomer_counts * counts_to_molar
-		monomer_relative_counts = monomer_counts / monomer_counts.sum(1).reshape(-1, 1)
-		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.g / units.mol)
+		monomer_counts_relative_to_total_monomer_counts = monomer_counts / monomer_counts.sum(1).reshape(-1, 1)
+		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
 		monomer_masses = monomer_counts * monomer_mw
-		monomer_relative_masses = monomer_masses / monomer_masses.sum(1).reshape(-1, 1)
+		monomer_masses_relative_to_total_monomer_mass = monomer_masses / monomer_masses.sum(1).reshape(-1, 1)
+		monomer_masses_relative_to_total_dcw = monomer_masses / dry_masses
 
 		# Save data in tables
 		mrna_ecocyc_ids = [rna[:-7] for rna in mrna_ids]  # strip _RNA[c]
 		monomer_ecocyc_ids = [monomer[:-3] for monomer in monomer_ids]  # strip [*]
 		media_id = 'MIX0-51'  # TODO: have a map of condition to EcoCyc media ID (temporarily hard-coded for minimal glc)
-		save_file(plotOutDir, f'wcm-mrna-data-{media_id}.tsv', mrna_ecocyc_ids,
-			mrna_counts, mrna_conc, mrna_relative_counts, mrna_relative_masses)
-		save_file(plotOutDir, f'wcm-monomer-data-{media_id}.tsv', monomer_ecocyc_ids,
-			monomer_counts, monomer_conc, monomer_relative_counts, monomer_relative_masses)
+
+		save_file(plotOutDir, f'wcm-mrna-data-{media_id}.tsv',
+			mrna_ecocyc_ids, mrna_counts, mrna_conc,
+			mrna_counts_relative_to_total_mrna_counts,
+			mrna_masses_relative_to_total_mrna_mass,
+			mrna_masses_relative_to_total_dcw,
+			)
+		save_file(plotOutDir, f'wcm-monomer-data-{media_id}.tsv',
+			monomer_ecocyc_ids, monomer_counts, monomer_conc,
+			monomer_counts_relative_to_total_monomer_counts,
+			monomer_masses_relative_to_total_monomer_mass,
+			monomer_masses_relative_to_total_dcw,
+			)
 
 
 if __name__ == '__main__':
