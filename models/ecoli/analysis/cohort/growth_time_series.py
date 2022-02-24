@@ -305,6 +305,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			f'{aa_ids[i][:-3]} concentration\n(mM)': {'y': [aa_conc[:, i]]}
 			for i in range(len(aa_ids))
 			}
+		data_5 = {
+			'Growth rates\n(1/hr)': {'y': [growth_rate, rna_growth, protein_growth], 'lim': [0, 2]},
+			}
 		# Subset of the data to plot for the paper
 		paper_2_keys = [
 			'Growth rate\n(1/hr)',
@@ -317,7 +320,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'Ribosome elongation rate\n(AA/s)',
 			]
 		paper_4_keys = [f'{aa_id[:-3]} concentration\n(mM)' for aa_id in aa_ids]
-		paper_5_keys = [
+		paper_6_keys = [
 			'RNA growth rate\n(1/hr)',
 			'RNA fraction\nsynthesis probability',
 			'RNAP elongation rate\n(nt/s)',
@@ -344,6 +347,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for i, key in enumerate(keys):
 				row = i % rows
 				col = i // rows
+				if rows == 1 and cols == 1:
+					axes = np.array([axes])
 				if cols == 1:
 					ax = axes[row]
 				elif rows == 1:
@@ -398,9 +403,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			downsample=10, trim=True, cols=1, single_cells=True)
 
 		# Plots specific for figure 5 in paper
-		subplots(f'{plotOutFileName}_fig5', data, paper_5_keys, filtered,
+		subplots(f'{plotOutFileName}_fig5', data_5, data_5.keys(), filtered,
+			downsample=10, trim=True, cols=1)
+
+		# Plots specific for figure 6 in paper
+		subplots(f'{plotOutFileName}_fig6', data, paper_6_keys, filtered,
 			downsample=10, trim=True, cols=1, row_scale=1.5, all_x_labeled=False)
-		subplots(f'{plotOutFileName}_fig5_single', data, paper_5_keys, filtered,
+		subplots(f'{plotOutFileName}_fig6_single', data, paper_6_keys, filtered,
 			downsample=10, trim=True, cols=1, single_cells=True)
 
 		# Plot histograms of data
