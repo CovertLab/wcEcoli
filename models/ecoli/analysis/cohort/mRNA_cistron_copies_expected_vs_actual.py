@@ -41,7 +41,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		is_mRNA = sim_data.process.transcription.cistron_data['is_mRNA']
 		assert np.all(
 			mRNA_cistron_ids == sim_data.process.transcription.cistron_data['id'][is_mRNA])
-		expected_counts = sim_data.process.transcription.cistron_expression[EXPECTED_COUNT_CONDITION][is_mRNA]
+		mRNA_is_rnap_or_rprotein = np.logical_or(
+				sim_data.process.transcription.cistron_data['is_RNAP'],
+				sim_data.process.transcription.cistron_data['is_ribosomal_protein'])[is_mRNA]
+		expected_counts = sim_data.process.transcription.cistron_expression[EXPECTED_COUNT_CONDITION][
+			is_mRNA][~mRNA_is_rnap_or_rprotein]
 
 		# Normalize counts
 		expected_counts /= expected_counts.sum()
@@ -51,7 +55,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, 'mRNACounts', 'mRNA_cistron_counts', fun=lambda x: x.mean(axis=0))
 
 		# Get average count across all sims
-		actual_counts = all_actual_counts.mean(axis=0)
+		actual_counts = all_actual_counts[:, ~mRNA_is_rnap_or_rprotein].mean(axis=0)
 
 		# Normalize counts
 		actual_counts /= actual_counts.sum()
