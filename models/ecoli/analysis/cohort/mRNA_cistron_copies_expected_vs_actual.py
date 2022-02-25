@@ -41,7 +41,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		is_mRNA = sim_data.process.transcription.cistron_data['is_mRNA']
 		assert np.all(
 			mRNA_cistron_ids == sim_data.process.transcription.cistron_data['id'][is_mRNA])
-		expected_counts = sim_data.process.transcription.fit_cistron_expression[EXPECTED_COUNT_CONDITION][is_mRNA]
+		expected_counts = sim_data.process.transcription.cistron_expression[EXPECTED_COUNT_CONDITION][is_mRNA]
 
 		# Normalize counts
 		expected_counts /= expected_counts.sum()
