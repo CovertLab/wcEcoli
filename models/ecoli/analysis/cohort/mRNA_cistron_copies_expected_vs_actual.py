@@ -11,6 +11,7 @@ import os
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
+import scipy.stats as st
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import (
@@ -21,7 +22,7 @@ from wholecell.io.tablereader import TableReader
 FIGSIZE = (6, 6)
 BOUNDS = [1e-8, 1e-1]
 NUMERICAL_ZERO = 1e-10
-Z_SCORE_THRESHOLD = 3.29  # Corresponds to p=0.001
+P_VALUE_THRESHOLD = 1e-3
 
 EXPECTED_COUNT_CONDITION = 'basal'
 
@@ -63,8 +64,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Get statistical significance boundaries assuming a Poissonian
 		# distribution
-		ub = expected_counts + Z_SCORE_THRESHOLD*np.sqrt(expected_counts/n_timesteps)
-		lb = expected_counts - Z_SCORE_THRESHOLD*np.sqrt(expected_counts/n_timesteps)
+		z_score_threshold = st.norm.ppf(1 - P_VALUE_THRESHOLD/2)
+		ub = expected_counts + z_score_threshold*np.sqrt(expected_counts/n_timesteps)
+		lb = expected_counts - z_score_threshold*np.sqrt(expected_counts/n_timesteps)
 
 		# Get mask for outliers
 		outlier_mask = np.logical_or(actual_counts > ub, actual_counts < lb)
