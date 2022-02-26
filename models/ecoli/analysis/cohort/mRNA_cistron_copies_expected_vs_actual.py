@@ -18,10 +18,10 @@ from wholecell.analysis.analysis_tools import (
 from wholecell.io.tablereader import TableReader
 
 
-
 FIGSIZE = (6, 6)
-BOUNDS = [1e-9, 1]
+BOUNDS = [1e-8, 1e-1]
 NUMERICAL_ZERO = 1e-10
+Z_SCORE_THRESHOLD = 3.29  # Corresponds to p=0.001
 
 EXPECTED_COUNT_CONDITION = 'basal'
 
@@ -52,22 +52,35 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Read actual counts
 		all_actual_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_cistron_counts', fun=lambda x: x.mean(axis=0))
+			cell_paths, 'mRNACounts', 'mRNA_cistron_counts')
 
-		# Get average count across all sims
+		# Get average count across all timesteps over all sims
 		actual_counts = all_actual_counts[:, ~mRNA_is_rnap_or_rprotein].mean(axis=0)
+		n_timesteps = all_actual_counts.shape[0]
 
 		# Normalize counts
 		actual_counts /= actual_counts.sum()
+
+		# Get statistical significance boundaries assuming a Poissonian
+		# distribution
+		ub = expected_counts + Z_SCORE_THRESHOLD*np.sqrt(expected_counts/n_timesteps)
+		lb = expected_counts - Z_SCORE_THRESHOLD*np.sqrt(expected_counts/n_timesteps)
+
+		# Get mask for outliers
+		outlier_mask = np.logical_or(actual_counts > ub, actual_counts < lb)
 
 		plt.figure(figsize=FIGSIZE)
 
 		plt.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
 		plt.scatter(
-			expected_counts + NUMERICAL_ZERO,
-			actual_counts + NUMERICAL_ZERO,
-			alpha=0.5,
-			s=1)
+			expected_counts[~outlier_mask] + NUMERICAL_ZERO,
+			actual_counts[~outlier_mask] + NUMERICAL_ZERO,
+			c='#cccccc', s=1)
+		# Highlight outliers in blue
+		plt.scatter(
+			expected_counts[outlier_mask] + NUMERICAL_ZERO,
+			actual_counts[outlier_mask] + NUMERICAL_ZERO,
+			c='b', s=1)
 
 		plt.title('Expected vs actual RNA copies')
 		plt.xlabel('Expected normalized copies')

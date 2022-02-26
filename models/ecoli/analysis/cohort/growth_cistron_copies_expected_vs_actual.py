@@ -67,11 +67,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Read actual counts
 		all_actual_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_cistron_counts', fun=lambda x: x.mean(axis=0))
+			cell_paths, 'mRNACounts', 'mRNA_cistron_counts')
 		all_actual_rprotein_counts = all_actual_counts[:, rprotein_indexes]
 		all_actual_rnap_counts = all_actual_counts[:, rnap_indexes]
 
-		# Get average count across all sims
+		# Get average count across all timesteps across all sims
 		actual_rprotein_counts = all_actual_rprotein_counts.mean(axis=0)
 		actual_rnap_counts = all_actual_rnap_counts.mean(axis=0)
 
