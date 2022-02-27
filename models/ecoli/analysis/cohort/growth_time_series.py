@@ -297,7 +297,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'RNA deg rate': {'y': [rna_deg_rate], 'lim': [0, 0.8]},
 			'RNA deg ratio': {'y': [mrna_deg_ratio, rrna_deg_ratio, trna_deg_ratio], 'lim': [0, 1]},
 			'Excess ribosome RNA/protein': {'y': [excess], 'lim': [0, 1]},
-			'Synthesis fraction RNA/protein/enzymes': {'y': [synth_fractions], 'lim': [0, 1]},
+			'Synthesis fraction rRNA/rProtein/enzymes': {'y': [synth_fractions], 'lim': [0, 1]},
 			'mRNA conc\n(count/fg)': {'y': [mrna_conc], 'lim': [0, 15]},
 			'RNA mass fraction produced': {'y': [mrna_fraction_produced, rrna_fraction_produced, trna_fraction_produced], 'lim': [0, 1]},
 			}
