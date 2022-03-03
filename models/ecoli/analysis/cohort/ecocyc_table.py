@@ -18,6 +18,7 @@ TODO:
 """
 
 import csv
+import numpy as np
 import os
 import pickle
 
@@ -30,7 +31,7 @@ from wholecell.utils import units
 
 def save_file(out_dir, filename, ids,
 	counts, concentrations, relative_counts, relative_masses_to_total_type_mass,
-	relative_masses_to_total_cell_dry_mass,
+	relative_masses_to_total_cell_dry_mass, validation_counts,
 	aerobic=True):
 	"""
 	TODO:
@@ -56,23 +57,27 @@ def save_file(out_dir, filename, ids,
 			'avg-relative-count-to-total-counts': 'A floating point number',
 			'avg-relative-mass-to-total-molecule-type-mass': 'A floating point number',
 			'avg-relative-mass-to-total-cell-dry-mass': 'A floating point number',
+			'validation-count': 'A floating point number',
 			}
 		for col, desc in columns.items():
 			writer.writerow([f'# {col}', desc])
 		writer.writerow(list(columns.keys()))
 
 		# Data rows
-		for id_, count, conc, rel_count, rel_mass1, rel_mass2 in zip(
+		for id_, count, conc, rel_count, rel_mass1, rel_mass2, val_count in zip(
 				ids, counts.T, concentrations.T, relative_counts.T,
-				relative_masses_to_total_type_mass.T, relative_masses_to_total_cell_dry_mass.T):
+				relative_masses_to_total_type_mass.T, relative_masses_to_total_cell_dry_mass.T,
+				validation_counts):
 			writer.writerow([id_, count.mean(), count.std(), conc.mean(), conc.std(),
-				rel_count.mean(), rel_mass1.mean(), rel_mass2.mean()])
+				rel_count.mean(), rel_mass1.mean(), rel_mass2.mean(), val_count])
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
+		with open(validationDataFile, 'rb') as f:
+			validation_data = pickle.load(f)
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 		cell_paths = ap.get_cells()
@@ -103,6 +108,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		dry_masses = read_stacked_columns(
 			cell_paths, 'Mass', 'dryMass', remove_first=True)
 
+		# Validation
+		mrna_validation_counts = np.zeros_like(mrna_counts)  # Zero for now
+		protein_id_to_schmidt_counts = {
+			item[0]: item[1] for item in validation_data.protein.schmidt2015Data
+			}
+		protein_validation_counts = np.array([
+			protein_id_to_schmidt_counts.get(protein_id, np.nan) for protein_id in monomer_ids
+			])
 
 		# Derived mRNA values
 		mrna_conc = mrna_counts * counts_to_molar
@@ -130,12 +143,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			mrna_counts_relative_to_total_mrna_counts,
 			mrna_masses_relative_to_total_mrna_mass,
 			mrna_masses_relative_to_total_dcw,
+			mrna_validation_counts,
 			)
 		save_file(plotOutDir, f'wcm-monomer-data-{media_id}.tsv',
 			monomer_ecocyc_ids, monomer_counts, monomer_conc,
 			monomer_counts_relative_to_total_monomer_counts,
 			monomer_masses_relative_to_total_monomer_mass,
 			monomer_masses_relative_to_total_dcw,
+			protein_validation_counts,
 			)
 
 
