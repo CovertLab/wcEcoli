@@ -15,7 +15,7 @@ from models.ecoli.analysis.single.ribosome_limitation import calculate_ribosome_
 from models.ecoli.sim.variants import ppgpp_conc, ppgpp_limitations
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, read_stacked_bulk_molecules
 from wholecell.io.tablereader import TableReader
-from wholecell.analysis.plotting_tools import COLORS_SMALL
+from wholecell.analysis.plotting_tools import COLORS_COLORBLIND as COLORS
 
 
 MEAN = 'mean'
@@ -26,7 +26,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def plot_data(self, axes, x, y, yerr, xlabel, ylabel, condition_labels, conditions,
 			factors, condition_base_factor):
 		raw_ax, norm_ax = axes
-		for condition, color in zip(np.unique(conditions), COLORS_SMALL):
+		for condition, color in zip(np.unique(conditions), COLORS):
 			mask = conditions == condition
 			raw_ax.errorbar(x[mask], y[mask], yerr=yerr[mask], fmt='o', color=color,
 				label=condition_labels[condition])
@@ -44,6 +44,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_xlabel(xlabel, fontsize=8)
 			ax.tick_params(labelsize=6)
 			self.remove_border(ax)
+
+	def plot_single(self, data, keys, x, twinx=False):
+		plt.figure(figsize=(4, 2.5))
+		ax = plt.gca()
+		create_axis = twinx
+		for key, color in zip(keys, COLORS):
+			y = data[key][MEAN]
+			yerr = data[key][STD]
+			ax.errorbar(x, y, yerr=yerr, fmt='o', color=color, label=key)
+
+			if twinx:
+				ax.set_ylabel(key)
+
+			if create_axis:
+				ax = plt.twinx(ax)
+				create_axis = False
+
+		if not twinx:
+			plt.legend(fontsize=6)
+		self.remove_border()
+		plt.tight_layout()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -138,7 +159,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			add_data('rprotein_protein_fraction', protein_fractions[:, 0])
 			add_data('enzyme_protein_fraction', protein_fractions[:, 1])
 
-		# Create plots
+		# Compile for plots
+		if metadata.get('variant') == 'ppgpp_limitations':
+			x = factors
+			xlabel = 'Adjustment factor'
+			condition_labels = {c: c for c in conditions}
+			condition_base_factor = None
+		else:
+			x = data['ppgpp'][MEAN]
+			xlabel = 'ppGpp conc (uM)'
+			condition_labels = {i: c for i, c in enumerate(sim_data.ordered_conditions)}
+			condition_base_factor = dict(zip(ppgpp_conc.CONDITIONS, ppgpp_conc.BASE_FACTOR))
 		labels = {
 			'growth_rate': 'Growth rate (1/hr)',
 			'elong_rate': 'Elongation rate (AA/s)',
@@ -159,27 +190,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'rprotein_protein_fraction': 'rProtein fraction\n(per protein mass)',
 			'enzyme_protein_fraction': 'Enzyme fraction\n(per protein mass)',
 			}
+
+		# Create plots
 		n_subplots = len(labels)
 		_, axes = plt.subplots(n_subplots, 2, figsize=(8, 2.5 * n_subplots))
 
 		## Bar plots of cell properties
-		if metadata.get('variant') == 'ppgpp_limitations':
-			x = factors
-			xlabel = 'Adjustment factor'
-			condition_labels = {c: c for c in conditions}
-			condition_base_factor = None
-		else:
-			x = data['ppgpp'][MEAN]
-			xlabel = 'ppGpp conc (uM)'
-			condition_labels = {i: c for i, c in enumerate(sim_data.ordered_conditions)}
-			condition_base_factor = dict(zip(ppgpp_conc.CONDITIONS, ppgpp_conc.BASE_FACTOR))
 		for i, (key, ylabel) in enumerate(labels.items()):
 			self.plot_data(axes[i, :], x, data[key][MEAN], data[key][STD],
-			xlabel, ylabel, condition_labels, conditions, factors, condition_base_factor)
+				xlabel, ylabel, condition_labels, conditions, factors, condition_base_factor)
 
+		## Formating for plots
 		axes[0, 0].legend(fontsize=6)
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
+
+		# Plots specific to paper
+		## Output
+		keys = ['ribosome_output', 'aa_output']
+		self.plot_single(data, keys, x)
+		exportFigure(plt, plotOutDir, plotOutFileName + '_output', metadata)
+		plt.close('all')
+
+		## Capacity
+		keys = ['ribosome_capacity', 'aa_capacity']
+		self.plot_single(data, keys, x, twinx=True)
+		exportFigure(plt, plotOutDir, plotOutFileName + '_capacity', metadata)
 		plt.close('all')
 
 
