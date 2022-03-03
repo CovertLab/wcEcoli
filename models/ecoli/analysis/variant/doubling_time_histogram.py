@@ -3,13 +3,11 @@ from matplotlib import pyplot as plt
 
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.analysis.plotting_tools import COLORS_COLORBLIND as COLORS
 
 
 FONT_SIZE=9
 MAX_CELL_LENGTH = 180  # filter sims that reach the max time of 180 min
-
-with plt.style.context('seaborn-colorblind'):
-	COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -31,7 +29,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.legend()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-
 		doubling_times = {}
 		growth_rates = {}
 
@@ -64,6 +61,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		axes[0].set_xlim([15, 90])
 		axes[1].set_xlim([0, 2.5])
 		exportFigure(plt, plotOutDir, plotOutFileName + '_trimmed', metadata)
+
 
 if __name__ == "__main__":
 	Plot().cli()
