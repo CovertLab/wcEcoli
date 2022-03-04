@@ -219,6 +219,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName + '_capacity', metadata)
 		plt.close('all')
 
+		## Excess
+		keys = ['excess_rna', 'aa_conc']
+		self.plot_single(data, keys, x, twinx=True)
+		exportFigure(plt, plotOutDir, plotOutFileName + '_excess', metadata)
+		plt.close('all')
+
 
 if __name__ == "__main__":
 	Plot().cli()
