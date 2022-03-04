@@ -45,25 +45,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(labelsize=6)
 			self.remove_border(ax)
 
-	def plot_single(self, data, keys, x, twinx=False):
-		plt.figure(figsize=(4, 2.5))
-		ax = plt.gca()
+	def plot_overlays(self, data, keys, x, twinx=False, normalize=4):
+		_, (raw_aw, norm_ax) = plt.subplots(1, 2, figsize=(8, 2.5))
 		create_axis = twinx
 		for key, color in zip(keys, COLORS):
 			y = data[key][MEAN]
 			yerr = data[key][STD]
-			ax.errorbar(x, y, yerr=yerr, fmt='o', color=color, label=key)
+			raw_aw.errorbar(x, y, yerr=yerr, fmt='o', color=color, label=key)
+
+			y_norm = y[normalize] if len(y) > normalize else 1
+			norm_ax.errorbar(x, y / y_norm, yerr=yerr / y_norm, fmt='o', color=color, label=key)
 
 			if twinx:
-				ax.set_ylabel(key)
+				raw_aw.set_ylabel(key)
 
 			if create_axis:
-				ax = plt.twinx(ax)
+				raw_aw = plt.twinx(raw_aw)
 				create_axis = False
 
-		if not twinx:
-			plt.legend(fontsize=6)
-		self.remove_border()
+		norm_ax.set_ylabel('Normalized values')
+		norm_ax.legend(fontsize=6)
+		self.remove_border(raw_aw)
+		self.remove_border(norm_ax)
 		plt.tight_layout()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -209,19 +212,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Plots specific to paper
 		## Output
 		keys = ['ribosome_output', 'aa_output']
-		self.plot_single(data, keys, x)
+		self.plot_overlays(data, keys, x)
 		exportFigure(plt, plotOutDir, plotOutFileName + '_output', metadata)
 		plt.close('all')
 
 		## Capacity
 		keys = ['ribosome_capacity', 'aa_capacity']
-		self.plot_single(data, keys, x, twinx=True)
+		self.plot_overlays(data, keys, x, twinx=True)
 		exportFigure(plt, plotOutDir, plotOutFileName + '_capacity', metadata)
 		plt.close('all')
 
 		## Excess
 		keys = ['excess_rna', 'aa_conc']
-		self.plot_single(data, keys, x, twinx=True)
+		self.plot_overlays(data, keys, x, twinx=True)
 		exportFigure(plt, plotOutDir, plotOutFileName + '_excess', metadata)
 		plt.close('all')
 
