@@ -305,6 +305,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			f'{aa_ids[i][:-3]} concentration\n(mM)': {'y': [aa_conc[:, i]]}
 			for i in range(len(aa_ids))
 			}
+		data_4['LEU concentration\n(mM)']['lim'] = [0, 20]
 		data_5 = {
 			'Growth rates\n(1/hr)': {'y': [growth_rate, rna_growth, protein_growth], 'lim': [0, 2]},
 			}
