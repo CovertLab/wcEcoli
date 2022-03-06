@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import time
+from typing import Dict
 
 from wholecell.utils import filepath
 
@@ -38,7 +39,7 @@ def get_fws(criteria):
 		result = [result]
 	return result
 
-rerun_counts = {}
+rerun_counts = {}  # type: Dict[str, int]
 while True:
 	# Get all fireworks with running status and all active job names
 	running = get_fws('-s RESERVED') + get_fws('-s RUNNING')
