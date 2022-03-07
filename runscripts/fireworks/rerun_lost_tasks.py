@@ -34,7 +34,7 @@ RUN_CMD = len(sys.argv) > 1 and sys.argv[1] == '-f'
 def get_fws(criteria):
 	result = json.loads(filepath.run_cmdline(f'lpad get_fws {criteria}', fallback='[]'))
 
-	# Handle single fw case to always make a lits of dicts
+	# Handle single fw case to always make a list of dicts
 	if isinstance(result, dict):
 		result = [result]
 	return result
@@ -81,7 +81,8 @@ while True:
 				if result is None:
 					filepath.run_cmdline('lpad admin unlock')
 			else:
-				print(f'Would rerun fw_ids {fws_to_rerun} if -f passed as arg')
+				print(f'Would rerun fw_ids {fws_to_rerun} if -f passed as arg. Manually rerun with:'
+					f'\n\tlpad rerun_fws -i {fws_to_rerun}')
 
 	# Sleep for a bit
 	print(f'{time.ctime()}: sleeping for {SLEEP} s...')
