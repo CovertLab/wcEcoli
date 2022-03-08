@@ -39,6 +39,7 @@ class ValidationDataEcoli(object):
 		self.reactionFlux = ReactionFlux(validation_data_raw, knowledge_base_raw)
 		self.essential_genes = EssentialGenes(validation_data_raw)
 		self.geneFunctions = GeneFunctions(validation_data_raw)
+		self.macromolecular_growth_rate_modulation = MacromolecularGrowthRateModulation(validation_data_raw)
 
 		self._add_dna_footprint_sizes(validation_data_raw)
 		self._add_amino_acid_growth_rates(validation_data_raw)
@@ -336,3 +337,33 @@ class GeneFunctions(object):
 
 		for row in validation_data_raw.geneFunctions:
 			self.geneFunctions[row["FrameID"]] = row["Function"]
+
+class MacromolecularGrowthRateModulation(object):
+	""" MacromolecularGrowthRateModulation """
+	def __init__(self, validation_data_raw):
+		self._load_macromolecular_growth_rate_modulation(validation_data_raw)
+
+	def _load_macromolecular_growth_rate_modulation(self, validation_data_raw):
+		dataset = validation_data_raw.macromolecular_growth_rate_modulation
+		self.doubling_time = np.zeros(len(dataset), dtype = Unum)
+		self.PRD_per_mass = np.zeros(len(dataset), dtype = Unum)
+		self.mass_per_cell = np.zeros(len(dataset), dtype = Unum)
+		self.total_RNA_stable_fraction = np.zeros(len(dataset), dtype= Unum)
+		self.stable_RNA_tRNA_fraction = np.zeros(len(dataset), dtype = Unum)
+		self.ribosomes_per_cell = np.zeros(len(dataset), dtype = Unum)
+		self.protein_per_cell_ug = np.zeros(len(dataset), dtype = Unum)
+		self.RNA_per_cell_ug = np.zeros(len(dataset), dtype = Unum)
+		self.DNA_per_cell_ug = np.zeros(len(dataset), dtype = Unum)
+		self.PRD_per_cell = np.zeros(len(dataset), dtype = Unum)
+
+		for idx, row in enumerate(dataset):
+			self.doubling_time[idx] = row["doubling_time"]
+			self.PRD_per_mass[idx] = row["PRD_per_mass"]
+			self.mass_per_cell[idx] = row["mass_per_cell"]
+			self.total_RNA_stable_fraction[idx] = row["total_RNA_stable_fraction"]
+			self.stable_RNA_tRNA_fraction[idx] = row["stable_RNA_tRNA_fraction"]
+			self.ribosomes_per_cell[idx] = row["ribosomes_per_cell"]
+			self.protein_per_cell_ug[idx] = row["protein_per_cell_ug"]
+			self.RNA_per_cell_ug[idx] = row["RNA_per_cell_ug"]
+			self.DNA_per_cell_ug[idx] = row["DNA_per_cell_ug"]
+			self.PRD_per_cell[idx] = row["PRD_per_cell"]
