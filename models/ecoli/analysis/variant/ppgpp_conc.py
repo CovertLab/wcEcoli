@@ -16,10 +16,14 @@ from models.ecoli.sim.variants import ppgpp_conc, ppgpp_limitations, ppgpp_limit
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, read_stacked_bulk_molecules
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.plotting_tools import COLORS_COLORBLIND as COLORS
+from wholecell.utils import units
 
 
 MEAN = 'mean'
 STD = 'std'
+MARKERS = ['o', 's']  # Expand for more overlays
+PANEL_WIDTH = 3.5
+PANEL_HEIGHT = 2
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -28,33 +32,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		raw_ax, norm_ax = axes
 		for condition, color in zip(np.unique(conditions), COLORS):
 			mask = conditions == condition
-			raw_ax.errorbar(x[mask], y[mask], yerr=yerr[mask], fmt='o', color=color,
+			raw_ax.errorbar(x[mask], y[mask], yerr=yerr[mask], fmt='o', color=color, alpha=0.8,
 				label=condition_labels[condition])
 
 			if condition_base_factor is not None and condition_base_factor.get(condition) in factors[mask]:
 				ref_idx = factors[mask] == condition_base_factor[condition]
 				ref_val = y[mask][ref_idx]
 				norm_ax.errorbar(x[mask], y[mask] / ref_val, yerr=yerr[mask] / ref_val,
-					fmt='o', color=color, label=condition_labels[condition])
+					fmt='o', color=color, alpha=0.8, label=condition_labels[condition])
 				norm_ax.axhline(1, linestyle='--', color='k', linewidth=0.5)
 
 		raw_ax.set_ylabel(ylabel, fontsize=8)
 		norm_ax.set_ylabel(f'Normalized\n{ylabel}', fontsize=8)
 		for ax in axes:
 			ax.set_xlabel(xlabel, fontsize=8)
-			ax.tick_params(labelsize=6)
+			ax.tick_params(labelsize=8)
 			self.remove_border(ax)
 
 	def plot_overlays(self, data, keys, x, twinx=False, normalize=4):
-		_, (raw_aw, norm_ax) = plt.subplots(1, 2, figsize=(8, 2.5))
+		_, (raw_aw, norm_ax) = plt.subplots(1, 2, figsize=(2 * PANEL_WIDTH, PANEL_HEIGHT))
 		create_axis = twinx
-		for key, color in zip(keys, COLORS):
+		for key, marker in zip(keys, MARKERS):
 			y = data[key][MEAN]
 			yerr = data[key][STD]
-			raw_aw.errorbar(x, y, yerr=yerr, fmt='o', color=color, label=key)
+			raw_aw.errorbar(x, y, yerr=yerr, fmt=marker, color='k', alpha=0.8, label=key)
 
 			y_norm = y[normalize] if len(y) > normalize else 1
-			norm_ax.errorbar(x, y / y_norm, yerr=yerr / y_norm, fmt='o', color=color, label=key)
+			norm_ax.errorbar(x, y / y_norm, yerr=yerr / y_norm, fmt=marker, color='k', alpha=0.8, label=key)
 
 			if twinx:
 				raw_aw.set_ylabel(key)
@@ -79,6 +83,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		fwd_kcats = metabolism.aa_kcats_fwd
 		ribosome_subunit_ids = [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex]
 		aa_ids = sim_data.molecule_groups.amino_acids
+		aa_mws = sim_data.getter.get_masses(aa_ids).asNumber(units.fg / units.count)
 		max_elong_rate = sim_data.process.translation.basal_elongation_rate
 		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charged_trna_names = transcription.charged_trna_names
@@ -109,8 +114,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ppgpp = read_stacked_columns(all_cells, 'GrowthLimits', 'ppgpp_conc')
 			elong_rate = read_stacked_columns(all_cells, 'RibosomeData', 'effectiveElongationRate')
 			growth_rate = read_stacked_columns(all_cells, 'Mass', 'instantaneous_growth_rate', remove_first=True) * 3600
-			rna_mass = read_stacked_columns(all_cells, 'Mass', 'rnaMass')
-			protein_mass = read_stacked_columns(all_cells, 'Mass', 'proteinMass')
+			rna_mass = read_stacked_columns(all_cells, 'Mass', 'rnaMass', remove_first=True).squeeze()
+			protein_mass = read_stacked_columns(all_cells, 'Mass', 'proteinMass', remove_first=True).squeeze()
 			aas_elongated = read_stacked_columns(all_cells, 'GrowthLimits', 'aasUsed', remove_first=True)
 			aas_supplied = read_stacked_columns(all_cells, 'GrowthLimits', 'aa_supply', remove_first=True)
 			aa_saturation = read_stacked_columns(all_cells, 'GrowthLimits', 'aa_supply_fraction_fwd', remove_first=True).mean(1)
@@ -121,7 +126,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, (aa_enzyme_ids, ribosome_subunit_ids, aa_ids, uncharged_trna_names, charged_trna_names), remove_first=True)
 			excess, synth_fractions, protein_fractions = calculate_ribosome_excesses(sim_data, all_cells)
 
-			rna_to_protein = (rna_mass / protein_mass)
+			aa_mass = aas @ aa_mws
+			rna_to_protein = rna_mass / protein_mass
+			rna_to_aa = rna_mass / (protein_mass + aa_mass)
 			ribosome_output = counts_to_molar * aas_elongated.sum(1) / time_step
 			aa_output = counts_to_molar * aas_supplied.sum(1) / time_step
 			aa_conc = counts_to_molar * aas.sum(1)
@@ -147,6 +154,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			add_data('ppgpp', ppgpp)
 			add_data('growth_rate', growth_rate)
 			add_data('rna_to_protein', rna_to_protein)
+			add_data('rna_to_aa', rna_to_aa)
 			add_data('elong_rate', elong_rate)
 			add_data('ribosome_output', ribosome_output)
 			add_data('aa_output', aa_output)
@@ -179,6 +187,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'growth_rate': 'Growth rate (1/hr)',
 			'elong_rate': 'Elongation rate (AA/s)',
 			'rna_to_protein': 'RNA/protein',
+			'rna_to_aa': 'RNA/(protein+AA)',
 			'ribosome_output': 'Ribosome output (mM/s)',
 			'aa_output': 'AA output (mM/s)',
 			'ribosome_capacity': 'Ribosome capacity (mM/s)',
@@ -198,7 +207,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Create plots
 		n_subplots = len(labels)
-		_, axes = plt.subplots(n_subplots, 2, figsize=(8, 2.5 * n_subplots))
+		_, axes = plt.subplots(n_subplots, 2, figsize=(2 * PANEL_WIDTH, n_subplots * PANEL_HEIGHT))
 
 		## Bar plots of cell properties
 		for i, (key, ylabel) in enumerate(labels.items()):
