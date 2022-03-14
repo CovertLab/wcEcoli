@@ -28,9 +28,12 @@ PANEL_HEIGHT = 2
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def plot_data(self, axes, x, y, yerr, xlabel, ylabel, condition_labels, conditions,
-			factors, condition_base_factor):
+			factors, condition_base_factor, colored=True):
 		raw_ax, norm_ax = axes
 		for condition, color in zip(np.unique(conditions), COLORS):
+			if not colored:
+				color = 'k'
+
 			mask = conditions == condition
 			raw_ax.errorbar(x[mask], y[mask], yerr=yerr[mask], fmt='o', color=color, alpha=0.8,
 				label=condition_labels[condition])
@@ -49,28 +52,38 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(labelsize=8)
 			self.remove_border(ax)
 
-	def plot_overlays(self, data, keys, x, twinx=False, normalize=4):
-		_, (raw_aw, norm_ax) = plt.subplots(1, 2, figsize=(2 * PANEL_WIDTH, PANEL_HEIGHT))
+	def plot_overlays(self, data, keys, x, xlabel, twinx=False, normalize=4, ylabel=None):
+		_, (raw_ax, norm_ax) = plt.subplots(1, 2, figsize=(2 * PANEL_WIDTH, PANEL_HEIGHT))
+		raw_ax.set_xlabel(xlabel, fontsize=8)
 		create_axis = twinx
 		for key, marker in zip(keys, MARKERS):
 			y = data[key][MEAN]
 			yerr = data[key][STD]
-			raw_aw.errorbar(x, y, yerr=yerr, fmt=marker, color='k', alpha=0.8, label=key)
+			raw_ax.errorbar(x, y, yerr=yerr, fmt=marker, color='k', alpha=0.8, label=key)
 
 			y_norm = y[normalize] if len(y) > normalize else 1
 			norm_ax.errorbar(x, y / y_norm, yerr=yerr / y_norm, fmt=marker, color='k', alpha=0.8, label=key)
 
 			if twinx:
-				raw_aw.set_ylabel(key)
+				raw_ax.set_ylabel(key, fontsize=8)
+				raw_ax.tick_params(labelsize=8)
 
 			if create_axis:
-				raw_aw = plt.twinx(raw_aw)
+				raw_ax = plt.twinx(raw_ax)
 				create_axis = False
 
-		norm_ax.set_ylabel('Normalized values')
+		if ylabel:
+			raw_ax.set_ylabel(ylabel, fontsize=8)
+		if not twinx:
+			raw_ax.legend(fontsize=6)
+		self.remove_border(raw_ax)
+
+		norm_ax.set_ylabel('Normalized values', fontsize=8)
+		norm_ax.tick_params(labelsize=8)
 		norm_ax.legend(fontsize=6)
-		self.remove_border(raw_aw)
+		norm_ax.set_xlabel(xlabel, fontsize=8)
 		self.remove_border(norm_ax)
+
 		plt.tight_layout()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -206,36 +219,41 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			}
 
 		# Create plots
-		n_subplots = len(labels)
-		_, axes = plt.subplots(n_subplots, 2, figsize=(2 * PANEL_WIDTH, n_subplots * PANEL_HEIGHT))
+		def plot_all(appended_filename='', colored=True):
+			n_subplots = len(labels)
+			_, axes = plt.subplots(n_subplots, 2, figsize=(2 * PANEL_WIDTH, n_subplots * PANEL_HEIGHT))
 
-		## Bar plots of cell properties
-		for i, (key, ylabel) in enumerate(labels.items()):
-			self.plot_data(axes[i, :], x, data[key][MEAN], data[key][STD],
-				xlabel, ylabel, condition_labels, conditions, factors, condition_base_factor)
+			## Bar plots of cell properties
+			for i, (key, ylabel) in enumerate(labels.items()):
+				self.plot_data(axes[i, :], x, data[key][MEAN], data[key][STD], xlabel, ylabel,
+					condition_labels, conditions, factors, condition_base_factor, colored=colored)
 
-		## Formating for plots
-		axes[0, 0].legend(fontsize=6)
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-		plt.close('all')
+			## Formating for plots
+			if len(np.unique(conditions)) > 1:
+				axes[0, 0].legend(fontsize=6)
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName + appended_filename, metadata)
+			plt.close('all')
+
+		plot_all()
+		plot_all(appended_filename='_grayscale', colored=False)
 
 		# Plots specific to paper
 		## Output
 		keys = ['ribosome_output', 'aa_output']
-		self.plot_overlays(data, keys, x)
+		self.plot_overlays(data, keys, x, xlabel, ylabel='Output')
 		exportFigure(plt, plotOutDir, plotOutFileName + '_output', metadata)
 		plt.close('all')
 
 		## Capacity
 		keys = ['ribosome_capacity', 'aa_capacity']
-		self.plot_overlays(data, keys, x, twinx=True)
+		self.plot_overlays(data, keys, x, xlabel, twinx=True)
 		exportFigure(plt, plotOutDir, plotOutFileName + '_capacity', metadata)
 		plt.close('all')
 
 		## Excess
 		keys = ['excess_rna', 'aa_conc']
-		self.plot_overlays(data, keys, x, twinx=True)
+		self.plot_overlays(data, keys, x, xlabel, twinx=True)
 		exportFigure(plt, plotOutDir, plotOutFileName + '_excess', metadata)
 		plt.close('all')
 
