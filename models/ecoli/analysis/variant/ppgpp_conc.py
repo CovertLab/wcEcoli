@@ -22,8 +22,8 @@ from wholecell.utils import units
 MEAN = 'mean'
 STD = 'std'
 MARKERS = ['o', 's']  # Expand for more overlays
-PANEL_WIDTH = 4
-PANEL_HEIGHT = 2
+PANEL_WIDTH = 3.8
+PANEL_HEIGHT = 1.7
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -36,13 +36,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			mask = conditions == condition
 			raw_ax.errorbar(x[mask], y[mask], yerr=yerr[mask], fmt='o', color=color, alpha=0.8,
-				label=condition_labels[condition])
+				label=condition_labels[condition], fillstyle='none')
 
 			if condition_base_factor is not None and condition_base_factor.get(condition) in factors[mask]:
 				ref_idx = factors[mask] == condition_base_factor[condition]
 				ref_val = y[mask][ref_idx]
 				norm_ax.errorbar(x[mask], y[mask] / ref_val, yerr=yerr[mask] / ref_val,
-					fmt='o', color=color, alpha=0.8, label=condition_labels[condition])
+					fmt='o', color=color, alpha=0.8, label=condition_labels[condition], fillstyle='none')
 				norm_ax.axhline(1, linestyle='--', color='k', linewidth=0.5)
 
 		raw_ax.set_ylabel(ylabel, fontsize=8)
@@ -60,10 +60,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for key, marker in zip(keys, MARKERS):
 			y = data[key][MEAN]
 			yerr = data[key][STD]
-			raw_ax.errorbar(x, y, yerr=yerr, fmt=marker, color='k', alpha=0.8, label=key)
+			raw_ax.errorbar(x, y, yerr=yerr, fmt=marker, fillstyle='none', color='k', alpha=0.8, label=key)
 
 			y_norm = y[normalize] if len(y) > normalize else 1
-			norm_ax.errorbar(x, y / y_norm, yerr=yerr / y_norm, fmt=marker, color='k', alpha=0.8, label=key)
+			norm_ax.errorbar(x, y / y_norm, yerr=yerr / y_norm, fmt=marker, fillstyle='none', color='k', alpha=0.8, label=key)
 
 			if twinx:
 				raw_ax.set_ylabel(key, fontsize=8)
@@ -75,6 +75,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		if not twinx:
 			raw_ax.set_ylabel(ylabel, fontsize=8)
+			raw_ax.tick_params(labelsize=8)
 			raw_ax.legend(fontsize=6)
 		self.remove_border(raw_ax)
 
@@ -83,8 +84,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		norm_ax.legend(fontsize=6)
 		norm_ax.set_xlabel(xlabel, fontsize=8)
 		self.remove_border(norm_ax)
-
-		plt.tight_layout()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -224,7 +223,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Create plots
 		def plot_all(appended_filename='', colored=True):
 			n_subplots = len(labels)
-			_, axes = plt.subplots(n_subplots, 2, figsize=(2 * PANEL_WIDTH, n_subplots * PANEL_HEIGHT))
+			_, axes = plt.subplots(n_subplots, 2, figsize=(2 * PANEL_WIDTH, n_subplots * PANEL_HEIGHT), constrained_layout=True)
 
 			## Bar plots of cell properties
 			for i, (key, ylabel) in enumerate(labels.items()):
@@ -237,7 +236,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			## Formating for plots
 			if len(np.unique(conditions)) > 1:
 				axes[0, 0].legend(fontsize=6)
-			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName + appended_filename, metadata)
 			plt.close('all')
 
