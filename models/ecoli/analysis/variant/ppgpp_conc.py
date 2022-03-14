@@ -22,7 +22,7 @@ from wholecell.utils import units
 MEAN = 'mean'
 STD = 'std'
 MARKERS = ['o', 's']  # Expand for more overlays
-PANEL_WIDTH = 3.5
+PANEL_WIDTH = 4
 PANEL_HEIGHT = 2
 
 
@@ -52,9 +52,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.tick_params(labelsize=8)
 			self.remove_border(ax)
 
-	def plot_overlays(self, data, keys, x, xlabel, twinx=False, normalize=4, ylabel=None):
-		_, (raw_ax, norm_ax) = plt.subplots(1, 2, figsize=(2 * PANEL_WIDTH, PANEL_HEIGHT))
+	def plot_overlays(self, axes, data, keys, x, xlabel, ylabel, normalize=4):
+		raw_ax, norm_ax = axes
 		raw_ax.set_xlabel(xlabel, fontsize=8)
+		twinx = 'twin' in ylabel
 		create_axis = twinx
 		for key, marker in zip(keys, MARKERS):
 			y = data[key][MEAN]
@@ -72,9 +73,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				raw_ax = plt.twinx(raw_ax)
 				create_axis = False
 
-		if ylabel:
-			raw_ax.set_ylabel(ylabel, fontsize=8)
 		if not twinx:
+			raw_ax.set_ylabel(ylabel, fontsize=8)
 			raw_ax.legend(fontsize=6)
 		self.remove_border(raw_ax)
 
@@ -216,6 +216,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'enzyme_synth_fraction': 'Enzyme synth fraction\n(per rRNA, rProtein, enzymes mass)',
 			'rprotein_protein_fraction': 'rProtein fraction\n(per protein mass)',
 			'enzyme_protein_fraction': 'Enzyme fraction\n(per protein mass)',
+			'Output': ['ribosome_output', 'aa_output'],
+			'Capacity-twin': ['ribosome_capacity', 'aa_capacity'],
+			'Excess-twin': ['excess_rna', 'aa_conc'],
 			}
 
 		# Create plots
@@ -225,8 +228,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			## Bar plots of cell properties
 			for i, (key, ylabel) in enumerate(labels.items()):
-				self.plot_data(axes[i, :], x, data[key][MEAN], data[key][STD], xlabel, ylabel,
-					condition_labels, conditions, factors, condition_base_factor, colored=colored)
+				if isinstance(ylabel, list):
+					self.plot_overlays(axes[i, :], data, ylabel, x, xlabel, key)
+				else:
+					self.plot_data(axes[i, :], x, data[key][MEAN], data[key][STD], xlabel, ylabel,
+						condition_labels, conditions, factors, condition_base_factor, colored=colored)
 
 			## Formating for plots
 			if len(np.unique(conditions)) > 1:
@@ -237,25 +243,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot_all()
 		plot_all(appended_filename='_grayscale', colored=False)
-
-		# Plots specific to paper
-		## Output
-		keys = ['ribosome_output', 'aa_output']
-		self.plot_overlays(data, keys, x, xlabel, ylabel='Output')
-		exportFigure(plt, plotOutDir, plotOutFileName + '_output', metadata)
-		plt.close('all')
-
-		## Capacity
-		keys = ['ribosome_capacity', 'aa_capacity']
-		self.plot_overlays(data, keys, x, xlabel, twinx=True)
-		exportFigure(plt, plotOutDir, plotOutFileName + '_capacity', metadata)
-		plt.close('all')
-
-		## Excess
-		keys = ['excess_rna', 'aa_conc']
-		self.plot_overlays(data, keys, x, xlabel, twinx=True)
-		exportFigure(plt, plotOutDir, plotOutFileName + '_excess', metadata)
-		plt.close('all')
 
 
 if __name__ == "__main__":
