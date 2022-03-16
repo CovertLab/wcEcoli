@@ -214,10 +214,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.figure(trimmed_fig)
 		set_lim(trimmed_axes[0, 0], xmin=0, xmax=4000)
 		set_lim(trimmed_axes[1, 0])
-		set_lim(trimmed_axes[2, 0])
+		set_lim(trimmed_axes[2, 0], ymin=-0.5, ymax=3.5)
 		set_lim(trimmed_axes[0, 1])
 		set_lim(trimmed_axes[1, 1])
-		set_lim(trimmed_axes[2, 1], ymax=4)
+		set_lim(trimmed_axes[2, 1], ymin=-1, ymax=4.5)
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_trimmed', metadata)
 
