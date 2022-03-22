@@ -8,6 +8,8 @@ TODO:
  - highlight mutants
 """
 
+import pickle
+
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy import signal
@@ -30,10 +32,17 @@ def butter_highpass_filter(data, cutoff, fs, order=5):
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		with open(simDataFile, 'rb') as f:
+			sim_data = pickle.load(f)
+		aa_ids = sim_data.molecule_groups.amino_acids
+		n_aas = len(aa_ids)
+
 		variants = self.ap.get_variants()
+		n_variants = len(variants)
 
 		baseline = None
 		all_corr = {}
+		autocorrelate = lambda x: signal.correlate(x, x, method='fft')
 		for variant in variants:
 			var_corr = []
 			Pxx_all = None
@@ -48,11 +57,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				sim_time = read_stacked_columns(cell_paths, 'Main', 'time', remove_first=True).squeeze()
 				aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_conc', remove_first=True).T
 
-				leu_conc = aa_conc[10, :]
-				corr = signal.correlate(leu_conc, leu_conc, method='fft')
-				var_corr.append(corr[(len(corr) - 1) // 2:] / corr.mean())
-
-				# TODO: figure out how to do all aa
+				corr = np.apply_along_axis(autocorrelate, 1, aa_conc)
+				var_corr.append(corr[:, (corr.shape[1] - 1) // 2:] / corr.mean(1).reshape(-1, 1))
 
 				# # Crude approach to oscillations
 				# print(f'\n{variant}')
@@ -113,12 +119,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		mean_corr = {}
 		for variant, var_corr in all_corr.items():
-			max_n = max([len(corr) for corr in var_corr])
+			max_n = max([corr.shape[1] for corr in var_corr])
 			n = np.zeros(max_n)
-			total_corr = np.zeros(max_n)
+			total_corr = np.zeros((n_aas, max_n))
 			for corr in var_corr:
-				n[:len(corr)] += 1
-				total_corr[:len(corr)] += corr
+				n_timepoints = corr.shape[1]
+				n[:n_timepoints] += 1
+				total_corr[:, :n_timepoints] += corr
 			mean_corr[variant] = total_corr / n
 
 		control_corr = mean_corr.get(0)
@@ -126,12 +133,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# plt.figure()
 
 		# plt.plot(mean_corr)
-		_, axes = plt.subplots(len(mean_corr), figsize=(5, 10))
+		_, axes = plt.subplots(nrows=n_variants, ncols=n_aas, figsize=(30, 2*n_variants))
 
-		for ax, corr, in zip(axes, mean_corr.values()):
-			ax.plot(np.arange(len(corr)) / 3600, corr)
-			if control_corr is not None:
-				ax.plot(np.arange(len(control_corr)) / 3600, control_corr)
+		for row, all_corr, in enumerate(mean_corr.values()):
+			for col, corr in enumerate(all_corr):
+				ax = axes[row, col]
+				ax.plot(np.arange(len(corr)) / 3600, corr)
+				if control_corr is not None:
+					ax.plot(np.arange(control_corr.shape[1]) / 3600, control_corr[col, :])
+
+				ax.tick_params(labelsize=6)
+
+				if row == 0:
+					ax.set_title(aa_ids[col], fontsize=6)
+
+				if col == 0:
+					ax.set_ylabel(f'Variant {variants[row]}\nautocorrelation', fontsize=6)
+
+				if row == n_variants - 1:
+					ax.set_xlabel('Lag (hr)', fontsize=6)
 		#
 		# # Not including baseline can provide some insights but need to figure out how to normalize
 		# # over the range of periods with a gradual upslope
