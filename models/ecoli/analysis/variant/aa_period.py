@@ -8,6 +8,8 @@ TODO:
  - highlight mutants
 """
 
+import csv
+import os
 import pickle
 
 from matplotlib import pyplot as plt
@@ -42,11 +44,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		baseline = None
 		all_corr = {}
+		all_periods = {}
+		all_conc_mean = {}
+		all_conc_std = {}
 		autocorrelate = lambda x: signal.correlate(x, x, method='fft')
 		for variant in variants:
 			var_corr = []
 			Pxx_all = None
 			# TODO: plot each variant? or make cohort?
+			var_conc = []
+			periods = []
 			for seed in self.ap.get_seeds(variant):
 				cell_paths = self.ap.get_cells(variant=[variant], seed=[seed])
 
@@ -64,15 +71,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# corr = np.apply_along_axis(autocorrelate, 1, aa_conc - aa_conc.mean(1).reshape(-1, 1))
 				# var_corr.append(corr[:, corr.shape[1]//2:] / corr[:, corr.shape[1]//2].reshape(-1, 1))
 
-
-				# # Crude approach to oscillations
+				# # Crude approach to oscillations for leu
 				# print(f'\n{variant}')
 				# mean = aa_conc.mean(1)[10]
 				# std = aa_conc.std(1)[10]
 				# print(std / mean)
 				# above = aa_conc[10, :] > mean
 				# switches = np.sum(above[:-1] != above[1:])
+				# total_time = (sim_time[-1] - sim_time[0]) / 3600
+				# period = total_time / ((switches - 1) / 2)
 				# print(switches)
+				# print(period)
+
+
+				total_time = (sim_time[-1] - sim_time[0]) / 3600
+				above = aa_conc > aa_conc.mean(1).reshape(-1, 1)
+				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
+				period = total_time / ((switches - 1) / 2)
+				var_conc.append(aa_conc)
+				periods.append(period)
+
 				#
 				# np.save('leu.npy', aa_conc[10, :])
 				#
@@ -121,6 +139,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# # TODO: set the length of analysis to minimal length of seed and add from all seeds
 				# # break
 			all_corr[variant] = var_corr
+
+			stacked_conc = np.hstack(var_conc)
+			all_conc_mean[variant] = stacked_conc.mean(1)
+			all_conc_std[variant] = stacked_conc.std(1)
+			all_periods[variant] = np.vstack(periods).mean(0)
+
+		# Save average data for comparison across runs
+		with open(f'{os.path.join(plotOutDir, plotOutFileName)}.tsv', 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			headers = ['Variant']
+			for aa in aa_ids:
+				headers += [f'{aa} mean', f'{aa} std', f'{aa} CV', f'{aa} period']
+			writer.writerow(headers)
+
+			for variant in variants:
+				cols = [variant]
+				for mean, std, period in zip(all_conc_mean[variant], all_conc_std[variant], all_periods[variant]):
+					cols += [mean, std, std / mean, period]
+
+				writer.writerow(cols)
 
 		mean_corr = {}
 		for variant, var_corr in all_corr.items():
