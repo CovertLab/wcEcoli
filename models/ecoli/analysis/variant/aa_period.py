@@ -46,6 +46,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		baseline = None
 		all_corr = {}
 		all_periods = {}
+		all_periods_mean_adjusted = {}
 		all_conc_mean = {}
 		all_conc_std = {}
 		autocorrelate = lambda x: signal.correlate(x, x, method='fft')
@@ -140,12 +141,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# # TODO: divide mutant variant Pxx by wt to normalize? but must make sure the same scale
 				# # TODO: set the length of analysis to minimal length of seed and add from all seeds
 				# # break
+
+			# TODO: period based on average time series across seeds
+
 			all_corr[variant] = var_corr
 
 			stacked_conc = np.hstack(var_conc)
 			all_conc_mean[variant] = stacked_conc.mean(1)
 			all_conc_std[variant] = stacked_conc.std(1)
 			all_periods[variant] = np.nanmean(np.vstack(periods), 0)
+
+			mean_periods = []
+			for aa_conc in var_conc:
+				total_time = aa_conc.shape[1] / 3600  # TODO: actual time?
+				above = aa_conc > all_conc_mean[variant].reshape(-1, 1)
+				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
+				period = total_time / ((switches - 1) / 2)
+				period[period == np.inf] = np.nan
+				mean_periods.append(period)
+			all_periods_mean_adjusted[variant] = np.nanmean(np.vstack(mean_periods), 0)
 
 		# Save average data for comparison across runs
 		with open(f'{os.path.join(plotOutDir, plotOutFileName)}.tsv', 'w') as f:
@@ -169,8 +183,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			}
 		width = 0.4
 
-		def plot_bar(data, label=''):
-			plt.figure()
+		# Plot for each amino acid for all variants
+		def plot_bar(data, ylabel, file_label=''):
+			plt.figure(figsize=(1.5, 1.5))
 
 			controls = [
 				data.get(control_idx, np.zeros(n_aas))[aa_ids.index(remove_aa_inhibition.get_aa_and_ki_factor(variant)[0])]
@@ -182,16 +197,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				for variant in variants
 				if variant != control_idx
 				]
+			xlabels = [
+				remove_aa_inhibition.get_aa_and_ki_factor(variant)[0][:-3]
+				for variant in variants
+				if variant != control_idx
+				]
 			x = range(len(mutants))
 			plt.bar(x, controls, width=-width, align='edge')
 			plt.bar(x, mutants, width=width, align='edge')
 
+			plt.xticks(x, xlabels, fontsize=8, rotation=45)
+			plt.ylabel(ylabel, fontsize=8)
+
+			plt.gca().tick_params(labelsize=8)
+
+			self.remove_border()
 			plt.tight_layout()
-			exportFigure(plt, plotOutDir, plotOutFileName + label, metadata)
+			exportFigure(plt, plotOutDir, plotOutFileName + file_label, metadata)
 			plt.close('all')
 
-		plot_bar(all_conc_cv, label='_cv')
-		plot_bar(all_periods, label='_period')
+		plot_bar(all_periods, 'Period')
+		plot_bar(all_conc_cv, 'Coefficient of variation', file_label='_cv')
+		plot_bar(all_periods_mean_adjusted, 'Period', file_label='_mean')
 
 		mean_corr = {}
 		for variant, var_corr in all_corr.items():
@@ -238,7 +265,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			exportFigure(plt, plotOutDir, plotOutFileName + label, metadata)
 			plt.close('all')
 
-		plot()
+		plot(label='_lag')
 		plot(label='_normalized', normalized=True)
 
 		# # Not including baseline can provide some insights but need to figure out how to normalize
