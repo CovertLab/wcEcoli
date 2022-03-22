@@ -130,29 +130,41 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		control_corr = mean_corr.get(0)
 
-		# plt.figure()
+		def plot(label='', normalized=False):
+			_, axes = plt.subplots(nrows=n_variants, ncols=n_aas, figsize=(30, 2*n_variants))
 
-		# plt.plot(mean_corr)
-		_, axes = plt.subplots(nrows=n_variants, ncols=n_aas, figsize=(30, 2*n_variants))
+			for row, all_corr, in enumerate(mean_corr.values()):
+				for col, corr in enumerate(all_corr):
+					ax = axes[row, col]
 
-		for row, all_corr, in enumerate(mean_corr.values()):
-			for col, corr in enumerate(all_corr):
-				ax = axes[row, col]
-				ax.plot(np.arange(len(corr)) / 3600, corr)
-				if control_corr is not None:
-					ax.plot(np.arange(control_corr.shape[1]) / 3600, control_corr[col, :])
+					if normalized and control_corr is not None:
+						control_pad = 0.95  # approaches 0 at the longest lag which can cause ratio to explode
+						n_overlap = int(min(len(corr), control_corr.shape[1]*control_pad))
+						ax.plot(np.arange(n_overlap) / 3600, corr[:n_overlap] / control_corr[col, :n_overlap])
+						ax.axhline(1, color='k', alpha=0.5, linestyle='--', linewidth=1)
+					else:
+						ax.plot(np.arange(len(corr)) / 3600, corr)
+						if control_corr is not None:
+							ax.plot(np.arange(control_corr.shape[1]) / 3600, control_corr[col, :])
 
-				ax.tick_params(labelsize=6)
+					ax.tick_params(labelsize=6)
 
-				if row == 0:
-					ax.set_title(aa_ids[col], fontsize=6)
+					if row == 0:
+						ax.set_title(aa_ids[col], fontsize=6)
 
-				if col == 0:
-					ax.set_ylabel(f'Variant {variants[row]}\nautocorrelation', fontsize=6)
+					if col == 0:
+						ax.set_ylabel(f'Variant {variants[row]}\nautocorrelation', fontsize=6)
 
-				if row == n_variants - 1:
-					ax.set_xlabel('Lag (hr)', fontsize=6)
-		#
+					if row == n_variants - 1:
+						ax.set_xlabel('Lag (hr)', fontsize=6)
+
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName + label, metadata)
+			plt.close('all')
+
+		plot()
+		plot(label='_normalized', normalized=True)
+
 		# # Not including baseline can provide some insights but need to figure out how to normalize
 		# # over the range of periods with a gradual upslope
 		# # Using baseline gives a depression of short periods in cases where inhibition is removed
@@ -170,9 +182,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# 	ax.set_xticks(np.logspace(-3, 0, 4))
 		# 	ax.axhline(1, color='k', linestyle='--', alpha=0.5)  # useful for comparison to baseline
 
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-		plt.close('all')
 
 
 if __name__ == "__main__":
