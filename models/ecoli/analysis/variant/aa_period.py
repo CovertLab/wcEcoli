@@ -17,6 +17,7 @@ import numpy as np
 from scipy import signal
 
 from models.ecoli.analysis import variantAnalysisPlot
+from models.ecoli.sim.variants import remove_aa_inhibition
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
 
@@ -88,6 +89,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				above = aa_conc > aa_conc.mean(1).reshape(-1, 1)
 				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
 				period = total_time / ((switches - 1) / 2)
+				period[period == np.inf] = np.nan
 				var_conc.append(aa_conc)
 				periods.append(period)
 
@@ -143,7 +145,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			stacked_conc = np.hstack(var_conc)
 			all_conc_mean[variant] = stacked_conc.mean(1)
 			all_conc_std[variant] = stacked_conc.std(1)
-			all_periods[variant] = np.vstack(periods).mean(0)
+			all_periods[variant] = np.nanmean(np.vstack(periods), 0)
 
 		# Save average data for comparison across runs
 		with open(f'{os.path.join(plotOutDir, plotOutFileName)}.tsv', 'w') as f:
@@ -159,6 +161,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					cols += [mean, std, std / mean, period]
 
 				writer.writerow(cols)
+
+		control_idx = 0
+		all_conc_cv = {
+			variant: all_conc_std[variant] / all_conc_mean[variant]
+			for variant in variants
+			}
+		width = 0.4
+
+		def plot_bar(data, label=''):
+			plt.figure()
+
+			controls = [
+				data.get(control_idx, np.zeros(n_aas))[aa_ids.index(remove_aa_inhibition.get_aa_and_ki_factor(variant)[0])]
+				for variant in variants
+				if variant != control_idx
+				]
+			mutants = [
+				data[variant][aa_ids.index(remove_aa_inhibition.get_aa_and_ki_factor(variant)[0])]
+				for variant in variants
+				if variant != control_idx
+				]
+			x = range(len(mutants))
+			plt.bar(x, controls, width=-width, align='edge')
+			plt.bar(x, mutants, width=width, align='edge')
+
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName + label, metadata)
+			plt.close('all')
+
+		plot_bar(all_conc_cv, label='_cv')
+		plot_bar(all_periods, label='_period')
 
 		mean_corr = {}
 		for variant, var_corr in all_corr.items():
