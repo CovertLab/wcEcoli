@@ -58,7 +58,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				aa_conc = read_stacked_columns(cell_paths, 'GrowthLimits', 'aa_conc', remove_first=True).T
 
 				corr = np.apply_along_axis(autocorrelate, 1, aa_conc)
-				var_corr.append(corr[:, (corr.shape[1] - 1) // 2:] / corr.mean(1).reshape(-1, 1))
+				var_corr.append(corr[:, corr.shape[1]//2:] / corr.mean(1).reshape(-1, 1))
+
+				# Other approaches (combined it should be pearson correlation)
+				# corr = np.apply_along_axis(autocorrelate, 1, aa_conc - aa_conc.mean(1).reshape(-1, 1))
+				# var_corr.append(corr[:, corr.shape[1]//2:] / corr[:, corr.shape[1]//2].reshape(-1, 1))
+
 
 				# # Crude approach to oscillations
 				# print(f'\n{variant}')
