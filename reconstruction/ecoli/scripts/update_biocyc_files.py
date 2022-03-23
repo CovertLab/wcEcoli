@@ -12,7 +12,7 @@ import time
 
 from wholecell.utils.filepath import ROOT_PATH
 
-BASE_API_URL = 'https://biocyc-guest.ai.sri.com/wc-get?type='
+BASE_API_URL = 'https://websvc.biocyc.org/wc-get?type='
 BIOCYC_FILE_IDS = [
     'complexation_reactions',
     'dna_sites',
