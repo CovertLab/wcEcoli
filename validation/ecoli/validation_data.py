@@ -345,25 +345,15 @@ class MacromolecularGrowthRateModulation(object):
 
 	def _load_macromolecular_growth_rate_modulation(self, validation_data_raw):
 		dataset = validation_data_raw.macromolecular_growth_rate_modulation
-		self.doubling_time = np.zeros(len(dataset), dtype = Unum)
-		self.PRD_per_mass = np.zeros(len(dataset), dtype = Unum)
-		self.mass_per_cell = np.zeros(len(dataset), dtype = Unum)
-		self.total_RNA_stable_fraction = np.zeros(len(dataset), dtype= Unum)
-		self.stable_RNA_tRNA_fraction = np.zeros(len(dataset), dtype = Unum)
-		self.ribosomes_per_cell = np.zeros(len(dataset), dtype = Unum)
-		self.protein_per_cell_ug = np.zeros(len(dataset), dtype = Unum)
-		self.RNA_per_cell_ug = np.zeros(len(dataset), dtype = Unum)
-		self.DNA_per_cell_ug = np.zeros(len(dataset), dtype = Unum)
-		self.PRD_per_cell = np.zeros(len(dataset), dtype = Unum)
-
-		for idx, row in enumerate(dataset):
-			self.doubling_time[idx] = row["doubling_time"]
-			self.PRD_per_mass[idx] = row["PRD_per_mass"]
-			self.mass_per_cell[idx] = row["mass_per_cell"]
-			self.total_RNA_stable_fraction[idx] = row["total_RNA_stable_fraction"]
-			self.stable_RNA_tRNA_fraction[idx] = row["stable_RNA_tRNA_fraction"]
-			self.ribosomes_per_cell[idx] = row["ribosomes_per_cell"]
-			self.protein_per_cell_ug[idx] = row["protein_per_cell_ug"]
-			self.RNA_per_cell_ug[idx] = row["RNA_per_cell_ug"]
-			self.DNA_per_cell_ug[idx] = row["DNA_per_cell_ug"]
-			self.PRD_per_cell[idx] = row["PRD_per_cell"]
+		# List of data value names extracted from the raw flat file
+		values = ["doubling_time", "PRD_per_mass", "mass_per_cell", "total_RNA_stable_fraction", "stable_RNA_tRNA_fraction",
+					  "ribosomes_per_cell", "protein_per_cell_ug", "RNA_per_cell_ug", "DNA_per_cell_ug", "PRD_per_cell"
+					  ]
+		for value in values:
+			# Store numerical value of raw data into a temporary ndarray
+			temp = np.zeros(len(dataset))
+			for idx, row in enumerate (dataset):
+				y = row[value]
+				temp[idx] = Unum.coerceToUnum(y).asNumber()
+			# Set each ndarray as the corresponding attribute, while tagging the data's original units onto the ndarray
+			setattr(self, value, Unum(Unum.coerceToUnum(dataset[0][value])._unit, temp))
