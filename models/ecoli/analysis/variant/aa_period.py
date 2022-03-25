@@ -33,7 +33,7 @@ def butter_highpass_filter(data, cutoff, fs, order=5):
 	return y
 
 
-def switch(data, input_drop=1, input_ma=600, deriv_ma=600, splrep=False):
+def switch(data, input_drop=5, input_ma=60, deriv_ma=300, splrep=False):
 	if input_drop > 1:
 		n_points = len(data) // input_drop
 		n_drop = len(data) % input_drop
@@ -122,13 +122,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				total_time = (sim_time[-1] - sim_time[0]) / 3600
 				above = aa_conc > aa_conc.mean(1).reshape(-1, 1)
 				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
-				period = total_time / switches
+				period = total_time / (switches / 2)
 				period[period == np.inf] = np.nan
 				var_conc.append(aa_conc)
 				periods.append(period)
 
 				switches = np.apply_along_axis(switch, 1, aa_conc)
-				period_deriv = total_time / switches
+				period_deriv = total_time / (switches / 2)
 				period_deriv[period_deriv == np.inf] = np.nan
 				periods_deriv.append(period_deriv)
 
@@ -195,7 +195,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				total_time = aa_conc.shape[1] / 3600  # TODO: actual time?
 				above = aa_conc > all_conc_mean[variant].reshape(-1, 1)
 				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
-				period = total_time / switches
+				period = total_time / (switches / 2)
 				period[period == np.inf] = np.nan
 				mean_periods.append(period)
 			all_periods_mean_adjusted[variant] = np.nanmean(np.vstack(mean_periods), 0)
