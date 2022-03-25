@@ -14,7 +14,7 @@ import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from scipy import signal
+from scipy import interpolate, signal
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.sim.variants import remove_aa_inhibition
@@ -33,6 +33,37 @@ def butter_highpass_filter(data, cutoff, fs, order=5):
 	return y
 
 
+def switch(data, input_drop=600, input_ma=600, deriv_ma=1, splrep=False):
+	if input_drop > 1:
+		n_points = len(data) // input_drop
+		n_drop = len(data) % input_drop
+		if n_drop == 0:
+			index = slice(None)
+		else:
+			index = slice(-n_drop)
+		data = data[index].reshape(n_points, -1).mean(1)
+
+	if input_ma:
+		input_ma = min(len(data) - 1, input_ma)
+		data = np.convolve(data, np.ones(input_ma) / input_ma, 'valid')
+
+	t = np.arange(len(data)) / 3600 * input_drop
+
+	if splrep:
+		spline = interpolate.splrep(t, data, k=5)
+		deriv = interpolate.splev(t, spline, der=2)
+	else:
+		spline = interpolate.CubicSpline(t, data)
+		deriv = spline.derivative(2)(t)
+
+	if deriv_ma:
+		deriv_ma = min(len(deriv) - 1, deriv_ma)
+		deriv = np.convolve(deriv, np.ones(deriv_ma) / deriv_ma, 'same')
+
+	sign = np.sign(deriv)
+
+	return np.sum(sign[:-1] != sign[1:])
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -46,6 +77,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		baseline = None
 		all_corr = {}
 		all_periods = {}
+		all_periods_deriv = {}
 		all_periods_mean_adjusted = {}
 		all_conc_mean = {}
 		all_conc_std = {}
@@ -56,6 +88,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# TODO: plot each variant? or make cohort?
 			var_conc = []
 			periods = []
+			periods_deriv = []
 			for seed in self.ap.get_seeds(variant):
 				cell_paths = self.ap.get_cells(variant=[variant], seed=[seed])
 
@@ -89,10 +122,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				total_time = (sim_time[-1] - sim_time[0]) / 3600
 				above = aa_conc > aa_conc.mean(1).reshape(-1, 1)
 				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
-				period = total_time / ((switches - 1) / 2)
+				period = total_time / switches
 				period[period == np.inf] = np.nan
 				var_conc.append(aa_conc)
 				periods.append(period)
+
+				switches = np.apply_along_axis(switch, 1, aa_conc)
+				period_deriv = total_time / switches
+				period_deriv[period_deriv == np.inf] = np.nan
+				periods_deriv.append(period_deriv)
 
 				#
 				# np.save('leu.npy', aa_conc[10, :])
@@ -150,13 +188,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_conc_mean[variant] = stacked_conc.mean(1)
 			all_conc_std[variant] = stacked_conc.std(1)
 			all_periods[variant] = np.nanmean(np.vstack(periods), 0)
+			all_periods_deriv[variant] = np.nanmean(np.vstack(periods_deriv), 0)
 
 			mean_periods = []
 			for aa_conc in var_conc:
 				total_time = aa_conc.shape[1] / 3600  # TODO: actual time?
 				above = aa_conc > all_conc_mean[variant].reshape(-1, 1)
 				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
-				period = total_time / ((switches - 1) / 2)
+				period = total_time / switches
 				period[period == np.inf] = np.nan
 				mean_periods.append(period)
 			all_periods_mean_adjusted[variant] = np.nanmean(np.vstack(mean_periods), 0)
@@ -203,6 +242,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				if variant != control_idx
 				]
 			x = range(len(mutants))
+			# TODO: plot value for all mutants not just specific to aa
 			plt.bar(x, controls, width=-width, align='edge')
 			plt.bar(x, mutants, width=width, align='edge')
 
@@ -218,6 +258,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot_bar(all_periods, 'Period')
 		plot_bar(all_conc_cv, 'Coefficient of variation', file_label='_cv')
+		plot_bar(all_periods_deriv, 'Period', file_label='_deriv')
 		plot_bar(all_periods_mean_adjusted, 'Period', file_label='_mean')
 
 		mean_corr = {}
