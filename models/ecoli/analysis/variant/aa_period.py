@@ -33,7 +33,7 @@ def butter_highpass_filter(data, cutoff, fs, order=5):
 	return y
 
 
-def switch(data, input_drop=600, input_ma=600, deriv_ma=1, splrep=False):
+def switch(data, input_drop=1, input_ma=600, deriv_ma=600, splrep=False):
 	if input_drop > 1:
 		n_points = len(data) // input_drop
 		n_drop = len(data) % input_drop
