@@ -1,5 +1,6 @@
 """
-Save data to share with EcoCyc to display on the simulation tab page.
+Generates tables of data to share with EcoCyc for display on the "modeling" tab
+of each gene page.
 
 TODO:
 	save a specific form of simulation metadata to share? (or existing metadata file?)
@@ -101,8 +102,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		## remove_first=True because countsToMolar is 0 at first time step
 		mrna_counts = read_stacked_columns(
 			cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True)
-		monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True)
 		counts_to_molar = read_stacked_columns(
 			cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True)
 		dry_masses = read_stacked_columns(
@@ -125,6 +124,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mrna_masses_relative_to_total_mrna_mass = mrna_masses / mrna_masses.sum(1).reshape(-1, 1)
 		mrna_masses_relative_to_total_dcw = mrna_masses / dry_masses
 
+		# Save RNA data in tables
+		mrna_ecocyc_ids = [rna[:-7] for rna in mrna_ids]  # strip _RNA[c]
+		media_id = 'MIX0-51'  # TODO: have a map of condition to EcoCyc media ID (temporarily hard-coded for minimal glc)
+		save_file(plotOutDir, f'wcm-mrna-data-{media_id}.tsv',
+			mrna_ecocyc_ids, mrna_counts, mrna_conc,
+			mrna_counts_relative_to_total_mrna_counts,
+			mrna_masses_relative_to_total_mrna_mass,
+			mrna_masses_relative_to_total_dcw,
+			mrna_validation_counts,
+			)
+
+		monomer_counts = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True)
+
 		# Derived monomer values
 		monomer_conc = monomer_counts * counts_to_molar
 		monomer_counts_relative_to_total_monomer_counts = monomer_counts / monomer_counts.sum(1).reshape(-1, 1)
@@ -133,18 +146,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_masses_relative_to_total_monomer_mass = monomer_masses / monomer_masses.sum(1).reshape(-1, 1)
 		monomer_masses_relative_to_total_dcw = monomer_masses / dry_masses
 
-		# Save data in tables
-		mrna_ecocyc_ids = [rna[:-7] for rna in mrna_ids]  # strip _RNA[c]
+		# Save protein data in tables
 		monomer_ecocyc_ids = [monomer[:-3] for monomer in monomer_ids]  # strip [*]
-		media_id = 'MIX0-51'  # TODO: have a map of condition to EcoCyc media ID (temporarily hard-coded for minimal glc)
-
-		save_file(plotOutDir, f'wcm-mrna-data-{media_id}.tsv',
-			mrna_ecocyc_ids, mrna_counts, mrna_conc,
-			mrna_counts_relative_to_total_mrna_counts,
-			mrna_masses_relative_to_total_mrna_mass,
-			mrna_masses_relative_to_total_dcw,
-			mrna_validation_counts,
-			)
 		save_file(plotOutDir, f'wcm-monomer-data-{media_id}.tsv',
 			monomer_ecocyc_ids, monomer_counts, monomer_conc,
 			monomer_counts_relative_to_total_monomer_counts,
