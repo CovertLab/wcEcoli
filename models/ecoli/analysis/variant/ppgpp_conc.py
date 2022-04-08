@@ -90,16 +90,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_data = pickle.load(f)
 		metabolism = sim_data.process.metabolism
 		transcription = sim_data.process.transcription
+		translation = sim_data.process.translation
+
 		aa_enzyme_ids = metabolism.aa_enzymes
 		get_enzymes = metabolism.get_pathway_enzyme_counts_per_aa
 		fwd_kcats = metabolism.aa_kcats_fwd
 		ribosome_subunit_ids = [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex]
 		aa_ids = sim_data.molecule_groups.amino_acids
 		aa_mws = sim_data.getter.get_masses(aa_ids).asNumber(units.fg / units.count)
-		max_elong_rate = sim_data.process.translation.basal_elongation_rate
+		max_elong_rate = translation.basal_elongation_rate
 		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
+		rna_contains_rprotein = transcription.rna_data['includes_ribosomal_protein'][transcription.rna_data['is_mRNA']]
+		rprotein_idx = translation.ribosomal_protein_indexes
 
 		variants = self.ap.get_variants()
 		n_variants = len(variants)
@@ -134,9 +138,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			time_step = read_stacked_columns(all_cells, 'Main', 'timeStepSec', remove_first=True).squeeze()
 			counts_to_molar = read_stacked_columns(all_cells, 'EnzymeKinetics', 'countsToMolar', remove_first=True).squeeze()
 			unique_mol_counts = read_stacked_columns(all_cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts', remove_first=True)
+			rprotein_rna_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts',
+				remove_first=True, fun=lambda x: np.sum(x[:, rna_contains_rprotein], 1).reshape(-1, 1)).squeeze()
+			rprotein_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',
+				remove_first=True, fun=lambda x: np.sum(x[:, rprotein_idx], 1).reshape(-1, 1)).squeeze()
 			enzymes, ribosome_subunits, aas, uncharged_trna_counts, charged_trna_counts = read_stacked_bulk_molecules(
 				all_cells, (aa_enzyme_ids, ribosome_subunit_ids, aa_ids, uncharged_trna_names, charged_trna_names), remove_first=True)
 			excess, synth_fractions, protein_fractions = calculate_ribosome_excesses(sim_data, all_cells)
+
+			# TODO: rRNA counts to compare to rProtein?
 
 			aa_mass = aas @ aa_mws
 			rna_to_protein = rna_mass / protein_mass
@@ -183,6 +193,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			add_data('enzyme_synth_fraction', synth_fractions[:, 2])
 			add_data('rprotein_protein_fraction', protein_fractions[:, 0])
 			add_data('enzyme_protein_fraction', protein_fractions[:, 1])
+			add_data('rprotein_rna_conc', rprotein_rna_counts * counts_to_molar)
+			add_data('rprotein_monomer_conc', rprotein_monomer_counts * counts_to_molar)
 
 		# Compile for plots
 		if 'ppgpp_limitations' in metadata.get('variant'):
@@ -215,6 +227,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'enzyme_synth_fraction': 'Enzyme synth fraction\n(per rRNA, rProtein, enzymes mass)',
 			'rprotein_protein_fraction': 'rProtein fraction\n(per protein mass)',
 			'enzyme_protein_fraction': 'Enzyme fraction\n(per protein mass)',
+			'rprotein_rna_conc': 'rProtein mRNA conc (mM)',
+			'rprotein_monomer_conc': 'rProtein monomer conc (mM)',
 			'Output': ['ribosome_output', 'aa_output'],
 			'Capacity-twin': ['ribosome_capacity', 'aa_capacity'],
 			'Excess-twin': ['excess_rna', 'aa_conc'],
