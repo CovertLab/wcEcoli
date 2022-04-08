@@ -202,7 +202,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			add_data('enzyme_synth_fraction', synth_fractions[:, 2])
 			add_data('rprotein_protein_fraction', protein_fractions[:, 0])
 			add_data('enzyme_protein_fraction', protein_fractions[:, 1])
-			add_data('rprotein_rna_conc', rprotein_rna_counts * counts_to_molar)
+			add_data('rprotein_rna_conc', rprotein_rna_counts * counts_to_molar * 1000)
 			add_data('rprotein_monomer_conc', rprotein_monomer_counts * counts_to_molar)
 
 		# Compile for plots
@@ -238,7 +238,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'enzyme_synth_fraction': 'Enzyme synth fraction\n(per rRNA, rProtein, enzymes mass)',
 			'rprotein_protein_fraction': 'rProtein fraction\n(per protein mass)',
 			'enzyme_protein_fraction': 'Enzyme fraction\n(per protein mass)',
-			'rprotein_rna_conc': 'rProtein mRNA conc (mM)',
+			'rprotein_rna_conc': 'rProtein mRNA conc (uM)',
 			'rprotein_monomer_conc': 'rProtein monomer conc (mM)',
 			'Output': ['ribosome_output', 'aa_output'],
 			'Capacity-twin': ['ribosome_capacity', 'aa_capacity'],
