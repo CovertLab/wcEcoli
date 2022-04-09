@@ -568,7 +568,7 @@ class Transcription(object):
 		rna_deg_rates = np.log(2) / rna_half_lives
 
 		# Apply RNAseq corrections to shorter genes if required by operon version
-		if sim_data.operon_option == 'on':
+		if sim_data.operons_on:
 			self._apply_rnaseq_correction()
 
 		expression, _ = self.fit_rna_expression(self.cistron_expression['basal'])
