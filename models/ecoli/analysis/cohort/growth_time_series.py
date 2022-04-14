@@ -21,7 +21,7 @@ from wholecell.utils import units
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t,
 			downsample=5, log_scale=False, single_cells=False, distinct=False,
-			show_x_labels=True, plot_options=None, single_scale=1):
+			show_x_labels=True, plot_options=None, single_scale=1, shade=True):
 		if plot_options is None:
 			plot_options = {}
 
@@ -91,12 +91,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Plot mean as a trace and standard deviation as a shaded area
 		ax.plot(t, mean, **plot_options)
-		if len(mean.shape) > 1:
-			for m, s in zip(mean.T, std.T):
-				ax.fill_between(t, m - s, m + s, alpha=0.1)
-		else:
-			ax.axhline(mean.mean(), linestyle='--', color='k', linewidth=0.5)
-			ax.fill_between(t, mean - std, mean + std, alpha=0.1)
+		if shade:
+			if len(mean.shape) > 1:
+				for m, s in zip(mean.T, std.T):
+					ax.fill_between(t, m - s, m + s, alpha=0.1)
+			else:
+				ax.axhline(mean.mean(), linestyle='--', color='k', linewidth=0.5)
+				ax.fill_between(t, mean - std, mean + std, alpha=0.1)
 
 		# Format axes
 		if log_scale:
@@ -315,7 +316,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			f'{aa_ids[i][:-3]} concentration\n(mM)': {'y': [aa_conc[:, i]]}
 			for i in range(len(aa_ids))
 			}
-		data_4['LEU concentration\n(mM)']['lim'] = [0, 20]
 		data_5 = {
 			'Growth rates (1/hr)': {'y': [growth_rate, rna_growth, protein_growth], 'lim': [0, 2]},
 			}
@@ -415,7 +415,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plots specific for figure 4 in paper
 		subplots(f'{plotOutFileName}_fig4_single', data_4, paper_4_keys, filtered,
 			downsample=10, trim=True, cols=1, single_cells=True, distinct=True,
-			xlim=(0, 300), plot_options=dict(color='k', alpha=0.6), single_scale=2)
+			xlim=(0, 300), plot_options=dict(color='k', alpha=0.6), single_scale=2,
+			shade=False)
 
 		# Plots specific for figure 5 in paper
 		subplots(f'{plotOutFileName}_fig5', data_5, data_5.keys(), filtered,
