@@ -21,9 +21,10 @@ from wholecell.utils import units
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t,
 			downsample=5, log_scale=False, single_cells=False, distinct=False,
-			show_x_labels=True, plot_options=None, single_scale=1, shade=True):
+			show_x_labels=True, plot_options=None, single_scale=1, shade=True, use_hr=False):
 		if plot_options is None:
 			plot_options = {}
+		t_scaling = 60 if use_hr else 1
 
 		# TODO: add trace labels as arg
 		# Extract y data for each time point (assumes time step lines up across samples)
@@ -50,7 +51,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			t.append(ts.mean())
 			mean.append(d.mean(0))
 			std.append(d.std(0))
-		t = np.array(t)
+		t = np.array(t) / t_scaling
 		mean = np.array(mean).squeeze()
 		std = np.array(std).squeeze()
 
@@ -73,7 +74,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Plot each cell trace
 			for start, end, alpha in zip(splits[:-1], splits[1:], alphas):
 				# Select cell specific trace
-				t_single = t_flat[start:end]
+				t_single = t_flat[start:end] / t_scaling
 				y_single = y_flat[start:end]
 
 				# Downsample data
@@ -103,7 +104,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if log_scale:
 			ax.set_yscale('log')
 		if show_x_labels:
-			ax.set_xlabel('Time (min)', fontsize=8)
+			t_units = 'hr' if use_hr else 'min'
+			ax.set_xlabel(f'Time ({t_units})', fontsize=8)
 		else:
 			ax.xaxis.set_ticklabels([])
 		ax.set_ylabel(ylabel, fontsize=8)
@@ -114,7 +116,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		t_max = t.max()
 		y_min, y_max = ax.get_ylim()
 		for i, (t_media, media) in enumerate(timeline):
-			t_media /= 60
+			t_media /= 60 * t_scaling
 			if t_media < t_max:
 				ax.axvline(t_media, color='k', linestyle='--', linewidth=0.5, alpha=0.3)
 				if log_scale:
@@ -415,8 +417,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plots specific for figure 4 in paper
 		subplots(f'{plotOutFileName}_fig4_single', data_4, paper_4_keys, filtered,
 			downsample=10, trim=True, cols=1, single_cells=True, distinct=True,
-			xlim=(0, 300), plot_options=dict(color='k', alpha=0.6), single_scale=2,
-			shade=False)
+			plot_options=dict(color='k', alpha=0.6), single_scale=2,
+			shade=False, use_hr=True, xlim=(0, 5))
 
 		# Plots specific for figure 5 in paper
 		subplots(f'{plotOutFileName}_fig5', data_5, data_5.keys(), filtered,
