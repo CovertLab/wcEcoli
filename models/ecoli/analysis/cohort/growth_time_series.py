@@ -7,6 +7,7 @@ import os
 import pickle
 
 from matplotlib import pyplot as plt
+import matplotlib
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -19,7 +20,11 @@ from wholecell.utils import units
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t,
-			downsample=5, log_scale=False, single_cells=False, show_x_labels=True):
+			downsample=5, log_scale=False, single_cells=False, distinct=False,
+			show_x_labels=True, plot_options=None, single_scale=1):
+		if plot_options is None:
+			plot_options = {}
+
 		# TODO: add trace labels as arg
 		# Extract y data for each time point (assumes time step lines up across samples)
 		data = {}
@@ -57,11 +62,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Scale transparency and width with number of cells to make more
 			# readable with many traces
-			alpha = 1 / (1 + n_cells)
-			linewidth = 1 / (1 + np.log(n_cells))
+			linewidth = 1 / (1 + np.log(n_cells)) * single_scale
+			if distinct:
+				alphas = np.linspace(0.2, 0.8, n_cells)
+				color = matplotlib.colors.TABLEAU_COLORS['tab:blue']
+			else:
+				alphas = 1 / (1 + n_cells) * np.ones(n_cells)
+				color = 'k'
 
 			# Plot each cell trace
-			for start, end in zip(splits[:-1], splits[1:]):
+			for start, end, alpha in zip(splits[:-1], splits[1:], alphas):
 				# Select cell specific trace
 				t_single = t_flat[start:end]
 				y_single = y_flat[start:end]
@@ -76,11 +86,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					y_single = y_single[:drop_slice].reshape(-1, downsample).mean(axis=1)
 
 				# Plot single trace
-				ax.plot(t_single, y_single, 'k',
+				ax.plot(t_single, y_single, color,
 					alpha=alpha, linewidth=linewidth)
 
 		# Plot mean as a trace and standard deviation as a shaded area
-		ax.plot(t, mean)
+		ax.plot(t, mean, **plot_options)
 		if len(mean.shape) > 1:
 			for m, s in zip(mean.T, std.T):
 				ax.fill_between(t, m - s, m + s, alpha=0.1)
@@ -332,8 +342,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			]
 
 		def subplots(filename, data, keys, filtered, rows=None, cols=None,
-				downsample=5, trim=False, single_cells=False,
-				row_scale=3., col_scale=3., all_x_labeled=True, xlim=None):
+				trim=False, row_scale=3., col_scale=3., all_x_labeled=True,
+				xlim=None, **kwargs):
 			# Determine layout
 			if rows:
 				cols = int(np.ceil(len(keys) / rows))
@@ -364,8 +374,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				for j, y in enumerate(entry['y']):
 					self.plot_time_series(ax, x, y, key,
 						timeline if j == 0 else [], filtered,
-						log_scale=entry.get('log', False), downsample=downsample,
-						single_cells=single_cells, show_x_labels=show_x_labels)
+						log_scale=entry.get('log', False),
+						show_x_labels=show_x_labels,
+						**kwargs)
 
 				if trim and (lim := entry.get('lim')):
 					ax.set_ylim(lim)
@@ -403,7 +414,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Plots specific for figure 4 in paper
 		subplots(f'{plotOutFileName}_fig4_single', data_4, paper_4_keys, filtered,
-			downsample=10, trim=True, cols=1, single_cells=True)
+			downsample=10, trim=True, cols=1, single_cells=True, distinct=True,
+			xlim=(0, 300), plot_options=dict(color='k', alpha=0.6), single_scale=2)
 
 		# Plots specific for figure 5 in paper
 		subplots(f'{plotOutFileName}_fig5', data_5, data_5.keys(), filtered,
