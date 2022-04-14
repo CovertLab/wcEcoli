@@ -333,7 +333,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		def subplots(filename, data, keys, filtered, rows=None, cols=None,
 				downsample=5, trim=False, single_cells=False,
-				row_scale=3., col_scale=3., all_x_labeled=True):
+				row_scale=3., col_scale=3., all_x_labeled=True, xlim=None):
 			# Determine layout
 			if rows:
 				cols = int(np.ceil(len(keys) / rows))
@@ -369,6 +369,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				if trim and (lim := entry.get('lim')):
 					ax.set_ylim(lim)
+				if xlim is not None:
+					ax.set_xlim(xlim)
 
 			# Cleanup text if trimming
 			if trim:
@@ -410,8 +412,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plots specific for figure 6 in paper
 		subplots(f'{plotOutFileName}_fig6', data, paper_6_keys, filtered,
 			downsample=10, trim=True, cols=1, row_scale=1.5, all_x_labeled=False)
-		subplots(f'{plotOutFileName}_fig6_single', data, paper_6_keys, filtered,
-			downsample=10, trim=True, cols=1, single_cells=True)
+		subplots(f'{plotOutFileName}_fig6_xlim', data, paper_6_keys, filtered,
+			downsample=10, trim=True, cols=1, row_scale=1.5, all_x_labeled=False,
+			xlim=(-40, 950))
 
 		# Plot histograms of data
 		# TODO: use data dict from above to generalize this to match any changes in time series traces
