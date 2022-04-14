@@ -243,6 +243,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'Output': ['ribosome_output', 'aa_output'],
 			'Capacity-twin': ['ribosome_capacity', 'aa_capacity'],
 			'Excess-twin': ['excess_rna', 'total_aa_conc'],
+			'AA-twin': ['total_aa_conc', 'aa_inhibition'],
+			'Inhibition': ['gtpase_inhibition', 'aa_inhibition'],
 			}
 
 		# Create plots
