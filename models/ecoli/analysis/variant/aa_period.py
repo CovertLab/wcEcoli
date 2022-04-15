@@ -223,8 +223,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		width = 0.4
 
 		# Plot for each amino acid for all variants
-		def plot_bar(data, ylabel, file_label=''):
-			plt.figure(figsize=(1.5, 1.5))
+		def plot_bar(data, ylabel, ylim=None, file_label=''):
+			plt.figure(figsize=(1.8, 1.5))
 
 			controls = [
 				data.get(control_idx, np.zeros(n_aas))[aa_ids.index(remove_aa_inhibition.get_aa_and_ki_factor(variant)[0])]
@@ -248,6 +248,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			plt.xticks(x, xlabels, fontsize=8, rotation=45)
 			plt.ylabel(ylabel, fontsize=8)
+			if ylim:
+				plt.ylim(ylim)
 
 			plt.gca().tick_params(labelsize=8)
 
@@ -258,7 +260,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot_bar(all_periods, 'Period')
 		plot_bar(all_conc_cv, 'Coefficient of variation', file_label='_cv')
-		plot_bar(all_periods_deriv, 'Period', file_label='_deriv')
+		plot_bar(all_periods_deriv, 'Period', ylim=(0, 1), file_label='_deriv')
 		plot_bar(all_periods_mean_adjusted, 'Period', file_label='_mean')
 
 		mean_corr = {}
