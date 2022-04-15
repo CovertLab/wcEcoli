@@ -157,8 +157,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			aa_output = counts_to_molar * aas_supplied.sum(1) / time_step
 			aa_conc = counts_to_molar.reshape(-1, 1) * aas
 			total_aa_conc = aa_conc.sum(1)
-			aa_inhibition = (1 / (1 + aa_conc / aa_kis)).mean(1)
-			gtpase_inhibition = units.strip_empty_units(
+			aa_inhibition = (1 - 1 / (1 + aa_conc / aa_kis)).mean(1)
+			gtpase_inhibition = 1 - units.strip_empty_units(
 				elong_rate_by_ppgpp(units.umol / units.L * ppgpp)
 				/ elong_rate_by_ppgpp(units.umol / units.L * 0))
 
