@@ -8,6 +8,7 @@ ACTIVE = [
 	"adder_sizer.py",
 	"cell_growth.py",
 	"doubling_time_histogram.py",
+	"extended_growth_condition_comparison_validation",
 	"growthConditionComparison.py",
 	"growth_condition_comparison_validation.py",
 	"growth_correlations.py",

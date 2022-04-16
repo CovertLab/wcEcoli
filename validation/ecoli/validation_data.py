@@ -346,9 +346,7 @@ class MacromolecularGrowthRateModulation(object):
 	def _load_macromolecular_growth_rate_modulation(self, validation_data_raw):
 		dataset = validation_data_raw.macromolecular_growth_rate_modulation
 		# List of data value names extracted from the raw flat file
-		values = ["doubling_time", "PRD_per_mass", "mass_per_cell", "total_RNA_stable_fraction", "stable_RNA_tRNA_fraction",
-					  "ribosomes_per_cell", "protein_per_cell_ug", "RNA_per_cell_ug", "DNA_per_cell_ug", "PRD_per_cell"
-					  ]
+		values = list(dataset[0].keys())
 		for value in values:
 			# Store numerical value of raw data into a temporary ndarray
 			temp = np.zeros(len(dataset))
