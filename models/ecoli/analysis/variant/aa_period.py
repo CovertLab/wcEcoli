@@ -1,11 +1,10 @@
 """
-Template for variant analysis plots
+Analysis of amino acid concentration periods when allosteric inhibition is removed.
+Useful with remove_aa_inhibition variant.
 
 TODO:
- - actual time
- - all aa for each variant
- - divide by control
- - highlight mutants
+ - plot all aa for each variant
+ - highlight mutants in _lag and _normalized plots
 """
 
 import csv
@@ -19,18 +18,6 @@ from scipy import interpolate, signal
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.sim.variants import remove_aa_inhibition
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
-
-
-def butter_highpass(cutoff, fs, order=5):
-	nyq = 0.5 * fs
-	normal_cutoff = cutoff / nyq
-	b, a = signal.butter(order, normal_cutoff, btype = "high", analog = False)
-	return b, a
-
-def butter_highpass_filter(data, cutoff, fs, order=5):
-	b, a = butter_highpass(cutoff, fs, order=order)
-	y = signal.filtfilt(b, a, data)
-	return y
 
 
 def switch(data, input_drop=5, input_ma=60, deriv_ma=300, splrep=False):
@@ -83,9 +70,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_conc_std = {}
 		autocorrelate = lambda x: signal.correlate(x, x, method='fft')
 		for variant in variants:
+			total_times = []
 			var_corr = []
-			Pxx_all = None
-			# TODO: plot each variant? or make cohort?
 			var_conc = []
 			periods = []
 			periods_deriv = []
@@ -102,85 +88,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				corr = np.apply_along_axis(autocorrelate, 1, aa_conc)
 				var_corr.append(corr[:, corr.shape[1]//2:] / corr.mean(1).reshape(-1, 1))
 
-				# Other approaches (combined it should be pearson correlation)
-				# corr = np.apply_along_axis(autocorrelate, 1, aa_conc - aa_conc.mean(1).reshape(-1, 1))
-				# var_corr.append(corr[:, corr.shape[1]//2:] / corr[:, corr.shape[1]//2].reshape(-1, 1))
-
-				# # Crude approach to oscillations for leu
-				# print(f'\n{variant}')
-				# mean = aa_conc.mean(1)[10]
-				# std = aa_conc.std(1)[10]
-				# print(std / mean)
-				# above = aa_conc[10, :] > mean
-				# switches = np.sum(above[:-1] != above[1:])
-				# total_time = (sim_time[-1] - sim_time[0]) / 3600
-				# period = total_time / ((switches - 1) / 2)
-				# print(switches)
-				# print(period)
-
-
 				total_time = (sim_time[-1] - sim_time[0]) / 3600
 				above = aa_conc > aa_conc.mean(1).reshape(-1, 1)
-				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
-				period = total_time / (switches / 2)
+				period_switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
+				period = total_time / (period_switches / 2)
 				period[period == np.inf] = np.nan
+				total_times.append(total_time)
 				var_conc.append(aa_conc)
 				periods.append(period)
 
-				switches = np.apply_along_axis(switch, 1, aa_conc)
-				period_deriv = total_time / (switches / 2)
+				deriv_switches = np.apply_along_axis(switch, 1, aa_conc)
+				period_deriv = total_time / (deriv_switches / 2)
 				period_deriv[period_deriv == np.inf] = np.nan
 				periods_deriv.append(period_deriv)
-
-				#
-				# np.save('leu.npy', aa_conc[10, :])
-				#
-				# # Normalize amplitude
-				# mean = aa_conc.mean(1).reshape(-1, 1)
-				# std = aa_conc.std(1).reshape(-1, 1)
-				# aa_conc = (aa_conc - mean) / std
-				#
-				# # Low pass filter
-				# moving_window = min(1001, aa_conc.shape[1])
-				# convolution_array = np.ones(moving_window) / moving_window
-				# # aa_conc = np.apply_along_axis(np.convolve, 1, aa_conc, convolution_array, mode='valid')
-				#
-				# n_samples = aa_conc.shape[1]
-				# print(n_samples)
-				# freq = (sim_time[-1] - sim_time[0]) / n_samples
-				# n_points = min(n_samples, 7200)
-				#
-				# # High pass filter
-				# # aa_conc = butter_highpass_filter(aa_conc, 0.0005, freq)
-				#
-				# # Periodogram
-				# f, Pxx = signal.periodogram(aa_conc, fs=1/freq, nfft=n_points, window='flattop', scaling='spectrum')
-				#
-				# # fft
-				# ## Taper window to reduce leakage: http://qingkaikong.blogspot.com/2016/10/signal-processing-why-do-we-need-taper.html
-				# # aa_conc *= signal.cosine(n_samples)
-				# # f = np.fft.fftfreq(n_points) / freq
-				# # Pxx = np.abs(np.real(np.fft.fft(aa_conc, n_points)))
-				# # mask = f > 0
-				# # f = f[mask]
-				# # Pxx = Pxx[:, mask] * f
-				#
-				#
-				# if Pxx_all is None:
-				# 	Pxx_all = Pxx
-				# else:
-				# 	Pxx_all += Pxx
-				#
-				# period = 1 / f / 3600
-				#
-				# if variant == 0:
-				# 	baseline = Pxx_all
-				#
-				# # TODO: divide mutant variant Pxx by wt to normalize? but must make sure the same scale
-				# # TODO: set the length of analysis to minimal length of seed and add from all seeds
-				# # break
-
-			# TODO: period based on average time series across seeds
 
 			all_corr[variant] = var_corr
 
@@ -191,11 +111,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_periods_deriv[variant] = np.nanmean(np.vstack(periods_deriv), 0)
 
 			mean_periods = []
-			for aa_conc in var_conc:
-				total_time = aa_conc.shape[1] / 3600  # TODO: actual time?
+			for aa_conc, total_time in zip(var_conc, total_times):
 				above = aa_conc > all_conc_mean[variant].reshape(-1, 1)
-				switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
-				period = total_time / (switches / 2)
+				mean_switches = np.sum(above[:, :-1] != above[:, 1:], axis=1)
+				period = total_time / (mean_switches / 2)
 				period[period == np.inf] = np.nan
 				mean_periods.append(period)
 			all_periods_mean_adjusted[variant] = np.nanmean(np.vstack(mean_periods), 0)
@@ -260,7 +179,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot_bar(all_periods, 'Period')
 		plot_bar(all_conc_cv, 'Coefficient of variation', file_label='_cv')
-		plot_bar(all_periods_deriv, 'Period', ylim=(0, 1), file_label='_deriv')
+		plot_bar(all_periods_deriv, 'Period', ylim=(0, 1), file_label='_deriv')  # TODO: adjust/remove ylim if needed, hardcoded for paper
 		plot_bar(all_periods_mean_adjusted, 'Period', file_label='_mean')
 
 		mean_corr = {}
@@ -310,24 +229,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot(label='_lag')
 		plot(label='_normalized', normalized=True)
-
-		# # Not including baseline can provide some insights but need to figure out how to normalize
-		# # over the range of periods with a gradual upslope
-		# # Using baseline gives a depression of short periods in cases where inhibition is removed
-		# y = Pxx_all if baseline is None else Pxx_all / baseline
-		# for ax, P in zip(axes.flatten(), y):
-		# 	# ax.plot(period[:-1], P[:-1] / np.sqrt(-np.diff(period*3600)))
-		# 	# ax.plot(period, np.sqrt(P))
-		# 	# ax.plot(period, P / f)
-		# 	# ax.plot(f, P / f)
-		# 	# ax.plot(f, P)
-		# 	ax.plot(period, P)
-		# 	# ax.plot(period, np.sqrt(P) * f)
-		# 	ax.set_xscale('log')
-		# 	ax.set_yscale('log')
-		# 	ax.set_xticks(np.logspace(-3, 0, 4))
-		# 	ax.axhline(1, color='k', linestyle='--', alpha=0.5)  # useful for comparison to baseline
-
 
 
 if __name__ == "__main__":
