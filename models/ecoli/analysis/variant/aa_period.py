@@ -197,6 +197,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		def plot(label='', normalized=False):
 			_, axes = plt.subplots(nrows=n_variants, ncols=n_aas, figsize=(30, 2*n_variants))
+			if n_variants == 1:
+				axes = axes.reshape(1, -1)
 
 			for row, all_corr, in enumerate(mean_corr.values()):
 				for col, corr in enumerate(all_corr):
