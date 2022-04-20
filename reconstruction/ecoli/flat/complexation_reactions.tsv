@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 26.0
-# Date and time generated: March 23, 2022, 13:47:57
+# Date and time generated: April 20, 2022, 16:49:54
 "id"	"stoichiometry"	"common_name"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"
