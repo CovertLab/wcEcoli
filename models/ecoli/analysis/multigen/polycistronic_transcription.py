@@ -8,11 +8,10 @@ import os
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis import multigenAnalysisPlot
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import (exportFigure, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
-TU_ID = 'EG10397_RNA[c]'
+TU_ID = 'TU0-13388[c]'
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -20,8 +19,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		ap = AnalysisPaths(seedOutDir, multi_gen_plot=True)
-		cell_paths = ap.get_cells()
+		if metadata['operons'] == 'off':
+			print('Skipping analysis - no operons used in this sim')
+			return
+
+		cell_paths = self.ap.get_cells()
 
 		simOutDir = os.path.join(cell_paths[0], "simOut")
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))

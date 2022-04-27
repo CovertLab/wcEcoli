@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
+	"aa_period.py",
 	"aa_synthesis_sensitivity.py",
 	"aa_uptake_sensitivity.py",
 	"adder_sizer.py",
@@ -77,19 +78,32 @@ TAGS = {
 	'PPGPP_CONC': [
 		'ppgpp_conc',
 		],
+	'PPGPP_LIMITATIONS': [
+		'ppgpp_conc',
+		],
+	'PPGPP_LIMITATIONS_RIBOSOME': [
+		'ppgpp_conc',
+		],
 	'REMOVE_AA_INHIBITION': [
+		'aa_period.py',
 		'remove_aa_inhibition.py',
 		],
-	'REMOVE_ONE_AA': [
+	'REMOVE_AAS_SHIFT': [
 		'cell_growth.py',
 		'growth_correlations',
 		'growth_rate_time_series',
 		'growth_trajectory',
 		],
+	'REMOVE_ONE_AA': [
+		'cell_growth.py',
+		'growth_correlations',
+		'growth_rate_time_series',
+		],
 	'REMOVE_ONE_AA_SHIFT': [
 		'cell_growth.py',
 		'growth_correlations',
 		'growth_rate_time_series',
+		'growth_trajectory',
 		],
 	'TF_ACTIVITY': [
 		'tfFit.py',

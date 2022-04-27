@@ -17,7 +17,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants.remove_aa_inhibition import AA_TO_ENZYME, get_aa_and_ki_factor
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
@@ -119,10 +118,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		ap = AnalysisPaths(inputDir, variant_plot=True)
-		variants = ap.get_variants()
+		variants = self.ap.get_variants()
 
-		aa_ids = list({aa for aas in HEATMAP_COLS for aa in aas[1]})
+		aa_ids = sorted({aa for aas in HEATMAP_COLS for aa in aas[1]})
 		aa_idx = {aa: i for i, aa in enumerate(aa_ids)}
 		n_aas = len(aa_ids)
 
@@ -134,18 +132,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ki_factors = []
 		for i, variant in enumerate(variants):
 			variant_conc = []
-			for sim_dir in ap.get_cells(variant=[variant]):
-				simOutDir = os.path.join(sim_dir, "simOut")
+			for seed in self.ap.get_seeds(variant):
+				seed_conc = []
+				for sim_dir in self.ap.get_cells(variant=[variant], seed=[seed], only_successful=True):
+					simOutDir = os.path.join(sim_dir, "simOut")
 
-				# Listeners used
-				kinetics_reader = TableReader(os.path.join(simOutDir, 'EnzymeKinetics'))
+					# Listeners used
+					kinetics_reader = TableReader(os.path.join(simOutDir, 'EnzymeKinetics'))
 
-				# Read data
-				(aa_counts,) = read_bulk_molecule_counts(simOutDir, aa_ids)
-				counts_to_molar = kinetics_reader.readColumn('countsToMolar').reshape(-1, 1)
+					# Read data
+					(aa_counts,) = read_bulk_molecule_counts(simOutDir, aa_ids)
+					counts_to_molar = kinetics_reader.readColumn('countsToMolar').reshape(-1, 1)
 
-				# Calculate amino acid concentration at each time step
-				variant_conc.append(aa_counts[1:, :]*counts_to_molar[1:])
+					# Calculate amino acid concentration at each time step
+					seed_conc.append(aa_counts[1:, :]*counts_to_molar[1:])
+				variant_conc.append(np.vstack(seed_conc).mean(0))
 
 			# Average concentration over all time steps
 			conc = np.vstack(variant_conc)
@@ -172,6 +173,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				if key in aa_conc:
 					conc[:, i, j] = aa_conc[key]
 					variance[:, i, j] = aa_var[key]
+
+		np.save(os.path.join(plotOutDir, plotOutFileName + '_control.npy'), control_conc)
+		np.save(os.path.join(plotOutDir, plotOutFileName + '_control_var.npy'), control_var)
+		np.save(os.path.join(plotOutDir, plotOutFileName + '.npy'), conc)
+		np.save(os.path.join(plotOutDir, plotOutFileName + '_var.npy'), variance)
 
 		# Skip plotting if data does not exist
 		if len(aa_variants) == 0 or len(ki_factors) == 0:

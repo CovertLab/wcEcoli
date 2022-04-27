@@ -13,20 +13,20 @@ def fast_nnls(A, b):
 	utilizes the property that both matrix A and vector b can be divided into
 	matrices and vectors that each form a smaller nonnegative least squares
 	problem, which can each be solved independently and the solutions later
-	concatenated to yield the full vector x. Argument A is given as a sparse
-	matrix.
+	concatenated to yield the full vector x. Argument A can given as either a
+	full numpy array or a scipy sparse matrix.
 
 	Args:
-		A: scipy.sparse.csr.csr_matrix of size (M, N)
+		A: np.ndarray or scipy.sparse.csr.csr_matrix of size (M, N)
 		b: numpy.ndarray of size (M, )
 	Returns:
 		x: numpy.ndarray of size (N, ), the solution to the NNLS problem.
 		r: numpy.ndarray of size (M, ), the residual vector (Ax - b) of the NNLS
 			problem.
 	"""
-	# Check input dimensions
-	if not issparse(A) or A.ndim != 2:
-		raise TypeError('Input array A must be a two-dimensional sparse csr_matrix')
+	# Check input types and dimensions
+	if A.ndim != 2:
+		raise TypeError('Input array A must be a two-dimensional numpy ndarray or sparse csr_matrix')
 	elif not isinstance(b, np.ndarray) or b.ndim != 1:
 		raise TypeError('Input array b must be a one-dimensional ndarray.')
 	elif A.shape[0] != len(b):
@@ -64,7 +64,7 @@ def fast_nnls(A, b):
 				column_DFS(i, all_row_indexes, all_column_indexes)
 
 	# Loop through each column of matrix A
-	for column_index in range(A_nonzero_column_indexes.max() + 1):
+	for column_index in range(A.shape[1]):
 		# Search for columns and rows that can be grouped into a single NNLS
 		# problem as the given column
 		if column_index not in visited_column_indexes:
@@ -72,26 +72,26 @@ def fast_nnls(A, b):
 			submatrix_column_indexes = []
 			column_DFS(column_index, submatrix_row_indexes, submatrix_column_indexes)
 
-			submatrix_indexes.append((
-				np.array(submatrix_row_indexes), np.array(submatrix_column_indexes)
-				))
+			if len(submatrix_row_indexes) > 0:
+				submatrix_indexes.append((
+					np.array(submatrix_row_indexes), np.array(submatrix_column_indexes)
+					))
 
 	# Initialize x
-	x = np.zeros(A_nonzero_column_indexes.max() + 1)
+	x = np.zeros(A.shape[1])
 
 	# Solve NNLS for each subproblem identified above
 	for (row_indexes, column_indexes) in submatrix_indexes:
 		if len(row_indexes) == 1 and len(column_indexes) == 1:
-			x[column_indexes] = b[row_indexes]
+			x[column_indexes] = max(0, b[row_indexes])
 		else:
 			# Build a full submatrix A for each subproblem
 			submatrix = np.zeros((len(row_indexes), len(column_indexes)))
 			mask = np.isin(A_nonzero_row_indexes, row_indexes)
-			for (i, j, v) in zip(
+			for (i, j) in zip(
 					A_nonzero_row_indexes[mask],
-					A_nonzero_column_indexes[mask],
-					A.data[mask]):
-				submatrix[np.where(row_indexes == i)[0][0], np.where(column_indexes == j)[0][0]] = v
+					A_nonzero_column_indexes[mask]):
+				submatrix[np.where(row_indexes == i)[0][0], np.where(column_indexes == j)[0][0]] = A[i, j]
 
 			# Solve the subproblem
 			x_subproblem, _ = nnls(submatrix, b[row_indexes])

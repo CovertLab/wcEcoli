@@ -8,9 +8,9 @@ import pickle
 
 from matplotlib import colors, gridspec, pyplot as plt
 import numpy as np
+from scipy import stats
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.sim.variants import aa_synthesis_sensitivity
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 
@@ -18,12 +18,33 @@ from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # These are set in the variant and will need to be updated if there are changes to the media
 GLT_INDEX = 5
 CONTROL_INDEX = 19
+PARAM_CONTROL_LABEL = 'L-SELENOCYSTEINE aa_kcats_fwd'  # This parameter should not affect growth rate
+
+
+def calculate_sensitivity(data, variant, factors, attr, default=None):
+	params = []
+	values = []
+	slopes = []
+	if variant in data:
+		for param, factor_results in data[variant].items():
+			attrs = []
+			for factor in factors:
+				if factor == 1 and default is not None:
+					value = default
+				elif factor not in factor_results or not np.isfinite(value := factor_results[factor][attr]):
+					break
+				attrs.append(value)
+			else:
+				params.append(param)
+				values.append(np.array(attrs))
+				slopes.append(stats.linregress(np.log10(factors), attrs).slope)
+
+	return np.array(params), np.array(values), np.array(slopes)
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		ap = AnalysisPaths(inputDir, variant_plot=True)
-		variants = ap.get_variants()
+		variants = self.ap.get_variants()
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -32,6 +53,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Load simulation growth rates
 		data = {}
+		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
 		for variant in variants:
 			media_index = aa_synthesis_sensitivity.get_media_index(variant, sim_data)
 			aa_index = aa_synthesis_sensitivity.get_aa_index(variant, sim_data)
@@ -40,13 +62,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			param_label = f'{aa_adjusted} {param}'
 
 			# Load data
-			cells = ap.get_cells(variant=[variant])
+			cells = self.ap.get_cells(variant=[variant])
+			time_step = read_stacked_columns(cells, 'Main', 'timeStepSec',
+				remove_first=True, ignore_exception=True).squeeze()
 			growth_rate = read_stacked_columns(cells, 'Mass', 'instantaneous_growth_rate',
-				remove_first=True, ignore_exception=True).mean()
+				remove_first=True, ignore_exception=True).mean() * 3600
 			elong_rate = read_stacked_columns(cells, 'RibosomeData', 'effectiveElongationRate',
 				remove_first=True, ignore_exception=True).mean()
+			protein_growth = (read_stacked_columns(cells, 'Mass', 'proteinMass',
+				fun=growth_function, ignore_exception=True).squeeze() / time_step).mean() * 3600
+			rna_growth = (read_stacked_columns(cells, 'Mass', 'rnaMass',
+				fun=growth_function, ignore_exception=True).squeeze() / time_step).mean() * 3600
 
-			variant_data = {'Growth rate': growth_rate * 3600, 'Elongation rate': elong_rate}
+			variant_data = {
+				'Growth rate': growth_rate,
+				'Elongation rate': elong_rate,
+				'Protein growth rate': protein_growth,
+				'RNA growth rate': rna_growth,
+				}
 			media_data = data.get(media_index, {})
 			param_data = media_data.get(param_label, {})
 			param_data[factor] = variant_data
@@ -105,7 +138,93 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-		plt.close('all')
+
+		if CONTROL_INDEX in data:
+			# Identify groups of factors to split into subplots
+			nonzero_factors = [f for f in aa_synthesis_sensitivity.FACTORS if f != 0]
+			nonzero_factors_with_control = sorted(nonzero_factors + [1])
+			increase_factors = [f for f in nonzero_factors_with_control if f >= 1]
+			decrease_factors = [f for f in nonzero_factors_with_control if f <= 1]
+
+			# Calculate the control growth rate
+			params, all_rates, _ = calculate_sensitivity(data, CONTROL_INDEX, nonzero_factors, 'Growth rate')
+			control_growth = all_rates[params == PARAM_CONTROL_LABEL, :]
+			control_growth_rate = control_growth.mean()
+			if not np.allclose(control_growth, control_growth_rate):
+				raise ValueError('Control parameter results in variable growth rates.'
+					' Run sims with no modified parameter or consider the mean.')
+
+			# Calculate changes from baseline and max growth rates for each parameter
+			highest_param_rates = all_rates[:, -1]
+			lowest_param_rates = all_rates[:, 0]
+			diff = highest_param_rates - lowest_param_rates
+			highest_param_change = highest_param_rates - control_growth_rate
+			lowest_param_change = lowest_param_rates - control_growth_rate
+			max_rates = np.max(all_rates, 1)
+
+			def slopes_plot(variant, factors, attr, axes, n_labeled=5, stds=1., control=None):
+				params, all_rates, slopes = calculate_sensitivity(data, variant, factors, attr, default=control)
+
+				slope_sort_idx = np.argsort(slopes)
+				mean = slopes.mean()
+				std = slopes.std()
+				upper_limit = max(mean + std * stds, slopes[slope_sort_idx[-n_labeled-1]])
+				lower_limit = min(mean - std * stds, slopes[slope_sort_idx[n_labeled]])
+
+				bar_ax, trace_ax = axes
+
+				# TODO: label params on x
+				bar_ax.bar(range(len(slopes)), slopes[slope_sort_idx])
+				bar_ax.set_ylabel(f'Slope of {attr} vs change in param', fontsize=8)
+				bar_ax.tick_params(labelsize=8)
+				self.remove_border(bar_ax)
+
+				for param, rates, slope in zip(params, all_rates, slopes):
+					if slope > upper_limit or slope < lower_limit:
+						style = dict(alpha=0.6, linewidth=1, markersize=2, label=param)
+					else:
+						style = dict(color='k', alpha=0.3, linewidth=0.5, markersize=1)
+					trace_ax.plot(np.log10(factors), rates, 'o-', **style)
+				trace_ax.set_xlabel('log10 change in param', fontsize=8)
+				trace_ax.set_ylabel(f'{attr}', fontsize=8)
+				trace_ax.legend(fontsize=6, frameon=False)
+				trace_ax.tick_params(labelsize=8)
+				self.remove_border(trace_ax)
+
+			_, axes = plt.subplots(2, 6, figsize=(30, 10))
+
+			# Slopes of growth vs change in parameter
+			# TODO: control growth rates for RNA and protein instead of overall growth rate
+			slopes_plot(CONTROL_INDEX, nonzero_factors_with_control, 'Growth rate', axes[:, 0], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, nonzero_factors_with_control, 'Protein growth rate', axes[:, 1], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, nonzero_factors_with_control, 'RNA growth rate', axes[:, 2], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, increase_factors, 'Growth rate', axes[:, 3], control=control_growth_rate)
+			slopes_plot(CONTROL_INDEX, decrease_factors, 'Growth rate', axes[:, 4], control=control_growth_rate)
+
+			# Greatest changes from baseline in positive and negative directions
+			ax = axes[0, 5]
+			sort_idx = np.argsort(diff)
+			x = np.arange(len(diff))
+			ax.bar(x, highest_param_change[sort_idx])
+			ax.bar(x, lowest_param_change[sort_idx])
+			ax.set_ylabel('Change in growth from baseline (1/hr)', fontsize=8)
+			ax.tick_params(labelsize=8)
+			self.remove_border(ax)
+
+			# Highest growth rates possible per param change
+			ax = axes[1, 5]
+			sort_idx = np.argsort(max_rates)
+			x = np.arange(len(max_rates))
+			ax.bar(x, max_rates[sort_idx])
+			ax.set_ylabel('Highest growth rate per parameter (1/hr)', fontsize=8)
+			ax.tick_params(labelsize=8)
+			self.remove_border(ax)
+
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, f'{plotOutFileName}_aggregated', metadata)
+			plt.close('all')
+		else:
+			print('Need to run additional variants for the aggregated plot.')
 
 
 if __name__ == "__main__":

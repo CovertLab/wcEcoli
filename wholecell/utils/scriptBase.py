@@ -39,6 +39,7 @@ METADATA_KEYS = (
 	'trna_charging',
 	'aa_supply_in_charging',
 	'ppgpp_regulation',
+	'disable_ppgpp_elongation_inhibition',
 	'superhelical_density',
 	'recycle_stalled_elongation',
 	'mechanistic_replisome',
@@ -74,6 +75,7 @@ SIM_KEYS = (
 	'trna_charging',
 	'aa_supply_in_charging',
 	'ppgpp_regulation',
+	'disable_ppgpp_elongation_inhibition',
 	'superhelical_density',
 	'recycle_stalled_elongation',
 	'mechanistic_replisome',
@@ -500,6 +502,10 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				 ' Only has an effect if --trna-charging option is used.')
 		add_bool_option('ppgpp_regulation', 'ppgpp_regulation',
 			help='if true, ppGpp concentration is determined with kinetic equations.')
+		add_bool_option('disable_ppgpp_elongation_inhibition', 'disable_ppgpp_elongation_inhibition',
+			help='if nonzero, ppGpp inhibition of ribosome elongation (GTPase'
+				 ' inhibition) is turned off (max elongation rate is not dependent'
+				 ' on ppGpp).  Only has an effect if --ppgpp-regulation option is used.')
 		add_bool_option('superhelical_density', 'superhelical_density',
 			help='if true, dynamically calculate superhelical densities of each DNA segment')
 		add_bool_option('recycle_stalled_elongation', 'recycle_stalled_elongation',
@@ -532,7 +538,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			override = dashize('--{}'.format(RANGE_ARGS[option]))
 			parser.add_argument(dashize('--{}'.format(option)), nargs=2, default=None, type=int,
 				metavar=('START_{}'.format(upper), 'END_{}'.format(upper)),
-				help='The range of variants to run.  Will override {} option.'.format(override))
+				help=f'The range of {key}s to run.  Will override {override} option.')
 			self.range_options.append(option)
 
 	def parse_args(self):
