@@ -34,7 +34,7 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
-PROMOTER_PDIFF_THRESHOLD = 0.1  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
+PROMOTER_PDIFF_THRESHOLD = 0.08  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
 PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
@@ -3045,9 +3045,9 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		# and one.
 		# 2) D @ P == Drhs : Values of P that correspond to alpha's and fixed TFs
 		# should not change.
-		# 3) pdiff @ P >= 0.1 : There must be at least a difference of 0.1
-		# between binding probabilities of a TF in conditions TF__active and
-		# TF__inactive
+		# 3) pdiff @ P >= PROMOTER_PDIFF_THRESHOLD : There must be at least a
+		# certain difference between binding probabilities of a TF in conditions
+		# TF__active and TF__inactive
 		constraint_p = [
 			0 <= PROMOTER_SCALING * P, PROMOTER_SCALING * P <= PROMOTER_SCALING,
 			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs,
