@@ -24,8 +24,11 @@ FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
 
 # Files
 INPUT = os.path.join(FILE_LOCATION, 'msystems.csv')
-RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli', 'flat', 'rnas.tsv')
-OUTPUT_FLAT_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli', 'flat', 'protein_half_lives_pulsed_silac.tsv')
+RNAS_FILE = os.path.join(
+    ROOT_PATH, 'reconstruction', 'ecoli', 'flat', 'rnas.tsv')
+OUTPUT_FLAT_FILE = os.path.join(
+    ROOT_PATH, 'reconstruction', 'ecoli', 'flat',
+    'protein_half_lives_pulsed_silac.tsv')
 
 
 def get_symbols_to_monomer_ids():
@@ -57,10 +60,7 @@ def get_symbols_to_monomer_ids():
         # assigning half-lives.
         for line in reader:
             gene_symbol = line[gene_symbol_index]
-            protein_id = line[protein_id_index]
-            protein_id = protein_id.replace("[", "")
-            protein_id = protein_id.replace("]", "")
-            protein_id = list(protein_id.split(", "))[0]
+            protein_id = list(line[protein_id_index][2:-2].split('", "'))[0]
 
             symbols_to_monomer_ids[gene_symbol] = protein_id
 
@@ -98,7 +98,7 @@ def get_half_lives(symbols_to_monomer_ids):
 
         for line in reader:
             gene_symbol = line[gene_symbol_index]
-            half_life = line[half_life_index]
+            half_life = float(line[half_life_index])
 
             if gene_symbol in symbols_to_monomer_ids:
                 id_to_half_life[symbols_to_monomer_ids[gene_symbol]] = half_life
@@ -116,17 +116,14 @@ def build_half_life_table(raw_half_lives):
         raw_half_lives: Dictionary that maps monomer ID's to their half-lives
         as reported in Nagar et. al. (2021).
     """
-    half_life_data = []
-
     # Builds list of tuples that stores half-life data
-    for (monomer_id, half_life) in raw_half_lives.items():
-        if half_life == 'inf' or float(half_life) > MAX_HALF_LIFE:
-            half_life_data.append((monomer_id, MAX_HALF_LIFE))
-        else:
-            half_life_data.append((monomer_id, round(float(half_life), ROUND_N_DECIMALS)))
+    half_life_data = [
+        (monomer_id, round(min(half_life, MAX_HALF_LIFE), ROUND_N_DECIMALS))
+        for (monomer_id, half_life) in raw_half_lives.items()
+        ]
 
     # Sort by monomer ID
-    half_life_data.sort(key=lambda v:v[0])
+    half_life_data.sort(key=lambda v: v[0])
 
     # Write to flat file
     with io.open(OUTPUT_FLAT_FILE, 'wb') as f:
@@ -136,7 +133,7 @@ def build_half_life_table(raw_half_lives):
         writer.writerow(['"id"', '"half_life (units.min)"'])
 
         for row in half_life_data:
-            writer.writerow([f'{row[0]}', f'{row[1]}'])
+            writer.writerow([f'"{row[0]}"', f'{row[1]}'])
 
 
 if __name__ == '__main__':
