@@ -34,12 +34,12 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
-PROMOTER_PDIFF_THRESHOLD = 0.08  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
+PROMOTER_PDIFF_THRESHOLD = 0.07  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
 PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
 PROMOTER_MAX_ITERATIONS = 100
-PROMOTER_CONVERGENCE_THRESHOLD = 1e-9
+PROMOTER_CONVERGENCE_THRESHOLD = 5e-8
 ECOS_0_TOLERANCE = 1e-10  # Tolerance to adjust solver output to 0
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
