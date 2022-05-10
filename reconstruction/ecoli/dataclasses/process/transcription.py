@@ -29,8 +29,6 @@ ESTIMATE_ENDO_RNASES = 5000
 PPGPP_CONC_UNITS = units.umol / units.L
 PRINT_VALUES = False  # print values for supplemental table if True
 
-RNASEQ_CORRECTION_OPERON_VERSIONS = ['v3', 'on']
-
 
 class Transcription(object):
 	"""
