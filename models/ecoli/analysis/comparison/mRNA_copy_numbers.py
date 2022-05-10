@@ -188,6 +188,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			ax = fig.add_subplot(1, 2, left + 1)
 			ax.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
 			category_mask = np.logical_xor(np.full_like(mRNA_mask_poly, left), mRNA_mask_poly)
+
 			mask = np.logical_and.reduce((plot_mask, category_mask, ~mRNA_mask_low_p))
 			ax.scatter(
 				np.log10(m1[mask] + 1),
@@ -218,7 +219,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
-
 
 		# Get bar plots of expression levels for operons with low p-values
 		cistron_id_to_mRNA_index = {
@@ -267,6 +267,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		for left, operon_index in enumerate(plot_order):
 			ax = plt.subplot(gs[left//7, left % 7])
 			operon = low_p_operons[operon_index]
+
 			cistron_indexes_in_operon = operon[0]
 			is_forward = cistron_is_forward[cistron_indexes_in_operon[0]]
 
@@ -308,7 +309,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName + '_bar_plots', metadata)
 		plt.close('all')
 
-
 		# (Optional) Get table of operons with low p-value genes
 		if GENERATE_OPERON_TABLE:
 			with open(os.path.join(plotOutDir, plotOutFileName + '_operon_table.tsv'), 'w') as f:
@@ -328,7 +328,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 						cistron_id_to_gene_name[all_cistron_ids[cistron_indexes[-1]]],
 						min(p_values_this_operon),
 						])
-
 
 		# Get bar plots of "failure" rates of each evidence code to align with
 		# RNAseq data
