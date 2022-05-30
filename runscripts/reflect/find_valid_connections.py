@@ -8,10 +8,11 @@ import pickle
 import csv
 import os
 import sys
-from typing import Any, Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from reconstruction.ecoli.dataclasses.process.metabolism import Metabolism
 from reconstruction.ecoli.dataclasses.state.external_state import ExternalState
+from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 
 
 # Directories
@@ -25,7 +26,7 @@ INVALID_MONOMERS_FILE = os.path.join(FILE_LOCATION, 'invalid_monomers.tsv')
 
 
 def get_boundaries(metabolism, external_state, media=None):
-	# type: (Metabolism, ExternalState, Optional[str]) -> (Set[str], Set[str])
+	# type: (Metabolism, ExternalState, Optional[str]) -> Tuple[Set[str], Set[str]]
 	"""
 	Get source and sink metabolites. Imports are sources. Concentration targets
 	and secretions are sinks.
@@ -53,7 +54,7 @@ def get_boundaries(metabolism, external_state, media=None):
 	return sources, sinks
 
 def get_mappings(reactions, map_reactants):
-	# type: (Dict[str, Dict[str, int]], bool) -> (Dict[str, List[str]], Dict[str, List[str]])
+	# type: (Dict[str, Dict[str, int]], bool) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]
 	"""
 	Mappings of metabolites to reactions and reactions to metabolites for easy
 	parsing of all reactions.
@@ -74,8 +75,8 @@ def get_mappings(reactions, map_reactants):
 	else:
 		direction = 1
 
-	met_to_rxn = {}
-	rxn_to_met = {}
+	met_to_rxn = {}  # type: Dict[str, List[str]]
+	rxn_to_met = {}  # type: Dict[str, List[str]]
 	for rxn, stoich in reactions.items():
 		for met, factor in stoich.items():
 			if factor * direction > 0:
@@ -145,7 +146,7 @@ def prune_reactions(reactions, valid_mets):
 	return excluded_rxns
 
 def get_monomers(sim_data, enzymes):
-	# type: (SimulationData, Iterable[str]) -> Set[str]
+	# type: (SimulationDataEcoli, Set[str]) -> Set[str]
 	"""
 	Break down complexes into monomers.
 
@@ -185,7 +186,7 @@ def get_monomers(sim_data, enzymes):
 	return {m[:-3] for m in monomers}
 
 def save_to_file(path, data, reactants, products):
-	# type: (str, Iterable[Any], Iterable[Any], Iterable[Any]) -> None
+	# type: (str, Iterable[Any], Dict[str, List[str]], Dict[str, List[str]]) -> None
 	"""Saves data to a file."""
 
 	print('Saving to {}'.format(path))
@@ -223,7 +224,7 @@ if __name__ == '__main__':
 	product_to_rxn, rxn_to_product = get_mappings(reactions, False)
 
 	# Find reactions that are not possible due to metabolites not being balanced
-	excluded_rxns = set()
+	excluded_rxns = set()  # type: Set[str]
 	rxn_len = -1  # used for break condition checking
 	while len(excluded_rxns) != rxn_len:
 		# Store old length to find when no new reactions are found
