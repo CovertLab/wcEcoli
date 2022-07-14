@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.0
-# Date and time generated: April 20, 2022, 16:49:54
+# Version: 26.1
+# Date and time generated: July 14, 2022, 14:07:27
 "id"	"stoichiometry"	"common_name"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"
@@ -143,7 +143,7 @@
 "BIOTIN-SYN-CPLX_RXN"	{"BIOTIN-SYN-CPLX": 1, "BIOTIN-SYN-MONOMER": -2}	"biotin synthase"
 "BRANCHED-CHAINAMINOTRANSFER-CPLX_RXN"	{"BRANCHED-CHAINAMINOTRANSFER-CPLX": 1, "BRANCHED-CHAINAMINOTRANSFER-MONOMER": -6}	"branched-chain-amino-acid aminotransferase"
 "CARBODEHYDRAT-CPLX_RXN"	{"CARBODEHYDRAT-CPLX": 1, "CARBODEHYDRAT-MONOMER": -2}	"carbonic anhydrase 1"
-"CARBPSYN-CPLX_RXN"	{"CARBPSYN-CPLX": 1, "CARBPSYN-LARGE": -2, "CARBPSYN-SMALL": -2}	"carbamoyl-phosphate synthetase, glutamine-hydrolyzing"
+"CARBPSYN-CPLX_RXN"	{"CARBPSYN-CPLX": 1, "CARBPSYN-LARGE": -1, "CARBPSYN-SMALL": -1}	"carbamoyl-phosphate synthetase, glutamine-hydrolyzing"
 "CARNDEHYDRA-CPLX_RXN"	{"CARNDEHYDRA-CPLX": 1, "CARNDEHYDRA-MONOMER": -2}	null
 "CFA-CPLX_RXN"	{"CFA-CPLX": 1, "CFA-MONOMER": -2}	null
 "CHEZ-CPLX_RXN"	{"CHEZ-CPLX": 1, "CHEZ-MONOMER": -2}	"chemotaxis protein CheZ"
@@ -302,7 +302,7 @@
 "CPLX0-3281_RXN"	{"CPLX0-3281": 1, "EG10857-MONOMER": -2}	"RNase III"
 "CPLX0-3301_RXN"	{"CPLX0-3301": 1, "EG11111-MONOMER": -2}	"DNA replication inhibitor CspD"
 "CPLX0-3361_RXN"	{"CPLX0-3361": 1, "NUOB-MONOMER": -1, "NUOC-MONOMER": -1, "NUOE-MONOMER": -1, "NUOF-MONOMER": -1, "NUOG-MONOMER": -1, "NUOI-MONOMER": -1}	"NADH:quinone oxidoreductase I, peripheral arm"
-"CPLX0-3382_RXN"	{"CPLX0-3382": 1, "G7702-MONOMER": null, "G7703-MONOMER": null, "G7704-MONOMER": null, "G7705-MONOMER": null, "G7706-MONOMER": null, "G7707-MONOMER": null, "G7708-MONOMER": null, "G7709-MONOMER": null, "G7710-MONOMER": null, "G7711-MONOMER": null, "EG12173-MONOMER": null, "EG11359-MONOMER": null}	"Type II secretion system"
+"CPLX0-3382_RXN"	{"CPLX0-3382": 1, "G7702-MONOMER": null, "G7703-MONOMER": null, "G7704-MONOMER": null, "G7705-MONOMER": null, "G7706-MONOMER": null, "G7707-MONOMER": null, "G7708-MONOMER": null, "G7709-MONOMER": null, "G7710-MONOMER": null, "G7711-MONOMER": null, "EG12173-MONOMER": null, "EG11359-MONOMER": null}	"type II secretion system"
 "CPLX0-3401_RXN"	{"CPLX0-3401": 1, "EG10308-MONOMER": null, "EG10313-MONOMER": null, "EG10314-MONOMER": null, "EG10315-MONOMER": null}	"fimbrial complex"
 "CPLX0-341_RXN"	{"CPLX0-341": 1, "EG10004-MONOMER": -12}	"fused 4'-phosphopantothenoylcysteine decarboxylase and phosphopantothenoylcysteine synthetase"
 "CPLX0-3461_RXN"	{"CPLX0-3461": 1, "EG10859-MONOMER": -4}	"ribonuclease E"
@@ -381,7 +381,7 @@
 "CPLX0-7444_RXN"	{"CPLX0-7444": 1, "EG11126-MONOMER": -2}	"DUF892 domain-containing protein YciF"
 "CPLX0-7450_RXN"	{"CPLX0-7450": 1, "FLIG-FLAGELLAR-SWITCH-PROTEIN": -26, "FLIM-FLAGELLAR-C-RING-SWITCH": -34, "FLIN-FLAGELLAR-C-RING-SWITCH": null}	"flagellar motor switch complex"
 "CPLX0-7451_RXN"	{"CPLX0-7451": 1, "G370-MONOMER": null, "G7028-MONOMER": null, "EG11224-MONOMER": null, "EG11975-MONOMER": null, "EG11976-MONOMER": null, "EG11977-MONOMER": null, "EG11656-MONOMER": -12, "G377-MONOMER": -6, "G378-MONOMER": null}	"flagellar export apparatus"
-"CPLX0-7452_RXN"	{"CPLX0-7452": 1, "FLAGELLAR-MOTOR-COMPLEX": null, "G361-MONOMER": -120, "EG11967-MONOMER": null, "EG11545-MONOMER": null, "EG10321-MONOMER": null, "EG10841-MONOMER": -5}	"flagellum"
+"CPLX0-7452_RXN"	{"CPLX0-7452": 1, "FLAGELLAR-MOTOR-COMPLEX": null, "G361-MONOMER": -120, "EG11967-MONOMER": null, "EG11545-MONOMER": null, "EG10321-MONOMER": null, "EG10841-MONOMER": -6}	"flagellum"
 "CPLX0-7458_RXN"	{"CPLX0-7458": 1, "G7545-MONOMER": null, "G7544-MONOMER": null, "MONOMER0-561": null}	"glycolate dehydrogenase"
 "CPLX0-7462_RXN"	{"CPLX0-7462": 1, "EG11234-MONOMER": -2}	null
 "CPLX0-7465_RXN"	{"CPLX0-7465": 1, "ALARACECAT-MONOMER": -2}	"alanine racemase 2"
@@ -560,7 +560,7 @@
 "CPLX0-7917_RXN"	{"CPLX0-7917": 1, "G7553-MONOMER": -2}	"disulfide reductase / organic hydroperoxide reductase"
 "CPLX0-7921_RXN"	{"CPLX0-7921": 1, "MANX-MONOMER": -2}	"mannose-specific PTS enzyme IIAB component"
 "CPLX0-7922_RXN"	{"CPLX0-7922": 1, "EG11191-MONOMER": -2}	"nucleoid occlusion factor SlmA"
-"CPLX0-7923_RXN"	{"CPLX0-7923": 1, "G6939-MONOMER": -2}	"ATP-independent periplasmic chaperone"
+"CPLX0-7923_RXN"	{"CPLX0-7923": 1, "G6939-MONOMER": -2}	"ATP-independent periplasmic chaperone Spy"
 "CPLX0-7927_RXN"	{"CPLX0-7927": 1, "G6760-MONOMER": -2}	"NADPH-dependent curcumin/dihydrocurcumin reductase"
 "CPLX0-7928_RXN"	{"CPLX0-7928": 1, "EG10836-MONOMER": -4}	"Qin prophage; antitoxin/DNA-binding transcriptional repressor RelB"
 "CPLX0-7929_RXN"	{"CPLX0-7929": 1, "EG12844-MONOMER": -2}	"antitoxin/DNA-binding transcriptional repressor YefM"
@@ -725,7 +725,7 @@
 "CPLX0-8240_RXN"	{"CPLX0-8240": 1, "EG11404-MONOMER": -2}	"redox-responsive ATPase YchF"
 "CPLX0-8244_RXN"	{"CPLX0-8244": 1, "G6491-MONOMER": -6}	"intermembrane transport protein PqiB"
 "CPLX0-8245_RXN"	{"CPLX0-8245": 1, "EG10018-MONOMER": -4}	"regulator of CsrB and CsrC decay"
-"CPLX0-8247_RXN"	{"CPLX0-8247": 1, "URAA-MONOMER": -2}	null
+"CPLX0-8247_RXN"	{"CPLX0-8247": 1, "URAA-MONOMER": -2}	"uracil transporter UraA"
 "CPLX0-8248_RXN"	{"CPLX0-8248": 1, "G7192-MONOMER": -4}	"phosphodiesterase YfcE"
 "CPLX0-8249_RXN"	{"CPLX0-8249": 1, "G6381-MONOMER": null, "G6380-MONOMER": null, "G6382-MONOMER": null}	"5-oxoprolinase"
 "CPLX0-8251_RXN"	{"CPLX0-8251": 1, "EG11157-MONOMER": -2}	"amino acid racemase YgeA"
@@ -774,7 +774,7 @@
 "CPLX0-8547_RXN"	{"CPLX0-8547": 1, "G6960-MONOMER": -4}	null
 "CPLX0-8548_RXN"	{"CPLX0-8548": 1, "G6959-MONOMER": -2}	null
 "CPLX0-8549_RXN"	{"CPLX0-8549": 1, "EG11436-MONOMER": -2}	"NADPH-dependent aldehyde reductase Ahr"
-"CPLX0-8550_RXN"	{"CPLX0-8550": 1, "G6577-MONOMER": -2}	"protein-lysine deacetylase/desuccinylase/lipoamidase"
+"CPLX0-8550_RXN"	{"CPLX0-8550": 1, "G6577-MONOMER": -2}	"protein-lysine deacetylase/desuccinylase/delipoylase"
 "CPLX0-8551_RXN"	{"CPLX0-8551": 1, "G7007-MONOMER": -6}	"lipophilic envelope spanning tunnel"
 "CPLX0-8553_RXN"	{"CPLX0-8553": 1, "CPLX0-1923": null, "EG10155-MONOMER": -1}	"iron-catecholate outer membrane transport complex II"
 "CPLX0-8554_RXN"	{"CPLX0-8554": 1, "G6652-MONOMER": -4}	null
@@ -814,6 +814,8 @@
 "CPLX0-8618_RXN"	{"CPLX0-8618": 1, "G7940-MONOMER": null}	"nucleoid-associated protein SymE"
 "CPLX0-8619_RXN"	{"CPLX0-8619": 1, "EG12159-MONOMER": -2}	"nucleoside phosphorylase PpnP"
 "CPLX0-861_RXN"	{"CPLX0-861": 1, "G7055-MONOMER": -2}	"protein/nucleic acid deglycase 1"
+"CPLX0-8762_RXN"	{"CPLX0-8762": 1, "FORMHYDROG2-CPLX": -2}	"hydrogenase 2"
+"CPLX0-8791_RXN"	{"CPLX0-8791": 1, "G7399-MONOMER": -2}	null
 "CPLX0-881_RXN"	{"CPLX0-881": 1, "EG10156-MONOMER": -6}	"ClpA ATP-dependent protease specificity component and chaperone"
 "CPLX0-901_RXN"	{"CPLX0-901": 1, "EG11372-MONOMER": -2}	"tRNA adenosine<sup>34</sup> deaminase"
 "CPLX0-902_RXN"	{"CPLX0-902": 1, "EG11761-MONOMER": -2}	"tautomerase PptA"
@@ -1077,8 +1079,8 @@
 "SULFITE-REDUCT-CPLX_RXN"	{"SULFITE-REDUCT-CPLX": 1, "CPLX0-7841": -1, "BETACOMP-MONOMER": -4}	"assimilatory sulfite reductase (NADPH)"
 "SUPEROX-DISMUTFE-CPLX_RXN"	{"SUPEROX-DISMUTFE-CPLX": 1, "SUPEROX-DISMUTFE-MONOMER": -2}	"superoxide dismutase (Fe)"
 "SUPEROX-DISMUTMN-CPLX_RXN"	{"SUPEROX-DISMUTMN-CPLX": 1, "SUPEROX-DISMUTMN-MONOMER": -2}	"superoxide dismutase (Mn)"
-"TAP-CPLX_RXN"	{"TAP-CPLX": 1, "CHEA-CPLX": -1, "CHEW-MONOMER": -2, "CPLX0-8104": -6}	"chemotaxis signaling complex - dipeptide sensing"
-"TAR-CPLX_RXN"	{"TAR-CPLX": 1, "CHEA-CPLX": -1, "CHEW-MONOMER": -2, "CPLX0-8102": -6}	"chemotaxis signaling complex - aspartate sensing"
+"TAP-CPLX_RXN"	{"TAP-CPLX": 1, "CHEA-CPLX": -1, "CHEW-MONOMER": -2, "CPLX0-8104": -6}	"chemotaxis signaling complex core unit - dipeptide sensing"
+"TAR-CPLX_RXN"	{"TAR-CPLX": 1, "CHEA-CPLX": -1, "CHEW-MONOMER": -2, "CPLX0-8102": -6}	"chemotaxis signaling complex core unit - aspartate sensing"
 "TATABCE-CPLX_RXN"	{"TATABCE-CPLX": 1, "G7808-MONOMER": null, "EG11479-MONOMER": null, "EG11305-MONOMER": null, "TATA": null}	"twin arginine protein translocation system"
 "THIOESTERII-CPLX_RXN"	{"THIOESTERII-CPLX": 1, "THIOESTERII-MONOMER": -4}	"acyl-CoA thioesterase II"
 "THIOREDOXIN-REDUCT-NADPH-CPLX_RXN"	{"THIOREDOXIN-REDUCT-NADPH-CPLX": 1, "THIOREDOXIN-REDUCT-NADPH-MONOMER": -2}	null
@@ -1099,11 +1101,11 @@
 "TRANSALDOLB-CPLX_RXN"	{"TRANSALDOLB-CPLX": 1, "TRANSALDOLB-MONOMER": -2}	"transaldolase B"
 "TRANSENOYLCOARED-CPLX_RXN"	{"TRANSENOYLCOARED-CPLX": 1, "TRANSENOYLCOARED-MONOMER": -2}	null
 "TRANSKETOI-CPLX_RXN"	{"TRANSKETOI-CPLX": 1, "TRANSKETOI-MONOMER": -2}	"transketolase 1"
-"TRG-CPLX_RXN"	{"TRG-CPLX": 1, "CHEA-CPLX": -1, "CHEW-MONOMER": -2, "CPLX0-8105": -6}	"chemotaxis signaling complex - ribose/galactose/glucose sensing"
+"TRG-CPLX_RXN"	{"TRG-CPLX": 1, "CHEA-CPLX": -1, "CHEW-MONOMER": -2, "CPLX0-8105": -6}	"chemotaxis signaling complex core unit - ribose/galactose/glucose sensing"
 "TRPS-CPLX_RXN"	{"TRPS-CPLX": 1, "TRPS-MONOMER": -2}	null
 "TRYPSYN_RXN"	{"TRYPSYN": 1, "TRYPSYN-APROTEIN": -2, "CPLX0-2401": -1}	null
 "TRYPTOPHAN-CPLX_RXN"	{"TRYPTOPHAN-CPLX": 1, "TRYPTOPHAN-MONOMER": -4}	null
-"TSR-CPLX_RXN"	{"TSR-CPLX": 1, "CHEW-MONOMER": -2, "CHEA-CPLX": -1, "CPLX0-8103": -6}	"chemotaxis signaling complex - serine sensing"
+"TSR-CPLX_RXN"	{"TSR-CPLX": 1, "CHEW-MONOMER": -2, "CHEA-CPLX": -1, "CPLX0-8103": -6}	"chemotaxis signaling complex core unit - serine sensing"
 "TYRB-DIMER_RXN"	{"TYRB-DIMER": 1, "TYRB-MONOMER": -2}	"tyrosine aminotransferase"
 "TYRS-CPLX_RXN"	{"TYRS-CPLX": 1, "TYRS-MONOMER": -2}	null
 "UDHA-CPLX_RXN"	{"UDHA-CPLX": 1, "UDHA-MONOMER": -8}	"soluble pyridine nucleotide transhydrogenase"

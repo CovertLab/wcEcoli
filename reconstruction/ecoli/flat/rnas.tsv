@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.0
-# Date and time generated: April 20, 2022, 16:50:33
+# Version: 26.1
+# Date and time generated: July 14, 2022, 14:08:04
 "id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
 "EG10001_RNA"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	"mRNA"	[]	"EG10001"	["ALARACEBIOSYN-MONOMER"]	null	[]
 "EG10002_RNA"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	"mRNA"	[]	"EG10002"	["MODB-MONOMER"]	null	[]
@@ -2888,6 +2888,7 @@
 "RNA0-426"	"Rac prophage; small RNA KilS"	["KilS"]	"miscRNA"	[]	"G0-17108"	[]	null	[]
 "RNA0-427"	"small RNA XylZ"	["XylZ"]	"miscRNA"	[]	"G0-17109"	[]	null	[]
 "RNA0-428"	"small RNA SokE"	["SokE"]	"miscRNA"	[]	"G0-17110"	[]	null	[]
+"RNA0-430"	"small regulatory RNA AzuR"	["AzuR"]	"miscRNA"	[]	"G0-17112"	[]	null	[]
 "G0-41_RNA"	"ecnA"	["ecnA", "b4410", "ECK4142"]	"mRNA"	[]	"G0-41"	["MONOMER0-1562"]	null	[]
 "G0-8601_RNA"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	"mRNA"	[]	"G0-8601"	["MONOMER0-561"]	null	[]
 "CSRB-RNA"	"small regulatory RNA CsrB"	["CsrB"]	"miscRNA"	[]	"G0-8785"	[]	null	[]
@@ -2930,7 +2931,7 @@
 "TKE8-RNA"	"small regulatory RNA MicC"	["Tke8", "IS063", "MicC"]	"miscRNA"	[]	"G0-8901"	[]	null	[]
 "G0-8902_RNA"	"C0362"	["C0362"]	"phantom"	[]	"G0-8902"	[]	null	[]
 "G0-8903_RNA"	"C0465"	["C0465"]	"phantom"	[]	"G0-8903"	[]	null	[]
-"G0-8904_RNA"	"isrB"	["isrB", "IS092", "b4434", "ECK1902"]	"phantom"	[]	"G0-8904"	[]	null	[]
+"G0-8904_RNA"	"isrB"	["isrB", "IS092", "azuCR", "b4434", "ECK1902"]	"phantom"	[]	"G0-8904"	[]	null	[]
 "IS102-RNA"	"CP4-44 prophage; small RNA IsrC"	["IS102", "IsrC"]	"miscRNA"	[]	"G0-8905"	[]	null	[]
 "G0-8906_RNA"	"tpke70"	["tpke70"]	"phantom"	[]	"G0-8906"	[]	null	[]
 "G0-8907_RNA"	"C0614"	["C0614"]	"phantom"	[]	"G0-8907"	[]	null	[]
@@ -3522,7 +3523,7 @@
 "G6631_RNA"	"ychS"	["ychS", "b1228", "ECK1222"]	"mRNA"	[]	"G6631"	["G6631-MONOMER"]	null	[]
 "G6632_RNA"	"insZ"	["insZ", "ychG", "b1240", "b1239", "b4573", "ECK1234"]	"pseudo"	[]	"G6632"	["G6632-MONOMER"]	null	[]
 "G6633_RNA"	"yciU"	["yciU", "b1248", "ECK1242"]	"mRNA"	[]	"G6633"	["G6633-MONOMER"]	null	[]
-"G6634_RNA"	"yciV"	["yciV", "trpH", "b1266", "ECK1260"]	"mRNA"	[]	"G6634"	["G6634-MONOMER"]	null	[]
+"G6634_RNA"	"rnm"	["rnm", "trpH", "yciV", "b1266", "ECK1260"]	"mRNA"	[]	"G6634"	["G6634-MONOMER"]	null	[]
 "G6635_RNA"	"yciO"	["yciO", "b1267", "ECK1261"]	"mRNA"	[]	"G6635"	["G6635-MONOMER"]	null	[]
 "G6636_RNA"	"yciQ"	["yciQ", "yciP", "b1268", "ECK1262"]	"mRNA"	[]	"G6636"	["G6636-MONOMER"]	null	[]
 "G6637_RNA"	"lapA"	["lapA", "yciS", "b1279", "ECK1274"]	"mRNA"	[]	"G6637"	["G6637-MONOMER"]	null	[]
@@ -4348,13 +4349,13 @@
 "G7509_RNA"	"ygfX"	["ygfX", "cptA", "b2896", "ECK2891"]	"mRNA"	[]	"G7509"	["G7509-MONOMER"]	null	[]
 "G7510_RNA"	"sdhE"	["sdhE", "ygfY", "cptB", "b2897", "ECK2892"]	"mRNA"	[]	"G7510"	["G7510-MONOMER"]	null	[]
 "G7511_RNA"	"ygfZ"	["ygfZ", "yzzW", "b2898", "ECK2893"]	"mRNA"	[]	"G7511"	["G7511-MONOMER"]	null	[]
-"G7512_RNA"	"yqfA"	["yqfA", "b2899", "ECK2894"]	"mRNA"	[]	"G7512"	["G7512-MONOMER"]	null	[]
+"G7512_RNA"	"trhA"	["trhA", "yqfA", "b2899", "ECK2894"]	"mRNA"	[]	"G7512"	["G7512-MONOMER"]	null	[]
 "G7513_RNA"	"yqfB"	["yqfB", "b2900", "ECK2895"]	"mRNA"	[]	"G7513"	["G7513-MONOMER"]	null	[]
 "G7514_RNA"	"ygfF"	["ygfF", "yqfD", "b2902", "ECK2897"]	"mRNA"	[]	"G7514"	["G7514-MONOMER"]	null	[]
 "G7515_RNA"	"yqfE"	["yqfE", "b2915", "ECK2911"]	"pseudo"	[]	"G7515"	["G7515-MONOMER"]	null	[]
 "G7516_RNA"	"scpB"	["scpB", "ygfG", "b2919", "ECK2915"]	"mRNA"	[]	"G7516"	["G7516-MONOMER"]	null	[]
 "G7517_RNA"	"scpC"	["scpC", "ygfH", "b2920", "ECK2916"]	"mRNA"	[]	"G7517"	["G7517-MONOMER"]	null	[]
-"G7518_RNA"	"ygfI"	["ygfI", "b2921", "ECK2917"]	"mRNA"	[]	"G7518"	["G7518-MONOMER"]	null	[]
+"G7518_RNA"	"srsR"	["srsR", "ygfI", "b2921", "ECK2917"]	"mRNA"	[]	"G7518"	["G7518-MONOMER"]	null	[]
 "G7520_RNA"	"yggP"	["yggP", "b2931", "b2932", "b4465", "ECK2927"]	"mRNA"	[]	"G7520"	["G7520-MONOMER"]	null	[]
 "G7521_RNA"	"yqgB"	["yqgB", "b2939", "ECK2934"]	"mRNA"	[]	"G7521"	["G7521-MONOMER"]	null	[]
 "G7522_RNA"	"yqgC"	["yqgC", "b2940", "ECK2935"]	"mRNA"	[]	"G7522"	["G7522-MONOMER"]	null	[]

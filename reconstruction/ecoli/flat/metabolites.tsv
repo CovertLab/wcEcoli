@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.0
-# Date and time generated: April 20, 2022, 16:50:17
+# Version: 26.1
+# Date and time generated: July 14, 2022, 14:07:43
 "id"	"common_name"	"synonyms"	"chemical_formula"	"mw"
 "--TRANS-ACENAPHTHENE-12-DIOL"	"(+/-)-<i>trans</i>-acenaphthene-1,2-diol"	["<i>trans</i>-1,2-acenaphthylene glycol"]	"C12H10O2"	186.21
 "1-2-Beta-D-Glucans"	"a 1,2-&beta;-D-glucan"	[]	null	null
@@ -558,6 +558,7 @@
 "5-methoxyU34-tRNA"	"a 5-methoxyuridine<sup>34</sup> in tRNA"	["mo<sup>5</sup>U34"]	null	null
 "5-Methyl-2-thiouracil54-in-tRNA"	"a 5-methyl-2-thiouracil<sup>54</sup> in tRNA"	["a tRNA containing 5-methyl-2-thiouracil<sup>54</sup>"]	null	null
 "5-Methyl-23S-rRNA-Cytosines"	"a 5-methylcytosine in 23S rRNA"	[]	null	null
+"5-METHYL-DL-TRYPTOPHAN"	"5-methyl-DL-tryptophan"	["5-methyltryptophan"]	"C12H14N2O2"	218.255
 "5-METHYL-THF"	"5-methyltetrahydropteroyl mono-L-glutamate"	["5-methyltetrahydrofolate mono-L-glutamate", "5-methyl-THF mono-L-glutamate", "5-methyl-5,6,7,8-tetrahydrofolate mono-L-glutamate", "n5-methyltetrahydrofolate mono-L-glutamate", "N5-methyl-THF mono-L-glutamate", "methyl-THF mono-L-glutamate", "methyl-tetrahydrofolate mono-L-glutamate", "methyl-H4F mono-L-glutamate", "5-methyl-5,6,7,8-tetrahydropteroyl-L-glutamate", "<i>N</i><sup>5</sup>-methyl--H<sub>4</sub>PteGlu<sub>1</sub>", "<i>N</i><sup>5</sup>-methyltetrahydropteroyl mono-L-glutamate"]	"C20H23N7O6"	457.445
 "5-METHYL-THF-GLU-N"	"a 5-methyltetrahydrofolate"	["an <i>N</i><sup>5</sup>-methyltetrahydrofolate"]	null	null
 "5-METHYLAMINOMETHYL-2-SELENOURIDINE"	"5-methylaminomethyl-2-selenouridine"	["mnm(5)se(2)U"]	"C11H16N3O5Se"	349.224
@@ -2346,6 +2347,7 @@
 "CPD-21605"	"enterobacterial common antigen-phosphatidylglycerol"	["ECA<sub>PG</sub>", "ECA phosphatidylglycerol"]	null	null
 "CPD-21612"	"iron(III)-[(2,3-dihydroxybenzoylserine)<sub>2</sub>] complex"	["ferric-[(2,3-dihydroxybenzoylserine)<sub>2</sub>] complex"]	"C20H15N2O11Fe"	515.192
 "CPD-21685"	"6-sulfo-&alpha;-D-quinovose"	["&alpha;-D-sulphoquinovose", "6-deoxy-6-&alpha;-D-sulfoglucose", "6-deoxy-6-sulfo-&alpha;-D-glucopyranose", "&alpha;-sulfoquinovose"]	"C6H11O8S"	243.208
+"CPD-21686"	"6-sulfo-&beta;-D-quinovose"	["&beta;-D-sulphoquinovose", "6-deoxy-6-&beta;-D-sulfoglucose", "6-deoxy-6-sulfo-&beta;-D-glucopyranose", "&beta;-sulfoquinovose"]	"C6H11O8S"	243.208
 "CPD-21702"	"3-hydroxypropanal dimer"	["2-(2-hydroxyethyl)-1,3-dioxan-4-ol"]	"C6H12O4"	148.158
 "CPD-21703"	"3-hydroxypropanal hydrate"	["reuterin hydrate"]	"C3H8O3"	92.094
 "CPD-21707"	"N<sup>6</sup>-(D-glucosyl)-L-lysine"	["glucoselysine", "glucosyllysine"]	"C12H25N2O7"	309.339
@@ -2463,7 +2465,9 @@
 "CPD-253"	"4,5-<i>seco</i>-dopa"	["4-(L-alanin-3-yl)-2-hydroxy-cis,cis-muconate 6-semialdehyde"]	"C9H10NO6"	228.181
 "CPD-25375"	"waldiomycin"	[]	"C38H34O13"	698.679
 "CPD-25382"	"(R)-4'-phosphopantothenoyl-cytidylate"	[]	"C18H27N4O15P2"	601.377
+"CPD-25444"	"<i>O</i>-lipoyl-ADP-ribose nicotinamide"	[]	"C29H38N7O15P2S2"	850.725
 "CPD-255"	"(S)-acetoin"	["(S)-2-acetoin", "L-(+)-acetoin", "(+)-acetoin", "(S)-acetylmethylcarbinol"]	"C4H8O2"	88.106
+"CPD-25891"	"ferricrocin"	[]	"C28H44N9O13Fe"	770.555
 "CPD-259"	"4-aminophenol"	["4-hydroxyaniline", "p-aminophenol", "4-aminobenzenol", "p-hydroxyaniline", "p-aminobenzenol"]	"C6H7NO"	109.127
 "CPD-264"	"3-hydroxybenzoyl-CoA"	[]	"C28H36N7O18P3S"	883.61
 "CPD-27"	"phosphinate"	["hypophosphite"]	"H2O2P"	64.988
@@ -4924,6 +4928,7 @@
 "i-Antigens"	"an i antigen"	["a &beta;-D-galactosyl-(1,4)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-(1,3)-&beta;-D-galactosyl-(1,4)-<i>N</i>-acetyl-D-glucosaminyl-[glycoprotein]", "a &beta;-D-galactosyl-(1&rarr;4)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-(1&rarr;3)-&beta;-D-galactosyl-(1&rarr;4)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-R", "an i histo-blood group antigen", "a &beta;-D-Gal-(1&rarr;4)-&beta;-D-GlcNAc-(1&rarr;3)-&beta;-D-Gal-(1&rarr;4)-&beta;-D-GlcNAc-R"]	null	null
 "Ibuprofen"	"ibuprofen"	["(4-isobutylphenyl)-&alpha;-methylacetate", "Motrin", "&alpha;-(4-isobutylphenyl)propionate", "2-(4-isobutylphenyl)propanoate", "&alpha;-methyl-4-(2-methylpropyl)benzeneacetate", "Advil", "Nurofen", "Nuprin"]	"C13H17O2"	205.276
 "Icosanoids"	"an icosanoid"	["an eicosanoid"]	null	null
+"Idose"	"idose"	[]	null	null
 "IDP"	"IDP"	["riboxin", "inosine diphosphate"]	"C10H11N4O11P2"	425.165
 "Iduronate"	"iduronate"	["iduronic acid"]	"C6H9O7"	193.133
 "III2-a-Fucosyllactotetraosylceramides"	"a III<sup>2</sup>-&alpha;-fucosyllactotetraosylceramide"	["&alpha;-L-fucosyl-(1&rarr;2)-&beta;-D-galactosyl-(1,3)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-(1,3)-&beta;-D- galactosyl-(1,4)-&beta;-D-glucosyl-(1,1)-ceramide", "&beta;-D-galactosyl-1,3-<i>N</i>-acetyl-&beta;-D-glucosaminyl-1,3-&beta;-D-galactosyl-1,4-&beta;-D-glucosyl-(1&harr;1)-ceramide", "&beta;-D-galactosyl-(1,3)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-(1,3)-&beta;-D-galactosyl-(1,4)-&beta;-D-glucosyl-(1,1)-ceramide"]	null	null
@@ -5128,6 +5133,7 @@
 "L-HOMOCYSTEATE"	"L-homocysteate"	["homocysteate", "L-homocysteic acid", "L-2-amino-4-sulfobutyric acid"]	"C4H8NO5S"	182.171
 "L-IDONATE"	"L-idonate"	["L-idonic acid", "(<i>R</i>)-idonate"]	"C6H11O7"	195.149
 "L-idopyranuronate"	"L-idopyranuronate"	["L-idopyranuronic acid"]	"C6H9O7"	193.133
+"L-idose"	"L-idose"	[]	"C6H12O6"	180.157
 "L-Iduronate"	"L-iduronate"	[]	"C6H9O7"	193.133
 "L-Ketohexoses"	"an L-ketohexose"	[]	null	null
 "L-Ketoses"	"an L-ketose"	[]	null	null
@@ -6326,6 +6332,7 @@
 "PQQ"	"pyrroloquinoline quinone"	["coenzyme PQQ", "4,5-dihydro-4,5-dioxo-1H-pyrrolo[2,3-5,6]quinoline-2,7,9-tricarboxylic acid", "2,7,9-tricarboxy-1H-pyrrolo(2,3-f)quinoline-4,5-dione", "2,4,6-tricarboxylic-pyrrolo[2,3-5,6]quinoline 8,9-quinone", "4,5-dioxo-3&alpha;,4,5,6,7,8,9,9&beta;-octahydro-1H pyrrolo[2,3-f]quinoline-2,7,9-tricarboxylate", "4,5-dioxo-4,5-dihydro-1H-pyrrolo[2,3-f]quinoline-2,7,9-tricarboxylate", "PQQ", "methoxatin", "2,7,9-tricarboxy-1H-pyrrolo[2,3-<i>f</i>]quinoline-4,5-dione"]	"C14H3N2O8"	327.186
 "Precorrins"	"a precorrin"	[]	null	null
 "PRECURSOR-Z"	"cyclic pyranopterin phosphate"	["precursor Z", "cPMP", "precursor-Z", "8-amino-2,12,12-trihydroxy-4a,5a,6,9,11,11a,12,12a-octahydro[1,3,2]dioxaphosphinino[4',5':5,6]pyrano[3,2-g]pteridin-10(4H)-one 2-oxide", "8-amino-2,12,12-trihydroxy-4,4a,5a,6,9,10,11,11a,12,12a-decahydro-[1,3,2]dioxaphosphinino[4',5':5,6]pyrano[3,2-g]pteridine 2-oxide", "cyclic pyranopterin monophosphate"]	"C10H11N5O7P"	344.2
+"PRENAL"	"3-methylbut-2-enal"	["3-methyl-2-butenal", "3,3-dimethyl-acrylaldehyde", "prenal", "3-methylcrotonaldehyde"]	"C5H8O"	84.118
 "PRENOL"	"prenol"	["isopentenol", "3-methyl-2-buten-1-ol"]	"C5H10O"	86.133
 "Prenols"	"a prenol"	["an isoprenoid alcohol"]	null	null
 "Prenylated-Glycans"	"a prenylated saccharide"	["a prenylated glycan"]	null	null
@@ -6622,8 +6629,8 @@
 "Ribonucleosides-in-rRNA"	"a ribonucleoside within rRNA"	[]	null	null
 "Ribonucleosides-in-tRNA"	"a ribonucleoside within tRNA"	[]	null	null
 "Ribonucleotides"	"a ribonucleotide"	[]	null	null
-"Ribose"	"ribose"	["Rib"]	null	null
 "RIBOSE"	"D-ribose"	["ribose"]	"C5H10O5"	150.131
+"Ribose"	"ribose"	["Rib"]	null	null
 "RIBOSE-15-BISPHOSPHATE"	"&alpha;-D-ribose 1,5-bisphosphate"	["ribose-1,5-bisphosphate"]	"C5H8O11P2"	306.059
 "RIBOSE-1P"	"&alpha;-D-ribose-1-phosphate"	["D-ribose-1-phosphate", "&alpha;-D-ribose-1P", "&alpha;-D-ribofuranose 1-phosphate", "ribose-1-phosphate"]	"C5H9O8P"	228.095
 "RIBOSE-5P"	"D-ribose 5-phosphate"	["D-ribose-5-phosphoric acid", "ribose-5-phosphoric acid", "ribose-5P", "D-ribose-5-P", "ribose-5-P", "D-ribose 5'-phosphate"]	"C5H9O8P"	228.095
