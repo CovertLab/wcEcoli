@@ -27,6 +27,10 @@ class RnapData(wholecell.listeners.listener.Listener):
 		super(RnapData, self).initialize(sim, sim_data)
 
 		self.rnaIds = sim_data.process.transcription.rna_data['id']
+		self.rRNA_indexes = np.where(
+			sim_data.process.transcription.rna_data['is_rRNA'])[0]
+		self.tRNA_indexes = np.where(
+			sim_data.process.transcription.rna_data['is_tRNA'])[0]
 		self.nRnaSpecies = self.rnaIds.size
 		self.cistron_ids = sim_data.process.transcription.cistron_data['id']
 		self.n_cistrons = self.cistron_ids.size
@@ -75,11 +79,14 @@ class RnapData(wholecell.listeners.listener.Listener):
 		self.active_rnap_domain_indexes = domain_indexes
 		self.active_rnap_unique_indexes = RNAP_unique_indexes
 
-		RNA_RNAP_index, is_full_transcript, RNA_unique_indexes = RNAs.attrs(
-			'RNAP_index', 'is_full_transcript', 'unique_index')
+		RNA_RNAP_index, is_full_transcript, RNA_unique_indexes, TU_indexes = RNAs.attrs(
+			'RNAP_index', 'is_full_transcript', 'unique_index', 'TU_index')
 		is_partial_transcript = np.logical_not(is_full_transcript)
+		is_stable_RNA = np.array([TU_index in self.rRNA_indexes or TU_index in self.tRNA_indexes
+									 for TU_index in TU_indexes])
 		partial_RNA_RNAP_indexes = RNA_RNAP_index[is_partial_transcript]
 		partial_RNA_unique_indexes = RNA_unique_indexes[is_partial_transcript]
+		self.partial_stable_RNA_RNAP_indexes = RNA_RNAP_index[np.logical_and(is_stable_RNA, is_partial_transcript)]
 
 		ribosome_RNA_index = active_ribosomes.attr('mRNA_index')
 
@@ -113,6 +120,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 			'active_rnap_coordinates',
 			'active_rnap_domain_indexes',
 			'active_rnap_unique_indexes',
+			'active_rnap_on_stable_RNA_indexes',
 			'active_rnap_n_bound_ribosomes',
 			'headon_collision_coordinates',
 			'codirectional_collision_coordinates',
@@ -126,6 +134,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 			active_rnap_coordinates=self.active_rnap_coordinates,
 			active_rnap_domain_indexes=self.active_rnap_domain_indexes,
 			active_rnap_unique_indexes=self.active_rnap_unique_indexes,
+			active_rnap_on_stable_RNA_indexes=self.partial_stable_RNA_RNAP_indexes,
 			active_rnap_n_bound_ribosomes=self.active_rnap_n_bound_ribosomes,
 			actualElongations = self.actualElongations,
 			didTerminate = self.didTerminate,
