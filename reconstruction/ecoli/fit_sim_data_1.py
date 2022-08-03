@@ -34,12 +34,12 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
-PROMOTER_PDIFF_THRESHOLD = 0.1  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
+PROMOTER_PDIFF_THRESHOLD = 0.07  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
 PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
 PROMOTER_MAX_ITERATIONS = 100
-PROMOTER_CONVERGENCE_THRESHOLD = 1e-9
+PROMOTER_CONVERGENCE_THRESHOLD = 5e-8
 ECOS_0_TOLERANCE = 1e-10  # Tolerance to adjust solver output to 0
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
@@ -989,7 +989,9 @@ def setRNAExpression(sim_data):
 		rna_id[:-3]: i for (i, rna_id)
 		in enumerate(sim_data.process.transcription.rna_data['id'])}
 
-	for mol_id in sim_data.adjustments.rna_expression_adjustments:
+	rna_index_to_adjustment = {}
+
+	for mol_id, adj_factor in sim_data.adjustments.rna_expression_adjustments.items():
 		if mol_id in cistron_ids:
 			# Find indexes of all RNAs containing the cistron
 			rna_indexes = sim_data.process.transcription.cistron_id_to_rna_indexes(mol_id)
@@ -999,8 +1001,15 @@ def setRNAExpression(sim_data):
 			raise ValueError(
 				f'Molecule ID {mol_id} not found in list of cistrons or transcription units.')
 
-		# Multiply all expression levels with the specified adjustment factor
-		sim_data.process.transcription.rna_expression["basal"][rna_indexes] *= sim_data.adjustments.rna_expression_adjustments[mol_id]
+		# If multiple adjustments are made for the same RNA, take the maximum
+		# adjustment factor
+		for rna_index in rna_indexes:
+			rna_index_to_adjustment[rna_index] = max(
+				rna_index_to_adjustment.get(rna_index, 0), adj_factor)
+
+	# Multiply all degradation rates with the specified adjustment factor
+	for rna_index, adj_factor in rna_index_to_adjustment.items():
+		sim_data.process.transcription.rna_expression["basal"][rna_index] *= adj_factor
 
 	sim_data.process.transcription.rna_expression["basal"] /= sim_data.process.transcription.rna_expression["basal"].sum()
 
@@ -1032,7 +1041,9 @@ def setRNADegRates(sim_data):
 		rna_id[:-3]: i for (i, rna_id)
 		in enumerate(sim_data.process.transcription.rna_data['id'])}
 
-	for mol_id in sim_data.adjustments.rna_deg_rates_adjustments:
+	rna_index_to_adjustment = {}
+
+	for mol_id, adj_factor in sim_data.adjustments.rna_deg_rates_adjustments.items():
 		if mol_id in cistron_id_to_index:
 			# Multiply the cistron degradation rate with the specified
 			# adjustment factor (Note: these rates are not actually used by the
@@ -1048,8 +1059,15 @@ def setRNADegRates(sim_data):
 			raise ValueError(
 				f'Molecule ID {mol_id} not found in list of cistrons or transcription units.')
 
-		# Multiply all degradation rates with the specified adjustment factor
-		sim_data.process.transcription.rna_data.struct_array["deg_rate"][rna_indexes] *= sim_data.adjustments.rna_deg_rates_adjustments[mol_id]
+		# If multiple adjustments are made for the same RNA, take the maximum
+		# adjustment factor
+		for rna_index in rna_indexes:
+			rna_index_to_adjustment[rna_index] = max(
+				rna_index_to_adjustment.get(rna_index, 0), adj_factor)
+
+	# Multiply all degradation rates with the specified adjustment factor
+	for rna_index, adj_factor in rna_index_to_adjustment.items():
+		sim_data.process.transcription.rna_data.struct_array["deg_rate"][rna_index] *= adj_factor
 
 def setProteinDegRates(sim_data):
 	"""
@@ -3027,9 +3045,9 @@ def fitPromoterBoundProbability(sim_data, cell_specs):
 		# and one.
 		# 2) D @ P == Drhs : Values of P that correspond to alpha's and fixed TFs
 		# should not change.
-		# 3) pdiff @ P >= 0.1 : There must be at least a difference of 0.1
-		# between binding probabilities of a TF in conditions TF__active and
-		# TF__inactive
+		# 3) pdiff @ P >= PROMOTER_PDIFF_THRESHOLD : There must be at least a
+		# certain difference between binding probabilities of a TF in conditions
+		# TF__active and TF__inactive
 		constraint_p = [
 			0 <= PROMOTER_SCALING * P, PROMOTER_SCALING * P <= PROMOTER_SCALING,
 			np.diag(D) @ (PROMOTER_SCALING * P) == PROMOTER_SCALING * Drhs,

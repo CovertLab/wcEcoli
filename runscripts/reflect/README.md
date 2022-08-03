@@ -75,3 +75,14 @@ Check options with:
 ```bash
 runscripts/reflect/model_inspection.py -h
 ```
+
+## find_valid_connections
+
+Find valid reactions and metabolites in the reaction network and identify enzymes associated with those reactions.  Valid reactions will contain only metabolites recognized in the model and be part of a pathway from a valid metabolite source (import from the media or a tracked concentration in the model) to a valid metabolite destination (exported from the cell or a tracked concentration in the model).  If this is not the case, then the reaction would not be able to carry any flux and is effectively not implemented in the model.  Information is saved to .tsv files.
+
+### usage
+
+Provide the path to a sim_data object as an arg to the script:
+```bash
+runscripts/reflect/find_valid_connections.py out/manual/kb/simData.cPickle
+```
