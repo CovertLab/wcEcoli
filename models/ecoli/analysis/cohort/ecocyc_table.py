@@ -100,13 +100,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		## Columns
 		## remove_first=True because countsToMolar is 0 at first time step
 		mrna_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, fun=lambda x: x[::60])
+			cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, ignore_exception=True)
 		monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True, fun=lambda x: x[::60])
+			cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True, ignore_exception=True)
 		counts_to_molar = read_stacked_columns(
-			cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True, fun=lambda x: x[::60])
+			cell_paths, 'EnzymeKinetics', 'countsToMolar', remove_first=True, ignore_exception=True)
 		dry_masses = read_stacked_columns(
-			cell_paths, 'Mass', 'dryMass', remove_first=True, fun=lambda x: x[::60])
+			cell_paths, 'Mass', 'dryMass', remove_first=True, ignore_exception=True)
 
 		# Validation
 		mrna_validation_counts = np.zeros(mrna_counts.shape[1])  # Zero for now
