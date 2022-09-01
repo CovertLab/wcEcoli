@@ -38,6 +38,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		transcription = sim_data2.process.transcription
 		operons = transcription.operons
 		cistron_start_pos = transcription.cistron_data['replication_coordinate']

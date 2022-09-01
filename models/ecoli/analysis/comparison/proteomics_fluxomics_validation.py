@@ -36,6 +36,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		# Read data from sim_data
 		monomer_ids = sim_data1.process.translation.monomer_data["id"]
 		cell_density = sim_data1.constants.cell_density

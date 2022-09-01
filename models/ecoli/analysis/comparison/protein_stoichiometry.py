@@ -34,6 +34,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ap1, sim_data1, _ = self.setup(reference_sim_dir)
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		# Load from sim_data
 		operon_cistron_ids = sim_data2.process.transcription.cistron_data['id']
 		cistron_id_to_monomer_id = {

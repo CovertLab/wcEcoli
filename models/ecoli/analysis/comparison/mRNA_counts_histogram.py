@@ -29,6 +29,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		def read_sims(ap):
 			# Ignore data from first two gens
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
