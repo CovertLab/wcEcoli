@@ -89,51 +89,53 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
         # Tuples for all plots, consisting of tuple name, units to plot in,
         # title of plot, position (row, column) of plot, and top y-axis limit.
-        plotted_variables = np.array([("doubling_time", time_units, None, (0, 0), None),
-                                      ("protein_per_mass", units.aa / mass_units, "Protein amino acids per dry mass", (0, 0), null_ylim),
-                                      ("RNA_per_mass", units.nt / mass_units, "RNA nucleotides per dry mass", (0, 1), null_ylim),
-                                      ("DNA_per_mass", 1 / mass_units, "Genome equivalents per dry mass", (0, 2), null_ylim),
-                                      ("protein_per_genome", units.aa, "Protein amino acids per genome equivalent", (0, 3), null_ylim),
-                                      ("RNA_per_genome", units.nt, "RNA nucleotides per genome equivalent", (0, 4), null_ylim),
+        plotted_variables = np.array([
+            ("doubling_time", time_units, None, (0, 0), None),
+            ("protein_per_mass", units.aa / mass_units, "Protein amino acids per dry mass", (0, 0), null_ylim),
+            ("RNA_per_mass", units.nt / mass_units, "RNA nucleotides per dry mass", (0, 1), null_ylim),
+            ("DNA_per_mass", 1 / mass_units, "Genome equivalents per dry mass", (0, 2), null_ylim),
+            ("protein_per_genome", units.aa, "Protein amino acids per genome equivalent", (0, 3), null_ylim),
+            ("RNA_per_genome", units.nt, "RNA nucleotides per genome equivalent", (0, 4), null_ylim),
 
-                                      ("origins_per_cell", None, "Origins of replication per cell", (1, 0), null_ylim),
-                                      ("termini_per_cell", None, "Chromosome termini per cell", (1, 1), null_ylim),
-                                      ("replication_forks_per_cell", None, "Replication forks per cell", (1, 2), null_ylim),
-                                      ("origins_per_genome", None, "Origins per genome equivalent", (1, 3), null_ylim),
-                                      ("protein_per_origin", units.aa, "Protein amino acids per origin", (1, 4), null_ylim),
+            ("origins_per_cell", None, "Origins of replication per cell", (1, 0), null_ylim),
+            ("termini_per_cell", None, "Chromosome termini per cell", (1, 1), null_ylim),
+            ("replication_forks_per_cell", None, "Replication forks per cell", (1, 2), null_ylim),
+            ("origins_per_genome", None, "Origins per genome equivalent", (1, 3), null_ylim),
+            ("protein_per_origin", units.aa, "Protein amino acids per origin", (1, 4), null_ylim),
 
-                                      ("DNA_per_cell_ug", mass_units, "DNA mass per cell (fg)", (2, 0), null_ylim),
-                                      ("mass_per_cell", mass_units, "Dry mass per cell (fg)", (2, 1), null_ylim),
-                                      ("protein_per_cell_ug", mass_units, "Protein mass per cell (fg)", (2, 2), null_ylim),
-                                      ("RNA_per_cell_ug", mass_units, "RNA mass per cell (fg)", (2, 3), null_ylim),
-                                      ("PRD_per_mass", None, "Protein + RNA + DNA mass per dry mass", (2, 4), (0, 1)),
-                                      ("PRD_per_cell", mass_units, "Protein + RNA + DNA mass per cell (fg)", (2, 5), null_ylim),
+            ("DNA_per_cell_ug", mass_units, "DNA mass per cell (fg)", (2, 0), null_ylim),
+            ("mass_per_cell", mass_units, "Dry mass per cell (fg)", (2, 1), null_ylim),
+            ("protein_per_cell_ug", mass_units, "Protein mass per cell (fg)", (2, 2), null_ylim),
+            ("RNA_per_cell_ug", mass_units, "RNA mass per cell (fg)", (2, 3), null_ylim),
+            ("PRD_per_mass", None, "Protein + RNA + DNA mass per dry mass", (2, 4), (0, 1)),
+            ("PRD_per_cell", mass_units, "Protein + RNA + DNA mass per cell (fg)", (2, 5), null_ylim),
 
-                                      ("total_RNA_stable_fraction", None, "Stable Fraction of Total RNA", (3, 0), (0.8, 1)),
-                                      ("stable_RNA_tRNA_fraction", None, "tRNA Fraction of Stable RNA", (3, 1), (0, 0.2)),
-                                      ("ribosomes_per_cell", None, "Ribosomes per cell", (3, 2), null_ylim),
-                                      ("r_prot_per_total_protein", None, "Ribosomal protein per total protein (amino acids)", (3, 3), (0, 0.5)),
-                                      ("tRNA_per_cell", None, "tRNA counts per cell", (3, 4), null_ylim),
-                                      ("peptide_elongation_rate", units.aa / units.s, "Ribosome elongation rate per second (aa/s)", (3, 5), null_ylim),
+            ("total_RNA_stable_fraction", None, "Stable Fraction of Total RNA", (3, 0), (0.8, 1)),
+            ("stable_RNA_tRNA_fraction", None, "tRNA Fraction of Stable RNA", (3, 1), (0, 0.2)),
+            ("ribosomes_per_cell", None, "Ribosomes per cell", (3, 2), null_ylim),
+            ("r_prot_per_total_protein", None, "Ribosomal protein per total protein (amino acids)", (3, 3), (0, 0.5)),
+            ("tRNA_per_cell", None, "tRNA counts per cell", (3, 4), null_ylim),
+            ("peptide_elongation_rate", units.aa / units.s, "Ribosome elongation rate per second (aa/s)", (3, 5), null_ylim),
 
-                                      ("RNAP_per_total_protein", None, "Protein fraction of RNAPs", (4, 0), (0, 0.02)),
-                                      ("RNAP_per_cell", None, "Total RNAP cores per cell", (4, 1), null_ylim),
-                                      ("RNAP_per_ribosome", None, "RNA polymerase cores per ribosome", (4, 2), (0, 0.4)),
+            ("RNAP_per_total_protein", None, "Protein fraction of RNAPs", (4, 0), (0, 0.02)),
+            ("RNAP_per_cell", None, "Total RNAP cores per cell", (4, 1), null_ylim),
+            ("RNAP_per_ribosome", None, "RNA polymerase cores per ribosome", (4, 2), (0, 0.4)),
 
-                                      ("RNA_synth_stable_fraction", None, "Fraction of RNA synthesis that is stable RNAs", (5, 0), (0, 1)),
-                                      ("stable_RNA_synthesis_per_cell", units.nt / units.s, "Cell-wide stable RNA synthesis rate (nt/sec)", (5, 1), null_ylim),
-                                      ("mRNA_synthesis_per_cell", units.nt / units.s, "Cell-wide mRNA synthesis rate (nt/sec)", (5, 2), null_ylim),
-                                      ("active_RNAP_synthesizing_stable_fraction", None, "Fraction of active RNAP synthesizing stable RNA", (5, 3), (0, 1)),
-                                      ("RNAP_active_fraction", None, "Active fraction of RNAPs", (5, 4), (0, 1)),
-                                      ("active_RNAP_per_cell", None, "Active RNAPs per cell", (5, 5), null_ylim),
+            ("RNA_synth_stable_fraction", None, "Fraction of RNA synthesis that is stable RNAs", (5, 0), (0, 1)),
+            ("stable_RNA_synthesis_per_cell", units.nt / units.s, "Cell-wide stable RNA synthesis rate (nt/sec)", (5, 1), null_ylim),
+            ("mRNA_synthesis_per_cell", units.nt / units.s, "Cell-wide mRNA synthesis rate (nt/sec)", (5, 2), null_ylim),
+            ("active_RNAP_synthesizing_stable_fraction", None, "Fraction of active RNAP synthesizing stable RNA", (5, 3), (0, 1)),
+            ("RNAP_active_fraction", None, "Active fraction of RNAPs", (5, 4), (0, 1)),
+            ("active_RNAP_per_cell", None, "Active RNAPs per cell", (5, 5), null_ylim),
 
-                                      ("rrn_genes_per_cell", None, "Rrn genes per cell", (6, 0), null_ylim),
-                                      ("rrn_genes_per_genome", None, "Rrn genes per genome", (6, 1), null_ylim),
-                                      ("rrn_gene_initiation_rate", 1 / units.s, "Ribosomal gene initiation rate (inits/gene/s)", (6, 2), null_ylim),
+            ("rrn_genes_per_cell", None, "Rrn genes per cell", (6, 0), null_ylim),
+            ("rrn_genes_per_genome", None, "Rrn genes per genome", (6, 1), null_ylim),
+            ("rrn_gene_initiation_rate", 1 / units.s, "Ribosomal gene initiation rate (inits/gene/s)", (6, 2), null_ylim),
 
-                                      ("ppGpp_concn_per_mass", mole_units / mass_units, "ppGpp concentration per dry mass (pmol/fg)", (7, 0), null_ylim),
-                                      ("ppGpp_concn_per_protein", mole_units / units.aa, "ppGpp concentration per total protein (pmol/amino acid)", (7, 1), null_ylim),
-                                      ], dtype=[('name', 'U100'), ('units', units.Unum), ('plot_name', 'U100'), ('position', np.int32, (2,)), ('y_lim', np.float64, (2,))])
+            ("ppGpp_concn_per_mass", mole_units / mass_units, "ppGpp concentration per dry mass (pmol/fg)", (7, 0), null_ylim),
+            ("ppGpp_concn_per_protein", mole_units / units.aa, "ppGpp concentration per total protein (pmol/amino acid)", (7, 1), null_ylim),
+            ],
+            dtype=[('name', 'U100'), ('units', units.Unum), ('plot_name', 'U100'), ('position', np.int32, (2,)), ('y_lim', np.float64, (2,))])
 
         # Extract validation data and strip the units while numerically
         # converting to the plotted units
@@ -254,25 +256,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
             variant = variants[varIdx]
             cells = ap.get_cells(variant=[variant])
             raw_sim_table = dict()
-            raw_sim_table['doubling_time_sec'] = read_stacked_columns(cells, 'Main', 'time', fun=lambda x: x[-1] - x[0])
+            raw_sim_table['doubling_time_sec'] = read_stacked_columns(
+                cells, 'Main', 'time', fun=lambda x: x[-1] - x[0])
             raw_sim_table['doubling_time'] = raw_sim_table['doubling_time_sec'] * (units.s).asNumber(time_units)
-            raw_sim_table['protein_per_cell_ug'] = read_stacked_columns(cells, 'Mass', 'proteinMass',
-                                                                        fun=lambda x: x.mean(), remove_first=True) * protein_mass_units.asNumber(mass_units)
-            raw_sim_table['RNA_per_cell_ug'] = read_stacked_columns(cells, 'Mass', 'rnaMass',
-                                                                    fun=lambda x: x.mean(), remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
-            raw_sim_table['DNA_per_cell_ug'] = read_stacked_columns(cells, 'Mass', 'dnaMass',
-                                                                    fun=lambda x: x.mean(), remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
-            raw_sim_table['mass_per_cell'] = read_stacked_columns(cells, 'Mass', 'dryMass',
-                                                                  fun=lambda x: x.mean(), remove_first=True) * dry_mass_units.asNumber(mass_units)
+            raw_sim_table['protein_per_cell_ug'] = read_stacked_columns(
+                cells, 'Mass', 'proteinMass', fun=lambda x: x.mean(),
+                remove_first=True) * protein_mass_units.asNumber(mass_units)
+            raw_sim_table['RNA_per_cell_ug'] = read_stacked_columns(
+                cells, 'Mass', 'rnaMass', fun=lambda x: x.mean(),
+                remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
+            raw_sim_table['DNA_per_cell_ug'] = read_stacked_columns(
+                cells, 'Mass', 'dnaMass', fun=lambda x: x.mean(),
+                remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
+            raw_sim_table['mass_per_cell'] = read_stacked_columns(
+                cells, 'Mass', 'dryMass', fun=lambda x: x.mean(),
+                remove_first=True) * dry_mass_units.asNumber(mass_units)
             raw_sim_table['PRD_per_mass'] = (raw_sim_table['protein_per_cell_ug'] + raw_sim_table['RNA_per_cell_ug'] + raw_sim_table['DNA_per_cell_ug']) / raw_sim_table[
                 'mass_per_cell']
             raw_sim_table['PRD_per_cell'] = raw_sim_table['protein_per_cell_ug'] + raw_sim_table['RNA_per_cell_ug'] + raw_sim_table['DNA_per_cell_ug']
-            raw_sim_table['mRNA_mass'] = read_stacked_columns(cells, 'Mass', 'mRnaMass',
-                                                              fun=lambda x: x.mean(), remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
-            raw_sim_table['rRNA_mass'] = read_stacked_columns(cells, 'Mass', 'rRnaMass',
-                                                              fun=lambda x: x.mean(), remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
-            raw_sim_table['tRNA_mass'] = read_stacked_columns(cells, 'Mass', 'tRnaMass',
-                                                              fun=lambda x: x.mean(), remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
+            raw_sim_table['mRNA_mass'] = read_stacked_columns(
+                cells, 'Mass', 'mRnaMass', fun=lambda x: x.mean(),
+                remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
+            raw_sim_table['rRNA_mass'] = read_stacked_columns(
+                cells, 'Mass', 'rRnaMass', fun=lambda x: x.mean(),
+                remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
+            raw_sim_table['tRNA_mass'] = read_stacked_columns(
+                cells, 'Mass', 'tRnaMass', fun=lambda x: x.mean(),
+                remove_first=True) * nucleic_acid_mass_units.asNumber(mass_units)
 
             raw_sim_table['DNA_per_cell_geq'] = raw_sim_table['DNA_per_cell_ug'] / geq_mass
             raw_sim_table['DNA_per_mass'] = raw_sim_table['DNA_per_cell_geq'] / raw_sim_table['mass_per_cell']
@@ -284,10 +294,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
             raw_sim_table['protein_per_genome'] = raw_sim_table['protein_per_cell_aa'] / raw_sim_table['DNA_per_cell_geq']
             raw_sim_table['RNA_per_genome'] = raw_sim_table['RNA_per_cell_nt'] / raw_sim_table['DNA_per_cell_geq']
             raw_sim_table['origins_per_cell'] = read_stacked_columns(cells, 'ReplicationData', 'numberOfOric', fun=lambda x: x.mean(), remove_first=True)
-            raw_sim_table['replication_forks_per_cell'] = read_stacked_columns(cells, 'ReplicationData', 'fork_coordinates',
-                                                                               fun=lambda x: (np.logical_not(np.isnan(x)).sum(axis=1)).mean(), remove_first=True)
-            raw_sim_table['termini_per_cell'] = read_stacked_columns(cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
-                                                                     fun=lambda x: x[:, full_chromosome_index].mean(), remove_first=True)
+            raw_sim_table['replication_forks_per_cell'] = read_stacked_columns(
+                cells, 'ReplicationData', 'fork_coordinates',
+                fun=lambda x: (np.logical_not(np.isnan(x)).sum(axis=1)).mean(), remove_first=True)
+            raw_sim_table['termini_per_cell'] = read_stacked_columns(
+                cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+                fun=lambda x: x[:, full_chromosome_index].mean(), remove_first=True)
             raw_sim_table['origins_per_genome'] = raw_sim_table['origins_per_cell'] / raw_sim_table['DNA_per_cell_geq']
             raw_sim_table['protein_per_origin'] = raw_sim_table['protein_per_cell_aa'] / raw_sim_table['origins_per_cell']
 
@@ -303,44 +315,64 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
             # We divide by 3 because there are three copies of the rrn operon,
             # but Dennis & Bremmer (2021) calculate the copy numbers of a single
             # operon
-            raw_sim_table['rrn_genes_per_cell'] = read_stacked_columns(cells, 'RnaSynthProb', 'gene_copy_number',
-                                                                       fun=lambda x: np.sum(x[:, is_rrn], axis=1).mean(), remove_first=True) / 3
+            raw_sim_table['rrn_genes_per_cell'] = read_stacked_columns(
+                cells, 'RnaSynthProb', 'gene_copy_number',
+                fun=lambda x: np.sum(x[:, is_rrn], axis=1).mean(), remove_first=True) / 3
             raw_sim_table['rrn_genes_per_genome'] = raw_sim_table['rrn_genes_per_cell'] / raw_sim_table['DNA_per_cell_geq']
-            raw_sim_table['rrn_gene_initiation_rate'] = read_stacked_columns(cells, 'RnapData', 'rnaInitEvent',
-                                                                             fun=lambda x: np.sum(x[:, is_rRNA]), remove_first=True) / (raw_sim_table['rrn_genes_per_cell'] * raw_sim_table['doubling_time_sec'])
-            raw_sim_table['active_RNAP_per_cell'] = read_stacked_columns(cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
-                                                                         fun=lambda x: x[:, active_rnap_index].mean(), remove_first=True)
-            raw_sim_table['RNAP_per_cell'] = read_stacked_columns(cells, 'BulkMolecules', 'counts',
-                                                                  fun=lambda x: x[:, rnap_index].mean(), remove_first=True) + raw_sim_table['active_RNAP_per_cell']
+            raw_sim_table['rrn_gene_initiation_rate'] = read_stacked_columns(
+                cells, 'RnapData', 'rnaInitEvent',
+                fun=lambda x: np.sum(x[:, is_rRNA]), remove_first=True) / (
+                raw_sim_table['rrn_genes_per_cell'] * raw_sim_table['doubling_time_sec'])
+            raw_sim_table['active_RNAP_per_cell'] = read_stacked_columns(
+                cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+                fun=lambda x: x[:, active_rnap_index].mean(), remove_first=True)
+            raw_sim_table['RNAP_per_cell'] = read_stacked_columns(
+                cells, 'BulkMolecules', 'counts',
+                fun=lambda x: x[:, rnap_index].mean(), remove_first=True) + raw_sim_table['active_RNAP_per_cell']
             raw_sim_table['RNAP_active_fraction'] = raw_sim_table['active_RNAP_per_cell'] / raw_sim_table['RNAP_per_cell']
             # Dennis & Bremmer (2021) calculate via amino acid ratios, but we
             # calculate via mass ratios
             raw_sim_table['RNAP_per_total_protein'] = raw_sim_table['RNAP_per_cell'] * rnap_mass / raw_sim_table['protein_per_cell_ug']
-            raw_sim_table['active_ribosomes_per_cell'] = read_stacked_columns(cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
-                                                                              fun=lambda x: x[:, active_ribosome_index].mean(), remove_first=True)
+            raw_sim_table['active_ribosomes_per_cell'] = read_stacked_columns(
+                cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+                fun=lambda x: x[:, active_ribosome_index].mean(), remove_first=True)
             # Bremmer & Dennis (2021) use the total ribosomal rna mass to
             # calculate total ribosomes, so we use the mass average amount of
             # subunits instead of taking the min across subunits
-            raw_sim_table['inactive_ribosomes_per_cell'] = read_stacked_columns(cells, 'BulkMolecules', 'counts',
-                                                                                fun=lambda x: np.mean(x[:, inactive_ribosome_mask],
-                                                                                                      axis=0) @ ribosome_subunit_mass_fractions, remove_first=True)
+            raw_sim_table['inactive_ribosomes_per_cell'] = read_stacked_columns(
+                cells, 'BulkMolecules', 'counts',
+                fun=lambda x: np.mean(x[:, inactive_ribosome_mask],
+                axis=0) @ ribosome_subunit_mass_fractions, remove_first=True)
             raw_sim_table['ribosomes_per_cell'] = raw_sim_table['active_ribosomes_per_cell'] + raw_sim_table['inactive_ribosomes_per_cell']
-            raw_sim_table['r_prot_aa_counts'] = read_stacked_columns(cells, 'MonomerCounts', 'monomerCounts',
-                                                                     fun=lambda x: np.mean(x[:, is_r_prot], axis=0) @ r_prot_aa_counts, remove_first=True)
+            raw_sim_table['r_prot_aa_counts'] = read_stacked_columns(
+                cells, 'MonomerCounts', 'monomerCounts',
+                fun=lambda x: np.mean(x[:, is_r_prot], axis=0) @ r_prot_aa_counts, remove_first=True)
             raw_sim_table['r_prot_per_total_protein'] = raw_sim_table['r_prot_aa_counts'] / raw_sim_table['protein_per_cell_aa']
             raw_sim_table['RNAP_per_ribosome'] = raw_sim_table['RNAP_per_cell'] / raw_sim_table['ribosomes_per_cell']
-            raw_sim_table['tRNA_per_cell'] = read_stacked_columns(cells, 'BulkMolecules', 'counts', fun=lambda x: np.mean(np.sum(x[:, bulk_tRNA_mask], axis=1)), remove_first=True)
-            raw_sim_table['peptide_elongation_rate'] = read_stacked_columns(cells, 'RibosomeData', 'effectiveElongationRate', fun=lambda x: x.mean(), remove_first=True)
+            raw_sim_table['tRNA_per_cell'] = read_stacked_columns(
+                cells, 'BulkMolecules', 'counts',
+                fun=lambda x: np.mean(np.sum(x[:, bulk_tRNA_mask], axis=1)),
+                remove_first=True)
+            raw_sim_table['peptide_elongation_rate'] = read_stacked_columns(
+                cells, 'RibosomeData', 'effectiveElongationRate',
+                fun=lambda x: x.mean(), remove_first=True)
 
-            raw_sim_table['active_RNAP_synthesizing_stable_fraction'] = read_stacked_columns(cells, 'RnapData', 'active_rnap_on_stable_RNA_indexes',
-                                                                                            fun=lambda x: np.mean(np.array([np.count_nonzero(~np.isnan(indices)) for indices in x]))) / raw_sim_table['active_RNAP_per_cell']
-            raw_sim_table['stable_RNA_synthesis_per_cell'] = read_stacked_columns(cells, "TranscriptElongationListener", "countRnaSynthesized",
-                                                                                  fun=lambda x: np.sum(x[:, is_stable], axis=0) @ stable_rna_lengths, remove_first=True) / raw_sim_table['doubling_time_sec']
-            raw_sim_table['mRNA_synthesis_per_cell'] = read_stacked_columns(cells, "TranscriptElongationListener", "countRnaSynthesized",
-                                                                            fun=lambda x: np.sum(x[:, is_mRNA], axis=0) @ mRNA_lengths, remove_first=True) / raw_sim_table['doubling_time_sec']
-            raw_sim_table['total_RNA_synth'] = read_stacked_columns(cells, "RnapData", "actualElongations", fun=lambda x: x.sum(), remove_first=True) / raw_sim_table['doubling_time_sec']
+            raw_sim_table['active_RNAP_synthesizing_stable_fraction'] = read_stacked_columns(
+                cells, 'RnapData', 'active_rnap_on_stable_RNA_indexes',
+                fun=lambda x: np.mean(np.array([np.count_nonzero(~np.isnan(indices)) for indices in x]))) / raw_sim_table['active_RNAP_per_cell']
+            raw_sim_table['stable_RNA_synthesis_per_cell'] = read_stacked_columns(
+                cells, "TranscriptElongationListener", "countRnaSynthesized",
+                fun=lambda x: np.sum(x[:, is_stable], axis=0) @ stable_rna_lengths, remove_first=True) / raw_sim_table['doubling_time_sec']
+            raw_sim_table['mRNA_synthesis_per_cell'] = read_stacked_columns(
+                cells, "TranscriptElongationListener", "countRnaSynthesized",
+                fun=lambda x: np.sum(x[:, is_mRNA], axis=0) @ mRNA_lengths, remove_first=True) / raw_sim_table['doubling_time_sec']
+            raw_sim_table['total_RNA_synth'] = read_stacked_columns(
+                cells, "RnapData", "actualElongations", fun=lambda x: x.sum(),
+                remove_first=True) / raw_sim_table['doubling_time_sec']
             raw_sim_table['RNA_synth_stable_fraction'] = raw_sim_table['stable_RNA_synthesis_per_cell'] / raw_sim_table['total_RNA_synth']
-            raw_sim_table['ppGpp_counts'] = read_stacked_columns(cells, 'BulkMolecules', 'counts', fun=lambda x: np.mean(x[:, ppGpp_index]), remove_first=True)
+            raw_sim_table['ppGpp_counts'] = read_stacked_columns(
+                cells, 'BulkMolecules', 'counts',
+                fun=lambda x: np.mean(x[:, ppGpp_index]), remove_first=True)
             raw_sim_table['ppGpp_concn_per_mass'] = raw_sim_table['ppGpp_counts'] * counts_to_moles / raw_sim_table['mass_per_cell']
             raw_sim_table['ppGpp_concn_per_protein'] = raw_sim_table['ppGpp_counts'] * counts_to_moles / (raw_sim_table['protein_per_cell_ug'] / avg_aa_mass)
 
