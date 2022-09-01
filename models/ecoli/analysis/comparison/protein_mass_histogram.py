@@ -1,5 +1,5 @@
 """
-Compare histograms of mRNA lengths.
+Compare histograms of protein masses.
 """
 
 from typing import Tuple
@@ -19,7 +19,7 @@ from wholecell.utils import units
 
 
 FIGSIZE = (4, 4)
-BOUNDS = [1, 5]
+BOUNDS = [100, 200]
 N_BINS = 20
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
@@ -29,61 +29,35 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
-		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
-			print('Skipping analysis -- not enough sims run.')
-			return
-
-		def read_sims(ap, sim_data):
-			rna_lengths = sim_data.process.transcription.rna_data['length'].asNumber(units.nt)
-			is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
-
+		def read_sims(ap):
 			# Ignore data from first two gens
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
 
-			mRNA_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'full_mRNA_counts', ignore_exception=True)
+			mRNA_mass = read_stacked_columns(
+				cell_paths, 'Mass', 'proteinMass',
+				ignore_exception=True, fun=lambda x: x[0])
 
-			mean_mRNA_counts = mRNA_counts.mean(axis=0)
-			mRNA_lengths = rna_lengths[is_mRNA]
+			return mRNA_mass
 
-			return mRNA_lengths, mean_mRNA_counts
-
-		lengths1, mean_counts1 = read_sims(ap1, sim_data1)
-		lengths2, mean_counts2 = read_sims(ap2, sim_data2)
-
-		weighted_mean1 = lengths1.dot(mean_counts1) / mean_counts1.sum()
-		weighted_mean2 = lengths2.dot(mean_counts2) / mean_counts2.sum()
-
-		m1 = (mean_counts1 > 0).sum()
-		m2 = (mean_counts2 > 0).sum()
-
-		weighted_std1 = np.sqrt(
-			mean_counts1.dot((lengths1 - weighted_mean1)**2) /
-			((m1 - 1) / m1 * mean_counts1.sum())
-			)
-		weighted_std2 = np.sqrt(
-			mean_counts2.dot((lengths2 - weighted_mean2)**2) /
-			((m2 - 1) / m2 * mean_counts2.sum())
-			)
+		mRNA_masses1 = read_sims(ap1)
+		mRNA_masses2 = read_sims(ap2)
 
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)
 
-		bins = np.logspace(BOUNDS[0], BOUNDS[1], N_BINS + 1)
+		bins = np.linspace(BOUNDS[0], BOUNDS[1], N_BINS + 1)
 
 		ax.hist(
-			lengths1, bins=bins, weights=mean_counts1, alpha=0.5,
-			label=f'reference ({weighted_mean1:.1f} $\pm$ {weighted_std1:.1f})')
-		ax.axvline(weighted_mean1, ls='--', lw=2, c='C0')
+			mRNA_masses1, bins=bins, alpha=0.5,
+			label=f'reference ({np.mean(mRNA_masses1):.2f} $\pm$ {np.std(mRNA_masses1):.2f})')
 		ax.hist(
-			lengths2, bins=bins, weights=mean_counts2, alpha=0.5,
-			label=f'input ({weighted_mean2:.1f}  $\pm$ {weighted_std2:.1f}))')
-		ax.axvline(weighted_mean2, ls='--', lw=2, c='C1')
+			mRNA_masses2, bins=bins, alpha=0.5,
+			label=f'input ({np.mean(mRNA_masses2):.2f} $\pm$ {np.std(mRNA_masses2):.2f})')
+
 		ax.legend(prop={'size': 6})
 
-		ax.set_xlim([10**1.5, 10**4.5])
-		ax.set_xscale('log')
-		ax.set_xlabel('mRNA lengths (nt)')
+		ax.set_xlim(BOUNDS)
+		ax.set_xlabel('protein mass (fg)')
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 

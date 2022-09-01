@@ -1,7 +1,6 @@
 """
-Generates a scatter plot of mRNA cistron copy numbers that are expected from the
-expression levels calculated in the ParCa vs actual copies in the simulations
-for a set of simulations run with operons, and a set run without operons.
+Generates a comparison scatter plot of mRNA copy numbers from two sets of
+simulations, one without operons and one with operons.
 """
 import itertools
 import os
@@ -24,26 +23,22 @@ from wholecell.io.tablereader import TableReader
 
 
 GENERATE_OPERON_TABLE = False
-FIGSIZE = (12, 6)
-BOUNDS = [0, 2.5]
-P_VALUE_THRESHOLD = 1e-3
-N_BOOTSTRAP = 20000
+FIGSIZE = (8, 4.1)
+BOUNDS = [[0, 2], [0, 2.5]]
+SELECTION_RATIO = 0.1
 NUMERICAL_ZERO = 1e-30
-OPERON_COUNT_CUTOFF = 20
+OPERON_COUNT_CUTOFF = 10
 
 EVIDENCE_CODE_TO_DESCRIPTIONS = {
-	'COMP': 'Inferred from computation',
-	'IC': 'Inferred by curator',
-	'EXP': 'Inferred from experiment',
-	'EV-COMP-HINF': 'Human inference from computation',
-	'EV-COMP-AINF': 'Automated inference from computation',
-	'EV-EXP-IEP': 'Inferred from expression pattern',
-	'EV-EXP-IEP-COREGULATION': 'Inferred from co-regulation',
-	'EV-IC-ADJ-GENES-SAME-BIO-PROCESS': 'Inferred by curator from adjacency',
-	'EV-IC': 'Inferred by curator',
-	'EV-EXP-IDA-TRANSCRIPT-LEN-DETERMINATION': 'Inferred from transcript lengths',
-	'EV-EXP-IDA-BOUNDARIES-DEFINED': 'Inferred from transcription boundaries',
-	'EV-EXP-IMP-POLAR-MUTATION': 'Inferred from polar effects',
+	'EV-COMP-HINF': 'Human inference from comp. ev.',
+	'EV-COMP-AINF': 'Automated inference from comp. ev.',
+	'EV-EXP-IEP': 'Expression pattern',
+	'EV-EXP-IEP-COREGULATION': 'Coregulation',
+	'EV-IC-ADJ-GENES-SAME-BIO-PROCESS': 'Gene adjacency',
+	'EV-IC': 'Curator inference',
+	'EV-EXP-IDA-TRANSCRIPT-LEN-DETERMINATION': 'Transcript lengths',
+	'EV-EXP-IDA-BOUNDARIES-DEFINED': 'Transcription boundaries',
+	'EV-EXP-IMP-POLAR-MUTATION': 'Polar effects',
 	0: 'No evidence',
 	1: 'Single evidence',
 	2: 'Multiple evidences',
@@ -142,104 +137,78 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		m2 = c2.mean(axis=0)
 		v2 = c2.var(axis=0)
 
-		def get_bootstrapped_samples(counts, sample_mean, combined_mean):
-			# Bootstrap from counts corrected to have equal means
-			n = counts.shape[0]
-
-			bs_counts_mean = np.zeros((N_BOOTSTRAP, counts.shape[1]))
-			bs_counts_var = np.zeros((N_BOOTSTRAP, counts.shape[1]))
-
-			# Vectorizing this ran into memory issues with high values of
-			# N_BOOTSTRAP
-			for i in np.arange(N_BOOTSTRAP):
-				bs_counts = (counts - sample_mean + combined_mean)[
-					np.random.choice(n, n), :]
-
-				bs_counts_mean[i, :] = bs_counts.mean(axis=0)
-				bs_counts_var[i, :] = bs_counts.var(axis=0)
-
-			return bs_counts_mean, bs_counts_var
-
-		# Get bootstrapped samples from each count array
 		n1 = c1.shape[0]
-		n2 = c2.shape[1]
-		combined_mean = (m1*n1 + m2*n2)/(n1 + n2)
-		bm1, bv1 = get_bootstrapped_samples(c1, m1, combined_mean)
-		bm2, bv2 = get_bootstrapped_samples(c2, m2, combined_mean)
+		n2 = c2.shape[0]
 
-		# Calculate t-score from the original sample and each of the
-		# bootstrapped samples
-		t_score = (m1 - m2)/np.sqrt(v1/n1 + v2/n2 + NUMERICAL_ZERO)
-		t_score_bs = (bm1 - bm2)/np.sqrt(bv1/n1 + bv2/n2 + NUMERICAL_ZERO)
+		# Calculate t-score and get cutoff
+		abs_t_scores = np.abs(m1 - m2)/(np.sqrt(v1/n1 + v2/n2) + NUMERICAL_ZERO)
+		n_plotted_poly_genes = np.logical_and(plot_mask, mRNA_mask_poly).sum()
+		t_score_cutoff = np.sort(
+			abs_t_scores[np.logical_and(plot_mask, mRNA_mask_poly)]
+			)[-int(n_plotted_poly_genes * SELECTION_RATIO)]
 
-		# Calculate p-values of a two-tailed test using the empirical t-score
-		# distribution calculated from the bootstrapped samples
-		p_values = 2*np.minimum(
-			((t_score <= t_score_bs).sum(axis=0) + 1)/(N_BOOTSTRAP + 1),
-			((t_score >= t_score_bs).sum(axis=0) + 1)/(N_BOOTSTRAP + 1)
-			)
-
-		# Get mask for mRNAs with low p-values
-		mRNA_mask_low_p = p_values < P_VALUE_THRESHOLD
+		# Get mask for mRNAs with high absolute t-scores
+		mRNA_mask_high_t = (abs_t_scores >= t_score_cutoff)
 
 		fig = plt.figure(figsize=FIGSIZE)
 
-		for left, category in enumerate(['Polycistronic genes', 'Monocistronic genes']):
-			ax = fig.add_subplot(1, 2, left + 1)
-			ax.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
-			category_mask = np.logical_xor(np.full_like(mRNA_mask_poly, left), mRNA_mask_poly)
-
-			mask = np.logical_and.reduce((plot_mask, category_mask, ~mRNA_mask_low_p))
+		for i, category in enumerate(['Polycistronic genes', 'Monocistronic genes']):
+			ax = fig.add_subplot(1, 2, i + 1)
+			ax.plot(BOUNDS[i], BOUNDS[i], ls='--', lw=2, c='k', alpha=0.05)
+			category_mask = np.logical_xor(np.full_like(mRNA_mask_poly, i), mRNA_mask_poly)
+			mask = np.logical_and.reduce((plot_mask, category_mask, ~mRNA_mask_high_t))
 			ax.scatter(
 				np.log10(m1[mask] + 1),
 				np.log10(m2[mask] + 1),
-				c='#cccccc', s=2, alpha=0.5,
-				label=f'p ≥ {P_VALUE_THRESHOLD:g} (n = {mask.sum():d})',
+				c='#555555', edgecolor='none', s=10, alpha=0.4,
+				label=f'|t| < {t_score_cutoff:.1f} (n = {mask.sum():d})',
 				clip_on=False)
-			# Highlight genes with low p-values
-			mask = np.logical_and.reduce((plot_mask, category_mask, mRNA_mask_low_p))
+			# Highlight genes with high t-scores
+			mask = np.logical_and.reduce((plot_mask, category_mask, mRNA_mask_high_t))
 			ax.scatter(
 				np.log10(m1[mask] + 1),
 				np.log10(m2[mask] + 1),
-				c='r', s=2, alpha=0.5,
-				label=f'p < {P_VALUE_THRESHOLD:g} (n = {mask.sum():d})',
+				c='C3', edgecolor='none', s=10, alpha=0.4,
+				label=f'|t| ≥ {t_score_cutoff:.1f} (n = {mask.sum():d})',
 				clip_on=False)
 
 			ax.set_title(category)
 			ax.set_xlabel('$\log_{10}$(mRNA copies + 1), old sims')
 			ax.set_ylabel('$\log_{10}$(mRNA copies + 1), new sims')
+			ax.set_xticks(np.arange(BOUNDS[i][0], BOUNDS[i][1] + 0.5, 0.5))
+			ax.set_yticks(np.arange(BOUNDS[i][0], BOUNDS[i][1] + 0.5, 0.5))
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
-			ax.spines["bottom"].set_position(("outward", 20))
-			ax.spines["left"].set_position(("outward", 20))
-			ax.set_xlim(BOUNDS)
-			ax.set_ylim(BOUNDS)
-			ax.legend(loc=2)
+			ax.spines["bottom"].set_position(("outward", 15))
+			ax.spines["left"].set_position(("outward", 15))
+			ax.set_xlim(BOUNDS[i])
+			ax.set_ylim(BOUNDS[i])
+			ax.legend(loc=2, prop={'size': 8})
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
-		# Get bar plots of expression levels for operons with low p-values
+		# Get bar plots of expression levels for operons with high t-scores
 		cistron_id_to_mRNA_index = {
 			cistron_id: i for i, cistron_id in enumerate(mRNA_cistron_ids)
 			}
 		cistron_id_to_cistron_index = {
 			cistron_id: i for i, cistron_id in enumerate(all_cistron_ids)
 			}
-		low_p_cistron_indexes = np.array([
+		high_t_cistron_indexes = np.array([
 			cistron_id_to_cistron_index[mRNA_cistron_ids[i]] for i
-			in np.where(np.logical_and.reduce((plot_mask, mRNA_mask_poly, mRNA_mask_low_p)))[0]
+			in np.where(np.logical_and.reduce((plot_mask, mRNA_mask_poly, mRNA_mask_high_t)))[0]
 			])
 
-		low_p_operons = [
+		high_t_operons = [
 			operon for operon in sim_data2.process.transcription.operons
-			if np.any(np.isin(operon[0], low_p_cistron_indexes))]
-		n_low_p_operons = len(low_p_operons)
+			if np.any(np.isin(operon[0], high_t_cistron_indexes))]
+		n_high_t_operons = len(high_t_operons)
 
 		# Get expression levels from each set
 		operon_expression = []
-		for operon_index, operon in enumerate(low_p_operons):
+		for operon_index, operon in enumerate(high_t_operons):
 			operon_cistron_ids = [all_cistron_ids[i] for i in operon[0]]
 			operon_cistron_mRNA_indexes = np.array([
 				cistron_id_to_mRNA_index[cistron_id]
@@ -260,24 +229,23 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		cistron_is_forward = sim_data2.process.transcription.cistron_data['is_forward']
 
 		fig = plt.figure()
-		fig.set_size_inches(30, 4 * (n_low_p_operons//7 + 1))
+		fig.set_size_inches(30, 4 * (n_high_t_operons//7 + 1))
 
-		gs = gridspec.GridSpec(n_low_p_operons//7 + 1, 7)
+		gs = gridspec.GridSpec(n_high_t_operons//7 + 1, 7)
 
-		for left, operon_index in enumerate(plot_order):
-			ax = plt.subplot(gs[left//7, left % 7])
-			operon = low_p_operons[operon_index]
-
+		for i, operon_index in enumerate(plot_order):
+			ax = plt.subplot(gs[i//7, i % 7])
+			operon = high_t_operons[operon_index]
 			cistron_indexes_in_operon = operon[0]
 			is_forward = cistron_is_forward[cistron_indexes_in_operon[0]]
 
 			if not is_forward:
 				cistron_indexes_in_operon = cistron_indexes_in_operon[::-1]
 
-			# Cistron IDs with low p-values are starred
+			# Cistron IDs with high t-scores are starred
 			operon_gene_names = [
 				'*' + cistron_id_to_gene_name[all_cistron_ids[i]]
-				if (i in low_p_cistron_indexes)
+				if (i in high_t_cistron_indexes)
 				else cistron_id_to_gene_name[all_cistron_ids[i]]
 				for i in cistron_indexes_in_operon
 				]
@@ -302,46 +270,58 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			ax.set_xticklabels(operon_gene_names, rotation=90)
 			ax.set_ylabel('mRNA counts')
 
-			if left == 0:
+			if i == 0:
 				ax.legend()
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_bar_plots', metadata)
 		plt.close('all')
 
-		# (Optional) Get table of operons with low p-value genes
+		# (Optional) Get table of operons with high t-score genes
 		if GENERATE_OPERON_TABLE:
 			with open(os.path.join(plotOutDir, plotOutFileName + '_operon_table.tsv'), 'w') as f:
 				writer = csv.writer(f, delimiter='\t')
 				writer.writerow([
-					'first_gene', 'last_gene', 'min_p'
+					'operon_name', 'first_gene', 'last_gene', 'max_t'
 					])
 
 				for operon_index in plot_order:
-					operon = low_p_operons[operon_index]
+					operon = high_t_operons[operon_index]
 					cistron_indexes = operon[0]
-					p_values_this_operon = [
-						p_values[cistron_id_to_mRNA_index[all_cistron_ids[i]]]
+					t_scores_this_operon = [
+						abs_t_scores[cistron_id_to_mRNA_index[all_cistron_ids[i]]]
 						for i in cistron_indexes]
+
+					is_forward = cistron_is_forward[cistron_indexes[0]]
+					if is_forward:
+						gene_list = [cistron_id_to_gene_name[all_cistron_ids[i]] for i in cistron_indexes]
+					else:
+						gene_list = [cistron_id_to_gene_name[all_cistron_ids[i]] for i in cistron_indexes[::-1]]
+
 					writer.writerow([
+						'-'.join(gene_list),
 						cistron_id_to_gene_name[all_cistron_ids[cistron_indexes[0]]],
 						cistron_id_to_gene_name[all_cistron_ids[cistron_indexes[-1]]],
-						min(p_values_this_operon),
+						max(t_scores_this_operon),
 						])
 
-		# Get bar plots of "failure" rates of each evidence code to align with
-		# RNAseq data
+		# Get violin plots of log t-scores of each evidence code
 		# Map each operon to the list of evidence codes for the transcription
 		# units in the operon
 		all_operons = sim_data2.process.transcription.operons
+		corrected_cistron_indexes = np.where(
+			sim_data2.process.transcription.cistron_data['uses_corrected_seq_counts']
+			)[0]
 		operon_index_to_evidence_codes = {}
 
-		for (left, operon) in enumerate(all_operons):
+		for (i, operon) in enumerate(all_operons):
 			# Skip monocistronic operons
 			if len(operon[0]) == 1:
 				continue
 
-			# TODO: skip operons with RNAseq corrections
+			# Skip operons that contain cistrons whose expression was corrected
+			if np.any(np.isin(operon[0], corrected_cistron_indexes)):
+				continue
 
 			evidence_codes = []
 			for rna_index in operon[1]:
@@ -350,14 +330,13 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 						all_rna_ids[rna_index][:-3], [])
 					)
 
-			operon_index_to_evidence_codes[left] = list(set(evidence_codes))
+			operon_index_to_evidence_codes[i] = list(set(evidence_codes))
 
-		# Map evidence superclass, code and multiplicity to minimum p-values of
-		# each operon
-		all_operon_p_values = []
-		evidence_superclass_to_p_values = {}
-		evidence_code_to_p_values = {}
-		evidence_multiplicity_to_p_values = {}
+		# Map evidence code and multiplicity to maximum log t-scores of each
+		# operon
+		all_operons_log_t_scores = []
+		evidence_code_to_log_t_scores = {}
+		evidence_multiplicity_to_log_t_scores = {}
 
 		for (operon_index, evidence_codes) in operon_index_to_evidence_codes.items():
 			operon = all_operons[operon_index]
@@ -365,91 +344,90 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			operon_cistron_mRNA_indexes = np.array([
 				cistron_id_to_mRNA_index[cistron_id]
 				for cistron_id in operon_cistron_ids])
-			min_p = p_values[operon_cistron_mRNA_indexes].min()
+			max_log_t = np.log10(
+				abs_t_scores[operon_cistron_mRNA_indexes].max() + 1)
 
 			for evidence_code in evidence_codes:
-				evidence_superclass_to_p_values.setdefault(
-					evidence_code.split('-')[1], []).append(min_p)
-				evidence_code_to_p_values.setdefault(
-					evidence_code, []).append(min_p)
+				evidence_code_to_log_t_scores.setdefault(
+					evidence_code, []).append(max_log_t)
 
 			# Evidence multiplicity is maxed out at two
-			evidence_multiplicity_to_p_values.setdefault(
-				min(len(evidence_codes), 2), []).append(min_p)
+			evidence_multiplicity_to_log_t_scores.setdefault(
+				min(len(evidence_codes), 2), []).append(max_log_t)
 
-			all_operon_p_values.append(min_p)
+			all_operons_log_t_scores.append(max_log_t)
 
-		all_operon_p_values = np.array(all_operon_p_values)
+		def sort_t_score_dict(t_score_dict):
+			sorted_t_score_dict = {}
 
-		def calculate_low_p_fraction(p_value_dict):
-			failure_rate_dict = {}
-			for key, p_values in p_value_dict.items():
-				n_operons = len(p_values)
-				if n_operons < OPERON_COUNT_CUTOFF:
+			for key, value in t_score_dict.items():
+				if len(value) < OPERON_COUNT_CUTOFF:
 					continue
-				failure_rate_dict[key] = (
-					(np.array(p_values) < P_VALUE_THRESHOLD).sum() / n_operons,
-					n_operons
-					)
+				sorted_t_score_dict[key] = np.array(value)
 
-			failure_rate_dict = dict(sorted(
-				failure_rate_dict.items(), key=lambda item: item[1][0]
-				))
-			return failure_rate_dict
+			sorted_t_score_dict = dict(sorted(
+				sorted_t_score_dict.items(), key=lambda item: np.median(item[1]),
+				reverse=True))
 
-		# Calculate fraction of low-p operons in each group
-		all_operons_low_p_fraction = {
-			'All operons': (
-				(all_operon_p_values < P_VALUE_THRESHOLD).sum() / len(all_operon_p_values),
-				len(all_operon_p_values)
-				)
+			return sorted_t_score_dict
+
+		all_operons_log_t_scores = {
+			'All operons': np.array(all_operons_log_t_scores)
 			}
-		evidence_superclass_to_low_p_fraction = calculate_low_p_fraction(
-			evidence_superclass_to_p_values)
-		evidence_code_to_low_p_fraction = calculate_low_p_fraction(
-			evidence_code_to_p_values)
-		evidence_multiplicity_to_low_p_fraction = calculate_low_p_fraction(
-			evidence_multiplicity_to_p_values)
+		evidence_code_to_log_t_scores = sort_t_score_dict(
+			evidence_code_to_log_t_scores)
+		evidence_multiplicity_to_log_t_scores = sort_t_score_dict(
+			evidence_multiplicity_to_log_t_scores)
 
-		fig = plt.figure(figsize=(9, 5))
+		fig = plt.figure(figsize=(9.5, 5))
 		ax = fig.add_subplot(111)
 
-		left = 0
-		all_xticks = []
+		i = 0
+		all_yticks = []
 		labels = []
 
-		# TODO: break y-axis for better scaling
-		for low_p_frac_dict in [
-			all_operons_low_p_fraction,
-			evidence_superclass_to_low_p_fraction,
-			evidence_code_to_low_p_fraction,
-			evidence_multiplicity_to_low_p_fraction]:
-
-			keys = [key for key in low_p_frac_dict.keys()]
-			fractions = [value[0] for value in low_p_frac_dict.values()]
-			n_samples = [value[1] for value in low_p_frac_dict.values()]
-			xticks = np.arange(left, left + len(keys))
-			all_xticks.extend(xticks)
+		for log_t_score_dict in [
+			evidence_multiplicity_to_log_t_scores,
+			evidence_code_to_log_t_scores,
+			all_operons_log_t_scores,
+			]:
+			keys = [key for key in log_t_score_dict.keys()]
+			log_t_scores = [value for value in log_t_score_dict.values()]
+			n_samples = [len(t) for t in log_t_scores]
+			yticks = np.arange(i, i + len(keys))
+			all_yticks.extend(yticks)
 			labels.extend([
 				f'{EVIDENCE_CODE_TO_DESCRIPTIONS.get(key, key)} (n={n_sample})'
-					for (key, n_sample) in zip(keys, n_samples)
+				for (key, n_sample) in zip(keys, n_samples)
 				])
 
-			high_p = ax.bar(
-				xticks, np.ones(len(keys)),
-				label=f'p ≥ {P_VALUE_THRESHOLD}', width=0.7, color='#cccccc')
-			low_p = ax.bar(
-				xticks, fractions,
-				label=f'p < {P_VALUE_THRESHOLD}', width=0.7, color='r')
-			left = left + len(keys) + 1
+			for j, t_scores in enumerate(log_t_scores):
+				parts = ax.violinplot(
+					t_scores, positions=[i + j], widths=0.75,
+					showextrema=False, vert=False)
 
-		ax.legend(handles=[high_p, low_p], bbox_to_anchor=(1, 1))
-		ax.set_xlim([-1, left - 1])
-		ax.set_ylim([0, 1])
-		ax.set_ylabel(f'Fraction of operons')
-		ax.set_xticks(all_xticks)
-		ax.set_xticklabels(labels, rotation=45, ha='right')
-		ax.spines["top"].set_visible(False)
+				for pc in parts['bodies']:
+					pc.set_facecolor('#cccccc')
+					pc.set_edgecolor('none')
+					pc.set_alpha(1)
+
+				quartile1, median, quartile3 = np.percentile(
+					t_scores, [25, 50, 75])
+
+				ax.scatter(median, i + j, marker='o', color='white', s=10, zorder=3)
+				ax.hlines(i + j, quartile1, quartile3, color='k', linestyle='-', lw=3)
+
+			i = i + len(keys) + 1
+
+		ax.set_xlim([0, 2])
+		ax.set_ylim([-1, i - 1])
+		ax.set_xticks([0, 0.5, 1, 1.5, 2])
+		ax.xaxis.tick_top()
+		ax.xaxis.set_label_position('top')
+		ax.set_xlabel('log10(max t-score + 1)')
+		ax.set_yticks(all_yticks)
+		ax.set_yticklabels(labels)
+		ax.spines["bottom"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 
 		plt.tight_layout()
