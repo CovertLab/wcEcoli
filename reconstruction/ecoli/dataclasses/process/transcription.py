@@ -296,12 +296,12 @@ class Transcription(object):
 
 		# Get half life of each RNA cistron - if the half life is not given, use
 		# the averaged reported half life of mRNAs
-		self._cistron_half_lives = np.array([
+		cistron_half_lives = np.array([
 			cistron_id_to_half_life.get(cistron_id, average_mRNA_cistron_half_life).asNumber(units.s)
 			for cistron_id in all_cistron_ids])
 
 		# Calculate expected first-order degradation rates of each cistron
-		cistron_deg_rates = np.log(2) / self._cistron_half_lives
+		cistron_deg_rates = np.log(2) / cistron_half_lives
 
 		# Construct boolean arrays for ribosomal protein and RNAP-encoding
 		# cistrons
@@ -356,6 +356,7 @@ class Transcription(object):
 				('is_5S_rRNA', 'bool'),
 				('is_ribosomal_protein', 'bool'),
 				('is_RNAP', 'bool'),
+				('uses_corrected_seq_counts', 'bool')
 				]
 			)
 
@@ -374,6 +375,7 @@ class Transcription(object):
 		cistron_data['is_5S_rRNA'] = is_5S
 		cistron_data['is_ribosomal_protein'] = is_ribosomal_protein
 		cistron_data['is_RNAP'] = is_RNAP
+		cistron_data['uses_corrected_seq_counts'] = np.zeros(n_cistrons, dtype=np.bool)
 
 		cistron_field_units = {
 			'id': None,
@@ -391,6 +393,7 @@ class Transcription(object):
 			'is_5S_rRNA': None,
 			'is_ribosomal_protein': None,
 			'is_RNAP': None,
+			'uses_corrected_seq_counts': None,
 			}
 
 		self.cistron_data = UnitStructArray(cistron_data, cistron_field_units)
@@ -406,12 +409,15 @@ class Transcription(object):
 			x['Gene']: x[sim_data.basal_expression_condition]
 			for x in getattr(raw_data.rna_seq_data, f'rnaseq_{RNA_SEQ_ANALYSIS}_mean')}
 
+		cistron_rnaseq_coverage = []
 		for cistron_id in self.cistron_data['id']:
 			gene_id = cistron_id_to_gene_id[cistron_id]
 			# If sequencing data is not found, initialize expression to zero.
 			cistron_expression.append(seq_data.get(gene_id, 0.))
+			cistron_rnaseq_coverage.append(gene_id in seq_data)
 
 		cistron_expression = np.array(cistron_expression)
+		self._cistron_is_rnaseq_covered = np.array(cistron_rnaseq_coverage)
 
 		# Set basal expression levels of each cistron - conditional values are
 		# set in the parca.
@@ -464,18 +470,18 @@ class Transcription(object):
 
 		# Mapping from cistron ID to index
 		cistron_id_to_index = {
-			rna_id: i for (i, rna_id) in enumerate(self.cistron_data['id'])
+			cistron_id: cistron_index for (cistron_index, cistron_id) in enumerate(self.cistron_data['id'])
 			}
 
-		for j, rna_id in enumerate(rna_ids):
+		for rna_index, rna_id in enumerate(rna_ids):
 			if rna_id in tu_id_to_cistron_ids:
 				for mc_rna_id in tu_id_to_cistron_ids[rna_id]:
 					cistron_indexes.append(cistron_id_to_index[mc_rna_id])
-					rna_indexes.append(j)
+					rna_indexes.append(rna_index)
 					v.append(1)
 			else:
 				cistron_indexes.append(cistron_id_to_index[rna_id])
-				rna_indexes.append(j)
+				rna_indexes.append(rna_index)
 				v.append(1)
 
 		cistron_indexes = np.array(cistron_indexes)
@@ -546,25 +552,120 @@ class Transcription(object):
 			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
 			in zip(rna_ids, compartments)]
 
-		# Calculate the half life of each transcription unit. For polycistronic
-		# transcription units, take the average of all constituent cistrons.
-		rna_half_lives = np.divide(
-			self._cistron_half_lives @ self.cistron_tu_mapping_matrix,
-			np.array(self.cistron_tu_mapping_matrix.sum(axis=0)).flatten())
-
-		# If a measured half-life for a polycistronic transcription unit exists,
-		# replace calculated value with the measured value
-		rna_id_to_index = {
-			rna_id: i for (i, rna_id) in enumerate(rna_ids)}
-		for rna in raw_data.rna_half_lives:
-			# If RNA is polycistronic, replace half-life with measured value
-			if rna['id'] in rna_id_to_index and rna['id'] not in cistron_id_to_index:
-				rna_half_lives[rna_id_to_index[rna['id']]] = rna['half_life'].asNumber(units.s)
-
-		# Convert to degradation rates
-		rna_deg_rates = np.log(2) / rna_half_lives
+		# Apply RNAseq corrections to shorter genes if required by operon version
+		if sim_data.operons_on:
+			self._apply_rnaseq_correction()
 
 		expression, _ = self.fit_rna_expression(self.cistron_expression['basal'])
+
+		# Determine type of each RNA
+		# TODO (ggsun): we would eventually want to get rid of these
+		# 	classifications for full RNAs, and only maintain them for individual
+		# 	cistrons to accomodate more transcription units. Currently no
+		# 	"hybrid" transcription units containing two or distinct types of
+		# 	cistrons are included in the model so this approach works.
+		is_mRNA = (
+			self.cistron_data['is_mRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_miscRNA = (
+			self.cistron_data['is_miscRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_rRNA = (
+			self.cistron_data['is_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_tRNA = (
+			self.cistron_data['is_tRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+
+		# Confirm there are no hybrid or unclassified RNAs
+		assert np.all(is_mRNA | is_miscRNA | is_rRNA | is_tRNA)
+		assert is_mRNA.sum() + is_miscRNA.sum() + is_rRNA.sum() + is_tRNA.sum() == n_rnas
+
+		# Determine if each RNA contains cistrons that encode for special
+		# components
+		is_23S_rRNA = (
+			self.cistron_data['is_23S_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_16S_rRNA = (
+			self.cistron_data['is_16S_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		is_5S_rRNA = (
+			self.cistron_data['is_5S_rRNA']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		includes_ribosomal_protein = (
+			self.cistron_data['is_ribosomal_protein']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+		includes_RNAP = (
+			self.cistron_data['is_RNAP']
+			@ self.cistron_tu_mapping_matrix).astype(bool)
+
+		# Build the relative abundance matrix between transcription units and
+		# constituent cistrons
+		cistron_indexes = []
+		rna_indexes = []
+		v = []
+
+		for cistron_index, cistron_id in enumerate(self.cistron_data['id']):
+			rna_indexes_this_cistron = self.cistron_id_to_rna_indexes(cistron_id)
+			v_this_cistron = np.zeros(len(rna_indexes_this_cistron))
+			for i, rna_index in enumerate(rna_indexes_this_cistron):
+				cistron_indexes.append(cistron_index)
+				rna_indexes.append(rna_index)
+				v_this_cistron[i] = expression[rna_index]
+
+			if v_this_cistron.sum() == 0:
+				v_this_cistron[:] = 1./len(v_this_cistron)
+			else:
+				v_this_cistron = v_this_cistron/v_this_cistron.sum()
+
+			v.extend(v_this_cistron)
+
+		cistron_indexes = np.array(cistron_indexes)
+		rna_indexes = np.array(rna_indexes)
+		v = np.array(v)
+		shape = (cistron_indexes.max() + 1, rna_indexes.max() + 1)
+
+		cistron_tu_relative_abundancy_matrix = csr_matrix(
+			(v, (cistron_indexes, rna_indexes)),
+			shape=shape)
+
+		rna_deg_rates = np.zeros(n_rnas)
+		# If a measured half-life for the transcription unit exists, use the
+		# measured value to calculate the degradation rate
+		rna_id_to_index = {
+			rna_id: cistron_index for (cistron_index, rna_id) in enumerate(rna_ids)}
+		for rna in raw_data.rna_half_lives:
+			if rna['id'] in rna_id_to_index and rna['id'] not in cistron_id_to_index:
+				rna_deg_rates[rna_id_to_index[rna['id']]] = np.log(2) / rna['half_life'].asNumber(units.s)
+
+		# Get mask for RNAs with measured deg rates
+		mask_measured_deg_rate = (rna_deg_rates > 0)
+
+		# Set the minimum possible degradation rates of mRNAs to the minimum of
+		# the measured degradation rates of mRNA cistrons
+		min_deg_rates = np.zeros(n_rnas)
+		cistron_deg_rates = self.cistron_data['deg_rate'].asNumber(1/units.s)
+		mRNA_cistron_deg_rates = cistron_deg_rates[self.cistron_data['is_mRNA']]
+		min_deg_rates[is_mRNA] = mRNA_cistron_deg_rates.min()
+		min_deg_rates = min_deg_rates[~mask_measured_deg_rate]
+
+		# Solve NNLS for unmeasured degredation rates, using the fact that
+		# A(x + m) = b is equivalent to Ax = b - Am
+		abundancy_no_measurements = cistron_tu_relative_abundancy_matrix[:, ~mask_measured_deg_rate]
+		abundancy_with_measurements = cistron_tu_relative_abundancy_matrix[:, mask_measured_deg_rate]
+		deg_rates_from_min_rates = abundancy_no_measurements.dot(min_deg_rates)
+		deg_rates_from_measured_rates = abundancy_with_measurements.dot(
+			rna_deg_rates[mask_measured_deg_rate])
+		rna_deg_rates_estimated_minus_min, _ = fast_nnls(
+			abundancy_no_measurements,
+			cistron_deg_rates - deg_rates_from_measured_rates - deg_rates_from_min_rates)
+
+		rna_deg_rates[~mask_measured_deg_rate] = rna_deg_rates_estimated_minus_min + min_deg_rates
+
+		# Clip mRNA degradation rates that are higher than the maximum measured
+		# degradation rate
+		max_mRNA_deg_rate = mRNA_cistron_deg_rates.max()
+		rna_deg_rates[np.logical_and(is_mRNA, rna_deg_rates > max_mRNA_deg_rate)] = max_mRNA_deg_rate
 
 		# Calculate synthesis probabilities from expression and normalize
 		synth_prob = expression*(
@@ -590,6 +691,29 @@ class Transcription(object):
 			nt_counts.append(
 				[seq.count(letter) for letter in ntp_abbreviations])
 		nt_counts = np.array(nt_counts)
+
+		# Set the lengths, nucleotide counts, molecular weights, and sequences
+		# of each type of rRNAs to be identical to those of the first rRNA
+		# operon. Later in the sim, transcription of all rRNA genes are set to
+		# produce the rRNAs of the first operon. This is done to simplify the
+		# complexation reactions that form ribosomes. In reality, all of these
+		# genes produce rRNA molecules with slightly different sequences and
+		# molecular weights.
+		idx_23S = np.where(is_23S_rRNA)[0]
+		idx_16S = np.where(is_16S_rRNA)[0]
+		idx_5S = np.where(is_5S_rRNA)[0]
+
+		rna_lengths[idx_23S] = rna_lengths[idx_23S[0]]
+		rna_lengths[idx_16S] = rna_lengths[idx_16S[0]]
+		rna_lengths[idx_5S] = rna_lengths[idx_5S[0]]
+
+		nt_counts[idx_23S, :] = nt_counts[idx_23S[0], :]
+		nt_counts[idx_16S, :] = nt_counts[idx_16S[0], :]
+		nt_counts[idx_5S, :] = nt_counts[idx_5S[0], :]
+
+		mws[idx_23S] = mws[idx_23S[0]]
+		mws[idx_16S] = mws[idx_16S[0]]
+		mws[idx_5S] = mws[idx_5S[0]]
 
 		# Get mapping from cistron IDs to coordinate and direction
 		rna_id_to_coordinate = {}
@@ -646,70 +770,6 @@ class Transcription(object):
 				# Value: (start position, end position)
 				self.cistron_start_end_pos_in_tu[(cistron_idx, rna_idx)] = (start_pos, end_pos)
 
-		# Determine type of each RNA
-		# TODO (ggsun): we would eventually want to get rid of these
-		# 	classifications for full RNAs, and only maintain them for individual
-		# 	cistrons to accomodate more transcription units. Currently no
-		# 	"hybrid" transcription units containing two or distinct types of
-		# 	cistrons are included in the model so this approach works.
-		is_mRNA = (
-			self.cistron_data['is_mRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		is_miscRNA = (
-			self.cistron_data['is_miscRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		is_rRNA = (
-			self.cistron_data['is_rRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		is_tRNA = (
-			self.cistron_data['is_tRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-
-		# Confirm there are no hybrid or unclassified RNAs
-		assert np.all(is_mRNA | is_miscRNA | is_rRNA | is_tRNA)
-		assert is_mRNA.sum() + is_miscRNA.sum() + is_rRNA.sum() + is_tRNA.sum() == n_rnas
-
-		# Determine if each RNA contains cistrons that encode for special
-		# components
-		is_23S_rRNA = (
-			self.cistron_data['is_23S_rRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		is_16S_rRNA = (
-			self.cistron_data['is_16S_rRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		is_5S_rRNA = (
-			self.cistron_data['is_5S_rRNA']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		includes_ribosomal_protein = (
-			self.cistron_data['is_ribosomal_protein']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-		includes_RNAP = (
-			self.cistron_data['is_RNAP']
-			@ self.cistron_tu_mapping_matrix).astype(bool)
-
-		# Set the lengths, nucleotide counts, molecular weights, and sequences
-		# of each type of rRNAs to be identical to those of the first rRNA
-		# operon. Later in the sim, transcription of all rRNA genes are set to
-		# produce the rRNAs of the first operon. This is done to simplify the
-		# complexation reactions that form ribosomes. In reality, all of these
-		# genes produce rRNA molecules with slightly different sequences and
-		# molecular weights.
-		idx_23S = np.where(is_23S_rRNA)[0]
-		idx_16S = np.where(is_16S_rRNA)[0]
-		idx_5S = np.where(is_5S_rRNA)[0]
-
-		rna_lengths[idx_23S] = rna_lengths[idx_23S[0]]
-		rna_lengths[idx_16S] = rna_lengths[idx_16S[0]]
-		rna_lengths[idx_5S] = rna_lengths[idx_5S[0]]
-
-		nt_counts[idx_23S, :] = nt_counts[idx_23S[0], :]
-		nt_counts[idx_16S, :] = nt_counts[idx_16S[0], :]
-		nt_counts[idx_5S, :] = nt_counts[idx_5S[0], :]
-
-		mws[idx_23S] = mws[idx_23S[0]]
-		mws[idx_16S] = mws[idx_16S[0]]
-		mws[idx_5S] = mws[idx_5S[0]]
-
 		max_rna_id_length = max(len(id_) for id_ in rna_ids_with_compartments)
 
 		# Get evidence codes for each transcription unit from raw data
@@ -722,6 +782,7 @@ class Transcription(object):
 			dtype = [
 				('id', 'U{}'.format(max_rna_id_length)),
 				('deg_rate', 'f8'),
+				('deg_rate_is_measured', 'bool'),
 				('length', 'i8'),
 				('counts_ACGU', '4i8'),
 				('mw', 'f8'),
@@ -742,6 +803,7 @@ class Transcription(object):
 
 		rna_data['id'] = rna_ids_with_compartments
 		rna_data['deg_rate'] = rna_deg_rates
+		rna_data['deg_rate_is_measured'] = mask_measured_deg_rate
 		rna_data['length'] = rna_lengths
 		rna_data['counts_ACGU'] = nt_counts
 		rna_data['mw'] = mws
@@ -761,6 +823,7 @@ class Transcription(object):
 		field_units = {
 			'id': None,
 			'deg_rate': 1 / units.s,
+			'deg_rate_is_measured': None,
 			'length': units.nt,
 			'counts_ACGU': units.nt,
 			'mw': units.g / units.mol,
@@ -780,7 +843,7 @@ class Transcription(object):
 
 		self.rna_data = UnitStructArray(rna_data, field_units)
 		self._rna_id_to_index = {
-			rna_id: i for (i, rna_id) in enumerate(self.rna_data['id'])
+			rna_id: cistron_index for (cistron_index, rna_id) in enumerate(self.rna_data['id'])
 			}
 
 		# Set basal expression and synthesis probabilities - conditional values
@@ -827,6 +890,66 @@ class Transcription(object):
 			relative_coordinates = coordinates - self._oric_coordinate
 
 		return relative_coordinates
+
+	def _apply_rnaseq_correction(self):
+		"""
+		Applies correction to RNAseq data for shorter genes as required when
+		operon structure is included in the model.
+		"""
+		cistron_expression = self.cistron_expression['basal'].copy()
+		zero_exp_mask = (cistron_expression == 0)
+
+		# Find minimum length of cistron with nonzero expression
+		cistron_lengths = self.cistron_data['length'].asNumber(units.nt)
+		length_threshold = cistron_lengths[~zero_exp_mask].min()
+
+		# Get mask for cistrons that are mRNAs, shorter than the threshold
+		# length, covered by RNAseq data, and with zero expression
+		correction_mask = np.logical_and.reduce((
+			self.cistron_data['is_mRNA'], zero_exp_mask,
+			cistron_lengths < length_threshold,
+			self._cistron_is_rnaseq_covered))
+		corrected_indexes = []
+
+		for cistron_index in np.where(correction_mask)[0]:
+			# Get indexes of cistrons in the same operon
+			cistrons_in_operon = None
+			rnas_in_operon = None
+			for operon in self.operons:
+				if cistron_index in operon[0]:
+					cistrons_in_operon = operon[0]
+					rnas_in_operon = operon[1]
+					break
+			assert cistrons_in_operon is not None
+
+			# Skip monocistronic operons
+			if len(cistrons_in_operon) == 1:
+				continue
+
+			# Get cistron-TU mapping matrix for this operon
+			mapping_matrix_this_operon = self.cistron_tu_mapping_matrix[
+				cistrons_in_operon, :][:, rnas_in_operon].toarray()
+
+			# Remove given gene from operon and run NNLS
+			pos_in_operon = cistrons_in_operon.index(cistron_index)
+			mapping_matrix_gene_removed = mapping_matrix_this_operon.copy()
+			mapping_matrix_gene_removed[pos_in_operon, :] = 0
+
+			rna_exp, _ = fast_nnls(
+				mapping_matrix_gene_removed,
+				cistron_expression[cistrons_in_operon]
+				)
+
+			# Use solution to get expected expression for given gene
+			exp = mapping_matrix_this_operon.dot(rna_exp)[pos_in_operon]
+			cistron_expression[cistron_index] = exp
+			corrected_indexes.append(cistron_index)
+
+		# Reset cistron_expression to new values
+		self.cistron_expression['basal'] = cistron_expression / cistron_expression.sum()
+
+		# Keep record of cistrons whose expression was corrected
+		self.cistron_data['uses_corrected_seq_counts'][np.array(corrected_indexes)] = True
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
