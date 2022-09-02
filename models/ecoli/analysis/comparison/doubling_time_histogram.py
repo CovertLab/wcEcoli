@@ -20,13 +20,8 @@ from wholecell.utils import units
 
 
 FIGSIZE = (4, 4)
-DOUBLING_TIME_BOUNDS_MINUTES = [20, 120]
-N_BINS = 20
-
-TARGET_LINE_STYLE = dict(
-	color = 'crimson',
-	lw = 2
-	)
+DOUBLING_TIME_BOUNDS_MINUTES = [20, 180]
+N_BINS = 32
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
@@ -46,18 +41,28 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 					# Assume simulated time == doubling time
 					time = TableReader(os.path.join(sim_out_dir, 'Main')).readColumn('time')
-				except TableReaderError:
+					doubling_time = time[-1] - time[0]
+					doubling_times_minutes.append(doubling_time / 60.)
+
+				except (TableReaderError, IndexError):
 					continue
 
-				doubling_time = time[-1] - time[0]
-				doubling_times_minutes.append(doubling_time / 60.)
-
-			return doubling_times_minutes
+			return np.array(doubling_times_minutes)
 
 		dt1 = read_sims(ap1)
 		dt2 = read_sims(ap2)
 
-		plt.figure(figsize=FIGSIZE)
+		# Exclude sims that hit time limit
+		dt1 = dt1[dt1 < 180]
+		dt2 = dt2[dt2 < 180]
+
+		if np.any(dt2 > 100):
+			xlim = [20, 180]
+		else:
+			xlim = [20, 100]
+
+		fig = plt.figure(figsize=FIGSIZE)
+		ax = fig.add_subplot(1, 1, 1)
 
 		bins = np.linspace(
 			DOUBLING_TIME_BOUNDS_MINUTES[0],
@@ -65,22 +70,19 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			N_BINS + 1
 			)
 
-		plt.hist(
+		ax.hist(
 			dt1, bins=bins, alpha=0.5,
 			label=f'reference (n={len(dt1)}, {np.mean(dt1):.1f} $\pm$ {np.std(dt1):.1f})')
-		plt.hist(
+		ax.hist(
 			dt2, bins=bins, alpha=0.5,
 			label=f'input (n={len(dt2)}, {np.mean(dt2):.1f} $\pm$ {np.std(dt2):.1f})')
+		ax.legend(prop={'size': 8})
 
-		plt.axvline(
-			sim_data.doubling_time.asNumber(units.min),
-			**TARGET_LINE_STYLE
-			)
-		plt.legend(prop={'size': 8})
+		ax.set_xlim(*xlim)
 
-		plt.xlim(*DOUBLING_TIME_BOUNDS_MINUTES)
-
-		plt.xlabel('Doubling time (minutes)')
+		ax.set_xlabel('Doubling time (min)')
+		ax.spines["top"].set_visible(False)
+		ax.spines["right"].set_visible(False)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
