@@ -46,6 +46,8 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 		self.full_mRNA_counts = np.zeros(len(self.mRNA_TU_ids), dtype=np.int64)
 		self.partial_mRNA_counts = np.zeros(len(self.mRNA_TU_ids), dtype=np.int64)
 		self.mRNA_cistron_counts = np.zeros(len(self.mRNA_cistron_ids), dtype=np.int64)
+		self.full_mRNA_cistron_counts = np.zeros(len(self.mRNA_cistron_ids), dtype=np.int64)
+		self.partial_mRNA_cistron_counts = np.zeros(len(self.mRNA_cistron_ids), dtype=np.int64)
 
 	def update(self):
 		# Get attributes of mRNAs
@@ -79,6 +81,9 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 			'mRNA_counts': 'mRNA_ids',
 			'full_mRNA_counts': 'mRNA_ids',
 			'partial_mRNA_counts': 'mRNA_ids',
+			'mRNA_cistron_counts': 'mRNA_cistron_ids',
+			'full_mRNA_cistron_counts': 'mRNA_cistron_ids',
+			'partial_mRNA_cistron_counts': 'mRNA_cistron_ids',
 			}
 
 		tableWriter.writeAttributes(
