@@ -3,12 +3,7 @@ Generates tables of data to share with EcoCyc for display on the "modeling" tab
 of each gene page.
 
 TODO:
-	save a specific form of simulation metadata to share? (or existing metadata file?)
-	save output as one file?
-		stacked rows
-		combine monomer values on the same row with a map of monomer to mRNA
 	other values
-		TPM for transcripts
 		weighted average for counts (time step weighted and cell cycle progress weighted)
 		max/min
 	other molecules
@@ -18,15 +13,20 @@ TODO:
 """
 
 import csv
-import numpy as np
+import json
 import os
 import pickle
+
+import numpy as np
+from scipy.stats import pearsonr
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
+
+IGNORE_FIRST_N_GENS = 2
 
 # TODO (ggsun): Add this to sim_data somewhere?
 # Maps media names used in model to IDs used in EcoCyc
@@ -67,8 +67,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		ap = AnalysisPaths(variantDir, cohort_plot=True)
 
-		# Ignore first two generations
-		cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
+		# Ignore first N generations
+		cell_paths = ap.get_cells(
+			generation=np.arange(IGNORE_FIRST_N_GENS, ap.n_generation))
 
 		# Load tables and attributes for mRNAs
 		mRNA_reader = TableReader(
@@ -186,6 +187,27 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		save_file(
 			plotOutDir, f'wcm-monomer-data-{media_id}.tsv', columns, values)
+
+		# Write metadata file
+		protein_val_exists = np.logical_not(np.isnan(protein_counts_val))
+		r, _ = pearsonr(
+			monomer_counts_avg[protein_val_exists],
+			protein_counts_val[protein_val_exists])
+
+		ecocyc_metadata = {
+			'git_hash': metadata['git_hash'],
+			'n_ignored_generations': IGNORE_FIRST_N_GENS,
+			'n_total_generations': metadata['generations'],
+			'n_seeds': metadata['init_sims'],
+			'n_cells': len(cell_paths),
+			'n_timesteps': len(counts_to_molar),
+			'protein_validation_r_squared': r**2,
+			}
+
+		metadata_file = os.path.join(plotOutDir, 'wcm-metadata.json')
+		with open(metadata_file, 'w') as f:
+			print(f'Saving data to {metadata_file}')
+			json.dump(ecocyc_metadata, f, indent=4)
 
 
 if __name__ == '__main__':
