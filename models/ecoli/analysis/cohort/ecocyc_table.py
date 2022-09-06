@@ -71,6 +71,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, ap.n_generation))
 
+		if len(cell_paths) == 0:
+			print('Skipping analysis -- not enough simulations run.')
+			return
+
 		# Load tables and attributes for mRNAs
 		mRNA_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'mRNACounts'))
