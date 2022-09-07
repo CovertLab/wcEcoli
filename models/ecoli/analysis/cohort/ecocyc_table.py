@@ -201,8 +201,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ecocyc_metadata = {
 			'git_hash': metadata['git_hash'],
 			'n_ignored_generations': IGNORE_FIRST_N_GENS,
-			'n_total_generations': metadata['generations'],
-			'n_seeds': metadata['init_sims'],
+			'n_total_generations': metadata['total_gens'],
+			'n_seeds': metadata['total_init_sims'],
 			'n_cells': len(cell_paths),
 			'n_timesteps': len(counts_to_molar),
 			'protein_validation_r_squared': r**2,
