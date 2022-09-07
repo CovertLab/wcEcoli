@@ -71,14 +71,16 @@ class EcoliSimulation(Simulation):
 			TfBinding,
 		),
 		(
-			RnaDegradation,
 			TranscriptInitiation,
-			TranscriptElongation,
 			PolypeptideInitiation,
-			PolypeptideElongation,
 			ChromosomeReplication,
 			ProteinDegradation,
+			RnaDegradation,
 			Complexation,
+		),
+		(
+			TranscriptElongation,
+			PolypeptideElongation,
 		),
 		(
 			ChromosomeStructure,
