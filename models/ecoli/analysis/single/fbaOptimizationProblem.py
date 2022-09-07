@@ -42,7 +42,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Burn in required because some large spikes/instability in early time points
 		burnIn = 20  # timesteps
 		nStd = 1  # number of standard deviations away from mean to filter
-		plt.figure(figsize = (8.5, 11))
+		plt.figure(figsize = (17, 22))
 
 		# Plot all shadow prices
 		ax = self.subplot(3, 2, 1)
@@ -73,7 +73,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax.set_ylabel('Shadow Price\n(Metabolites)', fontsize=8)
 		if len(idx):
 			ax.plot(time[burnIn:], shadowPrices[burnIn:, idx])
-			ax.legend(metaboliteNames[idx], fontsize=6)
+			ax.legend(metaboliteNames[idx], fontsize=4)
 			ax.tick_params(axis='both', which='major', labelsize=6)
 
 		# Find outliers for reduced costs and plot with legend to identify
@@ -90,7 +90,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		if len(idx):
 			shortenedNames = [x[:20] for x in reactionNames[idx]] # prevent long names from covering both subplots
 			ax.plot(time[burnIn:], reducedCosts[burnIn:, idx])
-			ax.legend(shortenedNames, fontsize=6)
+			ax.legend(shortenedNames, fontsize=4)
 			ax.tick_params(axis='both', which='major', labelsize=6)
 
 		# Find outliers for reduced costs and plot with legend to identify
@@ -107,7 +107,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		if len(idx):
 			shortenedNames = [x[:20] for x in reactionNames[idx]] # prevent long names from covering both subplots
 			ax.plot(time[burnIn:], reducedCosts[burnIn:, idx])
-			ax.legend(shortenedNames, fontsize=6)
+			ax.legend(shortenedNames, fontsize=4)
 			ax.tick_params(axis='both', which='major', labelsize=6)
 
 		# Check if there are kinetic reactions (FBA kinetics enabled)
@@ -138,7 +138,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			if len(idx):
 				shortenedNames = [x[:20] for x in kineticReactionNames[idx]]  # prevent long names from covering both subplots
 				ax.plot(time[burnIn:], kineticsReducedCosts[burnIn:, idx])
-				ax.legend(shortenedNames, fontsize=6)
+				ax.legend(shortenedNames, fontsize=4)
 				ax.tick_params(axis='both', which='major', labelsize=6)
 
 		plt.tight_layout()

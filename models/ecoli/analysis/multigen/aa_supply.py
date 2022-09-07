@@ -56,8 +56,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		normalized_use = (aas_used / time_step / dry_mass / expected_supply).T
 		enzyme_conc_fwd = (enzyme_counts_fwd * counts_to_mol).T
 		enzyme_conc_rev = (enzyme_counts_rev * counts_to_mol).T
-		enzyme_conc_fwd /= enzyme_conc_fwd[:, 0:1]
-		enzyme_conc_rev /= enzyme_conc_rev[:, 0:1]
+		with np.errstate(divide='ignore', invalid='ignore'):
+			enzyme_conc_fwd /= enzyme_conc_fwd[:, 0:1]
+			enzyme_conc_rev /= enzyme_conc_rev[:, 0:1]
 		aa_conc /= aa_conc[:, 0:1]
 
 		# Plot data
