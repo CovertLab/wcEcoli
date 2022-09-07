@@ -441,6 +441,10 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		self.define_option(parser, 'init_sims', int, 1, flag='i',
 			help='Number of initial sims (cell lineages) per variant. The'
 				 ' lineages get sequential seeds starting with the --seed value.')
+		if manual_script:
+			parser.add_argument(dashize('--total_init_sims'), type=int,
+				help='(int) Total number of initial simulations to write into'
+					 ' the metadata.json file. Default = the value of init_sims.')
 
 	def define_sim_options(self, parser):
 		# type: (argparse.ArgumentParser) -> None

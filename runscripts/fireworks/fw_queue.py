@@ -444,6 +444,7 @@ class WorkflowBuilder:
 			"time": SUBMISSION_TIME,
 			"python": sys.version.splitlines()[0],
 			"total_gens": N_GENS,
+			"total_init_sims": N_INIT_SIMS,
 			"analysis_type": None,
 			"variant": VARIANT,
 			"total_variants": str(len(VARIANTS_TO_RUN)),
