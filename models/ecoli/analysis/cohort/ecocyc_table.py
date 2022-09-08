@@ -98,6 +98,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, 'Mass', 'dryMass',
 			remove_first=True, ignore_exception=True)
 
+		# Build dictionary for metadata
+		ecocyc_metadata = {
+			'git_hash': metadata['git_hash'],
+			'n_ignored_generations': IGNORE_FIRST_N_GENS,
+			'n_total_generations': metadata['total_gens'],
+			'n_seeds': metadata['total_init_sims'],
+			'n_cells': len(cell_paths),
+			'n_timesteps': len(counts_to_molar),
+			}
+
 		# Calculate derived mRNA values
 		mRNA_counts_avg = mRNA_counts.mean(axis=0)
 		mRNA_counts_std = mRNA_counts.std(axis=0)
@@ -147,14 +157,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, 'MonomerCounts', 'monomerCounts',
 			remove_first=True, ignore_exception=True)
 
-		# Read validation data
-		protein_id_to_schmidt_counts = {
-			item[0]: item[1] for item in validation_data.protein.schmidt2015Data
-			}
-		protein_counts_val = np.array([
-			protein_id_to_schmidt_counts.get(protein_id, np.nan) for protein_id in monomer_ids
-			])
-
 		# Calculate derived protein values
 		monomer_counts_avg = monomer_counts.mean(axis=0)
 		monomer_counts_std = monomer_counts.std(axis=0)
@@ -178,7 +180,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'relative-protein-count-to-protein-rna-counts': 'A floating point number',
 			'relative-protein-mass-to-total-protein-mass': 'A floating point number',
 			'relative-protein-mass-to-total-cell-dry-mass': 'A floating point number',
-			'validation-count': 'A floating point number',
 			}
 		values = [
 			monomer_ecocyc_ids, monomer_counts_avg, monomer_counts_std,
@@ -186,29 +187,31 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			monomer_counts_relative_to_total_monomer_counts,
 			monomer_mass_relative_to_total_monomer_mass,
 			monomer_mass_relative_to_total_dcw,
-			protein_counts_val,
 			]
+
+		# Add validation data if sims used minimal glucose media
+		if media_name == 'minimal':
+			protein_id_to_schmidt_counts = {
+				item[0]: item[1] for item in validation_data.protein.schmidt2015Data
+				}
+			protein_counts_val = np.array([
+				protein_id_to_schmidt_counts.get(protein_id, np.nan) for protein_id in monomer_ids
+				])
+
+			columns['validation-count'] = 'A floating point number'
+			values.append(protein_counts_val)
+
+			protein_val_exists = np.logical_not(np.isnan(protein_counts_val))
+			r, _ = pearsonr(
+				monomer_counts_avg[protein_val_exists],
+				protein_counts_val[protein_val_exists])
+
+			ecocyc_metadata['protein_validation_r_squared'] = r ** 2
 
 		save_file(
 			plotOutDir, f'wcm-monomer-data-{media_id}.tsv', columns, values)
 
-		# Write metadata file
-		protein_val_exists = np.logical_not(np.isnan(protein_counts_val))
-		r, _ = pearsonr(
-			monomer_counts_avg[protein_val_exists],
-			protein_counts_val[protein_val_exists])
-
-		ecocyc_metadata = {
-			'git_hash': metadata['git_hash'],
-			'n_ignored_generations': IGNORE_FIRST_N_GENS,
-			'n_total_generations': metadata['total_gens'],
-			'n_seeds': metadata['total_init_sims'],
-			'n_cells': len(cell_paths),
-			'n_timesteps': len(counts_to_molar),
-			'protein_validation_r_squared': r**2,
-			}
-
-		metadata_file = os.path.join(plotOutDir, 'wcm-metadata.json')
+		metadata_file = os.path.join(plotOutDir, f'wcm-metadata-{media_id}.json')
 		with open(metadata_file, 'w') as f:
 			print(f'Saving data to {metadata_file}')
 			json.dump(ecocyc_metadata, f, indent=4)
