@@ -95,6 +95,7 @@ TAGS = {
 		"rnapCounts.py",
 		"rnaseCounts.py",
 		],
+	'ECOCYC': [],
 	'PARCA': [
 		"KmOptimization.py",
 		"KmRNAdecayComparison.py",

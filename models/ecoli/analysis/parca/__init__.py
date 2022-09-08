@@ -27,6 +27,7 @@ TAGS = {
 		'metabolite_concentrations.py',
 		'interpolation.py',
 		],
+	'ECOCYC': [],
 	'METABOLISM': [
 		'aa_synthesis_enzymes.py',
 		'aa_synthesis_pathways.py',

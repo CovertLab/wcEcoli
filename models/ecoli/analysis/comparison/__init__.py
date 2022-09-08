@@ -27,4 +27,5 @@ TAGS = {
 		"growth_histograms.py",
 		"massFractionComparison.py",
 		],
+	'ECOCYC': [],
 	}

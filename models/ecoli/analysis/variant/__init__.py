@@ -33,6 +33,7 @@ TAGS = {
 	'CORE': [           # the default list to run in development
 		"growthConditionComparison.py",
 		],
+	'ECOCYC': [],
 	'ENVIRONMENT_SHIFT': [
 		'growth_trajectory',
 		],
