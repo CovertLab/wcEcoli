@@ -63,7 +63,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			validation_data.protein.schmidt2015Data['glucoseCounts']))
 		val_basal_counts = np.array([validation_glucose.get(m, 0) for m in synthesis_monomers])
 
-		plt.figure()
+		plt.figure(figsize=(8, 8))
 
 		# Plot data and diagonal reference lines
 		max_counts = max(wcm_basal_counts.max(), val_basal_counts.max())
@@ -82,7 +82,6 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		self.remove_border()
 		plt.legend(fontsize=8, frameon=False)
 
-		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
 

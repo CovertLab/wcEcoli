@@ -5,6 +5,7 @@ Plots counts of rna degraded and the resulting free NMPs
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+from numpy.polynomial.polynomial import Polynomial
 from matplotlib import pyplot as plt
 from six.moves import cPickle
 
@@ -90,8 +91,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 			plt.errorbar(Kcats, fractionRNAkm_avg, yerr = [np.zeros(len(fractionRNAkm_sd)), fractionRNAkm_sd], fmt = 'o')
 
-			z = np.polyfit(np.log10(Kcats), np.log10(fractionRNAkm_avg), 1)
-			p = np.poly1d(z)
+			p = Polynomial.fit(np.log10(Kcats), np.log10(fractionRNAkm_avg), 1)
 
 			minX = np.log10(Kcats.min() / 2)
 			maxX = np.log10(np.round(2 * Kcats.max()))

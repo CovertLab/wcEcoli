@@ -108,6 +108,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(validationDataFile, 'rb') as f:
 			validation_data = pickle.load(f)
 
+		if self.ap.n_variant == 1:
+			print("Need more variant sims -- skipping analysis")
+			return
+
 		aa_ids = sim_data.molecule_groups.amino_acids
 		glc_mw = sim_data.getter.get_mass(GLC_ID)
 

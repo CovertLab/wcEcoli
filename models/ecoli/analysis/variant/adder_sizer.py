@@ -25,6 +25,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print("Need more data to create addedMass")
 			return
 
+		if self.ap.n_variant == 1:
+			print("Need more variant sims -- skipping analysis")
+			return
+
 		allScatter = plt.figure()
 		allScatter.set_figwidth(11)
 		allScatter.set_figheight(6)
