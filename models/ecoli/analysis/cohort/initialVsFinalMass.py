@@ -19,6 +19,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		max_cells_in_gen = 0
 		for genIdx in range(self.ap.n_generation):
 			n_cells = len(self.ap.get_cells(generation = [genIdx]))
+
+			if n_cells == 1:
+				print('Not enough seeds run -- skipping analysis.')
+				return
+
 			if n_cells > max_cells_in_gen:
 				max_cells_in_gen = n_cells
 
