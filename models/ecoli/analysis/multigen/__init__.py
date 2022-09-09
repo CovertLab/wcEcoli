@@ -69,7 +69,6 @@ TAGS = {
 	'DIVISION': [
 		"cellCycleLength.py",
 		],
-	'ECOCYC': [],
 	'ENVIRONMENT_SHIFT': [
 		"aa_supply.py",
 		"environmental_shift_fluxes.py",  # TODO(jerry): include this?
