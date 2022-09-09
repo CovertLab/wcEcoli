@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.0
-# Date and time generated: April 20, 2022, 16:49:57
+# Version: 26.1
+# Date and time generated: September 8, 2022, 10:40:32
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
@@ -69,12 +69,13 @@
 "CPLX0-8235_RXN"	{"CPLX0-8235": 1, "CPLX0-8234": null, "FORMALDEHYDE": null}	"FrmR-formaldehyde"
 "CPLX0-8246_RXN"	{"CPLX0-8246": 1, "PD03270": null, "CPD-14488": null}	"ExuR-&alpha;-D-glucuronate"
 "CPLX0-8257_RXN"	{"CPLX0-8257": 1, "G6144-MONOMER": null, "D-XYLONATE": null}	"XynR-D-xylonate"
-"CPLX0-8258_RXN"	{"CPLX0-8258": 1, "CPLX0-8595": null, "CPD0-2705": null}	"ChbR-<i>N</i>-monoacetylchitobiose 6'-phosphate"
+"CPLX0-8258_RXN"	{"CPLX0-8258": 1, "CPLX0-8595": null, "CPD0-2705": null}	"ChbR-6-phospho-&beta;-D-glucosaminyl-(1->4)-<i>N</i>-acetyl-D-glucosamine"
 "CPLX0-8286_CPD-21685_RXN"	{"CPLX0-8286": 1, "CPD-21685": null, "EG11849-MONOMER": null}	"CsqR-6-sulfo-D-quinovose"
+"CPLX0-8286_CPD-21686_RXN"	{"CPLX0-8286": 1, "CPD-21686": null, "EG11849-MONOMER": null}	"CsqR-6-sulfo-D-quinovose"
 "CPLX0-8287_RXN"	{"CPLX0-8287": 1, "CPLX0-8578": null, "D-GALACTONATE": null}	"DgoR-D-galactonate"
 "CPLX0-8293_RXN"	{"CPLX0-8293": 1, "EG12386-MONOMER": null, "GLUTARATE": null}	"GlaR-glutarate"
 "CPLX0-8309_RXN"	{"CPLX0-8309": 1, "G7244-MONOMER": null, "PYRUVATE": null}	"PyrR-pyruvate"
-"CPLX0-8577_RXN"	{"CPLX0-8577": 1, "CPLX0-8576": null, "FRUCTOSELYSINE-6-PHOSPHATE": null}	"FrlR-N<sup>6</sup>-(6-phospho-D-fructosyl)-L-lysine"
+"CPLX0-8577_RXN"	{"CPLX0-8577": 1, "CPLX0-8576": null, "FRUCTOSELYSINE-6-PHOSPHATE": null}	"FrlR- <i>N</i><sup>6</sup>-(1-deoxy-6-<i>O</i>-phospho-D-fructos-1-yl)-L-lysine"
 "CPLX0-8579_RXN"	{"CPLX0-8579": 1, "CPLX0-7418": null, "CPD-110": null}	"MprA-salicylate"
 "CPLX0-8598_RXN"	{"CPLX0-8598": 1, "CPLX0-8597": null, "TRIMETHYLAMINE-N-O": null}	"RcdA-trimethylamine N-oxide"
 "CPLX0-8599_RXN"	{"CPLX0-8599": 1, "CPLX0-8597": null, "TRIS": null}	"RcdA-tris"
