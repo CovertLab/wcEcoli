@@ -187,7 +187,7 @@ class AnalysisBase(FiretaskBase):
 			try:
 				mod = importlib.import_module(self.MODULE_PATH + '.' + f[:-3])
 			except ModuleNotFoundError as e:
-				print(f'Ignorning an unknown analysis class: {e}')
+				print(f'Ignoring an unknown analysis class: {e}')
 				continue
 			except ImportError:
 				traceback.print_exc()
