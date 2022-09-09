@@ -325,13 +325,13 @@ class Transcription(object):
 		idx_5S = []
 
 		for rnaIndex, cistron in enumerate(all_cistrons):
-			if cistron["type"] == "rRNA" and cistron["id"].startswith("RRL"):
+			if cistron['id'] + '[c]' in sim_data.molecule_groups.s50_23s_rRNA:
 				is_23S[rnaIndex] = True
 				idx_23S.append(rnaIndex)
-			if cistron["type"] == "rRNA" and cistron["id"].startswith("RRS"):
+			if cistron['id'] + '[c]' in sim_data.molecule_groups.s30_16s_rRNA:
 				is_16S[rnaIndex] = True
 				idx_16S.append(rnaIndex)
-			if cistron["type"] == "rRNA" and cistron["id"].startswith("RRF"):
+			if cistron['id'] + '[c]' in sim_data.molecule_groups.s50_5s_rRNA:
 				is_5S[rnaIndex] = True
 				idx_5S.append(rnaIndex)
 
