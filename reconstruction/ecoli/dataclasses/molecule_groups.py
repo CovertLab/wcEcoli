@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 POLYMERIZED_FRAGMENT_PREFIX = 'polymerized_'
 
-
 class MoleculeGroups(object):
 	"""
 	Helper class to extract molecule IDs of "special" groups of molecules. All
@@ -14,9 +13,9 @@ class MoleculeGroups(object):
 	"""
 
 	def __init__(self, raw_data, sim_data):
-		self._build_molecule_groups(sim_data)
+		self._build_molecule_groups(raw_data, sim_data)
 
-	def _build_molecule_groups(self, sim_data):
+	def _build_molecule_groups(self, raw_data, sim_data):
 		aa_ids = list(sim_data.amino_acid_code_to_id_ordered.values())
 		ntp_ids = list(sim_data.ntp_code_to_id_ordered.values())
 		dntp_ids = list(sim_data.dntp_code_to_id_ordered.values())
@@ -26,6 +25,62 @@ class MoleculeGroups(object):
 			POLYMERIZED_FRAGMENT_PREFIX + ntp_id for ntp_id in ntp_ids]
 		polymerized_dntp_ids = [
 			POLYMERIZED_FRAGMENT_PREFIX + dntp_id for dntp_id in dntp_ids]
+
+		# Build list of rRNA IDs from raw data
+		s30_16s_rRNA = [
+			rna['id'] + '[c]' for rna in raw_data.rnas
+			if rna['id'].startswith('RRS')]
+		s50_23s_rRNA = [
+			rna['id'] + '[c]' for rna in raw_data.rnas
+			if rna['id'].startswith('RRL')]
+		s50_5s_rRNA = [
+			rna['id'] + '[c]' for rna in raw_data.rnas
+			if rna['id'].startswith('RRF')]
+
+		# Build list of ribosomal proteins from raw data
+		monomer_ids = set([monomer['id'] for monomer in raw_data.proteins])
+
+		complex_id_to_subunit_ids = {}
+		for rxn in raw_data.complexation_reactions:
+			complex_ids = []
+			subunit_ids = []
+
+			for mol, v in rxn['stoichiometry'].items():
+				if (v is None or v < 0):
+					subunit_ids.append(mol)
+				else:
+					complex_ids.append(mol)
+
+			if len(complex_ids) > 1:
+				import ipdb; ipdb.set_trace()
+				raise ValueError()
+
+			complex_id_to_subunit_ids[complex_ids[0]] = subunit_ids
+
+		def find_protein_subunits(molecule_id):
+			"""
+			Recursive function to find all protein monomers that are subunits
+			of a given molecule.
+			"""
+			subunits = []
+
+			if molecule_id in monomer_ids:
+				subunits.append(molecule_id)
+			elif molecule_id in complex_id_to_subunit_ids:
+				for mol in complex_id_to_subunit_ids[molecule_id]:
+					subunits.extend(find_protein_subunits(mol))
+
+			return subunits
+
+		s30_proteins = [
+			mol + '[c]' for mol in find_protein_subunits(S30_COMPLEX_ID)
+			]
+		s50_proteins = [
+			mol + '[c]' for mol in find_protein_subunits(S50_COMPLEX_ID)
+			]
+
+		assert len(set(s30_proteins) & set(s50_proteins)) == 0
+		ribosomal_proteins = sorted(s30_proteins + s50_proteins)
 
 		molecule_groups = {
 			'amino_acids': aa_ids,
@@ -37,35 +92,13 @@ class MoleculeGroups(object):
 			'polymerized_dntps': polymerized_dntp_ids,
 			'polymerized_subunits': polymerized_aa_ids + polymerized_ntp_ids + polymerized_dntp_ids,
 
-			# EG11508-MONOMER[c] (sra) is removed from the list because it is
-			# not essential and should have very low counts in rich media
-			's30_proteins':	['EG10912-MONOMER[c]', 'EG10916-MONOMER[c]',
-				'EG10906-MONOMER[c]', 'EG10914-MONOMER[c]', 'EG10909-MONOMER[c]',
-				'EG10903-MONOMER[c]', 'EG10911-MONOMER[c]', 'EG10904-MONOMER[c]',
-				'EG10900-MONOMER[c]', 'EG10901-MONOMER[c]', 'EG10905-MONOMER[c]',
-				'EG10915-MONOMER[c]', 'EG10918-MONOMER[c]', 'EG10919-MONOMER[c]',
-				'EG10907-MONOMER[c]', 'EG10908-MONOMER[c]', 'EG10920-MONOMER[c]',
-				'EG10910-MONOMER[c]', 'EG10902-MONOMER[c]', 'EG10917-MONOMER[c]',
-				'EG10913-MONOMER[c]'],
-			's30_16s_rRNA': ['RRSA-RRNA[c]', 'RRSB-RRNA[c]', 'RRSC-RRNA[c]',
-				'RRSD-RRNA[c]', 'RRSE-RRNA[c]', 'RRSG-RRNA[c]', 'RRSH-RRNA[c]'],
+			's30_proteins':	s30_proteins,
+			's30_16s_rRNA': s30_16s_rRNA,
 
 			's50_protein_complexes': ['CPLX0-3956[c]'],
-			's50_proteins':	['EG10872-MONOMER[c]', 'EG10879-MONOMER[c]',
-				'EG11232-MONOMER[c]', 'EG10877-MONOMER[c]', 'EG10876-MONOMER[c]',
-				'EG10892-MONOMER[c]', 'EG10874-MONOMER[c]', 'EG50001-MONOMER[c]',
-				'EG10875-MONOMER[c]', 'EG10884-MONOMER[c]', 'EG11231-MONOMER[c]',
-				'EG10887-MONOMER[c]', 'EG10878-MONOMER[c]', 'EG10886-MONOMER[c]',
-				'EG10870-MONOMER[c]', 'EG10889-MONOMER[c]', 'EG10891-MONOMER[c]',
-				'EG10888-MONOMER[c]', 'EG50002-MONOMER[c]', 'EG10869-MONOMER[c]',
-				'EG10882-MONOMER[c]', 'EG10883-MONOMER[c]', 'EG10885-MONOMER[c]',
-				'EG10890-MONOMER[c]', 'EG10864-MONOMER[c]', 'EG10881-MONOMER[c]',
-				'EG10865-MONOMER[c]', 'EG10868-MONOMER[c]', 'EG10880-MONOMER[c]',
-				'EG10867-MONOMER[c]', 'EG10866-MONOMER[c]'],
-			's50_23s_rRNA': ['RRLA-RRNA[c]', 'RRLB-RRNA[c]', 'RRLC-RRNA[c]',
-				'RRLD-RRNA[c]', 'RRLE-RRNA[c]', 'RRLG-RRNA[c]', 'RRLH-RRNA[c]'],
-			's50_5s_rRNA': ['RRFA-RRNA[c]', 'RRFB-RRNA[c]', 'RRFC-RRNA[c]',
-				'RRFD-RRNA[c]', 'RRFE-RRNA[c]', 'RRFG-RRNA[c]', 'RRFH-RRNA[c]'],
+			's50_proteins':	s50_proteins,
+			's50_23s_rRNA': s50_23s_rRNA,
+			's50_5s_rRNA': s50_5s_rRNA,
 
 			'lipids': ['CPD-8260[c]', 'CPD-12819[c]', 'CPD-12824[c]'],
 			'polyamines': ['GAMMA-GLUTAMYL-PUTRESCINE[c]', 'PUTRESCINE[c]',
@@ -94,27 +127,7 @@ class MoleculeGroups(object):
 			'RNAP_subunits': ['RPOB-MONOMER[c]', 'RPOC-MONOMER[c]',
 				'EG10893-MONOMER[c]'],
 
-			# EG11508-MONOMER[c] (sra) is removed from the list because it is
-			# not essential and should have very low counts in rich media
-			'ribosomal_proteins': ['EG10872-MONOMER[c]', 'EG10879-MONOMER[c]',
-				'EG11232-MONOMER[c]', 'EG10877-MONOMER[c]', 'EG10876-MONOMER[c]',
-				'EG10892-MONOMER[c]', 'EG10874-MONOMER[c]',	'EG50001-MONOMER[c]',
-				'EG10875-MONOMER[c]', 'EG10884-MONOMER[c]', 'EG11231-MONOMER[c]',
-				'EG10887-MONOMER[c]', 'EG10871-MONOMER[c]',	'EG10878-MONOMER[c]',
-				'EG10886-MONOMER[c]', 'EG10870-MONOMER[c]', 'EG10889-MONOMER[c]',
-				'EG10891-MONOMER[c]', 'EG10888-MONOMER[c]', 'EG50002-MONOMER[c]',
-				'EG10869-MONOMER[c]', 'EG10882-MONOMER[c]',	'EG10883-MONOMER[c]',
-				'EG10885-MONOMER[c]', 'EG10890-MONOMER[c]',	'EG10864-MONOMER[c]',
-				'EG10881-MONOMER[c]', 'EG10865-MONOMER[c]', 'EG10868-MONOMER[c]',
-				'EG10880-MONOMER[c]', 'EG10867-MONOMER[c]', 'EG10873-MONOMER[c]',
-				'EG10866-MONOMER[c]', 'EG10912-MONOMER[c]', 'EG10916-MONOMER[c]',
-				'EG10920-MONOMER[c]', 'EG10914-MONOMER[c]', 'EG10909-MONOMER[c]',
-				'EG10903-MONOMER[c]', 'EG10911-MONOMER[c]', 'EG10904-MONOMER[c]',
-				'EG10900-MONOMER[c]', 'EG10901-MONOMER[c]', 'EG10905-MONOMER[c]',
-				'EG10915-MONOMER[c]', 'EG10918-MONOMER[c]', 'EG10919-MONOMER[c]',
-				'EG10907-MONOMER[c]', 'EG10908-MONOMER[c]', 'EG10906-MONOMER[c]',
-				'EG10910-MONOMER[c]', 'EG10902-MONOMER[c]', 'EG10917-MONOMER[c]',
-				'EG10913-MONOMER[c]'],
+			'ribosomal_proteins': ribosomal_proteins,
 
 			'carbon_sources': ['GLC[p]', 'ACET[p]', 'SUC[p]'],
 		}
