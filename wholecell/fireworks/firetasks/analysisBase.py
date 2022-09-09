@@ -93,6 +93,8 @@ class AnalysisBase(FiretaskBase):
 				self.expand_plot_names(self.TAGS[name], name_dict)
 			elif name.endswith('.py'):
 				name_dict[name] = True
+			elif name.isupper():
+				print(f'Ignoring an unknown analysis TAG: "{name}"')
 			else:
 				name_dict[name + '.py'] = True
 
@@ -184,6 +186,9 @@ class AnalysisBase(FiretaskBase):
 		for f in fileList:
 			try:
 				mod = importlib.import_module(self.MODULE_PATH + '.' + f[:-3])
+			except ModuleNotFoundError as e:
+				print(f'Ignoring an unknown analysis class: {e}')
+				continue
 			except ImportError:
 				traceback.print_exc()
 				exceptionFileList.append(f)
