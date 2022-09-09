@@ -51,9 +51,7 @@ class MoleculeGroups(object):
 				else:
 					complex_ids.append(mol)
 
-			if len(complex_ids) > 1:
-				import ipdb; ipdb.set_trace()
-				raise ValueError()
+			assert len(complex_ids) == 1
 
 			complex_id_to_subunit_ids[complex_ids[0]] = subunit_ids
 
@@ -73,14 +71,22 @@ class MoleculeGroups(object):
 			return subunits
 
 		s30_proteins = [
-			mol + '[c]' for mol in find_protein_subunits(S30_COMPLEX_ID)
+			mol + '[c]' for mol
+			in find_protein_subunits(sim_data.molecule_ids.s30_full_complex[:-3])
 			]
 		s50_proteins = [
-			mol + '[c]' for mol in find_protein_subunits(S50_COMPLEX_ID)
+			mol + '[c]' for mol
+			in find_protein_subunits(sim_data.molecule_ids.s50_full_complex[:-3])
 			]
 
 		assert len(set(s30_proteins) & set(s50_proteins)) == 0
 		ribosomal_proteins = sorted(s30_proteins + s50_proteins)
+
+		# Build list of RNA polymerase subunits from raw data
+		RNAP_subunits = [
+			mol + '[c]' for mol
+			in find_protein_subunits(sim_data.molecule_ids.full_RNAP[:-3])
+			]
 
 		molecule_groups = {
 			'amino_acids': aa_ids,
@@ -116,16 +122,13 @@ class MoleculeGroups(object):
 				'EG10858-MONOMER[c]', 'EG10863-MONOMER[c]', 'EG11259-MONOMER[c]',
 				'EG11547-MONOMER[c]', 'EG10746-MONOMER[c]', 'G7842-MONOMER[c]',
 				'EG10743-MONOMER[c]'],
-			'endoRNase_rnas': ['EG10856_RNA', 'EG10857_RNA',
-				'EG10859_RNA', 'EG10860_RNA', 'EG10861_RNA',
-				'EG10862_RNA', 'EG11299_RNA', 'G7175_RNA',
-				'G7365_RNA'],
-			'exoRNase_rnas': ['EG11620_RNA', 'G7175_RNA',
-				'EG10858_RNA', 'EG10863_RNA', 'EG11259_RNA',
-				'EG11547_RNA', 'EG10746_RNA', 'G7842_RNA',
-				'EG10743_RNA'],
-			'RNAP_subunits': ['RPOB-MONOMER[c]', 'RPOC-MONOMER[c]',
-				'EG10893-MONOMER[c]'],
+			'endoRNase_rnas': ['EG10856_RNA', 'EG10857_RNA', 'EG10859_RNA',
+				'EG10860_RNA', 'EG10861_RNA', 'EG10862_RNA', 'EG11299_RNA',
+				'G7175_RNA', 'G7365_RNA'],
+			'exoRNase_rnas': ['EG11620_RNA', 'G7175_RNA', 'EG10858_RNA',
+				'EG10863_RNA', 'EG11259_RNA', 'EG11547_RNA', 'EG10746_RNA',
+				'G7842_RNA', 'EG10743_RNA'],
+			'RNAP_subunits': RNAP_subunits,
 
 			'ribosomal_proteins': ribosomal_proteins,
 

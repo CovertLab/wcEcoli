@@ -56,9 +56,13 @@ class SimulationDataEcoli(object):
 		self.constants = Constants(raw_data)
 		self.adjustments = Adjustments(raw_data)
 
-		# Reference helper functions (can depend on hard-coded attributes)
-		self.molecule_groups = MoleculeGroups(raw_data, self)
+		# Reference helper function for molecule IDs (can depend on preceding
+		# helper functions)
 		self.molecule_ids = MoleculeIds(raw_data, self)
+
+		# Reference helper function for molecule groups (can depend on preceding
+		# helper functions)
+		self.molecule_groups = MoleculeGroups(raw_data, self)
 
 		# Getter functions (can depend on helper functions and reference classes)
 		self.getter = GetterFunctions(raw_data, self)
