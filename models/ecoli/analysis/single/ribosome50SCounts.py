@@ -55,7 +55,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.rc('font', **FONT)
 
 		for idx in range(len(proteinIds)):
-			rna_axis = plt.subplot(16, 3, idx + 1)
+			rna_axis = plt.subplot(17, 3, idx + 1)
 
 			sparklineAxis(rna_axis, time / 60., rna_cistron_counts[:, idx], 'left', '-', 'b')
 			setAxisMaxMinY(rna_axis, rna_cistron_counts[:, idx])
@@ -68,7 +68,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			rna_axis.set_title(proteinIds[idx][:-3], fontsize=8)
 
 		for idx in range(len(rRnaIds)):
-			rna_axis = plt.subplot(16, 3, idx + len(proteinIds) + 1)
+			rna_axis = plt.subplot(17, 3, idx + len(proteinIds) + 1)
 
 			sparklineAxis(rna_axis, time / 60., freeRRnaCounts[:, idx], 'left', '-', 'b')
 
@@ -78,7 +78,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			rna_axis.set_title(rRnaIds[idx][:-3], fontsize=8)
 
 		for idx in range(len(complexIds)):
-			complex_axis = plt.subplot(16, 3, idx + len(proteinIds) + len(rRnaIds) + 1)
+			complex_axis = plt.subplot(17, 3, idx + len(proteinIds) + len(rRnaIds) + 1)
 
 			sparklineAxis(complex_axis, time / 60., complexCounts[:, idx], 'left', '-', 'r')
 			setAxisMaxMinY(complex_axis, complexCounts[:, idx])
@@ -87,7 +87,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			complex_axis.set_title(complexIds[idx][:-3], fontsize=8)
 
 		# Plot number of ribosomes
-		ribosome_axis = plt.subplot(16, 3, len(proteinIds) + len(rRnaIds) + len(complexIds) + 1)
+		ribosome_axis = plt.subplot(17, 3, len(proteinIds) + len(rRnaIds) + len(complexIds) + 1)
 		sparklineAxis(ribosome_axis, time / 60., activeRibosome, 'left', '-', 'r')
 		setAxisMaxMinY(ribosome_axis, activeRibosome)
 		ribosome_axis.set_title('Active ribosome', fontsize=8)
