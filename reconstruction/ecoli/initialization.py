@@ -55,6 +55,9 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, r
 	# Set RNA counts from expression
 	initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulation, trna_attenuation)
 
+	# Set mature RNA counts
+	initialize_mature_RNA(bulkMolCntr, sim_data)
+
 	# Set other biomass components
 	set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules, massCoeff)
 
@@ -197,6 +200,31 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 	rnaView.countsIs(
 		randomState.multinomial(nRnas, rnaExpression)
 		)
+
+def initialize_mature_RNA(bulkMolCntr, sim_data):
+	"""
+	Initializes counts of mature RNAs in the bulk molecule container using the
+	counts of unprocessed RNAs.
+	"""
+	transcription = sim_data.process.transcription
+	rna_data = transcription.rna_data
+	unprocessed_rna_ids = rna_data['id'][rna_data['is_unprocessed']]
+
+	# Skip if there are no unprocessed RNAs represented
+	if len(unprocessed_rna_ids) == 0:
+		return
+
+	mature_rna_ids = transcription.mature_rna_data['id']
+	maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
+
+	# Get counts of unprocessed RNAs
+	unprocessed_rna_counts = bulkMolCntr.countsView(unprocessed_rna_ids).counts()
+
+	# Assume all unprocessed RNAs are converted to mature RNAs
+	bulkMolCntr.countsIs(0, unprocessed_rna_ids)
+	bulkMolCntr.countsInc(
+		maturation_stoich_matrix.dot(unprocessed_rna_counts), mature_rna_ids)
+
 
 # TODO: remove checks for zero concentrations (change to assertion)
 # TODO: move any rescaling logic to KB/fitting

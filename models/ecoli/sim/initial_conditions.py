@@ -67,7 +67,7 @@ def initialize_trna_charging(sim_data, states, variable_elongation):
 	aa_from_trna = transcription.aa_from_trna
 	bulk_molecules = states['BulkMolecules'].container
 	synthetases = bulk_molecules.countsView(transcription.synthetase_names)
-	uncharged_trna = bulk_molecules.countsView(transcription.rna_data['id'][transcription.rna_data['is_tRNA']])
+	uncharged_trna = bulk_molecules.countsView(transcription.uncharged_trna_names)
 	charged_trna = bulk_molecules.countsView(transcription.charged_trna_names)
 	aas = bulk_molecules.countsView(sim_data.molecule_groups.amino_acids)
 	ribosome_counts = states['UniqueMolecules'].container.counts(['active_ribosome'])

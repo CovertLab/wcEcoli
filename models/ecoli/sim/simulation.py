@@ -11,6 +11,7 @@ from wholecell.states.local_environment import LocalEnvironment
 from models.ecoli.processes.complexation import Complexation
 from models.ecoli.processes.metabolism import Metabolism
 from models.ecoli.processes.rna_degradation import RnaDegradation
+from models.ecoli.processes.rna_maturation import RnaMaturation
 from models.ecoli.processes.cell_division import CellDivision
 from models.ecoli.processes.chromosome_replication import ChromosomeReplication
 from models.ecoli.processes.chromosome_structure import ChromosomeStructure
@@ -76,6 +77,7 @@ class EcoliSimulation(Simulation):
 			ChromosomeReplication,
 			ProteinDegradation,
 			RnaDegradation,
+			RnaMaturation,
 			Complexation,
 		),
 		(

@@ -899,6 +899,16 @@ class Transcription(object):
 		rna_exp, res = fast_nnls(self.cistron_tu_mapping_matrix, cistron_expression)
 		return rna_exp, res
 
+	def fit_trna_expression(self, tRNA_cistron_expression):
+		"""
+		Calculates the expression of tRNA transcription units that best fits the
+		given expression levels of tRNA cistrons using nonnegative least
+		squares.
+		"""
+		tRNA_exp, res = fast_nnls(
+			self.tRNA_cistron_tu_mapping_matrix, tRNA_cistron_expression)
+		return tRNA_exp, res
+
 	def _get_relative_coordinates(self, coordinates):
 		"""
 		Returns the genomic coordinates of a given gene coordinate relative
@@ -993,6 +1003,12 @@ class Transcription(object):
 		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
 			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
 
+		# Get mapping matrix between tRNA cistrons and TUs
+		tRNA_indexes = np.where(self.rna_data['is_tRNA'])[0]
+		tRNA_cistron_indexes = np.where(self.cistron_data['is_tRNA'])[0]
+		self.tRNA_cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix[
+			:, tRNA_indexes][tRNA_cistron_indexes, :]
+
 		# Get RNA nucleotide compositions of unprocessed and processed RNAs
 		unprocessed_rna_nt_counts = self.rna_data['counts_ACGU'][
 			unprocessed_rna_indexes].asNumber(units.nt)
@@ -1002,11 +1018,12 @@ class Transcription(object):
 		ntp_abbreviations = [
 			ntp_id[0] for ntp_id in sim_data.molecule_groups.ntps]
 
-		mature_rna_nt_counts = []
+		mature_rna_nt_counts = np.zeros((0, 4))
 		for seq in mature_rna_seqs:
-			mature_rna_nt_counts.append(
-				[seq.count(letter) for letter in ntp_abbreviations])
-		mature_rna_nt_counts = np.array(mature_rna_nt_counts)
+			mature_rna_nt_counts = np.vstack((
+				mature_rna_nt_counts,
+				np.array([seq.count(letter) for letter in ntp_abbreviations])
+				))
 
 		# Calculate number of nucleotides that are degraded as part of the
 		# maturation process for each unprocessed RNA
@@ -1037,8 +1054,11 @@ class Transcription(object):
 		is_16S_rRNA = self.cistron_data['is_16S_rRNA'][mature_rna_cistron_indexes]
 		is_5S_rRNA = self.cistron_data['is_5S_rRNA'][mature_rna_cistron_indexes]
 
-		max_rna_id_length = max(
-			len(id_) for id_ in mature_rna_ids_with_compartments)
+		if n_mature_rnas > 0:
+			max_rna_id_length = max(
+				len(id_) for id_ in mature_rna_ids_with_compartments)
+		else:
+			max_rna_id_length = 1
 
 		mature_rna_data = np.zeros(
 			n_mature_rnas,
@@ -1134,13 +1154,13 @@ class Transcription(object):
 			data structures would be more appropriate there.
 		'''
 		# Create list of charged tRNAs
-		trna_names = np.concatenate((
-			self.rna_data['id'][self.rna_data['is_tRNA'] & ~self.rna_data['is_unprocessed']],
-			self.mature_rna_data['id'][self.mature_rna_data['is_tRNA']]
-			))
+		uncharged_trna_names = [
+			x + '[c]' for x
+			in self.cistron_data['id'][self.cistron_data['is_tRNA']]]
 
 		charged_trnas = [
-			x['modified_forms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
+			x['modified_forms'] for x in raw_data.rnas
+			if x['id'] + '[c]' in uncharged_trna_names]
 
 		filtered_charged_trna = []
 		for charged_list in charged_trnas:
@@ -1152,8 +1172,9 @@ class Transcription(object):
 				assert('c' in sim_data.getter.get_compartment(trna))
 				filtered_charged_trna += [trna + '[c]']
 
+		self.uncharged_trna_names = uncharged_trna_names
 		self.charged_trna_names = filtered_charged_trna
-		assert(len(self.charged_trna_names) == len(trna_names))
+		assert(len(self.charged_trna_names) == len(self.uncharged_trna_names))
 
 		# Create mapping of each tRNA/charged tRNA to associated AA
 		trna_dict = {
@@ -1167,9 +1188,9 @@ class Transcription(object):
 			}
 		aa_names = sim_data.molecule_groups.amino_acids
 		aa_indices = {aa: i for i, aa in enumerate(aa_names)}
-		trna_indices = {trna: i for i, trna in enumerate(trna_names)}
-		self.aa_from_trna = np.zeros((len(aa_names), len(trna_names)))
-		for trna in trna_names:
+		trna_indices = {trna: i for i, trna in enumerate(self.uncharged_trna_names)}
+		self.aa_from_trna = np.zeros((len(aa_names), len(self.uncharged_trna_names)))
+		for trna in self.uncharged_trna_names:
 			aa = trna[:3].upper()
 			if aa == 'ALA':
 				aa = 'L-ALPHA-ALANINE'
@@ -1207,7 +1228,7 @@ class Transcription(object):
 			# Get uncharged tRNA name for the given reaction
 			trna = None
 			for mol_id in reaction['stoichiometry'].keys():
-				if f'{mol_id}[c]' in trna_names:
+				if f'{mol_id}[c]' in self.uncharged_trna_names:
 					trna = f'{mol_id}[c]'
 					break
 
@@ -1383,11 +1404,11 @@ class Transcription(object):
 		TODO:
 			Calculate estimated charged tRNA concentration to use instead of all tRNA
 		"""
-
 		def get_trna_conc(condition):
 			spec = cell_specs[condition]
-			uncharged_trna_ids = self.rna_data['id'][self.rna_data['is_tRNA']]
-			counts = spec['bulkAverageContainer'].counts(uncharged_trna_ids)
+			unprocessed_trna_ids = self.rna_data['id'][self.rna_data['is_tRNA']]
+			unprocessed_counts = spec['bulkAverageContainer'].counts(unprocessed_trna_ids)
+			counts = self.tRNA_cistron_tu_mapping_matrix.dot(unprocessed_counts)
 			volume = (spec['avgCellDryMassInit'] / sim_data.constants.cell_density
 				/ sim_data.mass.cell_dry_mass_fraction)
 			# Order of operations for conc (counts last) is to get units to work well
@@ -1730,7 +1751,9 @@ class Transcription(object):
 		self.exp_ppgpp /= self.exp_ppgpp.sum()
 
 	def set_ppgpp_kinetics_parameters(self, init_container, constants):
-		trna_counts = self.aa_from_trna @ init_container.counts(self.rna_data['id'][self.rna_data['is_tRNA']])
+		unprocessed_trna_counts = init_container.counts(
+			self.rna_data['id'][self.rna_data['is_tRNA']])
+		trna_counts = self.aa_from_trna @ self.tRNA_cistron_tu_mapping_matrix.dot(unprocessed_trna_counts)
 		trna_ratio = trna_counts / trna_counts.sum()
 		adjustment_fraction = trna_ratio / trna_ratio.mean()
 
