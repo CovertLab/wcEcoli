@@ -29,7 +29,7 @@ class Complexation(object):
 		self.ids_reactions = []
 		self.reaction_stoichiometry_unknown = []
 		reaction_index = 0
-		rnas_with_singleton_tus = sim_data.getter.get_all_rnas_with_singleton_tus()
+		miscrnas_with_singleton_tus = sim_data.getter.get_miscrnas_with_singleton_tus()
 
 		# Build stoichiometric matrix from given complexation reactions
 		for reaction in raw_data.complexation_reactions:
@@ -37,8 +37,8 @@ class Complexation(object):
 			stoichiometry_unknown = False
 
 			for mol_id, coeff in reaction["stoichiometry"].items():
-				# Replace RNA subunit IDs with TU IDs
-				if mol_id in rnas_with_singleton_tus:
+				# Replace miscRNA subunit IDs with TU IDs
+				if mol_id in miscrnas_with_singleton_tus:
 					mol_id = sim_data.getter.get_singleton_tu_id(mol_id)
 
 				mol_id_with_compartment = "{}[{}]".format(
