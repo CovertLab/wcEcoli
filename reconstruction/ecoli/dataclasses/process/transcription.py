@@ -42,6 +42,7 @@ class Transcription(object):
 		self._build_oric_terc_coordinates(raw_data, sim_data)
 		self._build_cistron_data(raw_data, sim_data)
 		self._build_rna_data(raw_data, sim_data)
+		self._build_mature_rna_data(raw_data, sim_data)
 		self._build_transcription(raw_data, sim_data)
 		self._build_charged_trna(raw_data, sim_data)
 		self._build_attenuation(raw_data, sim_data)
@@ -441,14 +442,6 @@ class Transcription(object):
 			if sim_data.getter.is_valid_molecule(tu['id'])
 			]
 
-		# Compile IDs of all RNAs used by the model, including monocistronic
-		# transcription units represented with cistron IDs
-		rna_ids = [
-			cistron_id for cistron_id in self.cistron_data['id']
-			if sim_data.getter.is_valid_molecule(cistron_id)]
-		rna_ids.extend([tu['id'] for tu in all_valid_tus])
-		n_rnas = len(rna_ids)
-
 		# Get mapping from transcription unit IDs to list of constituent
 		# cistrons
 		gene_id_to_rna_id = {
@@ -461,6 +454,22 @@ class Transcription(object):
 				]
 			for tu in all_valid_tus
 			}
+
+		# Get list of cistrons that are covered by one or more TUs
+		cistrons_covered_by_tus = []
+		for cistrons in tu_id_to_cistron_ids.values():
+			cistrons_covered_by_tus.extend(cistrons)
+		cistrons_covered_by_tus = set(cistrons_covered_by_tus)
+
+		# Compile IDs of all RNAs that should be directly transcribed in the
+		# model, including RNAs for genes that are not covered by any
+		# transcription units
+		rna_ids = [tu['id'] for tu in all_valid_tus]
+		rna_ids.extend([
+			cistron_id for cistron_id in self.cistron_data['id']
+			if sim_data.getter.is_valid_molecule(cistron_id)
+			and cistron_id not in cistrons_covered_by_tus])
+		n_rnas = len(rna_ids)
 
 		# Build mapping matrix between transcription units and constituent
 		# cistrons
@@ -581,6 +590,13 @@ class Transcription(object):
 		assert np.all(is_mRNA | is_miscRNA | is_rRNA | is_tRNA)
 		assert is_mRNA.sum() + is_miscRNA.sum() + is_rRNA.sum() + is_tRNA.sum() == n_rnas
 
+		# Determine if RNA is an unprocessed rRNA/tRNA molecule
+		rtRNA_cistron_ids = set(
+			self.cistron_data['id'][self.cistron_data['is_tRNA'] | self.cistron_data['is_rRNA']])
+		is_mature_rtRNA = np.array([
+			rna_id in rtRNA_cistron_ids for rna_id in rna_ids])
+		is_unprocessed = (is_tRNA | is_rRNA) & ~is_mature_rtRNA
+
 		# Determine if each RNA contains cistrons that encode for special
 		# components
 		is_23S_rRNA = (
@@ -666,6 +682,9 @@ class Transcription(object):
 		# degradation rate
 		max_mRNA_deg_rate = mRNA_cistron_deg_rates.max()
 		rna_deg_rates[np.logical_and(is_mRNA, rna_deg_rates > max_mRNA_deg_rate)] = max_mRNA_deg_rate
+
+		# Set degradation rates of rRNAs and tRNAs to that of stable RNAs
+		rna_deg_rates[np.logical_or(is_rRNA, is_tRNA)] = np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s)
 
 		# Calculate synthesis probabilities from expression and normalize
 		synth_prob = expression*(
@@ -793,6 +812,7 @@ class Transcription(object):
 				('is_miscRNA', 'bool'),
 				('is_rRNA', 'bool'),
 				('is_tRNA', 'bool'),
+				('is_unprocessed', 'bool'),
 				('is_23S_rRNA', 'bool'),
 				('is_16S_rRNA', 'bool'),
 				('is_5S_rRNA', 'bool'),
@@ -814,6 +834,7 @@ class Transcription(object):
 		rna_data['is_miscRNA'] = is_miscRNA
 		rna_data['is_rRNA'] = is_rRNA
 		rna_data['is_tRNA'] = is_tRNA
+		rna_data['is_unprocessed'] = is_unprocessed
 		rna_data['is_23S_rRNA'] = is_23S_rRNA
 		rna_data['is_16S_rRNA'] = is_16S_rRNA
 		rna_data['is_5S_rRNA'] = is_5S_rRNA
@@ -834,6 +855,7 @@ class Transcription(object):
 			'is_miscRNA': None,
 			'is_rRNA': None,
 			'is_tRNA': None,
+			'is_unprocessed': None,
 			'is_23S_rRNA': None,
 			'is_16S_rRNA': None,
 			'is_5S_rRNA': None,
@@ -951,6 +973,118 @@ class Transcription(object):
 		# Keep record of cistrons whose expression was corrected
 		self.cistron_data['uses_corrected_seq_counts'][np.array(corrected_indexes)] = True
 
+	def _build_mature_rna_data(self, raw_data, sim_data):
+		"""
+		Build mature RNA-associated simulation data from raw data.
+		"""
+		unprocessed_rna_indexes = np.where(self.rna_data['is_unprocessed'])[0]
+
+		# Get IDs of all mature RNAs that are derived from unprocessed RNAs
+		mature_rna_cistron_indexes = np.unique(
+			self.cistron_tu_mapping_matrix[:, unprocessed_rna_indexes].nonzero()[0])
+		mature_rna_ids = self.cistron_data['id'][mature_rna_cistron_indexes]
+		n_mature_rnas = len(mature_rna_ids)
+		compartments = sim_data.getter.get_compartments(mature_rna_ids)
+		mature_rna_ids_with_compartments = [
+			f'{rna_id}[{loc[0]}]' for (rna_id, loc)
+			in zip(mature_rna_ids, compartments)]
+
+		# Get stoichiometric matrix for RNA maturation process
+		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
+			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
+
+		# Get RNA nucleotide compositions of unprocessed and processed RNAs
+		unprocessed_rna_nt_counts = self.rna_data['counts_ACGU'][
+			unprocessed_rna_indexes].asNumber(units.nt)
+
+		mature_rna_seqs = sim_data.getter.get_sequences(mature_rna_ids)
+		lengths = np.array([len(seq) for seq in mature_rna_seqs])
+		ntp_abbreviations = [
+			ntp_id[0] for ntp_id in sim_data.molecule_groups.ntps]
+
+		mature_rna_nt_counts = []
+		for seq in mature_rna_seqs:
+			mature_rna_nt_counts.append(
+				[seq.count(letter) for letter in ntp_abbreviations])
+		mature_rna_nt_counts = np.array(mature_rna_nt_counts)
+
+		# Calculate number of nucleotides that are degraded as part of the
+		# maturation process for each unprocessed RNA
+		degraded_nt_counts = unprocessed_rna_nt_counts.copy()
+		rows, cols = self.rna_maturation_stoich_matrix.nonzero()
+
+		for i, j in zip(rows, cols):
+			degraded_nt_counts[j, :] -= mature_rna_nt_counts[i, :]
+
+		assert np.all(degraded_nt_counts >= 0)
+		self.rna_maturation_degraded_nt_counts = degraded_nt_counts
+
+		# Set degradation rates to that of stable RNAs
+		rna_deg_rates = np.full(
+			n_mature_rnas,
+			np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s))
+
+		# Calculate EndoRNase Km values
+		Km = (KCAT_ENDO_RNASE * ESTIMATE_ENDO_RNASES / rna_deg_rates)
+
+		# Get MWs of mature RNA molecules
+		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
+
+		# Get identities of each stable RNA
+		is_rRNA = self.cistron_data['is_rRNA'][mature_rna_cistron_indexes]
+		is_tRNA = self.cistron_data['is_tRNA'][mature_rna_cistron_indexes]
+		is_23S_rRNA = self.cistron_data['is_23S_rRNA'][mature_rna_cistron_indexes]
+		is_16S_rRNA = self.cistron_data['is_16S_rRNA'][mature_rna_cistron_indexes]
+		is_5S_rRNA = self.cistron_data['is_5S_rRNA'][mature_rna_cistron_indexes]
+
+		max_rna_id_length = max(
+			len(id_) for id_ in mature_rna_ids_with_compartments)
+
+		mature_rna_data = np.zeros(
+			n_mature_rnas,
+			dtype=[
+				('id', 'U{}'.format(max_rna_id_length)),
+				('deg_rate', 'f8'),
+				('length', 'i8'),
+				('counts_ACGU', '4i8'),
+				('mw', 'f8'),
+				('Km_endoRNase', 'f8'),
+				('is_rRNA', 'bool'),
+				('is_tRNA', 'bool'),
+				('is_23S_rRNA', 'bool'),
+				('is_16S_rRNA', 'bool'),
+				('is_5S_rRNA', 'bool'),
+				]
+			)
+
+		mature_rna_data['id'] = mature_rna_ids_with_compartments
+		mature_rna_data['deg_rate'] = rna_deg_rates
+		mature_rna_data['length'] = lengths
+		mature_rna_data['counts_ACGU'] = mature_rna_nt_counts
+		mature_rna_data['mw'] = mws
+		mature_rna_data['Km_endoRNase'] = Km
+		mature_rna_data['is_rRNA'] = is_rRNA
+		mature_rna_data['is_tRNA'] = is_tRNA
+		mature_rna_data['is_23S_rRNA'] = is_23S_rRNA
+		mature_rna_data['is_16S_rRNA'] = is_16S_rRNA
+		mature_rna_data['is_5S_rRNA'] = is_5S_rRNA
+
+		field_units = {
+			'id': None,
+			'deg_rate': 1 / units.s,
+			'length': units.nt,
+			'counts_ACGU': units.nt,
+			'mw': units.g / units.mol,
+			'Km_endoRNase': units.mol / units.L,
+			'is_rRNA': None,
+			'is_tRNA': None,
+			'is_23S_rRNA': None,
+			'is_16S_rRNA': None,
+			'is_5S_rRNA': None,
+			}
+
+		self.mature_rna_data = UnitStructArray(mature_rna_data, field_units)
+
 	def _build_transcription(self, raw_data, sim_data):
 		"""
 		Build transcription-associated simulation data from raw data.
@@ -1000,8 +1134,11 @@ class Transcription(object):
 			data structures would be more appropriate there.
 		'''
 		# Create list of charged tRNAs
-		# TODO (ggsun): This assumes all tRNAs are monocistronic.
-		trna_names = self.rna_data['id'][self.rna_data['is_tRNA']]
+		trna_names = np.concatenate((
+			self.rna_data['id'][self.rna_data['is_tRNA'] & ~self.rna_data['is_unprocessed']],
+			self.mature_rna_data['id'][self.mature_rna_data['is_tRNA']]
+			))
+
 		charged_trnas = [
 			x['modified_forms'] for x in raw_data.rnas if x['id'] + '[c]' in trna_names]
 
