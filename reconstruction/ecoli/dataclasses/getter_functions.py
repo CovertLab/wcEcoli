@@ -149,6 +149,26 @@ class GetterFunctions(object):
 		assert isinstance(site_id, str)
 		return self._all_genomic_coordinates[site_id]
 
+	def get_miscrnas_with_singleton_tus(self):
+		# type: () -> list
+		"""
+		Returns a list of all miscRNA IDs with corresponding single-gene
+		transcription units.
+		"""
+		return sorted(self._miscrna_id_to_singleton_tu_id.keys())
+
+	def get_singleton_tu_id(self, rna_id):
+		# type: (str) -> (str)
+		"""
+		Returns the ID of the single-gene transcription unit corresponding to
+		the given miscRNA ID, if such a transcription unit exists. This is
+		necessary to replace some references to miscRNA IDs in complexation or
+		equilibrium reactions with their corresponding TU IDs, which are the
+		molecules that are actually transcribed.
+		"""
+		assert isinstance(rna_id, str)
+		return self._miscrna_id_to_singleton_tu_id[rna_id]
+
 	def _build_sequences(self, raw_data):
 		"""
 		Builds sequences of RNAs and proteins.
@@ -207,9 +227,13 @@ class GetterFunctions(object):
 		gene_id_to_right_end_pos = {
 			gene['id']: gene['right_end_pos'] for gene in raw_data.genes
 			}
+		gene_id_to_rna_id = {
+			gene['id']: gene['rna_ids'][0] for gene in raw_data.genes
+			}
 		gene_id_to_direction = {
 			gene['id']: gene['direction'] for gene in raw_data.genes
 			}
+		self._miscrna_id_to_singleton_tu_id = {}
 
 		for i, tu in enumerate(raw_data.transcription_units):
 			# Get list of genes in TU after excluding invalid genes
@@ -245,6 +269,10 @@ class GetterFunctions(object):
 
 			# Keep track of genes that are covered
 			covered_gene_ids |= set(tu['genes'])
+
+			# Add mapping from miscRNA IDs to single-gene TU IDs
+			if len(gene_tuple) == 1 and gene_id_to_rna_type[gene_tuple[0]] == 'miscRNA':
+				self._miscrna_id_to_singleton_tu_id[gene_id_to_rna_id[gene_tuple[0]]] = tu['id']
 
 			self._sequences[tu['id']] = parse_sequence(
 				tu['id'], tu['left_end_pos'], tu['right_end_pos'], tu['direction'])
@@ -552,6 +580,10 @@ class GetterFunctions(object):
 			subunit_stoich = {}
 
 			for mol_id, coeff in rxn['stoichiometry'].items():
+				# Replace miscRNA subunit IDs with TU IDs
+				if mol_id in self._miscrna_id_to_singleton_tu_id:
+					mol_id = self.get_singleton_tu_id(mol_id)
+
 				# Assume coefficients given as "null" equate to -1
 				if coeff is None:
 					coeff = -1
@@ -807,6 +839,10 @@ class GetterFunctions(object):
 			subunit_ids = []
 
 			for mol_id, coeff in rxn['stoichiometry'].items():
+				# Replace miscRNA subunit IDs with TU IDs
+				if mol_id in self._miscrna_id_to_singleton_tu_id:
+					mol_id = self.get_singleton_tu_id(mol_id)
+
 				if coeff is None:
 					coeff = -1
 
