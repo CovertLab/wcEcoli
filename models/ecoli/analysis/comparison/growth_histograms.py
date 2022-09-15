@@ -41,7 +41,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		rnap_id = sim_data.molecule_ids.full_RNAP
 		aa_ids = sim_data.molecule_groups.amino_acids
 		ribosome_subunit_ids = [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex]
-		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
+		uncharged_trna_names = transcription.uncharged_trna_names
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
 		cistron_data = transcription.cistron_data

@@ -118,8 +118,7 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list)
 		tf_ids = sim_data.process.transcription_regulation.tf_ids
 		indexes["TranscriptionFactors"] = build_index_dict(tf_ids)
 
-		rna_ids = sim_data.process.transcription.rna_data["id"]
-		trna_ids = rna_ids[sim_data.process.transcription.rna_data['is_tRNA']]
+		trna_ids = sim_data.process.transcription.uncharged_trna_names
 		indexes["Charging"] = build_index_dict(trna_ids)
 
 		# Cache cell volume array (used for calculating concentrations)

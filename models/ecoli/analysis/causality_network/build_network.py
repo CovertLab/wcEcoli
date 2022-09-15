@@ -670,7 +670,7 @@ class BuildNetwork(object):
 		# Add specific charging reactions
 		# TODO (Travis): add charged/uncharged tRNA as RNA not metabolites?
 		transcription = self.sim_data.process.transcription
-		uncharged_trnas = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
+		uncharged_trnas = transcription.uncharged_trna_names
 		charging_stoich = transcription.charging_stoich_matrix().T
 		charging_molecules = np.array(transcription.charging_molecules)
 		synthetases = np.array(transcription.synthetase_names)

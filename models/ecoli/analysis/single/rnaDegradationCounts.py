@@ -33,7 +33,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			simOutDir, (RnaseIds, exoRnaseIds, endoRnaseIds, ntp_ids))
 
 		rnaDegradationListenerFile = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
-		countRnaDegraded = rnaDegradationListenerFile.readColumn('countRnaDegraded')
+		count_RNA_degraded = rnaDegradationListenerFile.readColumn('count_RNA_degraded')
 		FractionActiveEndoRNases = rnaDegradationListenerFile.readColumn('FractionActiveEndoRNases')
 		DiffRelativeFirstOrderDecay = rnaDegradationListenerFile.readColumn('DiffRelativeFirstOrderDecay')
 		fragmentBasesDigested = rnaDegradationListenerFile.readColumn('fragmentBasesDigested')
@@ -69,7 +69,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 		ax = plt.subplot(n_rows, n_cols, 3)
-		plt.plot(time / 60., countRnaDegraded.sum(axis = 1))
+		plt.plot(time / 60., count_RNA_degraded.sum(axis = 1))
 		plt.ylabel("RNAs degraded", fontsize = 9)
 		yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 

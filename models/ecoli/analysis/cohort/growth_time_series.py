@@ -155,7 +155,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rnap_id = sim_data.molecule_ids.full_RNAP
 		aa_ids = sim_data.molecule_groups.amino_acids
 		ribosome_subunit_ids = [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex]
-		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
+		uncharged_trna_names = transcription.uncharged_trna_names
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
 		cistron_data = transcription.cistron_data
@@ -170,10 +170,27 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for fraction in rna_fractions
 			]).T
 		aa_mw = np.array([sim_data.getter.get_mass(aa[:-3]).asNumber(units.fg / units.count) for aa in aa_ids])
-		rna_mw = transcription.rna_data['mw'].asNumber(units.fg / units.count)
-		is_mrna = transcription.rna_data['is_mRNA']
-		is_rrna = transcription.rna_data['is_rRNA']
-		is_trna = transcription.rna_data['is_tRNA']
+		n_transcribed_rnas = len(transcription.rna_data)
+		rna_mw = np.concatenate((
+			transcription.rna_data['mw'].asNumber(units.fg / units.count),
+			transcription.mature_rna_data['mw'].asNumber(units.fg / units.count)
+			))
+		rna_mw_synth = rna_mw[:n_transcribed_rnas]
+		is_mrna = np.concatenate((
+			transcription.rna_data['is_mRNA'],
+			np.zeros(len(transcription.mature_rna_data), dtype=np.bool)
+			))
+		is_mrna_synth = is_mrna[:n_transcribed_rnas]
+		is_rrna = np.concatenate((
+			transcription.rna_data['is_rRNA'],
+			transcription.mature_rna_data['is_rRNA']
+			))
+		is_rrna_synth = is_rrna[:n_transcribed_rnas]
+		is_trna = np.concatenate((
+			transcription.rna_data['is_tRNA'],
+			transcription.mature_rna_data['is_tRNA']
+			))
+		is_trna_synth = is_trna[:n_transcribed_rnas]
 
 		cell_paths = self.ap.get_cells(only_successful=True)
 
@@ -185,8 +202,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load data
 		growth_function = lambda x: np.diff(x, axis=0) / x[:-1]
-		def reduce_rna(mask):
+		def reduce_rna_degradation(mask):
 			return lambda x: (x[:, mask] @ rna_mw[mask]).reshape(-1, 1)
+		def reduce_rna_synthesis(mask):
+			return lambda x: (x[:, mask] @ rna_mw_synth[mask]).reshape(-1, 1)
 		axis_sum = lambda x: x.sum(1).reshape(-1, 1)
 		time = read_stacked_columns(cell_paths, 'Main', 'time',
 			remove_first=True).squeeze() / 60
@@ -206,14 +225,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rrna_mass = read_stacked_columns(cell_paths, 'Mass', 'rRnaMass', remove_first=True).squeeze()
 		trna_mass = read_stacked_columns(cell_paths, 'Mass', 'tRnaMass', remove_first=True).squeeze()
 		cell_mass = read_stacked_columns(cell_paths, 'Mass', 'cellMass', remove_first=True).squeeze()
-		rna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=reduce_rna(slice(None))).squeeze()
-		mrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=reduce_rna(is_mrna)).squeeze()
-		rrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=reduce_rna(is_rrna)).squeeze()
-		trna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'countRnaDegraded',
-			remove_first=True, fun=reduce_rna(is_trna)).squeeze()
+		rna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'count_RNA_degraded',
+			remove_first=True, fun=reduce_rna_degradation(slice(None))).squeeze()
+		mrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'count_RNA_degraded',
+			remove_first=True, fun=reduce_rna_degradation(is_mrna)).squeeze()
+		rrna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'count_RNA_degraded',
+			remove_first=True, fun=reduce_rna_degradation(is_rrna)).squeeze()
+		trna_deg_mass = read_stacked_columns(cell_paths, 'RnaDegradationListener', 'count_RNA_degraded',
+			remove_first=True, fun=reduce_rna_degradation(is_trna)).squeeze()
 		ribosome_elong_rate = read_stacked_columns(cell_paths, 'RibosomeData', 'effectiveElongationRate',
 			remove_first=True).squeeze()
 		rnap_elongations = read_stacked_columns(cell_paths, 'RnapData', 'actualElongations',
@@ -233,13 +252,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		excess, synth_fractions, _ = calculate_ribosome_excesses(sim_data, cell_paths)
 		mrna_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
 		rna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
-			remove_first=True, fun=reduce_rna(slice(None)))
+			remove_first=True, fun=reduce_rna_synthesis(slice(None)))
 		mrna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
-			remove_first=True, fun=reduce_rna(is_mrna))
+			remove_first=True, fun=reduce_rna_synthesis(is_mrna_synth))
 		rrna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
-			remove_first=True, fun=reduce_rna(is_rrna))
+			remove_first=True, fun=reduce_rna_synthesis(is_rrna_synth))
 		trna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
-			remove_first=True, fun=reduce_rna(is_trna))
+			remove_first=True, fun=reduce_rna_synthesis(is_trna_synth))
 
 		# Derived quantities
 		counts_to_molar_squeezed = counts_to_molar.squeeze()

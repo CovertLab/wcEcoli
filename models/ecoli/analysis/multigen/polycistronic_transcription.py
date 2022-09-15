@@ -19,10 +19,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		if metadata['operons'] == 'off':
-			print('Skipping analysis - no operons used in this sim')
-			return
-
 		cell_paths = self.ap.get_cells()
 
 		simOutDir = os.path.join(cell_paths[0], "simOut")
@@ -31,6 +27,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
 		monomer_counts_reader = TableReader(os.path.join(simOutDir, 'MonomerCounts'))
 		all_monomer_ids = monomer_counts_reader.readAttribute('monomerIds')
+
+		if TU_ID not in mRNA_ids:
+			print('Skipping analysis - given transcription unit is used in this sim')
+			return
 
 		# Get indexes of cistrons that constitute the TU
 		tu_index = mRNA_ids.index(TU_ID)
