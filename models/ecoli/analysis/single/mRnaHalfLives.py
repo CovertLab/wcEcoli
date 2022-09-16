@@ -23,9 +23,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get the expected degradation rates from KB
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
+		is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
 		expected_degradation_rate_constants = np.array(
-			sim_data.process.transcription.rna_data['deg_rate'][isMRna].asNumber()
+			sim_data.process.transcription.rna_data['deg_rate'][is_mRNA].asNumber()
 			)
 
 		# Get length of simulation
@@ -40,8 +40,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Read number of degradation events
 		rna_degradation_reader = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
-		n_RNA_degraded = rna_degradation_reader.readColumn('countRnaDegraded')
-		n_mRNA_degraded_total = n_RNA_degraded.sum(axis = 0)[isMRna]
+		n_RNA_degraded = rna_degradation_reader.readColumn('count_RNA_degraded')
+		n_mRNA_degraded_total = n_RNA_degraded.sum(axis = 0)[:len(is_mRNA)][is_mRNA]
 
 		# Get mask for RNAs with counts no less than threshold
 		mask = mRNA_counts_mean >= MEAN_RNA_COUNT_THRESHOLD

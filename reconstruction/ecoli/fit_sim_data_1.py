@@ -1192,6 +1192,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	# Load from sim_data
 	n_avogadro = sim_data.constants.n_avogadro
+	cistron_data = sim_data.process.transcription.cistron_data
 	rna_data = sim_data.process.transcription.rna_data
 	get_average_copy_number = sim_data.process.replication.get_average_copy_number
 	rna_mw = rna_data['mw']
@@ -1210,6 +1211,8 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	ids_rRNA16S = ids_rnas[includes_rRNA16S]
 	ids_rRNA5S = ids_rnas[includes_rRNA5S]
 	ids_mRNA = ids_rnas[is_mRNA]
+	ids_tRNA = ids_rnas[is_tRNA]
+	ids_tRNA_cistrons = cistron_data['id'][cistron_data['is_tRNA']]
 
 	## Mass fractions
 	initial_rna_mass = (sim_data.mass.get_component_masses(doubling_time)['rnaMass']
@@ -1251,9 +1254,20 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	distribution_rRNA16S = normalize(n_avg_copy_rRNA16S)
 	distribution_rRNA5S = normalize(n_avg_copy_rRNA5S)
 
-	trna_distribution = sim_data.mass.get_trna_distribution(doubling_time)
-	ids_tRNA = trna_distribution['id']
-	distribution_tRNA = normalize(trna_distribution['molar_ratio_to_16SrRNA'])
+	# Use NNLS to calculate distribution of unprocessed tRNAs that most closely
+	# match the distribution of mature tRNAs
+	tRNA_distribution = sim_data.mass.get_trna_distribution(doubling_time)
+	tRNA_id_to_dist = {
+		trna_id: dist for (trna_id, dist)
+		in zip(tRNA_distribution['id'], tRNA_distribution['molar_ratio_to_16SrRNA'])
+		}
+	distribution_tRNA_cistrons = np.zeros(len(ids_tRNA_cistrons))
+	for i, tRNA_id in enumerate(ids_tRNA_cistrons):
+		distribution_tRNA_cistrons[i] = tRNA_id_to_dist[tRNA_id]
+	distribution_tRNA, _ = sim_data.process.transcription.fit_trna_expression(
+		distribution_tRNA_cistrons)
+	distribution_tRNA = normalize(distribution_tRNA)
+
 	distribution_mRNA = normalize(expression[is_mRNA])
 
 	# Construct bulk container

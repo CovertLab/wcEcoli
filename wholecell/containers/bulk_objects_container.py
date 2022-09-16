@@ -327,7 +327,7 @@ class BulkObjectsContainer(object):
 			retrieval.  Otherwise modifying an output array (e.g. an array
 			return by .counts()) would modify the underlying data.
 		"""
-		return np.array([self._objectIndex[name] for name in names])
+		return np.array([self._objectIndex[name] for name in names], dtype=np.int64)
 
 
 	def __eq__(self, other):

@@ -100,7 +100,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		aa_mws = sim_data.getter.get_masses(aa_ids).asNumber(units.fg / units.count)
 		aa_kis = metabolism.aa_kis * 1000
 		max_elong_rate = translation.basal_elongation_rate
-		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
+		uncharged_trna_names = transcription.uncharged_trna_names
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
 		rna_contains_rprotein = transcription.rna_data['includes_ribosomal_protein'][transcription.rna_data['is_mRNA']]

@@ -295,8 +295,8 @@ class GetterFunctions(object):
 			if gene_id not in valid_gene_ids:
 				continue
 
-			# Skip RNAs that are already covered by transcription units
-			if gene_id in covered_gene_ids:
+			# Skip mRNAs that are already covered by transcription units
+			if gene_id in covered_gene_ids and gene_id_to_rna_type[gene_id] == 'mRNA':
 				continue
 
 			left_end_pos = gene_id_to_left_end_pos[gene_id]
