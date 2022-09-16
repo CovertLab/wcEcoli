@@ -41,6 +41,9 @@ Workflow options:
 		variant. "DEFAULT" runs both "CORE" and "VARIANT" and is selected by default.
 		You can also name specific analysis files but any analysis
 		categories that don't have such a filename will print error messages.
+	EXPORT_ECOCYC_FILES (int, "0"): if nonzero, generate and export files that
+		provide model data to EcoCyc. To use this option, rclone must be
+		configured to interact with a cloud storage service.
 	DISABLE_RIBOSOME_CAPACITY_FITTING (int, "0"): if nonzero, ribosome
 		expression is not fit to protein synthesis demands
 	DISABLE_RNAPOLY_CAPACITY_FITTING (int, "0"): if nonzero, RNA polymerase
@@ -308,6 +311,7 @@ COMPRESS_OUTPUT = bool(int(get_environment("COMPRESS_OUTPUT", "0")))
 SIM_DESCRIPTION = get_environment("DESC", "").replace(" ", "_")
 VERBOSE_QUEUE = bool(int(get_environment("VERBOSE_QUEUE", "1")))
 RUN_AGGREGATE_ANALYSIS = bool(int(get_environment("RUN_AGGREGATE_ANALYSIS", "1")))
+EXPORT_ECOCYC_FILES = bool(int(get_environment("EXPORT_ECOCYC_FILES", "0")))
 PLOTS = get_environment("PLOTS", "").split()
 CACHED_SIM_DATA = bool(int(get_environment("CACHED_SIM_DATA", "0")))
 PARALLEL_PARCA = bool(int(get_environment("PARALLEL_PARCA", "0")))
@@ -619,6 +623,14 @@ class WorkflowBuilder:
 				cpus=analysis_cpus,
 				priority=5)
 
+		# EcoCyc file export
+		fw_ecocyc_file_export = None
+		if EXPORT_ECOCYC_FILES:
+			fw_ecocyc_file_export = self.add_firework(
+				ScriptTask(
+					script="runscripts/ecocyc/export_ecocyc_files.sh " + INDIV_OUT_DIRECTORY),
+				name="ScriptTask_ecocyc_file_export")
+
 		### Create variants and simulations
 		fw_this_variant_sim_data_compression = None
 		fw_this_variant_this_gen_this_sim_compression = None
@@ -676,6 +688,27 @@ class WorkflowBuilder:
 					name=f"AnalysisCohortTask__Var_{i:02d}",
 					cpus=analysis_cpus,
 					priority=4)
+
+			fw_this_variant_ecocyc_analysis = None
+
+			if EXPORT_ECOCYC_FILES:
+				fw_this_variant_ecocyc_analysis = self.add_firework(
+					AnalysisCohortTask(
+						input_variant_directory=VARIANT_DIRECTORY,
+						input_sim_data=os.path.join(VARIANT_SIM_DATA_DIRECTORY,
+													constants.SERIALIZED_SIM_DATA_MODIFIED),
+						input_validation_data=os.path.join(KB_DIRECTORY,
+														   constants.SERIALIZED_VALIDATION_DATA),
+						output_plots_directory=COHORT_PLOT_DIRECTORY,
+						plot='ECOCYC',
+						cpus=16,
+						metadata=md_cohort),
+					name=f"AnalysisCohortTask__EcoCyc__Var_{i:02d}",
+					cpus=16,
+					priority=4)
+
+				self.add_links(fw_this_variant_ecocyc_analysis,
+							   fw_ecocyc_file_export)
 
 			fw_this_variant_this_seed_multigen_analysis = None
 
@@ -783,6 +816,10 @@ class WorkflowBuilder:
 										   fw_this_variant_this_seed_multigen_analysis,
 										   fw_this_variant_cohort_analysis,
 										   fw_variant_analysis)
+
+						if EXPORT_ECOCYC_FILES and k == N_GENS - 1:
+							self.add_links(fw_this_variant_this_gen_this_sim,
+										   fw_this_variant_ecocyc_analysis)
 
 						sims_this_seed[k].append(fw_this_variant_this_gen_this_sim)
 
