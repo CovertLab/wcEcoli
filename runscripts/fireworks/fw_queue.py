@@ -628,7 +628,7 @@ class WorkflowBuilder:
 		if EXPORT_ECOCYC_FILES:
 			fw_ecocyc_file_export = self.add_firework(
 				ScriptTask(
-					script="runscripts/ecocyc/export_ecocyc_files.sh " + INDIV_OUT_DIRECTORY),
+					script=f"bash {os.path.join(filepath.ROOT_PATH, 'runscripts', 'ecocyc', 'export_ecocyc_files.sh')} " + INDIV_OUT_DIRECTORY),
 				name="ScriptTask_ecocyc_file_export")
 
 		### Create variants and simulations
@@ -700,7 +700,7 @@ class WorkflowBuilder:
 						input_validation_data=os.path.join(KB_DIRECTORY,
 														   constants.SERIALIZED_VALIDATION_DATA),
 						output_plots_directory=COHORT_PLOT_DIRECTORY,
-						plot='ECOCYC',
+						plot=['ECOCYC'],
 						cpus=16,
 						metadata=md_cohort),
 					name=f"AnalysisCohortTask__EcoCyc__Var_{i:02d}",
