@@ -382,7 +382,7 @@ class Mass(object):
 		self._trna_growth_rates = growth_rate_unit * np.array([x['growth rate'].asNumber() for x in raw_data.trna_data.trna_growth_rates])
 
 		trna_ratio_to_16SrRNA_by_growth_rate = []
-		for gr in self._trna_growth_rates: # This is a little crazy...
+		for gr in self._trna_growth_rates: # TODO: This is a little crazy...
 			trna_ratio_to_16SrRNA_by_growth_rate.append([x['ratio to 16SrRNA'] for x in getattr(raw_data.trna_data, "trna_ratio_to_16SrRNA_" + str(gr.asNumber()).replace('.','p'))])
 		self._trna_ratio_to_16SrRNA_by_growth_rate = np.array(trna_ratio_to_16SrRNA_by_growth_rate)
 

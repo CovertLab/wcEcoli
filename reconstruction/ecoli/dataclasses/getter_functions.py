@@ -441,12 +441,12 @@ class GetterFunctions(object):
 			tu_rna_types = [
 				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']
 				if rna_id_to_type[gene_id_to_rna_id[gene]] not in EXCLUDED_RNA_TYPES]
-
-			if len(set(tu_rna_types)) > 1:
-				raise ValueError(f'Transcription unit {tu["id"]} includes '
-					f'cistrons that encode for two or more different types of '
-					f'RNAs, which is not supported by this version of the '
-					f'model and thus should be removed.')
+		# TODO(Albert): this is removed
+			#if len(set(tu_rna_types)) > 1:
+		#		raise ValueError(f'Transcription unit {tu["id"]} includes '
+		#			f'cistrons that encode for two or more different types of '
+		#			f'RNAs, which is not supported by this version of the '
+		#			f'model and thus should be removed.')
 
 			rna_id_to_type[tu['id']] = tu_rna_types[0]
 
