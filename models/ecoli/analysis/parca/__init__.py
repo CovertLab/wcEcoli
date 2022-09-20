@@ -19,6 +19,7 @@ ACTIVE = [
 	'mRNA_transcript_table.py',
 	'ppgpp_expression.py',
 	'tf_target.py',
+	'tRNA_cistron_expression.py',
 ]
 
 TAGS = {
