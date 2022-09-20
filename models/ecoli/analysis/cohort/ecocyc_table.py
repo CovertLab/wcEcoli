@@ -144,7 +144,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			]
 
 		save_file(
-			plotOutDir, f'wcm-mrna-data-{media_id}.tsv', columns, values)
+			plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
 
 		# Load tables and attributes for proteins
 		monomer_reader = TableReader(
@@ -209,9 +209,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			ecocyc_metadata['protein_validation_r_squared'] = r ** 2
 
 		save_file(
-			plotOutDir, f'wcm-monomer-data-{media_id}.tsv', columns, values)
+			plotOutDir, f'wcm_monomers_{media_id}.tsv', columns, values)
 
-		metadata_file = os.path.join(plotOutDir, f'wcm-metadata-{media_id}.json')
+		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:
 			print(f'Saving data to {metadata_file}')
 			json.dump(ecocyc_metadata, f, indent=4)
