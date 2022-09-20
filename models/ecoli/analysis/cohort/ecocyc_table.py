@@ -1,15 +1,14 @@
 """
-Generates tables of data to share with EcoCyc for display on the "modeling" tab
-of each gene page.
+Generates tables of data to share with EcoCyc for display on the "modeling" tab.
 
 TODO:
 	other values
 		weighted average for counts (time step weighted and cell cycle progress weighted)
 		max/min
 	other molecules
-		values for complexes?
 		charged/uncharged tRNA
 		rRNA including in ribosomes/complexes
+		fluxes of metabolic reactions
 """
 
 import csv
@@ -22,7 +21,8 @@ from scipy.stats import pearsonr
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from wholecell.analysis.analysis_tools import read_stacked_columns
+from wholecell.analysis.analysis_tools import (read_stacked_bulk_molecules,
+	read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
@@ -34,6 +34,8 @@ MEDIA_NAME_TO_ID = {
 	'minimal': 'MIX0-51',
 	'minimal_minus_oxygen': 'MIX0-51-ANAEROBIC',
 	'minimal_plus_amino_acids': 'MIX0-847',
+	'minimal_acetate': 'minimal_acetate',
+	'minimal_succinate': 'minimal_succinate',
 	}
 
 
@@ -150,6 +152,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
 		monomer_ids = monomer_reader.readAttribute('monomerIds')
+		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
 
 		# Read columns
 		# remove_first=True because countsToMolar is 0 at first time step
@@ -164,7 +167,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_conc_avg = monomer_conc.mean(axis=0)
 		monomer_conc_std = monomer_conc.std(axis=0)
 		monomer_counts_relative_to_total_monomer_counts = monomer_counts_avg / monomer_counts_avg.sum()
-		monomer_mass_avg = monomer_counts_avg * mrna_mw
+		monomer_mass_avg = monomer_counts_avg * monomer_mw
 		monomer_mass_relative_to_total_monomer_mass = monomer_mass_avg / monomer_mass_avg.sum()
 		monomer_mass_relative_to_total_dcw = monomer_mass_avg / dry_masses.mean()
 
@@ -210,6 +213,48 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		save_file(
 			plotOutDir, f'wcm_monomers_{media_id}.tsv', columns, values)
+
+		# Load attributes for complexes
+		complex_ids = sim_data.process.complexation.ids_complexes
+		complex_mw = sim_data.getter.get_masses(complex_ids).asNumber(units.fg / units.count)
+
+		# Read columns
+		# remove_first=True because countsToMolar is 0 at first time step
+		(complex_counts, ) = read_stacked_bulk_molecules(
+			cell_paths, (complex_ids, ), remove_first=True,
+			ignore_exception=True)
+
+		# Calculate derived protein values
+		complex_counts_avg = complex_counts.mean(axis=0)
+		complex_counts_std = complex_counts.std(axis=0)
+		complex_conc = complex_counts * counts_to_molar
+		complex_conc_avg = complex_conc.mean(axis=0)
+		complex_conc_std = complex_conc.std(axis=0)
+		complex_mass_avg = complex_counts_avg * complex_mw
+		complex_mass_relative_to_total_protein_mass = complex_mass_avg / monomer_mass_avg.sum()
+		complex_mass_relative_to_total_dcw = complex_mass_avg / dry_masses.mean()
+
+		# Save complex data in table
+		complex_ecocyc_ids = [complex_id[:-3] for complex_id in complex_ids]  # strip [*]
+
+		columns = {
+			'id': 'Object ID, according to EcoCyc',
+			'complex-count-avg': 'A floating point number',
+			'complex-count-std': 'A floating point number',
+			'complex-concentration-avg': 'A floating point number in mM units',
+			'complex-concentration-std': 'A floating point number in mM units',
+			'relative-complex-mass-to-total-protein-mass': 'A floating point number',
+			'relative-complex-mass-to-total-cell-dry-mass': 'A floating point number',
+			}
+		values = [
+			complex_ecocyc_ids, complex_counts_avg, complex_counts_std,
+			complex_conc_avg, complex_conc_std,
+			complex_mass_relative_to_total_protein_mass,
+			complex_mass_relative_to_total_dcw,
+			]
+
+		save_file(
+			plotOutDir, f'wcm_complexes_{media_id}.tsv', columns, values)
 
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:
