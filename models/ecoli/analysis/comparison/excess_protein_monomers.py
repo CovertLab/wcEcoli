@@ -4,7 +4,6 @@ levels of protein monomers that constitute the same protein complex for sims
 with/without polycistronic operons.
 """
 
-from functools import reduce
 import os
 from typing import Tuple
 

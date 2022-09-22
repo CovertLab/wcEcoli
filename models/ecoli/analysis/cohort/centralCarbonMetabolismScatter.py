@@ -51,28 +51,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			massListener = TableReader(os.path.join(simOutDir, "Mass"))
 			cellMass = massListener.readColumn("cellMass")
 			dryMass = massListener.readColumn("dryMass")
-			massListener.close()
-
 			coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-			reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-			reactionFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("reactionFluxes").T / coefficient).T
-			fbaResults.close()
+			compiled_reaction_ids = fbaResults.readAttribute("compiled_reaction_ids")
+			compiled_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("compiled_reaction_fluxes").T / coefficient).T
 
 			for toyaReaction in toyaReactions:
-				fluxTimeCourse = []
+				fluxTimeCourse = None
 
-				for rxn in reactionIDs:
+				for i, rxn in enumerate(compiled_reaction_ids):
 					if re.findall(toyaReaction, rxn):
-						reverse = 1
-						if re.findall("(reverse)", rxn):
-							reverse = -1
-
-						if len(fluxTimeCourse):
-							fluxTimeCourse += reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
+						if fluxTimeCourse is not None:
+							fluxTimeCourse += compiled_reaction_fluxes[:, i]
 						else:
-							fluxTimeCourse = reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
+							fluxTimeCourse = compiled_reaction_fluxes[:, i]
 
 				if len(fluxTimeCourse):
 					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
