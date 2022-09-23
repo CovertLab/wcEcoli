@@ -8,7 +8,6 @@ TODO:
 	other molecules
 		charged/uncharged tRNA
 		rRNA including in ribosomes/complexes
-		fluxes of metabolic reactions
 """
 
 import csv
@@ -21,6 +20,8 @@ from scipy.stats import pearsonr
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.processes.metabolism import (
+	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS)
 from wholecell.analysis.analysis_tools import (read_stacked_bulk_molecules,
 	read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -255,6 +256,47 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		save_file(
 			plotOutDir, f'wcm_complexes_{media_id}.tsv', columns, values)
+
+		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
+		with open(metadata_file, 'w') as f:
+			print(f'Saving data to {metadata_file}')
+			json.dump(ecocyc_metadata, f, indent=4)
+
+		# Load attributes for metabolic fluxes
+		cell_density = sim_data.constants.cell_density
+		reaction_ids = sim_data.process.metabolism.compiled_reaction_ids
+
+		# Read columns
+		cell_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'cellMass', ignore_exception=True)
+		dry_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'dryMass', ignore_exception=True)
+		conversion_coeffs = (
+			dry_mass / cell_mass
+			* cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
+		)
+
+		# Calculate flux in units of mmol/g DCW/h
+		fluxes = (
+			(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
+			* (read_stacked_columns(cell_paths, 'FBAResults', 'compiled_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
+			).asNumber(units.mmol / units.g / units.h)
+
+		# Calculate derived flux values
+		fluxes_avg = fluxes.mean(axis=0)
+		fluxes_std = fluxes.std(axis=0)
+
+		columns = {
+			'id': 'Object ID, according to EcoCyc',
+			'flux-avg': 'A floating point number in mmol/g DCW/h units',
+			'flux-std': 'A floating point number in mmol/g DCW/h units',
+			}
+		values = [
+			reaction_ids, fluxes_avg, fluxes_std,
+			]
+
+		save_file(
+			plotOutDir, f'wcm_metabolic_reactions_{media_id}.tsv', columns, values)
 
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:

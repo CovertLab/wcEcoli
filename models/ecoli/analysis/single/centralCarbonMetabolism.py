@@ -41,9 +41,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		massListener.close()
 
 		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-		reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-		reactionFluxes = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.array(fbaResults.readColumn("reactionFluxes"))
-		fbaResults.close()
+		reaction_ids = np.array(fbaResults.readAttribute("compiled_reaction_ids"))
+		reactionFluxes = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.array(fbaResults.readColumn("compiled_reaction_fluxes"))
 
 		dryMassFracAverage = np.mean(dryMass / cellMass)
 
@@ -56,7 +55,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		idx = -1
 		for idx, fluxName in enumerate(toya_reactions):
-			reactionTimeCourse = net_flux(fluxName, reactionIDs, reactionFluxes).asNumber(FLUX_UNITS).squeeze()
+			reactionTimeCourse = net_flux(fluxName, reaction_ids, reactionFluxes).asNumber(FLUX_UNITS).squeeze()
 			if reactionTimeCourse[BURN_IN_TIMESTEPS:].any():
 				line_color = WITH_FLUX_COLOR
 			else:
@@ -96,20 +95,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		plt.close("all")
 
 def net_flux(reactionID, reactionIDs, reactionFluxes):
-	fluxTimeCourse = []
+	fluxTimeCourse = None
 
-	for rxn in reactionIDs:
+	for i, rxn in enumerate(reactionIDs):
 		if re.findall(reactionID, rxn):
-			reverse = 1
-			if re.findall("(reverse)", rxn):
-				reverse = -1
-
-			if len(fluxTimeCourse):
-				fluxTimeCourse += reverse * reactionFluxes[:,
-				np.where(reactionIDs == rxn)]
+			if fluxTimeCourse is not None:
+				fluxTimeCourse += reactionFluxes[:, i]
 			else:
-				fluxTimeCourse = reverse * reactionFluxes[:,
-				np.where(reactionIDs == rxn)]
+				fluxTimeCourse = reactionFluxes[:, i]
 
 	return fluxTimeCourse
 
