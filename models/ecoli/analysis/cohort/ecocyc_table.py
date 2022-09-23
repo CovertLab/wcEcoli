@@ -85,9 +85,25 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			os.path.join(cell_paths[0], 'simOut', 'Mass'))
 
 		mRNA_ids = mRNA_reader.readAttribute('mRNA_cistron_ids')
-		mrna_mw = sim_data.getter.get_masses(mRNA_ids).asNumber(units.fg/units.count)
 		mass_unit =	mass_reader.readAttribute('cellDry_units')
 		assert mass_unit == 'fg'
+
+		# Load tables and attributes for tRNAs and rRNAs
+		unique_molecule_counts_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'UniqueMoleculeCounts'))
+
+		uncharged_tRNA_ids = sim_data.process.transcription.uncharged_trna_names
+		charged_tRNA_ids = sim_data.process.transcription.charged_trna_names
+		tRNA_cistron_ids = [tRNA_id[:-3] for tRNA_id in uncharged_tRNA_ids]
+		rRNA_ids = [
+			sim_data.molecule_groups.s30_16s_rRNA[0],
+			sim_data.molecule_groups.s50_23s_rRNA[0],
+			sim_data.molecule_groups.s50_5s_rRNA[0]]
+		rRNA_cistron_ids = [rRNA_id[:-3] for rRNA_id in rRNA_ids]
+		ribosomal_subunit_ids = [
+			sim_data.molecule_ids.s30_full_complex,
+			sim_data.molecule_ids.s50_full_complex]
+		ribosome_index = unique_molecule_counts_reader.readAttribute('uniqueMoleculeIds').index('active_ribosome')
 
 		# Read columns
 		# remove_first=True because countsToMolar is 0 at first time step
@@ -101,6 +117,84 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, 'Mass', 'dryMass',
 			remove_first=True, ignore_exception=True)
 
+		(uncharged_tRNA_counts, charged_tRNA_counts, rRNA_counts, ribosomal_subunit_counts) = read_stacked_bulk_molecules(
+			cell_paths,
+			(uncharged_tRNA_ids, charged_tRNA_ids, rRNA_ids, ribosomal_subunit_ids),
+			remove_first=True, ignore_exception=True)
+		full_ribosome_counts = read_stacked_columns(
+			cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+			remove_first=True, ignore_exception=True)[:, ribosome_index]
+
+		# Add up to total counts of tRNAs and rRNAs
+		tRNA_counts = uncharged_tRNA_counts + charged_tRNA_counts
+		rRNA_counts[:, 0] += ribosomal_subunit_counts[:, 0]
+		rRNA_counts[:, 1:] += ribosomal_subunit_counts[:, 1:]
+		rRNA_counts += full_ribosome_counts[:, None]
+
+		# Concatenate arrays
+		n_mRNA = len(mRNA_ids)
+		n_tRNA = len(tRNA_cistron_ids)
+		n_rRNA = len(rRNA_cistron_ids)
+		rna_ids = np.concatenate((mRNA_ids, tRNA_cistron_ids, rRNA_cistron_ids))
+		rna_counts = np.hstack((mRNA_counts, tRNA_counts, rRNA_counts))
+		rna_mw = sim_data.getter.get_masses(rna_ids).asNumber(units.fg / units.count)
+
+		# Calculate derived RNA values
+		def normalize_within_each_type(values, n_mRNA, n_tRNA, n_rRNA):
+			assert len(values) == n_mRNA + n_tRNA + n_rRNA
+			normalized_values = np.zeros_like(values)
+
+			normalized_values[:n_mRNA] = values[:n_mRNA] / values[:n_mRNA].sum()
+			normalized_values[n_mRNA:(n_mRNA + n_tRNA)] = values[n_mRNA:(n_mRNA + n_tRNA)] / values[n_mRNA:(n_mRNA + n_tRNA)].sum()
+			normalized_values[-n_rRNA:] = values[-n_rRNA:] / values[-n_rRNA:].sum()
+
+			return normalized_values
+
+		rna_counts_avg = rna_counts.mean(axis=0)
+		rna_counts_std = rna_counts.std(axis=0)
+		rna_conc = rna_counts * counts_to_molar
+		rna_conc_avg = rna_conc.mean(axis=0)
+		rna_conc_std = rna_conc.std(axis=0)
+		rna_counts_relative_to_total_rna_counts = rna_counts_avg / rna_counts_avg.sum()
+		rna_counts_relative_to_total_rna_type_counts = normalize_within_each_type(
+			rna_counts_avg, n_mRNA, n_tRNA, n_rRNA)
+		rna_masses_avg = rna_counts_avg * rna_mw
+		rna_masses_relative_to_total_rna_mass = rna_masses_avg / rna_masses_avg.sum()
+		rna_masses_relative_to_total_rna_type_mass = normalize_within_each_type(
+			rna_masses_avg, n_mRNA, n_tRNA, n_rRNA)
+		rna_masses_relative_to_total_dcw = rna_masses_avg / dry_masses.mean()
+
+		# Save RNA data in table
+		cistron_id_to_gene_id = {
+			cistron['id']: cistron['gene_id']
+			for cistron in sim_data.process.transcription.cistron_data
+			}
+		gene_ids = [cistron_id_to_gene_id[x] for x in rna_ids]
+
+		columns = {
+			'id': 'Object ID, according to EcoCyc',
+			'rna-count-avg': 'A floating point number',
+			'rna-count-std': 'A floating point number',
+			'rna-concentration-avg': 'A floating point number in mM units',
+			'rna-concentration-std': 'A floating point number in mM units',
+			'relative-rna-count-to-total-rna-counts': 'A floating point number',
+			'relative-rna-count-to-total-rna-type-counts': 'A floating point number',
+			'relative-rna-mass-to-total-rna-mass': 'A floating point number',
+			'relative-rna-mass-to-total-rna-type-mass': 'A floating point number',
+			'relative-rna-mass-to-total-cell-dry-mass': 'A floating point number',
+			}
+		values = [
+			gene_ids, rna_counts_avg, rna_counts_std, rna_conc_avg,
+			rna_conc_std, rna_counts_relative_to_total_rna_counts,
+			rna_counts_relative_to_total_rna_type_counts,
+			rna_masses_relative_to_total_rna_mass,
+			rna_masses_relative_to_total_rna_type_mass,
+			rna_masses_relative_to_total_dcw,
+			]
+
+		save_file(
+			plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
+
 		# Build dictionary for metadata
 		ecocyc_metadata = {
 			'git_hash': metadata['git_hash'],
@@ -110,44 +204,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'n_cells': len(cell_paths),
 			'n_timesteps': len(counts_to_molar),
 			}
-
-		# Calculate derived mRNA values
-		mRNA_counts_avg = mRNA_counts.mean(axis=0)
-		mRNA_counts_std = mRNA_counts.std(axis=0)
-		mRNA_conc = mRNA_counts * counts_to_molar
-		mRNA_conc_avg = mRNA_conc.mean(axis=0)
-		mRNA_conc_std = mRNA_conc.std(axis=0)
-		mRNA_counts_relative_to_total_mRNA_counts = mRNA_counts_avg / mRNA_counts_avg.sum()
-		mRNA_masses_avg = mRNA_counts_avg * mrna_mw
-		mrna_masses_relative_to_total_mrna_mass = mRNA_masses_avg / mRNA_masses_avg.sum()
-		mrna_masses_relative_to_total_dcw = mRNA_masses_avg / dry_masses.mean()
-
-		# Save RNA data in table
-		cistron_id_to_gene_id = {
-			cistron['id']: cistron['gene_id']
-			for cistron in sim_data.process.transcription.cistron_data
-			}
-		gene_ids = [cistron_id_to_gene_id[x] for x in mRNA_ids]
-
-		columns = {
-			'id': 'Object ID, according to EcoCyc',
-			'rna-count-avg': 'A floating point number',
-			'rna-count-std': 'A floating point number',
-			'rna-concentration-avg': 'A floating point number in mM units',
-			'rna-concentration-std': 'A floating point number in mM units',
-			'relative-rna-count-to-total-rna-counts': 'A floating point number',
-			'relative-rna-mass-to-total-rna-mass': 'A floating point number',
-			'relative-rna-mass-to-total-cell-dry-mass': 'A floating point number',
-			}
-		values = [
-			gene_ids, mRNA_counts_avg, mRNA_counts_std, mRNA_conc_avg,
-			mRNA_conc_std, mRNA_counts_relative_to_total_mRNA_counts,
-			mrna_masses_relative_to_total_mrna_mass,
-			mrna_masses_relative_to_total_dcw,
-			]
-
-		save_file(
-			plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
 
 		# Load tables and attributes for proteins
 		monomer_reader = TableReader(
@@ -256,11 +312,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		save_file(
 			plotOutDir, f'wcm_complexes_{media_id}.tsv', columns, values)
-
-		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
-		with open(metadata_file, 'w') as f:
-			print(f'Saving data to {metadata_file}')
-			json.dump(ecocyc_metadata, f, indent=4)
 
 		# Load attributes for metabolic fluxes
 		cell_density = sim_data.constants.cell_density
