@@ -19,41 +19,40 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Load data from KB
 		sim_data = cPickle.load(open(simDataFile, "rb"))
 
-		if sim_data.constants.endoRNase_cooperation:
-			KmFirstOrderDecay = sim_data.process.rna_decay.Km_first_order_decay
-			KmNonLinearDecay = (sim_data.process.transcription.rna_data['Km_endoRNase'].asNumber())
+		KmFirstOrderDecay = sim_data.process.rna_decay.Km_first_order_decay
+		KmNonLinearDecay = np.concatenate((
+			sim_data.process.transcription.rna_data['Km_endoRNase'].asNumber(),
+			sim_data.process.transcription.mature_rna_data['Km_endoRNase'].asNumber()
+			))
 
-			# Compute deviation
-			Error = np.average(np.abs(KmFirstOrderDecay
-								- KmNonLinearDecay)
-								/ KmFirstOrderDecay
-					* 100)
+		# Compute deviation
+		Error = np.average(np.abs(KmFirstOrderDecay
+							- KmNonLinearDecay)
+							/ KmFirstOrderDecay
+				* 100)
 
-			# Plotting
-			plt.figure(figsize = (6, 12))
+		# Plotting
+		plt.figure(figsize = (6, 12))
 
-			plt.subplot(3,1,1)
-			plt.loglog(KmFirstOrderDecay, KmNonLinearDecay, 'o', markeredgecolor = 'k', markerfacecolor = 'none')
+		plt.subplot(3,1,1)
+		plt.loglog(KmFirstOrderDecay, KmNonLinearDecay, 'o', markeredgecolor = 'k', markerfacecolor = 'none')
 
-			minLine = np.round(1.2 * min((np.log10(KmFirstOrderDecay)).min(), (np.log10(KmNonLinearDecay).min())))
-			plt.loglog([np.power(10, minLine), 1], [np.power(10, minLine), 1], '--r')
+		minLine = np.round(1.2 * min((np.log10(KmFirstOrderDecay)).min(), (np.log10(KmNonLinearDecay).min())))
+		plt.loglog([np.power(10, minLine), 1], [np.power(10, minLine), 1], '--r')
 
-			plt.xlabel("Km First Order Decay (Log10, M)", fontsize = 14)
-			plt.ylabel("Km Non-linear Decay (Log10, M)", fontsize = 14)
-			plt.title("Relative error = %.2f%%" % Error, fontsize = 16)
-			# print(np.corrcoef(KmFirstOrderDecay, KmNonLinearDecay)[0,1])
+		plt.xlabel("Km First Order Decay (Log10, M)", fontsize = 14)
+		plt.ylabel("Km Non-linear Decay (Log10, M)", fontsize = 14)
+		plt.title("Relative error = %.2f%%" % Error, fontsize = 16)
 
+		plt.subplot(3,1,2)
+		GprimeKm = sim_data.process.rna_decay.Km_convergence
+		FprimeKm = np.log10(1 - GprimeKm[GprimeKm < 1])
+		plt.hist(FprimeKm)
 
-		if sim_data.constants.endoRNase_cooperation:
-			plt.subplot(3,1,2)
-			GprimeKm = sim_data.process.rna_decay.Km_convergence
-			FprimeKm = np.log10(1 - GprimeKm[GprimeKm < 1])
-			plt.hist(FprimeKm)
-
-			plt.ylabel("Number of genes", fontsize = 14)
-			plt.xlabel("Log10(1 - g\'(Km))", fontsize = 14)
-			PercentageConvergence = len(GprimeKm[GprimeKm < 1.]) / float(len(GprimeKm)) * 100.
-			plt.title("Convergence of %.0f%% Km\'s" % PercentageConvergence, fontsize = 16)
+		plt.ylabel("Number of genes", fontsize = 14)
+		plt.xlabel("Log10(1 - g\'(Km))", fontsize = 14)
+		PercentageConvergence = len(GprimeKm[GprimeKm < 1.]) / float(len(GprimeKm)) * 100.
+		plt.title("Convergence of %.0f%% Km\'s" % PercentageConvergence, fontsize = 16)
 
 
 		# Sensitivity analysis kcatEndoRNases

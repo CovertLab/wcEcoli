@@ -217,13 +217,10 @@ def basal_specs(sim_data, cell_specs,
 	# TODO (Travis): use ppGpp expression in condition fitting
 
 	# Modify other properties
-
 	# Re-compute Km's
-	if sim_data.constants.endoRNase_cooperation:
-		sim_data.process.transcription.rna_data['Km_endoRNase'] = setKmCooperativeEndoRNonLinearRNAdecay(sim_data, cell_specs["basal"]["bulkContainer"])
+	sim_data.process.transcription.rna_data['Km_endoRNase'] = setKmCooperativeEndoRNonLinearRNAdecay(sim_data, cell_specs["basal"]["bulkContainer"])
 
 	## Calculate and set maintenance values
-
 	# ----- Growth associated maintenance -----
 	fitMaintenanceCosts(sim_data, cell_specs["basal"]["bulkContainer"])
 
