@@ -8,7 +8,7 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-import _pickle as cPickle
+import pickle
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.io.tablereader import TableReader
@@ -139,7 +139,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
         # Extract validation data and strip the units while numerically
         # converting to the plotted units
-        validation_data = cPickle.load(open(validationDataFile, "rb"))
+        validation_data = pickle.load(open(validationDataFile, "rb"))
         db_table = validation_data.macromolecular_growth_rate_modulation
         val_table = dict()
         for idx in range(len(plotted_variables)):
@@ -163,7 +163,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
         test_cell = ap.get_cells(variant=[variants[0]])[0]
         simOutDir = os.path.join(test_cell, "simOut")
         try:
-            sim_data = cPickle.load(open(self.ap.get_variant_kb(variants[0]), 'rb'))
+            sim_data = pickle.load(open(self.ap.get_variant_kb(variants[0]), 'rb'))
         except Exception as e:
             print("Couldn't load sim_data object. Exiting.", e)
             return
