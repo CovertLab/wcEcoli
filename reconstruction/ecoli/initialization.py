@@ -709,9 +709,6 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 			'fixedRnaIdxs': [pair[0] for pair in probability_indexes],
 			'fixedSynthProbs': [pair[1] for pair in probability_indexes]}
 
-	# If initiationShuffleIdxs does not exist, set value to None
-	shuffleIdxs = getattr(sim_data.process.transcription, 'initiationShuffleIdxs', None)
-
 	# ID Groups
 	idx_rRNA = np.where(sim_data.process.transcription.rna_data['is_rRNA'])[0]
 	idx_mRNA = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
@@ -775,12 +772,6 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 
 	# Compute synthesis probabilities of each transcription unit
 	TU_synth_probs = TU_to_promoter.dot(promoter_init_probs)
-
-	# Shuffle initiation rates if we're running the variant that calls this
-	if shuffleIdxs is not None:
-		rescale_initiation_probs(
-			promoter_init_probs, TU_index, TU_synth_probs[shuffleIdxs],
-			np.arange(n_TUs))
 
 	# normalize to length of rna
 	init_prob_length_adjusted = promoter_init_probs * rnaLengths[TU_index]
