@@ -771,7 +771,7 @@ def expressionConverge(
 	fitExpression() to converge
 
 	Inputs
-	------
+	------sd
 	- expression (array of floats) - expression for each RNA, normalized to 1
 	- concDict {metabolite (str): concentration (float with units of mol/volume)} -
 	dictionary for concentrations of each metabolite with location tag
@@ -1235,6 +1235,8 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	total_mass_mRNA = initial_rna_mass * rna_fractions['mrna']
 
 	## Molecular weights
+	# TODO (Albert): change so uses mature rna data probably? or so that in get_mass they're
+	# the same?
 	individual_masses_rRNA23S = get_masses(ids_rRNA23S).asUnit(units.g / units.mol) / n_avogadro
 	individual_masses_rRNA16S = get_masses(ids_rRNA16S).asUnit(units.g / units.mol) / n_avogadro
 	individual_masses_rRNA5S = get_masses(ids_rRNA5S).asUnit(units.g / units.mol) / n_avogadro
@@ -1379,6 +1381,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	rna_expression_container.countsIs(counts_mRNA, ids_mRNA)
 
 	expression = normalize(rna_expression_container.counts())
+	import ipdb; ipdb.set_trace()
 	return expression
 
 def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
@@ -1564,11 +1567,24 @@ def setRibosomeCountsConstrainedByPhysiology(
 
 
 	# -- CONSTRAINT 2: Measured rRNA mass fraction -- #
-	## Calculate exact number of 30S and 50S subunits based on measured mass fractions of
-	## 16S, 23S, and 5S rRNA.
-	rRna23SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
-	rRna16SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
-	rRna5SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])
+	# TODO(Albert): changed this
+	# Get processed rRNA counts
+	rRna_tu_counts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"]
+		[sim_data.process.transcription.rna_data['is_rRNA']])
+	rRna_cistron_counts = sim_data.process.transcription.rRNA_cistron_tu_mapping_matrix.dot(
+		rRna_tu_counts)
+	# Get identites of each rRNA
+	rRna_cistron_indexes = np.where(sim_data.process.transcription.cistron_data['is_rRNA'])[0]
+	rRna23SCounts = rRna_cistron_counts[
+		sim_data.process.transcription.cistron_data['is_23S_rRNA'][rRna_cistron_indexes]]
+	rRna16SCounts = rRna_cistron_counts[
+		sim_data.process.transcription.cistron_data['is_16S_rRNA'][rRna_cistron_indexes]]
+	rRna5SCounts = rRna_cistron_counts[
+		sim_data.process.transcription.cistron_data['is_5S_rRNA'][rRna_cistron_indexes]]
+
+	#rRna23SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
+	#rRna16SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
+	#rRna5SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])
 
 	## 16S rRNA is in the 30S subunit
 	massFracPredicted_30SCount = rRna16SCounts.sum()
@@ -1608,9 +1624,11 @@ def setRibosomeCountsConstrainedByPhysiology(
 		)
 
 	# Return rRNA counts to value in sim_data
-	bulkContainer.countsIs(rRna23SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
-	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
-	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])
+	# TODO(Albert): changed this. Why is this needed??
+	bulkContainer.countsIs(rRna_tu_counts, sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_rRNA']])
+	#bulkContainer.countsIs(rRna23SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
+	#bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
+	#bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])
 
 def setRNAPCountsConstrainedByPhysiology(
 		sim_data,

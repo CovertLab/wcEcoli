@@ -19,7 +19,7 @@ from six.moves import zip
 import wholecell.processes.process
 from wholecell.utils import units
 
-
+# TODO (Albert): change the rRNA listeners to using operons
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
 

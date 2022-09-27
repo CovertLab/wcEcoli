@@ -178,24 +178,6 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
 
-	# ID Groups of rRNAs
-	idx_16Srrna = np.where(transcription.rna_data['is_16S_rRNA'])[0]
-	idx_23Srrna = np.where(transcription.rna_data['is_23S_rRNA'])[0]
-	idx_5Srrna = np.where(transcription.rna_data['is_5S_rRNA'])[0]
-
-	# Assume expression from all rRNA genes produce rRNAs from the first operon
-	total_16Srrna_expression = rnaExpression[idx_16Srrna].sum()
-	total_23Srrna_expression = rnaExpression[idx_23Srrna].sum()
-	total_5Srrna_expression = rnaExpression[idx_5Srrna].sum()
-
-	rnaExpression[idx_16Srrna] = 0
-	rnaExpression[idx_23Srrna] = 0
-	rnaExpression[idx_5Srrna] = 0
-
-	rnaExpression[idx_16Srrna[0]] = total_16Srrna_expression
-	rnaExpression[idx_23Srrna[0]] = total_23Srrna_expression
-	rnaExpression[idx_5Srrna[0]] = total_5Srrna_expression
-
 	# Calculate initial counts of each RNA from multinomial distribution
 	rnaView.countsIs(
 		randomState.multinomial(nRnas, rnaExpression)

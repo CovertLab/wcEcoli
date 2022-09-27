@@ -568,7 +568,8 @@ class Transcription(object):
 
 		expression, _ = self.fit_rna_expression(self.cistron_expression['basal'])
 
-		# TODO (Albert): should get rid of stuff here!
+		# TODO (Albert): should modify more when other types of hybrid RNAs
+		#  are introduced (right now, only rRNA-tRNA operons)
 		# Determine type of each RNA
 		# TODO (ggsun): we would eventually want to get rid of these
 		# 	classifications for full RNAs, and only maintain them for individual
@@ -614,10 +615,14 @@ class Transcription(object):
 		stable_rna_cistron_indexes = np.where(np.logical_or(self.cistron_data['is_tRNA'], self.cistron_data['is_rRNA']))[0]
 		tRNA_indexes = np.where(includes_tRNA)[0]
 		tRNA_cistron_indexes = np.where(self.cistron_data['is_tRNA'])[0]
+		rRNA_indexes = np.where(includes_rRNA)[0]
+		rRNA_cistron_indexes = np.where(self.cistron_data['is_rRNA'])[0]
 		self.stable_rna_cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix[
 		:, stable_rna_indexes][stable_rna_cistron_indexes, :]
 		self.tRNA_cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix[
 			:, tRNA_indexes] [tRNA_cistron_indexes, :]
+		self.rRNA_cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix[
+			:, rRNA_indexes] [rRNA_cistron_indexes, :]
 
 		# Build the relative abundance matrix between transcription units and
 		# constituent cistrons
@@ -715,7 +720,7 @@ class Transcription(object):
 				[seq.count(letter) for letter in ntp_abbreviations])
 		nt_counts = np.array(nt_counts)
 
-		# TODO: this should be done in cistron_data, or here, after we decide what to do!
+		# TODO: delete comments when it happens in mature_rna_data
 		# Set the lengths, nucleotide counts, molecular weights, and sequences
 		# of each type of rRNAs to be identical to those of the first rRNA
 		# operon. Later in the sim, transcription of all rRNA genes are set to
@@ -819,9 +824,9 @@ class Transcription(object):
 				('is_tRNA', 'bool'),
 				('is_hybrid_rtRNA', 'bool'),
 				('is_unprocessed', 'bool'),
-				('is_23S_rRNA', 'bool'),
-				('is_16S_rRNA', 'bool'),
-				('is_5S_rRNA', 'bool'),
+				#('is_23S_rRNA', 'bool'),
+				#('is_16S_rRNA', 'bool'),
+				#('is_5S_rRNA', 'bool'),
 				('includes_ribosomal_protein', 'bool'),
 				('includes_RNAP', 'bool'),
 				]
@@ -842,9 +847,6 @@ class Transcription(object):
 		rna_data['is_tRNA'] = includes_tRNA
 		rna_data['is_hybrid_rtRNA'] = is_hybrid_rtRNA
 		rna_data['is_unprocessed'] = is_unprocessed
-		#rna_data['is_23S_rRNA'] = is_23S_rRNA
-		#rna_data['is_16S_rRNA'] = is_16S_rRNA
-		#rna_data['is_5S_rRNA'] = is_5S_rRNA
 		rna_data['includes_ribosomal_protein'] = includes_ribosomal_protein
 		rna_data['includes_RNAP'] = includes_RNAP
 
@@ -864,9 +866,6 @@ class Transcription(object):
 			'is_tRNA': None,
 			'is_hybrid_rtRNA': None,
 			'is_unprocessed': None,
-			'is_23S_rRNA': None,
-			'is_16S_rRNA': None,
-			'is_5S_rRNA': None,
 			'includes_ribosomal_protein': None,
 			'includes_RNAP': None,
 			}
@@ -1011,6 +1010,7 @@ class Transcription(object):
 		"""
 		Build mature RNA-associated simulation data from raw data.
 		"""
+		# TODO(Albert): make all rRNAs the same by type here
 		unprocessed_rna_indexes = np.where(self.rna_data['is_unprocessed'])[0]
 
 		# Get IDs of all mature RNAs that are derived from unprocessed RNAs
@@ -1026,13 +1026,6 @@ class Transcription(object):
 		# Get stoichiometric matrix for RNA maturation process
 		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
 			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
-
-		# TODO (Albert): delete these comments, moved upward
-		# Get mapping matrix between stable RNA cistrons and TUs
-		#tRNA_indexes = np.where(self.rna_data['is_tRNA'])[0]
-		#tRNA_cistron_indexes = np.where(self.cistron_data['is_tRNA'])[0]
-		#self.tRNA_cistron_tu_mapping_matrix = self.cistron_tu_mapping_matrix[
-	#		:, tRNA_indexes][tRNA_cistron_indexes, :]
 
 		# Get RNA nucleotide compositions of unprocessed and processed RNAs
 		unprocessed_rna_nt_counts = self.rna_data['counts_ACGU'][
@@ -1137,15 +1130,6 @@ class Transcription(object):
 		# Load sequence data
 		rna_seqs = sim_data.getter.get_sequences(
 			[rna_id[:-3] for rna_id in self.rna_data['id']])
-
-		# TODO (Albert): Should change this! This breaks right now!
-		# Set the sequences of each type of rRNAs to be identical to those of
-		# the first rRNA operon.
-		rrna_types = ['is_23S_rRNA', 'is_16S_rRNA', 'is_5S_rRNA']
-		for rrna in rrna_types:
-			rrna_idx = np.where(self.rna_data[rrna])[0]
-			for idx in rrna_idx[1:]:
-				rna_seqs[idx] = rna_seqs[rrna_idx[0]]
 
 		# Construct transcription sequence matrix
 		maxLen = np.int64(
@@ -1601,20 +1585,46 @@ class Transcription(object):
 
 		if self._ppgpp_expression_set:
 			exp = self.expression_from_ppgpp(ppgpp)
-			mass = self.rna_data['mw'] * exp
-			mass = (mass / units.sum(mass)).asNumber()
-			# TODO (Albert): Change these!! this breaks right now
+			processed_exp = self.process_rna_expression(exp)
+			mass = np.concatenate((self.rna_data['mw'].asNumber(),
+								  self.mature_rna_data['mw'].asNumber())) * processed_exp
+			mass = normalize(mass)
+
 			fractions =  {
-				'23S': mass[self.rna_data['is_23S_rRNA']].sum(),
-				'16S': mass[self.rna_data['is_16S_rRNA']].sum(),
-				'5S': mass[self.rna_data['is_5S_rRNA']].sum(),
-				'trna': mass[self.rna_data['is_tRNA']].sum(),
-				'mrna': mass[self.rna_data['is_mRNA']].sum(),
+				'23S': mass[np.concatenate((np.zeros(len(self.rna_data), np.int64),
+						self.mature_rna_data['is_23S_rRNA'].astype(np.int64)))].sum(),
+				'16S': mass[np.concatenate((np.zeros(len(self.rna_data), np.int64),
+						self.mature_rna_data['is_16S_rRNA'].astype(np.int64)))].sum(),
+				'5S': mass[np.concatenate((np.zeros(len(self.rna_data), np.int64),
+						self.mature_rna_data['is_5S_rRNA'].astype(np.int64)))].sum(),
+				'trna': mass[np.concatenate((np.logical_and(self.rna_data['is_tRNA'],
+							~self.rna_data['is_unprocessed']).astype(np.int64),
+							self.mature_rna_data['is_tRNA'].astype(np.int64)))].sum(),
+				'mrna': mass[np.concatenate((self.rna_data['is_mRNA'].astype(np.int64),
+							np.zeros(len(self.mature_rna_data), np.int64)))].sum(),
 				}
 		else:
 			fractions = self._basal_rna_fractions
 
 		return fractions
+
+	def process_rna_expression(self, rna_expression):
+		"""
+		Calculates expected relative RNA expression after all unprocessed RNA
+		transcripts are matured.
+		Args:
+			rna_expression: expression of transcribed RNAs
+
+		Returns:
+			ndarray: concatenated array of transcribed RNAs with mature RNAs,
+			values sum to 1
+		"""
+		maturation_stoich_matrix = self.rna_maturation_stoich_matrix
+		unprocessed_rna_expression = rna_expression[self.rna_data['is_unprocessed']]
+		mature_rna_expression = maturation_stoich_matrix.dot(unprocessed_rna_expression)
+		rna_expression[self.rna_data['is_unprocessed']] = 0
+
+		return normalize(np.concatenate((rna_expression, mature_rna_expression)))
 
 	def set_ppgpp_expression(self, sim_data):
 		"""
