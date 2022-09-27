@@ -30,6 +30,11 @@ PPGPP_CONC_UNITS = units.umol / units.L
 PRINT_VALUES = False  # print values for supplemental table if True
 
 
+class TranscriptionDirectionError(Exception):
+	pass
+
+
+
 class Transcription(object):
 	"""
 	SimulationData for the transcription process
@@ -267,6 +272,50 @@ class Transcription(object):
 		is_forward = [
 			cistron_id_to_direction[cistron['id']] == '+' for cistron in all_cistrons]
 
+		# Get cistron nucleotide compositions
+		genome_sequence = raw_data.genome_sequence
+
+		def parse_sequence(cistron_id, left_end_pos, right_end_pos, direction):
+			"""
+			Parses genome sequence to get the sequence of the RNA transcribed
+			from the cistron, given left and right end positions and
+			transcription direction (Note: the left and right end positions in
+			the raw data files are given as 1-indexed coordinates)
+			"""
+			if direction == '+':
+				return genome_sequence[left_end_pos - 1 : right_end_pos].transcribe()
+			elif direction == '-':
+				return genome_sequence[left_end_pos - 1 : right_end_pos].reverse_complement().transcribe()
+			else:
+				raise TranscriptionDirectionError(
+					f"Unidentified transcription direction given for {cistron_id}")
+
+		rna_seqs = [
+			parse_sequence(
+				cistron_id,
+				gene_id_to_left_end_pos[cistron_id_to_gene_id[cistron_id]],
+				gene_id_to_right_end_pos[cistron_id_to_gene_id[cistron_id]],
+				cistron_id_to_direction[cistron_id]
+				)
+			for cistron_id in all_cistron_ids
+			]
+
+		nt_counts = []
+		for seq in rna_seqs:
+			nt_counts.append([
+				seq.count(letter)
+				for letter in sim_data.ntp_code_to_id_ordered.keys()])
+		nt_counts = np.array(nt_counts)
+
+		# Calculate molecular weights of the RNAs corresponding to each cistron
+		ppi_mw = sim_data.getter.get_mass(sim_data.molecule_ids.ppi[:-3]).asNumber(units.g/units.mol)
+		polymerized_ntp_mws = np.array([
+			sim_data.getter.get_mass(met_id[:-3]).asNumber(units.g/units.mol)
+			for met_id in sim_data.molecule_groups.polymerized_ntps
+			])
+
+		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
+
 		# Get boolean arrays for each RNA type
 		is_mRNA = [rna["type"] == "mRNA" for rna in all_cistrons]
 		is_miscRNA = [rna["type"] == "miscRNA" for rna in all_cistrons]
@@ -347,6 +396,7 @@ class Transcription(object):
 				('length', 'i8'),
 				('replication_coordinate', 'i8'),
 				('is_forward', 'bool'),
+				('mw', 'f8'),
 				('deg_rate', 'f8'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
@@ -366,6 +416,7 @@ class Transcription(object):
 		cistron_data['length'] = cistron_lengths
 		cistron_data['replication_coordinate'] = replication_coordinate
 		cistron_data['is_forward'] = is_forward
+		cistron_data['mw'] = mws
 		cistron_data['deg_rate'] = cistron_deg_rates
 		cistron_data['is_mRNA'] = is_mRNA
 		cistron_data['is_miscRNA'] = is_miscRNA
@@ -384,6 +435,7 @@ class Transcription(object):
 			'length': units.nt,
 			'replication_coordinate': None,
 			'is_forward': None,
+			'mw': units.g / units.mol,
 			'deg_rate': 1 / units.s,
 			'is_mRNA': None,
 			'is_miscRNA': None,

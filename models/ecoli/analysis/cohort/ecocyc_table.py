@@ -137,7 +137,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		n_rRNA = len(rRNA_cistron_ids)
 		rna_ids = np.concatenate((mRNA_ids, tRNA_cistron_ids, rRNA_cistron_ids))
 		rna_counts = np.hstack((mRNA_counts, tRNA_counts, rRNA_counts))
-		rna_mw = sim_data.getter.get_masses(rna_ids).asNumber(units.fg / units.count)
+
+		cistron_id_to_mw = {
+			cistron_id: cistron_mw for (cistron_id, cistron_mw)
+			in zip(
+				sim_data.process.transcription.cistron_data['id'],
+				sim_data.process.transcription.cistron_data['mw'].asNumber(
+					units.fg / units.count))
+			}
+		rna_mw = np.array(
+			[cistron_id_to_mw[cistron_id] for cistron_id in rna_ids])
 
 		# Calculate derived RNA values
 		def normalize_within_each_type(values, n_mRNA, n_tRNA, n_rRNA):
