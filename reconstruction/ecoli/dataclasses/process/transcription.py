@@ -1803,9 +1803,7 @@ class Transcription(object):
 		self.exp_ppgpp /= self.exp_ppgpp.sum()
 
 	def set_ppgpp_kinetics_parameters(self, init_container, constants):
-		unprocessed_trna_counts = init_container.counts(
-			self.rna_data['id'][self.rna_data['is_tRNA']])
-		trna_counts = self.aa_from_trna @ self.tRNA_cistron_tu_mapping_matrix.dot(unprocessed_trna_counts)
+		trna_counts = self.aa_from_trna @ init_container.counts(self.uncharged_trna_names)
 		trna_ratio = trna_counts / trna_counts.sum()
 		adjustment_fraction = trna_ratio / trna_ratio.mean()
 
