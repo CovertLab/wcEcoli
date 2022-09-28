@@ -79,12 +79,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 			transcription.mature_rna_data['deg_rate'].asNumber(1/units.s)
 			))
 
-		shuffleIdxs = None
-		if hasattr(transcription, "rnaDegRateShuffleIdxs") and transcription.rnaDegRateShuffleIdxs is not None:
-			shuffleIdxs = transcription.rnaDegRateShuffleIdxs
-			self.rna_deg_rates = self.rna_deg_rates[shuffleIdxs]
-
-		# Load boolean RNA type arrays for all degradable RNAs
 		self.is_mRNA = np.concatenate((
 			transcription.rna_data['is_mRNA'].astype(np.int64),
 			np.zeros(len(transcription.mature_rna_data), np.int64)
