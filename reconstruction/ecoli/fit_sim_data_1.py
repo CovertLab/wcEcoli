@@ -217,13 +217,13 @@ def basal_specs(sim_data, cell_specs,
 	# TODO (Travis): use ppGpp expression in condition fitting
 
 	# Modify other properties
-
-	# Re-compute Km's
-	if sim_data.constants.endoRNase_cooperation:
-		sim_data.process.transcription.rna_data['Km_endoRNase'] = setKmCooperativeEndoRNonLinearRNAdecay(sim_data, cell_specs["basal"]["bulkContainer"])
+	# Compute Km's
+	Km = setKmCooperativeEndoRNonLinearRNAdecay(sim_data, cell_specs["basal"]["bulkContainer"])
+	n_transcribed_rnas = len(sim_data.process.transcription.rna_data)
+	sim_data.process.transcription.rna_data['Km_endoRNase'] = Km[:n_transcribed_rnas]
+	sim_data.process.transcription.mature_rna_data['Km_endoRNase'] = Km[n_transcribed_rnas:]
 
 	## Calculate and set maintenance values
-
 	# ----- Growth associated maintenance -----
 	fitMaintenanceCosts(sim_data, cell_specs["basal"]["bulkContainer"])
 
@@ -3397,32 +3397,35 @@ def crc32(*arrays: np.ndarray, initial: int = 0) -> int:
 
 def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	"""
-	Fits the affinities (Michaelis-Menten constants) for RNAs binding to endoRNAses.
+	Fits the affinities (Michaelis-Menten constants) for RNAs binding to
+	endoRNAses.
 
-	EndoRNAses perform the first step of RNA decay by cleaving a whole RNA somewhere inside its
-	extent.  This results in RNA fragments, which are then digested into monomers by exoRNAses. To
-	model endoRNAse activity, we need to determine an affinity (Michaelis-Menten constant) for each
-	RNA that is consistent with experimentally observed half-lives.  The Michaelis-Menten constants
-	must be determined simultaneously, as the RNAs must compete for the active site of the
-	endoRNAse.  (See the RnaDegradation Process class for more information about the dynamical
-	model.)  The parameters are estimated using a root solver (scipy.optimize.fsolve).  (See the
-	sim_data.process.rna_decay.kmLossFunction method for more information about the optimization
-	problem.)
+	EndoRNAses perform the first step of RNA decay by cleaving a whole RNA
+	somewhere inside its extent.  This results in RNA fragments, which are then
+	digested into monomers by exoRNAses. To model endoRNAse activity, we need to
+	determine an affinity (Michaelis-Menten constant) for each RNA that is
+	consistent with experimentally observed half-lives.  The Michaelis-Menten
+	constants must be determined simultaneously, as the RNAs must compete for
+	the active site of the endoRNAse. (See the RnaDegradation Process class for
+	more information about the dynamical model.) The parameters are estimated
+	using a root solver (scipy.optimize.fsolve).  (See the
+	sim_data.process.rna_decay.kmLossFunction method for more information about
+	the optimization problem.)
 
 	Requires
 	--------
 	- cell density, dry mass fraction, and average initial dry mass
-		Used to calculate the cell volume, which in turn is used to calculate concentrations.
+		Used to calculate the cell volume, which in turn is used to calculate
+		concentrations.
 	- observed RNA degradation rates (half-lives)
-	- enoRNAse counts
+	- endoRNAse counts
 	- endoRNAse catalytic rate constants
 	- RNA counts
 	- boolean options that enable sensitivity analyses (see Notes below)
 
 	Modifies
 	--------
-	- Michaelis-Menten constants for first-order decay
-		TODO (John): Determine the purpose of these values - legacy?
+	- Michaelis-Menten constants for first-order decay (initially set to zeros)
 	- Several optimization-related values
 		Sensitivity analyses (optional, see Notes below)
 		Terminal values for optimization-related functions
@@ -3433,21 +3436,18 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 	Notes
 	-----
-	If certain options are set, a sensitivity analysis will be performed using a range of
-	metaparameters. TODO (John): Determine default behavior.
-
-	Outputs will be cached and utilized instead of running the optimization if possible.
-	TODO (John): Determine if caching is functional, and consider removing functionality.
-
-	The function that generates the optimization functions is defined under sim_data but has no
-	dependency on sim_data, and therefore could be moved here or elsewhere. (TODO)
+	If certain options are set, a sensitivity analysis will be performed using a
+	range of metaparameters. Outputs will be cached and utilized instead of
+	running the optimization if possible.
+	The function that generates the optimization functions is defined under
+	sim_data but has no dependency on sim_data, and therefore could be moved
+	here or elsewhere. (TODO)
 
 	TODO (John): Refactor as a pure function.
-
-	TODO (John): Why is this function called 'cooperative'?  It seems to instead assume and model
-		competitive binding.
-
-	TODO (John): Determine what part (if any) of the 'linear' parameter fitting should be retained.
+	TODO (John): Why is this function called 'cooperative'?  It seems to instead
+		assume and model competitive binding.
+	TODO (John): Determine what part (if any) of the 'linear' parameter fitting
+		should be retained.
 	"""
 
 	def arrays_differ(a: np.ndarray, b: np.ndarray) -> bool:
@@ -3457,39 +3457,42 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	cellVolume = sim_data.mass.avg_cell_dry_mass_init / cellDensity / sim_data.mass.cell_dry_mass_fraction
 	countsToMolar = 1 / (sim_data.constants.n_avogadro * cellVolume)
 
-	degradationRates = sim_data.process.transcription.rna_data['deg_rate']
-	endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRNase_ids)
+	degradable_rna_ids = np.concatenate((
+		sim_data.process.transcription.rna_data['id'],
+		sim_data.process.transcription.mature_rna_data['id']
+	))
+	degradation_rates = (1 / units.s) * np.concatenate((
+		sim_data.process.transcription.rna_data['deg_rate'].asNumber(1/units.s),
+		sim_data.process.transcription.mature_rna_data['deg_rate'].asNumber(1/units.s)
+		))
+	endoRNaseConc = countsToMolar * bulkContainer.counts(
+		sim_data.process.rna_decay.endoRNase_ids)
 	kcatEndoRNase = sim_data.process.rna_decay.kcats
 	totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
 
-	# isMRna = sim_data.process.transcription.rnaData["isMRna"]
-	# isRna = np.zeros(len(isMRna))
-
 	endoRnaseRnaIds = sim_data.molecule_groups.endoRNase_rnas
-	isEndoRnase = np.array([x in endoRnaseRnaIds for x in sim_data.process.transcription.rna_data["id"]])
+	isEndoRnase = np.array([
+		(x in endoRnaseRnaIds) for x in degradable_rna_ids])
 
-	rnaCounts = bulkContainer.counts(sim_data.process.transcription.rna_data['id'])
-	# endoCounts = bulkContainer.counts(sim_data.process.rna_decay.endoRnaseIds)
-
-	rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rna_data['id'])
-	Kmcounts = (( 1 / degradationRates * totalEndoRnaseCapacity ) - rnaConc).asNumber()
-	sim_data.process.rna_decay.Km_first_order_decay = Kmcounts
+	rna_counts = bulkContainer.counts(degradable_rna_ids)
+	rna_conc = countsToMolar * rna_counts
+	Km_counts = ((1 / degradation_rates * totalEndoRnaseCapacity) - rna_conc).asNumber()
+	sim_data.process.rna_decay.Km_first_order_decay = Km_counts
 
 	# Residuals can be written as follows: Res = f(Km) = 0, then Km = g(Km)
 	# Compute derivative g(Km) in counts:
-	KmQuadratic = 1 / np.power((1 / countsToMolar * Kmcounts).asNumber(), 2)
-	denominator = np.power(np.sum(rnaCounts / (1 / countsToMolar * Kmcounts).asNumber()),2)
-	numerator = (1 / countsToMolar * totalEndoRnaseCapacity).asNumber() * (denominator - (rnaCounts / (1 / countsToMolar * Kmcounts).asNumber()))
+	KmQuadratic = 1 / np.power((1 / countsToMolar * Km_counts).asNumber(), 2)
+	denominator = np.power(np.sum(rna_counts / (1 / countsToMolar * Km_counts).asNumber()),2)
+	numerator = (1 / countsToMolar * totalEndoRnaseCapacity).asNumber() * (denominator - (rna_counts / (1 / countsToMolar * Km_counts).asNumber()))
 	gDerivative = np.abs(KmQuadratic * (1 - (numerator / denominator)))
 	if VERBOSE: print("Max derivative (counts) = %f" % max(gDerivative))
 
 	# Compute derivative g(Km) in concentrations:
-	KmQuadratic = 1 / np.power(Kmcounts, 2)
-	denominator = np.power(np.sum(rnaConc.asNumber() / Kmcounts),2)
-	numerator = totalEndoRnaseCapacity.asNumber() * (denominator - (rnaConc.asNumber() / Kmcounts))
+	KmQuadratic = 1 / np.power(Km_counts, 2)
+	denominator = np.power(np.sum(rna_conc.asNumber() / Km_counts),2)
+	numerator = totalEndoRnaseCapacity.asNumber() * (denominator - (rna_conc.asNumber() / Km_counts))
 	gDerivative = np.abs(KmQuadratic * (1 - (numerator / denominator)))
 	if VERBOSE: print("Max derivative (concentration) = %f" % max(gDerivative))
-
 
 	# Sensitivity analysis: alpha (regularization term)
 	Alphas = []
@@ -3497,8 +3500,8 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		Alphas = [0.0001, 0.001, 0.01, 0.1, 1, 10]
 
 	total_endo_rnase_capacity_mol_l_s = totalEndoRnaseCapacity.asNumber(units.mol / units.L / units.s)
-	rna_conc_mol_l = (countsToMolar * rnaCounts).asNumber(units.mol / units.L)
-	degradation_rates_s = degradationRates.asNumber(1 / units.s)
+	rna_conc_mol_l = rna_conc.asNumber(units.mol / units.L)
+	degradation_rates_s = degradation_rates.asNumber(1 / units.s)
 
 	for alpha in Alphas:
 		if VERBOSE: print('Alpha = %f' % alpha)
@@ -3509,9 +3512,9 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 				degradation_rates_s,
 				isEndoRnase,
 				alpha)
-		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, Kmcounts, fprime = LossFunctionP)
-		sim_data.process.rna_decay.sensitivity_analysis_alpha_residual[alpha] = np.sum(np.abs(R_aux(KmCooperativeModel)))
-		sim_data.process.rna_decay.sensitivity_analysis_alpha_regulari_neg[alpha] = np.sum(np.abs(Rneg(KmCooperativeModel)))
+		Km_cooperative_model = scipy.optimize.fsolve(LossFunction, Km_counts, fprime = LossFunctionP)
+		sim_data.process.rna_decay.sensitivity_analysis_alpha_residual[alpha] = np.sum(np.abs(R_aux(Km_cooperative_model)))
+		sim_data.process.rna_decay.sensitivity_analysis_alpha_regulari_neg[alpha] = np.sum(np.abs(Rneg(Km_cooperative_model)))
 
 	alpha = 0.5
 
@@ -3530,11 +3533,11 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 				degradation_rates_s,
 				isEndoRnase,
 				alpha)
-		KmcountsIni = (( totalEndoRNcap / degradationRates.asNumber() ) - rnaConc).asNumber()
-		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, KmcountsIni, fprime = LossFunctionP)
-		sim_data.process.rna_decay.sensitivity_analysis_kcat[kcat] = KmCooperativeModel
-		sim_data.process.rna_decay.sensitivity_analysis_kcat_res_ini[kcat] = np.sum(np.abs(R_aux(Kmcounts)))
-		sim_data.process.rna_decay.sensitivity_analysis_kcat_res_opt[kcat] = np.sum(np.abs(R_aux(KmCooperativeModel)))
+		KmcountsIni = (( totalEndoRNcap / degradation_rates.asNumber() ) - rna_conc).asNumber()
+		Km_cooperative_model = scipy.optimize.fsolve(LossFunction, KmcountsIni, fprime = LossFunctionP)
+		sim_data.process.rna_decay.sensitivity_analysis_kcat[kcat] = Km_cooperative_model
+		sim_data.process.rna_decay.sensitivity_analysis_kcat_res_ini[kcat] = np.sum(np.abs(R_aux(Km_counts)))
+		sim_data.process.rna_decay.sensitivity_analysis_kcat_res_opt[kcat] = np.sum(np.abs(R_aux(Km_cooperative_model)))
 
 	# Loss function, and derivative
 	LossFunction, Rneg, R, LossFunctionP, R_aux, L_aux, Lp_aux, Jacob, Jacob_aux = sim_data.process.rna_decay.km_loss_function(
@@ -3549,12 +3552,12 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 	# `make clean` will delete the cache files.
 	needToUpdate = ''
 	cache_dir = filepath.makedirs(filepath.ROOT_PATH, "cache")
-	checksum = crc32(Kmcounts, isEndoRnase, np.array(alpha))
+	checksum = crc32(Km_counts, isEndoRnase, np.array(alpha))
 	km_filepath = os.path.join(cache_dir, f'parca-km-{checksum}.cPickle')
 
 	if os.path.exists(km_filepath):
 		with open(km_filepath, "rb") as f:
-			KmCache = cPickle.load(f)
+			Km_cache = cPickle.load(f)
 
 		# KmCooperativeModel fits a set of Km values to give the expected degradation rates.
 		# It takes 1.5 - 3 minutes to recompute.
@@ -3562,56 +3565,45 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		# Km values and the expected rate so this sum seems like a good test of
 		# whether the cache fits current input data, but cross-check additional
 		# inputs to avoid Issue #996.
-		KmCooperativeModel = KmCache['KmCooperativeModel']
-		if (Kmcounts.shape != KmCooperativeModel.shape
-				or np.sum(np.abs(R_aux(KmCooperativeModel))) > 1e-15
-				or arrays_differ(KmCache['total_endo_rnase_capacity_mol_l_s'], total_endo_rnase_capacity_mol_l_s)
-				or arrays_differ(KmCache['rna_conc_mol_l'], rna_conc_mol_l)
-				or arrays_differ(KmCache['degradation_rates_s'], degradation_rates_s)):
+		Km_cooperative_model = Km_cache['Km_cooperative_model']
+		if (Km_counts.shape != Km_cooperative_model.shape
+				or np.sum(np.abs(R_aux(Km_cooperative_model))) > 1e-15
+				or arrays_differ(Km_cache['total_endo_rnase_capacity_mol_l_s'], total_endo_rnase_capacity_mol_l_s)
+				or arrays_differ(Km_cache['rna_conc_mol_l'], rna_conc_mol_l)
+				or arrays_differ(Km_cache['degradation_rates_s'], degradation_rates_s)):
 			needToUpdate = 'recompute'
 	else:
 		needToUpdate = 'compute'
 
 	if needToUpdate:
-		rnaConc = countsToMolar * bulkContainer.counts(sim_data.process.transcription.rna_data['id'])
-		degradationRates = sim_data.process.transcription.rna_data['deg_rate']
-		endoRNaseConc = countsToMolar * bulkContainer.counts(sim_data.process.rna_decay.endoRNase_ids)
-		kcatEndoRNase = sim_data.process.rna_decay.kcats
-		totalEndoRnaseCapacity = units.sum(endoRNaseConc * kcatEndoRNase)
-		Kmcounts = (( 1 / degradationRates * totalEndoRnaseCapacity ) - rnaConc).asNumber()
-
 		if VERBOSE: print(f'Running non-linear optimization to {needToUpdate} {km_filepath}')
-		KmCooperativeModel = scipy.optimize.fsolve(LossFunction, Kmcounts, fprime = LossFunctionP)
-		KmCache = dict(
-			KmCooperativeModel=KmCooperativeModel,
+		Km_cooperative_model = scipy.optimize.fsolve(LossFunction, Km_counts, fprime = LossFunctionP)
+		Km_cache = dict(
+			Km_cooperative_model=Km_cooperative_model,
 			total_endo_rnase_capacity_mol_l_s=total_endo_rnase_capacity_mol_l_s,
 			rna_conc_mol_l=rna_conc_mol_l,
 			degradation_rates_s=degradation_rates_s)
 
 		with open(km_filepath, "wb") as f:
-			cPickle.dump(KmCache, f, protocol=cPickle.HIGHEST_PROTOCOL)
+			cPickle.dump(Km_cache, f, protocol=cPickle.HIGHEST_PROTOCOL)
 	else:
 		if VERBOSE:
 			print("Not running non-linear optimization--using cached result {}".format(km_filepath))
 
 	if VERBOSE > 1:
-		print("Loss function (Km inital) = %f" % np.sum(np.abs(LossFunction(Kmcounts))))
-		print("Loss function (optimized Km) = %f" % np.sum(np.abs(LossFunction(KmCooperativeModel))))
-
-		print("Negative km ratio = %f" % np.sum(np.abs(Rneg(KmCooperativeModel))))
-
-		print("Residuals (Km initial) = %f" % np.sum(np.abs(R(Kmcounts))))
-		print("Residuals optimized = %f" % np.sum(np.abs(R(KmCooperativeModel))))
-
-		print("EndoR residuals (Km initial) = %f" % np.sum(np.abs(isEndoRnase * R(Kmcounts))))
-		print("EndoR residuals optimized = %f" % np.sum(np.abs(isEndoRnase * R(KmCooperativeModel))))
-
-		print("Residuals (scaled by Kdeg * RNAcounts) Km initial = %f" % np.sum(np.abs(R_aux(Kmcounts))))
-		print("Residuals (scaled by Kdeg * RNAcounts) optimized = %f" % np.sum(np.abs(R_aux(KmCooperativeModel))))
+		print("Loss function (Km inital) = %f" % np.sum(np.abs(LossFunction(Km_counts))))
+		print("Loss function (optimized Km) = %f" % np.sum(np.abs(LossFunction(Km_cooperative_model))))
+		print("Negative km ratio = %f" % np.sum(np.abs(Rneg(Km_cooperative_model))))
+		print("Residuals (Km initial) = %f" % np.sum(np.abs(R(Km_counts))))
+		print("Residuals optimized = %f" % np.sum(np.abs(R(Km_cooperative_model))))
+		print("EndoR residuals (Km initial) = %f" % np.sum(np.abs(isEndoRnase * R(Km_counts))))
+		print("EndoR residuals optimized = %f" % np.sum(np.abs(isEndoRnase * R(Km_cooperative_model))))
+		print("Residuals (scaled by Kdeg * RNAcounts) Km initial = %f" % np.sum(np.abs(R_aux(Km_counts))))
+		print("Residuals (scaled by Kdeg * RNAcounts) optimized = %f" % np.sum(np.abs(R_aux(Km_cooperative_model))))
 
 	# Evaluate Jacobian around solutions (Kmcounts and KmCooperativeModel)
-	JacobDiag = np.diag(Jacob(KmCooperativeModel))
-	Jacob_auxDiag = np.diag(Jacob_aux(KmCooperativeModel))
+	JacobDiag = np.diag(Jacob(Km_cooperative_model))
+	Jacob_auxDiag = np.diag(Jacob_aux(Km_cooperative_model))
 
 	# Compute convergence of non-linear optimization: g'(Km)
 	Gkm = np.abs(1. - JacobDiag)
@@ -3624,18 +3616,14 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 		print("Convergence (Jacobian_aux) = %.0f%% (<K> = %.5f)" % (len(Gkm_aux[Gkm_aux < 1.]) / float(len(Gkm_aux)) * 100., np.mean(Gkm_aux[Gkm_aux < 1.])))
 
 	# Save statistics KM optimization
-	sim_data.process.rna_decay.stats_fit['LossKm'] = np.sum(np.abs(LossFunction(Kmcounts)))
-	sim_data.process.rna_decay.stats_fit['LossKmOpt'] = np.sum(np.abs(LossFunction(KmCooperativeModel)))
+	sim_data.process.rna_decay.stats_fit['LossKm'] = np.sum(np.abs(LossFunction(Km_counts)))
+	sim_data.process.rna_decay.stats_fit['LossKmOpt'] = np.sum(np.abs(LossFunction(Km_cooperative_model)))
+	sim_data.process.rna_decay.stats_fit['RnegKmOpt'] = np.sum(np.abs(Rneg(Km_cooperative_model)))
+	sim_data.process.rna_decay.stats_fit['ResKm'] = np.sum(np.abs(R(Km_counts)))
+	sim_data.process.rna_decay.stats_fit['ResKmOpt'] = np.sum(np.abs(R(Km_cooperative_model)))
+	sim_data.process.rna_decay.stats_fit['ResEndoRNKm'] = np.sum(np.abs(isEndoRnase * R(Km_counts)))
+	sim_data.process.rna_decay.stats_fit['ResEndoRNKmOpt'] = np.sum(np.abs(isEndoRnase * R(Km_cooperative_model)))
+	sim_data.process.rna_decay.stats_fit['ResScaledKm'] = np.sum(np.abs(R_aux(Km_counts)))
+	sim_data.process.rna_decay.stats_fit['ResScaledKmOpt'] = np.sum(np.abs(R_aux(Km_cooperative_model)))
 
-	sim_data.process.rna_decay.stats_fit['RnegKmOpt'] = np.sum(np.abs(Rneg(KmCooperativeModel)))
-
-	sim_data.process.rna_decay.stats_fit['ResKm'] = np.sum(np.abs(R(Kmcounts)))
-	sim_data.process.rna_decay.stats_fit['ResKmOpt'] = np.sum(np.abs(R(KmCooperativeModel)))
-
-	sim_data.process.rna_decay.stats_fit['ResEndoRNKm'] = np.sum(np.abs(isEndoRnase * R(Kmcounts)))
-	sim_data.process.rna_decay.stats_fit['ResEndoRNKmOpt'] = np.sum(np.abs(isEndoRnase * R(KmCooperativeModel)))
-
-	sim_data.process.rna_decay.stats_fit['ResScaledKm'] = np.sum(np.abs(R_aux(Kmcounts)))
-	sim_data.process.rna_decay.stats_fit['ResScaledKmOpt'] = np.sum(np.abs(R_aux(KmCooperativeModel)))
-
-	return units.mol / units.L * KmCooperativeModel
+	return units.mol / units.L * Km_cooperative_model

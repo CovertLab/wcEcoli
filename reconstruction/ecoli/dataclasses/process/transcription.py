@@ -24,8 +24,6 @@ from wholecell.utils.random import make_elongation_rates
 
 PROCESS_MAX_TIME_STEP = 2.
 RNA_SEQ_ANALYSIS = "rsem_tpm"
-KCAT_ENDO_RNASE = 0.001
-ESTIMATE_ENDO_RNASES = 5000
 PPGPP_CONC_UNITS = units.umol / units.L
 PRINT_VALUES = False  # print values for supplemental table if True
 
@@ -745,9 +743,6 @@ class Transcription(object):
 			)
 		synth_prob /= synth_prob.sum()
 
-		# Calculate EndoRNase Km values
-		Km = (KCAT_ENDO_RNASE*ESTIMATE_ENDO_RNASES/rna_deg_rates) - expression
-
 		# Load RNA sequences and molecular weights from getter functions
 		rna_seqs = sim_data.getter.get_sequences(rna_ids)
 		mws = sim_data.getter.get_masses(rna_ids).asNumber(units.g / units.mol)
@@ -879,7 +874,7 @@ class Transcription(object):
 		rna_data['length'] = rna_lengths
 		rna_data['counts_ACGU'] = nt_counts
 		rna_data['mw'] = mws
-		rna_data['Km_endoRNase'] = Km
+		rna_data['Km_endoRNase'] = np.zeros(len(rna_ids_with_compartments))  # Set later in ParCa
 		rna_data['replication_coordinate'] = replication_coordinate
 		rna_data['is_forward'] = is_forward
 		rna_data['is_mRNA'] = is_mRNA
@@ -1093,9 +1088,6 @@ class Transcription(object):
 			n_mature_rnas,
 			np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s))
 
-		# Calculate EndoRNase Km values
-		Km = (KCAT_ENDO_RNASE * ESTIMATE_ENDO_RNASES / rna_deg_rates)
-
 		# Get MWs of mature RNA molecules
 		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
 
@@ -1134,7 +1126,7 @@ class Transcription(object):
 		mature_rna_data['length'] = lengths
 		mature_rna_data['counts_ACGU'] = mature_rna_nt_counts
 		mature_rna_data['mw'] = mws
-		mature_rna_data['Km_endoRNase'] = Km
+		mature_rna_data['Km_endoRNase'] = np.zeros(len(mature_rna_ids_with_compartments))  # Set later in ParCa
 		mature_rna_data['is_rRNA'] = is_rRNA
 		mature_rna_data['is_tRNA'] = is_tRNA
 		mature_rna_data['is_23S_rRNA'] = is_23S_rRNA
