@@ -1010,7 +1010,6 @@ class Transcription(object):
 		"""
 		Build mature RNA-associated simulation data from raw data.
 		"""
-		# TODO(Albert): make all rRNAs the same by type here
 		unprocessed_rna_indexes = np.where(self.rna_data['is_unprocessed'])[0]
 
 		# Get IDs of all mature RNAs that are derived from unprocessed RNAs
@@ -1122,6 +1121,7 @@ class Transcription(object):
 			}
 
 		self.mature_rna_data = UnitStructArray(mature_rna_data, field_units)
+		import ipdb; ipdb.set_trace()
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""
