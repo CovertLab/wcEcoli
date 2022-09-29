@@ -31,7 +31,7 @@ def calcInitialConditions(sim, sim_data):
 		randomState, massCoeff, sim._ppgpp_regulation, sim._trna_attenuation)
 	cell_mass = init.calculate_cell_mass(sim.internal_states)
 	init.initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass,
-		randomState, sim._superhelical_density, sim._ppgpp_regulation, sim._trna_attenuation)
+		randomState, sim._superhelical_density, sim._ppgpp_regulation, sim._trna_attenuation, sim._mechanistic_replisome)
 
 	# Must be called after unique and bulk molecules are initialized to get
 	# concentrations for ribosomes, tRNA, synthetases etc from cell volume

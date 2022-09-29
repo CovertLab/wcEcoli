@@ -66,12 +66,12 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, r
 		initializeComplexation(bulkMolCntr, sim_data, randomState)
 
 def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, randomState,
-		superhelical_density, ppgpp_regulation, trna_attenuation):
+		superhelical_density, ppgpp_regulation, trna_attenuation, mechanistic_replisome):
 	# Initialize counts of full chromosomes
 	initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data)
 
 	# Initialize unique molecules relevant to replication
-	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass)
+	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, mechanistic_replisome)
 
 	# Initialize bound transcription factors
 	initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
@@ -305,7 +305,7 @@ def initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data):
 		)
 
 
-def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
+def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, mechanistic_replisome):
 	"""
 	Initializes replication by creating an appropriate number of replication
 	forks given the cell growth rate. This also initializes the gene dosage
@@ -350,6 +350,19 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 		child_domains=domain_state["child_domains"])
 
 	if n_replisome != 0:
+		# Update mass of replisomes if the mechanistic replisome option is set
+		if mechanistic_replisome:
+			replisome_trimer_subunit_masses = np.vstack([
+				sim_data.getter.get_submass_array(x).asNumber(units.fg/units.count)
+				for x in sim_data.molecule_groups.replisome_trimer_subunits])
+			replisome_monomer_subunit_masses = np.vstack([
+				sim_data.getter.get_submass_array(x).asNumber(units.fg/units.count)
+				for x in sim_data.molecule_groups.replisome_monomer_subunits])
+			replisome_mass_array = 3*replisome_trimer_subunit_masses.sum(axis=0) + replisome_monomer_subunit_masses.sum(axis=0)
+			replisome_protein_mass = replisome_mass_array.sum()
+		else:
+			replisome_protein_mass = 0.
+
 		# Update mass to account for DNA strands that have already been
 		# elongated.
 		sequences = sim_data.process.replication.replication_sequences
@@ -367,7 +380,9 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 			coordinates=replisome_state["coordinates"],
 			right_replichore=replisome_state["right_replichore"],
 			domain_index=replisome_state["domain_index"],
-			massDiff_DNA=mass_increase_dna[0::2] + mass_increase_dna[1::2])
+			massDiff_DNA=mass_increase_dna[0::2] + mass_increase_dna[1::2],
+			massDiff_protein=np.full(n_replisome, replisome_protein_mass),
+			)
 
 		# Remove replisome subunits from bulk molecules
 		bulkMolCntr.countsDec(3*n_replisome, sim_data.molecule_groups.replisome_trimer_subunits)

@@ -215,27 +215,18 @@ class InternalState(object):
 		# Add active replisomes
 		# Note that the replisome does not functionally replicate the
 		# chromosome, but instead keeps track of the mass associated with
-		# essential subunits of the replisome complex. The list of essential
-		# subunits and their stoichiometry were taken from Reyes-Lamothe et
-		# al., 2010.
+		# essential subunits of the replisome complex (if the mechanistic
+		# replisome option is turned on). The list of essential subunits and
+		# their stoichiometry were taken from Reyes-Lamothe et al., 2010.
 		replisome_mass = (units.g / units.mol) * np.zeros_like(RNAP_mass)
-
-		trimer_ids = sim_data.molecule_groups.replisome_trimer_subunits
-		monomer_ids = sim_data.molecule_groups.replisome_monomer_subunits
-
-		for trimer_id in trimer_ids:
-			replisome_mass += 3*bulk_molecule_id_to_mass[trimer_id]
-		for monomer_id in monomer_ids:
-			replisome_mass += bulk_molecule_id_to_mass[monomer_id]
-
-		replisomeAttributes = {
+		replisome_attributes = {
 			'domain_index': 'i4',
 			'right_replichore': '?',
 			'coordinates': 'i8',
 			}
 
 		self.unique_molecule.add_to_unique_state(
-			'active_replisome', replisomeAttributes, replisome_mass)
+			'active_replisome', replisome_attributes, replisome_mass)
 
 		# Active replisomes are divided based on their domain index
 		sim_data.molecule_groups.unique_molecules_domain_index_division.append(
