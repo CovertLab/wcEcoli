@@ -906,11 +906,20 @@ class Transcription(object):
 		rna_exp, res = fast_nnls(self.cistron_tu_mapping_matrix, cistron_expression)
 		return rna_exp, res
 
-	def fit_stable_rna_expression(self, tRNA_cistron_expression, rRNA23S_expression,
-								  rRNA16S_expression, rRNA5S_expression):
+	def fit_trna_expression(self, tRNA_cistron_expression):
 		"""
 		Calculates the expression of tRNA transcription units that best fits the
 		given expression levels of tRNA cistrons using nonnegative least
+		squares.
+		"""
+		tRNA_exp, res = fast_nnls(self.tRNA_cistron_tu_mapping_matrix, tRNA_cistron_expression)
+		return tRNA_exp, res
+
+	def fit_stable_rna_expression(self, tRNA_cistron_expression, rRNA23S_expression,
+								  rRNA16S_expression, rRNA5S_expression):
+		"""
+		Calculates the expression of stable RNA transcription units that best fits the
+		given expression levels of stable RNA cistrons using nonnegative least
 		squares.
 		"""
 		# Combine expression arrays into one according to indexes
@@ -1023,8 +1032,32 @@ class Transcription(object):
 			in zip(mature_rna_ids, compartments)]
 
 		# Get stoichiometric matrix for RNA maturation process
-		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
+		raw_rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
 			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
+
+		# Change all rRNAs to the corresponding rRNA from the first operon to
+		# simplify ribosome complexation process
+		change_rrnas_stoich_matrix = np.identity(len(mature_rna_cistron_indexes))
+		mature_rRNA5S_indexes = np.where(self.cistron_data['is_5S_rRNA'])[0]
+		mature_rRNA16S_indexes = np.where(self.cistron_data['is_16S_rRNA'])[0]
+		mature_rRNA23S_indexes = np.where(self.cistron_data['is_23S_rRNA'])[0]
+		mature_rRNA_group_indexes = [mature_rRNA5S_indexes, mature_rRNA16S_indexes, mature_rRNA23S_indexes]
+
+		first_rRNA5S_index = np.where(self.cistron_data['id'] == 'RRFA-RRNA')[0]
+		first_rRNA16S_index = np.where(self.cistron_data['id'] == 'RRSA-RRNA')[0]
+		first_rRNA23S_index = np.where(self.cistron_data['id'] == 'RRLA-RRNA')[0]
+		first_rRNA_indexes = [first_rRNA5S_index, first_rRNA16S_index, first_rRNA23S_index]
+
+		for (rRNA_indexes, first_rRNA_index) in zip(mature_rRNA_group_indexes, first_rRNA_indexes):
+			mature_rRNA_mature_rna_indexes = np.where(
+				np.isin(mature_rna_cistron_indexes, rRNA_indexes))[0]
+			first_rRNA_mature_rna_index = np.where(
+				mature_rna_cistron_indexes == first_rRNA_index)[0]
+			for idx in mature_rRNA_mature_rna_indexes:
+				change_rrnas_stoich_matrix[idx, idx] = 0
+				change_rrnas_stoich_matrix[first_rRNA_mature_rna_index, idx] += 1
+
+		self.rna_maturation_stoich_matrix = change_rrnas_stoich_matrix @ raw_rna_maturation_stoich_matrix
 
 		# Get RNA nucleotide compositions of unprocessed and processed RNAs
 		unprocessed_rna_nt_counts = self.rna_data['counts_ACGU'][
@@ -1042,8 +1075,8 @@ class Transcription(object):
 				np.array([seq.count(letter) for letter in ntp_abbreviations])
 				))
 
-		# Calculate number of nucleotides that are degraded as part of the
-		# maturation process for each unprocessed RNA
+		# Calculate number of nucleotides that are degraded (or changed for
+		# rRNAs) as part of the maturation process for each unprocessed RNA
 		degraded_nt_counts = unprocessed_rna_nt_counts.copy()
 		rows, cols = self.rna_maturation_stoich_matrix.nonzero()
 
@@ -1121,7 +1154,6 @@ class Transcription(object):
 			}
 
 		self.mature_rna_data = UnitStructArray(mature_rna_data, field_units)
-		import ipdb; ipdb.set_trace()
 
 	def _build_transcription(self, raw_data, sim_data):
 		"""

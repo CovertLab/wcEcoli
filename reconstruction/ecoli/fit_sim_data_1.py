@@ -1201,27 +1201,27 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	rna_coord = rna_data['replication_coordinate']
 
 	## Mask arrays for rRNAs
-	is_rRNA23S = cistron_data['is_23S_rRNA']
-	is_rRNA16S = cistron_data['is_16S_rRNA']
-	is_rRNA5S = cistron_data['is_5S_rRNA']
+	is_rRNA_cistron = cistron_data['is_rRNA']
 	is_tRNA_cistron = cistron_data['is_tRNA']
 	includes_rRNA = rna_data['is_rRNA']
 	includes_tRNA = rna_data['is_tRNA']
-	includes_stable_RNA = np.logical_or(includes_rRNA, includes_tRNA)
 	is_mRNA = rna_data['is_mRNA']
-
+	#is_rRNA23S = cistron_data['is_23S_rRNA']
+	#is_rRNA16S = cistron_data['is_16S_rRNA']
+	#is_rRNA5S = cistron_data['is_5S_rRNA']
 
 	## IDs
 	ids_rnas = rna_data["id"]
 	ids_cistrons = cistron_data["id"]
 	ids_rRNA = ids_rnas[includes_rRNA]
-	ids_rRNA23S = ids_cistrons[is_rRNA23S]
-	ids_rRNA16S = ids_cistrons[is_rRNA16S]
-	ids_rRNA5S = ids_cistrons[is_rRNA5S]
 	ids_mRNA = ids_rnas[is_mRNA]
 	ids_tRNA = ids_rnas[includes_tRNA]
 	ids_tRNA_cistrons = ids_cistrons[is_tRNA_cistron]
-	ids_stable_RNA = ids_rnas[includes_stable_RNA]
+	ids_rRNA_cistrons = ids_cistrons[is_rRNA_cistron]
+	# ids_rRNA23S = ids_cistrons[is_rRNA23S]
+	# ids_rRNA16S = ids_cistrons[is_rRNA16S]
+	# ids_rRNA5S = ids_cistrons[is_rRNA5S]
+
 	## Mass fractions
 	initial_rna_mass = (sim_data.mass.get_component_masses(doubling_time)['rnaMass']
 		/ sim_data.mass.avg_cell_to_initial_cell_conversion_factor)
@@ -1230,56 +1230,63 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	total_mass_rRNA23S = initial_rna_mass * rna_fractions['23S']
 	total_mass_rRNA16S = initial_rna_mass * rna_fractions['16S']
 	total_mass_rRNA5S = initial_rna_mass * rna_fractions['5S']
+	total_mass_rRNA = total_mass_rRNA23S + total_mass_rRNA16S + total_mass_rRNA5S
 	total_mass_tRNA = initial_rna_mass * rna_fractions['trna']
-	total_mass_stable_RNA = total_mass_tRNA + total_mass_rRNA23S + total_mass_rRNA16S + total_mass_rRNA5S
 	total_mass_mRNA = initial_rna_mass * rna_fractions['mrna']
 
+
 	## Molecular weights
-	# TODO (Albert): change so uses mature rna data probably? or so that in get_mass they're
-	# the same?
-	individual_masses_rRNA23S = get_masses(ids_rRNA23S).asUnit(units.g / units.mol) / n_avogadro
-	individual_masses_rRNA16S = get_masses(ids_rRNA16S).asUnit(units.g / units.mol) / n_avogadro
-	individual_masses_rRNA5S = get_masses(ids_rRNA5S).asUnit(units.g / units.mol) / n_avogadro
+	individual_masses_rRNA_cistrons = get_masses(ids_rRNA_cistrons).asUnit(units.g / units.mol) / n_avogadro
+	individual_masses_rRNA_TU_rRNA_cistrons = individual_masses_rRNA_cistrons.asNumber(units.g) @ \
+		sim_data.process.transcription.rRNA_cistron_tu_mapping_matrix * units.g
 	individual_masses_tRNA_cistrons = get_masses(ids_tRNA_cistrons).asUnit(units.g / units.mol) / n_avogadro
-	#individual_masses_rRNA = get_masses(ids_rRNA).asNumber(units.g / units.mol) / n_avogadro
-	#individual_masses_tRNA = get_masses(ids_tRNA).asNumber(units.g / units.mol) / n_avogadro
-	individual_masses_stable_RNA = get_masses(ids_stable_RNA).asUnit(units.g / units.mol) / n_avogadro
+	individual_masses_tRNA_operon_matured = individual_masses_tRNA_cistrons.asNumber(units.g) @ \
+		sim_data.process.transcription.tRNA_cistron_tu_mapping_matrix * units.g
 	individual_masses_mRNA = rna_mw[is_mRNA] / n_avogadro
+	#individual_masses_rRNA23S = get_masses(ids_rRNA23S).asUnit(units.g / units.mol) / n_avogadro
+	#individual_masses_rRNA16S = get_masses(ids_rRNA16S).asUnit(units.g / units.mol) / n_avogadro
+	#individual_masses_rRNA5S = get_masses(ids_rRNA5S).asUnit(units.g / units.mol) / n_avogadro
 
-	# Molecule expression distributions
+	## Set rRNA TU expression assuming equal per-copy
+	# transcription probabilities. Since the operons have different promoter
+	# positions and thus copy-numbers, the rRNA operon expression distribution
+	# is assumed to be the normalized average copy numbers of each rRNA gene.
+
+	# Get average copy numbers for all rRNAs by using their
+	# replication coordinates and doubling time
 	tau = doubling_time.asNumber(units.min)
-
-	# Right now we use the assumption that the only rRNA operons are the full ones
-	## Get replication coordinates of rRNA genes
 	coord_rRNA = rna_coord[includes_rRNA]
-	#coord_rRNA23S = rna_coord[includes_rRNA23S]
-	#coord_rRNA16S = rna_coord[includes_rRNA16S]
-	#coord_rRNA5S = rna_coord[includes_rRNA5S]
-
-	## Get average copy numbers for all rRNA genes
 	n_avg_copy_rRNA = get_average_copy_number(tau, coord_rRNA)
-	#n_avg_copy_rRNA23S = get_average_copy_number(tau, coord_rRNA23S)
-	#n_avg_copy_rRNA16S = get_average_copy_number(tau, coord_rRNA16S)
-	#n_avg_copy_rRNA5S = get_average_copy_number(tau, coord_rRNA5S)
+	distribution_rRNA = normalize(n_avg_copy_rRNA)
 
-	# TODO (Albert): Should try without this assumption as well. Also this assumption should
-	#  probably be implemented later when rRNAs are made. Should this be a hard assumption if it
-	#  conflicts with tRNA stuff?
-	# For rRNAs it is assumed that all operons have the same per-copy
-	# transcription probabilities. Since the positions of the operons and thus
-	# the average copy numbers of each rRNA gene are different, the
-	# distribution is given as the normalized ratio of the average copy numbers
-	# of each rRNA gene.
-	distribution_rRNA23S = normalize(n_avg_copy_rRNA)
-	distribution_rRNA16S = normalize(n_avg_copy_rRNA)
-	# TODO (Albert): This is bc rRNAD has rrfD and rrfF
-	distribution_rRNA5S = normalize(np.append(n_avg_copy_rRNA, n_avg_copy_rRNA[
-		np.where(ids_rRNA == "TU0-1191[c]")[0][0]]))
+	# Total mass of rRNAs is from the matured segments, so we should use each
+	# rRNA operon's mature rRNA masses to calculate total counts
+	total_count_rRNA = totalCountFromMassesAndRatios(
+		total_mass_rRNA,
+		individual_masses_rRNA_TU_rRNA_cistrons,
+		distribution_rRNA
+		)
+	counts_rRNA = total_count_rRNA * distribution_rRNA
 
-	# TODO (Albert): Should this go into sim_data transcription?
+	## Get tRNAs and their counts/mass that are expressed from rRNA TUs
+	unprocessed_RNA_rRNA_indexes = np.where(rna_data['is_rRNA'][rna_data['is_unprocessed']])[0]
+	unprocessed_RNA_rRNAs = np.zeros(len(np.where(rna_data['is_unprocessed'])[0]))
+	unprocessed_RNA_rRNAs[unprocessed_RNA_rRNA_indexes] = counts_rRNA
+	counts_tRNA_from_rRNA = sim_data.process.transcription.rna_maturation_stoich_matrix @ \
+		unprocessed_RNA_rRNAs
+	counts_tRNA_from_rRNA[~mature_rna_data['is_tRNA']] = 0
+	tRNA_from_rRNA_ids = mature_rna_data['id'][np.nonzero(counts_tRNA_from_rRNA)]
+	counts_tRNA_from_rRNA = counts_tRNA_from_rRNA[np.nonzero(counts_tRNA_from_rRNA)]
+	tRNA_id_to_index = {tRNA_id+"[c]": idx for (idx, tRNA_id) in enumerate(ids_tRNA_cistrons)}
+	tRNA_from_rRNA_tRNA_indexes = np.array([tRNA_id_to_index[tRNA_id] for tRNA_id in tRNA_from_rRNA_ids])
 
+	counts_tRNA_from_rRNA_tRNA = np.zeros(len(ids_tRNA_cistrons))
+	counts_tRNA_from_rRNA_tRNA[tRNA_from_rRNA_tRNA_indexes] = counts_tRNA_from_rRNA
+	tRNA_from_rRNA_total_mass = np.sum(counts_tRNA_from_rRNA_tRNA * individual_masses_tRNA_cistrons)
 
-	# Get tRNA cistron distribution
+	## Approximate tRNA distribution while excluding tRNAs expressed from rRNAs
+	# Get tRNA cistron distribution (see Dong 1996), while removing
+	# tRNA cistrons that are expressed from rRNAs
 	tRNA_distribution = sim_data.mass.get_trna_distribution(doubling_time)
 	tRNA_id_to_dist = {
 		trna_id: dist for (trna_id, dist)
@@ -1288,88 +1295,33 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	distribution_tRNA_cistrons = np.zeros(len(ids_tRNA_cistrons))
 	for i, tRNA_id in enumerate(ids_tRNA_cistrons):
 		distribution_tRNA_cistrons[i] = tRNA_id_to_dist[tRNA_id]
-	distribution_tRNA_cistrons = normalize(distribution_tRNA_cistrons)
-	#distribution_tRNA, _ = sim_data.process.transcription.fit_trna_expression(
-	#	distribution_tRNA_cistrons)
-	#distribution_tRNA = normalize(distribution_tRNA)
 
+	distribution_tRNA_cistrons[tRNA_from_rRNA_tRNA_indexes] = 0
+
+	# Approximate tRNA distribution from tRNA cistron distribution by using NNLS
+	distribution_tRNA, _ = sim_data.process.transcription.fit_trna_expression(
+		distribution_tRNA_cistrons)
+	distribution_tRNA = normalize(distribution_tRNA)
+
+	## Calculate mRNA expression distribution
 	distribution_mRNA = normalize(expression[is_mRNA])
 
 	# Construct bulk container
 	rna_expression_container = BulkObjectsContainer(ids_rnas, dtype=np.float64)
 
-	## Assign rRNA and tRNA cistron counts based on mass
-	total_count_rRNA23S = totalCountFromMassesAndRatios(
-		total_mass_rRNA23S,
-		individual_masses_rRNA23S,
-		distribution_rRNA23S
-		)
-	total_count_rRNA16S = totalCountFromMassesAndRatios(
-		total_mass_rRNA16S,
-		individual_masses_rRNA16S,
-		distribution_rRNA16S
-		)
-	total_count_rRNA5S = totalCountFromMassesAndRatios(
-		total_mass_rRNA5S,
-		individual_masses_rRNA5S,
-		distribution_rRNA5S
-		)
+	## Assign tRNA counts based on masses and relative abundances (see Dong 1996)
+	total_mass_tRNA_minus_rRNA_TUs = total_mass_tRNA - tRNA_from_rRNA_total_mass
 	total_count_tRNA = totalCountFromMassesAndRatios(
-		total_mass_tRNA,
-		individual_masses_tRNA_cistrons,
-		distribution_tRNA_cistrons
+		total_mass_tRNA_minus_rRNA_TUs,
+		individual_masses_tRNA_operon_matured,
+		distribution_tRNA
 		)
-	counts_tRNA_cistrons = total_count_tRNA * distribution_tRNA_cistrons
-	counts_rRNA23S = total_count_rRNA23S * distribution_rRNA23S
-	counts_rRNA16S = total_count_rRNA16S * distribution_rRNA16S
-	counts_rRNA5S = total_count_rRNA5S * distribution_rRNA5S
+	counts_tRNA = total_count_tRNA * distribution_tRNA
+	rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
 
-	# Use NNLS to calculate distribution of stable RNAs that most closely
-	# match the distribution of mature tRNAs and rRNAs
-	distribution_stable_rna, _ = sim_data.process.transcription.fit_stable_rna_expression(
-		tRNA_cistron_expression=counts_tRNA_cistrons,
-		rRNA23S_expression=counts_rRNA23S,
-		rRNA16S_expression=counts_rRNA16S,
-		rRNA5S_expression=counts_rRNA5S
-		)
-	distribution_stable_rna = normalize(distribution_stable_rna)
-
-	## Assign stable RNA counts based on masses and relative abundances (see Dong 1996)
-	total_count_stable_RNA = totalCountFromMassesAndRatios(
-		total_mass_stable_RNA,
-		individual_masses_stable_RNA,
-		distribution_stable_rna
-		)
-	counts_stable_RNA = total_count_stable_RNA * distribution_stable_rna
-	rna_expression_container.countsIs(counts_stable_RNA, ids_stable_RNA)
-
-	# Mass weighted average rRNA count to set rRNA subunit counts equal to each
-	# other but keep the same expected total rRNA mass
-	#mass_weighting_rRNA23S = individual_masses_rRNA23S * distribution_rRNA23S
-	#mass_weighting_rRNA16S = individual_masses_rRNA16S * distribution_rRNA16S
-	#mass_weighting_rRNA5S = individual_masses_rRNA5S * distribution_rRNA5S
-	#total_count_rRNA_average = (
-	#	units.sum(mass_weighting_rRNA23S * total_count_rRNA23S)
-	#	+ units.sum(mass_weighting_rRNA16S * total_count_rRNA16S)
-	#	+ units.sum(mass_weighting_rRNA5S * total_count_rRNA5S)
-	#	) / (
-	#	units.sum(mass_weighting_rRNA23S)
-	#	+ units.sum(mass_weighting_rRNA16S)
-	#	+ units.sum(mass_weighting_rRNA5S)
-	#	)
-
-	#counts_rRNA23S = total_count_rRNA_average * distribution_rRNA23S
-	#counts_rRNA16S = total_count_rRNA_average * distribution_rRNA16S
-	#counts_rRNA5S = total_count_rRNA_average * distribution_rRNA5S
-
-
-
-	#rna_expression_container.countsIs(counts_rRNA23S, ids_rRNA23S)
-	#rna_expression_container.countsIs(counts_rRNA16S, ids_rRNA16S)
-	#rna_expression_container.countsIs(counts_rRNA5S, ids_rRNA5S)
-
-	## Assign tRNA counts based on mass and relative abundances (see Dong 1996)
-	#rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
+	## Assign rRNA counts based on masses and equal-per-copy-initiation
+	# assumption
+	rna_expression_container.countsIs(counts_rRNA, ids_rRNA)
 
 	## Assign mRNA counts based on mass and relative abundances (microarrays)
 	total_count_mRNA = totalCountFromMassesAndRatios(
@@ -1381,8 +1333,28 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	rna_expression_container.countsIs(counts_mRNA, ids_mRNA)
 
 	expression = normalize(rna_expression_container.counts())
-	import ipdb; ipdb.set_trace()
+
+	## Get rRNA subunit from masses/ratios for validation
+	#total_count_rRNA23S = totalCountFromMassesAndRatios(
+	#	total_mass_rRNA23S,
+	#	individual_masses_rRNA23S,
+	#	distribution_rRNA23S
+	#	)
+	#total_count_rRNA16S = totalCountFromMassesAndRatios(
+	#	total_mass_rRNA16S,
+	#	individual_masses_rRNA16S,
+	#	distribution_rRNA16S
+	#	)
+	#total_count_rRNA5S = totalCountFromMassesAndRatios(
+	#	total_mass_rRNA5S,
+	#	individual_masses_rRNA5S,
+	#	distribution_rRNA5S
+	#	)
+	#counts_rRNA23S = total_count_rRNA23S * distribution_rRNA23S
+	#counts_rRNA16S = total_count_rRNA16S * distribution_rRNA16S
+	#counts_rRNA5S = total_count_rRNA5S * distribution_rRNA5S
 	return expression
+
 
 def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	"""

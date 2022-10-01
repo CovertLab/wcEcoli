@@ -306,21 +306,6 @@ class GetterFunctions(object):
 			self._sequences[rna_id] = parse_sequence(
 				rna_id, left_end_pos, right_end_pos, gene_id_to_direction[gene_id])
 
-
-
-		# Make all 5S, 16S, and 23S rRNAs have the same sequences to make ribosome
-		# complexation simpler
-		# Same as in molecule groups. TODO(Albert): any need to change?
-		s50_23S_rRNAs = [rna_id for rna_id in all_rna_ids
-			if rna_id.startswith("RRL")]
-		s30_16S_rRNAs = [rna_id for rna_id in all_rna_ids
-			if rna_id.startswith("RRS")]
-		s50_5S_rRNAs = [rna_id for rna_id in all_rna_ids
-			if rna_id.startswith("RRF")]
-		for rRNA_group in [s50_23S_rRNAs, s30_16S_rRNAs, s50_5S_rRNAs]:
-			for rRNA in rRNA_group:
-				self._sequences[rRNA] = self._sequences[rRNA_group[0]]
-
 	def _build_protein_sequences(self, raw_data):
 		"""
 		Builds the amino acid sequences of each protein monomer using sequences
