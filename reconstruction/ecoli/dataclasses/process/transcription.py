@@ -1401,6 +1401,7 @@ class Transcription(object):
 			gene = row['Target']
 			cistron_id = gene_symbol_to_cistron_id[gene]
 
+			# Map FC to all RNAs that cover the cistron
 			rna_indexes_with_cistron = self.cistron_id_to_rna_indexes(cistron_id)
 			for rna_idx in rna_indexes_with_cistron:
 				rna_id = self.rna_data['id'][rna_idx]
