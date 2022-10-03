@@ -76,13 +76,12 @@ class Transcription(object):
 	def _build_ppgpp_regulation(self, raw_data, sim_data):
 		"""
 		Determine which genes are regulated by ppGpp and store the fold
-		change in expression associated with each RNA.
+		change in expression associated with each gene.
 
 		Attributes set:
-			ppgpp_regulated_genes (ndarray[str]): RNA ID of regulated
-				genes (no compartment tag)
-			ppgpp_fold_changes (ndarray[float]): log2 fold change for
-				each gene in ppgpp_regulated_genes
+			ppgpp_regulated_genes (ndarray[str]): cistron ID of regulated genes
+			ppgpp_fold_changes (ndarray[float]): log2 fold change for each gene
+				in ppgpp_regulated_genes
 			_ppgpp_growth_parameters: parameters for interpolate.splev
 				to estimate growth rate from ppGpp concentration
 		"""
@@ -1643,9 +1642,6 @@ class Transcription(object):
 				bound to ppGpp
 			exp_free (ndarray[float]): expression for each TU when RNAP is not
 				bound to ppGpp
-			ppgpp_km (float with units of mol / vol): KM for ppGpp binding to RNAP
-			ppgpp_km_squared (float): squared and unitless version of KM for
-				faster computation in other functions
 		"""
 		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['with_aa'])
@@ -1672,16 +1668,17 @@ class Transcription(object):
 		cistron_exp_free[cistron_exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
 
 		# Map expression levels of cistrons to those of TUs through NNLS
-		# TODO (ggsun): Should these be normalized here?
 		self.exp_ppgpp, _ = self.fit_rna_expression(cistron_exp_ppgpp)
 		self.exp_free, _ = self.fit_rna_expression(cistron_exp_free)
+		self._normalize_ppgpp_expression()
 
 		self._ppgpp_expression_set = True
 
 	def adjust_polymerizing_ppgpp_expression(self, sim_data):
 		"""
-		Adjust ppGpp expression based on fit for ribosome and RNAP physiological constraints
-		using least squares fit for 3 conditions with different growth rates/ppGpp.
+		Adjust ppGpp expression based on fit for ribosome and RNAP physiological
+		constraints using least squares fit for 3 conditions with different
+		growth rates/ppGpp.
 
 		Modifies attributes:
 			exp_ppgpp (ndarray[float]): expression for each gene when RNAP
@@ -1711,7 +1708,7 @@ class Transcription(object):
 		f_ppgpp_anaerobic = self.fraction_rnap_bound_ppgpp(ppgpp_anaerobic)
 
 		# Adjustments for TFs
-		## Probabilities need to be unnormaalized to match the scale of delta prob
+		## Probabilities need to be unnormalized to match the scale of delta prob
 		## This includes not having get_delta_prob_matrix normalized for ppGpp
 		tf_adjustments = {}
 		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=False)
@@ -1795,9 +1792,7 @@ class Transcription(object):
 		self.exp_ppgpp /= self.exp_ppgpp.sum()
 
 	def set_ppgpp_kinetics_parameters(self, init_container, constants):
-		unprocessed_trna_counts = init_container.counts(
-			self.rna_data['id'][self.rna_data['is_tRNA']])
-		trna_counts = self.aa_from_trna @ self.tRNA_cistron_tu_mapping_matrix.dot(unprocessed_trna_counts)
+		trna_counts = self.aa_from_trna @ init_container.counts(self.uncharged_trna_names)
 		trna_ratio = trna_counts / trna_counts.sum()
 		adjustment_fraction = trna_ratio / trna_ratio.mean()
 
