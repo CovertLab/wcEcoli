@@ -678,6 +678,7 @@ class Transcription(object):
 				rna_indexes.append(rna_index)
 				v_this_cistron[i] = expression[rna_index]
 
+			# Assume uniform distribution if cistron is not expressed
 			if v_this_cistron.sum() == 0:
 				v_this_cistron[:] = 1./len(v_this_cistron)
 			else:
@@ -1394,7 +1395,7 @@ class Transcription(object):
 		Load fold changes related to transcriptional attenuation.
 		"""
 		# Load data from file
-		aa_rna_pair_to_fcs = {}
+		aa_rna_pair_to_log_fcs = {}
 		gene_symbol_to_cistron_id = {g['symbol']: g['rna_ids'][0] for g in raw_data.genes}
 		for row in raw_data.transcriptional_attenuation:
 			trna_aa = row['tRNA'].split('-')[1].upper() + '[c]'
@@ -1405,19 +1406,21 @@ class Transcription(object):
 			rna_indexes_with_cistron = self.cistron_id_to_rna_indexes(cistron_id)
 			for rna_idx in rna_indexes_with_cistron:
 				rna_id = self.rna_data['id'][rna_idx]
-				if (trna_aa, self.rna_data['id'][rna_idx]) in aa_rna_pair_to_fcs:
-					aa_rna_pair_to_fcs[(trna_aa, rna_id)].append(2**row['log2 FC'])
+				if (trna_aa, self.rna_data['id'][rna_idx]) in aa_rna_pair_to_log_fcs:
+					aa_rna_pair_to_log_fcs[(trna_aa, rna_id)].append(row['log2 FC'])
 				else:
-					aa_rna_pair_to_fcs[(trna_aa, rna_id)] = [2**row['log2 FC']]
+					aa_rna_pair_to_log_fcs[(trna_aa, rna_id)] = [row['log2 FC']]
 
 		aa_trnas = []
 		attenuated_rnas = []
 		fold_changes = []
 
-		for ((trna_aa, rna_id), all_fcs) in aa_rna_pair_to_fcs.items():
+		for ((trna_aa, rna_id), all_log_fcs) in aa_rna_pair_to_log_fcs.items():
 			aa_trnas.append(trna_aa)
 			attenuated_rnas.append(rna_id)
-			fold_changes.append(np.mean(all_fcs))
+
+			# Take the average of the reported FCs of each constituent cistron
+			fold_changes.append(2**np.mean(all_log_fcs))
 
 		self.attenuated_rna_ids = np.unique(attenuated_rnas)
 
