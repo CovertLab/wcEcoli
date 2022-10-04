@@ -135,7 +135,7 @@ This page goes through the Python environment setup steps in more detail and wit
    library.
 
    ```bash
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.13
    ```
 
 ### Anywhere else
@@ -147,7 +147,7 @@ the above command that has `--enable-shared`.
 1. Use `pyenv`.
 
    ```bash
-   pyenv install 3.8.7 
+   pyenv install 3.8.13
    ```
 
 
@@ -158,11 +158,11 @@ your project directory unless you need to update or rebuild the team's shared
 virtualenv.
 
 
-1. Create a pyenv virtualenv and select it for your project directory.
+1. Create a pyenv virtualenv and select it in your project directory.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
-   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3
+   pyenv virtualenv 3.8.13 wcEcoli3 && pyenv local wcEcoli3
    ```
 
 1. Upgrade this virtual environment's installers.
@@ -171,7 +171,7 @@ virtualenv.
    pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
    ```
 
-1. ***CONDITIONAL:*** Link numpy and scipy to a manually-installed OpenBLAS.
+1. ***CONDITIONAL:*** Link numpy and scipy to a manually-installed \[that is, not provided by the numpy and scipy installers] OpenBLAS.
 
    **See Issue #931.** There are several degrees of freedom for installing
    OpenBLAS, numpy, and scipy that might change the computed results. We do not know
@@ -189,7 +189,9 @@ virtualenv.
    wcm-runtime Docker Image.
 
    In that case, you need to locate the OpenBLAS library.
-   * Brew on macOS installs OpenBLAS in `/usr/local/opt/openblas/`.
+   * Brew on Intel macOS installs OpenBLAS in `/usr/local/opt/openblas/`.  
+     (To check, run `brew info openblas` and see the `LDFLAGS` and the `CPPFLAGS`.)
+   * Brew on Apple Silicon macOS installs OpenBLAS in `/opt/homebrew/opt/openblas`.
    * For other package managers, find out where they installed `lib/libopenblas*`.
    * Compiling OpenBLAS from source in Ubuntu goes into `/opt/OpenBLAS/` by default.
    * Compiling from source with
@@ -200,7 +202,7 @@ virtualenv.
      scipy works if the same environment module is loaded at runtime.)
 
    To link numpy and scipy to a manually-installed OpenBLAS, create a `~/.numpy-site.cfg` file pointing to
-   it and remember to run `pip install <packages> --no-binary numpy,scipy` in the
+   it and remember to run `pip install <<packages>> --no-binary numpy,scipy` in the
    pip-install steps below.
 
    Copy these lines to `~/.numpy-site.cfg`, adjusting the paths as needed:
@@ -337,7 +339,7 @@ especially when called from multiple processes.
    Go back to that step, run
 
    ```shell script
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7 --force
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.13 --force
    ```
 
    then delete and recreate the virtualenv `wcEcoli3`.

@@ -18,21 +18,25 @@
 #
 ## Install the required version of Python via pyenv, and remember to enable it as
 ## a shared library:
-#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.7
+#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.13
 #
 ## Create the "wcEcoli3" python virtual environment based on that Python version,
 ## and select it for your project directory:
 #   cd ~/dev/wcEcoli
-#   pyenv virtualenv 3.8.7 wcEcoli3 && pyenv local wcEcoli3
+#   pyenv virtualenv 3.8.13 wcEcoli3 && pyenv local wcEcoli3
 #
 ## Upgrade this virtual environment's installers:
 #   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
 #
 ## Install numpy (if it's the first time) then all the packages listed in this file (see
-## docs/create-pyenv.md about whether to add `--no-binary numpy,scipy` to these steps):
-## [When updating numpy here also update it below, in Dockerfile, and in docs/*.]
-#   pip install numpy==1.19.5
+## docs/create-pyenv.md about whether to create a `~/.numpy-site.cfg` file and add
+## `--no-binary numpy,scipy` to these `pip install` steps):
+## [When updating the numpy version here also update it below, in Dockerfile, and in docs/*.]
+#   pip install numpy==1.20.0
 #   pip install -r requirements.txt && pyenv rehash
+#
+## Build the Cython code:
+#   make clean compile
 
 # Installers
 pip>=20.1.1
@@ -49,14 +53,14 @@ wheel>=0.34.2
 # pytest-cov is for `pytest --cov`.
 #
 # TODO: Periodically unfreeze, update, test, and refreeze.
-numpy==1.19.5
-scipy==1.5.4
+numpy==1.20.0
+scipy==1.7.3
 
 aesara==2.0.8
 biopython==1.77
 bokeh==1.4.0
 borealis-fireworks==0.11.0
-cvxpy==1.1.10
+cvxpy==1.1.20
 Cython==0.29.21
 dash==1.18.1
 dnspython==2.0.0
@@ -66,13 +70,13 @@ future==0.18.2
 ipdb==0.13.3
 ipython==7.16.1
 line-profiler==3.0.2
-llvmlite==0.33.0
-matplotlib==3.2.2
+llvmlite==0.38.1
+matplotlib==3.3.4
 mock==4.0.2
 mypy==0.812
-numba==0.50.1
-pandas==1.0.5
-Pillow==7.2.0
+numba==0.55.0
+pandas==1.4.0
+Pillow==8.3.0
 plotly==4.14.1
 pymongo==3.10.1
 pytest==5.4.3
@@ -81,7 +85,7 @@ PyYAML==5.3.1
 ruamel.yaml==0.16.10
 six==1.15.0
 stochastic-arrow==0.5.0
-swiglpk==4.65.1
+swiglpk==5.0.0
 sympy==1.6.1
 Unum==4.1.4
 

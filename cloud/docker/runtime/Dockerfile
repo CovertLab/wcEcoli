@@ -11,7 +11,7 @@
 # Add option `--build-arg from=ABC` to build from a different base image "ABC"
 # but DO NOT USE an alpine base since the simulation math comes out different!
 # See https://pythonspeed.com/articles/alpine-docker-python/ for more reasons.
-ARG from=python:3.8.7
+ARG from=python:3.8.13
 FROM ${from}
 
 RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc \
@@ -53,7 +53,7 @@ ARG NO_AVX2=0
 ENV NO_AVX2="$NO_AVX2"
 
 # Install openblas (must be 0.3.5+) for numpy, scipy, and Aesara.
-ENV OPENBLAS_LABEL=v0.3.13
+ENV OPENBLAS_LABEL=v0.3.21
 RUN if [ -f ~/.numpy-site.cfg ]; then \
     (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/${OPENBLAS_LABEL}.tar.gz | tar -xz \
