@@ -46,13 +46,15 @@ virtualenv-clone>=0.5.4
 virtualenvwrapper>=4.8.4
 wheel>=0.34.2
 
-# Direct dependendencies, frozen at the latest version 2020-07-08, except bokeh is
-# frozen at the latest version that's compatible with Python 2.
+# Direct dependendencies.
+#
+# NOTE: *** When updating the numpy==______ version, also update
+#           cloud/docker/runtime/Dockerfile and the instructions. ***
+#
+# bokeh==1.4.0 is the last version compatible with Python 2. Now irrelevant.
 #
 # dnspython is for pymongo to access server clusters.
 # pytest-cov is for `pytest --cov`.
-#
-# TODO: Periodically unfreeze, update, test, and refreeze.
 numpy==1.20.0
 scipy==1.7.3
 
