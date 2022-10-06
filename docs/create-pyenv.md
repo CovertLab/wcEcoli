@@ -190,7 +190,7 @@ virtualenv.
 
    In that case, you need to locate the OpenBLAS library.
    * Brew on Intel macOS installs OpenBLAS in `/usr/local/opt/openblas/`.  
-     (To check, run `brew info openblas` and see the `LDFLAGS` and the `CPPFLAGS`.)
+     (To check, run `brew --prefix openblas`.)
    * Brew on Apple Silicon macOS installs OpenBLAS in `/opt/homebrew/opt/openblas`.
    * For other package managers, find out where they installed `lib/libopenblas*`.
    * Compiling OpenBLAS from source in Ubuntu goes into `/opt/OpenBLAS/` by default.
