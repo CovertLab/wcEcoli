@@ -1656,24 +1656,30 @@ class Transcription(object):
 		cistron_id_to_idx = {
 			cistron: i for i, cistron in enumerate(self.cistron_data['id'])}
 
-		# Since fold changes are reported for each cistron (gene), the FCs are
-		# applied first to the expression levels of individual cistrons which
-		# are converted back to TU expression levels through NNLS
-		cistron_exp = self.fit_cistron_expression['basal']
+		# Since fold changes are reported for each cistron (gene), the log2 fold
+		# change of each RNA is set as the mean of the reported log2 FCs of the
+		# constituent genes
+		cistron_index_to_log2_fc = {
+			cistron_id_to_idx[cistron_id]: fc for (cistron_id, fc)
+			in zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes)
+			}
 
-		fcs = np.zeros(len(self.cistron_data))
-		for cistron_id, fc in zip(self.ppgpp_regulated_genes, self.ppgpp_fold_changes):
-			fcs[cistron_id_to_idx[cistron_id]] = fc
+		rna_log2_fcs = np.zeros(len(self.rna_data))
+		for rna_index, rna_id in enumerate(self.rna_data['id']):
+			cistron_indexes = self.rna_id_to_cistron_indexes(rna_id)
+			log2_fcs = []
+			for cistron_index in cistron_indexes:
+				if cistron_index in cistron_index_to_log2_fc:
+					log2_fcs.append(cistron_index_to_log2_fc[cistron_index])
 
-		# Apply fold changes to expression levels of cistrons
-		cistron_exp_ppgpp = ((2**fcs * cistron_exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
-			/ (1 - 2**fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
-		cistron_exp_free = (cistron_exp - cistron_exp_ppgpp * f_ppgpp_basal) / (1 - f_ppgpp_basal)
-		cistron_exp_free[cistron_exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
+			if len(log2_fcs) > 0:
+				rna_log2_fcs[rna_index] = np.mean(log2_fcs)
 
-		# Map expression levels of cistrons to those of TUs through NNLS
-		self.exp_ppgpp, _ = self.fit_rna_expression(cistron_exp_ppgpp)
-		self.exp_free, _ = self.fit_rna_expression(cistron_exp_free)
+		# Apply fold changes to expression levels of RNAs
+		rna_exp = self.rna_expression['basal']
+		self.exp_ppgpp = ((2**rna_log2_fcs * rna_exp * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))
+			/ (1 - 2**rna_log2_fcs * (f_ppgpp_aa - f_ppgpp_basal * (1 - f_ppgpp_aa) / (1 - f_ppgpp_basal))))
+		self.exp_free = (rna_exp - self.exp_ppgpp * f_ppgpp_basal) / (1 - f_ppgpp_basal)
 		self._normalize_ppgpp_expression()
 
 		self._ppgpp_expression_set = True
