@@ -67,7 +67,7 @@ Simulation parameters:
 		formatting details.
 	WC_LENGTHSEC (int, "10800"): sets the maximum simulation time in seconds, useful
 		for short simulations (default is 3 hr)
-	TIMESTEP_MAX (float, "2"): sets the maximum time step
+	TIMESTEP_MAX (float, "1"): sets the maximum time step
 	TIMESTEP_SAFETY_FRAC (float, "1.3"): increases the time step by this factor
 		if conditions are favorable; up the the limit of the max time step
 	TIMESTEP_UPDATE_FREQ (int, "5"): frequency at which the time step is updated
@@ -83,7 +83,7 @@ Modeling options:
 		a normal distribution centered on 1; otherwise it is set equal to 1
 	GROWTH_RATE_NOISE (int, "0"): if nonzero, a growth rate coefficient is drawn
 		from a normal distribution centered on 1; otherwise it is set equal to 1
-	D_PERIOD_DIVISION (int, "0"): if nonzero, ends simulation once D period has
+	D_PERIOD_DIVISION (int, "1"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
 	OPERONS (str, "off"): run with operons "off", "on" (actually monocistronic
@@ -98,10 +98,10 @@ Modeling options:
 	TRNA_CHARGING (int, "1"): if nonzero, tRNA charging reactions are modeled
 		and the ribosome elongation rate is set by the amount of charged tRNA
 		present.  This option will override TRANSLATION_SUPPLY in the simulation.
-	AA_SUPPLY_IN_CHARGING (int, "0"): if nonzero, amino acid supply function is
+	AA_SUPPLY_IN_CHARGING (int, "1"): if nonzero, amino acid supply function is
 		used during charging for more stable charging calculations.  Only has an
 		effect if TRNA_CHARGING option is used.
-	PPGPP_REGULATION (int, "0"): if nonzero, ppGpp concentration is determined
+	PPGPP_REGULATION (int, "1"): if nonzero, ppGpp concentration is determined
 		with kinetic equations
 	DISABLE_PPGPP_ELONGATION_INHIBITION (int, "0"): if nonzero, ppGpp inhibition
 		of ribosome elongation (GTPase inhibition) is turned off (max elongation
@@ -111,13 +111,13 @@ Modeling options:
 		superhelical densities of each DNA fragment
 	RECYCLE_STALLED_ELONGATION (int "0"): if nonzero, recycle RNAP and fragment
 		bases when transcription elongation is stalled in ntp-limiting conditions
-	MECHANISTIC_REPLISOME (int, "1"): if nonzero, replisome initiation is
+	MECHANISTIC_REPLISOME (int, "0"): if nonzero, replisome initiation is
 		mechanistic (requires appropriate number of subunits to initiate)
-	MECHANISTIC_TRANSLATION_SUPPLY (int, "0"): if nonzero, amino acid translation supply is
+	MECHANISTIC_TRANSLATION_SUPPLY (int, "1"): if nonzero, amino acid translation supply is
 		mechanistic (depends on concentrations of enzymes and amino acids)
-	MECHANISTIC_AA_TRANSPORT (int, "0"): if nonzero, amino acid uptake and export are
+	MECHANISTIC_AA_TRANSPORT (int, "1"): if nonzero, amino acid uptake and export are
 		mechanistic (depends on concentrations of transporter enzymes and amino acids)
-	TRNA_ATTENUATION (int, "0"): if nonzero, transcriptional attenuation by
+	TRNA_ATTENUATION (int, "1"): if nonzero, transcriptional attenuation by
 		charged tRNA is enabled
 
 Additional variables:
