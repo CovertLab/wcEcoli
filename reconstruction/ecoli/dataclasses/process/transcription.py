@@ -1032,32 +1032,28 @@ class Transcription(object):
 			in zip(mature_rna_ids, compartments)]
 
 		# Get stoichiometric matrix for RNA maturation process
-		raw_rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
+		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
 			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
 
 		# Change all rRNAs to the corresponding rRNA from the first operon to
 		# simplify ribosome complexation process
-		change_rrnas_stoich_matrix = np.identity(len(mature_rna_cistron_indexes))
-		mature_rRNA5S_indexes = np.where(self.cistron_data['is_5S_rRNA'])[0]
-		mature_rRNA16S_indexes = np.where(self.cistron_data['is_16S_rRNA'])[0]
-		mature_rRNA23S_indexes = np.where(self.cistron_data['is_23S_rRNA'])[0]
-		mature_rRNA_group_indexes = [mature_rRNA5S_indexes, mature_rRNA16S_indexes, mature_rRNA23S_indexes]
+		mature_rRNA_indexes = [np.where(self.cistron_data['is_5S_rRNA'])[0],
+			np.where(self.cistron_data['is_16S_rRNA'])[0],
+			np.where(self.cistron_data['is_23S_rRNA'])[0]]
 
-		first_rRNA5S_index = np.where(self.cistron_data['id'] == 'RRFA-RRNA')[0]
-		first_rRNA16S_index = np.where(self.cistron_data['id'] == 'RRSA-RRNA')[0]
-		first_rRNA23S_index = np.where(self.cistron_data['id'] == 'RRLA-RRNA')[0]
-		first_rRNA_indexes = [first_rRNA5S_index, first_rRNA16S_index, first_rRNA23S_index]
+		first_rRNA_indexes = [np.where(self.cistron_data['id'] == 'RRFA-RRNA')[0],
+			np.where(self.cistron_data['id'] == 'RRSA-RRNA')[0],
+			np.where(self.cistron_data['id'] == 'RRLA-RRNA')[0]]
 
-		for (rRNA_indexes, first_rRNA_index) in zip(mature_rRNA_group_indexes, first_rRNA_indexes):
+		for (rRNA_indexes, first_rRNA_index) in zip(mature_rRNA_indexes, first_rRNA_indexes):
 			mature_rRNA_mature_rna_indexes = np.where(
 				np.isin(mature_rna_cistron_indexes, rRNA_indexes))[0]
 			first_rRNA_mature_rna_index = np.where(
-				mature_rna_cistron_indexes == first_rRNA_index)[0]
+				mature_rna_cistron_indexes == first_rRNA_index)[0][0]
 			for idx in mature_rRNA_mature_rna_indexes:
-				change_rrnas_stoich_matrix[idx, idx] = 0
-				change_rrnas_stoich_matrix[first_rRNA_mature_rna_index, idx] += 1
-
-		self.rna_maturation_stoich_matrix = change_rrnas_stoich_matrix @ raw_rna_maturation_stoich_matrix
+				if idx != first_rRNA_mature_rna_index:
+					self.rna_maturation_stoich_matrix[first_rRNA_mature_rna_index, :] += self.rna_maturation_stoich_matrix[idx, :]
+					self.rna_maturation_stoich_matrix[idx, :] = 0
 
 		# Get RNA nucleotide compositions of unprocessed and processed RNAs
 		unprocessed_rna_nt_counts = self.rna_data['counts_ACGU'][

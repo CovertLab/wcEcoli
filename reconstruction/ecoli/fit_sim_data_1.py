@@ -1206,9 +1206,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	includes_rRNA = rna_data['is_rRNA']
 	includes_tRNA = rna_data['is_tRNA']
 	is_mRNA = rna_data['is_mRNA']
-	#is_rRNA23S = cistron_data['is_23S_rRNA']
-	#is_rRNA16S = cistron_data['is_16S_rRNA']
-	#is_rRNA5S = cistron_data['is_5S_rRNA']
+
 
 	## IDs
 	ids_rnas = rna_data["id"]
@@ -1218,9 +1216,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	ids_tRNA = ids_rnas[includes_tRNA]
 	ids_tRNA_cistrons = ids_cistrons[is_tRNA_cistron]
 	ids_rRNA_cistrons = ids_cistrons[is_rRNA_cistron]
-	# ids_rRNA23S = ids_cistrons[is_rRNA23S]
-	# ids_rRNA16S = ids_cistrons[is_rRNA16S]
-	# ids_rRNA5S = ids_cistrons[is_rRNA5S]
+
 
 	## Mass fractions
 	initial_rna_mass = (sim_data.mass.get_component_masses(doubling_time)['rnaMass']
@@ -1243,9 +1239,6 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	individual_masses_tRNA_operon_matured = individual_masses_tRNA_cistrons.asNumber(units.g) @ \
 		sim_data.process.transcription.tRNA_cistron_tu_mapping_matrix * units.g
 	individual_masses_mRNA = rna_mw[is_mRNA] / n_avogadro
-	#individual_masses_rRNA23S = get_masses(ids_rRNA23S).asUnit(units.g / units.mol) / n_avogadro
-	#individual_masses_rRNA16S = get_masses(ids_rRNA16S).asUnit(units.g / units.mol) / n_avogadro
-	#individual_masses_rRNA5S = get_masses(ids_rRNA5S).asUnit(units.g / units.mol) / n_avogadro
 
 	## Set rRNA TU expression assuming equal per-copy
 	# transcription probabilities. Since the operons have different promoter
@@ -1292,10 +1285,11 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 		trna_id: dist for (trna_id, dist)
 		in zip(tRNA_distribution['id'], tRNA_distribution['molar_ratio_to_16SrRNA'])
 		}
-	distribution_tRNA_cistrons = np.zeros(len(ids_tRNA_cistrons))
+	raw_distribution_tRNA_cistrons = np.zeros(len(ids_tRNA_cistrons))
 	for i, tRNA_id in enumerate(ids_tRNA_cistrons):
-		distribution_tRNA_cistrons[i] = tRNA_id_to_dist[tRNA_id]
+		raw_distribution_tRNA_cistrons[i] = tRNA_id_to_dist[tRNA_id]
 
+	distribution_tRNA_cistrons = raw_distribution_tRNA_cistrons.copy()
 	distribution_tRNA_cistrons[tRNA_from_rRNA_tRNA_indexes] = 0
 
 	# Approximate tRNA distribution from tRNA cistron distribution by using NNLS
@@ -1334,25 +1328,36 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 
 	expression = normalize(rna_expression_container.counts())
 
-	## Get rRNA subunit from masses/ratios for validation
-	#total_count_rRNA23S = totalCountFromMassesAndRatios(
-	#	total_mass_rRNA23S,
-	#	individual_masses_rRNA23S,
-	#	distribution_rRNA23S
-	#	)
-	#total_count_rRNA16S = totalCountFromMassesAndRatios(
-	#	total_mass_rRNA16S,
-	#	individual_masses_rRNA16S,
-	#	distribution_rRNA16S
-	#	)
-	#total_count_rRNA5S = totalCountFromMassesAndRatios(
-	#	total_mass_rRNA5S,
-	#	individual_masses_rRNA5S,
-	#	distribution_rRNA5S
-	#	)
-	#counts_rRNA23S = total_count_rRNA23S * distribution_rRNA23S
-	#counts_rRNA16S = total_count_rRNA16S * distribution_rRNA16S
-	#counts_rRNA5S = total_count_rRNA5S * distribution_rRNA5S
+	## Get rRNA subunit for validation
+
+	is_rRNA23S = cistron_data['is_23S_rRNA']
+	is_rRNA16S = cistron_data['is_16S_rRNA']
+	is_rRNA5S = cistron_data['is_5S_rRNA']
+
+	ids_rRNA23S = ids_cistrons[is_rRNA23S]
+	ids_rRNA16S = ids_cistrons[is_rRNA16S]
+	ids_rRNA5S = ids_cistrons[is_rRNA5S]
+
+	get_mass = sim_data.getter.get_mass
+	mass_rRNA23S = get_mass(ids_rRNA23S[0]).asUnit(units.g / units.mol) / n_avogadro
+	mass_rRNA16S = get_mass(ids_rRNA16S[0]).asUnit(units.g / units.mol) / n_avogadro
+	mass_rRNA5S = get_mass(ids_rRNA5S[0]).asUnit(units.g / units.mol) / n_avogadro
+
+	val_count_rRNA23S = total_mass_rRNA23S / mass_rRNA23S
+	val_count_rRNA16S = total_mass_rRNA16S / mass_rRNA16S
+	val_count_rRNA5S = total_mass_rRNA5S / mass_rRNA5S
+	total_count_rRNA23S = total_count_rRNA
+	total_count_rRNA16S = total_count_rRNA
+	total_count_rRNA5S = total_count_rRNA + counts_rRNA[6]
+
+	rRNA_contributed_tRNA_counts = counts_tRNA_from_rRNA
+	val_tRNA_counts = totalCountFromMassesAndRatios(
+		total_mass_tRNA,
+		individual_masses_tRNA_cistrons,
+		normalize(raw_distribution_tRNA_cistrons)
+		) * normalize(raw_distribution_tRNA_cistrons)
+	#val_tRNA_counts = val_tRNA_counts[tRNA_from_rRNA_tRNA_indexes]
+
 	return expression
 
 
