@@ -1077,7 +1077,8 @@ class Transcription(object):
 		rows, cols = self.rna_maturation_stoich_matrix.nonzero()
 
 		for i, j in zip(rows, cols):
-			degraded_nt_counts[j, :] -= mature_rna_nt_counts[i, :]
+			degraded_nt_counts[j, :] -= mature_rna_nt_counts[i, :] \
+										* self.rna_maturation_stoich_matrix[i, j]
 
 		assert np.all(degraded_nt_counts >= 0)
 		self.rna_maturation_degraded_nt_counts = degraded_nt_counts
