@@ -86,7 +86,7 @@ Modeling options:
 	D_PERIOD_DIVISION (int, "1"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
-	OPERONS (str, "off"): run with operons "off", "on" (actually monocistronic
+	OPERONS (str, "on"): run with operons "off", "on" (actually monocistronic
 		or polycistronic), or "both" (into adjacent output directories)
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene

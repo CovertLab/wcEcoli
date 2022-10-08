@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 
 OPERON_OPTIONS = ('off', 'on')
 EXTENDED_OPERON_OPTIONS = OPERON_OPTIONS + ('both',)
-DEFAULT_OPERON_OPTION = 'off'
+DEFAULT_OPERON_OPTION = 'on'
 
 SERIALIZED_RAW_DATA = "rawData.cPickle"
 SERIALIZED_RAW_VALIDATION_DATA = "rawValidationData.cPickle"
