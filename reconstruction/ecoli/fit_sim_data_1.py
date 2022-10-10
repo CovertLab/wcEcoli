@@ -449,7 +449,7 @@ def buildBasalCellSpecifications(
 		variable_elongation_transcription=True,
 		variable_elongation_translation=False,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False,
+		disable_rnapoly_capacity_fitting=False
 		):
 	"""
 	Creates cell specifications for the basal condition by fitting expression.
@@ -763,7 +763,8 @@ def expressionConverge(
 		variable_elongation_transcription=True,
 		variable_elongation_translation=False,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False):
+		disable_rnapoly_capacity_fitting=False
+		):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
 	expression based on gene expression data and makes adjustments to match
@@ -812,7 +813,6 @@ def expressionConverge(
 
 		initialExpression = expression.copy()
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
-
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
@@ -1357,7 +1357,6 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 		normalize(raw_distribution_tRNA_cistrons)
 		) * normalize(raw_distribution_tRNA_cistrons)
 	#val_tRNA_counts = val_tRNA_counts[tRNA_from_rRNA_tRNA_indexes]
-
 	return expression
 
 
@@ -2407,7 +2406,6 @@ def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs
 	# Use NNLS to map new cistron expression to RNA expression
 	expression, _ = transcription.fit_rna_expression(cistron_expression)
 	expression = normalize(expression)
-
 	# Apply genotype perturbations to all RNAs that contain each cistron
 	rna_indexes = []
 	rna_fcs = []

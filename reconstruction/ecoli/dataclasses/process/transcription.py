@@ -720,30 +720,6 @@ class Transcription(object):
 				[seq.count(letter) for letter in ntp_abbreviations])
 		nt_counts = np.array(nt_counts)
 
-		# TODO: delete comments when it happens in mature_rna_data
-		# Set the lengths, nucleotide counts, molecular weights, and sequences
-		# of each type of rRNAs to be identical to those of the first rRNA
-		# operon. Later in the sim, transcription of all rRNA genes are set to
-		# produce the rRNAs of the first operon. This is done to simplify the
-		# complexation reactions that form ribosomes. In reality, all of these
-		# genes produce rRNA molecules with slightly different sequences and
-		# molecular weights.
-		#idx_23S = np.where(is_23S_rRNA)[0]
-		#idx_16S = np.where(is_16S_rRNA)[0]
-		#idx_5S = np.where(is_5S_rRNA)[0]
-
-		#rna_lengths[idx_23S] = rna_lengths[idx_23S[0]]
-		#rna_lengths[idx_16S] = rna_lengths[idx_16S[0]]
-		#rna_lengths[idx_5S] = rna_lengths[idx_5S[0]]
-
-		#nt_counts[idx_23S, :] = nt_counts[idx_23S[0], :]
-		#nt_counts[idx_16S, :] = nt_counts[idx_16S[0], :]
-		#nt_counts[idx_5S, :] = nt_counts[idx_5S[0], :]
-
-		#mws[idx_23S] = mws[idx_23S[0]]
-		#mws[idx_16S] = mws[idx_16S[0]]
-		#mws[idx_5S] = mws[idx_5S[0]]
-
 		# Get mapping from cistron IDs to coordinate and direction
 		rna_id_to_coordinate = {}
 		rna_id_to_direction = {}
@@ -914,32 +890,6 @@ class Transcription(object):
 		"""
 		tRNA_exp, res = fast_nnls(self.tRNA_cistron_tu_mapping_matrix, tRNA_cistron_expression)
 		return tRNA_exp, res
-
-	def fit_stable_rna_expression(self, tRNA_cistron_expression, rRNA23S_expression,
-								  rRNA16S_expression, rRNA5S_expression):
-		"""
-		Calculates the expression of stable RNA transcription units that best fits the
-		given expression levels of stable RNA cistrons using nonnegative least
-		squares.
-		"""
-		# Combine expression arrays into one according to indexes
-		stable_cistron_indexes = np.where(np.logical_or(self.cistron_data['is_tRNA'], self.cistron_data['is_rRNA']))[0]
-		is_tRNA = self.cistron_data['is_tRNA'][stable_cistron_indexes]
-		is_rRNA23S = self.cistron_data['is_23S_rRNA'][stable_cistron_indexes]
-		is_rRNA16S = self.cistron_data['is_16S_rRNA'][stable_cistron_indexes]
-		is_rRNA5S = self.cistron_data['is_5S_rRNA'][stable_cistron_indexes]
-		stable_rna_cistron_expression = np.zeros_like(stable_cistron_indexes)
-		stable_rna_cistron_expression[is_tRNA] = tRNA_cistron_expression
-		stable_rna_cistron_expression[is_rRNA23S] = rRNA23S_expression
-		stable_rna_cistron_expression[is_rRNA16S] = rRNA16S_expression
-		stable_rna_cistron_expression[is_rRNA5S] = rRNA5S_expression
-		# TODO (Albert): does it matter than normalize happens here instead of elsewhere?
-		stable_rna_cistron_expression = normalize(stable_rna_cistron_expression)
-
-		# Calculate stable RNA expression with NNLS
-		stable_rna_exp, res = fast_nnls(
-			self.stable_rna_cistron_tu_mapping_matrix, stable_rna_cistron_expression)
-		return stable_rna_exp, res
 
 	def _get_relative_coordinates(self, coordinates):
 		"""
@@ -1620,17 +1570,17 @@ class Transcription(object):
 			mass = normalize(mass)
 
 			fractions =  {
-				'23S': mass[np.concatenate((np.zeros(len(self.rna_data), np.int64),
-						self.mature_rna_data['is_23S_rRNA'].astype(np.int64)))].sum(),
-				'16S': mass[np.concatenate((np.zeros(len(self.rna_data), np.int64),
-						self.mature_rna_data['is_16S_rRNA'].astype(np.int64)))].sum(),
-				'5S': mass[np.concatenate((np.zeros(len(self.rna_data), np.int64),
-						self.mature_rna_data['is_5S_rRNA'].astype(np.int64)))].sum(),
+				'23S': mass[np.concatenate((np.zeros(len(self.rna_data), bool),
+						self.mature_rna_data['is_23S_rRNA'].astype(bool)))].sum(),
+				'16S': mass[np.concatenate((np.zeros(len(self.rna_data), bool),
+						self.mature_rna_data['is_16S_rRNA'].astype(bool)))].sum(),
+				'5S': mass[np.concatenate((np.zeros(len(self.rna_data), bool),
+						self.mature_rna_data['is_5S_rRNA'].astype(bool)))].sum(),
 				'trna': mass[np.concatenate((np.logical_and(self.rna_data['is_tRNA'],
-							~self.rna_data['is_unprocessed']).astype(np.int64),
-							self.mature_rna_data['is_tRNA'].astype(np.int64)))].sum(),
-				'mrna': mass[np.concatenate((self.rna_data['is_mRNA'].astype(np.int64),
-							np.zeros(len(self.mature_rna_data), np.int64)))].sum(),
+							~self.rna_data['is_unprocessed']).astype(bool),
+							self.mature_rna_data['is_tRNA'].astype(bool)))].sum(),
+				'mrna': mass[np.concatenate((self.rna_data['is_mRNA'].astype(bool),
+							np.zeros(len(self.mature_rna_data), bool)))].sum(),
 				}
 		else:
 			fractions = self._basal_rna_fractions
@@ -1652,7 +1602,6 @@ class Transcription(object):
 		unprocessed_rna_expression = rna_expression[self.rna_data['is_unprocessed']]
 		mature_rna_expression = maturation_stoich_matrix.dot(unprocessed_rna_expression)
 		rna_expression[self.rna_data['is_unprocessed']] = 0
-
 		return normalize(np.concatenate((rna_expression, mature_rna_expression)))
 
 	def set_ppgpp_expression(self, sim_data):
