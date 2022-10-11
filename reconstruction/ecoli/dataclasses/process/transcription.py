@@ -840,7 +840,7 @@ class Transcription(object):
 
 		# Get evidence codes for each transcription unit from raw data
 		self.rna_id_to_evidence_codes = {
-			tu['id']: tu['evidence'] for tu in raw_data.transcription_units
+			tu['id']: sorted(tu['evidence']) for tu in raw_data.transcription_units
 		}
 
 		rna_data = np.zeros(
