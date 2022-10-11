@@ -503,7 +503,6 @@ class Transcription(object):
 			(v, (cistron_indexes, rna_indexes)),
 			shape=shape)
 
-
 		# Find groups of cistrons and TUs that belong to the same operons.
 		# self.operons is a list of tuples that each specify an operon with
 		# a list of cistron indexes and a list of RNA indexes
