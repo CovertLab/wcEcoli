@@ -182,7 +182,6 @@ class GetterFunctions(object):
 		Builds nucleotide sequences of each transcription unit using the genome
 		sequence and the left and right end positions.
 		"""
-		# TODO(Albert): make the rRNAs all the same by type here
 		genome_sequence = raw_data.genome_sequence
 
 		def parse_sequence(tu_id, left_end_pos, right_end_pos, direction):
@@ -449,7 +448,11 @@ class GetterFunctions(object):
 					f' version of the model with the exception of rRNA'
 					f' transcription units with tRNA genes.')
 
-			rna_id_to_type[tu['id']] = tu_rna_types[0]
+			if len(tu_rna_types) == 1:
+				rna_id_to_type[tu['id']] = tu_rna_types[0]
+			else:
+				# Hybrid RNAs are set to have nonspecific mass
+				rna_id_to_type[tu['id']] = 'nonspecific_RNA'
 
 		return {
 			rna_id: self._build_submass_array(mw, rna_id_to_type[rna_id])
