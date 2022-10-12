@@ -1,3 +1,2 @@
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
-"EG10001"   "alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
-"NG001"   "gfp"   ["gfp"] 1111 1111 "+" ["NG001_RNA"]
+"NG001"	"gfp"	["gfp"]	1111	1111	"+"	["NG001_RNA"]

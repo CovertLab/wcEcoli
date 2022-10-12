@@ -1,3 +1,2 @@
 "id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
-"EG10001_RNA"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	"mRNA"	[]	"EG10001"	["ALARACEBIOSYN-MONOMER"]	null	[]
-"NG001_RNA" "gfp"   ["gfp"] "mRNA"  []  "NG001" ["GFP-MONOMER"] null    []
+"NG001_RNA"	"gfp"	["gfp"]	"mRNA"	[]	"NG001"	["GFP-MONOMER"]	null	[]
