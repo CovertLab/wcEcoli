@@ -208,13 +208,10 @@ class Mass(object):
 		Measured RNA subgroup mass fractions. Fractions should change in other
 		conditions with growth rate (see transcription.get_rna_fractions()).
 		"""
-
 		return {
-			'23S': self._rrna23s_mass_sub_fraction,
-			'16S': self._rrna16s_mass_sub_fraction,
-			'5S': self._rrna5s_mass_sub_fraction,
-			'trna': self._trna_mass_sub_fraction,
-			'mrna': self._mrna_mass_sub_fraction,
+			'rRNA': self._rrna23s_mass_sub_fraction + self._rrna16s_mass_sub_fraction + self._rrna5s_mass_sub_fraction,
+			'tRNA': self._trna_mass_sub_fraction,
+			'mRNA': self._mrna_mass_sub_fraction,
 			}
 
 	def getBiomassAsConcentrations(self, doubling_time, rp_ratio=None):
