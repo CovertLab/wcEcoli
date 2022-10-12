@@ -155,8 +155,9 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool):
+	def __init__(self, operons_on: bool, new_genes_on: bool):
 		self.operons_on = operons_on
+		self.new_genes_on = new_genes_on
 
 		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
 		self.transcription_units: List[dict] = []
@@ -176,6 +177,9 @@ class KnowledgeBaseEcoli(object):
 			self.added_data.update({
 				'transcription_units': 'transcription_units_added',
 				})
+
+		if self.new_genes_on:
+			print("New genes is on!")
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:

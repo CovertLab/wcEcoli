@@ -27,6 +27,7 @@ class ParcaTask(FiretaskBase):
 		'rnapoly_fitting']
 	optional_params = [
 		'operons',
+		'new_genes',
 		'load_intermediate',
 		'save_intermediates',
 		'intermediates_directory',
@@ -54,6 +55,7 @@ class ParcaTask(FiretaskBase):
 		tasks = [
 			InitRawDataTask(
 				operons=self.get('operons'),
+				new_genes=self.get('new_genes'),
 				output=raw_data_file),
 
 			FitSimDataTask(

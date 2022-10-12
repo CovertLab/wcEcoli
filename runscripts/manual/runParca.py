@@ -73,6 +73,7 @@ class RunParca(scriptBase.ScriptBase):
 			'git_branch': fp.git_branch(),
 			'description': args.description,
 			'operons': args.operons,
+			'new_genes': args.new_genes,
 			'time': args.time,
 			'python': sys.version.splitlines()[0],
 		}

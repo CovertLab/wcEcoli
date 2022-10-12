@@ -53,6 +53,7 @@ PARCA_KEYS = (
 	'ribosome_fitting',
 	'rnapoly_fitting',
 	'operons',
+	'new_genes',
 	'cpus',
 	'variable_elongation_transcription',
 	'variable_elongation_translation')
