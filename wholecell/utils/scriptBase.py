@@ -374,6 +374,13 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			choices=constants.OPERON_OPTIONS,
 			help='Turn operons off/on (actually monocistronic/polycistronic).')
 
+	def define_parameter_new_genes(self, parser: argparse.ArgumentParser) -> None:
+		self.define_option(parser,
+			'new-genes', str,
+			default=constants.DEFAULT_NEW_GENES_OPTION,
+			choices=constants.NEW_GENES_OPTIONS,
+			help='Turn new genes off/on.')
+
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None
 		"""Define Parca task options EXCEPT the elongation options."""
@@ -390,6 +397,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 					 ' through --no-debug-parca).')
 
 		self.define_parameter_operons(parser)
+		self.define_parameter_new_genes(parser)
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
