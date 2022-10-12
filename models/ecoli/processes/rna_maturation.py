@@ -65,3 +65,17 @@ class RnaMaturation(wholecell.processes.process.Process):
 		self.fragment_bases.countsInc(n_fragment_bases)
 		self.unprocessed_rnas.countsDec(unprocessed_rna_counts)
 		self.ppi.countDec(self.n_ppi_added.dot(unprocessed_rna_counts))
+
+		# Write to listener
+		self.writeToListener(
+			"RnaMaturationListener", "total_maturation_events",
+			unprocessed_rna_counts.sum())
+		self.writeToListener(
+			"RnaMaturationListener", "total_degraded_ntps",
+			n_fragment_bases.sum())
+		self.writeToListener(
+			"RnaMaturationListener", "unprocessed_rnas_consumed",
+			unprocessed_rna_counts)
+		self.writeToListener(
+			"RnaMaturationListener", "mature_rnas_generated",
+			n_mature_rnas)

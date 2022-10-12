@@ -30,6 +30,7 @@ REQUIRED_COLUMNS = [
 	("Mass", "cellMass"),
 	("Mass", "dryMass"),
 	("mRNACounts", "mRNA_counts"),
+	("RnaMaturationListener", "unprocessed_rnas_consumed"),
 	("RnaSynthProb", "gene_copy_number"),
 	("RnaSynthProb", "pPromoterBound"),
 	("RnaSynthProb", "rna_synth_prob_per_cistron"),
@@ -114,6 +115,10 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list)
 
 		equilibrium_rxn_ids = sim_data.process.equilibrium.rxn_ids
 		indexes["EquilibriumReactions"] = build_index_dict(equilibrium_rxn_ids)
+
+		unprocessed_rna_ids = TableReader(
+			os.path.join(simOutDir, "RnaMaturationListener")).readAttribute("unprocessed_rna_ids")
+		indexes["UnprocessedRnas"] = build_index_dict(unprocessed_rna_ids)
 
 		tf_ids = sim_data.process.transcription_regulation.tf_ids
 		indexes["TranscriptionFactors"] = build_index_dict(tf_ids)
@@ -355,6 +360,21 @@ def read_complexation_dynamics(sim_data, node, node_id, columns, indexes, volume
 
 	node.read_dynamics(dynamics, dynamics_units)
 
+def read_rna_maturation_dynamics(sim_data, node, node_id, columns, indexes, volume):
+	"""
+	Reads dynamics data for RNA maturation nodes from a simulation output.
+	"""
+	reaction_idx = indexes["UnprocessedRnas"][node_id[:-4] + '[c]']
+
+	dynamics = {
+		'RNA maturation events': columns[("RnaMaturationListener", "unprocessed_rnas_consumed")][:, reaction_idx],
+		}
+	dynamics_units = {
+		'RNA maturation events': COUNT_UNITS,
+		}
+
+	node.read_dynamics(dynamics, dynamics_units)
+
 
 def read_metabolism_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	"""
@@ -458,6 +478,7 @@ TYPE_TO_READER_FUNCTION = {
 	"Translation": read_translation_dynamics,
 	"Complexation": read_complexation_dynamics,
 	"Equilibrium": read_equilibrium_dynamics,
+	"RNA Maturation": read_rna_maturation_dynamics,
 	"Metabolism": read_metabolism_dynamics,
 	"Transport": read_metabolism_dynamics,
 	"Regulation": read_regulation_dynamics,

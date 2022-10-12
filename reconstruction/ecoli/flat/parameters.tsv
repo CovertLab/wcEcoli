@@ -3,9 +3,7 @@
 "cell_density"	1100	"units.g/units.L"	"Baldwin et al."	"from Baldwin WW, Myer R, Powell N, Anderson E, Koch AL. Buoyant density of Escherichia coli is determined solely by the osmolarity of the culture medium. Arch Microbiol. 1995 Aug164(2):155-7 p.156 fig.3 & fig.2 (retrieved from Bionumbers)"
 "growth_associated_maintenance"	59.81	"units.mmol / units.g"	"Feist"	
 "non_growth_associated_maintenance"	8.39	"units.mmol / units.g / units.h"	"Feist"	
-"kcat_exoRNase"	50	"1/units.s"		
-"endoRNase_function"	1			
-"endoRNase_cooperation"	1			
+"kcat_exoRNase"	50	"1/units.s"
 "ribosome_elongation_rate_max"	30	"units.aa/units.s"		
 "ribosome_elongation_rate_basal"	22	"units.aa/units.s"		
 "RNAP_elongation_rate_for_stable_RNA"	85	"units.nt/units.s"

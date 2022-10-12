@@ -104,8 +104,8 @@ def analyze_variant(args):
 			cell_mass = mass_reader.readColumn('cellMass')[-5:]
 			coefficient = dry_mass / cell_mass * cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
-			reaction_ids = np.array(fba_results_reader.readAttribute("reactionIDs"))
-			reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("reactionFluxes")[-5:].T / coefficient).T
+			reaction_ids = np.array(fba_results_reader.readAttribute("compiled_reaction_ids"))
+			reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("compiled_reaction_fluxes")[-5:].T / coefficient).T
 		# Exclude failed sims
 		except Exception as e:
 			print('Variant {} exception: {}'.format(variant, e))
@@ -114,20 +114,16 @@ def analyze_variant(args):
 		# Extract fluxes in Toya data set from simulation output
 		model_fluxes = np.zeros_like(toya_fluxes)
 		for i, toya_reaction in enumerate(toya_reactions):
-			flux_time_course = []  # type: List[np.ndarray]
+			flux_time_course = None
 
-			for rxn in reaction_ids:
+			for j, rxn in enumerate(reaction_ids):
 				if re.findall(toya_reaction, rxn):
-					reverse = 1
-					if re.findall("(reverse)", rxn):
-						reverse = -1
-
-					if len(flux_time_course):
-						flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+					if flux_time_course is not None:
+						flux_time_course += reaction_fluxes[:, j]
 					else:
-						flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
+						flux_time_course = reaction_fluxes[:, j]
 
-			if len(flux_time_course):
+			if flux_time_course is not None:
 				model_fluxes[i] = np.mean(flux_time_course).asNumber(flux_units)
 
 		flux_r, _ = stats.pearsonr(toya_fluxes, model_fluxes)

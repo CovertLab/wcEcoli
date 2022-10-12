@@ -47,12 +47,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			}
 		self.monomer_index_to_tu_indexes = sim_data.relation.monomer_index_to_tu_indexes
 
-		# Determine changes from parameter shuffling variant
-		if (hasattr(sim_data.process.translation, "translationEfficienciesShuffleIdxs")
-				and sim_data.process.translation.translationEfficienciesShuffleIdxs is not None):
-			shuffleIdxs = sim_data.process.translation.translationEfficienciesShuffleIdxs
-			self.translationEfficiencies = self.translationEfficiencies[shuffleIdxs]
-
 		# Create view on to active 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 

@@ -25,12 +25,7 @@ from six.moves import zip
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get all cells
-		allDir = self.ap.get_cells()
-		# allDir = self.ap.get_cells(generation = [0, 1, 2])
-
-		sim_data = cPickle.load(open(simDataFile, "rb"))
-		metaboliteNames = np.array(sorted(sim_data.process.metabolism.conc_dict.keys()))
-		nMetabolites = len(metaboliteNames)
+		cell_paths = self.ap.get_cells()
 
 		validation_data = cPickle.load(open(validationDataFile, "rb"))
 		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
@@ -40,47 +35,37 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
 		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		cellDensity = sim_data.constants.cell_density
 
 		modelFluxes = {}
 		toyaOrder = []
+
 		for rxn in toyaReactions:
 			modelFluxes[rxn] = []
 			toyaOrder.append(rxn)
 
-		for simDir in allDir:
+		for simDir in cell_paths:
 			simOutDir = os.path.join(simDir, "simOut")
-
-			mainListener = TableReader(os.path.join(simOutDir, "Main"))
-			mainListener.close()
 
 			massListener = TableReader(os.path.join(simOutDir, "Mass"))
 			cellMass = massListener.readColumn("cellMass")
 			dryMass = massListener.readColumn("dryMass")
-			massListener.close()
-
 			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-			reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-			reactionFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("reactionFluxes").T / coefficient).T
-			fbaResults.close()
+			compiled_reaction_ids = fbaResults.readAttribute("compiled_reaction_ids")
+			compiled_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("compiled_reaction_fluxes").T / coefficient).T
 
 			for toyaReaction in toyaReactions:
-				fluxTimeCourse = []
+				fluxTimeCourse = None
 
-				for rxn in reactionIDs:
+				for i, rxn in enumerate(compiled_reaction_ids):
 					if re.findall(toyaReaction, rxn):
-						reverse = 1
-						if re.findall("(reverse)", rxn):
-							reverse = -1
-
-						if len(fluxTimeCourse):
-							fluxTimeCourse += reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
+						if fluxTimeCourse is not None:
+							fluxTimeCourse += compiled_reaction_fluxes[:, i]
 						else:
-							fluxTimeCourse = reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
+							fluxTimeCourse = compiled_reaction_fluxes[:, i]
 
-				if len(fluxTimeCourse):
+				if fluxTimeCourse is not None:
 					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(units.mmol / units.g / units.h))
 
 		toyaVsReactionAve = []

@@ -42,11 +42,6 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Load protein degradation rates (based on N-end rule)
 		self.rawDegRate = sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s)
 
-		shuffleIdxs = None
-		if hasattr(sim_data.process.translation, "monomerDegRateShuffleIdxs") and sim_data.process.translation.monomerDegRateShuffleIdxs is not None:
-			shuffleIdxs = sim_data.process.translation.monomerDegRateShuffleIdxs
-			self.rawDegRate = self.rawDegRate[shuffleIdxs]
-
 		# Build metabolite IDs for S matrix
 		h2oId = [sim_data.molecule_ids.water]
 		metaboliteIds = sim_data.molecule_groups.amino_acids + h2oId

@@ -24,10 +24,13 @@ from wholecell.utils.random import make_elongation_rates
 
 PROCESS_MAX_TIME_STEP = 2.
 RNA_SEQ_ANALYSIS = "rsem_tpm"
-KCAT_ENDO_RNASE = 0.001
-ESTIMATE_ENDO_RNASES = 5000
 PPGPP_CONC_UNITS = units.umol / units.L
 PRINT_VALUES = False  # print values for supplemental table if True
+
+
+class TranscriptionDirectionError(Exception):
+	pass
+
 
 
 class Transcription(object):
@@ -73,13 +76,12 @@ class Transcription(object):
 	def _build_ppgpp_regulation(self, raw_data, sim_data):
 		"""
 		Determine which genes are regulated by ppGpp and store the fold
-		change in expression associated with each RNA.
+		change in expression associated with each gene.
 
 		Attributes set:
-			ppgpp_regulated_genes (ndarray[str]): RNA ID of regulated
-				genes (no compartment tag)
-			ppgpp_fold_changes (ndarray[float]): log2 fold change for
-				each gene in ppgpp_regulated_genes
+			ppgpp_regulated_genes (ndarray[str]): cistron ID of regulated genes
+			ppgpp_fold_changes (ndarray[float]): log2 fold change for each gene
+				in ppgpp_regulated_genes
 			_ppgpp_growth_parameters: parameters for interpolate.splev
 				to estimate growth rate from ppGpp concentration
 		"""
@@ -267,6 +269,50 @@ class Transcription(object):
 		is_forward = [
 			cistron_id_to_direction[cistron['id']] == '+' for cistron in all_cistrons]
 
+		# Get cistron nucleotide compositions
+		genome_sequence = raw_data.genome_sequence
+
+		def parse_sequence(cistron_id, left_end_pos, right_end_pos, direction):
+			"""
+			Parses genome sequence to get the sequence of the RNA transcribed
+			from the cistron, given left and right end positions and
+			transcription direction (Note: the left and right end positions in
+			the raw data files are given as 1-indexed coordinates)
+			"""
+			if direction == '+':
+				return genome_sequence[left_end_pos - 1 : right_end_pos].transcribe()
+			elif direction == '-':
+				return genome_sequence[left_end_pos - 1 : right_end_pos].reverse_complement().transcribe()
+			else:
+				raise TranscriptionDirectionError(
+					f"Unidentified transcription direction given for {cistron_id}")
+
+		rna_seqs = [
+			parse_sequence(
+				cistron_id,
+				gene_id_to_left_end_pos[cistron_id_to_gene_id[cistron_id]],
+				gene_id_to_right_end_pos[cistron_id_to_gene_id[cistron_id]],
+				cistron_id_to_direction[cistron_id]
+				)
+			for cistron_id in all_cistron_ids
+			]
+
+		nt_counts = []
+		for seq in rna_seqs:
+			nt_counts.append([
+				seq.count(letter)
+				for letter in sim_data.ntp_code_to_id_ordered.keys()])
+		nt_counts = np.array(nt_counts)
+
+		# Calculate molecular weights of the RNAs corresponding to each cistron
+		ppi_mw = sim_data.getter.get_mass(sim_data.molecule_ids.ppi[:-3]).asNumber(units.g/units.mol)
+		polymerized_ntp_mws = np.array([
+			sim_data.getter.get_mass(met_id[:-3]).asNumber(units.g/units.mol)
+			for met_id in sim_data.molecule_groups.polymerized_ntps
+			])
+
+		mws = nt_counts.dot(polymerized_ntp_mws) + ppi_mw  # Add end weight
+
 		# Get boolean arrays for each RNA type
 		is_mRNA = [rna["type"] == "mRNA" for rna in all_cistrons]
 		is_miscRNA = [rna["type"] == "miscRNA" for rna in all_cistrons]
@@ -347,6 +393,7 @@ class Transcription(object):
 				('length', 'i8'),
 				('replication_coordinate', 'i8'),
 				('is_forward', 'bool'),
+				('mw', 'f8'),
 				('deg_rate', 'f8'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
@@ -366,6 +413,7 @@ class Transcription(object):
 		cistron_data['length'] = cistron_lengths
 		cistron_data['replication_coordinate'] = replication_coordinate
 		cistron_data['is_forward'] = is_forward
+		cistron_data['mw'] = mws
 		cistron_data['deg_rate'] = cistron_deg_rates
 		cistron_data['is_mRNA'] = is_mRNA
 		cistron_data['is_miscRNA'] = is_miscRNA
@@ -384,6 +432,7 @@ class Transcription(object):
 			'length': units.nt,
 			'replication_coordinate': None,
 			'is_forward': None,
+			'mw': units.g / units.mol,
 			'deg_rate': 1 / units.s,
 			'is_mRNA': None,
 			'is_miscRNA': None,
@@ -637,6 +686,7 @@ class Transcription(object):
 				rna_indexes.append(rna_index)
 				v_this_cistron[i] = expression[rna_index]
 
+			# Assume uniform distribution if cistron is not expressed
 			if v_this_cistron.sum() == 0:
 				v_this_cistron[:] = 1./len(v_this_cistron)
 			else:
@@ -700,9 +750,6 @@ class Transcription(object):
 			+ rna_deg_rates
 			)
 		synth_prob /= synth_prob.sum()
-
-		# Calculate EndoRNase Km values
-		Km = (KCAT_ENDO_RNASE*ESTIMATE_ENDO_RNASES/rna_deg_rates) - expression
 
 		# Load RNA sequences and molecular weights from getter functions
 		rna_seqs = sim_data.getter.get_sequences(rna_ids)
@@ -778,7 +825,7 @@ class Transcription(object):
 
 		# Get evidence codes for each transcription unit from raw data
 		self.rna_id_to_evidence_codes = {
-			tu['id']: tu['evidence'] for tu in raw_data.transcription_units
+			tu['id']: sorted(tu['evidence']) for tu in raw_data.transcription_units
 		}
 
 		rna_data = np.zeros(
@@ -813,7 +860,7 @@ class Transcription(object):
 		rna_data['length'] = rna_lengths
 		rna_data['counts_ACGU'] = nt_counts
 		rna_data['mw'] = mws
-		rna_data['Km_endoRNase'] = Km
+		rna_data['Km_endoRNase'] = np.zeros(len(rna_ids_with_compartments))  # Set later in ParCa
 		rna_data['replication_coordinate'] = replication_coordinate
 		rna_data['is_forward'] = is_forward
 		rna_data['is_mRNA'] = is_mRNA
@@ -1037,9 +1084,6 @@ class Transcription(object):
 			n_mature_rnas,
 			np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s))
 
-		# Calculate EndoRNase Km values
-		Km = (KCAT_ENDO_RNASE * ESTIMATE_ENDO_RNASES / rna_deg_rates)
-
 		# Get MWs of mature RNA molecules
 		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
 
@@ -1078,7 +1122,7 @@ class Transcription(object):
 		mature_rna_data['length'] = lengths
 		mature_rna_data['counts_ACGU'] = mature_rna_nt_counts
 		mature_rna_data['mw'] = mws
-		mature_rna_data['Km_endoRNase'] = Km
+		mature_rna_data['Km_endoRNase'] = np.zeros(len(mature_rna_ids_with_compartments))  # Set later in ParCa
 		mature_rna_data['is_rRNA'] = is_rRNA
 		mature_rna_data['is_tRNA'] = is_tRNA
 		mature_rna_data['is_23S_rRNA'] = is_23S_rRNA
@@ -1339,29 +1383,32 @@ class Transcription(object):
 		Load fold changes related to transcriptional attenuation.
 		"""
 		# Load data from file
-		aa_rna_pair_to_fcs = {}
+		aa_rna_pair_to_log_fcs = {}
 		gene_symbol_to_cistron_id = {g['symbol']: g['rna_ids'][0] for g in raw_data.genes}
 		for row in raw_data.transcriptional_attenuation:
 			trna_aa = row['tRNA'].split('-')[1].upper() + '[c]'
 			gene = row['Target']
 			cistron_id = gene_symbol_to_cistron_id[gene]
 
+			# Map FC to all RNAs that cover the cistron
 			rna_indexes_with_cistron = self.cistron_id_to_rna_indexes(cistron_id)
 			for rna_idx in rna_indexes_with_cistron:
 				rna_id = self.rna_data['id'][rna_idx]
-				if (trna_aa, self.rna_data['id'][rna_idx]) in aa_rna_pair_to_fcs:
-					aa_rna_pair_to_fcs[(trna_aa, rna_id)].append(2**row['log2 FC'])
+				if (trna_aa, self.rna_data['id'][rna_idx]) in aa_rna_pair_to_log_fcs:
+					aa_rna_pair_to_log_fcs[(trna_aa, rna_id)].append(row['log2 FC'])
 				else:
-					aa_rna_pair_to_fcs[(trna_aa, rna_id)] = [2**row['log2 FC']]
+					aa_rna_pair_to_log_fcs[(trna_aa, rna_id)] = [row['log2 FC']]
 
 		aa_trnas = []
 		attenuated_rnas = []
 		fold_changes = []
 
-		for ((trna_aa, rna_id), all_fcs) in aa_rna_pair_to_fcs.items():
+		for ((trna_aa, rna_id), all_log_fcs) in aa_rna_pair_to_log_fcs.items():
 			aa_trnas.append(trna_aa)
 			attenuated_rnas.append(rna_id)
-			fold_changes.append(np.mean(all_fcs))
+
+			# Take the average of the reported FCs of each constituent cistron
+			fold_changes.append(2**np.mean(all_log_fcs))
 
 		self.attenuated_rna_ids = np.unique(attenuated_rnas)
 
@@ -1613,9 +1660,6 @@ class Transcription(object):
 				bound to ppGpp
 			exp_free (ndarray[float]): expression for each TU when RNAP is not
 				bound to ppGpp
-			ppgpp_km (float with units of mol / vol): KM for ppGpp binding to RNAP
-			ppgpp_km_squared (float): squared and unitless version of KM for
-				faster computation in other functions
 		"""
 		ppgpp_aa = sim_data.growth_rate_parameters.get_ppGpp_conc(
 			sim_data.condition_to_doubling_time['with_aa'])
@@ -1642,16 +1686,17 @@ class Transcription(object):
 		cistron_exp_free[cistron_exp_free < 0] = 0  # fold change is limited by KM, can't have very high positive fold changes
 
 		# Map expression levels of cistrons to those of TUs through NNLS
-		# TODO (ggsun): Should these be normalized here?
 		self.exp_ppgpp, _ = self.fit_rna_expression(cistron_exp_ppgpp)
 		self.exp_free, _ = self.fit_rna_expression(cistron_exp_free)
+		self._normalize_ppgpp_expression()
 
 		self._ppgpp_expression_set = True
 
 	def adjust_polymerizing_ppgpp_expression(self, sim_data):
 		"""
-		Adjust ppGpp expression based on fit for ribosome and RNAP physiological constraints
-		using least squares fit for 3 conditions with different growth rates/ppGpp.
+		Adjust ppGpp expression based on fit for ribosome and RNAP physiological
+		constraints using least squares fit for 3 conditions with different
+		growth rates/ppGpp.
 
 		Modifies attributes:
 			exp_ppgpp (ndarray[float]): expression for each gene when RNAP
@@ -1681,7 +1726,7 @@ class Transcription(object):
 		f_ppgpp_anaerobic = self.fraction_rnap_bound_ppgpp(ppgpp_anaerobic)
 
 		# Adjustments for TFs
-		## Probabilities need to be unnormaalized to match the scale of delta prob
+		## Probabilities need to be unnormalized to match the scale of delta prob
 		## This includes not having get_delta_prob_matrix normalized for ppGpp
 		tf_adjustments = {}
 		delta_prob = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=False)
@@ -1765,9 +1810,7 @@ class Transcription(object):
 		self.exp_ppgpp /= self.exp_ppgpp.sum()
 
 	def set_ppgpp_kinetics_parameters(self, init_container, constants):
-		unprocessed_trna_counts = init_container.counts(
-			self.rna_data['id'][self.rna_data['is_tRNA']])
-		trna_counts = self.aa_from_trna @ self.tRNA_cistron_tu_mapping_matrix.dot(unprocessed_trna_counts)
+		trna_counts = self.aa_from_trna @ init_container.counts(self.uncharged_trna_names)
 		trna_ratio = trna_counts / trna_counts.sum()
 		adjustment_fraction = trna_ratio / trna_ratio.mean()
 

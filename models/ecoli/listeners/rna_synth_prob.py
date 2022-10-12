@@ -80,8 +80,9 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.bound_TF_coordinates = all_coordinates[bound_promoter_indexes]
 		self.bound_TF_domains = all_domains[bound_promoter_indexes]
 
-		self.rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
+		rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.rnaSynthProb)
+		self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron / rna_synth_prob_per_cistron.sum()
 		self.n_bound_TF_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.n_bound_TF_per_TU).astype(np.int16).T
 
