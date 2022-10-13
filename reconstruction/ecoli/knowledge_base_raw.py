@@ -79,6 +79,7 @@ LIST_OF_DICT_FILENAMES = [
 	"trna_charging_reactions_removed.tsv",
 	"two_component_systems.tsv",
 	"two_component_system_templates.tsv",
+	#"gfp_rnas.tsv",
 	os.path.join("mass_fractions", "glycogen_fractions.tsv"),
 	os.path.join("mass_fractions", "ion_fractions.tsv"),
 	os.path.join("mass_fractions", "LPS_fractions.tsv"),
@@ -111,7 +112,7 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_expression_adjustments.tsv"),
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
-	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
+	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv")
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = (
@@ -179,7 +180,30 @@ class KnowledgeBaseEcoli(object):
 				})
 
 		if self.new_genes_on:
-			print("New genes is on!")
+
+			### For each subdirectory in new_gene_data directory, we will do the following:
+			new_gene_subdir = 'gfp'
+			new_gene_path = os.path.join('new_gene_data',new_gene_subdir)
+			nested_attr = 'new_gene_data.' + new_gene_subdir + "."
+
+			# These files do not need to be joined to existing files
+			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'insertion_location.tsv'))
+			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'gene_sequences.tsv'))
+
+			# These files need to be joined to existing files
+			new_gene_shared_files = ['genes','rnas','rna_half_lives','protein_half_lives_measured','proteins']
+			for f in new_gene_shared_files:
+				self.list_of_dict_filenames.append(os.path.join(new_gene_path, f+'.tsv'))
+				self.added_data.update({f: nested_attr + f})
+			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'rnaseq_seal_rpkm_mean.tsv'))
+			self.added_data.update({'rna_seq_data.rnaseq_seal_rpkm_mean': nested_attr + 'rnaseq_seal_rpkm_mean'})
+
+		# add to reference genome (will have to do this step further down)
+				# need to read in from gfp_sequences and make them Seq objects
+				# need to use coordinates from gfp_gene coords to mash together sequence to be inserted
+				# reference genome is a Seq object, use insert to add at a given index
+					# (may need to convert the Seq to a MutableSeq first, then convert it back after the insertion)
+			# modify the cordinates of genes data attribute
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
@@ -193,6 +217,8 @@ class KnowledgeBaseEcoli(object):
 		self._modify_data()
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
+		import ipdb
+		ipdb.set_trace()
 
 	def _load_tsv(self, dir_name, file_name):
 		path = self
@@ -277,7 +303,10 @@ class KnowledgeBaseEcoli(object):
 		# Join data for each file with data to be added
 		for data_attr, attr_to_add in self.added_data.items():
 			# Get datasets to join
-			data = getattr(self, data_attr)
+			data = getattr(self, data_attr.split('.')[0])
+			for attr in data_attr.split('.')[1:]:
+				data = getattr(data, attr)
+
 			added_data = getattr(self, attr_to_add.split('.')[0])
 			for attr in attr_to_add.split('.')[1:]:
 				added_data = getattr(added_data, attr)
