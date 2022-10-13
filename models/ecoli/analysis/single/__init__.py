@@ -57,6 +57,7 @@ ACTIVE = [
 	"ribosome50SCounts.py",
 	"ribosomeCapacity.py",
 	"ribosomeCounts.py",
+	"rna_maturation.py",
 	"rnaDegradationCounts.py",
 	"rnaSynthesisProbabilities.py",
 	"rnapCapacity.py",

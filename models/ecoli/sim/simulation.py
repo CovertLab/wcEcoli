@@ -42,6 +42,7 @@ from models.ecoli.listeners.mRNA_counts import mRNACounts
 from models.ecoli.listeners.complexation_listener import ComplexationListener
 from models.ecoli.listeners.equilibrium_listener import EquilibriumListener
 from models.ecoli.listeners.dna_supercoiling import DnaSupercoiling
+from models.ecoli.listeners.rna_maturation_listener import RnaMaturationListener
 
 from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
@@ -77,12 +78,12 @@ class EcoliSimulation(Simulation):
 			ChromosomeReplication,
 			ProteinDegradation,
 			RnaDegradation,
-			RnaMaturation,
 			Complexation,
 		),
 		(
 			TranscriptElongation,
 			PolypeptideElongation,
+			RnaMaturation,
 		),
 		(
 			ChromosomeStructure,
@@ -112,6 +113,7 @@ class EcoliSimulation(Simulation):
 		ComplexationListener,
 		EquilibriumListener,
 		DnaSupercoiling,
+		RnaMaturationListener,
 		)
 
 	_hookClasses = ()

@@ -66,12 +66,12 @@ def initializeBulkMolecules(bulkMolCntr, sim_data, media_id, import_molecules, r
 		initializeComplexation(bulkMolCntr, sim_data, randomState)
 
 def initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, randomState,
-		superhelical_density, ppgpp_regulation, trna_attenuation):
+		superhelical_density, ppgpp_regulation, trna_attenuation, mechanistic_replisome):
 	# Initialize counts of full chromosomes
 	initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data)
 
 	# Initialize unique molecules relevant to replication
-	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass)
+	initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, mechanistic_replisome)
 
 	# Initialize bound transcription factors
 	initialize_transcription_factors(bulkMolCntr, uniqueMolCntr, sim_data, randomState)
@@ -186,26 +186,46 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 def initialize_mature_RNA(bulkMolCntr, sim_data):
 	"""
 	Initializes counts of mature RNAs in the bulk molecule container using the
-	counts of unprocessed RNAs.
+	counts of unprocessed RNAs. Also consolidates the different variants of each
+	rRNA molecule into the main type.
 	"""
 	transcription = sim_data.process.transcription
 	rna_data = transcription.rna_data
 	unprocessed_rna_ids = rna_data['id'][rna_data['is_unprocessed']]
 
 	# Skip if there are no unprocessed RNAs represented
-	if len(unprocessed_rna_ids) == 0:
-		return
+	if len(unprocessed_rna_ids) > 0:
+		mature_rna_ids = transcription.mature_rna_data['id']
+		maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
 
-	mature_rna_ids = transcription.mature_rna_data['id']
-	maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
+		# Get counts of unprocessed RNAs
+		unprocessed_rna_counts = bulkMolCntr.countsView(unprocessed_rna_ids).counts()
 
-	# Get counts of unprocessed RNAs
-	unprocessed_rna_counts = bulkMolCntr.countsView(unprocessed_rna_ids).counts()
+		# Assume all unprocessed RNAs are converted to mature RNAs
+		bulkMolCntr.countsIs(0, unprocessed_rna_ids)
+		bulkMolCntr.countsInc(
+			maturation_stoich_matrix.dot(unprocessed_rna_counts), mature_rna_ids)
 
-	# Assume all unprocessed RNAs are converted to mature RNAs
-	bulkMolCntr.countsIs(0, unprocessed_rna_ids)
-	bulkMolCntr.countsInc(
-		maturation_stoich_matrix.dot(unprocessed_rna_counts), mature_rna_ids)
+	# Get IDs of rRNAs
+	main_23s_rRNA_id = sim_data.molecule_groups.s50_23s_rRNA[0]
+	main_16s_rRNA_id = sim_data.molecule_groups.s30_16s_rRNA[0]
+	main_5s_rRNA_id = sim_data.molecule_groups.s50_5s_rRNA[0]
+	variant_23s_rRNA_ids = sim_data.molecule_groups.s50_23s_rRNA[1:]
+	variant_16s_rRNA_ids = sim_data.molecule_groups.s30_16s_rRNA[1:]
+	variant_5s_rRNA_ids = sim_data.molecule_groups.s50_5s_rRNA[1:]
+
+	# Get counts of variant rRNAs
+	variant_23s_rRNA_counts = bulkMolCntr.countsView(variant_23s_rRNA_ids).counts()
+	variant_16s_rRNA_counts = bulkMolCntr.countsView(variant_16s_rRNA_ids).counts()
+	variant_5s_rRNA_counts = bulkMolCntr.countsView(variant_5s_rRNA_ids).counts()
+
+	# Evolve states
+	bulkMolCntr.countInc(variant_23s_rRNA_counts.sum(), main_23s_rRNA_id)
+	bulkMolCntr.countInc(variant_16s_rRNA_counts.sum(), main_16s_rRNA_id)
+	bulkMolCntr.countInc(variant_5s_rRNA_counts.sum(), main_5s_rRNA_id)
+	bulkMolCntr.countsDec(variant_23s_rRNA_counts, variant_23s_rRNA_ids)
+	bulkMolCntr.countsDec(variant_16s_rRNA_counts, variant_16s_rRNA_ids)
+	bulkMolCntr.countsDec(variant_5s_rRNA_counts, variant_5s_rRNA_ids)
 
 
 # TODO: remove checks for zero concentrations (change to assertion)
@@ -287,7 +307,7 @@ def initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data):
 		)
 
 
-def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
+def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, mechanistic_replisome):
 	"""
 	Initializes replication by creating an appropriate number of replication
 	forks given the cell growth rate. This also initializes the gene dosage
@@ -332,6 +352,19 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 		child_domains=domain_state["child_domains"])
 
 	if n_replisome != 0:
+		# Update mass of replisomes if the mechanistic replisome option is set
+		if mechanistic_replisome:
+			replisome_trimer_subunit_masses = np.vstack([
+				sim_data.getter.get_submass_array(x).asNumber(units.fg/units.count)
+				for x in sim_data.molecule_groups.replisome_trimer_subunits])
+			replisome_monomer_subunit_masses = np.vstack([
+				sim_data.getter.get_submass_array(x).asNumber(units.fg/units.count)
+				for x in sim_data.molecule_groups.replisome_monomer_subunits])
+			replisome_mass_array = 3*replisome_trimer_subunit_masses.sum(axis=0) + replisome_monomer_subunit_masses.sum(axis=0)
+			replisome_protein_mass = replisome_mass_array.sum()
+		else:
+			replisome_protein_mass = 0.
+
 		# Update mass to account for DNA strands that have already been
 		# elongated.
 		sequences = sim_data.process.replication.replication_sequences
@@ -349,7 +382,9 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass):
 			coordinates=replisome_state["coordinates"],
 			right_replichore=replisome_state["right_replichore"],
 			domain_index=replisome_state["domain_index"],
-			massDiff_DNA=mass_increase_dna[0::2] + mass_increase_dna[1::2])
+			massDiff_DNA=mass_increase_dna[0::2] + mass_increase_dna[1::2],
+			massDiff_protein=np.full(n_replisome, replisome_protein_mass),
+			)
 
 		# Remove replisome subunits from bulk molecules
 		bulkMolCntr.countsDec(3*n_replisome, sim_data.molecule_groups.replisome_trimer_subunits)
@@ -691,9 +726,6 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 			'fixedRnaIdxs': [pair[0] for pair in probability_indexes],
 			'fixedSynthProbs': [pair[1] for pair in probability_indexes]}
 
-	# If initiationShuffleIdxs does not exist, set value to None
-	shuffleIdxs = getattr(sim_data.process.transcription, 'initiationShuffleIdxs', None)
-
 	# ID Groups
 	idx_rRNA = np.where(sim_data.process.transcription.rna_data['is_rRNA'])[0]
 	idx_mRNA = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
@@ -757,12 +789,6 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 
 	# Compute synthesis probabilities of each transcription unit
 	TU_synth_probs = TU_to_promoter.dot(promoter_init_probs)
-
-	# Shuffle initiation rates if we're running the variant that calls this
-	if shuffleIdxs is not None:
-		rescale_initiation_probs(
-			promoter_init_probs, TU_index, TU_synth_probs[shuffleIdxs],
-			np.arange(n_TUs))
 
 	# normalize to length of rna
 	init_prob_length_adjusted = promoter_init_probs * rnaLengths[TU_index]

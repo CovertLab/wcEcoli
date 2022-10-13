@@ -18,7 +18,9 @@ ACTIVE = [
 	'mRNA_cistron_expression.py',
 	'mRNA_transcript_table.py',
 	'ppgpp_expression.py',
+	'target_vs_actual_ppgpp_fold_change.py',
 	'tf_target.py',
+	'tRNA_cistron_expression.py',
 ]
 
 TAGS = {

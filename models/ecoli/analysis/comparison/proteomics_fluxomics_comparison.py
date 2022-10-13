@@ -50,7 +50,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Get list of relevant reaction IDs and indexes
 		fba_reader = TableReader(
 			os.path.join(ap1.get_cells()[0], 'simOut', 'FBAResults'))
-		sim_rxn_ids = fba_reader.readAttribute('reactionIDs')
+		sim_rxn_ids = fba_reader.readAttribute('compiled_reaction_ids')
 
 		relevant_sim_rxn_indexes = []
 		relevant_sim_rxn_ids = []
@@ -94,7 +94,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			# Get flux for each reaction at each timestep
 			sim_fluxes = (
 				(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-				* (read_stacked_columns(cell_paths, 'FBAResults', 'reactionFluxes', ignore_exception=True)[:, relevant_sim_rxn_indexes] / conversion_coeffs)
+				* (read_stacked_columns(cell_paths, 'FBAResults', 'compiled_reaction_fluxes', ignore_exception=True)[:, relevant_sim_rxn_indexes] / conversion_coeffs)
 				).asNumber(units.mmol / units.g / units.h)
 
 			# Add up all fluxes that contribute to each value in validation data
@@ -108,11 +108,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				for i, sim_rxn_id in enumerate(relevant_sim_rxn_ids):
 					if re.findall(val_rxn_id, sim_rxn_id):
 						rxn_found = True
-						stoich = 1
-						if re.findall('(reverse)', sim_rxn_id):
-							stoich = -1
-
-						total_fluxes += stoich * sim_fluxes[:, i]
+						total_fluxes += sim_fluxes[:, i]
 
 				if rxn_found:
 					rxn_id_to_sim_flux_mean[val_rxn_id] = total_fluxes.mean()

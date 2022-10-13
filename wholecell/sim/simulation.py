@@ -24,7 +24,7 @@ import wholecell.loggers.disk
 from six.moves import range
 import six
 
-MAX_TIME_STEP = 2.
+MAX_TIME_STEP = 1.
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
 	boundary_reactions = [],
@@ -33,19 +33,19 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	initialTime = 0.,
 	jit = True,
 	massDistribution = True,
-	dPeriodDivision = False,
+	dPeriodDivision = True,
 	growthRateNoise = False,
 	translationSupply = True,
 	trna_charging = True,
-	aa_supply_in_charging = False,
-	ppgpp_regulation = False,
+	aa_supply_in_charging = True,
+	ppgpp_regulation = True,
 	disable_ppgpp_elongation_inhibition = False,
 	superhelical_density = False,
 	recycle_stalled_elongation = False,
-	mechanistic_replisome = True,
-	mechanistic_translation_supply = False,
-	mechanistic_aa_transport = False,
-	trna_attenuation = False,
+	mechanistic_replisome = False,
+	mechanistic_translation_supply = True,
+	mechanistic_aa_transport = True,
+	trna_attenuation = True,
 	timeStepSafetyFraction = 1.3,
 	maxTimeStep = MAX_TIME_STEP,
 	updateTimeStepFreq = 5,
