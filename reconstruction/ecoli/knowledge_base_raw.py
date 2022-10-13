@@ -198,13 +198,6 @@ class KnowledgeBaseEcoli(object):
 			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'rnaseq_seal_rpkm_mean.tsv'))
 			self.added_data.update({'rna_seq_data.rnaseq_seal_rpkm_mean': nested_attr + 'rnaseq_seal_rpkm_mean'})
 
-		# add to reference genome (will have to do this step further down)
-				# need to read in from gfp_sequences and make them Seq objects
-				# need to use coordinates from gfp_gene coords to mash together sequence to be inserted
-				# reference genome is a Seq object, use insert to add at a given index
-					# (may need to convert the Seq to a MutableSeq first, then convert it back after the insertion)
-			# modify the cordinates of genes data attribute
-
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
 			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
@@ -212,11 +205,21 @@ class KnowledgeBaseEcoli(object):
 		for filename in LIST_OF_PARAMETER_FILENAMES:
 			self._load_parameters(os.path.join(FLAT_DIR, filename))
 
+		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
+
 		self._prune_data()
+
+		if self.new_genes_on:
+			insert_left, insert_right = self._update_gene_insertion_location('genes', nested_attr + 'insertion_location')
+
+			# TODO: add insertion sequence to reference genome
+
+			self._update_gene_locations('genes',nested_attr+'genes', insert_left, insert_right)
+			self.added_data.update({'genes': nested_attr+'genes'})
+
 		self._join_data()
 		self._modify_data()
 
-		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 		import ipdb
 		ipdb.set_trace()
 
@@ -362,3 +365,63 @@ class KnowledgeBaseEcoli(object):
 					f'{modify_attr} because of one or more entries in '
 					f'{modify_attr} that do not exist in {data_attr} '
 					f'(nonexistent entries: {id_diff}).')
+
+	def _update_gene_insertion_location(self,genes_attr,insert_loc_attr):
+		"""
+		Update insertion location of new genes to prevent conflicts.
+		"""
+
+		genes_data = getattr(self, genes_attr.split('.')[0])
+		for attr in genes_attr.split('.')[1:]:
+			genes_data = getattr(genes_data, attr)
+
+		insert_loc_data = getattr(self, insert_loc_attr.split('.')[0])
+		for attr in insert_loc_attr.split('.')[1:]:
+			insert_loc_data = getattr(insert_loc_data, attr)
+
+		insert_left = insert_loc_data[0]['left_end_pos']
+		insert_right = insert_loc_data[0]['right_end_pos']
+
+		# If specified insertion location is in the middle of another gene,
+		# change insertion location to after that gene
+		conflicts = [row for row in genes_data if
+					 (row['left_end_pos'] is not None) and (row['right_end_pos'] is not None) and (
+								 row['left_end_pos'] < insert_left) and (row['right_end_pos'] >= insert_left)]
+		if conflicts:
+			shift = conflicts[0]['right_end_pos'] - insert_left + 1
+			insert_left = insert_left + shift
+			insert_right = insert_right + shift
+
+		return insert_left, insert_right
+
+
+	def _update_gene_locations(self,genes_attr,new_genes_attr,insert_left,insert_right):
+		"""
+		Modify positions of original genes based upon the insertion location of new genes.
+		"""
+
+		genes_data = getattr(self, genes_attr.split('.')[0])
+		for attr in genes_attr.split('.')[1:]:
+			genes_data = getattr(genes_data, attr)
+
+		new_genes_data = getattr(self, new_genes_attr.split('.')[0])
+		for attr in new_genes_attr.split('.')[1:]:
+			new_genes_data = getattr(new_genes_data, attr)
+
+		# Update global positions of original genes
+		insert_len = insert_right - insert_left + 1
+		for row in genes_data:
+			left = row['left_end_pos']
+			right = row['right_end_pos']
+			if (left is not None) and (right is not None) and left >= insert_left:
+					row.update({'left_end_pos': left+insert_len})
+					row.update({'right_end_pos': right+insert_len})
+
+		# CHange relative insertion positions to global positions in reference genome
+		for row in new_genes_data:
+			left = row['left_end_pos']
+			right = row['right_end_pos']
+			row.update({'left_end_pos': left + insert_left})
+			row.update({'right_end_pos': right + insert_left})
+
+		return insert_left, insert_right
