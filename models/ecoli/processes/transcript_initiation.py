@@ -80,9 +80,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.RNAs = self.uniqueMoleculesView('RNA')
 
 		# ID Groups
-		#self.idx_16SrRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
-		#self.idx_23SrRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
-		#self.idx_5SrRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 		self.idx_rRNA = np.where(sim_data.process.transcription.rna_data['is_rRNA'])[0]
 		self.idx_mRNA = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
 		self.idx_tRNA = np.where(sim_data.process.transcription.rna_data['is_tRNA'])[0]
@@ -273,17 +270,21 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			RNAP_index=RNAP_indexes)
 
 		# Create masks for ribosomal RNAs
-		is_rrna = np.isin(TU_index, self.idx_rRNA)
+		rrna_TU_masks = [np.isin(TU_index, idx) for idx in self.idx_rRNA]
+		rrna_initiations = np.array([n_initiations[rrna_mask].sum()
+			for rrna_mask in rrna_TU_masks])
+		rnaInitEvent = TU_to_promoter.dot(n_initiations)
 
 		# Write outputs to listeners
+		# TODO(Albert): should this be in transcription_elongation?
 		self.writeToListener(
-			"RibosomeData", "rrn_produced", n_initiations[is_rrna].sum())
+			"RibosomeData", "rrn_produced_TU", rrna_initiations)
 		self.writeToListener(
-			"RibosomeData", "rrn_init_prob",
-			n_initiations[is_rrna].sum() / float(n_RNAPs_to_activate))
+			"RibosomeData", "rrn_init_prob_TU", rrna_initiations / float(n_RNAPs_to_activate))
 		self.writeToListener("RibosomeData", "total_rna_init", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
-		self.writeToListener("RnapData", "rnaInitEvent", TU_to_promoter.dot(n_initiations))
+		self.writeToListener("RnapData", "rnaInitEvent", rnaInitEvent)
+		self.writeToListener("RibosomeData", "rnaInitEvent", rnaInitEvent)
 
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):

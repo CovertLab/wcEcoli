@@ -17,7 +17,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
-
+# TODO(Albert): change rRNA, tRNA stuff to cistron level
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def plot_time_series(self, ax, t_flat, y_flat, ylabel, timeline, filtered_t,
 			downsample=5, log_scale=False, single_cells=False, distinct=False,

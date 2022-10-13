@@ -27,6 +27,7 @@ def calculate_ribosome_excesses(sim_data, paths):
 	complexation = sim_data.process.complexation
 	metabolism = sim_data.process.metabolism
 	rna_data = sim_data.process.transcription.rna_data
+	mature_rna_data = sim_data.process.transcription.mature_rna_data
 
 	# Get complexation data
 	complex_stoich = -complexation.stoich_matrix_monomers().astype(int)
@@ -34,7 +35,8 @@ def calculate_ribosome_excesses(sim_data, paths):
 	complex_ids = {id_: i for i, id_ in enumerate(complexation.ids_complexes)}
 
 	# Get molecules of interest
-	rrnas = [rna for rna in rna_data['id'][rna_data['is_rRNA']] if rna in monomer_ids]
+	rrnas = [rna for rna in np.append(rna_data['id'][rna_data['is_rRNA']], mature_rna_data['id'][mature_rna_data['is_rRNA']])
+		if rna in monomer_ids]
 	rproteins = sim_data.molecule_groups.ribosomal_proteins
 	ribosome_complexes = ([sim_data.molecule_ids.s50_full_complex]
 		+ [sim_data.molecule_ids.s30_full_complex]
@@ -57,6 +59,7 @@ def calculate_ribosome_excesses(sim_data, paths):
 	rprotein_stoich = complex_stoich[rprotein_idx, :][:, ribosome_complex_idx].T
 
 	# Molecular weights for molecule groups
+	# TODO(Albert): should we change this?
 	mw_rrnas = sim_data.getter.get_masses(rrnas).asNumber(units.fg / units.count)
 	mw_rproteins = sim_data.getter.get_masses(rproteins).asNumber(units.fg / units.count)
 	mw_ribosome = (sim_data.getter.get_mass(sim_data.molecule_ids.s50_full_complex) + sim_data.getter.get_mass(sim_data.molecule_ids.s30_full_complex)).asNumber(units.fg / units.count)
