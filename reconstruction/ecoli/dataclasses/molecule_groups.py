@@ -18,6 +18,7 @@ class MoleculeGroups(object):
 	def _build_molecule_groups(self, raw_data, sim_data):
 		aa_ids = list(sim_data.amino_acid_code_to_id_ordered.values())
 		ntp_ids = list(sim_data.ntp_code_to_id_ordered.values())
+		nmp_ids = list(sim_data.nmp_code_to_id_ordered.values())
 		dntp_ids = list(sim_data.dntp_code_to_id_ordered.values())
 		polymerized_aa_ids = [
 			POLYMERIZED_FRAGMENT_PREFIX + aa_id for aa_id in aa_ids]
@@ -91,6 +92,7 @@ class MoleculeGroups(object):
 		molecule_groups = {
 			'amino_acids': aa_ids,
 			'ntps': ntp_ids,
+			'nmps': nmp_ids,
 			'dntps': dntp_ids,
 
 			'polymerized_amino_acids': polymerized_aa_ids,

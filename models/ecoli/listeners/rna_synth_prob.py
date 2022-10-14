@@ -82,7 +82,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 
 		rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.rnaSynthProb)
-		self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron / rna_synth_prob_per_cistron.sum()
+		if rna_synth_prob_per_cistron.sum() != 0:
+			self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron / rna_synth_prob_per_cistron.sum()
+		else:
+			self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron
 		self.n_bound_TF_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.n_bound_TF_per_TU).astype(np.int16).T
 
