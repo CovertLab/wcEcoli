@@ -78,7 +78,7 @@ class RnaMaturation(wholecell.processes.process.Process):
 			sim_data.molecule_groups.polymerized_ntps)
 		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 		self.water = self.bulkMoleculeView(sim_data.molecule_ids.water)
-		self.nmps = self.bulkMoleculesView(["AMP[c]", "CMP[c]", "GMP[c]", "UMP[c]"])
+		self.nmps = self.bulkMoleculesView(sim_data.molecule_groups.nmps)
 		self.proton = self.bulkMoleculeView(sim_data.molecule_ids.proton)
 
 		self.main_23s_rRNA = self.bulkMoleculeView(self.main_23s_rRNA_id)

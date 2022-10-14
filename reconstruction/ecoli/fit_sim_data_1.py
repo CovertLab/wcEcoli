@@ -1495,7 +1495,6 @@ def setRibosomeCountsConstrainedByPhysiology(
 	# Get rRNA counts
 	rna_data = sim_data.process.transcription.rna_data
 	rRNA_tu_counts = bulkContainer.counts(rna_data["id"][rna_data['is_rRNA']])
-	print(rRNA_tu_counts)
 	rRNA_cistron_counts = sim_data.process.transcription.rRNA_cistron_tu_mapping_matrix.dot(
 		rRNA_tu_counts)
 	rRNA_cistron_indexes = np.where(
