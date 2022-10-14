@@ -5,7 +5,7 @@ sh runscripts/jenkins/fireworks-config.sh glucose
 
 echo y | lpad reset
 
-DESC="Daily build." SINGLE_DAUGHTERS=1 N_GENS=25 MASS_DISTRIBUTION=0 COMPRESS_OUTPUT=1 PLOTS=ACTIVE RAISE_ON_TIME_LIMIT=1 python runscripts/fireworks/fw_queue.py
+DESC="Daily build." SINGLE_DAUGHTERS=1 N_GENS=16 MASS_DISTRIBUTION=0 COMPRESS_OUTPUT=1 PLOTS=ACTIVE RAISE_ON_TIME_LIMIT=1 python runscripts/fireworks/fw_queue.py
 
 bash runscripts/jenkins/run-fireworks.sh
 
