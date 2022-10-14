@@ -20,11 +20,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
-		# TODO(Albert): change to cistron-level probabilties
 		# Load info from sim_data
-		isMRna = sim_data.process.transcription.cistron_data['is_mRNA']
-		isRRna = sim_data.process.transcription.cistron_data['is_rRNA']
-		isTRna = sim_data.process.transcription.cistron_data['is_tRNA']
+		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
+		isRRna = sim_data.process.transcription.rna_data['is_rRNA']
+		isTRna = sim_data.process.transcription.rna_data['is_tRNA']
 		nutrients = sim_data.conditions[sim_data.condition]["nutrients"]
 		synth_prob_fractions = sim_data.process.transcription.rnaSynthProbFraction[nutrients]
 
