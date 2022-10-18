@@ -257,21 +257,17 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			RNAP_index=RNAP_indexes)
 
 		# Create masks for ribosomal RNAs
-		rrna_TU_masks = [np.isin(TU_index, idx) for idx in self.idx_rRNA]
-		rrna_initiations = np.array([n_initiations[rrna_mask].sum()
-			for rrna_mask in rrna_TU_masks])
-		rnaInitEvent = TU_to_promoter.dot(n_initiations)
+		rna_init_event = TU_to_promoter.dot(n_initiations)
+		rRNA_initiations = rna_init_event[self.idx_rRNA]
 
 		# Write outputs to listeners
-		# TODO(Albert): should this be in transcription_elongation?
 		self.writeToListener(
-			"RibosomeData", "rrn_produced_TU", rrna_initiations)
+			"RibosomeData", "rRNA_initiated_TU", rRNA_initiations)
 		self.writeToListener(
-			"RibosomeData", "rrn_init_prob_TU", rrna_initiations / float(n_RNAPs_to_activate))
+			"RibosomeData", "rRNA_init_prob_TU", rRNA_initiations / float(n_RNAPs_to_activate))
 		self.writeToListener("RibosomeData", "total_rna_init", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
-		self.writeToListener("RnapData", "rnaInitEvent", rnaInitEvent)
-		self.writeToListener("RibosomeData", "rnaInitEvent", rnaInitEvent)
+		self.writeToListener("RnapData", "rnaInitEvent", rna_init_event)
 
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):

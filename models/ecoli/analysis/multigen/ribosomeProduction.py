@@ -62,9 +62,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			## Calculate ribosomal rna doubling times ##
 			ribosomeData = TableReader(os.path.join(simOutDir, "RibosomeData"))
-			rrn16S_produced = ribosomeData.readColumn("rrn16S_produced")
-			rrn23S_produced = ribosomeData.readColumn("rrn23S_produced")
-			rrn5S_produced = ribosomeData.readColumn("rrn5S_produced")
+			rrn16S_produced = ribosomeData.readColumn("rRNA16S_initiated")
+			rrn23S_produced = ribosomeData.readColumn("rRNA23S_initiated")
+			rrn5S_produced = ribosomeData.readColumn("rRNA5S_initiated")
 
 			ids_16s = []
 			ids_16s.extend(sim_data.molecule_groups.s30_16s_rRNA)
@@ -105,9 +105,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rrn5S_doubling_time[rrn5S_doubling_time.asNumber() == np.inf] = np.nan * units.s
 
 			## Calculate ribosomal rna cistron-level initiation probabilities ##
-			rrn16S_init_prob = ribosomeData.readColumn("rrn16S_init_prob")
-			rrn23S_init_prob = ribosomeData.readColumn("rrn23S_init_prob")
-			rrn5S_init_prob = ribosomeData.readColumn("rrn5S_init_prob")
+			rrn16S_init_prob = ribosomeData.readColumn("rRNA16S_init_prob")
+			rrn23S_init_prob = ribosomeData.readColumn("rRNA23S_init_prob")
+			rrn5S_init_prob = ribosomeData.readColumn("rRNA5S_init_prob")
 
 			idx_16s = np.zeros(len(sim_data.molecule_groups.s30_16s_rRNA), dtype=int)
 			for idx, id16s in enumerate(sim_data.molecule_groups.s30_16s_rRNA):
