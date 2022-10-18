@@ -212,10 +212,12 @@ class KnowledgeBaseEcoli(object):
 		if self.new_genes_on:
 			insert_left, insert_right = self._update_gene_insertion_location('genes', nested_attr + 'insertion_location')
 
-			# TODO: add insertion sequence to reference genome
+			insertion_sequence = self.get_new_gene_sequence(nested_attr + 'genes', nested_attr + 'gene_sequences')
 
 			self._update_gene_locations('genes',nested_attr+'genes', insert_left, insert_right)
 			self.added_data.update({'genes': nested_attr+'genes'})
+
+			self.genome_sequence = self.ref_genome_insertion(self.genome_sequence,insert_left,insertion_sequence)
 
 		self._join_data()
 		self._modify_data()
@@ -425,3 +427,48 @@ class KnowledgeBaseEcoli(object):
 			row.update({'right_end_pos': right + insert_left})
 
 		return insert_left, insert_right
+
+	def get_new_gene_sequence(self, new_genes_attr, seq_attr):
+		"""
+		Determine genome sequnce for insertion using the sequences and relative locations of the new genes.
+		"""
+		from Bio import Seq
+		from Bio import Alphabet
+
+		new_genes_data = getattr(self, new_genes_attr.split('.')[0])
+		for attr in new_genes_attr.split('.')[1:]:
+			new_genes_data = getattr(new_genes_data, attr)
+
+		seq_data = getattr(self, seq_attr.split('.')[0])
+		for attr in seq_attr.split('.')[1:]:
+			seq_data = getattr(seq_data, attr)
+
+		insertion_seq = Seq.Seq('',Alphabet.SingleLetterAlphabet())
+		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
+		for gene in new_genes_data:
+			if gene['direction'] == "+":
+				seq_row = next((row for row in seq_data if row['id'] == gene['id']), None)
+				seq_string = seq_row['gene_seq']
+				seq_addition = Seq.Seq(seq_string,Alphabet.SingleLetterAlphabet())
+				insertion_seq += seq_addition
+			else:
+				seq_row = next((row for row in seq_data if row['id'] == gene['id']), None)
+				seq_string = seq_row['gene_seq']
+				seq_addition = Seq.Seq(seq_string, Alphabet.SingleLetterAlphabet())
+				insertion_seq += seq_addition.reverse_complement()
+
+		return insertion_seq
+
+	def ref_genome_insertion(self,ref_genome,insert_left,insertion_seq):
+		"""
+		Insert new gene sequence into the reference genome.
+		"""
+		from Bio import Seq
+		from Bio import Alphabet
+
+		mutable_ref_genome = ref_genome.tomutable()
+		mutable_ref_genome.insert(insert_left,'Z') # MutableSeq.insert only allows the insertion of one character at a time
+		split_ref_genome = mutable_ref_genome.toseq().split('Z')
+		updated_ref_genome = split_ref_genome[0].join([insertion_seq,split_ref_genome[1]])
+
+		return updated_ref_genome
