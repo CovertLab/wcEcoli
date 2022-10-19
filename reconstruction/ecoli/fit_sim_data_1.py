@@ -1207,7 +1207,7 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	is_tRNA = rna_data['is_tRNA']
 	is_mRNA = rna_data['is_mRNA']
 
-	# Get list RNA IDs for each type and rRNA cistron IDs
+	# Get list of RNA IDs for each type and tRNA cistron IDs
 	all_RNA_ids = rna_data['id']
 	ids_rRNA = all_RNA_ids[is_rRNA]
 	ids_mRNA = all_RNA_ids[is_mRNA]
@@ -1433,10 +1433,10 @@ def setRibosomeCountsConstrainedByPhysiology(
 		doubling_time,
 		variable_elongation_translation):
 	"""
-	Set counts of ribosomal subunits based on three constraints:
+	Set counts of ribosomal protein subunits based on three constraints:
 	(1) Expected protein distribution doubles in one cell cycle
 	(2) Measured rRNA mass fractions
-	(3) Expected ribosomal subunit counts based on RNA expression data
+	(3) Expected ribosomal protein subunit counts based on RNA expression data
 
 	Inputs
 	------
@@ -1452,10 +1452,26 @@ def setRibosomeCountsConstrainedByPhysiology(
 	active_fraction = sim_data.growth_rate_parameters.get_fraction_active_ribosome(doubling_time)
 
 	# Get IDs and stoichiometry of ribosome subunits
-	ribosome30SSubunits = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s30_full_complex)['subunitIds']
-	ribosome50SSubunits = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s50_full_complex)['subunitIds']
-	ribosome30SStoich = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s30_full_complex)['subunitStoich']
-	ribosome50SStoich = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s50_full_complex)['subunitStoich']
+	ribosome_30S_subunits = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s30_full_complex)['subunitIds']
+	ribosome_50S_subunits = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s50_full_complex)['subunitIds']
+	ribosome_30S_stoich = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s30_full_complex)['subunitStoich']
+	ribosome_50S_stoich = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s50_full_complex)['subunitStoich']
+
+	# Remove rRNA subunits from each array
+	monomer_ids = set(sim_data.process.translation.monomer_data['id'])
+	def remove_rRNA(subunit_ids, subunit_stoich):
+		is_protein = np.array([
+			(subunit_id in monomer_ids) for subunit_id in subunit_ids])
+		return (subunit_ids[is_protein], subunit_stoich[is_protein])
+
+	ribosome_30S_subunits, ribosome_30S_stoich = remove_rRNA(
+		ribosome_30S_subunits, ribosome_30S_stoich)
+	ribosome_50S_subunits, ribosome_50S_stoich = remove_rRNA(
+		ribosome_50S_subunits, ribosome_50S_stoich)
 
 	# -- CONSTRAINT 1: Expected protein distribution doubling -- #
 	## Calculate minimium number of 30S and 50S subunits required in order to double our expected
@@ -1483,11 +1499,11 @@ def setRibosomeCountsConstrainedByPhysiology(
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
-		nRibosomesNeeded * ribosome30SStoich
+		nRibosomesNeeded * ribosome_30S_stoich
 		)
 
 	constraint1_ribosome50SCounts = (
-		nRibosomesNeeded * ribosome50SStoich
+		nRibosomesNeeded * ribosome_50S_stoich
 		)
 
 
@@ -1511,36 +1527,36 @@ def setRibosomeCountsConstrainedByPhysiology(
 	## 23S and 5S rRNA are in the 50S subunit
 	massFracPredicted_50SCount = min(rRNA_23S_counts.sum(), rRNA_5S_counts.sum())
 
-	constraint2_ribosome30SCounts = massFracPredicted_30SCount * ribosome30SStoich
-	constraint2_ribosome50SCounts = massFracPredicted_50SCount * ribosome50SStoich
+	constraint2_ribosome30SCounts = massFracPredicted_30SCount * ribosome_30S_stoich
+	constraint2_ribosome50SCounts = massFracPredicted_50SCount * ribosome_50S_stoich
 
 
 	# -- CONSTRAINT 3: Expected ribosomal subunit counts based expression
 	## Calculate fundamental ribosomal subunit count distribution based on RNA expression data
 	## Already calculated and stored in bulkContainer
-	ribosome30SCounts = bulkContainer.counts(ribosome30SSubunits)
-	ribosome50SCounts = bulkContainer.counts(ribosome50SSubunits)
+	ribosome30SCounts = bulkContainer.counts(ribosome_30S_subunits)
+	ribosome50SCounts = bulkContainer.counts(ribosome_50S_subunits)
 
 	# -- SET RIBOSOME FUNDAMENTAL SUBUNIT COUNTS TO MAXIMUM CONSTRAINT -- #
 	constraint_names = np.array(["Insufficient to double protein counts", "Too small for mass fraction", "Current level OK"])
-	rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome30SStoich).min()])
-	rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome50SStoich).min()])
+	rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome_30S_stoich).min()])
+	rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome_50S_stoich).min()])
 	if VERBOSE > 1:
 		print('30S limit: {}'.format(constraint_names[np.where(rib30lims.max() == rib30lims)[0]][-1]))
-		print('30S actual count: {}'.format((ribosome30SCounts / ribosome30SStoich).min()))
+		print('30S actual count: {}'.format((ribosome30SCounts / ribosome_30S_stoich).min()))
 		print('30S count set to: {}'.format(rib30lims[np.where(rib30lims.max() == rib30lims)[0]][-1]))
 		print('50S limit: {}'.format(constraint_names[np.where(rib50lims.max() == rib50lims)[0]][-1]))
-		print('50S actual count: {}'.format((ribosome50SCounts / ribosome50SStoich).min()))
+		print('50S actual count: {}'.format((ribosome50SCounts / ribosome_50S_stoich).min()))
 		print('50S count set to: {}'.format(rib50lims[np.where(rib50lims.max() == rib50lims)[0]][-1]))
 
 	bulkContainer.countsIs(
 		np.fmax(np.fmax(ribosome30SCounts, constraint1_ribosome30SCounts), constraint2_ribosome30SCounts),
-		ribosome30SSubunits
+		ribosome_30S_subunits
 		)
 
 	bulkContainer.countsIs(
 		np.fmax(np.fmax(ribosome50SCounts, constraint1_ribosome50SCounts), constraint2_ribosome50SCounts),
-		ribosome50SSubunits
+		ribosome_50S_subunits
 		)
 
 def setRNAPCountsConstrainedByPhysiology(
