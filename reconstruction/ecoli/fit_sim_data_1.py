@@ -838,6 +838,7 @@ def expressionConverge(
 			sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
 
 		degreeOfFit = np.sqrt(np.mean(np.square(initialExpression - expression)))
+
 		if VERBOSE > 1:
 			print('degree of fit: {}'.format(degreeOfFit))
 			print(f'Average cistron expression residuals: {np.linalg.norm(cistron_expression_res)}')
@@ -1491,11 +1492,13 @@ def setRibosomeCountsConstrainedByPhysiology(
 		1,
 		variable_elongation_translation)
 
-	nRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
-		proteinLengths,
-		elongation_rates,
-		netLossRate_protein,
-		proteinCounts).asNumber(units.aa / units.s) / active_fraction
+	nRibosomesNeeded = np.ceil(
+		calculateMinPolymerizingEnzymeByProductDistribution(
+			proteinLengths,
+			elongation_rates,
+			netLossRate_protein,
+			proteinCounts).asNumber(units.aa / units.s) / active_fraction
+		)
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
@@ -1637,7 +1640,8 @@ def setRNAPCountsConstrainedByPhysiology(
 		elongation_rates,
 		rnaLossRate).asNumber(units.nt / units.s)
 
-	nRnapsNeeded = nActiveRnapNeeded / sim_data.growth_rate_parameters.get_fraction_active_rnap(doubling_time)
+	nRnapsNeeded = np.ceil(
+		nActiveRnapNeeded / sim_data.growth_rate_parameters.get_fraction_active_rnap(doubling_time))
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	rnapIds = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.full_RNAP)['subunitIds']
