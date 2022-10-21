@@ -656,7 +656,8 @@ def buildCombinedConditionCellSpecifications(
 		variable_elongation_transcription=True,
 		variable_elongation_translation=False,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False):
+		disable_rnapoly_capacity_fitting=False,
+		):
 	"""
 	Creates cell specifications for sets of transcription factors being active.
 	These sets include conditions like 'with_aa' or 'no_oxygen' where multiple
@@ -763,7 +764,8 @@ def expressionConverge(
 		variable_elongation_transcription=True,
 		variable_elongation_translation=False,
 		disable_ribosome_capacity_fitting=False,
-		disable_rnapoly_capacity_fitting=False):
+		disable_rnapoly_capacity_fitting=False,
+		):
 	"""
 	Iteratively fits synthesis probabilities for RNA. Calculates initial
 	expression based on gene expression data and makes adjustments to match
@@ -812,7 +814,6 @@ def expressionConverge(
 
 		initialExpression = expression.copy()
 		expression = setInitialRnaExpression(sim_data, expression, doubling_time)
-
 		bulkContainer = createBulkContainer(sim_data, expression, doubling_time)
 		avgCellDryMassInit, fitAvgSolubleTargetMolMass = rescaleMassForSolubleMetabolites(sim_data, bulkContainer, concDict, doubling_time)
 
@@ -837,6 +838,7 @@ def expressionConverge(
 			sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km)
 
 		degreeOfFit = np.sqrt(np.mean(np.square(initialExpression - expression)))
+
 		if VERBOSE > 1:
 			print('degree of fit: {}'.format(degreeOfFit))
 			print(f'Average cistron expression residuals: {np.linalg.norm(cistron_expression_res)}')
@@ -1164,15 +1166,16 @@ def rescaleMassForSolubleMetabolites(sim_data, bulkMolCntr, concDict, doubling_t
 
 def setInitialRnaExpression(sim_data, expression, doubling_time):
 	"""
-	Creates a container that with the initial count and ID of each RNA, calculated based on the mass fraction,
-	molecular weight, and expression distribution of each RNA. For rRNA the counts are set based on mass, while for
-	tRNA and mRNA the counts are set based on mass and relative abundance. Relies on the math function
-	totalCountFromMassesAndRatios.
+	Creates a container that with the initial count and ID of each RNA,
+	calculated based on the mass fraction, molecular weight, and expression
+	distribution of each RNA. For rRNA the counts are set based on mass, while
+	for tRNA and mRNA the counts are set based on mass and relative abundance.
+	Relies on the math function totalCountFromMassesAndRatios.
 
 	Requires
 	--------
-	- Needs information from the knowledge base about the mass fraction, molecular weight, and distribution of each
-	RNA species.
+	- Needs information from the knowledge base about the mass fraction,
+	molecular weight, and distribution of each RNA species.
 
 	Inputs
 	------
@@ -1189,73 +1192,71 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	- Now rnaData["synthProb"] does not match "expression"
 
 	"""
-
 	# Load from sim_data
 	n_avogadro = sim_data.constants.n_avogadro
-	cistron_data = sim_data.process.transcription.cistron_data
-	rna_data = sim_data.process.transcription.rna_data
+	transcription = sim_data.process.transcription
+	cistron_data = transcription.cistron_data
+	rna_data = transcription.rna_data
 	get_average_copy_number = sim_data.process.replication.get_average_copy_number
 	rna_mw = rna_data['mw']
+	rna_rRNA_mw = rna_data['rRNA_mw']
+	rna_tRNA_mw = rna_data['tRNA_mw']
 	rna_coord = rna_data['replication_coordinate']
 
-	## Mask arrays for rRNAs
-	includes_rRNA23S = rna_data['is_23S_rRNA']
-	includes_rRNA16S = rna_data['is_16S_rRNA']
-	includes_rRNA5S = rna_data['is_5S_rRNA']
+	# Mask arrays for each RNA type
+	is_rRNA = rna_data['is_rRNA']
 	is_tRNA = rna_data['is_tRNA']
 	is_mRNA = rna_data['is_mRNA']
 
-	## IDs
-	ids_rnas = rna_data["id"]
-	ids_rRNA23S = ids_rnas[includes_rRNA23S]
-	ids_rRNA16S = ids_rnas[includes_rRNA16S]
-	ids_rRNA5S = ids_rnas[includes_rRNA5S]
-	ids_mRNA = ids_rnas[is_mRNA]
-	ids_tRNA = ids_rnas[is_tRNA]
+	# Get list of RNA IDs for each type and tRNA cistron IDs
+	all_RNA_ids = rna_data['id']
+	ids_rRNA = all_RNA_ids[is_rRNA]
+	ids_mRNA = all_RNA_ids[is_mRNA]
+	ids_tRNA = all_RNA_ids[is_tRNA]
 	ids_tRNA_cistrons = cistron_data['id'][cistron_data['is_tRNA']]
 
-	## Mass fractions
-	initial_rna_mass = (sim_data.mass.get_component_masses(doubling_time)['rnaMass']
-		/ sim_data.mass.avg_cell_to_initial_cell_conversion_factor)
+	# Get mass fractions of each RNA type for this condition
+	initial_rna_mass = (
+		sim_data.mass.get_component_masses(doubling_time)['rnaMass']
+		/ sim_data.mass.avg_cell_to_initial_cell_conversion_factor
+		)
 	ppgpp = sim_data.growth_rate_parameters.get_ppGpp_conc(doubling_time)
-	rna_fractions = sim_data.process.transcription.get_rna_fractions(ppgpp)
-	total_mass_rRNA23S = initial_rna_mass * rna_fractions['23S']
-	total_mass_rRNA16S = initial_rna_mass * rna_fractions['16S']
-	total_mass_rRNA5S = initial_rna_mass * rna_fractions['5S']
-	total_mass_tRNA = initial_rna_mass * rna_fractions['trna']
-	total_mass_mRNA = initial_rna_mass * rna_fractions['mrna']
+	rna_fractions = transcription.get_rna_fractions(ppgpp)
+	total_mass_rRNA = initial_rna_mass * rna_fractions['rRNA']
+	total_mass_tRNA = initial_rna_mass * rna_fractions['tRNA']
+	total_mass_mRNA = initial_rna_mass * rna_fractions['mRNA']
 
-	## Molecular weights
-	individual_masses_rRNA23S = rna_mw[includes_rRNA23S] / n_avogadro
-	individual_masses_rRNA16S = rna_mw[includes_rRNA16S] / n_avogadro
-	individual_masses_rRNA5S = rna_mw[includes_rRNA5S] / n_avogadro
+	# Get molecular weights of each RNA. For rRNAs, we only account for the
+	# masses of the rRNA cistrons within each RNA, since these transcription
+	# units can contain tRNAs within them.
+	individual_masses_rRNA = rna_rRNA_mw[is_rRNA] / n_avogadro
 	individual_masses_tRNA = rna_mw[is_tRNA] / n_avogadro
 	individual_masses_mRNA = rna_mw[is_mRNA] / n_avogadro
 
-	# Molecule expression distributions
+	# Set rRNA TU expression assuming equal per-copy transcription
+	# probabilities. The combined expression levels of each rRNA TU are assumed
+	# to be proportional to their expected average copy numbers, which are
+	# dependent on the doubling time and the chromosomal position.
 	tau = doubling_time.asNumber(units.min)
+	coord_rRNA = rna_coord[is_rRNA]
+	n_avg_copy_rRNA = get_average_copy_number(tau, coord_rRNA)
+	distribution_rRNA = normalize(n_avg_copy_rRNA)
 
-	## Get replication coordinates of rRNA genes
-	coord_rRNA23S = rna_coord[includes_rRNA23S]
-	coord_rRNA16S = rna_coord[includes_rRNA16S]
-	coord_rRNA5S = rna_coord[includes_rRNA5S]
+	total_count_rRNA = totalCountFromMassesAndRatios(
+		total_mass_rRNA,
+		individual_masses_rRNA,
+		distribution_rRNA
+		)
+	counts_rRNA = total_count_rRNA * distribution_rRNA
 
-	## Get average copy numbers for all rRNA genes
-	n_avg_copy_rRNA23S = get_average_copy_number(tau, coord_rRNA23S)
-	n_avg_copy_rRNA16S = get_average_copy_number(tau, coord_rRNA16S)
-	n_avg_copy_rRNA5S = get_average_copy_number(tau, coord_rRNA5S)
+	# Get the total mass of tRNAs that are expressed from rRNA TUs and subtract
+	# this mass from the total tRNA mass
+	tRNA_masses_in_each_rRNA = rna_tRNA_mw[is_rRNA] / n_avogadro
+	total_mass_tRNA_in_rRNAs = units.dot(counts_rRNA, tRNA_masses_in_each_rRNA)
+	total_mass_tRNA -= total_mass_tRNA_in_rRNAs
 
-	# For rRNAs it is assumed that all operons have the same per-copy
-	# transcription probabilities. Since the positions of the operons and thus
-	# the average copy numbers of each rRNA gene are different, the
-	# distribution is given as the normalized ratio of the average copy numbers
-	# of each rRNA gene.
-	distribution_rRNA23S = normalize(n_avg_copy_rRNA23S)
-	distribution_rRNA16S = normalize(n_avg_copy_rRNA16S)
-	distribution_rRNA5S = normalize(n_avg_copy_rRNA5S)
-
-	# Use NNLS to calculate distribution of unprocessed tRNAs that most closely
-	# match the distribution of mature tRNAs
+	# Get tRNA cistron distribution (see Dong 1996), while setting values for
+	# cistrons that are expressed from rRNAs to zero
 	tRNA_distribution = sim_data.mass.get_trna_distribution(doubling_time)
 	tRNA_id_to_dist = {
 		trna_id: dist for (trna_id, dist)
@@ -1264,76 +1265,50 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	distribution_tRNA_cistrons = np.zeros(len(ids_tRNA_cistrons))
 	for i, tRNA_id in enumerate(ids_tRNA_cistrons):
 		distribution_tRNA_cistrons[i] = tRNA_id_to_dist[tRNA_id]
-	distribution_tRNA, _ = sim_data.process.transcription.fit_trna_expression(
+
+	tRNA_expressed_from_rRNA_mask = transcription.cistron_tu_mapping_matrix.dot(is_rRNA)[
+		cistron_data['is_tRNA']].astype(bool)
+	distribution_tRNA_cistrons[tRNA_expressed_from_rRNA_mask] = 0
+	distribution_tRNA_cistrons = normalize(distribution_tRNA_cistrons)
+
+	# Approximate distribution of tRNA-including transcripts from tRNA cistron
+	# distribution by using NNLS
+	distribution_tRNA_including_transcripts, _ = transcription.fit_trna_expression(
 		distribution_tRNA_cistrons)
+
+	# Get distribution of tRNA-including transcripts that are not rRNAs
+	is_hybrid = rna_data['is_rRNA'][rna_data['includes_tRNA']]
+	distribution_tRNA = distribution_tRNA_including_transcripts[~is_hybrid]
 	distribution_tRNA = normalize(distribution_tRNA)
 
-	distribution_mRNA = normalize(expression[is_mRNA])
-
-	# Construct bulk container
-	rna_expression_container = BulkObjectsContainer(ids_rnas, dtype=np.float64)
-
-	## Assign rRNA counts based on mass
-	total_count_rRNA23S = totalCountFromMassesAndRatios(
-		total_mass_rRNA23S,
-		individual_masses_rRNA23S,
-		distribution_rRNA23S
-		)
-	total_count_rRNA16S = totalCountFromMassesAndRatios(
-		total_mass_rRNA16S,
-		individual_masses_rRNA16S,
-		distribution_rRNA16S
-		)
-	total_count_rRNA5S = totalCountFromMassesAndRatios(
-		total_mass_rRNA5S,
-		individual_masses_rRNA5S,
-		distribution_rRNA5S
-		)
-
-	# Mass weighted average rRNA count to set rRNA subunit counts equal to each
-	# other but keep the same expected total rRNA mass
-	mass_weighting_rRNA23S = individual_masses_rRNA23S * distribution_rRNA23S
-	mass_weighting_rRNA16S = individual_masses_rRNA16S * distribution_rRNA16S
-	mass_weighting_rRNA5S = individual_masses_rRNA5S * distribution_rRNA5S
-	total_count_rRNA_average = (
-		units.sum(mass_weighting_rRNA23S * total_count_rRNA23S)
-		+ units.sum(mass_weighting_rRNA16S * total_count_rRNA16S)
-		+ units.sum(mass_weighting_rRNA5S * total_count_rRNA5S)
-		) / (
-		units.sum(mass_weighting_rRNA23S)
-		+ units.sum(mass_weighting_rRNA16S)
-		+ units.sum(mass_weighting_rRNA5S)
-		)
-
-	counts_rRNA23S = total_count_rRNA_average * distribution_rRNA23S
-	counts_rRNA16S = total_count_rRNA_average * distribution_rRNA16S
-	counts_rRNA5S = total_count_rRNA_average * distribution_rRNA5S
-
-	rna_expression_container.countsIs(counts_rRNA23S, ids_rRNA23S)
-	rna_expression_container.countsIs(counts_rRNA16S, ids_rRNA16S)
-	rna_expression_container.countsIs(counts_rRNA5S, ids_rRNA5S)
-
-	## Assign tRNA counts based on mass and relative abundances (see Dong 1996)
+	# Assign tRNA counts based on this distribution
 	total_count_tRNA = totalCountFromMassesAndRatios(
 		total_mass_tRNA,
 		individual_masses_tRNA,
 		distribution_tRNA
 		)
 	counts_tRNA = total_count_tRNA * distribution_tRNA
-	rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
 
-	## Assign mRNA counts based on mass and relative abundances (microarrays)
+	# Assign mRNA counts based on mass and relative abundances (microarrays)
+	distribution_mRNA = normalize(expression[is_mRNA])
 	total_count_mRNA = totalCountFromMassesAndRatios(
 		total_mass_mRNA,
 		individual_masses_mRNA,
 		distribution_mRNA
 		)
 	counts_mRNA = total_count_mRNA * distribution_mRNA
+
+	# Set expression counts in container
+	rna_expression_container = BulkObjectsContainer(
+		all_RNA_ids, dtype=np.float64)
+	rna_expression_container.countsIs(counts_rRNA, ids_rRNA)
+	rna_expression_container.countsIs(counts_tRNA, ids_tRNA)
 	rna_expression_container.countsIs(counts_mRNA, ids_mRNA)
 
 	expression = normalize(rna_expression_container.counts())
 
 	return expression
+
 
 def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	"""
@@ -1459,10 +1434,10 @@ def setRibosomeCountsConstrainedByPhysiology(
 		doubling_time,
 		variable_elongation_translation):
 	"""
-	Set counts of ribosomal subunits based on three constraints:
+	Set counts of ribosomal protein subunits based on three constraints:
 	(1) Expected protein distribution doubles in one cell cycle
 	(2) Measured rRNA mass fractions
-	(3) Expected ribosomal subunit counts based on RNA expression data
+	(3) Expected ribosomal protein subunit counts based on RNA expression data
 
 	Inputs
 	------
@@ -1478,10 +1453,26 @@ def setRibosomeCountsConstrainedByPhysiology(
 	active_fraction = sim_data.growth_rate_parameters.get_fraction_active_ribosome(doubling_time)
 
 	# Get IDs and stoichiometry of ribosome subunits
-	ribosome30SSubunits = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s30_full_complex)['subunitIds']
-	ribosome50SSubunits = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s50_full_complex)['subunitIds']
-	ribosome30SStoich = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s30_full_complex)['subunitStoich']
-	ribosome50SStoich = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.s50_full_complex)['subunitStoich']
+	ribosome_30S_subunits = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s30_full_complex)['subunitIds']
+	ribosome_50S_subunits = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s50_full_complex)['subunitIds']
+	ribosome_30S_stoich = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s30_full_complex)['subunitStoich']
+	ribosome_50S_stoich = sim_data.process.complexation.get_monomers(
+		sim_data.molecule_ids.s50_full_complex)['subunitStoich']
+
+	# Remove rRNA subunits from each array
+	monomer_ids = set(sim_data.process.translation.monomer_data['id'])
+	def remove_rRNA(subunit_ids, subunit_stoich):
+		is_protein = np.array([
+			(subunit_id in monomer_ids) for subunit_id in subunit_ids])
+		return (subunit_ids[is_protein], subunit_stoich[is_protein])
+
+	ribosome_30S_subunits, ribosome_30S_stoich = remove_rRNA(
+		ribosome_30S_subunits, ribosome_30S_stoich)
+	ribosome_50S_subunits, ribosome_50S_stoich = remove_rRNA(
+		ribosome_50S_subunits, ribosome_50S_stoich)
 
 	# -- CONSTRAINT 1: Expected protein distribution doubling -- #
 	## Calculate minimium number of 30S and 50S subunits required in order to double our expected
@@ -1501,70 +1492,75 @@ def setRibosomeCountsConstrainedByPhysiology(
 		1,
 		variable_elongation_translation)
 
-	nRibosomesNeeded = calculateMinPolymerizingEnzymeByProductDistribution(
-		proteinLengths,
-		elongation_rates,
-		netLossRate_protein,
-		proteinCounts).asNumber(units.aa / units.s) / active_fraction
+	nRibosomesNeeded = np.ceil(
+		calculateMinPolymerizingEnzymeByProductDistribution(
+			proteinLengths,
+			elongation_rates,
+			netLossRate_protein,
+			proteinCounts).asNumber(units.aa / units.s) / active_fraction
+		)
 
 	# Minimum number of ribosomes needed
 	constraint1_ribosome30SCounts = (
-		nRibosomesNeeded * ribosome30SStoich
+		nRibosomesNeeded * ribosome_30S_stoich
 		)
 
 	constraint1_ribosome50SCounts = (
-		nRibosomesNeeded * ribosome50SStoich
+		nRibosomesNeeded * ribosome_50S_stoich
 		)
 
 
 	# -- CONSTRAINT 2: Measured rRNA mass fraction -- #
-	## Calculate exact number of 30S and 50S subunits based on measured mass fractions of
-	## 16S, 23S, and 5S rRNA.
-	rRna23SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
-	rRna16SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
-	rRna5SCounts = bulkContainer.counts(sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])
+	# Get rRNA counts
+	rna_data = sim_data.process.transcription.rna_data
+	rRNA_tu_counts = bulkContainer.counts(rna_data["id"][rna_data['is_rRNA']])
+	rRNA_cistron_counts = sim_data.process.transcription.rRNA_cistron_tu_mapping_matrix.dot(
+		rRNA_tu_counts)
+	rRNA_cistron_indexes = np.where(
+		sim_data.process.transcription.cistron_data['is_rRNA'])[0]
+	rRNA_23S_counts = rRNA_cistron_counts[
+		sim_data.process.transcription.cistron_data['is_23S_rRNA'][rRNA_cistron_indexes]]
+	rRNA_16S_counts = rRNA_cistron_counts[
+		sim_data.process.transcription.cistron_data['is_16S_rRNA'][rRNA_cistron_indexes]]
+	rRNA_5S_counts = rRNA_cistron_counts[
+		sim_data.process.transcription.cistron_data['is_5S_rRNA'][rRNA_cistron_indexes]]
 
 	## 16S rRNA is in the 30S subunit
-	massFracPredicted_30SCount = rRna16SCounts.sum()
+	massFracPredicted_30SCount = rRNA_16S_counts.sum()
 	## 23S and 5S rRNA are in the 50S subunit
-	massFracPredicted_50SCount = min(rRna23SCounts.sum(), rRna5SCounts.sum())
+	massFracPredicted_50SCount = min(rRNA_23S_counts.sum(), rRNA_5S_counts.sum())
 
-	constraint2_ribosome30SCounts = massFracPredicted_30SCount * ribosome30SStoich
-	constraint2_ribosome50SCounts = massFracPredicted_50SCount * ribosome50SStoich
+	constraint2_ribosome30SCounts = massFracPredicted_30SCount * ribosome_30S_stoich
+	constraint2_ribosome50SCounts = massFracPredicted_50SCount * ribosome_50S_stoich
 
 
 	# -- CONSTRAINT 3: Expected ribosomal subunit counts based expression
 	## Calculate fundamental ribosomal subunit count distribution based on RNA expression data
 	## Already calculated and stored in bulkContainer
-	ribosome30SCounts = bulkContainer.counts(ribosome30SSubunits)
-	ribosome50SCounts = bulkContainer.counts(ribosome50SSubunits)
+	ribosome30SCounts = bulkContainer.counts(ribosome_30S_subunits)
+	ribosome50SCounts = bulkContainer.counts(ribosome_50S_subunits)
 
 	# -- SET RIBOSOME FUNDAMENTAL SUBUNIT COUNTS TO MAXIMUM CONSTRAINT -- #
 	constraint_names = np.array(["Insufficient to double protein counts", "Too small for mass fraction", "Current level OK"])
-	rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome30SStoich).min()])
-	rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome50SStoich).min()])
+	rib30lims = np.array([nRibosomesNeeded, massFracPredicted_30SCount, (ribosome30SCounts / ribosome_30S_stoich).min()])
+	rib50lims = np.array([nRibosomesNeeded, massFracPredicted_50SCount, (ribosome50SCounts / ribosome_50S_stoich).min()])
 	if VERBOSE > 1:
 		print('30S limit: {}'.format(constraint_names[np.where(rib30lims.max() == rib30lims)[0]][-1]))
-		print('30S actual count: {}'.format((ribosome30SCounts / ribosome30SStoich).min()))
+		print('30S actual count: {}'.format((ribosome30SCounts / ribosome_30S_stoich).min()))
 		print('30S count set to: {}'.format(rib30lims[np.where(rib30lims.max() == rib30lims)[0]][-1]))
 		print('50S limit: {}'.format(constraint_names[np.where(rib50lims.max() == rib50lims)[0]][-1]))
-		print('50S actual count: {}'.format((ribosome50SCounts / ribosome50SStoich).min()))
+		print('50S actual count: {}'.format((ribosome50SCounts / ribosome_50S_stoich).min()))
 		print('50S count set to: {}'.format(rib50lims[np.where(rib50lims.max() == rib50lims)[0]][-1]))
 
 	bulkContainer.countsIs(
 		np.fmax(np.fmax(ribosome30SCounts, constraint1_ribosome30SCounts), constraint2_ribosome30SCounts),
-		ribosome30SSubunits
+		ribosome_30S_subunits
 		)
 
 	bulkContainer.countsIs(
 		np.fmax(np.fmax(ribosome50SCounts, constraint1_ribosome50SCounts), constraint2_ribosome50SCounts),
-		ribosome50SSubunits
+		ribosome_50S_subunits
 		)
-
-	# Return rRNA counts to value in sim_data
-	bulkContainer.countsIs(rRna23SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_23S_rRNA']])
-	bulkContainer.countsIs(rRna16SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_16S_rRNA']])
-	bulkContainer.countsIs(rRna5SCounts, sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_5S_rRNA']])
 
 def setRNAPCountsConstrainedByPhysiology(
 		sim_data,
@@ -1644,7 +1640,8 @@ def setRNAPCountsConstrainedByPhysiology(
 		elongation_rates,
 		rnaLossRate).asNumber(units.nt / units.s)
 
-	nRnapsNeeded = nActiveRnapNeeded / sim_data.growth_rate_parameters.get_fraction_active_rnap(doubling_time)
+	nRnapsNeeded = np.ceil(
+		nActiveRnapNeeded / sim_data.growth_rate_parameters.get_fraction_active_rnap(doubling_time))
 
 	# Convert nRnapsNeeded to the number of RNA polymerase subunits required
 	rnapIds = sim_data.process.complexation.get_monomers(sim_data.molecule_ids.full_RNAP)['subunitIds']

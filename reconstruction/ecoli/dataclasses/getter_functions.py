@@ -441,14 +441,18 @@ class GetterFunctions(object):
 			tu_rna_types = [
 				rna_id_to_type[gene_id_to_rna_id[gene]] for gene in tu['genes']
 				if rna_id_to_type[gene_id_to_rna_id[gene]] not in EXCLUDED_RNA_TYPES]
+			if len(set(tu_rna_types)) > 1 and set(tu_rna_types) != {'rRNA', 'tRNA'}:
+				raise ValueError(f'Transcription unit {tu["id"]} includes genes'
+					f' that encode for two or more different types of RNAs.'
+					f' Such transcription units are not supported by this'
+					f' version of the model with the exception of rRNA'
+					f' transcription units with tRNA genes.')
 
-			if len(set(tu_rna_types)) > 1:
-				raise ValueError(f'Transcription unit {tu["id"]} includes '
-					f'cistrons that encode for two or more different types of '
-					f'RNAs, which is not supported by this version of the '
-					f'model and thus should be removed.')
-
-			rna_id_to_type[tu['id']] = tu_rna_types[0]
+			if len(tu_rna_types) == 1:
+				rna_id_to_type[tu['id']] = tu_rna_types[0]
+			else:
+				# Hybrid RNAs are set to have nonspecific mass
+				rna_id_to_type[tu['id']] = 'nonspecific_RNA'
 
 		return {
 			rna_id: self._build_submass_array(mw, rna_id_to_type[rna_id])

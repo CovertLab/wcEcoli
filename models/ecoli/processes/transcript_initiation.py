@@ -19,7 +19,6 @@ from six.moves import zip
 import wholecell.processes.process
 from wholecell.utils import units
 
-
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
 
@@ -77,9 +76,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.RNAs = self.uniqueMoleculesView('RNA')
 
 		# ID Groups
-		self.idx_16SrRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
-		self.idx_23SrRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
-		self.idx_5SrRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 		self.idx_rRNA = np.where(sim_data.process.transcription.rna_data['is_rRNA'])[0]
 		self.idx_mRNA = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
 		self.idx_tRNA = np.where(sim_data.process.transcription.rna_data['is_tRNA'])[0]
@@ -261,30 +257,17 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			RNAP_index=RNAP_indexes)
 
 		# Create masks for ribosomal RNAs
-		is_5Srrna = np.isin(TU_index, self.idx_5SrRNA)
-		is_16Srrna = np.isin(TU_index, self.idx_16SrRNA)
-		is_23Srrna = np.isin(TU_index, self.idx_23SrRNA)
+		rna_init_event = TU_to_promoter.dot(n_initiations)
+		rRNA_initiations = rna_init_event[self.idx_rRNA]
 
 		# Write outputs to listeners
 		self.writeToListener(
-			"RibosomeData", "rrn16S_produced", n_initiations[is_16Srrna].sum())
+			"RibosomeData", "rRNA_initiated_TU", rRNA_initiations)
 		self.writeToListener(
-			"RibosomeData", "rrn23S_produced", n_initiations[is_23Srrna].sum())
-		self.writeToListener(
-			"RibosomeData", "rrn5S_produced", n_initiations[is_5Srrna].sum())
-
-		self.writeToListener(
-			"RibosomeData", "rrn16S_init_prob",
-			n_initiations[is_16Srrna].sum() / float(n_RNAPs_to_activate))
-		self.writeToListener(
-			"RibosomeData", "rrn23S_init_prob",
-			n_initiations[is_23Srrna].sum() / float(n_RNAPs_to_activate))
-		self.writeToListener("RibosomeData", "rrn5S_init_prob",
-			n_initiations[is_5Srrna].sum() / float(n_RNAPs_to_activate))
+			"RibosomeData", "rRNA_init_prob_TU", rRNA_initiations / float(n_RNAPs_to_activate))
 		self.writeToListener("RibosomeData", "total_rna_init", n_RNAPs_to_activate)
-
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
-		self.writeToListener("RnapData", "rnaInitEvent", TU_to_promoter.dot(n_initiations))
+		self.writeToListener("RnapData", "rnaInitEvent", rna_init_event)
 
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):
