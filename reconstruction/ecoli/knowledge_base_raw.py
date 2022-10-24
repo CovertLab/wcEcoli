@@ -227,9 +227,6 @@ class KnowledgeBaseEcoli(object):
 		self._join_data()
 		self._modify_data()
 
-		import ipdb
-		ipdb.set_trace()
-
 	def _load_tsv(self, dir_name, file_name):
 		path = self
 		for sub_path in file_name[len(dir_name) + 1 : ].split(os.path.sep)[:-1]:
