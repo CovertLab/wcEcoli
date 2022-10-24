@@ -191,12 +191,17 @@ class KnowledgeBaseEcoli(object):
 			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'gene_sequences.tsv'))
 
 			# These files need to be joined to existing files
-			new_gene_shared_files = ['genes','rnas','rna_half_lives','protein_half_lives_measured','proteins']
+			new_gene_shared_files = ['genes','rnas','proteins','rna_half_lives','protein_half_lives_measured']
 			for f in new_gene_shared_files:
-				self.list_of_dict_filenames.append(os.path.join(new_gene_path, f+'.tsv'))
-				self.added_data.update({f: nested_attr + f})
-			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'rnaseq_seal_rpkm_mean.tsv'))
-			self.added_data.update({'rna_seq_data.rnaseq_seal_rpkm_mean': nested_attr + 'rnaseq_seal_rpkm_mean'})
+				file_path = os.path.join(new_gene_path, f + '.tsv')
+				if os.path.isfile(os.path.join(FLAT_DIR, file_path)): # if these files dont exist, fill in with default values at a later point
+					self.list_of_dict_filenames.append(file_path)
+					self.added_data.update({f: nested_attr + f})
+
+			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_seal_rpkm_mean.tsv')
+			if os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)):
+				self.list_of_dict_filenames.append(rnaseq_path)
+				self.added_data.update({'rna_seq_data.rnaseq_seal_rpkm_mean': nested_attr + 'rnaseq_seal_rpkm_mean'})
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
@@ -381,6 +386,7 @@ class KnowledgeBaseEcoli(object):
 		for attr in insert_loc_attr.split('.')[1:]:
 			insert_loc_data = getattr(insert_loc_data, attr)
 
+		assert len(insert_loc_data) == 1, 'each noncontiguous insertion should be in its own directory'
 		insert_left = insert_loc_data[0]['left_end_pos']
 		insert_right = insert_loc_data[0]['right_end_pos']
 
@@ -409,6 +415,9 @@ class KnowledgeBaseEcoli(object):
 		new_genes_data = getattr(self, new_genes_attr.split('.')[0])
 		for attr in new_genes_attr.split('.')[1:]:
 			new_genes_data = getattr(new_genes_data, attr)
+		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
+
+		assert new_genes_data[-1]['right_end_pos'] == (insert_right - insert_left), 'insertion lengths must agree'
 
 		# Update global positions of original genes
 		insert_len = insert_right - insert_left + 1
@@ -419,7 +428,7 @@ class KnowledgeBaseEcoli(object):
 					row.update({'left_end_pos': left+insert_len})
 					row.update({'right_end_pos': right+insert_len})
 
-		# CHange relative insertion positions to global positions in reference genome
+		# Change relative insertion positions to global positions in reference genome
 		for row in new_genes_data:
 			left = row['left_end_pos']
 			right = row['right_end_pos']
@@ -445,6 +454,8 @@ class KnowledgeBaseEcoli(object):
 
 		insertion_seq = Seq.Seq('',Alphabet.SingleLetterAlphabet())
 		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
+		assert new_genes_data[0]['left_end_pos'] == 0, 'first gene in new sequence must start at relative coordinate 0'
+
 		for gene in new_genes_data:
 			if gene['direction'] == "+":
 				seq_row = next((row for row in seq_data if row['id'] == gene['id']), None)
