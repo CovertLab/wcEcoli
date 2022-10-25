@@ -18,17 +18,15 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 
 
-RNA_IDS = ['RRFA-RRNA', 'RRLA-RRNA', 'RRSA-RRNA', 'alaU-tRNA']
-
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = cPickle.load(f)
 
 		# Read from sim_data
-		rna_replication_coordinates = sim_data.process.transcription.rna_data[
-			"replication_coordinate"]
-		rna_ids = sim_data.process.transcription.rna_data["id"]
+		transcription = sim_data.process.transcription
+		rna_replication_coordinates = transcription.rna_data["replication_coordinate"]
+		rna_ids = transcription.rna_data["id"]
 		forward_sequence_length = sim_data.process.replication.replichore_lengths[0]
 		reverse_sequence_length = sim_data.process.replication.replichore_lengths[1]
 
@@ -39,12 +37,17 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		selected_rna_indexes = list(np.argsort(rna_relative_positions)[
 			::(len(rna_replication_coordinates)//10)])
 
+		# Add extra genes
+		rRNA_gene = rna_ids[sim_data.process.transcription.rna_data['is_rRNA']][0]
+		tRNA_gene = rna_ids[sim_data.process.transcription.rna_data['is_tRNA']][0]
+		extra_rna_ids = [rRNA_gene, tRNA_gene]
+
 		# Add extra genes specified in RNA_IDS
 		rna_ids_to_indexes = {
 			rna: i for i, rna
-			in enumerate(sim_data.process.transcription.rna_data["id"])}
+			in enumerate(rna_ids)}
 		selected_rna_indexes.extend(
-			[rna_ids_to_indexes[rna_id + "[c]"] for rna_id in RNA_IDS]
+			[rna_ids_to_indexes[rna_id] for rna_id in extra_rna_ids]
 			)
 		selected_rna_indexes = np.array(selected_rna_indexes)
 

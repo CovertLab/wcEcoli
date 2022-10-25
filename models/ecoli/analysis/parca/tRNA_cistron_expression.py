@@ -33,7 +33,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			for cistron_id in all_cistron_ids
 			]
 		cistron_is_tRNA = transcription.cistron_data['is_tRNA']
-		rna_is_tRNA = transcription.rna_data['is_tRNA']
+		rna_includes_tRNA = transcription.rna_data['includes_tRNA']
 		tRNA_cistron_ids = all_cistron_ids[cistron_is_tRNA]
 
 		# Get boolean array of relevant cistrons that belong to at least one
@@ -64,7 +64,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# Get actual expression levels of each tRNA cistron
 		rna_exp = transcription.rna_expression[CONDITION]
 		actual_tRNA_cistron_exp = transcription.tRNA_cistron_tu_mapping_matrix.dot(
-			rna_exp[rna_is_tRNA])
+			rna_exp[rna_includes_tRNA])
 		actual_tRNA_cistron_exp = normalize(actual_tRNA_cistron_exp)
 
 		# Find cistrons with more than a 10-fold difference between actual vs

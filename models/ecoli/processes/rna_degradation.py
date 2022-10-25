@@ -124,7 +124,7 @@ class RnaDegradation(wholecell.processes.process.Process):
 		self.bulk_RNAs = self.bulkMoleculesView(all_rna_ids)
 		self.unique_RNAs = self.uniqueMoleculesView('RNA')
 		self.water = self.bulkMoleculeView(sim_data.molecule_ids.water)
-		self.nmps = self.bulkMoleculesView(["AMP[c]", "CMP[c]", "GMP[c]", "UMP[c]"])
+		self.nmps = self.bulkMoleculesView(sim_data.molecule_groups.nmps)
 		self.proton = self.bulkMoleculeView(sim_data.molecule_ids.proton)
 
 		self.fragment_metabolites = self.bulkMoleculesView(end_cleavage_metabolite_ids)
