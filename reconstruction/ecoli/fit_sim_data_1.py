@@ -1226,11 +1226,11 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	total_mass_tRNA = initial_rna_mass * rna_fractions['tRNA']
 	total_mass_mRNA = initial_rna_mass * rna_fractions['mRNA']
 
-	# Get molecular weights of each RNA. For rRNAs, we only account for the
-	# masses of the rRNA cistrons within each RNA, since these transcription
-	# units can contain tRNAs within them.
+	# Get molecular weights of each RNA. For rRNAs/tRNAs, we only account for
+	# the masses of the mature rRNAs/tRNAs within each RNA, since these RNAs are
+	# almost instantly processed to yield the mature RNAs.
 	individual_masses_rRNA = rna_rRNA_mw[is_rRNA] / n_avogadro
-	individual_masses_tRNA = rna_mw[is_tRNA] / n_avogadro
+	individual_masses_tRNA = rna_tRNA_mw[is_tRNA] / n_avogadro
 	individual_masses_mRNA = rna_mw[is_mRNA] / n_avogadro
 
 	# Set rRNA TU expression assuming equal per-copy transcription
@@ -1363,25 +1363,37 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 
 def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 	"""
-	Calculates the total counts of RNA from their relative expression, individual
-	mass, and total RNA mass. Relies on the math function totalCountFromMassesAndRatios.
+	Calculates the total counts of RNA from their relative expression,
+	individual mass, and total RNA mass. Relies on the math function
+	totalCountFromMassesAndRatios.
 
 	Inputs
 	------
-	- expression (array of floats) - relative frequency distribution of RNA expression
-	- doubling_time (float with units of time) - measured doubling time given the condition
+	- expression (array of floats) - relative frequency distribution of RNA
+		expression
+	- doubling_time (float with units of time) - measured doubling time given
+		the condition
 
 	Returns
 	--------
 	- total_count_RNA (float) - total number of RNAs
 	- ids_rnas (array of str) - name of each RNA with location tag
 	- distribution_RNA (array of floats) - distribution for each RNA,
-	normalized to 1
+		normalized to 1
 	"""
-
-	ids_rnas = sim_data.process.transcription.rna_data["id"]
-	total_mass_RNA = sim_data.mass.get_component_masses(doubling_time)["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
-	individual_masses_RNA = sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro
+	transcription = sim_data.process.transcription
+	ids_rnas = transcription.rna_data["id"]
+	total_mass_RNA = (
+		sim_data.mass.get_component_masses(doubling_time)["rnaMass"] /
+		sim_data.mass.avg_cell_to_initial_cell_conversion_factor
+		)
+	mws = transcription.rna_data["mw"]
+	# Use only the rRNA/tRNA mass for rRNA/tRNA transcription units
+	is_rRNA = transcription.rna_data['is_rRNA']
+	is_tRNA = transcription.rna_data['is_tRNA']
+	mws[is_rRNA] = transcription.rna_data['rRNA_mw'][is_rRNA]
+	mws[is_tRNA] = transcription.rna_data['tRNA_mw'][is_tRNA]
+	individual_masses_RNA = mws / sim_data.constants.n_avogadro
 
 	distribution_RNA = normalize(expression)
 
@@ -1532,7 +1544,6 @@ def setRibosomeCountsConstrainedByPhysiology(
 
 	constraint2_ribosome30SCounts = massFracPredicted_30SCount * ribosome_30S_stoich
 	constraint2_ribosome50SCounts = massFracPredicted_50SCount * ribosome_50S_stoich
-
 
 	# -- CONSTRAINT 3: Expected ribosomal subunit counts based expression
 	## Calculate fundamental ribosomal subunit count distribution based on RNA expression data
