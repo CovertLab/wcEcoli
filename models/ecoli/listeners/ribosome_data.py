@@ -60,14 +60,16 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		# Attributes computed by the listener
 		self.n_ribosomes_per_transcript = np.zeros(self.nMonomers, np.int64)
 		self.n_ribosomes_on_partial_mRNA_per_transcript = np.zeros(self.nMonomers, np.int64)
+		self.mRNA_unique_index = np.zeros(30, np.int64)
+		self.num_ribosome_on_mRNA = np.zeros(30, np.int64)
 
 	def update(self):
 		# Get attributes of RNAs and ribosomes
 		RNAs = self.uniqueMolecules.container.objectsInCollection('RNA')
 		ribosomes = self.uniqueMolecules.container.objectsInCollection(
 			'active_ribosome')
-		is_full_transcript_RNA, unique_index_RNA = RNAs.attrs(
-			'is_full_transcript', 'unique_index')
+		is_full_transcript_RNA, unique_index_RNA, is_mRNA = RNAs.attrs(
+			'is_full_transcript', 'unique_index', 'is_mRNA')
 		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(
 			'protein_index', 'mRNA_index')
 
@@ -84,6 +86,20 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			protein_index_ribosomes[ribosomes_on_nascent_mRNA_mask],
 			minlength=self.nMonomers)
 
+
+		# GET MRNA UNIQUE INDEX
+		self.mRNA_unique_index = unique_index_RNA[is_mRNA]
+
+		# print(self.mRNA_unique_index[:8])
+		# is_ribosome_attached = np.isin(mRNA_unique_index,mRNA_index_ribosomes) # TASK: FIGURE OUT ISIN AND USE THIS TO ADJUST BINCOUNT LENGTH AND EXTRACT INFO
+
+		# Get counts of ribosomes attached to the same mRNA
+		bincount_minlength = max(self.mRNA_unique_index)+1
+		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)
+		self.num_ribosome_on_mRNA = bincount_ribosome_on_mRNA[self.mRNA_unique_index]
+
+		# import ipdb;
+		# ipdb.set_trace()
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'probTranslationPerTranscript': 'monomerIds',
@@ -94,6 +110,11 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		tableWriter.writeAttributes(
 			monomerIds = self.monomerIds,
 			subcolumns = subcolumns)
+
+		tableWriter.set_variable_length_columns(
+			'num_ribosome_on_mRNA',
+			'mRNA_unique_index'
+			)
 
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
@@ -121,4 +142,6 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			probTranslationPerTranscript = self.probTranslationPerTranscript,
 			n_ribosomes_per_transcript = self.n_ribosomes_per_transcript,
 			n_ribosomes_on_partial_mRNA_per_transcript = self.n_ribosomes_on_partial_mRNA_per_transcript,
+			num_ribosome_on_mRNA = self.num_ribosome_on_mRNA,
+			mRNA_unique_index = self.mRNA_unique_index
 			)
