@@ -178,24 +178,6 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
 
-	# ID Groups of rRNAs
-	idx_16Srrna = np.where(transcription.rna_data['is_16S_rRNA'])[0]
-	idx_23Srrna = np.where(transcription.rna_data['is_23S_rRNA'])[0]
-	idx_5Srrna = np.where(transcription.rna_data['is_5S_rRNA'])[0]
-
-	# Assume expression from all rRNA genes produce rRNAs from the first operon
-	total_16Srrna_expression = rnaExpression[idx_16Srrna].sum()
-	total_23Srrna_expression = rnaExpression[idx_23Srrna].sum()
-	total_5Srrna_expression = rnaExpression[idx_5Srrna].sum()
-
-	rnaExpression[idx_16Srrna] = 0
-	rnaExpression[idx_23Srrna] = 0
-	rnaExpression[idx_5Srrna] = 0
-
-	rnaExpression[idx_16Srrna[0]] = total_16Srrna_expression
-	rnaExpression[idx_23Srrna[0]] = total_23Srrna_expression
-	rnaExpression[idx_5Srrna[0]] = total_5Srrna_expression
-
 	# Calculate initial counts of each RNA from multinomial distribution
 	rnaView.countsIs(
 		randomState.multinomial(nRnas, rnaExpression)
@@ -204,26 +186,46 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 def initialize_mature_RNA(bulkMolCntr, sim_data):
 	"""
 	Initializes counts of mature RNAs in the bulk molecule container using the
-	counts of unprocessed RNAs.
+	counts of unprocessed RNAs. Also consolidates the different variants of each
+	rRNA molecule into the main type.
 	"""
 	transcription = sim_data.process.transcription
 	rna_data = transcription.rna_data
 	unprocessed_rna_ids = rna_data['id'][rna_data['is_unprocessed']]
 
 	# Skip if there are no unprocessed RNAs represented
-	if len(unprocessed_rna_ids) == 0:
-		return
+	if len(unprocessed_rna_ids) > 0:
+		mature_rna_ids = transcription.mature_rna_data['id']
+		maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
 
-	mature_rna_ids = transcription.mature_rna_data['id']
-	maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
+		# Get counts of unprocessed RNAs
+		unprocessed_rna_counts = bulkMolCntr.countsView(unprocessed_rna_ids).counts()
 
-	# Get counts of unprocessed RNAs
-	unprocessed_rna_counts = bulkMolCntr.countsView(unprocessed_rna_ids).counts()
+		# Assume all unprocessed RNAs are converted to mature RNAs
+		bulkMolCntr.countsIs(0, unprocessed_rna_ids)
+		bulkMolCntr.countsInc(
+			maturation_stoich_matrix.dot(unprocessed_rna_counts), mature_rna_ids)
 
-	# Assume all unprocessed RNAs are converted to mature RNAs
-	bulkMolCntr.countsIs(0, unprocessed_rna_ids)
-	bulkMolCntr.countsInc(
-		maturation_stoich_matrix.dot(unprocessed_rna_counts), mature_rna_ids)
+	# Get IDs of rRNAs
+	main_23s_rRNA_id = sim_data.molecule_groups.s50_23s_rRNA[0]
+	main_16s_rRNA_id = sim_data.molecule_groups.s30_16s_rRNA[0]
+	main_5s_rRNA_id = sim_data.molecule_groups.s50_5s_rRNA[0]
+	variant_23s_rRNA_ids = sim_data.molecule_groups.s50_23s_rRNA[1:]
+	variant_16s_rRNA_ids = sim_data.molecule_groups.s30_16s_rRNA[1:]
+	variant_5s_rRNA_ids = sim_data.molecule_groups.s50_5s_rRNA[1:]
+
+	# Get counts of variant rRNAs
+	variant_23s_rRNA_counts = bulkMolCntr.countsView(variant_23s_rRNA_ids).counts()
+	variant_16s_rRNA_counts = bulkMolCntr.countsView(variant_16s_rRNA_ids).counts()
+	variant_5s_rRNA_counts = bulkMolCntr.countsView(variant_5s_rRNA_ids).counts()
+
+	# Evolve states
+	bulkMolCntr.countInc(variant_23s_rRNA_counts.sum(), main_23s_rRNA_id)
+	bulkMolCntr.countInc(variant_16s_rRNA_counts.sum(), main_16s_rRNA_id)
+	bulkMolCntr.countInc(variant_5s_rRNA_counts.sum(), main_5s_rRNA_id)
+	bulkMolCntr.countsDec(variant_23s_rRNA_counts, variant_23s_rRNA_ids)
+	bulkMolCntr.countsDec(variant_16s_rRNA_counts, variant_16s_rRNA_ids)
+	bulkMolCntr.countsDec(variant_5s_rRNA_counts, variant_5s_rRNA_ids)
 
 
 # TODO: remove checks for zero concentrations (change to assertion)

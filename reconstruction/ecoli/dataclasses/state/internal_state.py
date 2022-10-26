@@ -150,8 +150,6 @@ class InternalState(object):
 		# is bound to
 		# - pos_on_mRNA (64-bit int): Location of the ribosome on the bound
 		# mRNA, in number of bases from the transcription start site
-		# TODO: This is a bad hack that works because in the parca
-		# I have forced expression to be these subunits only
 		ribosome_30S_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.s30_full_complex]
 		ribosome_50S_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.s50_full_complex]
 		ribosome_mass = ribosome_30S_mass + ribosome_50S_mass

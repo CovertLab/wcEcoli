@@ -29,7 +29,13 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 
 		self.monomerIds = sim_data.process.translation.monomer_data['id'].tolist()
 		self.nMonomers = len(self.monomerIds)
-
+		self.rRNA_cistron_tu_mapping_matrix = sim_data.process.transcription.rRNA_cistron_tu_mapping_matrix
+		self.cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
+		self.rRNA_is_5S = sim_data.process.transcription.cistron_data['is_5S_rRNA'][sim_data.process.transcription.cistron_data['is_rRNA']]
+		self.rRNA_is_16S = sim_data.process.transcription.cistron_data['is_16S_rRNA'][sim_data.process.transcription.cistron_data['is_rRNA']]
+		self.rRNA_is_23S = sim_data.process.transcription.cistron_data['is_23S_rRNA'][sim_data.process.transcription.cistron_data['is_rRNA']]
+		self.n_rRNAs = sim_data.process.transcription.rna_data['is_rRNA'].sum()
+		self.n_RNAs = len(sim_data.process.transcription.rna_data)
 
 	# Allocate memory
 	def allocate(self):
@@ -45,12 +51,16 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.didInitialize = 0
 		self.terminationLoss = 0
 		self.effectiveElongationRate = 0.
-		self.rrn16S_produced = 0
-		self.rrn23S_produced = 0
-		self.rrn5S_produced = 0
-		self.rrn16S_init_prob = 0.
-		self.rrn23S_init_prob = 0.
-		self.rrn5S_init_prob = 0.
+		self.rRNA_initiated_TU = np.zeros(self.n_rRNAs, np.int64)
+		self.rRNA_init_prob_TU = np.zeros(self.n_rRNAs, np.float64)
+		self.total_rRNA_initiated = 0
+		self.total_rRNA_init_prob = 0.
+		self.rRNA16S_initiated = 0
+		self.rRNA23S_initiated = 0
+		self.rRNA5S_initiated = 0
+		self.rRNA16S_init_prob = 0.
+		self.rRNA23S_init_prob = 0.
+		self.rRNA5S_init_prob = 0.
 		self.total_rna_init = 0
 		self.processElongationRate = 0.
 		self.translationSupply = np.zeros(21, np.float64)
@@ -84,6 +94,17 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			protein_index_ribosomes[ribosomes_on_nascent_mRNA_mask],
 			minlength=self.nMonomers)
 
+		rRNA_cistrons_produced = self.rRNA_cistron_tu_mapping_matrix.dot(self.rRNA_initiated_TU)
+		rRNA_cistrons_init_prob = self.rRNA_cistron_tu_mapping_matrix.dot(self.rRNA_init_prob_TU)
+		self.total_rRNA_initiated = np.sum(self.rRNA_initiated_TU)
+		self.total_rRNA_init_prob = np.sum(self.rRNA_init_prob_TU)
+		self.rRNA5S_initiated = np.sum(rRNA_cistrons_produced[self.rRNA_is_5S])
+		self.rRNA16S_initiated = np.sum(rRNA_cistrons_produced[self.rRNA_is_16S])
+		self.rRNA23S_initiated = np.sum(rRNA_cistrons_produced[self.rRNA_is_23S])
+		self.rRNA5S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_5S])
+		self.rRNA16S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_16S])
+		self.rRNA23S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_23S])
+
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'probTranslationPerTranscript': 'monomerIds',
@@ -108,12 +129,14 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			didInitialize = self.didInitialize,
 			terminationLoss = self.terminationLoss,
 			effectiveElongationRate = self.effectiveElongationRate,
-			rrn16S_produced = self.rrn16S_produced,
-			rrn23S_produced = self.rrn23S_produced,
-			rrn5S_produced = self.rrn5S_produced,
-			rrn16S_init_prob = self.rrn16S_init_prob,
-			rrn23S_init_prob = self.rrn23S_init_prob,
-			rrn5S_init_prob = self.rrn5S_init_prob,
+			total_rRNA_initiated = self.total_rRNA_initiated,
+			total_rRNA_init_prob = self.total_rRNA_init_prob,
+			rRNA16S_initiated = self.rRNA16S_initiated,
+			rRNA23S_initiated = self.rRNA23S_initiated,
+			rRNA5S_initiated = self.rRNA5S_initiated,
+			rRNA16S_init_prob = self.rRNA16S_init_prob,
+			rRNA23S_init_prob = self.rRNA23S_init_prob,
+			rRNA5S_init_prob = self.rRNA5S_init_prob,
 			total_rna_init = self.total_rna_init,
 			processElongationRate = self.processElongationRate,
 			translationSupply = self.translationSupply,
