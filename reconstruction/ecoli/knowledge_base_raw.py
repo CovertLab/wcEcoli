@@ -477,6 +477,6 @@ class KnowledgeBaseEcoli(object):
 		mutable_ref_genome = ref_genome.tomutable()
 		mutable_ref_genome.insert(insert_left,'Z') # MutableSeq.insert only allows the insertion of one character at a time
 		split_ref_genome = mutable_ref_genome.toseq().split('Z')
-		updated_ref_genome = split_ref_genome[0].join([insertion_seq,split_ref_genome[1]])
+		updated_ref_genome = Seq.Seq('',Alphabet.SingleLetterAlphabet()).join([split_ref_genome[0],insertion_seq,split_ref_genome[1]])
 
 		return updated_ref_genome
