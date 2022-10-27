@@ -1789,11 +1789,17 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	expression = normalize(rna_expression_container.counts())
 
 	# Set number of RNAs based on expression we just set
-	nRnas = totalCountFromMassesAndRatios(
-		total_mass_RNA,
-		sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro,
-		expression)
-	view_RNA.countsIs(nRnas * expression)
+	mws = transcription.rna_data["mw"]
+
+	# Use only the rRNA/tRNA mass for rRNA/tRNA transcription units
+	is_rRNA = transcription.rna_data['is_rRNA']
+	is_tRNA = transcription.rna_data['is_tRNA']
+	mws[is_rRNA] = transcription.rna_data['rRNA_mw'][is_rRNA]
+	mws[is_tRNA] = transcription.rna_data['tRNA_mw'][is_tRNA]
+
+	n_rnas = totalCountFromMassesAndRatios(
+		total_mass_RNA, mws / sim_data.constants.n_avogadro, expression)
+	view_RNA.countsIs(n_rnas * expression)
 
 	if Km is None:
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
