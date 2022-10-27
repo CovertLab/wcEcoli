@@ -72,6 +72,7 @@ ACTIVE = [
 	"tRnaCounts.py",
 	"trpRegulation.py",
 	"twoComponentSystem.py",
+	"polysome_counts.py"
 ]
 
 TAGS = {
