@@ -28,10 +28,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         n_ribosome_on_each_mRNA_flattened = n_ribosome_on_each_mRNA.ravel()
         highest_ribosome_count = int(max(n_ribosome_on_each_mRNA_flattened))+1
 
-        # Count polysomes at each timestep
+        # Count polysomes at all time steps and take average
         n_ribosome_on_each_mRNA_flattened_clean = n_ribosome_on_each_mRNA_flattened[
                                                   np.logical_not(np.isnan(n_ribosome_on_each_mRNA_flattened))]
-
         bincount_ribosomes_all_time_step = np.bincount(n_ribosome_on_each_mRNA_flattened_clean.tolist())
         average_polysome_count = bincount_ribosomes_all_time_step/len(n_ribosome_on_each_mRNA)
 
