@@ -78,8 +78,8 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		RNAs = self.uniqueMolecules.container.objectsInCollection('RNA')
 		ribosomes = self.uniqueMolecules.container.objectsInCollection(
 			'active_ribosome')
-		is_full_transcript_RNA, unique_index_RNA, is_mRNA = RNAs.attrs(
-			'is_full_transcript', 'unique_index', 'is_mRNA')
+		is_full_transcript_RNA, unique_index_RNA, is_mRNA, can_translate = RNAs.attrs(
+			'is_full_transcript', 'unique_index', 'is_mRNA', 'can_translate')
 		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(
 			'protein_index', 'mRNA_index')
 
@@ -96,14 +96,6 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			protein_index_ribosomes[ribosomes_on_nascent_mRNA_mask],
 			minlength=self.nMonomers)
 
-		# GET MRNA UNIQUE INDEX
-		self.mRNA_unique_index = unique_index_RNA[is_mRNA]
-
-		# Get counts of ribosomes attached to the same mRNA
-		bincount_minlength = max(self.mRNA_unique_index)+1
-		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)
-		self.num_ribosome_on_mRNA = bincount_ribosome_on_mRNA[self.mRNA_unique_index]
-
 		rRNA_cistrons_produced = self.rRNA_cistron_tu_mapping_matrix.dot(self.rRNA_initiated_TU)
 		rRNA_cistrons_init_prob = self.rRNA_cistron_tu_mapping_matrix.dot(self.rRNA_init_prob_TU)
 		self.total_rRNA_initiated = np.sum(self.rRNA_initiated_TU)
@@ -114,6 +106,14 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.rRNA5S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_5S])
 		self.rRNA16S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_16S])
 		self.rRNA23S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_23S])
+
+		# Get mRNA unique index
+		self.mRNA_unique_index = unique_index_RNA[can_translate]
+
+		# Get counts of ribosomes attached to the same mRNA
+		bincount_minlength = max(self.mRNA_unique_index) + 1
+		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)
+		self.num_ribosome_on_mRNA = bincount_ribosome_on_mRNA[self.mRNA_unique_index]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
