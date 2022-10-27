@@ -19,14 +19,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
         # Listeners used
         ribosome_reader = TableReader(os.path.join(simOutDir, 'RibosomeData'))
-        mRNACount_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
 
         # Load data
         num_ribosome_on_mRNA = ribosome_reader.readColumn('num_ribosome_on_mRNA')
-        mRNA_count = mRNACount_reader.readColumn('mRNA_counts')
 
         # Initialize variables
-        highest_ribosome_count = 30
+        highest_ribosome_count = 50
         bincount_ribosome_time_step = np.zeros((len(num_ribosome_on_mRNA), highest_ribosome_count))
         bincount_ribosome_time_step[:] = np.NaN
         average_polysome_count = np.zeros(highest_ribosome_count)
@@ -34,7 +32,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # Count polysomes at each timestep
         for time_index in range(len(num_ribosome_on_mRNA)):
             num_ribosome_time_step = num_ribosome_on_mRNA[time_index, :]
-            num_ribosome_time_step_clean = num_ribosome_time_step[np.logical_not(np.isnan(num_ribosome_time_step))]
+            num_ribosome_time_step_clean = num_ribosome_time_step[
+                                           np.logical_not(np.isnan(num_ribosome_time_step))]
 
             bincount_ribosome = np.bincount(num_ribosome_time_step_clean.tolist())
             bincount_ribosome_time_step[time_index, :len(bincount_ribosome)] = bincount_ribosome
@@ -43,7 +42,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         for col_index in range(highest_ribosome_count):
             polysome_per_num_ribosome = bincount_ribosome_time_step[:, col_index]
             polysome_per_num_ribosome_clean = polysome_per_num_ribosome[
-                np.logical_not(np.isnan(polysome_per_num_ribosome))]
+                                              np.logical_not(np.isnan(polysome_per_num_ribosome))]
 
             if polysome_per_num_ribosome_clean.size == 0:
                 average_polysome_count[col_index] = 0
@@ -51,20 +50,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
                 average_polysome_count[col_index] = np.mean(polysome_per_num_ribosome_clean)
 
 
+        fig = plt.figure(figsize = (8, 10))
 
-        ### CHECK IF MRNA COUNTS MATCH
-        # Check whether no. of mRNA match at each timepoint
-        # for time_index in range(len(num_ribosome_on_mRNA)):
-        #     num_ribosome_time_step = num_ribosome_on_mRNA[time_index, :]
-        #     mRNA_count_time_step = mRNA_count[time_index, :]
-        #     num_ribosome_time_step_clean = num_ribosome_time_step[np.logical_not(np.isnan(num_ribosome_time_step))]
-        #     print(len(num_ribosome_time_step_clean) - sum(mRNA_count_time_step))
-
-        import ipdb; ipdb.set_trace()
-
-        fig = plt.figure(figsize = (8.5, 15))
-
-        plt.subplot(1, 1, 1)
         plt.hist(np.arange(highest_ribosome_count),
                  weights = average_polysome_count,
                  bins = highest_ribosome_count-1,
