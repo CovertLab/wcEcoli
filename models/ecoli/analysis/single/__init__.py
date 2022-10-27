@@ -44,6 +44,7 @@ ACTIVE = [
 	"mrnaVsProteinCounts.py",
 	"ntpCounts.py",
 	"outer_membrane_expression.py",
+	"polysome_counts.py",
 	"processMassBalance.py",
 	"processMassBalanceDynamics.py",
 	"proteinCounts.py",
@@ -71,8 +72,7 @@ ACTIVE = [
 	"trna_charging.py",
 	"tRnaCounts.py",
 	"trpRegulation.py",
-	"twoComponentSystem.py",
-	"polysome_counts.py"
+	"twoComponentSystem.py"
 ]
 
 TAGS = {
