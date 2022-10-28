@@ -13,7 +13,6 @@
 "minimal_minus_phosphate"	"MIX0-57"	1.0	""	0	["Pi"]	[-Infinity]	[]	[]
 "minimal_plus_arabinose"	"MIX0-57"	1.0	""	0	["ARABINOSE"]	[Infinity]	[]	[]
 "minimal_plus_cytidine"	"MIX0-57"	1.0	""	0	["CYTIDINE"]	[Infinity]	[]	[]
-"minimal_plus_ferric"	"MIX0-57"	1.0	""	0	["FE+3"]	[Infinity]	[]	[]
 "minimal_plus_gallate"	"MIX0-57"	1.0	""	0	["CPD-183"]	[Infinity]	[]	[]
 "minimal_plus_indole"	"MIX0-57"	1.0	""	0	["INDOLE"]	[Infinity]	[]	[]
 "minimal_plus_nitrate"	"MIX0-57"	1.0	""	0	["NITRATE"]	[Infinity]	[]	[]
