@@ -59,7 +59,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			mRnasTranscribed = np.array([x != 0 for x in moleculeCounts_sumOverTime])
 
 			rnaSynthProb = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-			simulatedSynthProb_ = rnaSynthProb.readColumn("rnaSynthProb")
+			simulatedSynthProb_ = rnaSynthProb.readColumn("actual_rna_synth_prob")
 
 			if hadTranscribed is None:
 				hadTranscribed = mRnasTranscribed

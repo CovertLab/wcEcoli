@@ -64,7 +64,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				])
 
 			tfTargetBoundCountsAll = n_bound_TF_per_TU[:, tf_target_indexes, tf_idx]
-			tfTargetSynthProbAll = rna_synth_prob_reader.readColumn("rnaSynthProb")[:, tf_target_indexes]
+			tfTargetSynthProbAll = rna_synth_prob_reader.readColumn("actual_rna_synth_prob")[:, tf_target_indexes]
 			tf_target_promoter_copies_all = promoter_copy_number[:, tf_target_indexes]
 
 			for i, tfTarget in enumerate(sorted(sim_data.tf_to_fold_change[tf])):

@@ -127,7 +127,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# Get the synthesis probability for all regulated genes
 			rnaSynthProbReader = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-			synthProbs = rnaSynthProbReader.readColumn("rnaSynthProb")
+			synthProbs = rnaSynthProbReader.readColumn("actual_rna_synth_prob")
 			cistron_ids = sim_data.process.transcription.cistron_data['id']
 			cistron_synth_probs = cistron_tu_mapping_matrix.dot(synthProbs.T).T
 
