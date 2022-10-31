@@ -45,6 +45,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			start_codon_counter.values())
 		ax0.set_xticks(range(len(start_codon_counter)))
 		ax0.set_xticklabels(start_codon_counter.keys())
+		ax0.set_xlabel("Start codon")
 		ax0.set_ylabel("Number of genes")
 
 		ax1 = plt.subplot(1, 2, 2, sharey=ax0)
@@ -54,6 +55,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		ax1.set_xticks(range(len(n_terminal_amino_acid_counter)))
 		ax1.set_xticklabels(n_terminal_amino_acid_counter.keys())
 		ax1.set_xlim([-2.7, 2.7])
+		ax1.set_xlabel("N-terminal amino acid")
 
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
