@@ -24,22 +24,24 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # Load data
         n_ribosome_on_each_mRNA = ribosome_reader.readColumn('n_ribosomes_on_each_mRNA')
 
+
         # Initialize variables
         n_ribosome_on_each_mRNA_flattened = n_ribosome_on_each_mRNA.ravel()
-        highest_ribosome_count = int(max(n_ribosome_on_each_mRNA_flattened))+1
+        n_ribosome_on_each_mRNA_flattened_clean = n_ribosome_on_each_mRNA_flattened[
+                                                  np.logical_not(np.isnan(n_ribosome_on_each_mRNA_flattened))].astype(int)
+        highest_ribosome_count = n_ribosome_on_each_mRNA_flattened_clean.max()
+
 
         # Count polysomes at all time steps and take average
-        n_ribosome_on_each_mRNA_flattened_clean = n_ribosome_on_each_mRNA_flattened[
-                                                  np.logical_not(np.isnan(n_ribosome_on_each_mRNA_flattened))]
-        bincount_ribosomes_all_time_step = np.bincount(n_ribosome_on_each_mRNA_flattened_clean.tolist())
-        average_polysome_count = bincount_ribosomes_all_time_step/len(n_ribosome_on_each_mRNA)
+        bincount_ribosomes_all_time_step = np.bincount(n_ribosome_on_each_mRNA_flattened_clean)
+        average_polysome_count = bincount_ribosomes_all_time_step/n_ribosome_on_each_mRNA.shape[0]
 
 
         fig = plt.figure(figsize = (8, 10))
 
-        plt.hist(np.arange(highest_ribosome_count),
+        plt.hist(np.arange(highest_ribosome_count+1), # add 1 to include the highest ribosome count
                  weights = average_polysome_count,
-                 bins = highest_ribosome_count-1,
+                 bins = highest_ribosome_count,
                  align = 'left')
         plt.xlabel("Count of Ribosomes Attached to Individual mRNA")
         plt.ylabel("Count of mRNA")

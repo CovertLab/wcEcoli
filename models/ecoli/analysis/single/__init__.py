@@ -72,7 +72,7 @@ ACTIVE = [
 	"trna_charging.py",
 	"tRnaCounts.py",
 	"trpRegulation.py",
-	"twoComponentSystem.py"
+	"twoComponentSystem.py",
 ]
 
 TAGS = {
