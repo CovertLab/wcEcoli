@@ -233,12 +233,15 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		max_p = (self.rnaPolymeraseElongationRate / self.active_rnap_footprint_size
 			* (units.s) * self.timeStepSec() / n_RNAPs_to_activate).asNumber()
 		is_overcrowded = (self.promoter_init_probs > max_p)
-		self.promoter_init_probs[is_overcrowded] = max_p
-		scale_the_rest_by = (
-			(1. - self.promoter_init_probs[is_overcrowded].sum())
-			/ self.promoter_init_probs[~is_overcrowded].sum()
-			)
-		self.promoter_init_probs[~is_overcrowded] *= scale_the_rest_by
+
+		while np.any(self.promoter_init_probs > max_p):
+			self.promoter_init_probs[is_overcrowded] = max_p
+			scale_the_rest_by = (
+				(1. - self.promoter_init_probs[is_overcrowded].sum())
+				/ self.promoter_init_probs[~is_overcrowded].sum()
+				)
+			self.promoter_init_probs[~is_overcrowded] *= scale_the_rest_by
+			is_overcrowded |= (self.promoter_init_probs > max_p)
 
 		# Compute actual synthesis probabilities of each transcription unit
 		actual_TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
