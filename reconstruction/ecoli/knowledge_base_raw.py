@@ -169,6 +169,8 @@ class KnowledgeBaseEcoli(object):
 		self.modified_data: Dict[str, str] = MODIFIED_DATA.copy()
 		self.added_data: Dict[str, str] = ADDED_DATA.copy()
 
+		self.new_gene_added_data: Dict[str,str] = {}
+
 		if self.operons_on:
 			self.list_of_dict_filenames.append('transcription_units.tsv')
 			self.removed_data.update({
@@ -195,12 +197,12 @@ class KnowledgeBaseEcoli(object):
 				file_path = os.path.join(new_gene_path, f + '.tsv')
 				if os.path.isfile(os.path.join(FLAT_DIR, file_path)): # if these files dont exist, fill in with default values at a later point
 					self.list_of_dict_filenames.append(file_path)
-					self.added_data.update({f: nested_attr + f})
+					self.new_gene_added_data.update({f: nested_attr + f})
 
 			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_rsem_tpm_mean.tsv')
 			if os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)):
 				self.list_of_dict_filenames.append(rnaseq_path)
-				self.added_data.update({'rna_seq_data.rnaseq_rsem_tpm_mean': nested_attr + 'rnaseq_rsem_tpm_mean'})
+				self.new_gene_added_data.update({'rna_seq_data.rnaseq_rsem_tpm_mean': nested_attr + 'rnaseq_rsem_tpm_mean'})
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
@@ -213,18 +215,22 @@ class KnowledgeBaseEcoli(object):
 
 		self._prune_data()
 
+		self._join_data()
+		self._modify_data()
+
 		if self.new_genes_on:
-			insert_left, insert_right = self._update_gene_insertion_location('genes', nested_attr + 'insertion_location')
+
+			insert_left, insert_right = self._update_gene_insertion_location('genes', nested_attr + 'insertion_location','transcription_units')
 
 			insertion_sequence = self.get_new_gene_sequence(nested_attr + 'genes', nested_attr + 'gene_sequences')
 
-			self._update_gene_locations('genes',nested_attr+'genes', insert_left, insert_right)
-			self.added_data.update({'genes': nested_attr+'genes'})
+			self._update_gene_locations('genes',nested_attr+'genes','transcription_units', insert_left, insert_right)
+			self.new_gene_added_data.update({'genes': nested_attr+'genes'})
 
 			self.genome_sequence = self.ref_genome_insertion(self.genome_sequence,insert_left,insert_right,insertion_sequence)
 
-		self._join_data()
-		self._modify_data()
+			self.added_data = self.new_gene_added_data
+			self._join_data()
 
 	def _load_tsv(self, dir_name, file_name):
 		path = self
@@ -369,7 +375,7 @@ class KnowledgeBaseEcoli(object):
 					f'{modify_attr} that do not exist in {data_attr} '
 					f'(nonexistent entries: {id_diff}).')
 
-	def _update_gene_insertion_location(self,genes_attr,insert_loc_attr):
+	def _update_gene_insertion_location(self,genes_attr,insert_loc_attr,tu_attr):
 		"""
 		Update insertion location of new genes to prevent conflicts.
 		"""
@@ -382,24 +388,35 @@ class KnowledgeBaseEcoli(object):
 		for attr in insert_loc_attr.split('.')[1:]:
 			insert_loc_data = getattr(insert_loc_data, attr)
 
+		tu_data = getattr(self, tu_attr.split('.')[0])
+		for attr in tu_attr.split('.')[1:]:
+			tu_data = getattr(tu_data, attr)
+
 		assert len(insert_loc_data) == 1, 'each noncontiguous insertion should be in its own directory'
 		insert_left = insert_loc_data[0]['left_end_pos']
 		insert_right = insert_loc_data[0]['right_end_pos']
 
-		# If specified insertion location is in the middle of another gene,
-		# change insertion location to after that gene
-		conflicts = [row for row in genes_data if
-					 (row['left_end_pos'] is not None) and (row['right_end_pos'] is not None) and (
-								 row['left_end_pos'] < insert_left) and (row['right_end_pos'] >= insert_left)]
+		if not tu_data:
+			# Check if specified insertion location is in the middle of another gene
+			data_to_check = genes_data
+		else:
+			# Check if specified insertion location is in the middle of a transcription unit
+			data_to_check = tu_data
+
+		conflicts = [row for row in data_to_check if
+					 ((row['left_end_pos'] is not None) and (row['left_end_pos'] != '')) and (
+							 (row['right_end_pos'] is not None) and (row['left_end_pos'] != '')) and (
+							 row['left_end_pos'] < insert_left) and (row['right_end_pos'] >= insert_left)]
+		# Change insertion location to after conflicts
 		if conflicts:
-			shift = conflicts[0]['right_end_pos'] - insert_left + 1
+			shift = max([ sub['right_end_pos'] for sub in conflicts ]) - insert_left + 1
 			insert_left = insert_left + shift
 			insert_right = insert_right + shift
 
 		return insert_left, insert_right
 
 
-	def _update_gene_locations(self,genes_attr,new_genes_attr,insert_left,insert_right):
+	def _update_gene_locations(self,genes_attr,new_genes_attr,tu_attr,insert_left,insert_right):
 		"""
 		Modify positions of original genes based upon the insertion location of new genes.
 		"""
@@ -413,6 +430,10 @@ class KnowledgeBaseEcoli(object):
 			new_genes_data = getattr(new_genes_data, attr)
 		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
 
+		tu_data = getattr(self, tu_attr.split('.')[0])
+		for attr in tu_attr.split('.')[1:]:
+			tu_data = getattr(tu_data, attr)
+
 		assert new_genes_data[-1]['right_end_pos'] == (insert_right - insert_left), 'insertion lengths must agree'
 
 		# Update global positions of original genes
@@ -424,6 +445,15 @@ class KnowledgeBaseEcoli(object):
 					row.update({'left_end_pos': left+insert_len})
 					row.update({'right_end_pos': right+insert_len})
 
+		# Update global positions of transcription units
+		if tu_data:
+			for row in tu_data:
+				left = row['left_end_pos']
+				right = row['right_end_pos']
+				if (left != '') and (right != '') and left >= insert_left:
+					row.update({'left_end_pos': left + insert_len})
+					row.update({'right_end_pos': right + insert_len})
+
 		# Change relative insertion positions to global positions in reference genome
 		for row in new_genes_data:
 			left = row['left_end_pos']
@@ -431,7 +461,7 @@ class KnowledgeBaseEcoli(object):
 			row.update({'left_end_pos': left + insert_left})
 			row.update({'right_end_pos': right + insert_left})
 
-		return insert_left, insert_right
+		return
 
 	def get_new_gene_sequence(self, new_genes_attr, seq_attr):
 		"""
