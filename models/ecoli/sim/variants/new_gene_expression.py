@@ -25,7 +25,7 @@ def new_gene_expression(sim_data, index):
 	if index == 0:
 		factor = 0
 	else:
-		factor = 10^(index - 1)
+		factor = 10**(index - 1)
 
 	rna_data = sim_data.process.transcription.rna_data
 
