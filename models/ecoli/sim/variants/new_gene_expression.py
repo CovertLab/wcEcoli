@@ -10,9 +10,9 @@ Modifies:
 	sim_data.process.transcription_regulation.basal_prob
 	sim_data.process.transcription_regulation.delta_prob
 
-Expected variant factors:
-	1: control
-	> 0 or > 1: factor to multiply new gene expression by
+Expected variant indices (int):
+	0: control (knockout new gene expression)
+	x > 0: multiply new gene expression by a factor of 10^(x-1)
 """
 
 CONTROL_OUTPUT = dict(
@@ -21,9 +21,11 @@ CONTROL_OUTPUT = dict(
 	)
 
 
-def new_gene_expression(sim_data, factor):
-	if factor == 1:
-		return CONTROL_OUTPUT, sim_data
+def new_gene_expression(sim_data, index):
+	if index == 0:
+		factor = 0
+	else:
+		factor = 10^(index - 1)
 
 	rna_data = sim_data.process.transcription.rna_data
 
@@ -33,6 +35,9 @@ def new_gene_expression(sim_data, factor):
 	for geneIndex in new_gene_indices:
 		sim_data.adjust_final_expression([geneIndex], [factor])
 		geneID = rna_data["id"][geneIndex]
+
+	if index == 0:
+		return CONTROL_OUTPUT, sim_data
 
 	return dict(
 		shortName = "{}_NGEXP",
