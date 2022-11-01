@@ -25,7 +25,7 @@ DATA = [
 	('FBAResults', 'reactionFluxes'),
 	('EnzymeKinetics', 'metaboliteCountsFinal'),
 	('EnzymeKinetics', 'targetFluxes'),
-	('RnaSynthProb', 'rnaSynthProb'),
+	('RnaSynthProb', 'actual_rna_synth_prob'),
 	('RnapData', 'rnaInitEvent')
 	]
 

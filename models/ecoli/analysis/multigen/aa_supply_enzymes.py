@@ -113,7 +113,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		enzyme_counts_rev = read_stacked_columns(
 			cell_paths, 'GrowthLimits', 'aa_supply_enzymes_rev', remove_first=True)
 		probabilities = read_stacked_columns(
-			cell_paths, 'RnaSynthProb', 'rnaSynthProb', remove_first=True)
+			cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob', remove_first=True)
 		attenuation = read_stacked_columns(
 			cell_paths, 'TranscriptElongationListener', 'attenuation_probability', remove_first=True)
 

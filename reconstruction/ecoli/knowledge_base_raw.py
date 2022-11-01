@@ -29,6 +29,7 @@ LIST_OF_DICT_FILENAMES = [
 	"complexation_reactions_modified.tsv",
 	"complexation_reactions_removed.tsv",
 	"disabled_kinetic_reactions.tsv",
+	"dna_footprint_sizes.tsv",
 	"dna_sites.tsv",
 	"dry_mass_composition.tsv",
 	"endoRNases.tsv",

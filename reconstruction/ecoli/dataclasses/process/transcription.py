@@ -1160,6 +1160,16 @@ class Transcription(object):
 		self.transcription_end_weight = ((sim_data.getter.get_masses([sim_data.molecule_ids.ppi])
 			/ sim_data.constants.n_avogadro).asNumber(units.fg))
 
+		# Load active RNAP footprint on DNA
+		molecule_id_to_dna_footprint_sizes = {
+			row['molecule_id']: row['footprint_size']
+			for row in raw_data.dna_footprint_sizes}
+		try:
+			self.active_rnap_footprint_size = molecule_id_to_dna_footprint_sizes[
+				sim_data.molecule_ids.full_RNAP[:-3]]
+		except KeyError:
+			raise ValueError('DNA footprint size for RNA polymerses not found.')
+
 	def _build_charged_trna(self, raw_data, sim_data):
 		'''
 		Loads information and creates data structures necessary for charging of tRNA
