@@ -92,9 +92,6 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("trna_data","trna_ratio_to_16SrRNA_2p5.tsv"),
 	os.path.join("trna_data","trna_growth_rates.tsv"),
 	os.path.join("rna_seq_data","rnaseq_rsem_tpm_mean.tsv"),
-	os.path.join("rna_seq_data","rnaseq_rsem_tpm_std.tsv"),
-	os.path.join("rna_seq_data","rnaseq_seal_rpkm_mean.tsv"),
-	os.path.join("rna_seq_data","rnaseq_seal_rpkm_std.tsv"),
 	os.path.join("condition", "tf_condition.tsv"),
 	os.path.join("condition", "condition_defs.tsv"),
 	os.path.join("condition", "environment_molecules.tsv"),
@@ -181,7 +178,7 @@ class KnowledgeBaseEcoli(object):
 
 		if self.new_genes_on:
 
-			### For each subdirectory in new_gene_data directory, we will do the following:
+			### TODO find and loop over each subdirectory in new_gene_data directory
 			new_gene_subdir = 'gfp'
 			new_gene_path = os.path.join('new_gene_data',new_gene_subdir)
 			nested_attr = 'new_gene_data.' + new_gene_subdir + "."
@@ -198,10 +195,10 @@ class KnowledgeBaseEcoli(object):
 					self.list_of_dict_filenames.append(file_path)
 					self.added_data.update({f: nested_attr + f})
 
-			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_seal_rpkm_mean.tsv')
+			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_rsem_tpm_mean.tsv')
 			if os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)):
 				self.list_of_dict_filenames.append(rnaseq_path)
-				self.added_data.update({'rna_seq_data.rnaseq_seal_rpkm_mean': nested_attr + 'rnaseq_seal_rpkm_mean'})
+				self.added_data.update({'rna_seq_data.rnaseq_rsem_tpm_mean': nested_attr + 'rnaseq_rsem_tpm_mean'})
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
@@ -222,7 +219,7 @@ class KnowledgeBaseEcoli(object):
 			self._update_gene_locations('genes',nested_attr+'genes', insert_left, insert_right)
 			self.added_data.update({'genes': nested_attr+'genes'})
 
-			self.genome_sequence = self.ref_genome_insertion(self.genome_sequence,insert_left,insertion_sequence)
+			self.genome_sequence = self.ref_genome_insertion(self.genome_sequence,insert_left,insert_right,insertion_sequence)
 
 		self._join_data()
 		self._modify_data()
@@ -467,7 +464,7 @@ class KnowledgeBaseEcoli(object):
 
 		return insertion_seq
 
-	def ref_genome_insertion(self,ref_genome,insert_left,insertion_seq):
+	def ref_genome_insertion(self,ref_genome,insert_left,insert_right,insertion_seq):
 		"""
 		Insert new gene sequence into the reference genome.
 		"""
@@ -478,5 +475,7 @@ class KnowledgeBaseEcoli(object):
 		mutable_ref_genome.insert(insert_left,'Z') # MutableSeq.insert only allows the insertion of one character at a time
 		split_ref_genome = mutable_ref_genome.toseq().split('Z')
 		updated_ref_genome = Seq.Seq('',Alphabet.SingleLetterAlphabet()).join([split_ref_genome[0],insertion_seq,split_ref_genome[1]])
+
+		assert updated_ref_genome[insert_left:(insert_right+1)] == insertion_seq
 
 		return updated_ref_genome
