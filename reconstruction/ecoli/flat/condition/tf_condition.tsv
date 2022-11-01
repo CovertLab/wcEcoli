@@ -20,7 +20,6 @@
 "fnr"	"FNR-4FE-4S-CPLX"	"minimal_minus_oxygen"	{"EG10061_RNA": 0}	"minimal"	{"EG10061_RNA": 0}	"1CS"
 "arcA"	"PHOSPHO-ARCA"	"minimal_minus_oxygen"	{"EG10325_RNA": 0}	"minimal"	{"EG10325_RNA": 0}	"2CS"
 "baeR"	"PHOSPHO-BAER"	"minimal_plus_indole"	{}	"minimal"	{}	"2CS"
-"basR"	"PHOSPHO-BASR"	"minimal_plus_ferric"	{}	"minimal"	{}	"2CS"
 "dcuR"	"PHOSPHO-DCUR"	"minimal_succinate"	{}	"minimal"	{}	"2CS"
 "narL"	"PHOSPHO-NARL"	"minimal_plus_nitrate"	{}	"minimal"	{}	"2CS"
 "crp"	"CPLX0-226"	"minimal_acetate"	{}	"minimal"	{}	"1CS"

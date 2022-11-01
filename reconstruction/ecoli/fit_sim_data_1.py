@@ -34,12 +34,12 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
-PROMOTER_PDIFF_THRESHOLD = 0.06  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
+PROMOTER_PDIFF_THRESHOLD = 0.05  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
 PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
 PROMOTER_MAX_ITERATIONS = 100
-PROMOTER_CONVERGENCE_THRESHOLD = 5e-8
+PROMOTER_CONVERGENCE_THRESHOLD = 1e-9
 ECOS_0_TOLERANCE = 1e-10  # Tolerance to adjust solver output to 0
 
 BASAL_EXPRESSION_CONDITION = "M9 Glucose minus AAs"
@@ -1226,11 +1226,11 @@ def setInitialRnaExpression(sim_data, expression, doubling_time):
 	total_mass_tRNA = initial_rna_mass * rna_fractions['tRNA']
 	total_mass_mRNA = initial_rna_mass * rna_fractions['mRNA']
 
-	# Get molecular weights of each RNA. For rRNAs, we only account for the
-	# masses of the rRNA cistrons within each RNA, since these transcription
-	# units can contain tRNAs within them.
+	# Get molecular weights of each RNA. For rRNAs/tRNAs, we only account for
+	# the masses of the mature rRNAs/tRNAs within each RNA, since these RNAs are
+	# almost instantly processed to yield the mature RNAs.
 	individual_masses_rRNA = rna_rRNA_mw[is_rRNA] / n_avogadro
-	individual_masses_tRNA = rna_mw[is_tRNA] / n_avogadro
+	individual_masses_tRNA = rna_tRNA_mw[is_tRNA] / n_avogadro
 	individual_masses_mRNA = rna_mw[is_mRNA] / n_avogadro
 
 	# Set rRNA TU expression assuming equal per-copy transcription
@@ -1363,25 +1363,37 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 
 def totalCountIdDistributionRNA(sim_data, expression, doubling_time):
 	"""
-	Calculates the total counts of RNA from their relative expression, individual
-	mass, and total RNA mass. Relies on the math function totalCountFromMassesAndRatios.
+	Calculates the total counts of RNA from their relative expression,
+	individual mass, and total RNA mass. Relies on the math function
+	totalCountFromMassesAndRatios.
 
 	Inputs
 	------
-	- expression (array of floats) - relative frequency distribution of RNA expression
-	- doubling_time (float with units of time) - measured doubling time given the condition
+	- expression (array of floats) - relative frequency distribution of RNA
+		expression
+	- doubling_time (float with units of time) - measured doubling time given
+		the condition
 
 	Returns
 	--------
 	- total_count_RNA (float) - total number of RNAs
 	- ids_rnas (array of str) - name of each RNA with location tag
 	- distribution_RNA (array of floats) - distribution for each RNA,
-	normalized to 1
+		normalized to 1
 	"""
-
-	ids_rnas = sim_data.process.transcription.rna_data["id"]
-	total_mass_RNA = sim_data.mass.get_component_masses(doubling_time)["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
-	individual_masses_RNA = sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro
+	transcription = sim_data.process.transcription
+	ids_rnas = transcription.rna_data["id"]
+	total_mass_RNA = (
+		sim_data.mass.get_component_masses(doubling_time)["rnaMass"] /
+		sim_data.mass.avg_cell_to_initial_cell_conversion_factor
+		)
+	mws = transcription.rna_data["mw"]
+	# Use only the rRNA/tRNA mass for rRNA/tRNA transcription units
+	is_rRNA = transcription.rna_data['is_rRNA']
+	is_tRNA = transcription.rna_data['is_tRNA']
+	mws[is_rRNA] = transcription.rna_data['rRNA_mw'][is_rRNA]
+	mws[is_tRNA] = transcription.rna_data['tRNA_mw'][is_tRNA]
+	individual_masses_RNA = mws / sim_data.constants.n_avogadro
 
 	distribution_RNA = normalize(expression)
 
@@ -1486,9 +1498,17 @@ def setRibosomeCountsConstrainedByPhysiology(
 		proteinDegradationRates,
 		)
 
+	# Get expected ribosome elongation rates
+	expected_ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
+		doubling_time)
+	basal_elongation_rate = sim_data.constants.ribosome_elongation_rate_basal.asNumber(
+		units.aa / units.s)
+	expected_elongation_rate = sim_data.growth_rate_parameters.get_ribosome_elongation_rate_by_ppgpp(
+		expected_ppgpp_conc, basal_elongation_rate).asNumber(units.aa / units.s)
+
 	elongation_rates = sim_data.process.translation.make_elongation_rates(
 		None,
-		sim_data.growth_rate_parameters.get_ribosome_elongation_rate(doubling_time).asNumber(units.aa / units.s),
+		expected_elongation_rate,
 		1,
 		variable_elongation_translation)
 
@@ -1532,7 +1552,6 @@ def setRibosomeCountsConstrainedByPhysiology(
 
 	constraint2_ribosome30SCounts = massFracPredicted_30SCount * ribosome_30S_stoich
 	constraint2_ribosome50SCounts = massFracPredicted_50SCount * ribosome_50S_stoich
-
 
 	# -- CONSTRAINT 3: Expected ribosomal subunit counts based expression
 	## Calculate fundamental ribosomal subunit count distribution based on RNA expression data
@@ -1689,33 +1708,47 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	--------
 	- expression (array of floats) - adjusted expression for each RNA,
 	normalized to 1
-	- synthProb (array of floats) - synthesis probability for each RNA which
+	- synth_prob (array of floats) - synthesis probability for each RNA which
 	accounts for expression and degradation rate, normalized to 1
+	- fit_cistron_expression (array of floats) - target expression levels of
+	each cistron (gene) used to calculate RNA expression levels
+	- cistron_expression_res (array of floats) - the residuals of the NNLS
+	problem solved to calculate RNA expression levels
 
 	Notes
 	-----
 	- TODO - sets bulkContainer counts and returns values - change to only return values
 	"""
 	# Load required parameters
+	transcription = sim_data.process.transcription
+	translation = sim_data.process.translation
 	translation_efficiencies_by_protein = normalize(
-		sim_data.process.translation.translation_efficiencies_by_monomer)
-	degradation_rates_protein = sim_data.process.translation.monomer_data['deg_rate']
+		translation.translation_efficiencies_by_monomer)
+	degradation_rates_protein = translation.monomer_data['deg_rate']
 	net_loss_rate_protein = netLossRateFromDilutionAndDegradationProtein(
 		doubling_time, degradation_rates_protein)
 	avg_cell_fraction_mass = sim_data.mass.get_component_masses(doubling_time)
 	total_mass_RNA = avg_cell_fraction_mass["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
-	cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
+	cistron_tu_mapping_matrix = transcription.cistron_tu_mapping_matrix
+	cistron_index_to_mRNA_index = {
+		cistron_index: mRNA_index for (mRNA_index, cistron_index)
+		in enumerate(np.where(transcription.cistron_data['is_mRNA'])[0])
+		}
+	operons_with_adjusted_expression = [
+		np.array([cistron_index_to_mRNA_index[i] for i in operon[0]])
+		for operon in transcription.operons
+		if np.any(transcription.cistron_data['is_ribosomal_protein'][operon[0]])
+		or np.any(transcription.cistron_data['is_RNAP'][operon[0]])
+		]
 
 	# Calculate current expression fraction of mRNA transcription units
-	view_RNA = bulkContainer.countsView(
-		sim_data.process.transcription.rna_data["id"])
+	view_RNA = bulkContainer.countsView(transcription.rna_data["id"])
 	rna_expression_container = BulkObjectsContainer(
-		list(sim_data.process.transcription.rna_data["id"]),
-		dtype = np.dtype("float64"))
+		list(transcription.rna_data["id"]), dtype = np.dtype("float64"))
 	rna_expression_container.countsIs(normalize(view_RNA.counts()))
 
 	mRNA_tu_expression_view = rna_expression_container.countsView(
-		sim_data.process.transcription.rna_data["id"][sim_data.process.transcription.rna_data['is_mRNA']])
+		transcription.rna_data["id"][transcription.rna_data['is_mRNA']])
 	mRNA_tu_expression_frac = np.sum(mRNA_tu_expression_view.counts())
 
 	# Calculate current expression levels of each cistron given the RNA
@@ -1723,49 +1756,64 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	fit_cistron_expression = normalize(
 		cistron_tu_mapping_matrix.dot(view_RNA.counts()))
 	mRNA_cistron_expression_frac = fit_cistron_expression[
-		sim_data.process.transcription.cistron_data['is_mRNA']].sum()
+		transcription.cistron_data['is_mRNA']].sum()
 
 	# Calculate required mRNA expression from monomer counts
 	counts_protein = bulkContainer.counts(
-		sim_data.process.translation.monomer_data["id"])
-	mRNA_cistron_distribution_from_protein_counts = mRNADistributionFromProtein(
+		translation.monomer_data["id"])
+	mRNA_cistron_distribution_per_protein = mRNADistributionFromProtein(
 		normalize(counts_protein),
 		translation_efficiencies_by_protein,
 		net_loss_rate_protein)
 
 	mRNA_cistron_distribution = normalize(
 		sim_data.relation.monomer_to_mRNA_cistron_mapping().T.dot(
-			mRNA_cistron_distribution_from_protein_counts)
+			mRNA_cistron_distribution_per_protein)
 		)
 
+	# Set the expression levels of operons with genes encoding for ribosomal
+	# proteins or RNA polymerases to the maximum level within the operon to
+	# ensure we are getting sufficient expression of every gene within the
+	# operon. This was necessary because NNLS tends to return an averaged
+	# expression level for each operon, which results in insufficient protein
+	# counts for genes with lower translational efficiencies.
+	for operon in operons_with_adjusted_expression:
+		mRNA_cistron_distribution[operon] = mRNA_cistron_distribution[operon].max()
+	mRNA_cistron_distribution = normalize(mRNA_cistron_distribution)
+
 	# Replace mRNA cistron expression with values calculated from monomer counts
-	fit_cistron_expression[
-		sim_data.process.transcription.cistron_data['is_mRNA']
-		] = mRNA_cistron_expression_frac * mRNA_cistron_distribution
+	fit_cistron_expression[transcription.cistron_data['is_mRNA']] = (
+		mRNA_cistron_expression_frac * mRNA_cistron_distribution)
 
 	# Use least squares to calculate expression of transcription units required
 	# to generate the given cistron expression levels and the residuals for
 	# the expression of each cistron
-	fit_tu_expression, cistron_expression_res = sim_data.process.transcription.fit_rna_expression(fit_cistron_expression)
-	fit_mRNA_tu_expression = fit_tu_expression[
-		sim_data.process.transcription.rna_data['is_mRNA']]
+	fit_tu_expression, cistron_expression_res = transcription.fit_rna_expression(
+		fit_cistron_expression)
+	fit_mRNA_tu_expression = fit_tu_expression[transcription.rna_data['is_mRNA']]
 
 	mRNA_tu_expression_view.countsIs(
 		mRNA_tu_expression_frac * normalize(fit_mRNA_tu_expression))
 	expression = normalize(rna_expression_container.counts())
 
 	# Set number of RNAs based on expression we just set
-	nRnas = totalCountFromMassesAndRatios(
-		total_mass_RNA,
-		sim_data.process.transcription.rna_data["mw"] / sim_data.constants.n_avogadro,
-		expression)
-	view_RNA.countsIs(nRnas * expression)
+	mws = transcription.rna_data["mw"]
+
+	# Use only the rRNA/tRNA mass for rRNA/tRNA transcription units
+	is_rRNA = transcription.rna_data['is_rRNA']
+	is_tRNA = transcription.rna_data['is_tRNA']
+	mws[is_rRNA] = transcription.rna_data['rRNA_mw'][is_rRNA]
+	mws[is_tRNA] = transcription.rna_data['tRNA_mw'][is_tRNA]
+
+	n_rnas = totalCountFromMassesAndRatios(
+		total_mass_RNA, mws / sim_data.constants.n_avogadro, expression)
+	view_RNA.countsIs(n_rnas * expression)
 
 	if Km is None:
 		rnaLossRate = netLossRateFromDilutionAndDegradationRNALinear(
 			doubling_time,
-			sim_data.process.transcription.rna_data['deg_rate'],
-			bulkContainer.counts(sim_data.process.transcription.rna_data['id'])
+			transcription.rna_data['deg_rate'],
+			bulkContainer.counts(transcription.rna_data['id'])
 		)
 	else:
 		# Get constants to compute countsToMolar factor
@@ -1786,9 +1834,9 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 			countsToMolar,
 		)
 
-	synthProb = normalize(rnaLossRate.asNumber(1 / units.min))
+	synth_prob = normalize(rnaLossRate.asNumber(1 / units.min))
 
-	return expression, synthProb, fit_cistron_expression, cistron_expression_res
+	return expression, synth_prob, fit_cistron_expression, cistron_expression_res
 
 def fitMaintenanceCosts(sim_data, bulkContainer):
 	"""
