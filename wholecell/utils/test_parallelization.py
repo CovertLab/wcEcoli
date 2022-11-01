@@ -54,5 +54,6 @@ class Test_parallelization(unittest.TestCase):
 
         self._check_multi_sum(2, nestable=True)  # NoDaemonPool
 
-        with pytest.raises(AssertionError, match='daemonic'):
-            self._check_multi_sum(2, nestable=False)  # mp.Pool
+        if parallelization.cpus(2) > 1:  # else an InlinePool
+            with pytest.raises(AssertionError, match='daemonic'):
+                self._check_multi_sum(2, nestable=False)  # mp.Pool
