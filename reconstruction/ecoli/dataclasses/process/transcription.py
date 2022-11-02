@@ -1036,8 +1036,12 @@ class Transcription(object):
 		mature_rna_indexes = []
 		enzyme_indexes = []
 
-		for mature_rna_id, enzyme_list in mature_rna_to_enzyme_list.items():
-			mature_rna_index = mature_rna_id_to_index[mature_rna_id]
+		for rna_id, enzyme_list in mature_rna_to_enzyme_list.items():
+			# Skip if RNA is not a mature RNA
+			try:
+				mature_rna_index = mature_rna_id_to_index[rna_id]
+			except KeyError:
+				continue
 
 			for enzyme in enzyme_list:
 				mature_rna_indexes.append(mature_rna_index)
@@ -1047,8 +1051,8 @@ class Transcription(object):
 					enzyme_indexes.append(len(all_enzymes))
 					all_enzymes.append(enzyme)
 
-		mature_rna_indexes = np.array(mature_rna_indexes)
-		enzyme_indexes = np.array(enzyme_indexes)
+		mature_rna_indexes = np.array(mature_rna_indexes, dtype=int)
+		enzyme_indexes = np.array(enzyme_indexes, dtype=int)
 		mature_rna_to_enzyme_mapping_matrix = np.zeros(
 			(n_mature_rnas, len(all_enzymes)), dtype=bool)
 		mature_rna_to_enzyme_mapping_matrix[
