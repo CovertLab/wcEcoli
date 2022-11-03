@@ -1024,6 +1024,48 @@ class Transcription(object):
 		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
 			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
 
+		# Get mapping matrix from mature RNA to processing enzymes that are
+		# needed to get the mature forms
+		mature_rna_to_enzyme_list = {
+			row['rna_id']: row['enzymes'] for row
+			in raw_data.rna_maturation_enzymes}
+		mature_rna_id_to_index = {
+			rna_id: i for (i, rna_id) in enumerate(mature_rna_ids)}
+
+		all_enzymes = []
+		mature_rna_indexes = []
+		enzyme_indexes = []
+
+		for rna_id, enzyme_list in mature_rna_to_enzyme_list.items():
+			# Skip if RNA is not a mature RNA
+			try:
+				mature_rna_index = mature_rna_id_to_index[rna_id]
+			except KeyError:
+				continue
+
+			for enzyme in enzyme_list:
+				mature_rna_indexes.append(mature_rna_index)
+				if enzyme in all_enzymes:
+					enzyme_indexes.append(all_enzymes.index(enzyme))
+				else:
+					enzyme_indexes.append(len(all_enzymes))
+					all_enzymes.append(enzyme)
+
+		mature_rna_indexes = np.array(mature_rna_indexes, dtype=int)
+		enzyme_indexes = np.array(enzyme_indexes, dtype=int)
+		mature_rna_to_enzyme_mapping_matrix = np.zeros(
+			(n_mature_rnas, len(all_enzymes)), dtype=bool)
+		mature_rna_to_enzyme_mapping_matrix[
+			mature_rna_indexes, enzyme_indexes] = True
+
+		# Convert to mapping matrix between unprocessed RNAs and enzymes
+		self.rna_maturation_enzyme_matrix = self.rna_maturation_stoich_matrix.T.dot(
+			mature_rna_to_enzyme_mapping_matrix).astype(bool)
+		enzyme_compartments = sim_data.getter.get_compartments(all_enzymes)
+		self.rna_maturation_enzymes = [
+			f'{enzyme_id}[{loc[0]}]' for (enzyme_id, loc)
+			in zip(all_enzymes, enzyme_compartments)]
+
 		# Get mapping matrix between rtRNA cistrons and TUs
 		rRNA_indexes = np.where(self.rna_data['is_rRNA'])[0]
 		rRNA_cistron_indexes = np.where(self.cistron_data['is_rRNA'])[0]
