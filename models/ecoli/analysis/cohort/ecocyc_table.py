@@ -32,11 +32,11 @@ IGNORE_FIRST_N_GENS = 2
 # TODO (ggsun): Add this to sim_data somewhere?
 # Maps media names used in model to IDs used in EcoCyc
 MEDIA_NAME_TO_ID = {
-	'minimal': 'MIX0-51',
-	'minimal_minus_oxygen': 'MIX0-51-ANAEROBIC',
-	'minimal_plus_amino_acids': 'MIX0-847',
-	'minimal_acetate': 'minimal_acetate',
-	'minimal_succinate': 'minimal_succinate',
+	'minimal': 'MIX0-57',
+	'minimal_minus_oxygen': 'MIX0-57-ANAEROBIC',
+	'minimal_plus_amino_acids': 'MIX0-847',  # TODO (ggsun): Update
+	'minimal_acetate': 'MIX0-58',
+	'minimal_succinate': 'MIX0-844',
 	}
 
 

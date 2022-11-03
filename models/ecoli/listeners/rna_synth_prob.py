@@ -43,7 +43,9 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 	def allocate(self):
 		super(RnaSynthProb, self).allocate()
 
-		self.rnaSynthProb = np.zeros(self.n_TU, np.float64)
+		self.target_rna_synth_prob = np.zeros(self.n_TU, np.float64)
+		self.actual_rna_synth_prob = np.zeros(self.n_TU, np.float64)
+		self.tu_is_overcrowded = np.zeros(self.n_TU, np.float64)
 		self.promoter_copy_number = np.zeros(self.n_TU, np.int16)
 		self.rna_synth_prob_per_cistron = np.zeros(self.n_cistron, np.float64)
 
@@ -81,8 +83,11 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.bound_TF_domains = all_domains[bound_promoter_indexes]
 
 		rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
-			self.rnaSynthProb)
-		self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron / rna_synth_prob_per_cistron.sum()
+			self.actual_rna_synth_prob)
+		if rna_synth_prob_per_cistron.sum() != 0:
+			self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron / rna_synth_prob_per_cistron.sum()
+		else:
+			self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron
 		self.n_bound_TF_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.n_bound_TF_per_TU).astype(np.int16).T
 
@@ -91,7 +96,9 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'promoter_copy_number': 'rnaIds',
 			'gene_copy_number': 'gene_ids',
-			'rnaSynthProb': 'rnaIds',
+			'target_rna_synth_prob': 'rnaIds',
+			'actual_rna_synth_prob': 'rnaIds',
+			'tu_is_overcrowded': 'rnaIds',
 			'rna_synth_prob_per_cistron': 'cistron_ids',
 			'pPromoterBound': 'tf_ids',
 			'nPromoterBound': 'tf_ids',
@@ -119,7 +126,9 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		tableWriter.append(
 			time = self.time(),
 			simulationStep = self.simulationStep(),
-			rnaSynthProb = self.rnaSynthProb,
+			target_rna_synth_prob = self.target_rna_synth_prob,
+			actual_rna_synth_prob =	self.actual_rna_synth_prob,
+			tu_is_overcrowded = self.tu_is_overcrowded,
 			rna_synth_prob_per_cistron = self.rna_synth_prob_per_cistron,
 			promoter_copy_number = self.promoter_copy_number,
 			gene_copy_number = self.gene_copy_number,
