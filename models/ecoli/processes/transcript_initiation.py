@@ -19,7 +19,6 @@ from six.moves import zip
 import wholecell.processes.process
 from wholecell.utils import units
 
-
 class TranscriptInitiation(wholecell.processes.process.Process):
 	""" TranscriptInitiation """
 
@@ -43,6 +42,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.rnaPolymeraseElongationRateDict = sim_data.process.transcription.rnaPolymeraseElongationRateDict
 		self.variable_elongation = sim._variable_elongation_transcription
 		self.make_elongation_rates = sim_data.process.transcription.make_elongation_rates
+		self.active_rnap_footprint_size = sim_data.process.transcription.active_rnap_footprint_size
 
 		# Initialize matrices used to calculate synthesis probabilities
 		self.basal_prob = sim_data.process.transcription_regulation.basal_prob.copy()
@@ -77,9 +77,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.RNAs = self.uniqueMoleculesView('RNA')
 
 		# ID Groups
-		self.idx_16SrRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
-		self.idx_23SrRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
-		self.idx_5SrRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 		self.idx_rRNA = np.where(sim_data.process.transcription.rna_data['is_rRNA'])[0]
 		self.idx_mRNA = np.where(sim_data.process.transcription.rna_data['is_mRNA'])[0]
 		self.idx_tRNA = np.where(sim_data.process.transcription.rna_data['is_tRNA'])[0]
@@ -194,7 +191,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# no synthesis if no chromosome
 		if self.full_chromosomes.total_count() == 0:
 			self.writeToListener(
-				"RnaSynthProb", "rnaSynthProb", np.zeros(self.n_TUs))
+				"RnaSynthProb", "target_rna_synth_prob", np.zeros(self.n_TUs))
+			self.writeToListener(
+				"RnaSynthProb", "actual_rna_synth_prob", np.zeros(self.n_TUs))
+			self.writeToListener(
+				"RnaSynthProb", "tu_is_overcrowded", np.zeros(self.n_TUs))
 			return
 
 		# Get attributes of promoters
@@ -207,23 +208,48 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			(np.ones(n_promoters), (TU_index, np.arange(n_promoters))),
 			shape = (self.n_TUs, n_promoters))
 
-		# Compute synthesis probabilities of each transcription unit
-		TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
-		self.writeToListener("RnaSynthProb", "rnaSynthProb", TU_synth_probs)
+		# Compute target synthesis probabilities of each transcription unit
+		target_TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
+		self.writeToListener(
+			"RnaSynthProb", "target_rna_synth_prob", target_TU_synth_probs)
 
 		# Calculate RNA polymerases to activate based on probabilities
+		# Note: ideally we should be using the actual TU synthesis probabilities
+		# here, but the calculation of actual probabilities requires the number
+		# of RNAPs to activate. The difference should be very small.
 		self.activationProb = self._calculateActivationProb(
 			self.fracActiveRnap,
 			self.rnaLengths,
 			(units.nt / units.s) * self.elongation_rates,
-			TU_synth_probs)
+			target_TU_synth_probs)
 		n_RNAPs_to_activate = np.int64(
 			self.activationProb * self.inactive_RNAPs.count())
 
 		if n_RNAPs_to_activate == 0:
 			return
 
-		#### Growth control code ####
+		# Cap the initiation probabilities at the maximum level physically
+		# allowed from the known RNAP footprint sizes
+		max_p = (self.rnaPolymeraseElongationRate / self.active_rnap_footprint_size
+			* (units.s) * self.timeStepSec() / n_RNAPs_to_activate).asNumber()
+		is_overcrowded = (self.promoter_init_probs > max_p)
+
+		while np.any(self.promoter_init_probs > max_p):
+			self.promoter_init_probs[is_overcrowded] = max_p
+			scale_the_rest_by = (
+				(1. - self.promoter_init_probs[is_overcrowded].sum())
+				/ self.promoter_init_probs[~is_overcrowded].sum()
+				)
+			self.promoter_init_probs[~is_overcrowded] *= scale_the_rest_by
+			is_overcrowded |= (self.promoter_init_probs > max_p)
+
+		# Compute actual synthesis probabilities of each transcription unit
+		actual_TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
+		tu_is_overcrowded = TU_to_promoter.dot(is_overcrowded).astype(bool)
+		self.writeToListener(
+			"RnaSynthProb", "actual_rna_synth_prob", actual_TU_synth_probs)
+		self.writeToListener(
+			"RnaSynthProb", "tu_is_overcrowded", tu_is_overcrowded)
 
 		# Sample a multinomial distribution of initiation probabilities to
 		# determine what promoters are initialized
@@ -261,30 +287,17 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			RNAP_index=RNAP_indexes)
 
 		# Create masks for ribosomal RNAs
-		is_5Srrna = np.isin(TU_index, self.idx_5SrRNA)
-		is_16Srrna = np.isin(TU_index, self.idx_16SrRNA)
-		is_23Srrna = np.isin(TU_index, self.idx_23SrRNA)
+		rna_init_event = TU_to_promoter.dot(n_initiations)
+		rRNA_initiations = rna_init_event[self.idx_rRNA]
 
 		# Write outputs to listeners
 		self.writeToListener(
-			"RibosomeData", "rrn16S_produced", n_initiations[is_16Srrna].sum())
+			"RibosomeData", "rRNA_initiated_TU", rRNA_initiations)
 		self.writeToListener(
-			"RibosomeData", "rrn23S_produced", n_initiations[is_23Srrna].sum())
-		self.writeToListener(
-			"RibosomeData", "rrn5S_produced", n_initiations[is_5Srrna].sum())
-
-		self.writeToListener(
-			"RibosomeData", "rrn16S_init_prob",
-			n_initiations[is_16Srrna].sum() / float(n_RNAPs_to_activate))
-		self.writeToListener(
-			"RibosomeData", "rrn23S_init_prob",
-			n_initiations[is_23Srrna].sum() / float(n_RNAPs_to_activate))
-		self.writeToListener("RibosomeData", "rrn5S_init_prob",
-			n_initiations[is_5Srrna].sum() / float(n_RNAPs_to_activate))
+			"RibosomeData", "rRNA_init_prob_TU", rRNA_initiations / float(n_RNAPs_to_activate))
 		self.writeToListener("RibosomeData", "total_rna_init", n_RNAPs_to_activate)
-
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
-		self.writeToListener("RnapData", "rnaInitEvent", TU_to_promoter.dot(n_initiations))
+		self.writeToListener("RnapData", "rnaInitEvent", rna_init_event)
 
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):

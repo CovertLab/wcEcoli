@@ -1,11 +1,9 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 from typing import cast
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
@@ -32,7 +30,7 @@ def align_yaxis(ax1, v1, ax2, v2):
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Check if basal sim
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		if sim_data.condition != "basal":
 			print("Skipping - plot only runs for basal sim.")
 			return
@@ -44,21 +42,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("Skipping - particular seed and/or gens were not simulated.")
 			return
 
-		# Get all ids reqiured
-		ids_transcription = sim_data.process.transcription.rna_data["id"].tolist()
-
 		# Pre-allocate variables. Rows = Generations, Cols = Monomers
 		n_monomers = sim_data.process.translation.monomer_data['id'].size
 
 		# Load simData from first simulation
 		simOutDir = os.path.join(allDir[0], "simOut")
-		bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		moleculeIds = bulkMolecules.readAttribute("objectNames")
-		transcriptionIdx = np.array([moleculeIds.index(x) for x in ids_transcription])
+		mRNA_counts_reader = TableReader(os.path.join(simOutDir, "mRNACounts"))
+		mRNA_cistron_ids = mRNA_counts_reader.readAttribute("mRNA_cistron_ids")
+		cistron_id_to_index = {
+			cistron_id: i for (i, cistron_id) in enumerate(mRNA_cistron_ids)
+			}
+		monomer_index_to_mRNA_cistron_index = {
+			i: cistron_id_to_index[monomer['cistron_id']] for (i, monomer)
+			in enumerate(sim_data.process.translation.monomer_data)
+			}
 
 		ratioFinalToInitialCountMultigen = np.zeros((n_gens, n_monomers), dtype = float)
-
-		# protein_index_of_interest_full = np.zeros((n_gens, n_monomers), dtype = bool)
 
 		time = np.arange(0)
 		for gen_idx, simDir in enumerate(allDir):
@@ -93,37 +92,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		burstProtein_axis = axesList[0,1]
 		burstRna_axis = axesList[1,1]
 
-		# expProteinFold_axis = expProtein_axis.twinx()
-		# expProteinFold_axis.spines["bottom"].set_visible(False)
-		# expProteinFold_axis.spines["top"].set_visible(False)
-		# expProteinFold_axis.spines["left"].set_visible(False)
-		# expProteinFold_axis.tick_params(bottom=False)
-		# expProteinFold_axis.tick_params(axis="x", labelbottom=False)
-		# expProteinFold_axis.spines["right"].set_position(("outward", 10))
-		# expProteinFold_axis.tick_params(which = "both", direction = "out")
-		# expProteinFold_axis.set_ylabel("Fold change", fontsize=9)
-
-		# burstProteinFold_axis = burstProtein_axis.twinx()
-		# burstProteinFold_axis.spines["bottom"].set_visible(False)
-		# burstProteinFold_axis.spines["top"].set_visible(False)
-		# burstProteinFold_axis.spines["left"].set_visible(False)
-		# burstProteinFold_axis.tick_params(bottom=False)
-		# burstProteinFold_axis.tick_params(axis="x", labelbottom=False)
-		# burstProteinFold_axis.spines["right"].set_position(("outward", 10))
-		# burstProteinFold_axis.tick_params(which = "both", direction = "out")
-		# burstProteinFold_axis.set_ylabel("Fold change", fontsize=9)
-
 		mult = 3
 		fig_width = mm2inch(80) * mult
 		fig_height = mm2inch(50) * mult
 
 		fig.set_figwidth(fig_width)
 		fig.set_figheight(fig_height)
-		# firstLine = True
-		# firstLineInit = None
-		# firstLineInitRna = None
-		# firstLineInit_burst = None
-		# firstLineInitRna_burst = None
 
 		time_eachGen = []
 		startTime = 0
@@ -135,22 +109,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				startTime = time[0]
 
 			## READ DATA ##
-			# Read in bulk ids and counts
-			bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-			bulkCounts = bulkMolecules.readColumn("counts")
-			bulkMolecules.close() # NOTE (John): .close() doesn't currently do anything
-
 			# Get protein monomer counts
 			monomerCounts = TableReader(os.path.join(simOutDir, "MonomerCounts"))
 			proteinMonomerCounts = monomerCounts.readColumn("monomerCounts")
-			rnaMonomerCounts = bulkCounts[:, transcriptionIdx]
 
-			# if firstLine:
-			# 	firstLineInit = float(proteinMonomerCounts[:, protein_idx][0])
-			# 	firstLineInitRna = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx][0])
-			# 	firstLineInit_burst = float(proteinMonomerCounts[:, protein_idx_burst][0])
-			# 	firstLineInitRna_burst = float(rnaMonomerCounts[:, sim_data.relation.rnaIndexToMonomerMapping][:,protein_idx_burst][0])
-			# 	firstLine = False
+			# Read in RNA cistron counts
+			mRNA_counts_reader = TableReader(os.path.join(simOutDir, "mRNACounts"))
+			mRNA_cistron_counts = mRNA_counts_reader.readColumn("mRNA_cistron_counts")
 
 			LINEWIDTH = 1
 
@@ -168,8 +133,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			counts = (
 				proteinMonomerCounts[:, protein_idx],
 				proteinMonomerCounts[:, protein_idx_burst],
-				rnaMonomerCounts[:, sim_data.relation.cistron_to_monomer_mapping][:, protein_idx],
-				rnaMonomerCounts[:, sim_data.relation.cistron_to_monomer_mapping][:, protein_idx_burst]
+				mRNA_cistron_counts[:, monomer_index_to_mRNA_cistron_index[protein_idx]],
+				mRNA_cistron_counts[:, monomer_index_to_mRNA_cistron_index[protein_idx_burst]],
 				)
 			line_color = (
 				EXP_COLOR,
@@ -225,20 +190,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				ax.plot(x, y, color = lc, linewidth = LINEWIDTH)
 
-			# expProteinFold_axis.plot(time_minutes, proteinMonomerCounts[:, protein_idx] / firstLineInit, alpha = 0.,color = "red")
-			# burstProteinFold_axis.plot(time_minutes, proteinMonomerCounts[:, protein_idx_burst] / firstLineInit_burst, alpha = 0., color="red")
-
 		expProtein_axis.set_title("Exponential dynamics: {}".format(sim_data.process.translation.monomer_data['id'][protein_idx][:-3]), fontsize=9)
 		burstProtein_axis.set_title("Sub-generational dynamics: {}".format(sim_data.process.translation.monomer_data['id'][protein_idx_burst][:-3]), fontsize=9)
 		expProtein_axis.set_ylabel("Protein\ncount", rotation=0, fontsize=9)
 		expRna_axis.set_ylabel("mRNA\ncount", rotation=0, fontsize=9)
-
-		# align_yaxis(expProtein_axis, firstLineInit, expProteinFold_axis, 1)
-		# expProteinFold_axis.set_yticks([expProteinFold_axis.get_ylim()[0], 1., expProteinFold_axis.get_ylim()[1]])
-		# expProteinFold_axis.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
-		# align_yaxis(burstProtein_axis, firstLineInit_burst, burstProteinFold_axis, 1)
-		# burstProteinFold_axis.set_yticks([burstProteinFold_axis.get_ylim()[0], 1., burstProteinFold_axis.get_ylim()[1]])
 
 		time_eachGen.append(time[-1])
 		time_eachGen = np.array(time_eachGen)
@@ -264,8 +219,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		expRna_axis.set_xlabel("Time (gens)", fontsize = 9)
 
 		axesList = axesList.flatten().tolist()
-		# axesList.append(expProteinFold_axis)
-		# axesList.append(burstProteinFold_axis)
 		for axes in axesList:
 			for tick in axes.xaxis.get_major_ticks():
 				tick.label.set_fontsize(9)

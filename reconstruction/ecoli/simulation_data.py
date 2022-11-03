@@ -112,6 +112,10 @@ class SimulationDataEcoli(object):
 			tuple((row["code"], row["id"])
 				  for row in raw_data.base_codes.ntp))
 
+		self.nmp_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.nmp))
+
 		self.dntp_code_to_id_ordered = collections.OrderedDict(
 			tuple((row["code"], row["id"])
 				  for row in raw_data.base_codes.dntp))

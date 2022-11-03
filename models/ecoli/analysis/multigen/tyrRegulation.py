@@ -110,7 +110,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			tyrA_cistron_synth_prob_id = ["EG11039_RNA"]
 			tyrA_cistron_synth_prob_index = np.array([
 				cistron_ids.index(x) for x in tyrA_cistron_synth_prob_id])
-			tyrASynthProb = rnaSynthProbReader.readColumn("rnaSynthProb")[
+			tyrASynthProb = rnaSynthProbReader.readColumn("rna_synth_prob_per_cistron")[
 				:, tyrA_cistron_synth_prob_index].reshape(-1)
 
 			tyrRBound = rnaSynthProbReader.readColumn("nActualBound")[:,tyrRIndex]
