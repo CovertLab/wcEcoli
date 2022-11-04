@@ -45,7 +45,16 @@ class Test_openblas_threads(unittest.TestCase):
 			diff = dot - products[0]
 			print('{:7} {:26.17g} {:26.17g}'.format(num_threads, dot, diff))
 
-		assert products[0] == 0.016683805584112754
+		# Issue #931: These two values came from Intel and Apple M1 CPUs,
+		# respectively. Numpy-installed openblas returns yet different results
+		# than manually-installed openblas, so let's use numpy's openblas.
+		#
+		# Reproducible simulations require reproducible floating point results,
+		# but that might be unachievable across platforms.
+		#
+		# Here, openblas returns different dot products even for one thread.
+		# Maybe it's still batching the vectors in chunks non-portably.
+		assert products[0] in (0.016683805584112754, 0.01668380558411259)
 
 		# Check that multi-threaded results are within some tolerance.
 		np_products = np.array(products)

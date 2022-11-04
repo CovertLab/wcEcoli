@@ -37,7 +37,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mass_reader = TableReader(os.path.join(simOutDir, "Mass"))
 
 		# Load data
-		rna_synth_prob = rna_synth_prob_reader.readColumn('rnaSynthProb')
+		rna_synth_prob = rna_synth_prob_reader.readColumn('actual_rna_synth_prob')
 		time = rna_synth_prob_reader.readColumn('time')
 		mrna_synth_prob = rna_synth_prob[:, isMRna].sum(axis = 1)
 		trna_synth_prob = rna_synth_prob[:, isTRna].sum(axis = 1)

@@ -70,14 +70,15 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		# Attributes computed by the listener
 		self.n_ribosomes_per_transcript = np.zeros(self.nMonomers, np.int64)
 		self.n_ribosomes_on_partial_mRNA_per_transcript = np.zeros(self.nMonomers, np.int64)
+		self.n_ribosomes_on_each_mRNA = np.zeros([], np.int64)
 
 	def update(self):
 		# Get attributes of RNAs and ribosomes
 		RNAs = self.uniqueMolecules.container.objectsInCollection('RNA')
 		ribosomes = self.uniqueMolecules.container.objectsInCollection(
 			'active_ribosome')
-		is_full_transcript_RNA, unique_index_RNA = RNAs.attrs(
-			'is_full_transcript', 'unique_index')
+		is_full_transcript_RNA, unique_index_RNA, can_translate = RNAs.attrs(
+			'is_full_transcript', 'unique_index', 'can_translate')
 		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(
 			'protein_index', 'mRNA_index')
 
@@ -105,6 +106,14 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.rRNA16S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_16S])
 		self.rRNA23S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_23S])
 
+		# Get mRNA unique index
+		self.mRNA_unique_index = unique_index_RNA[can_translate]
+
+		# Get counts of ribosomes attached to the same mRNA
+		bincount_minlength = max(self.mRNA_unique_index) + 1
+		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)
+		self.n_ribosomes_on_each_mRNA = bincount_ribosome_on_mRNA[self.mRNA_unique_index]
+
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'probTranslationPerTranscript': 'monomerIds',
@@ -115,6 +124,10 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		tableWriter.writeAttributes(
 			monomerIds = self.monomerIds,
 			subcolumns = subcolumns)
+
+		tableWriter.set_variable_length_columns(
+			'n_ribosomes_on_each_mRNA'
+			)
 
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
@@ -144,4 +157,5 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			probTranslationPerTranscript = self.probTranslationPerTranscript,
 			n_ribosomes_per_transcript = self.n_ribosomes_per_transcript,
 			n_ribosomes_on_partial_mRNA_per_transcript = self.n_ribosomes_on_partial_mRNA_per_transcript,
+			n_ribosomes_on_each_mRNA = self.n_ribosomes_on_each_mRNA
 			)
