@@ -182,8 +182,7 @@ class KnowledgeBaseEcoli(object):
 
 		if self.new_genes_on:
 
-			### TODO find and loop over each subdirectory in new_gene_data directory
-			new_gene_subdir = 'gfp'
+			new_gene_subdir = 'gfp' ### TODO make command line option
 			new_gene_path = os.path.join('new_gene_data',new_gene_subdir)
 			nested_attr = 'new_gene_data.' + new_gene_subdir + "."
 
