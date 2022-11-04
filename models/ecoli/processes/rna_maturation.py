@@ -31,8 +31,10 @@ class RnaMaturation(wholecell.processes.process.Process):
 		rna_data = transcription.rna_data
 		mature_rna_data = transcription.mature_rna_data
 
-		# Get matrices and vectors that describe reaction stoichiometries
+		# Get matrices and vectors that describe maturation reactions
 		self.stoich_matrix = transcription.rna_maturation_stoich_matrix
+		self.enzyme_matrix = transcription.rna_maturation_enzyme_matrix.astype(int)
+		self.n_required_enzymes = self.enzyme_matrix.sum(axis=1)
 		self.degraded_nt_counts = transcription.rna_maturation_degraded_nt_counts
 		self.n_ppi_added = self.stoich_matrix.toarray().sum(axis=0) - 1
 
@@ -71,9 +73,12 @@ class RnaMaturation(wholecell.processes.process.Process):
 		# Build views
 		unprocessed_rna_ids = rna_data['id'][rna_data['is_unprocessed']]
 		mature_rna_ids = transcription.mature_rna_data['id']
+		rna_maturation_enzyme_ids = transcription.rna_maturation_enzymes
 
 		self.unprocessed_rnas = self.bulkMoleculesView(unprocessed_rna_ids)
 		self.mature_rnas = self.bulkMoleculesView(mature_rna_ids)
+		self.rna_maturation_enzymes = self.bulkMoleculesView(
+			rna_maturation_enzyme_ids)
 		self.fragment_bases = self.bulkMoleculesView(
 			sim_data.molecule_groups.polymerized_ntps)
 		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
@@ -97,9 +102,18 @@ class RnaMaturation(wholecell.processes.process.Process):
 		variant_23s_rRNA_counts = self.variant_23s_rRNAs.total_counts()
 		variant_16s_rRNA_counts = self.variant_16s_rRNAs.total_counts()
 		variant_5s_rRNA_counts = self.variant_5s_rRNAs.total_counts()
+		self.enzyme_availability = self.rna_maturation_enzymes.total_counts().astype(bool)
+
+		# Determine which maturation reactions to turn off based on enzyme
+		# availability
+		reaction_is_off = (
+			self.enzyme_matrix.dot(self.enzyme_availability)
+			< self.n_required_enzymes
+		)
+		unprocessed_rna_counts[reaction_is_off] = 0
 
 		# Request all unprocessed RNAs
-		self.unprocessed_rnas.requestAll()
+		self.unprocessed_rnas.requestIs(unprocessed_rna_counts)
 
 		# Request ppis that need to be added to the 5'-ends of mature RNAs
 		self.ppi.requestIs(self.n_ppi_added.dot(unprocessed_rna_counts))
@@ -154,6 +168,9 @@ class RnaMaturation(wholecell.processes.process.Process):
 		self.writeToListener(
 			"RnaMaturationListener", "mature_rnas_generated",
 			n_mature_rnas)
+		self.writeToListener(
+			"RnaMaturationListener", "maturation_enzyme_counts",
+			self.rna_maturation_enzymes.total_counts())
 
 		# Get counts of variant rRNAs
 		variant_23s_rRNA_counts = self.variant_23s_rRNAs.counts()
