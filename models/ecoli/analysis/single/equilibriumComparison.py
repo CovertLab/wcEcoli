@@ -49,14 +49,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		cellVolume = cellMass / cellDensity
 
-		fig = plt.figure(figsize = (20, 20))
+		plt.figure(figsize = (20, 20))
 		rows = 8
 		cols = 8
 		num_subentries = 3
 
 		for idx in range(stoichMatrix.shape[1]):
 
-			grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
+			grid_loc = idx + 1 + (cols*(num_subentries + 1))*int(idx / cols)
 
 			reactantIds = [moleculeNames[x] for x in np.where(stoichMatrix[:, idx] < 0)[0]]
 			reactantCoeffs = np.abs(stoichMatrix[stoichMatrix[:, idx] < 0, idx])
