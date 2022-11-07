@@ -155,9 +155,9 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool, new_genes_on: bool):
+	def __init__(self, operons_on: bool, new_genes_option: str):
 		self.operons_on = operons_on
-		self.new_genes_on = new_genes_on
+		self.new_genes_option = new_genes_option
 
 		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
 		self.transcription_units: List[dict] = []
@@ -180,10 +180,11 @@ class KnowledgeBaseEcoli(object):
 				'transcription_units': 'transcription_units_added',
 				})
 
-		if self.new_genes_on:
+		if self.new_genes_option != 'off':
 
-			new_gene_subdir = 'gfp' ### TODO make command line option
+			new_gene_subdir = new_genes_option
 			new_gene_path = os.path.join('new_gene_data',new_gene_subdir)
+			assert os.path.isdir(os.path.join(FLAT_DIR,new_gene_path)), "This new_genes_data subdirectory is invalid."
 			nested_attr = 'new_gene_data.' + new_gene_subdir + "."
 
 			# These files do not need to be joined to existing files
@@ -217,7 +218,7 @@ class KnowledgeBaseEcoli(object):
 		self._join_data()
 		self._modify_data()
 
-		if self.new_genes_on:
+		if self.new_genes_option != 'off':
 
 			insert_left, insert_right = self._update_gene_insertion_location('genes', nested_attr + 'insertion_location','transcription_units')
 

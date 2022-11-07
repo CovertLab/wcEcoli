@@ -379,8 +379,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		self.define_option(parser,
 			'new-genes', str,
 			default=constants.DEFAULT_NEW_GENES_OPTION,
-			choices=constants.NEW_GENES_OPTIONS,
-			help='Turn new genes off/on.')
+			help='Turn new genes off or specify a new_gene_data subdirectoy name.')
 
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None

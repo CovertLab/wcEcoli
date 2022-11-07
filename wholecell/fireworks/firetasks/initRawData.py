@@ -25,7 +25,7 @@ class InitRawDataTask(FiretaskBase):
 
 		raw_data = KnowledgeBaseEcoli(
 			operons_on=(operon_option == 'on'),
-			new_genes_on=(new_gene_option == 'on'))
+			new_genes_option=new_gene_option)
 
 		print(f"{time.ctime()}: Saving raw_data")
 

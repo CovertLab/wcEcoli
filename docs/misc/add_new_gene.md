@@ -17,11 +17,12 @@ Addition of new genes to the chromosome<br>(in progress)
     * `rna_half_lives.tsv` - Can specify if desired, otherwise will default to average of the other RNAs
     * `proteinhalf_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
 
-With `newgenes_on=True`, `KnowledgeBaseEcoli` uses the information in the specified `new_gene_subdir` (currently specified in `reconstruction/ecoli/knowledge_base_raw.py`, but will instead be specified via command line soon) to make the addition of the gene to the Ecoli chromosome. 
+With `new_genes_option != 'off'`, `KnowledgeBaseEcoli` uses the information in the new gene subdirectory, which is specified in the command line via `new_genes_option`, to make the addition of the gene to the Ecoli chromosome.
+For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the Parca.
 
 The following steps occur in incorporating the new genes into the chromosome:
-* Read in all data tables from the specified `<new_gene_subdir>` (e.g. 'gfp'), and join rows with information about the new genes to the corresponding tables with information about the original genes.
-  * For example, the rows in `reconstruction/ecoli/flat/new_gene_data/<new_gene_subdir>/rnas.tsv` are read in and added to the data attribute for `reconstruction/ecoli/flat/rnas.tsv`.
+* Read in all data tables from the specified `<new_genes_option>` (e.g. 'gfp'), and join rows with information about the new genes to the corresponding tables with information about the original genes.
+  * For example, the rows in `reconstruction/ecoli/flat/new_gene_data/<new_genes_option>/rnas.tsv` are read in and added to the data attribute for `reconstruction/ecoli/flat/rnas.tsv`.
   * If any of the optional files are not provided, then default values will be filled in at a later point in the simulation.
 * Based upon the global coordinates in `insertion_location.tsv`, check for conflicts and move insertion location as necessary. For example, if the user specified insertion location would be in the middle of another gene or transcription unit, instead move the insertion location to be immediately after that gene or transcription unit.
 * Use the relative coordinates in `genes.tsv` and sequences in `gene_sequences.tsv`, determine the sequence to be inserted.
