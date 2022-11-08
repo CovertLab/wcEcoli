@@ -277,7 +277,7 @@ class Metabolism(object):
 		Build the matrices/vectors for metabolism (FBA)
 		Reads in and stores reaction and kinetic constraint information
 		"""
-		(compiled_rxn_ids, reaction_stoich, reversible_reactions, catalysts, rxn_id_to_compiled_id
+		(base_rxn_ids, reaction_stoich, reversible_reactions, catalysts, rxn_id_to_base_rxn_id
 			) = self.extract_reactions(raw_data, sim_data)
 
 		# Load kinetic reaction constraints from raw_data
@@ -288,9 +288,9 @@ class Metabolism(object):
 
 		# Make modifications from kinetics data
 		(constraints, reaction_stoich, catalysts, reversible_reactions,
-			rxn_id_to_compiled_id) = self._replace_enzyme_reactions(
+			rxn_id_to_base_rxn_id) = self._replace_enzyme_reactions(
 			raw_constraints, reaction_stoich, catalysts, reversible_reactions,
-			rxn_id_to_compiled_id)
+			rxn_id_to_base_rxn_id)
 
 		# Create symbolic kinetic equations
 		(self.kinetic_constraint_reactions, self.kinetic_constraint_enzymes,
@@ -355,9 +355,9 @@ class Metabolism(object):
 		self.constraints_to_disable = [rxn["disabled reaction"]
 			for rxn in raw_data.disabled_kinetic_reactions]
 
-		# Properties for conversion to compiled list of reaction IDs
-		self.compiled_reaction_ids = compiled_rxn_ids
-		self.reaction_id_to_compiled_id = rxn_id_to_compiled_id
+		# Properties for conversion of fluxes to those for base reaction IDs
+		self.base_reaction_ids = base_rxn_ids
+		self.reaction_id_to_base_reaction_id = rxn_id_to_base_rxn_id
 
 		self.amino_acid_export_kms = raw_data.amino_acid_export_kms
 
@@ -1384,7 +1384,8 @@ class Metabolism(object):
 			sim_data (SimulationDataEcoli): simulation data
 
 		Returns:
-			compiled_rxn_ids: list of reaction IDs in their original forms
+			base_rxn_ids: list of base reaction IDs from which reaction IDs
+				were derived from
 			reaction_stoich: {reaction ID: {metabolite ID with location tag: stoichiometry}}
 				stoichiometry of metabolites for each reaction
 			reversible_reactions: reaction IDs for reactions that have a reverse
@@ -1392,9 +1393,9 @@ class Metabolism(object):
 			reaction_catalysts: {reaction ID: enzyme IDs with location tag}
 				enzyme catalysts for each reaction with known catalysts, likely
 				a subset of reactions in stoich
-			rxn_id_to_compiled_id: {reaction ID: original reaction ID}
-				mapping from reaction IDs to the IDs of the original reactions
-				they were derived from
+			rxn_id_to_base_rxn_id: {reaction ID: base ID}
+				mapping from reaction IDs to the IDs of the base reactions they
+				were derived from
 		"""
 		compartment_ids_to_abbreviations = {
 			comp['id']: comp['abbrev'] for comp in raw_data.compartments
@@ -1457,11 +1458,11 @@ class Metabolism(object):
 			}
 
 		# Initialize variables to store reaction information
-		compiled_rxn_ids = []
+		base_rxn_ids = set()
 		reaction_stoich = {}
 		reversible_reactions = []
 		reaction_catalysts = {}
-		rxn_id_to_compiled_id = {}
+		rxn_id_to_base_rxn_id = {}
 
 		# Load and parse reaction information from raw_data
 		for reaction in cast(Any, raw_data).metabolic_reactions:
@@ -1508,6 +1509,31 @@ class Metabolism(object):
 							.format(catalyst, reaction_id)
 							)
 
+			# Get base reaction ID of this reaction
+			# If reaction ID does not end with a dot, the given reaction ID is
+			# already a base reaction ID
+			if reaction_id[-1] != '.':
+				base_reaction_id = reaction_id
+			# If reaction ID ends with a dot, find the base reaction ID based
+			# on the following rules (provided by EcoCyc):
+			#   The parsing instructions for obtaining the base rxn-ID are, effectively:
+			#   1: Check whether the full rxn-ID ends with a dot.
+			#   2: If there is no dot at the end, it is already a base rxn-ID.
+			#       Otherwise, find the position of a second dot, to the left of the dot at the end.
+			#   3: Extract the string between the last dot and the second to last dot.
+			#       If this intervening string consists of only digits, then convert this string to an integer.
+			#       In this case, this rxn-ID stands for a generic rxn, and has extra suffixes
+			#       that need to be trimmed off, to retrieve the base rxn-ID.
+			#       The extracted integer indicates the length of the suffixes to be trimmed off.
+			#   4: To find the end position of the base rxn-ID, subtract the integer (obtained by 3: )
+			#       from the position of the second dot (obtained by 2: ) .
+			#   5: Retrieve the base rxn-ID, which is the substring from the very left (position 0)
+			#       to the end position (obtained by 4: ) .
+			else:
+				reaction_id_split = reaction_id[:-1].split('.')
+				suffix_length = int(reaction_id_split[-1])
+				base_reaction_id = '.'.join(reaction_id_split[:-1])[:-suffix_length]
+
 			if forward:
 				reaction_stoich[reaction_id] = {
 					convert_compartment_tags(moleculeID): stoichCoeff
@@ -1515,7 +1541,7 @@ class Metabolism(object):
 					}
 				if len(catalysts_for_this_rxn) > 0:
 					reaction_catalysts[reaction_id] = catalysts_for_this_rxn
-				rxn_id_to_compiled_id[reaction_id] = reaction_id
+				rxn_id_to_base_rxn_id[reaction_id] = base_reaction_id
 
 			if reverse:
 				reverse_reaction_id = REVERSE_REACTION_ID.format(reaction_id)
@@ -1525,14 +1551,17 @@ class Metabolism(object):
 					}
 				if len(catalysts_for_this_rxn) > 0:
 					reaction_catalysts[reverse_reaction_id] = list(catalysts_for_this_rxn)
-				rxn_id_to_compiled_id[reverse_reaction_id] = reaction_id
+				rxn_id_to_base_rxn_id[reverse_reaction_id] = base_reaction_id
 
 			if forward and reverse:
 				reversible_reactions.append(reaction_id)
 
-			compiled_rxn_ids.append(reaction_id)
+			if base_reaction_id not in base_rxn_ids:
+				base_rxn_ids.add(base_reaction_id)
 
-		return compiled_rxn_ids, reaction_stoich, reversible_reactions, reaction_catalysts, rxn_id_to_compiled_id
+		base_rxn_ids = sorted(list(base_rxn_ids))
+
+		return base_rxn_ids, reaction_stoich, reversible_reactions, reaction_catalysts, rxn_id_to_base_rxn_id
 
 	@staticmethod
 	def match_reaction(stoich, catalysts, rxn_to_match, enz, mets, direction=None):

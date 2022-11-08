@@ -324,7 +324,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load attributes for metabolic fluxes
 		cell_density = sim_data.constants.cell_density
-		reaction_ids = sim_data.process.metabolism.compiled_reaction_ids
+		reaction_ids = sim_data.process.metabolism.base_reaction_ids
 
 		# Read columns
 		cell_mass = read_stacked_columns(
