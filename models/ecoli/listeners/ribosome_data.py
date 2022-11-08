@@ -79,7 +79,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			'active_ribosome')
 		is_full_transcript_RNA, unique_index_RNA, can_translate, TU_index = RNAs.attrs(
 			'is_full_transcript', 'unique_index', 'can_translate', 'TU_index')
-		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(  # here add massDiff_protein
+		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs( 
 			'protein_index', 'mRNA_index')
 
 		# Get mask for ribosomes that are translating proteins on partially
