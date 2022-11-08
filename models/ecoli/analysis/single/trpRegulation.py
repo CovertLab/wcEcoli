@@ -84,7 +84,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Get the synthesis probability for all regulated genes
 		synthProbIndex = np.array([rna_idx[x] for x in target_ids])
-		synthProbs = rna_synth_prob_reader.readColumn("rnaSynthProb")[:, synthProbIndex]
+		synthProbs = rna_synth_prob_reader.readColumn("actual_rna_synth_prob")[:, synthProbIndex]
 
 		tf_ids = rna_synth_prob_reader.readAttribute("tf_ids")
 		trpRIndex = [i for i, tf in enumerate(tf_ids) if tf == "CPLX-125"][0]

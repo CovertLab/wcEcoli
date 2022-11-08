@@ -133,7 +133,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			proteomeMassFraction = trpAMass.asNumber(units.fg) / proteinMass.asNumber(units.fg)
 
 			# Get the synthesis probability for all regulated genes
-			synthProbs = rna_synth_prob_reader.readColumn("rnaSynthProb")[:, target_idx]
+			synthProbs = rna_synth_prob_reader.readColumn("actual_rna_synth_prob")[:, target_idx]
 			trpRBound = rna_synth_prob_reader.readColumn("nActualBound")[:, trpRIndex]
 
 			rna_synth_prob_reader.close()

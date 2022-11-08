@@ -16,11 +16,6 @@ from wholecell.io.tablereader import TableReader
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		with open(simDataFile, 'rb') as f:
-			sim_data = pickle.load(f)
-		with open(validationDataFile, 'rb') as f:
-			validation_data = pickle.load(f)
-
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
 		rna_maturation_reader =	TableReader(os.path.join(simOutDir, 'RnaMaturationListener'))
@@ -33,25 +28,33 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		total_degraded_ntps = rna_maturation_reader.readColumn('total_degraded_ntps')
 		mature_rnas_generated = rna_maturation_reader.readColumn(
 			'mature_rnas_generated')
+		maturation_enzyme_counts = rna_maturation_reader.readColumn(
+			'maturation_enzyme_counts')
+		enzyme_ids = rna_maturation_reader.readAttribute('enzyme_ids')
 
 		if mature_rnas_generated.ndim == 2:
 			total_mature_rnas_generated = mature_rnas_generated.sum(axis=1)
 		else:
 			total_mature_rnas_generated = mature_rnas_generated
 
-		plt.figure(figsize=(6, 6))
-		ax = plt.subplot(3, 1, 1)
-		ax.plot(time_min, total_maturation_events)
-		ax.set_ylabel('Number of\nmaturation events')
+		plt.figure(figsize=(6, 8))
+		ax0 = plt.subplot(4, 1, 1)
+		ax0.plot(time_min, total_maturation_events)
+		ax0.set_ylabel('Number of\nmaturation events')
 
-		ax = plt.subplot(3, 1, 2)
-		ax.plot(time_min, total_mature_rnas_generated)
-		ax.set_ylabel('Number of mature RNAs\ngenerated')
+		ax1 = plt.subplot(4, 1, 2)
+		ax1.plot(time_min, total_mature_rnas_generated)
+		ax1.set_ylabel('Number of mature RNAs\ngenerated')
 
-		ax = plt.subplot(3, 1, 3)
-		ax.plot(time_min, total_degraded_ntps)
-		ax.set_ylabel('Number of NTPs\ndegraded')
-		ax.set_xlabel('Time (min)')
+		ax2 = plt.subplot(4, 1, 3)
+		ax2.plot(time_min, total_degraded_ntps)
+		ax2.set_ylabel('Number of NTPs\ndegraded')
+
+		ax3 = plt.subplot(4, 1, 4)
+		ax3.plot(time_min, maturation_enzyme_counts)
+		ax3.legend(enzyme_ids)
+		ax3.set_ylabel('RNA maturation\nenzyme counts')
+		ax3.set_xlabel('Time (min)')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

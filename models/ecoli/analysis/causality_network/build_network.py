@@ -415,6 +415,8 @@ class BuildNetwork(object):
 		mature_rna_ids = transcription.mature_rna_data['id']
 		unprocessed_rna_ids = transcription.rna_data['id'][transcription.rna_data['is_unprocessed']]
 		rna_maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
+		rna_maturation_enzyme_matrix = transcription.rna_maturation_enzyme_matrix
+		rna_maturation_enzymes = transcription.rna_maturation_enzymes
 		ntp_ids = self.sim_data.molecule_groups.ntps
 		ppi_id = self.sim_data.molecule_ids.ppi
 
@@ -490,6 +492,15 @@ class BuildNetwork(object):
 
 			# Add edge from ppi to maturation node
 			self._append_edge("RNA Maturation", ppi_id, maturation_id)
+
+			# Get indexes of enzymes that catalyze the maturation
+			enzyme_indexes = np.where(rna_maturation_enzyme_matrix[i, :])[0]
+
+			# Add edge from each enzyme to maturation node
+			for enzyme_index in enzyme_indexes:
+				self._append_edge(
+					"RNA Maturation", rna_maturation_enzymes[enzyme_index],
+					maturation_id)
 
 
 	def _add_translation_and_monomers(self):

@@ -41,7 +41,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			time += TableReader(os.path.join(simOutDir, "Main")).readColumn("time").tolist()
 
 			rnaSynthProb = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("rnaSynthProb")[:, mRnaIndexes], axis = 0)
+			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("actual_rna_synth_prob")[:, mRnaIndexes], axis = 0)
 			rnaSynthProb.close()
 			simulatedSynthProbs.append(simulatedSynthProb)
 

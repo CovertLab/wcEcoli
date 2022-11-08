@@ -23,6 +23,7 @@ class RnaMaturationListener(wholecell.listeners.listener.Listener):
 		self.unprocessed_rna_ids = transcription.rna_data['id'][
 			transcription.rna_data['is_unprocessed']]
 		self.mature_rna_ids = transcription.mature_rna_data['id']
+		self.enzyme_ids = transcription.rna_maturation_enzymes
 
 	# Allocate memory
 	def allocate(self):
@@ -34,6 +35,8 @@ class RnaMaturationListener(wholecell.listeners.listener.Listener):
 			len(self.unprocessed_rna_ids), dtype=np.float64)
 		self.mature_rnas_generated = np.zeros(
 			len(self.mature_rna_ids), dtype=np.float64)
+		self.maturation_enzyme_counts = np.zeros(
+			len(self.enzyme_ids), dtype=np.float64)
 
 	def update(self):
 		pass
@@ -42,11 +45,13 @@ class RnaMaturationListener(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'unprocessed_rnas_consumed': 'unprocessed_rna_ids',
 			'mature_rnas_generated': 'mature_rna_ids',
+			'maturation_enzyme_counts': 'enzyme_ids',
 			}
 
 		tableWriter.writeAttributes(
 			unprocessed_rna_ids=list(self.unprocessed_rna_ids),
 			mature_rna_ids=list(self.mature_rna_ids),
+			enzyme_ids=self.enzyme_ids,
 			subcolumns=subcolumns)
 
 	def tableAppend(self, tableWriter):
@@ -57,4 +62,5 @@ class RnaMaturationListener(wholecell.listeners.listener.Listener):
 			total_degraded_ntps = self.total_degraded_ntps,
 			unprocessed_rnas_consumed = self.unprocessed_rnas_consumed,
 			mature_rnas_generated = self.mature_rnas_generated,
+			maturation_enzyme_counts = self.maturation_enzyme_counts,
 			)

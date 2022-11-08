@@ -34,7 +34,7 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
-PROMOTER_PDIFF_THRESHOLD = 0.05  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
+PROMOTER_PDIFF_THRESHOLD = 0.04  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
 PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
@@ -1498,17 +1498,9 @@ def setRibosomeCountsConstrainedByPhysiology(
 		proteinDegradationRates,
 		)
 
-	# Get expected ribosome elongation rates
-	expected_ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(
-		doubling_time)
-	basal_elongation_rate = sim_data.constants.ribosome_elongation_rate_basal.asNumber(
-		units.aa / units.s)
-	expected_elongation_rate = sim_data.growth_rate_parameters.get_ribosome_elongation_rate_by_ppgpp(
-		expected_ppgpp_conc, basal_elongation_rate).asNumber(units.aa / units.s)
-
 	elongation_rates = sim_data.process.translation.make_elongation_rates(
 		None,
-		expected_elongation_rate,
+		sim_data.growth_rate_parameters.get_ribosome_elongation_rate(doubling_time).asNumber(units.aa / units.s),
 		1,
 		variable_elongation_translation)
 

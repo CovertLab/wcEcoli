@@ -63,7 +63,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		promoter_copy_numbers = synth_prob_reader.readColumn(
 			"promoter_copy_number")[:, selected_rna_indexes]
 		synth_probs = synth_prob_reader.readColumn(
-			"rnaSynthProb")[:, selected_rna_indexes]
+			"actual_rna_synth_prob")[:, selected_rna_indexes]
 		parca_synth_probs = all_parca_synth_probs[selected_rna_indexes]
 
 		n_plots = len(selected_rna_indexes)
