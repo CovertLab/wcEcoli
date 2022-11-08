@@ -34,7 +34,7 @@ MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
-PROMOTER_PDIFF_THRESHOLD = 0.04  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
+PROMOTER_PDIFF_THRESHOLD = 0.06  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
 PROMOTER_SCALING = 10  # Multiplied to all matrices for numerical stability
 PROMOTER_NORM_TYPE = 1  # Matrix 1-norm
@@ -1722,16 +1722,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 	avg_cell_fraction_mass = sim_data.mass.get_component_masses(doubling_time)
 	total_mass_RNA = avg_cell_fraction_mass["rnaMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 	cistron_tu_mapping_matrix = transcription.cistron_tu_mapping_matrix
-	cistron_index_to_mRNA_index = {
-		cistron_index: mRNA_index for (mRNA_index, cistron_index)
-		in enumerate(np.where(transcription.cistron_data['is_mRNA'])[0])
-		}
-	operons_with_adjusted_expression = [
-		np.array([cistron_index_to_mRNA_index[i] for i in operon[0]])
-		for operon in transcription.operons
-		if np.any(transcription.cistron_data['is_ribosomal_protein'][operon[0]])
-		or np.any(transcription.cistron_data['is_RNAP'][operon[0]])
-		]
 
 	# Calculate current expression fraction of mRNA transcription units
 	view_RNA = bulkContainer.countsView(transcription.rna_data["id"])
@@ -1762,16 +1752,6 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 		sim_data.relation.monomer_to_mRNA_cistron_mapping().T.dot(
 			mRNA_cistron_distribution_per_protein)
 		)
-
-	# Set the expression levels of operons with genes encoding for ribosomal
-	# proteins or RNA polymerases to the maximum level within the operon to
-	# ensure we are getting sufficient expression of every gene within the
-	# operon. This was necessary because NNLS tends to return an averaged
-	# expression level for each operon, which results in insufficient protein
-	# counts for genes with lower translational efficiencies.
-	for operon in operons_with_adjusted_expression:
-		mRNA_cistron_distribution[operon] = mRNA_cistron_distribution[operon].max()
-	mRNA_cistron_distribution = normalize(mRNA_cistron_distribution)
 
 	# Replace mRNA cistron expression with values calculated from monomer counts
 	fit_cistron_expression[transcription.cistron_data['is_mRNA']] = (

@@ -34,7 +34,7 @@ IGNORE_FIRST_N_GENS = 2
 MEDIA_NAME_TO_ID = {
 	'minimal': 'MIX0-57',
 	'minimal_minus_oxygen': 'MIX0-57-ANAEROBIC',
-	'minimal_plus_amino_acids': 'MIX0-847',  # TODO (ggsun): Update
+	'minimal_plus_amino_acids': 'MIX0-850',
 	'minimal_acetate': 'MIX0-58',
 	'minimal_succinate': 'MIX0-844',
 	}
