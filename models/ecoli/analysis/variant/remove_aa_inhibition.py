@@ -118,6 +118,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		if metadata.get('variant', '') != 'remove_aa_inhibition':
+			print('This plot only runs for the remove_aa_inhibition variant.')
+			return
+
 		variants = self.ap.get_variants()
 
 		aa_ids = sorted({aa for aas in HEATMAP_COLS for aa in aas[1]})
