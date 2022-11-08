@@ -1458,7 +1458,7 @@ class Metabolism(object):
 			}
 
 		# Initialize variables to store reaction information
-		base_rxn_ids = set()
+		all_base_rxns = set()
 		reaction_stoich = {}
 		reversible_reactions = []
 		reaction_catalysts = {}
@@ -1556,10 +1556,10 @@ class Metabolism(object):
 			if forward and reverse:
 				reversible_reactions.append(reaction_id)
 
-			if base_reaction_id not in base_rxn_ids:
-				base_rxn_ids.add(base_reaction_id)
+			if base_reaction_id not in all_base_rxns:
+				all_base_rxns.add(base_reaction_id)
 
-		base_rxn_ids = sorted(list(base_rxn_ids))
+		base_rxn_ids = sorted(list(all_base_rxns))
 
 		return base_rxn_ids, reaction_stoich, reversible_reactions, reaction_catalysts, rxn_id_to_base_rxn_id
 
