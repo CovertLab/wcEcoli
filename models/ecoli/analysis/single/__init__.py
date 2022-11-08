@@ -45,6 +45,7 @@ ACTIVE = [
 	"ntpCounts.py",
 	"outer_membrane_expression.py",
 	"polysome_counts.py",
+	"polysome_mw.py",
 	"processMassBalance.py",
 	"processMassBalanceDynamics.py",
 	"proteinCounts.py",
