@@ -2,7 +2,7 @@
 """
 Test numpy dot products with different numbers of OpenBLAS threads.
 
-Assert that the result using 1 thread is as expected to test if the wcEcoli
+Check that the result using 1 thread is as expected to test if the wcEcoli
 simulation results might be consistent across platforms.
 
 Any of these ways works to run this test. The first one is quiet if the test
@@ -64,7 +64,7 @@ class Test_openblas_threads(unittest.TestCase):
 		expected = 0.016683805584112754
 		if products[0] != expected:
 			warnings.warn(f"Didn't reproduce the expected dot product using 1"
-						  f" openblas thread, {products[0]} != {expected}, so"
+						  f" OpenBLAS thread, {products[0]} != {expected}, so"
 						  f" simulation results aren't portable.")
 
 		# Check that multi-threaded results are within some tolerance.
