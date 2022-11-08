@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 """
+Test numpy dot products with different numbers of OpenBLAS threads.
+
+Assert that the result using 1 thread is as expected to test if the wcEcoli
+simulation results might be consistent across platforms.
+
 Any of these ways works to run this test. The first one is quiet if the test
 passes. The others always show stdout:
 	pytest wholecell/tests/utils/test_openblas_threads.py
@@ -10,6 +15,7 @@ passes. The others always show stdout:
 import os
 import sys
 import unittest
+import warnings
 
 import numpy as np
 
@@ -45,16 +51,21 @@ class Test_openblas_threads(unittest.TestCase):
 			diff = dot - products[0]
 			print('{:7} {:26.17g} {:26.17g}'.format(num_threads, dot, diff))
 
-		# Issue #931: These two values came from Intel and Apple M1 CPUs,
-		# respectively. Numpy-installed openblas returns yet different results
-		# than manually-installed openblas, so let's use numpy's openblas.
+		print()
+
+		# Issue #931: The expected value came from Numpy's copy of openblas on
+		# Intel CPUs on Sherlock, Mac, and Linux. But:
+		#
+		#   * Apple M1 CPU on Mac computed 0.01668380558411259
+		#   * Intel CPU on WSL on Windows computed 0.016683805584112667
 		#
 		# Reproducible simulations require reproducible floating point results,
 		# but that might be unachievable across platforms.
-		#
-		# Here, openblas returns different dot products even for one thread.
-		# Maybe it's still batching the vectors in chunks non-portably.
-		assert products[0] in (0.016683805584112754, 0.01668380558411259)
+		expected = 0.016683805584112754
+		if products[0] != expected:
+			warnings.warn(f"Didn't reproduce the expected dot product using 1"
+						  f" openblas thread, {products[0]} != {expected}, so"
+						  f" simulation results aren't portable.")
 
 		# Check that multi-threaded results are within some tolerance.
 		np_products = np.array(products)
