@@ -73,8 +73,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax.plot([0, max_prob], [0, max_prob], '--k')
 		scatter = ax.scatter(expected, actual, c=frac_limited, alpha=0.5, cmap='hot', edgecolors='k')
 		fig.colorbar(scatter)
-		ax.set_xscale('symlog', linthreshx=min_prob)
-		ax.set_yscale('symlog', linthreshy=min_prob)
+		ax.set_xscale('symlog', linthresh=min_prob)
+		ax.set_yscale('symlog', linthresh=min_prob)
 
 		# Add text labels
 		limited_cutoff = 0.05
