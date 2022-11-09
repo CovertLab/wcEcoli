@@ -2,15 +2,12 @@
 Central carbon metabolism comparison to Toya et al
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-import re
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -19,8 +16,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.analysis import cohortAnalysisPlot
-import six
-from six.moves import zip
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -28,14 +23,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
 		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 		toyaFluxes = validation_data.reactionFlux.toya2010fluxes["reactionFlux"]
 		toyaStdev = validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]
 		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		sim_data = pickle.load(open(simDataFile, 'rb'))
 		cellDensity = sim_data.constants.cell_density
 
 		modelFluxes = {}
@@ -54,24 +49,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-			compiled_reaction_ids = fbaResults.readAttribute("compiled_reaction_ids")
-			compiled_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("compiled_reaction_fluxes").T / coefficient).T
+			base_reaction_ids = fbaResults.readAttribute("base_reaction_ids")
+			base_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("base_reaction_fluxes").T / coefficient).T
+			base_reaction_id_to_index = {
+				rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+			}
 
 			for toyaReaction in toyaReactions:
-				fluxTimeCourse = None
-
-				for i, rxn in enumerate(compiled_reaction_ids):
-					if re.findall(toyaReaction, rxn):
-						if fluxTimeCourse is not None:
-							fluxTimeCourse += compiled_reaction_fluxes[:, i]
-						else:
-							fluxTimeCourse = compiled_reaction_fluxes[:, i]
-
-				if len(fluxTimeCourse):
-					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
+				if toyaReaction in base_reaction_id_to_index:
+					rxn_index = base_reaction_id_to_index[toyaReaction]
+					fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
+					modelFluxes[toyaReaction].append(
+						np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
 
 		toyaVsReactionAve = []
-		for rxn, toyaFlux in six.viewitems(toyaFluxesDict):
+		for rxn, toyaFlux in toyaFluxesDict.items():
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append(
 					(np.mean(modelFluxes[rxn]),

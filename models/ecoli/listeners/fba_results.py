@@ -29,8 +29,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.media_id = sim.external_states['Environment'].current_media_id
 		fba = self.metabolism.fba
 		self.fba_reaction_ids = fba.getReactionIDs()
-		self.compiled_reaction_ids = sim_data.process.metabolism.compiled_reaction_ids
-		fba_reaction_ids_to_compiled_ids = sim_data.process.metabolism.reaction_id_to_compiled_id
+		self.base_reaction_ids = sim_data.process.metabolism.base_reaction_ids
+		fba_reaction_ids_to_base_reaction_ids = sim_data.process.metabolism.reaction_id_to_base_reaction_id
 		self.externalMoleculeIDs = fba.getExternalMoleculeIDs()
 		self.outputMoleculeIDs = fba.getOutputMoleculeIDs()
 		self.kineticTargetFluxNames = fba.getKineticTargetFluxNames()
@@ -42,35 +42,34 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.all_external_exchange_molecules = sim_data.external_state.all_external_exchange_molecules
 		self.conc_update_molecules = sim.processes["Metabolism"].conc_update_molecules
 
-		# Get conversion matrix to compile individual fluxes in the FBA solution
-		# to the compiled set of reactions listed in raw data
+		# Get conversion matrix to compile individual fluxes in the FBA
+		# solution to the fluxes of base reactions
 		fba_reaction_id_to_index = {
 			rxn_id: i for (i, rxn_id) in enumerate(self.fba_reaction_ids)
 			}
-		compiled_reaction_id_to_index = {
-			rxn_id: i for (i, rxn_id) in enumerate(self.compiled_reaction_ids)
+		base_reaction_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(self.base_reaction_ids)
 			}
-		orig_rxn_indexes = []
+		base_rxn_indexes = []
 		fba_rxn_indexes = []
 		v = []
 
 		for fba_rxn_id in self.fba_reaction_ids:
-			orig_rxn_id = fba_reaction_ids_to_compiled_ids[fba_rxn_id]
-
-			orig_rxn_indexes.append(compiled_reaction_id_to_index[orig_rxn_id])
+			base_rxn_id = fba_reaction_ids_to_base_reaction_ids[fba_rxn_id]
+			base_rxn_indexes.append(base_reaction_id_to_index[base_rxn_id])
 			fba_rxn_indexes.append(fba_reaction_id_to_index[fba_rxn_id])
 			if fba_rxn_id.endswith(REVERSE_TAG):
 				v.append(-1)
 			else:
 				v.append(1)
 
-		orig_rxn_indexes = np.array(orig_rxn_indexes)
+		base_rxn_indexes = np.array(base_rxn_indexes)
 		fba_rxn_indexes = np.array(fba_rxn_indexes)
 		v = np.array(v)
-		shape = (len(self.compiled_reaction_ids), len(self.fba_reaction_ids))
+		shape = (len(self.base_reaction_ids), len(self.fba_reaction_ids))
 
 		self.reaction_mapping_matrix = csr_matrix(
-			(v, (orig_rxn_indexes, fba_rxn_indexes)),
+			(v, (base_rxn_indexes, fba_rxn_indexes)),
 			shape=shape)
 
 	# Allocate memory
@@ -78,7 +77,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		super(FBAResults, self).allocate()
 
 		self.reactionFluxes = np.zeros(len(self.fba_reaction_ids), np.float64)
-		self.compiled_reaction_fluxes = np.zeros(len(self.compiled_reaction_ids), np.float64)
+		self.base_reaction_fluxes = np.zeros(len(self.base_reaction_ids), np.float64)
 		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
 		self.shadowPrices = np.zeros(len(self.outputMoleculeIDs), np.float64)
 		self.reducedCosts = np.zeros(len(self.fba_reaction_ids), np.float64)
@@ -97,14 +96,14 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.uptake_constraints = [np.nan] * len(self.all_external_exchange_molecules)
 
 	def update(self):
-		# Compile reaction fluxes
-		self.compiled_reaction_fluxes = self.reaction_mapping_matrix.dot(
+		# Compile reaction fluxes to those of base reactions
+		self.base_reaction_fluxes = self.reaction_mapping_matrix.dot(
 			self.reactionFluxes)
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'reactionFluxes': 'reactionIDs',
-			'compiled_reaction_fluxes': 'compiled_reaction_ids',
+			'base_reaction_fluxes': 'base_reaction_ids',
 			'externalExchangeFluxes': 'externalMoleculeIDs',
 			'shadowPrices': 'outputMoleculeIDs',
 			'reducedCosts': 'reactionIDs',
@@ -120,7 +119,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 
 		tableWriter.writeAttributes(
 			reactionIDs=list(self.fba_reaction_ids),
-			compiled_reaction_ids=self.compiled_reaction_ids,
+			base_reaction_ids=self.base_reaction_ids,
 			externalMoleculeIDs=self.externalMoleculeIDs,
 			outputMoleculeIDs=self.outputMoleculeIDs,
 			homeostaticTargetMolecules=self.homeostaticTargetMolecules,
@@ -138,7 +137,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			time=self.time(),
 			simulationStep=self.simulationStep(),
 			reactionFluxes=self.reactionFluxes,
-			compiled_reaction_fluxes=self.compiled_reaction_fluxes,
+			base_reaction_fluxes=self.base_reaction_fluxes,
 			externalExchangeFluxes=self.externalExchangeFluxes,
 			shadowPrices=self.shadowPrices,
 			reducedCosts=self.reducedCosts,
