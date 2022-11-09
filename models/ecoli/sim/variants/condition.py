@@ -7,11 +7,11 @@ Modifies:
 
 Expected variant indices (dependent on sim_data.ordered_conditions and should
 be the same order as rows in condition_defs.tsv):
-	0: control
-	1: anaerobic
-	2: with amino acids
-	3: acetate
-	4: succinate
+	0: control (minimal media)
+	1: with amino acids
+	2: acetate
+	3: succinate
+	4: minimal media (anaerobic)
 """
 from __future__ import absolute_import, division, print_function
 
