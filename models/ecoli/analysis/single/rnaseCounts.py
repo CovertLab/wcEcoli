@@ -29,9 +29,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		RNase_RnaIDS = np.concatenate((endoRnase_RnaIDs, exoRnase_RnaIDs))
 
 		# Load count data for mRNAs
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-		all_mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
+		all_mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 
 		# Get counts for RNase proteins and mRNAs
 		(RNase_counts,) = read_bulk_molecule_counts(simOutDir, (RNase_IDS,))

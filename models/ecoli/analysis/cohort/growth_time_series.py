@@ -249,7 +249,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
 				remove_first=True)
 		excess, synth_fractions, _ = calculate_ribosome_excesses(sim_data, cell_paths)
-		mrna_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
+		mrna_counts = read_stacked_columns(cell_paths, 'RNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
 		rna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
 			remove_first=True, fun=reduce_rna_synthesis(slice(None)))
 		mrna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',

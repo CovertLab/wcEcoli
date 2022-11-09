@@ -103,7 +103,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		total_rRNA_target_synth_prob = np.sum(rRNA_target_synth_prob, axis=1)
 
 		# Partial rRNAs, or RNAPs on rrn genes
-		rna_counts = TableReader(os.path.join(simOutDir, "mRnaCounts"))
+		rna_counts = TableReader(os.path.join(simOutDir, "RNACounts"))
 		partial_rRNA_counts = rna_counts.readColumn("partial_rRNA_counts")
 		rna_ids = np.array(rna_counts.readAttribute("rRNA_ids"))
 		rRNA_idxs = [np.where(rna_ids == rRNA_id)[0][0] for rRNA_id in rRNA_ids]

@@ -53,7 +53,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			)).T
 		ppgpp_count, = read_stacked_bulk_molecules(cell_paths, [sim_data.molecule_ids.ppGpp])
 		ppgpp_conc = ppgpp_count * counts_to_molar * 1000  # uM
-		mrna_cistron_count = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_cistron_counts')
+		mrna_cistron_count = read_stacked_columns(cell_paths, 'RNACounts', 'mRNA_cistron_counts')
 		synthase_counts = mrna_cistron_count[:, synthase_cistron_idx_mrnas]
 
 		extra_plots = 4  # traces in addition to fractions

@@ -54,8 +54,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cell_paths = ap.get_cells(seed=[0])
 
 			simOutDir = os.path.join(cell_paths[0], "simOut")
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-			mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+			RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+			mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 			monomer_counts_reader = TableReader(os.path.join(simOutDir, 'MonomerCounts'))
 			all_monomer_ids = monomer_counts_reader.readAttribute('monomerIds')
 
@@ -72,7 +72,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			gen_start_time = read_stacked_columns(
 				cell_paths, 'Main', 'time', fun=lambda x: x[0])
 			cistron_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
+				cell_paths, 'RNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
 			monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indexes]
 

@@ -36,8 +36,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		cell_paths = ap2.get_cells()
 		simOutDir = os.path.join(cell_paths[0], 'simOut')
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 
 		# Get mask for mRNA genes that encode for ribosomal proteins or RNAPs
 		all_cistron_ids = sim_data2.process.transcription.cistron_data['id']
@@ -57,7 +57,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			# Sample initial mRNA counts from each cell
 			all_initial_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'mRNA_cistron_counts',
+				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True, fun=lambda x: x[0])
 
 			return all_initial_counts

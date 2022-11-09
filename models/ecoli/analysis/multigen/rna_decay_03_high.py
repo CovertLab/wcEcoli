@@ -75,11 +75,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rnaDegradationListener = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
 			rna_cistron_degraded_counts.append(rnaDegradationListener.readColumn('count_RNA_degraded_per_cistron')[:, cistron_idxs])
 
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			all_mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			all_mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 			cistron_indexes = np.array([all_mRNA_cistron_ids.index(x) for x in cistron_ids], int)
-			rna_cistron_counts.append(mRNA_counts_reader.readColumn("mRNA_cistron_counts")[:, cistron_indexes])
+			rna_cistron_counts.append(RNA_counts_reader.readColumn("mRNA_cistron_counts")[:, cistron_indexes])
 
 		rnaDegradedCountsAveraged = []
 		rnaCountsAveraged = []

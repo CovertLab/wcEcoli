@@ -66,6 +66,7 @@ ACTIVE = [
 	"rnap_crowding.py",
 	"rnap_stalled.py",
 	"rnaseCounts.py",
+	"rRNA_operon_expression.py",
 	"superhelical_density.py",
 	"surface_area_comparison.py",
 	"transcriptional_attenuation.py",

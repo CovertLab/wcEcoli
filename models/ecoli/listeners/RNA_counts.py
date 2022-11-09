@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-mRNACounts Listener
+RNACounts Listener
 """
 
 from __future__ import absolute_import, division, print_function
@@ -10,18 +10,18 @@ import numpy as np
 import wholecell.listeners.listener
 
 
-class mRNACounts(wholecell.listeners.listener.Listener):
+class RNACounts(wholecell.listeners.listener.Listener):
 	"""
 	Listener for the counts of each mRNA and rRNA transcription units and
 	cistrons. Includes the counts of both partial and full transcripts.
 	"""
-	_name = 'mRNACounts'
+	_name = 'RNACounts'
 
 	def __init__(self, *args, **kwargs):
-		super(mRNACounts, self).__init__(*args, **kwargs)
+		super(RNACounts, self).__init__(*args, **kwargs)
 
 	def initialize(self, sim, sim_data):
-		super(mRNACounts, self).initialize(sim, sim_data)
+		super(RNACounts, self).initialize(sim, sim_data)
 
 		self.uniqueMolecules = sim.internal_states['UniqueMolecules']
 
@@ -45,7 +45,7 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 		self.cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
 
 	def allocate(self):
-		super(mRNACounts, self).allocate()
+		super(RNACounts, self).allocate()
 
 		self.mRNA_counts = np.zeros(len(self.mRNA_TU_ids), dtype=np.int64)
 		self.full_mRNA_counts = np.zeros(len(self.mRNA_TU_ids), dtype=np.int64)
@@ -96,6 +96,8 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 			'mRNA_cistron_counts': 'mRNA_cistron_ids',
 			'full_mRNA_cistron_counts': 'mRNA_cistron_ids',
 			'partial_mRNA_cistron_counts': 'mRNA_cistron_ids',
+			'partial_rRNA_counts': 'rRNA_ids',
+			'partial_rRNA_cistron_counts': 'rRNA_cistron_ids',
 			}
 
 		tableWriter.writeAttributes(
