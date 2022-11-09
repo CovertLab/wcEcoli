@@ -127,21 +127,16 @@ def analyze_variant(args):
 
 		# Toya comparison
 		# Toya units read in as mmol/g/hr
-		reaction_ids = np.array(fba_results_reader.readAttribute('compiled_reaction_ids'))
-		reaction_fluxes = MODEL_FLUX_UNITS * fba_results_reader.readColumn('compiled_reaction_fluxes').T
-		reaction_fluxes = (reaction_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS).T
+		base_reaction_ids = np.array(fba_results_reader.readAttribute('base_reaction_ids'))
+		sim_reaction_fluxes = MODEL_FLUX_UNITS * fba_results_reader.readColumn('base_reaction_fluxes').T
+		sim_reaction_fluxes = (sim_reaction_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS).T
+		sim_rxn_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+		}
 
 		for toya_reaction_id in toya_reactions:
-			flux_time_course = None
-
-			for i, rxn in enumerate(reaction_ids):
-				if re.findall(toya_reaction_id, rxn):
-					if flux_time_course is not None:
-						flux_time_course += reaction_fluxes[1:, i]
-					else:
-						flux_time_course = reaction_fluxes[1:, i]
-
-			if flux_time_course is not None:
+			if toya_reaction_id in sim_rxn_id_to_index:
+				flux_time_course = sim_reaction_fluxes[1:, sim_rxn_id_to_index[toya_reaction_id]]
 				flux_ave = np.mean(flux_time_course)
 				toya_model_fluxes[toya_reaction_id].append(flux_ave)
 

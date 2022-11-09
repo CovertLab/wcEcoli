@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 import os
 from six.moves import cPickle
-import re
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -18,8 +17,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.analysis import multigenAnalysisPlot
-import six
-from six.moves import zip
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -43,6 +40,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			modelFluxes[rxn] = []
 			toyaOrder.append(rxn)
 
+		mmol_per_g_per_h = units.mmol / units.g / units.h
 		for simDir in cell_paths:
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -52,24 +50,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-			compiled_reaction_ids = fbaResults.readAttribute("compiled_reaction_ids")
-			compiled_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("compiled_reaction_fluxes").T / coefficient).T
+			base_reaction_ids = fbaResults.readAttribute("base_reaction_ids")
+			base_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("base_reaction_fluxes").T / coefficient).T
+			base_reaction_id_to_index = {
+				rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+			}
 
 			for toyaReaction in toyaReactions:
-				fluxTimeCourse = None
-
-				for i, rxn in enumerate(compiled_reaction_ids):
-					if re.findall(toyaReaction, rxn):
-						if fluxTimeCourse is not None:
-							fluxTimeCourse += compiled_reaction_fluxes[:, i]
-						else:
-							fluxTimeCourse = compiled_reaction_fluxes[:, i]
-
-				if fluxTimeCourse is not None:
-					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(units.mmol / units.g / units.h))
+				if toyaReaction in base_reaction_id_to_index:
+					rxn_index = base_reaction_id_to_index[toyaReaction]
+					fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
+					modelFluxes[toyaReaction].append(
+						np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
 
 		toyaVsReactionAve = []
-		for rxn, toyaFlux in six.viewitems(toyaFluxesDict):
+		for rxn, toyaFlux in toyaFluxesDict.items():
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append((np.mean(modelFluxes[rxn]), toyaFlux.asNumber(units.mmol / units.g / units.h), np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(units.mmol / units.g / units.h)))
 

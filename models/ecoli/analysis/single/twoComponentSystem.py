@@ -64,7 +64,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 
 		for idx in range(len(sim_data.molecule_groups.twoComponentSystems)):
-			grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
+			grid_loc = idx + 1 + (cols*(num_subentries + 1))*int(idx / cols)
 			current_RR = str(sim_data.molecule_groups.twoComponentSystems[idx]["molecules"]["RR"])
 			if RR_phosphorylation[current_RR].size == 1:
 				new_RR = True
@@ -76,7 +76,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 					if moleculeTypeOrder[subentryIdx] == "PHOSPHO-RR":
 						RRP[:] = moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro)
-
 
 				ax = plt.subplot(rows*(num_subentries + 2), cols, grid_loc + (cols * subentryIdx))
 				ax.plot(time / 60., moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro), linewidth = 1, color = moleculeTypeColor[subentryIdx])

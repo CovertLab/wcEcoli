@@ -104,7 +104,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		alwaysPresentIndexes = np.where(transcribedBoolOrdered == 1.)[0]
 		neverPresentIndexes = np.where(transcribedBoolOrdered == 0.)[0]
-		sometimesPresentIndexes = np.array([x for x in np.arange(len(transcribedBoolOrdered)) if x not in alwaysPresentIndexes and x not in neverPresentIndexes])
+		sometimesPresentIndexes = np.array([
+			x for x in np.arange(len(transcribedBoolOrdered))
+			if x not in alwaysPresentIndexes and x not in neverPresentIndexes],
+			dtype=int)
 		colors = np.repeat(COLOR_FSUB, len(transcribedBoolOrdered))
 		colors[alwaysPresentIndexes] = COLOR_F1
 		colors[neverPresentIndexes] = COLOR_F0
@@ -223,7 +226,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		alwaysAxis.set_ylabel("Freq. = 1", fontsize = 14)
 		sometimesAxis.set_ylabel("0 < Freq. < 1", fontsize = 14)
 		sometimesAxis.set_xlabel("Time (gens)", fontsize = 14)
-		sometimesAxis.set_xticklabels(np.arange(FIRST_N_GENS + 1))
+		sometimesAxis.set_xticklabels(np.arange(len(time_eachGen)))
 		exportFigure(plt, plotOutDir, "figure5B__bottom", metadata)
 		plt.close("all")
 

@@ -56,7 +56,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax.set_ylim(max(0, ylim[0]), ylim[1])
 		ax.set_ylabel('Carbon source import\n(mmol/gDCW/hr)')
 		ax.tick_params(labelsize=8, which='both', direction='out')
-		ax.legend()
+		ax.legend(loc=1)
 
 		# Plot other uptake of interest
 		for index, molecule in enumerate(molecule_ids):
@@ -81,7 +81,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				])
 			ymin = np.floor(ave_flux - y_range)
 			ymax = np.ceil(ave_flux + y_range)
-			ax.set_ylim([ymin, ymax])
+			if ymin == 0 and ymax == 0:
+				ax.set_ylim([-1, 1])
+			else:
+				ax.set_ylim([ymin, ymax])
 
 			abs_max = np.max(molecule_flux)
 			abs_min = np.min(molecule_flux)
@@ -119,8 +122,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax_export.set_yscale('symlog')
 		ax_import.set_yscale('symlog')
 		handles, labels = ax_export.get_legend_handles_labels()
-		ax_export.legend(handles[::-1], labels[::-1], fontsize=6)
-		ax_import.legend(fontsize=6)
+		ax_export.legend(handles[::-1], labels[::-1], fontsize=6, loc=1)
+		ax_import.legend(fontsize=6, loc=1)
 		ax_export.set_title('Export Fluxes', fontsize=8)
 		ax_import.set_title('Import Fluxes', fontsize=8)
 		ax_export.tick_params(labelsize=8, which='both', direction='out')
