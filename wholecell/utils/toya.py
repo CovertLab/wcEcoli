@@ -85,10 +85,8 @@ def process_simulated_fluxes(
 	# type: (Iterable[str], Iterable[str], Unum) -> Tuple[Unum, Unum]
 	"""Compute means and standard deviations of flux from simulation
 
-	For a given output ID from output_ids, all reaction IDs from
-	reaction_ids whose roots (before the first _ or space) match the output ID
-	will have their data included in that output
-	ID's mean and standard deviation.
+	For a given output ID from output_ids, find the mean and stdev of simulated
+	fluxes of the reaction with the matching ID.
 
 	Arguments:
 		output_ids: IDs of reactions to include in output
@@ -106,23 +104,16 @@ def process_simulated_fluxes(
 		order as their associated reaction IDs in output_ids. Both
 		lists will have units FLUX_UNITS.
 	"""
-	reaction_ids = np.array(reaction_ids)
+	reaction_id_to_index = {
+		rxn_id: i for (i, rxn_id) in enumerate(reaction_ids)
+	}
 	means = []  # type: List[np.ndarray]
 	stdevs = []  # type: List[np.ndarray]
 	for output_id in output_ids:
-		time_course = []  # type: List[Unum]
-		for i, rxn_id in enumerate(reaction_ids):
-			if re.findall(output_id, rxn_id):
-				reverse = -1 if re.findall("(reverse)", rxn_id) else 1
-				matches = reaction_fluxes[:, i]
-				if len(time_course):
-					time_course += reverse * matches
-				else:
-					time_course = reverse * matches
-		if len(time_course):
-			time_course_ = time_course  # type: Any
-			means.append(np.mean(time_course_).asNumber(FLUX_UNITS))
-			stdevs.append(np.std(time_course_.asNumber(FLUX_UNITS)))
+		if output_id in reaction_id_to_index:
+			time_course = reaction_fluxes[:, reaction_id_to_index[output_id]]
+			means.append(np.mean(time_course).asNumber(FLUX_UNITS))
+			stdevs.append(np.std(time_course.asNumber(FLUX_UNITS)))
 	means_ = FLUX_UNITS * np.array(means)
 	stdevs_ = FLUX_UNITS * np.array(stdevs)
 	return means_, stdevs_

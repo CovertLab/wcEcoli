@@ -5,9 +5,6 @@ TODO:
 	other values
 		weighted average for counts (time step weighted and cell cycle progress weighted)
 		max/min
-	other molecules
-		charged/uncharged tRNA
-		rRNA including in ribosomes/complexes
 """
 
 import csv
@@ -324,7 +321,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load attributes for metabolic fluxes
 		cell_density = sim_data.constants.cell_density
-		reaction_ids = sim_data.process.metabolism.compiled_reaction_ids
+		reaction_ids = sim_data.process.metabolism.base_reaction_ids
 
 		# Read columns
 		cell_mass = read_stacked_columns(
@@ -339,7 +336,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Calculate flux in units of mmol/g DCW/h
 		fluxes = (
 			(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-			* (read_stacked_columns(cell_paths, 'FBAResults', 'compiled_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
+			* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
 			).asNumber(units.mmol / units.g / units.h)
 
 		# Calculate derived flux values
