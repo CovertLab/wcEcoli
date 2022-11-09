@@ -12,6 +12,7 @@ import numpy as np
 from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 
@@ -30,10 +31,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         n_ribosome_on_each_mRNA = ribosome_reader.readColumn('n_ribosomes_on_each_mRNA')
 
         # Initialize variables for polysome mw
-        rna_mw = sim_data.process.transcription.rna_data['mw'].asNumber()/1e6  # convert unit to kg/mmol
+        rna_mw = sim_data.process.transcription.rna_data['mw'].asNumber(units.kg/units.mmol) # convert unit to kg/mmol
         ribosome_30S_mass = sim_data.getter.get_mass(sim_data.molecule_ids.s30_full_complex)
         ribosome_50S_mass = sim_data.getter.get_mass(sim_data.molecule_ids.s50_full_complex)
-        ribosome_mass = (ribosome_30S_mass + ribosome_50S_mass).asNumber()/1e6  # convert unit to kg/mmol
+        ribosome_mass = (ribosome_30S_mass + ribosome_50S_mass).asNumber(units.kg/units.mmol)  # convert unit to kg/mmol
 
         mRNA_TU_index_flattened = mRNA_TU_index.ravel()
         mRNA_TU_index_flattened_clean = mRNA_TU_index_flattened[
