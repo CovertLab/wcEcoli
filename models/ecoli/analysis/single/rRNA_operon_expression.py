@@ -14,22 +14,25 @@ from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
 
-MA_WINDOWS = [200, 400] # moving average window to plot timeseries, in timesteps
-COLORS = ['r', 'b']
+MA_WINDOWS = [200] # moving average window to plot timeseries, in timesteps
+COLORS = ['r']
 LABELPAD = 10
 FONTSIZE = 15
 LEGEND_FONT = 10
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-	def make_plot(self, axs, time, var, titles, ma=None, ylim=None, c=COLORS):
+	# TODO: add ppGpp plot
+	def make_plot(self, axs, time, var, titles, ma=MA_WINDOWS, ylim=None,
+				  c=COLORS, label=""):
 		if ma:
 			var = self.moving_average(var, ma)
 			time = self.moving_average(time, ma)
 			for (i, mv_avg) in enumerate(var):
 				if len(np.shape(mv_avg)) > 1:
 					for (j, subvar) in enumerate(mv_avg):
-						axs[j].plot(time[i], subvar, c=c[i], label="Mov avg window %fs" % int(ma[i] * self.avg_timestep))
+						axs[j].plot(time[i], subvar, c=c[i], label=label+"Mov avg window %fs" % int(ma[i] * self.avg_timestep))
+						axs[j].tick_params(axis='both')
 						if i==0 and titles:
 							axs[j].set_title(titles[j], pad=LABELPAD, fontsize=FONTSIZE)
 						if ylim:
@@ -37,7 +40,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 						if i == len(ma) - 1:
 							axs[j].legend(fontsize=LEGEND_FONT)
 				else:
-					axs.plot(time[i], mv_avg, c=c[i], label="Mov avg window %fs" % int(ma[i] * self.avg_timestep))
+					axs.plot(time[i], mv_avg, c=c[i], label=label+"Mov avg window %fs" % int(ma[i] * self.avg_timestep))
+					axs.tick_params(axis='both')
 					if titles:
 						axs.set_title(titles, pad=LABELPAD, fontsize=FONTSIZE)
 					if ylim:
@@ -49,12 +53,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				var = var.T
 				for (j, subvar) in enumerate(var):
 					axs[j].plot(time, subvar, c=COLORS[0])
+					axs[j].tick_params(axis='both')
 					if titles:
 						axs[j].set_title(titles[j], pad=LABELPAD, fontsize=FONTSIZE)
 					if ylim:
 						axs[j].set_ylim(ylim)
 			else:
 				axs.plot(time, var, c=COLORS[0])
+				axs.tick_params(axis='both')
 				if titles:
 					axs.set_title(titles, pad=LABELPAD, fontsize=FONTSIZE)
 				if ylim:
@@ -188,90 +194,90 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ncols = num_rRNAs + 1 + 3
 		nrows=7
 
-		fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(8 * ncols, 8 * nrows))
+		fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 5 * nrows), sharex='all')
 		# Plot operon-level rRNA initiation events
 		axs[0, 0].set_ylabel("Initiations per second", labelpad=LABELPAD)
 		rRNA_names = [rRNA_operon_to_name[rRNA] if rRNA in rRNA_operon_to_name
 			else rRNA for rRNA in rRNA_ids]
 		self.make_plot(axs=[axs[0, i] for i in range(num_rRNAs)], time=time, var=rRNA_init_per_sec,
-					   titles=rRNA_names, ma=MA_WINDOWS, ylim=[0, 4])
+					   titles=rRNA_names, ylim=[0, 4])
 		self.make_plot(axs=axs[0, num_rRNAs], time=time, var=total_rRNA_init_per_sec,
-					   titles="Total rRNAs", ma=MA_WINDOWS, ylim=[0, 15])
+					   titles="Total rRNAs", ylim=[0, 15])
 		for i in range(ncols):
 			axs[0, i].set_xlabel("Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
 
 		# Plot gene dosage of each operon
 		axs[1, 0].set_ylabel("Gene dosage", labelpad=LABELPAD, fontsize=FONTSIZE)
 		self.make_plot(axs=[axs[1, i] for i in range(num_rRNAs)], time=time, var=rRNA_gene_dosage,
-					   titles=None, ylim=[0, 5])
+					   titles=None, ma=None, ylim=[0, 5])
 		self.make_plot(axs=axs[1, num_rRNAs], time=time, var=total_rRNA_gene_dosage,
-					   titles=None, ylim=[0, 5])
+					   titles=None, ma=None, ylim=[0, 5])
 
 		# Plot the rRNA initiation events per gene dosage
 		axs[2, 0].set_ylabel("Initiations per second per gene dosage", labelpad=LABELPAD, fontsize=FONTSIZE)
 		self.make_plot(axs=[axs[2,i] for i in range(num_rRNAs)], time=time, var=rRNA_initiation_per_gene_dosage,
-					   titles=None, ma=MA_WINDOWS, ylim=[0, 1])
+					   titles=None, ylim=[0, 1])
 		self.make_plot(axs=axs[2, num_rRNAs], time=time, var=total_rRNA_initiation_per_gene_dosage,
-					   titles=None, ma=MA_WINDOWS, ylim=[0, 1])
+					   titles=None, ylim=[0, 1])
 
 		# Plot effective initiation events of 5S, 16S, and 23S rRNA
 		self.make_plot(axs=axs[0, num_rRNAs+1], time=time, var=rRNA5S_init_per_sec,
-					   titles="5S rRNA inits", ma=MA_WINDOWS, ylim=[0, 15])
+					   titles="5S rRNA inits", ylim=[0, 15])
 		self.make_plot(axs=axs[0, num_rRNAs+2], time=time, var=rRNA16S_init_per_sec,
-					   titles="16S rRNA inits", ma=MA_WINDOWS, ylim=[0, 15])
+					   titles="16S rRNA inits", ylim=[0, 15])
 		self.make_plot(axs=axs[0, num_rRNAs+3], time=time, var=rRNA23S_init_per_sec,
-					   titles="23S rRNA inits", ma=MA_WINDOWS, ylim=[0, 15])
+					   titles="23S rRNA inits", ylim=[0, 15])
 
 		# Plot the target and actual synthesis probabilities of rRNA operons
 		axs[3, 0].set_ylabel("Target and actual rRNA synthesis probabilities")
 		self.make_plot(axs=[axs[3, i] for i in range(num_rRNAs)], time=time, var=rRNA_actual_synth_prob,
-					   titles=None, ma=[200], c=['r'])
+					   titles=None, c=['r'], label="Actual: ")
 		self.make_plot(axs=[axs[3, i] for i in range(num_rRNAs)], time=time, var=rRNA_target_synth_prob,
-					   titles=None, ma=[200], c=['g'],  ylim=[0, 0.04])
+					   titles=None, c=['g'],  ylim=[0, 0.04], label="Target: ")
 		for i in range(num_rRNAs):
 			axs[3, i].text(np.mean(time), axs[3, i].get_ylim()[1],
 						"Overcrowded time fraction: %f"%rRNA_is_overcrowded_fraction[i])
 		self.make_plot(axs=axs[3, num_rRNAs], time=time, var=total_rRNA_actual_synth_prob,
-					   titles=None, ma=[200], c=['r'])
+					   titles=None, c=['r'], label="Actual: ")
 		self.make_plot(axs=axs[3, num_rRNAs], time=time, var=total_rRNA_target_synth_prob,
-					   titles=None, ma=[200], c=['g'], ylim=(0, None))
+					   titles=None, c=['g'], ylim=(0, None), label="Target: ")
 		axs[3, num_rRNAs].text(np.mean(time), axs[3, num_rRNAs].get_ylim()[1],
 							"Overcrowded time fraction: %f"%total_rRNA_is_overcrowded_fraction)
 
 		# Plot the number of RNAPs on rrn genes
 		axs[4, 0].set_ylabel("Counts of RNAPs on rrn genes")
 		self.make_plot(axs=[axs[4, i] for i in range(num_rRNAs)], time=time, var=RNAP_on_rRNA_counts,
-					   titles=None, ma=MA_WINDOWS, c=['r', 'b'], ylim=[0, 200])
+					   titles=None, c=['r', 'b'], ylim=[0, 200])
 		self.make_plot(axs=axs[4, num_rRNAs], time=time, var=total_RNAP_on_rRNA_counts,
-					   titles=None, ma=MA_WINDOWS, c=['r', 'b'], ylim=[0, 1000])
+					   titles=None, c=['r', 'b'], ylim=[0, 1000])
 
 		# Plot the fraction of active or total RNAPs on rrn genes
 		axs[5, 0].set_ylabel("Fraction of total/active RNAPs on rrn genes")
 		self.make_plot(axs=[axs[5, i] for i in range(num_rRNAs)], time=time,
 					   var=RNAP_total_fraction_on_rRNA,
-					   titles=None, ma=MA_WINDOWS, c=['g', 'k'], ylim=[0, 0.2])
+					   titles=None, c=['g', 'k'], ylim=[0, 0.2])
 		self.make_plot(axs=[axs[5, i] for i in range(num_rRNAs)], time=time,
 					   var=RNAP_active_fraction_on_rRNA,
-					   titles=None, ma=MA_WINDOWS, c=['r','b'])
+					   titles=None, c=['r','b'])
 		self.make_plot(axs=axs[5, num_rRNAs], time=time, var=total_RNAP_active_fraction_on_rRNA,
-					   titles=None, ma=MA_WINDOWS, c=['m', 'y'],  ylim=[0, None])
+					   titles=None, c=['m', 'y'],  ylim=[0, None])
 		self.make_plot(axs=axs[5, num_rRNAs], time=time, var=total_RNAP_total_fraction_on_rRNA,
-					   titles=None, ma=MA_WINDOWS, c=['g', 'k'])
+					   titles=None, c=['g', 'k'])
 
 		# Plot the amount of (active or inactive) ribosomal subunits
 		axs[6, 0].set_ylabel("Counts", labelpad=LABELPAD, fontsize=FONTSIZE)
 		self.make_plot(axs=axs[6, 0], time=time, var=total_30S_counts,
-					   titles="Total 30S", ma=MA_WINDOWS,  ylim=(0, None))
+					   titles="Total 30S", ylim=(0, None))
 		self.make_plot(axs=axs[6, 1], time=time, var=total_50S_counts,
-					   titles="Total 50S", ma=MA_WINDOWS,  ylim=(0, None))
+					   titles="Total 50S", ylim=(0, None))
 
 		# Plot the amount of uncomplexed rRNAs
 		self.make_plot(axs=axs[6, 2], time=time, var=rRNA_5S_counts,
-					   titles="Free 5S rRNA", ma=MA_WINDOWS,  ylim=(0, None))
+					   titles="Free 5S rRNA", ylim=(0, None))
 		self.make_plot(axs=axs[6, 3], time=time, var=rRNA_16S_counts,
-					   titles="Free 16S rRNA", ma=MA_WINDOWS,  ylim=(0, None))
+					   titles="Free 16S rRNA", ylim=(0, None))
 		self.make_plot(axs=axs[6, 4], time=time, var=rRNA_23S_counts,
-					   titles="Free 23S rRNA", ma=MA_WINDOWS,  ylim=(0, None))
+					   titles="Free 23S rRNA", ylim=(0, None))
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
