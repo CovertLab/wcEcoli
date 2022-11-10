@@ -125,7 +125,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax3.set_xlim([0, time_off[-1] / 60])
 		ax3.set_ylim([0, 300])
 		ax3.set_yticks([0, 300])
-		ax3.set_xticks(list(gen_start_time_off / 60) + [time_off[-1]/60])
+		ax3.set_xticks((gen_start_time_off / 60).flatten().tolist() + [time_off.flatten()[-1]/60])
 		ax3.set_xticklabels(np.arange(len(gen_start_time_off) + 1))
 
 		# Plot counts of each protein when operon="on"
@@ -143,8 +143,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax4.spines["left"].set_visible(False)
 		ax4.get_yaxis().set_visible(False)
 		ax4.set_xlim([0, time_on[-1]/60])
-		ax4.set_xticks(list(gen_start_time_on / 60) + [time_on[-1] / 60])
-		ax4.set_xticklabels(np.arange(len(gen_start_time_on) + 1))
+		ax4.set_xticks((gen_start_time_on / 60).flatten().tolist() + [time_on.flatten()[-1] / 60])
+		ax4.set_xticklabels(np.arange(len(gen_start_time_on) + 1).tolist())
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

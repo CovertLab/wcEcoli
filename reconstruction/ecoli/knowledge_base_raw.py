@@ -64,6 +64,7 @@ LIST_OF_DICT_FILENAMES = [
 	"proteins.tsv",
 	"relative_metabolite_concentrations.tsv",
 	"rna_half_lives.tsv",
+	"rna_maturation_enzymes.tsv",
 	"rnas.tsv",
 	"secretions.tsv",
 	"sequence_motifs.tsv",
