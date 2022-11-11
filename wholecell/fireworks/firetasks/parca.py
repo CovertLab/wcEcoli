@@ -33,7 +33,10 @@ class ParcaTask(FiretaskBase):
 		'cpus',
 		'debug',
 		'variable_elongation_transcription',
-		'variable_elongation_translation']
+		'variable_elongation_translation',
+		'remove_rrna_operons',
+		'remove_rrff',
+		]
 
 	def _get_default(self, key):
 		return self.get(key, DEFAULT_SIMULATION_KWARGS[key])
@@ -54,6 +57,8 @@ class ParcaTask(FiretaskBase):
 		tasks = [
 			InitRawDataTask(
 				operons=self.get('operons'),
+				remove_rrna_operons=self.get('remove_rrna_operons', False),
+				remove_rrff=self.get('remove_rrff', False),
 				output=raw_data_file),
 
 			FitSimDataTask(

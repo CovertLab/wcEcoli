@@ -13,14 +13,21 @@ class InitRawDataTask(FiretaskBase):
 
 	_fw_name = "InitRawDataTask"
 	required_params = ["output"]
-	optional_params = ['operons']
+	optional_params = [
+		'operons',
+		'remove_rrna_operons',
+		'remove_rrff',
+		]
 
 	def run_task(self, fw_spec):
 		operon_option = self.get('operons') or DEFAULT_OPERON_OPTION
 		print(f"{time.ctime()}: Instantiating raw_data with operons={operon_option}")
 
 		raw_data = KnowledgeBaseEcoli(
-			operons_on=(operon_option == 'on'))
+			operons_on=(operon_option == 'on'),
+			remove_rrna_operons=self.get('remove_rrna_operons', False),
+			remove_rrff=self.get('remove_rrff', False),
+			)
 
 		print(f"{time.ctime()}: Saving raw_data")
 
