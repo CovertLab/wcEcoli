@@ -5,7 +5,7 @@ Addition of new genes to the chromosome<br>(in progress)
 
 * Add one directory per genome insertion to (`reconstruction/ecoli/flat/new_gene_data`), following file structure in the `template` subdirectory.  
   * Each directory can have multiple new genes (represented as multiple rows in the tables), but these genes must all be inserted in the same place in the genome.
-  * ID of new genes MUST begin with NG
+  * <b>ID of new genes, rnas, and proteins MUST begin with NG</b>
   * Necessary data files:
     * `insertion_location.tsv` - Specify desired genome insertion location
     * `genes.tsv` - List of the genes you would like to insert, with relative coordinates within the sequence to be inserted
