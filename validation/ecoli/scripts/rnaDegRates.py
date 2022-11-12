@@ -42,7 +42,11 @@ with io.open(DEG_RATES, "rb") as csvfile:
 		elif row["Sample"] == "WT +kas replicate 1" and row["Name"] not in rateDict:
 			rateDict[row["Name"]] = -1
 
-raw_data = KnowledgeBaseEcoli(operons_on=False)  # type: Any
+raw_data = KnowledgeBaseEcoli(
+	operons_on=False,
+	remove_rrna_operons=False,
+	remove_rrff=False,
+	)  # type: Any
 
 modelRates = {}
 paperRates = {}  # type: Dict[str, Union[int, float]]
