@@ -22,21 +22,21 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
 		mRNA_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
 
-		new_gene_mRNA_IDS  = [k for k,v in mRNA_idx.items() if k.startswith('NG')]
-		new_gene_mrna_indexes = [v for k, v in mRNA_idx.items() if k.startswith('NG')]
+		new_gene_mRNA_ids  = [k for k,v in mRNA_idx.items() if k.startswith('NG')]
+		new_gene_mRNA_indexes = [v for k, v in mRNA_idx.items() if k.startswith('NG')]
 
-		assert len(new_gene_mRNA_IDS) != 0, 'no new gene mRNAs found'
-		new_gene_mrna_counts = mRNA_counts[:, new_gene_mrna_indexes]
+		assert len(new_gene_mRNA_ids) != 0, 'no new gene mRNAs found'
+		new_gene_mRNA_counts = mRNA_counts[:, new_gene_mRNA_indexes]
 
 		# Extract protein counts for each new gene
 		monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
 		monomer_counts = monomer_counts_reader.readColumn('monomerCounts')
 		monomer_idx = {monomer: i for i, monomer in enumerate(monomer_counts_reader.readAttribute('monomerIds'))}
 
-		new_gene_monomer_IDS = [k for k, v in monomer_idx.items() if k.startswith('NG')]
+		new_gene_monomer_ids = [k for k, v in monomer_idx.items() if k.startswith('NG')]
 		new_gene_monomer_indexes = [v for k, v in monomer_idx.items() if k.startswith('NG')]
 
-		assert len(new_gene_monomer_IDS) != 0, 'no new gene proteins found'
+		assert len(new_gene_monomer_ids) != 0, 'no new gene proteins found'
 		new_gene_monomer_counts = monomer_counts[:, new_gene_monomer_indexes]
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
@@ -48,8 +48,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Protein Counts
 		plt.subplot(2, 1, 1)
-		for m in range(len(new_gene_monomer_IDS)):
-			plt.plot(time / 60., new_gene_monomer_counts[:,m], label = new_gene_monomer_IDS[m])
+		for m in range(len(new_gene_monomer_ids)):
+			plt.plot(time / 60., new_gene_monomer_counts[:,m], label = new_gene_monomer_ids[m])
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
 		plt.title("New Gene Protein Counts")
@@ -57,8 +57,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# mRNA Counts
 		plt.subplot(2, 1, 2)
-		for r in range(len(new_gene_mRNA_IDS)):
-			plt.plot(time / 60., new_gene_mrna_counts[:,r], label = new_gene_mRNA_IDS[r])
+		for r in range(len(new_gene_mRNA_ids)):
+			plt.plot(time / 60., new_gene_mRNA_counts[:,r], label = new_gene_mRNA_ids[r])
 		plt.xlabel("Time (min)")
 		plt.ylabel("mRNA Counts")
 		plt.title("New Gene mRNA Counts")
