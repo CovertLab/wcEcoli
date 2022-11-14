@@ -31,6 +31,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		doubling_times = {}
 		growth_rates = {}
+		new_gene_monomer_counts = {}
+		new_gene_mRNA_counts = {}
 
 		def downsample(x):
 			"""Average every n_downsample points to one value to smooth and downsample"""
@@ -50,17 +52,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			growth_rates[variant] = read_stacked_columns(all_cells[dt < MAX_CELL_LENGTH], 'Mass', 'instantaneous_growth_rate',
 				remove_first=True, fun=downsample).squeeze() * 3600.
 
+			# TODO get indexes for New Gene mRNA and Protein
+
+			all_mRNA_counts = read_stacked_columns(all_cells[dt < MAX_CELL_LENGTH], 'mRNACounts', 'mRNA_counts')
+			new_gene_mRNA_counts_var = all_mRNA_counts[:,-1]
+			new_gene_mRNA_counts_var = downsample(new_gene_mRNA_counts_var)
+			new_gene_mRNA_counts_var[new_gene_mRNA_counts_var == 0] = 10**(-10)
+			new_gene_mRNA_counts[variant] = np.log10(new_gene_mRNA_counts_var)
+
+			all_monomer_counts = read_stacked_columns(all_cells[dt < MAX_CELL_LENGTH], 'MonomerCounts', 'monomerCounts')
+			new_gene_monomer_counts_var = all_monomer_counts[:, -1]
+			new_gene_monomer_counts_var = downsample(new_gene_monomer_counts_var)
+			new_gene_monomer_counts_var[new_gene_monomer_counts_var == 0] = 10 ** (-10)
+			new_gene_monomer_counts[variant] = np.log10(new_gene_monomer_counts_var)
+
 		_, axes = plt.subplots(2, 1, figsize=(10, 10))
 
-		self.hist(axes[0], doubling_times, 'Doubling Time (min)')
-		self.hist(axes[1], growth_rates, 'Growth rates (1/hr)', bin_width=0.05, sf=2)
-
+		self.hist(axes[0], new_gene_monomer_counts, 'Log10(New Gene Protein Counts)')
+		self.hist(axes[1], new_gene_mRNA_counts, 'Log10(New Gene mRNA Counts)')
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
-		axes[0].set_xlim([15, 90])
-		axes[1].set_xlim([0, 2.5])
+		axes[0].set_xlim([-10, 8])
+		axes[1].set_xlim([-10, 8])
 		exportFigure(plt, plotOutDir, plotOutFileName + '_trimmed', metadata)
+		plt.close("all")
 
 
 if __name__ == "__main__":
