@@ -12,7 +12,7 @@ Addition of new genes to the chromosome<br>(in progress)
     * `gene_sequences.tsv` - Sequences of genes to be inserted
     * `rnas.tsv` - RNAs corresponding to those genes
     * `proteins.tsv` - Proteins corresponding to those genes
-    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to 1 and modify basal expression levels later via variant (more details below)
+    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to .01 and modify basal expression levels later via variant (more details below)
   * Currently supported optional data files:
     * `rna_half_lives.tsv` - Can specify if desired, otherwise will default to average of the other RNAs
     * `proteinhalf_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
