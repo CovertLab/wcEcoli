@@ -26,6 +26,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
+		### TODO flag new gene mRNAs and proteins more efficiently
 		# Extract mRNA ids for each new gene
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
 		mRNA_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
@@ -41,7 +42,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
-		# (new_gene_mRNA_counts,) = read_stacked_bulk_molecules(cell_paths, new_gene_mRNA_ids) # TODO figure out why this always returns 0
 		(new_gene_monomer_counts,) = read_stacked_bulk_molecules(cell_paths, new_gene_monomer_ids)
 		all_mRNA_stacked_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts')
 		new_gene_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]

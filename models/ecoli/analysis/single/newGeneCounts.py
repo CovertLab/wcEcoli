@@ -17,6 +17,7 @@ from six.moves import cPickle,range
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		### TODO flag new gene mRNAs and proteins more efficiently
 		# Extract mRNA counts for each new gene
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
 		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')

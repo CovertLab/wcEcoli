@@ -1,6 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+import os
+from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.analysis.plotting_tools import COLORS_COLORBLIND as COLORS
@@ -31,8 +33,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		doubling_times = {}
 		growth_rates = {}
-		new_gene_monomer_counts = {}
-		new_gene_mRNA_counts = {}
 
 		def downsample(x):
 			"""Average every n_downsample points to one value to smooth and downsample"""
@@ -41,7 +41,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				x = x[:-extra_points]
 			return x.reshape(-1, n_downsample).mean(1).reshape(-1, 1)
 
-		for variant in self.ap.get_variants():
+		# Data extraction
+		variants = self.ap.get_variants()
+		min_variant = min(variants)
+		for variant in variants:
 			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			if len(all_cells) == 0:
 				continue
@@ -52,30 +55,53 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			growth_rates[variant] = read_stacked_columns(all_cells[dt < MAX_CELL_LENGTH], 'Mass', 'instantaneous_growth_rate',
 				remove_first=True, fun=downsample).squeeze() * 3600.
 
-			# TODO get indexes for New Gene mRNA and Protein
-
 			all_mRNA_counts = read_stacked_columns(all_cells[dt < MAX_CELL_LENGTH], 'mRNACounts', 'mRNA_counts')
-			new_gene_mRNA_counts_var = all_mRNA_counts[:,-1]
-			new_gene_mRNA_counts_var = downsample(new_gene_mRNA_counts_var)
-			new_gene_mRNA_counts_var[new_gene_mRNA_counts_var == 0] = 10**(-10)
-			new_gene_mRNA_counts[variant] = np.log10(new_gene_mRNA_counts_var)
-
 			all_monomer_counts = read_stacked_columns(all_cells[dt < MAX_CELL_LENGTH], 'MonomerCounts', 'monomerCounts')
-			new_gene_monomer_counts_var = all_monomer_counts[:, -1]
-			new_gene_monomer_counts_var = downsample(new_gene_monomer_counts_var)
-			new_gene_monomer_counts_var[new_gene_monomer_counts_var == 0] = 10 ** (-10)
-			new_gene_monomer_counts[variant] = np.log10(new_gene_monomer_counts_var)
+			if variant == min_variant: ### TODO flag new gene mRNAs and proteins more efficiently
+				# Extract mRNA indexes for each new gene
+				sim_dir = all_cells[0]
+				simOutDir = os.path.join(sim_dir, 'simOut')
+				mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
+				mRNA_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
+				new_gene_mRNA_ids = [k for k, v in mRNA_idx.items() if k.startswith('NG')]
+				new_gene_mRNA_indexes = [v for k, v in mRNA_idx.items() if k.startswith('NG')]
+				assert len(new_gene_mRNA_ids) != 0, 'no new gene mRNAs found'
 
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
+				# Extract protein indexes for each new gene
+				monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
+				monomer_idx = {monomer: i for i, monomer in
+							   enumerate(monomer_counts_reader.readAttribute('monomerIds'))}
+				new_gene_monomer_ids = [k for k, v in monomer_idx.items() if k.startswith('NG')]
+				new_gene_monomer_indexes = [v for k, v in monomer_idx.items() if k.startswith('NG')]
+				assert len(new_gene_monomer_ids) != 0, 'no new gene proteins found'
 
-		self.hist(axes[0], new_gene_monomer_counts, 'Log10(New Gene Protein Counts)')
-		self.hist(axes[1], new_gene_mRNA_counts, 'Log10(New Gene mRNA Counts)')
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+				assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), 'number of new gene monomers and mRNAs should be equal'
 
-		axes[0].set_xlim([-10, 8])
-		axes[1].set_xlim([-10, 8])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_trimmed', metadata)
+				new_gene_mRNA_counts = [{} for id in new_gene_mRNA_ids]
+				new_gene_monomer_counts = [{} for id in new_gene_monomer_ids]
+
+			for i in range(len(new_gene_mRNA_ids)):
+				new_gene_mRNA_counts_var = all_mRNA_counts[:,new_gene_mRNA_indexes[i]]
+				new_gene_mRNA_counts_var = downsample(new_gene_mRNA_counts_var)
+				new_gene_mRNA_counts_var[new_gene_mRNA_counts_var == 0] = 10**(-10)
+				new_gene_mRNA_counts[i][variant] = np.log10(new_gene_mRNA_counts_var)
+
+				new_gene_monomer_counts_var = all_monomer_counts[:, new_gene_monomer_indexes[i]]
+				new_gene_monomer_counts_var = downsample(new_gene_monomer_counts_var)
+				new_gene_monomer_counts_var[new_gene_monomer_counts_var == 0] = 10 ** (-10)
+				new_gene_monomer_counts[i][variant] = np.log10(new_gene_monomer_counts_var)
+
+		# Plotting
+		for i in range(len(new_gene_mRNA_ids)):
+			_, axes = plt.subplots(2, 1, figsize=(10, 10))
+			self.hist(axes[0], new_gene_monomer_counts[i], 'Log10(' + new_gene_monomer_ids[i][:-3] +' Counts)')
+			self.hist(axes[1], new_gene_mRNA_counts[i], 'Log10(' + new_gene_mRNA_ids[i][:-3] +' Counts)')
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName+'_'+new_gene_monomer_ids[i][:-3], metadata)
+
+			axes[0].set_xlim([-11, 8])
+			axes[1].set_xlim([-11, 8])
+			exportFigure(plt, plotOutDir, plotOutFileName+'_'+new_gene_monomer_ids[i][:-3] +'_trimmed', metadata)
 		plt.close("all")
 
 
