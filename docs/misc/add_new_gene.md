@@ -45,8 +45,9 @@ The following steps occur in incorporating the new genes into the chromosome:
 
 * Analysis scripts
   * `models/ecoli/analysis/single/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation
-  * TODO extend newGeneCounts.py plots to multi generations
-  * TODO create a histogram of doubling time and average counts of each new gene for multi-gen, multi-variant, multi-seed simulations
+  * `models/ecoli/analysis/single/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation (extention for multiple generations)
+  * `models/ecoli/analysis/variant/new_gene_histogram.py` creates one figure with two plots for each new gene - one with a histogram of the mRNA counts for that new gene, and one with a histogram the protein counts for that new gene, both are colored by variant index
+  * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with a histogram of the growth rate, both colored by variant index
 
   
 
