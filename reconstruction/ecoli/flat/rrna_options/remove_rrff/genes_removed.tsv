@@ -1,0 +1,3 @@
+# List of genes to remove when the 'remove_rrff' option is used for building raw_data.
+"id"	"_comment"
+"EG30091"	"rrfF gene that encodes for the extra 5S rRNA in the rrnD operon"

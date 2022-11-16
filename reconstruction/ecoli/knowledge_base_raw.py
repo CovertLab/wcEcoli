@@ -4,12 +4,11 @@ Whole-cell knowledge base for Ecoli. Contains all raw, un-fit data processed
 directly from CSV flat files.
 
 """
-from __future__ import absolute_import, division, print_function
-
 import io
 import os
 import json
 from typing import List, Dict
+import warnings
 
 from reconstruction.spreadsheets import read_tsv
 from wholecell.io import tsv
@@ -87,16 +86,20 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("mass_fractions", "lipid_fractions.tsv"),
 	os.path.join("mass_fractions", "murein_fractions.tsv"),
 	os.path.join("mass_fractions", "soluble_fractions.tsv"),
-	os.path.join("trna_data","trna_ratio_to_16SrRNA_0p4.tsv"),
-	os.path.join("trna_data","trna_ratio_to_16SrRNA_0p7.tsv"),
-	os.path.join("trna_data","trna_ratio_to_16SrRNA_1p6.tsv"),
-	os.path.join("trna_data","trna_ratio_to_16SrRNA_1p07.tsv"),
-	os.path.join("trna_data","trna_ratio_to_16SrRNA_2p5.tsv"),
-	os.path.join("trna_data","trna_growth_rates.tsv"),
-	os.path.join("rna_seq_data","rnaseq_rsem_tpm_mean.tsv"),
-	os.path.join("rna_seq_data","rnaseq_rsem_tpm_std.tsv"),
-	os.path.join("rna_seq_data","rnaseq_seal_rpkm_mean.tsv"),
-	os.path.join("rna_seq_data","rnaseq_seal_rpkm_std.tsv"),
+	os.path.join("trna_data", "trna_ratio_to_16SrRNA_0p4.tsv"),
+	os.path.join("trna_data", "trna_ratio_to_16SrRNA_0p7.tsv"),
+	os.path.join("trna_data", "trna_ratio_to_16SrRNA_1p6.tsv"),
+	os.path.join("trna_data", "trna_ratio_to_16SrRNA_1p07.tsv"),
+	os.path.join("trna_data", "trna_ratio_to_16SrRNA_2p5.tsv"),
+	os.path.join("trna_data", "trna_growth_rates.tsv"),
+	os.path.join("rna_seq_data", "rnaseq_rsem_tpm_mean.tsv"),
+	os.path.join("rna_seq_data", "rnaseq_rsem_tpm_std.tsv"),
+	os.path.join("rna_seq_data", "rnaseq_seal_rpkm_mean.tsv"),
+	os.path.join("rna_seq_data", "rnaseq_seal_rpkm_std.tsv"),
+	os.path.join("rrna_options", "remove_rrff", "genes_removed.tsv"),
+	os.path.join("rrna_options", "remove_rrff", "rnas_removed.tsv"),
+	os.path.join("rrna_options", "remove_rrff", "transcription_units_modified.tsv"),
+	os.path.join("rrna_options", "remove_rrna_operons", "transcription_units_removed.tsv"),
 	os.path.join("condition", "tf_condition.tsv"),
 	os.path.join("condition", "condition_defs.tsv"),
 	os.path.join("condition", "environment_molecules.tsv"),
@@ -160,8 +163,13 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool):
+	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool):
 		self.operons_on = operons_on
+
+		if not operons_on and remove_rrna_operons:
+			warnings.warn("Setting the 'remove_rrna_operons' option to 'True'"
+			              " has no effect on the simulations when the 'operon'"
+			              " option is set to 'off'.")
 
 		self.compartments: List[dict] = []  # mypy can't track setattr(self, attr_name, rows)
 		self.transcription_units: List[dict] = []
@@ -175,12 +183,29 @@ class KnowledgeBaseEcoli(object):
 
 		if self.operons_on:
 			self.list_of_dict_filenames.append('transcription_units.tsv')
-			self.removed_data.update({
-				'transcription_units': 'transcription_units_removed',
+			if remove_rrna_operons:
+				# Use alternative file with all rRNA transcription units if
+				# remove_rrna_operons option was used
+				self.removed_data.update({
+					'transcription_units': 'rrna_options.remove_rrna_operons.transcription_units_removed',
+					})
+			else:
+				self.removed_data.update({
+					'transcription_units': 'transcription_units_removed',
 				})
 			self.added_data.update({
 				'transcription_units': 'transcription_units_added',
 				})
+
+		if remove_rrff:
+			self.removed_data.update({
+				'genes': 'rrna_options.remove_rrff.genes_removed',
+				'rnas': 'rrna_options.remove_rrff.rnas_removed',
+				})
+			if self.operons_on:
+				self.modified_data.update({
+					'transcription_units': 'rrna_options.remove_rrff.transcription_units_modified',
+					})
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
@@ -244,7 +269,9 @@ class KnowledgeBaseEcoli(object):
 		# Check each pair of files to be removed
 		for data_attr, attr_to_remove in self.removed_data.items():
 			# Build the set of data to identify rows to be removed
-			data_to_remove = getattr(self, attr_to_remove)
+			data_to_remove = getattr(self, attr_to_remove.split('.')[0])
+			for attr in attr_to_remove.split('.')[1:]:
+				data_to_remove = getattr(data_to_remove, attr)
 			removed_cols = list(data_to_remove[0].keys())
 			ids_to_remove = set()
 			for row in data_to_remove:
@@ -301,7 +328,9 @@ class KnowledgeBaseEcoli(object):
 		# Check each pair of files to be modified
 		for data_attr, modify_attr in self.modified_data.items():
 			# Build the set of data to identify rows to be modified
-			data_to_modify = getattr(self, modify_attr)
+			data_to_modify = getattr(self, modify_attr.split('.')[0])
+			for attr in modify_attr.split('.')[1:]:
+				data_to_modify = getattr(data_to_modify, attr)
 			id_col_name = list(data_to_modify[0].keys())[0]
 
 			id_to_modified_cols = {}
