@@ -66,24 +66,23 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
             rna_mw[mRNA_TU_index_flattened_clean] +
             ribosome_mass * n_ribosome_on_each_mRNA_flattened_clean)
         polysome_mw_hist, bin_edges = np.histogram(polysome_mw_all_time_step,
-            bins=np.arange(min(polysome_mw_all_time_step),
-            max(polysome_mw_all_time_step)+BIN_WIDTH, BIN_WIDTH))
+            bins = np.arange(min(polysome_mw_all_time_step),
+            max(polysome_mw_all_time_step) + BIN_WIDTH, BIN_WIDTH))
         average_polysome_mw = polysome_mw_hist / mRNA_TU_index.shape[0]
 
         fig = plt.figure(figsize = (8, 10))
         # Plot polysome count
         polysome_count_ax = plt.subplot(2,1,1)
         # add 1 to include the highest ribosome count
-        polysome_count_ax.bar(list(range(highest_ribosome_count+1)),
+        polysome_count_ax.bar(list(range(highest_ribosome_count + 1)),
             average_polysome_count, align = 'center')
         polysome_count_ax.set_xlabel("Count of Ribosomes Attached to Individual mRNA")
         polysome_count_ax.set_ylabel("Count of mRNA")
 
         # Plot polysome mw
-
         polysome_mw_ax = plt.subplot(2, 1, 2)
         polysome_mw_ax.bar(bin_edges[:-1], average_polysome_mw,
-            width=np.diff(bin_edges), align = 'edge')
+            width = np.diff(bin_edges), align = 'edge')
         polysome_mw_ax.set_xlabel("Polysome Molecular Weight [fg]")
         polysome_mw_ax.set_ylabel("Count of polysome")
 
