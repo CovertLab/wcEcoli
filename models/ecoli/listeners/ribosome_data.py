@@ -110,6 +110,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.mRNA_unique_index = unique_index_RNA[can_translate & is_full_transcript_RNA]
 		self.mRNA_TU_index = TU_index[can_translate & is_full_transcript_RNA]
 
+
 		# Get counts of ribosomes attached to the same mRNA
 		bincount_minlength = max(self.mRNA_unique_index) + 1
 		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)

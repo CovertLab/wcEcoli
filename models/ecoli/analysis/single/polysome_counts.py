@@ -70,12 +70,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
             rna_mw[mRNA_TU_index_flattened_clean] +
             ribosome_mass * n_ribosome_on_each_mRNA_flattened_clean +
             protein_mass_on_mRNA_flattened_clean)
+
         polysome_mw_hist, bin_edges = np.histogram(polysome_mw_all_time_step,
             bins = np.arange(min(polysome_mw_all_time_step),
             max(polysome_mw_all_time_step) + BIN_WIDTH, BIN_WIDTH))
         average_polysome_mw = polysome_mw_hist / mRNA_TU_index.shape[0]
-
-        import ipdb; ipdb.set_trace()
+        
         fig = plt.figure(figsize = (8, 10))
         # Plot polysome count
         polysome_count_ax = plt.subplot(2,1,1)
