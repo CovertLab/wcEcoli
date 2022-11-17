@@ -1,9 +1,15 @@
 """
 Histogram of the average polysome counts in the system.
-The polysome count analysis script takes number of ribosomes attached to mRNA
+The polysome count analysis takes number of ribosomes attached to mRNA
 at each time point, calculates the sum of polysomes across all time points,
 and takes the average of polysomes count by dividing with the number of
 time points in the system.
+
+The polysome mw analysis takes mass of each unique mRNA, mass of ribosome 30s
+and 50s bulk molecules, protein mass attached to each ribosome, and
+the number of ribosomes attached to mRNA at each time point to calculate
+the molecular weight of polysome through the relationship
+polysome_mw = mRNA_mw + protein_mass + n_ribosome * ribosome_mw.
 """
 
 import os
@@ -75,7 +81,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
             bins = np.arange(min(polysome_mw_all_time_step),
             max(polysome_mw_all_time_step) + BIN_WIDTH, BIN_WIDTH))
         average_polysome_mw = polysome_mw_hist / mRNA_TU_index.shape[0]
-        
+
         fig = plt.figure(figsize = (8, 10))
         # Plot polysome count
         polysome_count_ax = plt.subplot(2,1,1)

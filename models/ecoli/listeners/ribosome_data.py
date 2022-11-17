@@ -116,27 +116,21 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)
 		self.n_ribosomes_on_each_mRNA = bincount_ribosome_on_mRNA[self.mRNA_unique_index]
 
-		## initialize protein mass array such as each index corresponds to
-		## total massDiff_protein of each mRNA --> should be same size as
-		## n_ribosomes_on_each_mRNA
+		# Initialize array representing protein mass for each mRNA
 		self.protein_mass_on_polysomes = np.zeros(
 			len(self.n_ribosomes_on_each_mRNA))
 
-		## only consider ribosomes protein mass attached on translatable mRNA
+		# Consider ribosomes protein mass attached on translatable mRNA only
 		mRNA_index_ribosome_on_polysome = mRNA_index_ribosomes[
 			np.isin(mRNA_index_ribosomes, self.mRNA_unique_index)]
 		massDiff_protein_ribosomes_on_polysome = massDiff_protein_ribosomes[
 			np.isin(mRNA_index_ribosomes, self.mRNA_unique_index)]
 
-		## this np.unique output will give us indexes to sum in the
-		## massDiff_protein_ribosomes array when using bincount
+		# Get protein mass on each polysome
+		idx_nonzero_ribosome = np.where(self.n_ribosomes_on_each_mRNA != 0)
 		_, massDiff_protein_index, _ = np.unique(
 			mRNA_index_ribosome_on_polysome,
 			return_counts=True, return_inverse=True)
-
-		# Get protein mass on each polysome
-		idx_nonzero_ribosome = np.where(self.n_ribosomes_on_each_mRNA != 0)
-		## adds mass of protein of the same mRNA
 		self.protein_mass_on_polysomes[idx_nonzero_ribosome] = np.bincount(
 			massDiff_protein_index, massDiff_protein_ribosomes_on_polysome)
 
