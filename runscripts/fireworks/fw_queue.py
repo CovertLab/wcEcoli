@@ -88,6 +88,8 @@ Modeling options:
 		once a given mass has been added to the cell
 	OPERONS (str, "on"): run with operons "off", "on" (actually monocistronic
 		or polycistronic), or "both" (into adjacent output directories)
+	NEW_GENES (str,"off"): run with new genes "off" or specify a new_gene_data
+		subdirectory name to add those genes to the chromosome.
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
@@ -288,6 +290,7 @@ GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULA
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 OPERONS = get_environment("OPERONS", constants.DEFAULT_OPERON_OPTION)
 assert OPERONS in constants.EXTENDED_OPERON_OPTIONS, f'{OPERONS=} needs to be in {constants.EXTENDED_OPERON_OPTIONS}'
+NEW_GENES = get_environment("NEW_GENES", constants.DEFAULT_NEW_GENES_OPTION)
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
@@ -445,6 +448,7 @@ class WorkflowBuilder:
 			"git_branch": filepath.git_branch(),
 			"description": os.environ.get("DESC", ""),
 			"operons": self.operons,
+			"new_genes": NEW_GENES,
 			"time": SUBMISSION_TIME,
 			"python": sys.version.splitlines()[0],
 			"total_gens": N_GENS,
