@@ -31,6 +31,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # Load data
         mRNA_TU_index = ribosome_reader.readColumn('mRNA_TU_index')
         n_ribosome_on_mRNA = ribosome_reader.readColumn('n_ribosomes_on_each_mRNA')
+        protein_mass_on_mRNA = ribosome_reader.readColumn('protein_mass_on_polysomes')
         n_avogadro = sim_data.constants.n_avogadro
 
         # Initialize variables
@@ -47,12 +48,15 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
         mRNA_TU_index_flattened = mRNA_TU_index.ravel()
         n_ribosome_on_mRNA_flattened = n_ribosome_on_mRNA.ravel()
+        protein_mass_on_mRNA_flattened = protein_mass_on_mRNA.ravel()
 
         mRNA_TU_index_flattened_clean = mRNA_TU_index_flattened[
             ~(np.isnan(mRNA_TU_index_flattened))].astype(int)
         n_ribosome_on_each_mRNA_flattened_clean = n_ribosome_on_mRNA_flattened[
             ~(np.isnan(n_ribosome_on_mRNA_flattened))].astype(int)
         highest_ribosome_count = n_ribosome_on_each_mRNA_flattened_clean.max()
+        protein_mass_on_mRNA_flattened_clean = protein_mass_on_mRNA_flattened[
+            ~(np.isnan(protein_mass_on_mRNA_flattened))]
 
 
         # Count polysomes at all time steps and take average
@@ -64,12 +68,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # Calculate polysomes mw at all times steps and take average
         polysome_mw_all_time_step = (
             rna_mw[mRNA_TU_index_flattened_clean] +
-            ribosome_mass * n_ribosome_on_each_mRNA_flattened_clean)
+            ribosome_mass * n_ribosome_on_each_mRNA_flattened_clean +
+            protein_mass_on_mRNA_flattened_clean)
         polysome_mw_hist, bin_edges = np.histogram(polysome_mw_all_time_step,
             bins = np.arange(min(polysome_mw_all_time_step),
             max(polysome_mw_all_time_step) + BIN_WIDTH, BIN_WIDTH))
         average_polysome_mw = polysome_mw_hist / mRNA_TU_index.shape[0]
 
+        import ipdb; ipdb.set_trace()
         fig = plt.figure(figsize = (8, 10))
         # Plot polysome count
         polysome_count_ax = plt.subplot(2,1,1)
