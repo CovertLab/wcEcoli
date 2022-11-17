@@ -404,7 +404,8 @@ class Transcription(object):
 				('is_5S_rRNA', 'bool'),
 				('is_ribosomal_protein', 'bool'),
 				('is_RNAP', 'bool'),
-				('uses_corrected_seq_counts', 'bool')
+				('uses_corrected_seq_counts', 'bool'),
+				('is_new_gene','bool')
 				]
 			)
 
@@ -425,6 +426,7 @@ class Transcription(object):
 		cistron_data['is_ribosomal_protein'] = is_ribosomal_protein
 		cistron_data['is_RNAP'] = is_RNAP
 		cistron_data['uses_corrected_seq_counts'] = np.zeros(n_cistrons, dtype=np.bool)
+		cistron_data['is_new_gene'] = [k.startswith('NG') for k in gene_id]
 
 		cistron_field_units = {
 			'id': None,
@@ -444,6 +446,7 @@ class Transcription(object):
 			'is_ribosomal_protein': None,
 			'is_RNAP': None,
 			'uses_corrected_seq_counts': None,
+			'is_new_gene': None
 			}
 
 		self.cistron_data = UnitStructArray(cistron_data, cistron_field_units)
