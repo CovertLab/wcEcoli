@@ -135,6 +135,20 @@ class MoleculeGroups(object):
 			'ribosomal_proteins': ribosomal_proteins,
 
 			'carbon_sources': ['GLC[p]', 'ACET[p]', 'SUC[p]'],
+
+			# Common names of the seven rRNA operons
+			'rRNA_operons': [
+				'rrnA', 'rrnB', 'rrnC', 'rrnD', 'rrnE', 'rrnG', 'rrnH'],
+
+			# List of IDs of genes that consist each of the seven rRNA operons
+			'rrnA': ['EG30070', 'EG30077', 'EG30008', 'EG30043', 'EG30084'],
+			'rrnB': ['EG30071', 'EG30078', 'EG30032', 'EG30085'],
+			'rrnC': ['EG30072', 'EG30079', 'EG30033', 'EG30086'],
+			'rrnD': ['EG30091', 'EG30103', 'EG30073', 'EG30080', 'EG30009',
+				'EG30044', 'EG30087'],
+			'rrnE': ['EG30074', 'EG30081', 'EG30034', 'EG30088'],
+			'rrnG': ['EG30075', 'EG30082', 'EG30035', 'EG30089'],
+			'rrnH': ['EG30076', 'EG30083', 'EG30010', 'EG30045', 'EG30090'],
 		}
 
 		# Initialize molecule groups for how molecules are split between two
