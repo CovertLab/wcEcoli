@@ -157,7 +157,7 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool, new_genes_option: str):
+	def __init__(self, operons_on: bool, new_genes_option: str="off"):
 		self.operons_on = operons_on
 		self.new_genes_option = new_genes_option
 
