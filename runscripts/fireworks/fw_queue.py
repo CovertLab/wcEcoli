@@ -505,6 +505,7 @@ class WorkflowBuilder:
 		fw_init_raw_data = self.add_firework(
 			InitRawDataTask(
 				operons=self.operons,
+				new_genes=NEW_GENES,
 				output=os.path.join(KB_DIRECTORY, constants.SERIALIZED_RAW_DATA)),
 			"InitRawData",
 			priority=12)
