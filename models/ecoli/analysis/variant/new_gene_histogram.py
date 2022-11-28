@@ -1,3 +1,7 @@
+"""
+Plot mRNA and protein counts for new genes
+"""
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -5,7 +9,7 @@ import os
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
-from wholecell.analysis.plotting_tools import COLORS_COLORBLIND as COLORS
+from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
 
 
 FONT_SIZE=9
