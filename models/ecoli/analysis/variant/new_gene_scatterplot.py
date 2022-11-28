@@ -1,5 +1,5 @@
 """
-Plot histogram of mRNA and protein counts for new genes, colored by variant, for all generations, early generations, and late (i.e. not early) generations
+Plot mRNA and protein counts for new genes, colored by variant, for all generations, early generations, and late (i.e. not early) generations
 """
 
 import numpy as np
@@ -18,28 +18,28 @@ MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of d
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def hist(self, ax, data, xlabel, bin_width=1., xlim=None, sf=1):
-		if xlim:
-			bins = np.histogram(range(xlim[0],xlim[1]+1), bins=int(np.ceil((xlim[1]-xlim[0])/bin_width)))[1]
-
-		for variant, variant_data in data.items():
+	def scatter(self, ax, new_gene_data,doubling_time_data, xlabel,ylabel, xlim=None,ylim=None, sf=1):
+		for variant, variant_data in new_gene_data.items():
 			color = COLORS[variant % len(COLORS)]
-			if not xlim:
-				bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
-			mean = variant_data.mean()
-			std = variant_data.std()
-			ax.hist(variant_data, bins, color=color, alpha=0.5,
+			mean = doubling_time_data[variant].mean()
+			std = doubling_time_data[variant].std()
+			ax.scatter(variant_data, doubling_time_data[variant], color=color, alpha=0.5,
 				label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-			ax.axvline(mean, color=color, linestyle='--', linewidth=1)
 
 		if xlim:
 			ax.set_xlim(xlim)
-		self.remove_border(ax)
+		if ylim:
+			ax.set_ylim(ylim)
 		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
+		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
 		ax.tick_params(labelsize=FONT_SIZE)
 		ax.legend()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		doubling_times = {}
+		doubling_times_early_gens = {}
+		doubling_times_late_gens = {}
+
 		# Data extraction
 		print("---Data Extraction---")
 		variants = self.ap.get_variants()
@@ -49,9 +49,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if len(all_cells) == 0:
 				continue
 
+			dt = read_stacked_columns(all_cells, 'Main', 'time',
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			doubling_times[variant] = dt[dt < MAX_CELL_LENGTH]
+
 			if len(all_cells) >= MIN_LATE_CELL_INDEX:
 				early_cell_index = list(range(MIN_LATE_CELL_INDEX))
 				late_cell_index = list(range(MIN_LATE_CELL_INDEX, len(all_cells)))
+
+				doubling_times_early_gens[variant] = doubling_times[variant][early_cell_index]
+				doubling_times_late_gens[variant] = doubling_times[variant][late_cell_index]
 
 			if variant == min_variant: ### TODO flag new gene mRNAs and proteins more efficiently
 				# Extract mRNA indexes for each new gene
@@ -110,13 +117,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index]
 					new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index]
 
+
 		# Plotting
 		print("---Plotting---")
-		# ALL GENS
 		for i in range(len(new_gene_mRNA_ids)):
 			_, axes = plt.subplots(2, 1, figsize=(10, 10))
-			self.hist(axes[0], new_gene_monomer_counts[i], 'Log10(' + new_gene_monomer_ids[i][:-3] +' Counts + 1)', bin_width=0.25, sf=2,xlim=[-1,8])
-			self.hist(axes[1], new_gene_mRNA_counts[i], 'Log10(' + new_gene_mRNA_ids[i][:-3] +' Counts + 1)', bin_width=0.25, sf=2,xlim=[-1,8])
+			self.scatter(axes[0], new_gene_monomer_counts[i], doubling_times, 'Log10(' + new_gene_monomer_ids[i][:-3] +' Counts + 1)', 'Doubling Time (min)', sf=2, xlim=[-1,8], ylim=[30, 100])
+			self.scatter(axes[1], new_gene_mRNA_counts[i], doubling_times, 'Log10(' + new_gene_mRNA_ids[i][:-3] +' Counts + 1)', 'Doubling Time (min)', sf=2, xlim=[-1,8], ylim=[30, 100])
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName+'_all_gens_'+new_gene_monomer_ids[i][:-3], metadata)
 
@@ -124,27 +131,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# EARLY GENS
 			for i in range(len(new_gene_mRNA_ids)):
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
-				self.hist(axes[0], new_gene_monomer_counts_early_gens[i], 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)',
-						  bin_width=0.25, sf=2, xlim=[-1, 8])
-				self.hist(axes[1], new_gene_mRNA_counts_early_gens[i], 'Log10(' + new_gene_mRNA_ids[i][:-3] + ' Counts + 1)',
-						  bin_width=0.25, sf=2, xlim=[-1, 8])
+				self.scatter(axes[0], new_gene_monomer_counts_early_gens[i], doubling_times_early_gens,
+							 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
+							 xlim=[-1, 8], ylim=[30, 100])
+				self.scatter(axes[1], new_gene_mRNA_counts_early_gens[i], doubling_times_early_gens,
+							 'Log10(' + new_gene_mRNA_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
+							 xlim=[-1, 8], ylim=[30, 100])
 				plt.tight_layout()
 				exportFigure(plt, plotOutDir, plotOutFileName + '_early_gens_' + new_gene_monomer_ids[i][:-3], metadata)
 
 			# LATE GENS
 			for i in range(len(new_gene_mRNA_ids)):
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
-				self.hist(axes[0], new_gene_monomer_counts_late_gens[i],
-						  'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)',
-						  bin_width=0.25, sf=2, xlim=[-1, 8])
-				self.hist(axes[1], new_gene_mRNA_counts_late_gens[i],
-						  'Log10(' + new_gene_mRNA_ids[i][:-3] + ' Counts + 1)',
-						  bin_width=0.25, sf=2, xlim=[-1, 8])
+				self.scatter(axes[0], new_gene_monomer_counts_late_gens[i], doubling_times_late_gens,
+							 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
+							 xlim=[-1, 8], ylim=[30, 100])
+				self.scatter(axes[1], new_gene_mRNA_counts_late_gens[i], doubling_times_late_gens,
+							 'Log10(' + new_gene_mRNA_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
+							 xlim=[-1, 8], ylim=[30, 100])
 				plt.tight_layout()
-				exportFigure(plt, plotOutDir, plotOutFileName + '_late_gens_' + new_gene_monomer_ids[i][:-3], metadata)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_late_gens_' + new_gene_monomer_ids[i][:-3],
+							 metadata)
 
 		plt.close("all")
-
 
 if __name__ == "__main__":
 	Plot().cli()

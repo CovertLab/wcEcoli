@@ -45,9 +45,12 @@ The following steps occur in incorporating the new genes into the chromosome:
 
 * Analysis scripts
   * `models/ecoli/analysis/single/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation
-  * `models/ecoli/analysis/single/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation (extention for multiple generations)
-  * `models/ecoli/analysis/variant/new_gene_histogram.py` creates one figure with two plots for each new gene - one with a histogram of the mRNA counts for that new gene, and one with a histogram the protein counts for that new gene, both are colored by variant index
-  * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with a histogram of the growth rate, both colored by variant index
+  * `models/ecoli/analysis/multigen/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation (extention for multiple generations)
+  * `models/ecoli/analysis/variant/new_gene_histogram.py` creates one figure with two plots for each new gene - one with a histogram of the mRNA counts for that new gene, and one with a histogram of the protein counts for that new gene, both are colored by variant index
+  * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with a histogram of the instantaneous growth rate, both colored by variant index
+  * `models/ecoli/analysis/variant/new_gene_scatterplot.py` creates one figure with two plots for each new gene - one with a scatterplot of the mRNA counts for that new gene vs the doubling time, and one with a scatterplot of the protein counts for that new gene vs the doubling time, both are colored by variant index
+
+Note: for the latter three scripts, the average value for each generation is plotted. In addition, three separate figures are created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
   
 
