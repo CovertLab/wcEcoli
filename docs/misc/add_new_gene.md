@@ -12,7 +12,7 @@ Addition of new genes to the chromosome<br>(in progress)
     * `gene_sequences.tsv` - Sequences of genes to be inserted
     * `rnas.tsv` - RNAs corresponding to those genes
     * `proteins.tsv` - Proteins corresponding to those genes
-    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to .01 and modify basal expression levels later via variant (more details below)
+    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to .01 (so that the Parca does not try to correct for the new genes) and modify basal expression levels later via variant (more details below)
   * Currently supported optional data files:
     * `rna_half_lives.tsv` - Can specify if desired, otherwise will default to average of the other RNAs
     * `protein_half_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
@@ -52,5 +52,18 @@ The following steps occur in incorporating the new genes into the chromosome:
 
 Note: for the latter three scripts, the average value for each generation is plotted. In addition, three separate figures are created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
-  
+ ---
 
+Sample Commands
+
+`python runscripts/manual/runParca.py --new-genes gfp`
+
+`python runscripts/manual/runSim.py --variant new_gene_expression 0 10 --generations 8`   
+Note: The numbers after new_gene_expression must be integers. A different simulation will run for each value between the first and second specified numbers (inclusive). Note that for higher numbers, you may see `RuntimeError: GLP_EFAIL: Solver failure`. This is a representation of cell death, as this failure usually arises due to strain from insufficient cellular resources.
+
+
+`python models/ecoli/analysis/multigen/newGeneCounts.py` 
+
+`python models/ecoli/analysis/variant/new_gene_histogram.py`
+
+`python models/ecoli/analysis/variant/doubling_time_histogram.py`
