@@ -23,8 +23,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			color = COLORS[variant % len(COLORS)]
 			mean = doubling_time_data[variant].mean()
 			std = doubling_time_data[variant].std()
+			mean_new_gene = variant_data.mean()
+			std_new_gene = variant_data.std()
 			ax.scatter(variant_data, doubling_time_data[variant], color=color, alpha=0.5,
 				label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
+			ax.scatter(mean_new_gene,mean,color=color,alpha=0.5,marker='x')
 
 		if xlim:
 			ax.set_xlim(xlim)
