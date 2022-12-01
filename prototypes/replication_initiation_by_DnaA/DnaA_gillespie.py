@@ -11,7 +11,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from six.moves import range
 
 # Seed for numpy
 SEED = 21

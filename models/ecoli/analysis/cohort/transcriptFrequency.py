@@ -10,7 +10,6 @@ import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis

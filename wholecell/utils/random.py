@@ -7,7 +7,6 @@ Special random number generators.  Most are holdovers from the original port.
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from six.moves import range
 
 def randCounts(randomState, counts, N):
 	counts = np.array(counts)

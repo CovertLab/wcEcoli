@@ -8,7 +8,6 @@ from wholecell.utils.modular_fba import FluxBalanceAnalysis
 import matplotlib.pyplot as plt
 from wholecell.analysis.analysis_tools import exportFigure
 import os
-from six.moves import zip
 
 reactions_file = "reactions.tsv"
 transportFluxes_file = "transport_fluxes.tsv"

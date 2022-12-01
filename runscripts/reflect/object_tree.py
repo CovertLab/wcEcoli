@@ -13,7 +13,6 @@ import Bio.Seq
 import numpy as np
 import scipy.interpolate
 import six
-from six.moves import range
 import sympy
 from sympy.matrices import dense
 import unum

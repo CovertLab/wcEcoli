@@ -14,7 +14,6 @@ import numpy as np
 from numpy.testing import assert_equal
 
 import unittest
-from six.moves import range
 
 P = polymerize.PAD_VALUE
 

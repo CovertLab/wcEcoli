@@ -14,7 +14,6 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 
 def plot_data(gs, col, time, x, y, label, molecule_names):

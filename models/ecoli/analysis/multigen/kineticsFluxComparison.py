@@ -16,7 +16,6 @@ from bokeh.models import HoverTool
 from bokeh.plotting import figure, ColumnDataSource
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import zip
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS

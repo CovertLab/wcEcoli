@@ -10,7 +10,6 @@ import zlib
 
 from wholecell.utils import filepath
 from . import tablewriter as tw
-from six.moves import zip
 
 __all__ = [
 	"TableReader",

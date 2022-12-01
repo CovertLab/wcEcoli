@@ -27,7 +27,6 @@ from typing import Tuple
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
-from six.moves import range
 
 
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)

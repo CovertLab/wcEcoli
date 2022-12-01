@@ -15,12 +15,10 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 from scipy import stats
-from six.moves import range
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import constants, units
-from six.moves import zip
 
 
 CONC_UNITS = units.mmol / units.L

@@ -7,7 +7,6 @@ from typing import cast
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis

@@ -23,7 +23,6 @@ import pickle
 import time
 
 import numpy as np
-from six.moves import zip
 
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1

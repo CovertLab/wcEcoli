@@ -12,7 +12,6 @@ from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib import collections as mc
 import numpy as np
-from six.moves import range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure

@@ -7,7 +7,6 @@ import unittest
 import pytest
 
 from wholecell.utils import data
-from six.moves import range
 
 
 class Test_data(unittest.TestCase):

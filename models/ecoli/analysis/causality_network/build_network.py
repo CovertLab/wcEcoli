@@ -65,7 +65,6 @@ import json
 
 from typing import Union
 import six
-from six.moves import zip
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,

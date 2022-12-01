@@ -15,7 +15,6 @@ from typing import Any, Dict, Callable, Iterable, List, Optional, Sequence, Text
 import numpy as np
 import pandas as pd
 from unum import Unum
-from six.moves import range, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units, toya

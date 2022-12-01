@@ -23,7 +23,6 @@ from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 	TableWriter, MissingFieldError, TableExistsError, UnrecognizedFieldError,
 	VariableEntrySizeError, AttributeAlreadyExistsError, AttributeTypeError,
 	V2_DIR_COLUMNS)
-from six.moves import range
 import six
 
 

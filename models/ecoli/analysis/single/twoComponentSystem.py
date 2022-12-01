@@ -9,13 +9,11 @@ import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import zip
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):

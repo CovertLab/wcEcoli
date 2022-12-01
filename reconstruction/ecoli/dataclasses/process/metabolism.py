@@ -25,7 +25,6 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils import units
 import six
-from six.moves import range, zip
 
 KINETIC_CONSTRAINT_CONC_UNITS = units.umol / units.L
 K_CAT_UNITS = 1 / units.s

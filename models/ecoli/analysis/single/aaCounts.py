@@ -8,7 +8,6 @@ import os
 import pickle
 
 from matplotlib import pyplot as plt
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts

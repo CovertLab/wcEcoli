@@ -11,7 +11,6 @@ from copy import deepcopy
 
 from wholecell.utils.constants import SERIALIZED_INHERITED_STATE
 from wholecell.utils import filepath
-from six.moves import zip
 
 BINOMIAL_COEFF = 0.5
 

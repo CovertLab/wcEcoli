@@ -12,7 +12,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 from itertools import cycle
-from six.moves import range, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units

@@ -12,7 +12,6 @@ from scipy.integrate import odeint
 
 from wholecell.utils import units
 from wholecell.utils import spatial_tool
-from six.moves import range
 
 
 # From colorbrewer2.org, qualitative 8-class set 1

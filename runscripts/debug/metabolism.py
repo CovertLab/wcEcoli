@@ -11,7 +11,6 @@ import pickle
 from typing import List
 
 import numpy as np
-from six.moves import range, zip
 
 from models.ecoli.processes.metabolism import (CONC_UNITS, CONVERSION_UNITS,
 	FluxBalanceAnalysisModel, GDCW_BASIS)

@@ -13,7 +13,6 @@ import pytest
 
 from wholecell.utils import filepath
 import six
-from six.moves import range
 
 
 class Test_filepath(unittest.TestCase):

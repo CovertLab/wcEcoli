@@ -14,7 +14,6 @@ import sympy as sp
 
 from wholecell.utils import build_ode, data, units
 from wholecell.utils.random import stochasticRound
-from six.moves import range, zip
 
 
 class EquilibriumError(Exception):

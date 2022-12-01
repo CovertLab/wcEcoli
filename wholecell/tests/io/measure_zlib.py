@@ -47,7 +47,6 @@ import sys
 import zlib
 
 import numpy as np
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.py3 import process_time_seconds

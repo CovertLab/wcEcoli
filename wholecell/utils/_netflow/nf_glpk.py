@@ -34,8 +34,6 @@ import six
 import swiglpk as glp
 
 from ._base import NetworkFlowProblemBase
-from six.moves import range
-from six.moves import zip
 
 class MessageLevel(Enum):
 	OFF = glp.GLP_MSG_OFF  # no output

@@ -9,7 +9,6 @@ import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import range
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure

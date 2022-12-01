@@ -10,7 +10,6 @@ import os
 import pickle
 
 import numpy as np
-from six.moves import range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader

@@ -31,7 +31,6 @@ import sys
 import unittest
 
 from wholecell.utils import memory_debug
-from six.moves import range
 
 PEP442 = sys.version_info[:2] >= (3, 4)
 

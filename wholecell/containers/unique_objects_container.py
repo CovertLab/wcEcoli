@@ -18,7 +18,6 @@ from typing import cast
 import numpy as np
 import zlib
 import six
-from six.moves import zip
 
 # TODO: object transfer between UniqueObjectsContainer instances
 

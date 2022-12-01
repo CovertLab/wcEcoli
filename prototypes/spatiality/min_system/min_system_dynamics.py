@@ -13,7 +13,6 @@ import numpy as np
 from scipy.ndimage import convolve
 
 import matplotlib
-from six.moves import range
 
 ANIMATE = True
 SAVE_PLOT = True

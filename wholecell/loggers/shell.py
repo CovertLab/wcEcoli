@@ -14,8 +14,6 @@ import os
 import sys
 from typing import Iterable, Optional
 
-from six.moves import range, zip
-
 import wholecell.loggers.logger
 from wholecell.utils.py3 import monotonic_seconds
 

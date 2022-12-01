@@ -10,15 +10,7 @@ import errno
 import json
 import io
 import os
-import sys
-from six.moves import range
-if os.name == 'posix' and sys.version_info[0] < 3:
-	# noinspection PyPackageRequirements
-	import subprocess32 as subprocess2
-	subprocess = subprocess2
-else:
-	import subprocess as subprocess3
-	subprocess = subprocess3
+import subprocess
 from typing import Any, Generator, Optional, Sequence, Tuple
 
 import six

@@ -10,7 +10,6 @@ import pickle
 from math import log10, floor
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units

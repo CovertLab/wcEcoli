@@ -5,7 +5,6 @@ import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import range
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.io.tablereader import TableReader

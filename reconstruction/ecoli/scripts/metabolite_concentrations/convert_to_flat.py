@@ -30,9 +30,9 @@ import os
 import sys
 import time
 from typing import Any, cast, Dict, IO, Tuple
+from urllib import request
 
 import numpy as np
-from six.moves.urllib import request
 
 from wholecell.io import tsv
 

@@ -7,7 +7,6 @@ import os
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader, TableReaderError
-from six.moves import range
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):

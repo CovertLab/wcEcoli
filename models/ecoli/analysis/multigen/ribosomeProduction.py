@@ -6,7 +6,6 @@ import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure

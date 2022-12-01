@@ -10,13 +10,11 @@ import pickle
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-from six.moves import range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from six.moves import zip
 
 PLOT_TOP_N_GENES = 30  # Number of genes to be plotted in panes 2, 3, 6, and 7
 MEMBRANE_COMPARTMENT_IDS = ['w', 'm', 'o', 'p', 'i']

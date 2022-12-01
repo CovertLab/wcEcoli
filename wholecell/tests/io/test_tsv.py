@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function
 
 from io import BytesIO
-from six.moves import zip_longest
+from itertools import zip_longest
 import unittest
 
 from wholecell.io import tsv

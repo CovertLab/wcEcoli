@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 import matplotlib.pyplot as plt
 from scipy import stats
-from six.moves import range
 
 
 COLORS_LARGE = ["#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",

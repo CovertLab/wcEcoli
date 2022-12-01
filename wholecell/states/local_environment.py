@@ -27,7 +27,6 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 import wholecell.states.external_state
 from wholecell.utils import units
 import six
-from six.moves import zip
 
 
 COUNTS_UNITS = units.mmol

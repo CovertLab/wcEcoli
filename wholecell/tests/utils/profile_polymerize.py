@@ -18,13 +18,14 @@ kernprof doesn't support that.
 """
 from __future__ import absolute_import, division, print_function
 
+import builtins
+from io import StringIO
 import sys
 import os
 import cProfile
 import pstats
 
 import numpy as np
-from six.moves import builtins, StringIO
 
 from wholecell.utils.py3 import monotonic_seconds
 

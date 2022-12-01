@@ -17,7 +17,6 @@ from scipy.sparse import coo_matrix
 import six
 
 from ._base import NetworkFlowProblemBase
-from six.moves import zip
 
 
 class NetworkFlowCPLEX(NetworkFlowProblemBase):

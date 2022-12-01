@@ -19,7 +19,6 @@ from typing import Dict, List
 from fireworks import FiretaskBase
 import matplotlib as mpl
 from PIL import Image
-from six.moves import zip
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils import data

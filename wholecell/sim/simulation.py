@@ -21,7 +21,6 @@ from wholecell.utils.py3 import monotonic_seconds
 import wholecell.loggers.shell
 import wholecell.loggers.disk
 
-from six.moves import range
 import six
 
 MAX_TIME_STEP = 1.

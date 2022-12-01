@@ -5,7 +5,6 @@ import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer

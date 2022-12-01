@@ -10,11 +10,10 @@ TODO:
 
 from __future__ import absolute_import, division, print_function
 
-import numpy as np
-import scipy.sparse
 from typing import cast
 
-from six.moves import zip
+import numpy as np
+import scipy.sparse
 
 import wholecell.processes.process
 from wholecell.utils import units

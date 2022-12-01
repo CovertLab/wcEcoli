@@ -4,7 +4,6 @@ import os
 import itertools
 
 from matplotlib import pyplot as plt
-from six.moves import zip
 
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.plotting_tools import COLORS_LARGE

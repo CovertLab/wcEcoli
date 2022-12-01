@@ -20,7 +20,6 @@ import numpy as np
 import scipy.optimize
 import scipy.sparse
 import six
-from six.moves import range, zip
 
 from reconstruction.ecoli.initialization import create_bulk_container
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli

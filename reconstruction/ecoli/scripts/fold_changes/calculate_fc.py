@@ -12,7 +12,6 @@ import os
 from typing import Any, Dict, Iterable, List, Tuple
 
 import numpy as np
-from six.moves import zip
 
 from reconstruction.spreadsheets import tsv_writer
 from wholecell.io import tsv

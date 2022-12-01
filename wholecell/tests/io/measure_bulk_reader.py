@@ -15,7 +15,6 @@ import sys
 from typing import Callable, List
 
 import numpy as np
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.py3 import monotonic_seconds

@@ -15,7 +15,6 @@ from copy import deepcopy
 
 import numpy as np
 import six
-from six.moves import zip
 
 import wholecell.states.internal_state
 import wholecell.views.view

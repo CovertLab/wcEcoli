@@ -10,7 +10,6 @@ import numpy as np
 
 from wholecell.utils import units
 import wholecell.processes.process
-from six.moves import range
 
 
 class Equilibrium(wholecell.processes.process.Process):

@@ -5,7 +5,6 @@ import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure

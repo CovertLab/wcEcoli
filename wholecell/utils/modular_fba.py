@@ -6,7 +6,6 @@ import warnings
 
 import numpy as np
 import six
-from six.moves import zip
 
 from wholecell.utils._netflow._base import NetworkFlowProblemBase
 
