@@ -107,8 +107,9 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.rRNA23S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_23S])
 
 		# Get fully transcribed translatable mRNA index
-		self.mRNA_unique_index = unique_index_RNA[can_translate & is_full_transcript_RNA]
-		self.mRNA_TU_index = TU_index[can_translate & is_full_transcript_RNA]
+		is_full_mRNA = can_translate & is_full_transcript_RNA
+		self.mRNA_unique_index = unique_index_RNA[is_full_mRNA]
+		self.mRNA_TU_index = TU_index[is_full_mRNA]
 
 
 		# Get counts of ribosomes attached to the same mRNA
@@ -120,19 +121,10 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.protein_mass_on_polysomes = np.zeros(
 			len(self.n_ribosomes_on_each_mRNA))
 
-		# Consider ribosomes protein mass attached on translatable mRNA only
-		mRNA_index_ribosome_on_polysome = mRNA_index_ribosomes[
-			np.isin(mRNA_index_ribosomes, self.mRNA_unique_index)]
-		massDiff_protein_ribosomes_on_polysome = massDiff_protein_ribosomes[
-			np.isin(mRNA_index_ribosomes, self.mRNA_unique_index)]
-
 		# Get protein mass on each polysome
-		idx_nonzero_ribosome = np.where(self.n_ribosomes_on_each_mRNA != 0)
-		_, massDiff_protein_index, _ = np.unique(
-			mRNA_index_ribosome_on_polysome,
-			return_counts=True, return_inverse=True)
-		self.protein_mass_on_polysomes[idx_nonzero_ribosome] = np.bincount(
-			massDiff_protein_index, massDiff_protein_ribosomes_on_polysome)
+		self.protein_mass_on_polysomes = np.bincount(
+			mRNA_index_ribosomes, weights=massDiff_protein_ribosomes,
+			minlength=bincount_minlength)[self.mRNA_unique_index]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
