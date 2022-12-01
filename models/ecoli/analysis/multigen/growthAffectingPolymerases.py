@@ -1,11 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -25,7 +26,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for gen_idx in range(self.ap.n_generation):
 			firstCellLineage.append(self.ap.get_cells(generation = [gen_idx])[0])
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		## Get expected doubling time ##
 		expected_doubling_time = sim_data.doubling_time

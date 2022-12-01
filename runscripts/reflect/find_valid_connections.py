@@ -33,6 +33,7 @@ def get_boundaries(metabolism, external_state, media=None):
 
 	Args:
 		metabolism: sim_data metabolism process class
+		external_state: provides the saved_media and exchange_data_from_media
 		media: media label for potential import molecules, if None, uses all
 			possible import molecules
 
@@ -171,17 +172,17 @@ def get_monomers(sim_data, enzymes):
 
 	assert len(monomers) + len(complexes) == len(enzymes)
 
-	for complex in complexes:
-		if complex in sim_data.process.complexation.complex_names:
-			monomers += sim_data.process.complexation.get_monomers(complex)['subunitIds'].tolist()
-		elif complex in sim_data.process.equilibrium.complex_name_to_rxn_idx:
-			for subunit in sim_data.process.equilibrium.get_monomers(complex)['subunitIds'].tolist():
+	for complex_ in complexes:
+		if complex_ in sim_data.process.complexation.complex_names:
+			monomers += sim_data.process.complexation.get_monomers(complex_)['subunitIds'].tolist()
+		elif complex_ in sim_data.process.equilibrium.complex_name_to_rxn_idx:
+			for subunit in sim_data.process.equilibrium.get_monomers(complex_)['subunitIds'].tolist():
 				if subunit in sim_data.process.complexation.complex_names:
 					monomers += sim_data.process.complexation.get_monomers(subunit)['subunitIds'].tolist()
 				elif subunit in sim_data.process.translation.monomer_data['id']:
 					monomers += [subunit]
 		else:
-			raise ValueError(f'Complex ({complex}) is not in equilibrium or complexation')
+			raise ValueError(f'Complex ({complex_}) is not in equilibrium or complexation')
 
 	return {m[:-3] for m in monomers}
 

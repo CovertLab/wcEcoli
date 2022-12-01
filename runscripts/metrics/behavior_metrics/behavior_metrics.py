@@ -8,13 +8,14 @@ from __future__ import absolute_import, division, print_function
 from collections import namedtuple
 import importlib
 from os import path
+import pickle
 import re
 from typing import Any, Dict, Callable, Iterable, List, Optional, Sequence, Text, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from unum import Unum
-from six.moves import cPickle, range, zip
+from six.moves import range, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units, toya
@@ -266,10 +267,10 @@ class BehaviorMetrics(object):
 		pickles = {}
 		if self.validation_path:
 			with open(self.validation_path, "rb") as f:
-				pickles["validation_data"] = cPickle.load(f)
+				pickles["validation_data"] = pickle.load(f)
 		if self.metrics_pickle_path:
 			with open(self.metrics_pickle_path, "rb") as f:
-				pickles["metrics_data"] = cPickle.load(f)
+				pickles["metrics_data"] = pickle.load(f)
 		results = []
 		for metric, config in metrics_conf.items():
 			data = self.load_data_from_config(config["data"], pickles)
@@ -415,8 +416,7 @@ class BehaviorMetrics(object):
 				data = BehaviorMetrics._load_from_import_string(
 					source_config["import"])
 			elif "cPickle" in source_config:
-				pickle = pickles[source_config["cPickle"]]
-				data = pickle
+				data = pickles[source_config["cPickle"]]
 				if "dotted_name" in source_config:
 					data = BehaviorMetrics._resolve_dotted_name(
 						data, source_config["dotted_name"])

@@ -6,8 +6,8 @@ of the outer membrane.
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -78,7 +78,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		average_timepoint = np.log(
 			sim_data.mass.avg_cell_to_initial_cell_conversion_factor) / np.log(2)
 		existing_outer_mem_protein_ids = [

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 
@@ -17,9 +17,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		with open(validationDataFile, 'rb') as f:
-			validation_data = cPickle.load(f)
+			validation_data = pickle.load(f)
 
 
 		# Get all cells

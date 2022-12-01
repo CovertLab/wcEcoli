@@ -5,10 +5,11 @@ Plot two component system counts
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -22,7 +23,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		TCS_IDS = []
 		moleculeTypeOrder = ["HK", "PHOSPHO-HK", "LIGAND", "HK-LIGAND", "PHOSPHO-HK-LIGAND", "RR", "PHOSPHO-RR"]
 		moleculeTypeColor = ["b", "b", "orange", "g", "g", "r", "r"]

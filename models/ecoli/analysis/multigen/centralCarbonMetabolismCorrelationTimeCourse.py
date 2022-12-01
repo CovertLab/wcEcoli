@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -20,8 +20,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		cellDensity = sim_data.constants.cell_density
 

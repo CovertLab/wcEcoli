@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 import re
 
 import numpy as np
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 from unum import Unum
 

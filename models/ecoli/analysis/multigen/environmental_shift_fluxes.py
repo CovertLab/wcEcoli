@@ -5,10 +5,11 @@ Plot fluxes for metabolic map figure during a shift
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -31,7 +32,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		rxnStoich = sim_data.process.metabolism.reaction_stoich
 
 		reactants = [

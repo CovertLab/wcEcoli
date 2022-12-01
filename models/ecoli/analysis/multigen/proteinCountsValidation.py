@@ -5,10 +5,10 @@ Compare protein counts to Schmidt 2015 data set
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.protein_counts import get_simulated_validation_counts
@@ -19,8 +19,8 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, "rb"))
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
 
 		monomer_ids = sim_data.process.translation.monomer_data["id"]
 		schmidt_ids = validation_data.protein.schmidt2015Data["monomerId"]

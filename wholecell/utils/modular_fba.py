@@ -1075,6 +1075,7 @@ class FluxBalanceAnalysis(object):
 			molecules: the molecule IDs to assign limits to
 			force: if True, will force exchange by setting both the upper and
 				lower bounds to the levels provided
+			allow_export: TODO
 		"""
 
 		if molecules is None:

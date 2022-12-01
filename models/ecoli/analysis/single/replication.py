@@ -5,10 +5,10 @@ Plots simulation outputs relevant to DNA replication
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -18,7 +18,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		genomeLength = len(sim_data.process.replication.genome_sequence)
 

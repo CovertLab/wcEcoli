@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -37,7 +37,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for variant, simDir in zip(variants, all_cells):
 
-			sim_data = cPickle.load(open(self.ap.get_variant_kb(variant), "rb"))
+			sim_data = pickle.load(open(self.ap.get_variant_kb(variant), "rb"))
 			tfList = ["basal (no TF)"] + sorted(sim_data.tf_to_active_inactive_conditions)
 			simOutDir = os.path.join(simDir, "simOut")
 			tf = tfList[(variant + 1) // 2]

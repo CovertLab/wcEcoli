@@ -5,8 +5,8 @@ for processes.
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
@@ -46,7 +46,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		n_variants = len(variants)
 
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		inactive_rnap_id = [sim_data.molecule_ids.full_RNAP]
 		ribosome_subunit_ids = [
 			sim_data.molecule_ids.s50_full_complex,

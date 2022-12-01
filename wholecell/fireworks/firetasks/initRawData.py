@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
+import pickle
 import time
 
 from fireworks import FiretaskBase, explicit_serialize
@@ -32,4 +32,4 @@ class InitRawDataTask(FiretaskBase):
 		print(f"{time.ctime()}: Saving raw_data")
 
 		with open(self["output"], "wb") as f:
-			cPickle.dump(raw_data, f, protocol = cPickle.HIGHEST_PROTOCOL)
+			pickle.dump(raw_data, f, protocol = pickle.HIGHEST_PROTOCOL)

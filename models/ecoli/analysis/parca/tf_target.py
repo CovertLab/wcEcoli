@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 
 import bokeh.io
 import bokeh.io.state
@@ -19,7 +19,7 @@ from six.moves import zip
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
 		with open(sim_data_file, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		targetToFC = {}
 		targetToFCTF = {}

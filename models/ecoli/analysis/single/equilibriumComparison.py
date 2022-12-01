@@ -5,10 +5,11 @@ Plot empirical Kd's (from the simulation) and their expected value (from the sim
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -23,7 +24,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
 		ratesFwd = sim_data.process.equilibrium.rates_fwd

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 import sys
 
 from fireworks import FiretaskBase, explicit_serialize
@@ -33,7 +33,7 @@ class VariantSimDataTask(FiretaskBase):
 		sys.setrecursionlimit(4000)
 
 		with open(self["output_sim_data"], "wb") as f:
-			cPickle.dump(sim_data, f, protocol = cPickle.HIGHEST_PROTOCOL)
+			pickle.dump(sim_data, f, protocol = pickle.HIGHEST_PROTOCOL)
 
 		with open(os.path.join(self["variant_metadata_directory"], "short_name"), "w") as h:
 			h.write("%s\n" % info["shortName"])

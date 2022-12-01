@@ -60,11 +60,12 @@ from collections import Counter
 import numpy as np
 import re
 import os
+import pickle
 import json
 
 from typing import Union
 import six
-from six.moves import cPickle, zip
+from six.moves import zip
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,
@@ -146,7 +147,7 @@ class BuildNetwork(object):
 	def __init__(self, sim_data_file, output_dir, check_sanity=False):
 		"""
 		Args:
-			sim_data_file: path to the variant sim_data cPickle file used for
+			sim_data_file: path to the variant sim_data pickle file used for
 			building the network.
 			output_dir: output directory for the node list and edge list files.
 			check_sanity: if set to True, checks if there are any nodes with
@@ -156,7 +157,7 @@ class BuildNetwork(object):
 		"""
 		# Open simulation data and save as attribute
 		with open(sim_data_file, 'rb') as f:
-			self.sim_data = cPickle.load(f)
+			self.sim_data = pickle.load(f)
 
 		self.output_dir = output_dir
 		self.check_sanity = check_sanity

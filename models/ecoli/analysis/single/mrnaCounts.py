@@ -4,8 +4,8 @@ Plot mRNA counts
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -18,7 +18,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Get the names of RNAs from the KB
 		is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']

@@ -6,10 +6,11 @@ one copy of transcript) at the 4th generation across 32 seeds.
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
@@ -30,7 +31,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("Skipping -- transcriptFrequency only runs for multiple seeds")
 			return
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		# Get mRNA data
 		rnaIds = sim_data.process.transcription.rna_data["id"]

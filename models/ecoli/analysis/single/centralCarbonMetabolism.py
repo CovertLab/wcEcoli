@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
-import re
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -26,8 +25,8 @@ AVERAGE_COLOR_OPPOSITE_SIGN = 'red'
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		cellDensity = sim_data.constants.cell_density
 

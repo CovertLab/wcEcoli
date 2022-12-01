@@ -5,10 +5,11 @@ Plot to assess sensitivity of menE behavior to model parameters.
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -32,7 +33,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		# Get constants from wildtype variant
-		sim_data = cPickle.load(open(self.ap.get_variant_kb(4), "rb")) # 4 is the wildtype variant
+		sim_data = pickle.load(open(self.ap.get_variant_kb(4), "rb")) # 4 is the wildtype variant
 		cellDensity = sim_data.constants.cell_density
 		nAvogadro = sim_data.constants.n_avogadro
 

@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.io.tablereader import TableReader
@@ -19,7 +20,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		return
 
 		# Get all ids reqiured
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		# Get all cells
 		allDir = self.ap.get_cells()

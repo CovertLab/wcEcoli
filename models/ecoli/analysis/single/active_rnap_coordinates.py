@@ -6,12 +6,13 @@ time.
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib import collections as mc
 import numpy as np
-from six.moves import cPickle, range
+from six.moves import range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -21,7 +22,7 @@ from wholecell.io.tablereader import TableReader
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))

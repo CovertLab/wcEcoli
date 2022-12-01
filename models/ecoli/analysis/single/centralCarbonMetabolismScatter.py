@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
+import pickle
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -45,8 +45,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			Fluxes and standard deviations are numpy arrays with units
 			FLUX_UNITS.
 		"""
-		validation_data = cPickle.load(open(validation_data_file, "rb"))
-		sim_data = cPickle.load(open(sim_data_file, "rb"))
+		validation_data = pickle.load(open(validation_data_file, "rb"))
+		sim_data = pickle.load(open(sim_data_file, "rb"))
 		cell_density = sim_data.constants.cell_density
 
 		mass_listener = TableReader(os.path.join(sim_out_dir, "Mass"))

@@ -19,10 +19,11 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import io
 import os
+import pickle
 import time
 
 import numpy as np
-from six.moves import cPickle, zip
+from six.moves import zip
 
 from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 from reconstruction.ecoli.fit_sim_data_1 import fitSimData_1
@@ -49,10 +50,13 @@ def load_raw_data(path):
 	if os.path.exists(path):
 		print('Loading raw_data from {}...'.format(path))
 		with open(path, 'rb') as f:
-			raw_data = cPickle.load(f)
+			raw_data = pickle.load(f)
 	else:
 		print('Loading raw_data from flat files...')
-		raw_data = KnowledgeBaseEcoli(operons_on=False)
+		raw_data = KnowledgeBaseEcoli(
+			operons_on=False,
+			remove_rrna_operons=False,
+			remove_rrff=False)
 
 	return raw_data
 
@@ -68,7 +72,7 @@ def load_sim_data(path, raw_data):
 	if os.path.exists(path):
 		print('Loading sim_data from {}...'.format(path))
 		with open(path, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 	else:
 		print('Calculating sim_data...')
 		sim_data = fitSimData_1(raw_data)

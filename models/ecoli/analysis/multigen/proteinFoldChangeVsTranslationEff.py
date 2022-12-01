@@ -1,14 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
-
-from six.moves import cPickle
 from models.ecoli.analysis import multigenAnalysisPlot
 
 CLOSE_TO_DOUBLE = 0.1
@@ -17,7 +16,7 @@ CLOSE_TO_DOUBLE = 0.1
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get all ids reqiured
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		# Get all cells
 		allDir = self.ap.get_cells()

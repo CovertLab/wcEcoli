@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import io
 import os
+import pickle
 import re
 
 import bokeh.io
@@ -15,7 +16,7 @@ from bokeh.models import HoverTool
 from bokeh.plotting import figure, ColumnDataSource
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, zip
+from six.moves import zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
@@ -34,7 +35,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		sim_data = pickle.load(open(simDataFile, 'rb'))
 
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")

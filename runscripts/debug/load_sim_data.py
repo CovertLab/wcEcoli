@@ -19,8 +19,8 @@ alias of choice):
 
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle
 import os
+import pickle
 import sys
 
 import ipdb
@@ -40,8 +40,8 @@ else:
 raw_data_filename = constants.SERIALIZED_RAW_DATA
 sim_data_filename = constants.SERIALIZED_SIM_DATA_FILENAME
 
-raw_data = cPickle.load(open(os.path.join(data_dir, raw_data_filename), 'rb'))
-sim_data = cPickle.load(open(os.path.join(data_dir, sim_data_filename), 'rb'))
+raw_data = pickle.load(open(os.path.join(data_dir, raw_data_filename), 'rb'))
+sim_data = pickle.load(open(os.path.join(data_dir, sim_data_filename), 'rb'))
 print('Loaded {} from {}'.format(sim_data_filename, data_dir))
 
 # Shortcuts for easier access or tab complete

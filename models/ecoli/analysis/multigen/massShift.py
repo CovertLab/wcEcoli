@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,7 +15,7 @@ NUM_SKIP_TIMESTEPS_AT_GEN_CHANGE = 1
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		T_ADD_AA = None
 		T_CUT_AA = None

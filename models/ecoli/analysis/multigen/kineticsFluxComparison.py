@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import io
 import os
+import pickle
 import re
 
 import bokeh.io
@@ -15,7 +16,7 @@ from bokeh.models import HoverTool
 from bokeh.plotting import figure, ColumnDataSource
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, zip
+from six.moves import zip
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
@@ -38,7 +39,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 		# allDir = self.ap.get_cells(generation = [0, 1, 2])
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		allTargetFluxList = []
 		allActualFluxList = []

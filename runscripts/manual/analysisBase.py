@@ -9,7 +9,7 @@ import abc
 import argparse
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from models.ecoli.analysis.analysisPlot import AnalysisPlot
 from wholecell.utils import constants, data, scriptBase, parallelization

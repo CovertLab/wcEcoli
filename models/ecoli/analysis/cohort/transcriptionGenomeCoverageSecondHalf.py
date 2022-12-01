@@ -5,10 +5,11 @@ Plots fraction of mRNAs transcribed (out of all genes to be transcribed) for all
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -20,7 +21,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return
 
 		# Get IDs of mRNAs
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		rnaIds = sim_data.process.transcription.rna_data["id"]
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		basalExpression = sim_data.process.transcription.rna_expression["basal"]

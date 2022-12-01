@@ -2,6 +2,7 @@ import collections
 import functools
 import numbers
 import os
+import pickle
 from pprint import pformat
 import re
 import sys
@@ -12,7 +13,7 @@ import Bio.Seq
 import numpy as np
 import scipy.interpolate
 import six
-from six.moves import cPickle, range
+from six.moves import range
 import sympy
 from sympy.matrices import dense
 import unum
@@ -388,7 +389,7 @@ def load_tree(path):
 	with open(path, "rb") as f:
 		# Extra kwargs only in PY3+ for compatibility with PY2 pickle files.
 		kwargs = {} if six.PY2 else dict(fix_imports=True, encoding='latin1')
-		data = cPickle.load(f, **kwargs)
+		data = pickle.load(f, **kwargs)
 	return object_tree(data)
 
 

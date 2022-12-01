@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import pickle
 import time
-from six.moves import cPickle
 
 from fireworks import FiretaskBase, explicit_serialize
 from models.ecoli.sim.simulation import EcoliSimulation
@@ -53,7 +53,7 @@ class SimulationTask(FiretaskBase):
 		# load the sim_data from the output of the parameter calculator (parca)
 		# TODO(spanglry): make the parca output JSON and this load from JSON instead
 		with open(self["input_sim_data"], "rb") as input_sim_data:
-			sim_data = cPickle.load(input_sim_data)
+			sim_data = pickle.load(input_sim_data)
 
 		options = {}
 

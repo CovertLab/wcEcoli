@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
@@ -33,7 +34,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Check if cache from rnaVsProteinPerCell.py exists
 		if os.path.exists(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle")):
-			rnaVsProteinPerCell = cPickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
+			rnaVsProteinPerCell = pickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
 			avgProteinCounts_forAllCells = rnaVsProteinPerCell["protein"]
 			monomersInManyComplexes_avgProteins_dict = rnaVsProteinPerCell["monomersInManyComplexes"]
 
@@ -49,7 +50,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Check if cache from figure5B_E_F_G.py exist
 		if os.path.exists(os.path.join(plotOutDir, "figure5B.pickle")):
-			figure5B_data = cPickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
+			figure5B_data = pickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
 			colors = figure5B_data["colors"]
 			mrnaIds = figure5B_data["id"].tolist()
 		else:
@@ -60,7 +61,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# Load sim data
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.cistron_to_monomer_mapping] # orders rna IDs to match monomer IDs
 
 		# Make views for monomers

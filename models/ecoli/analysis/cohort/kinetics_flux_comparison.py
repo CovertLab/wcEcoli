@@ -6,11 +6,12 @@ from __future__ import absolute_import, division, print_function
 
 import io
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
-from six.moves import cPickle, range
+from six.moves import range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.io import tsv
@@ -33,7 +34,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		targetFluxList = []
 		actualFluxList = []
