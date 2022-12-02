@@ -1,4 +1,4 @@
-import collections
+from collections.abc import Mapping, Sequence
 import functools
 import numbers
 import os
@@ -78,7 +78,7 @@ def is_leaf(value, leaves=LEAF_TYPES):
 	Predicate to determine if we have reached the end of how deep we want to traverse
 	through the object tree.
 	"""
-	if isinstance(value, (collections.Mapping, collections.Sequence)):
+	if isinstance(value, (Mapping, Sequence)):
 		return isinstance(value, (bytes, str))
 	return (callable(value)                 # it's callable
 			or isinstance(value, leaves)    # it's an instance of a declared leaf type
@@ -114,10 +114,10 @@ def object_tree(obj, path='', debug=None):
 		if callable(obj) and (debug == 'CALLABLE'):
 			print('{}: {}'.format(path, obj))
 		return obj
-	elif isinstance(obj, collections.Mapping):
+	elif isinstance(obj, Mapping):
 		return {key: object_tree(value, "{}['{}']".format(path, key), debug)
 			for (key, value) in obj.items()}
-	elif isinstance(obj, collections.Sequence):
+	elif isinstance(obj, Sequence):
 		return [object_tree(subobj, "{}[{}]".format(path, index), debug) for index, subobj in enumerate(obj)]
 	else:
 		attrs = all_vars(obj)
@@ -189,7 +189,7 @@ def size_tree(o, cutoff=0.1):
 		return size,
 
 	# if it is a dictionary, then get the size of keys and values
-	elif isinstance(o, collections.Mapping):
+	elif isinstance(o, Mapping):
 		sizes = {}
 		total_size = size
 		for key, value in o.items():
@@ -206,7 +206,7 @@ def size_tree(o, cutoff=0.1):
 		return return_val(total_size, sizes)
 
 	# if it is a sequence, then get the size of each element
-	elif isinstance(o, collections.Sequence):
+	elif isinstance(o, Sequence):
 		sizes = []
 		total_size = size
 		for value in o:
@@ -286,7 +286,7 @@ def diff_trees(a, b):
 			return elide(a), elide(b)
 
 	# if they are dictionaries then diff the value under each key
-	elif isinstance(a, collections.Mapping):
+	elif isinstance(a, Mapping):
 		diff = {}
 		na = Repr('--')
 		nb = Repr('--')
@@ -297,7 +297,7 @@ def diff_trees(a, b):
 		return diff
 
 	# if they are sequences then compare each element at each index
-	elif isinstance(a, collections.Sequence):
+	elif isinstance(a, Sequence):
 		if len(a) > len(b):
 			b = list(b) + (len(a) - len(b)) * [Repr('--')]
 		elif len(b) > len(a):
