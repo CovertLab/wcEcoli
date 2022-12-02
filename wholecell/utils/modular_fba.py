@@ -5,7 +5,6 @@ from typing import Dict, Type
 import warnings
 
 import numpy as np
-import six
 
 from wholecell.utils._netflow._base import NetworkFlowProblemBase
 
@@ -327,7 +326,7 @@ class FluxBalanceAnalysis(object):
 
 		for reactionID in sorted(reactionStoich):
 			stoichiometry = reactionStoich[reactionID]
-			for moleculeID, stoichCoeff in six.viewitems(stoichiometry):
+			for moleculeID, stoichCoeff in stoichiometry.items():
 				self._solver.setFlowMaterialCoeff(
 					reactionID,
 					moleculeID,
@@ -453,7 +452,7 @@ class FluxBalanceAnalysis(object):
 		if biomassSatisfactionWeight < 0:
 			raise FBAError("flexFBA beta parameter must be nonnegative")
 
-		if any(coeff < 0 for coeff in six.viewvalues(objective)):
+		if any(coeff < 0 for coeff in objective.values()):
 			warnings.warn("flexFBA is not designed to use negative biomass coefficients")
 
 		# Add biomass to objective
@@ -557,7 +556,7 @@ class FluxBalanceAnalysis(object):
 		to minimize the distance between the current metabolite level and some
 		target level, as defined in the objective."""
 
-		if any(coeff < 0 for coeff in six.viewvalues(objective)):
+		if any(coeff < 0 for coeff in objective.values()):
 			raise FBAError("Homeostatic FBA is not designed to use negative biomass coefficients")
 
 		self._homeostaticTargetMolecules.update(set(objective.keys()))
@@ -696,7 +695,7 @@ class FluxBalanceAnalysis(object):
 			upperBound = 1,
 			)
 
-		for reactionID, expectedFlux in six.viewitems(objective):
+		for reactionID, expectedFlux in objective.items():
 			if expectedFlux < 0:
 				raise FBAError("Target flux for reaction {} is negative. Kinetic targets must be positive - set the value for the (reverse) reaction if a negative flux is desired.".format(reactionID))
 
@@ -1023,7 +1022,7 @@ class FluxBalanceAnalysis(object):
 			-1
 			)
 
-		for moleculeID, stoichCoeff in six.viewitems(maintenanceReaction):
+		for moleculeID, stoichCoeff in maintenanceReaction.items():
 			self._solver.setFlowMaterialCoeff(
 				self._reactionID_GAM,
 				moleculeID,
@@ -1152,7 +1151,7 @@ class FluxBalanceAnalysis(object):
 				reverse reaction since net flux bounds might not be set
 		'''
 
-		if isinstance(reactionIDs, six.string_types):
+		if isinstance(reactionIDs, str):
 			reactionIDs = [reactionIDs]
 			if lowerBounds is not None:
 				lowerBounds = [lowerBounds]
@@ -1239,7 +1238,7 @@ class FluxBalanceAnalysis(object):
 		change = np.zeros(len(self._outputMoleculeIDs))
 
 		for i, stoich in enumerate(self._outputMoleculeCoeffs):
-			flowRates = self._solver.getFlowRates(six.viewkeys(stoich))
+			flowRates = self._solver.getFlowRates(stoich.keys())
 			coeffs = list(stoich.values())
 			change[i] = np.dot(flowRates, coeffs)
 
@@ -1418,7 +1417,7 @@ class FluxBalanceAnalysis(object):
 
 			return targets
 
-		if isinstance(reactionIDs, six.string_types):
+		if isinstance(reactionIDs, str):
 			reactionIDs = [reactionIDs]
 		mean_targets = validate_targets(mean_targets, reactionIDs)
 		lower_targets = validate_targets(lower_targets, reactionIDs, default=mean_targets)
@@ -1480,7 +1479,7 @@ class FluxBalanceAnalysis(object):
 
 	def enableKineticTargets(self, reactionIDs=None):
 		# If a single value is passed in, make a list of length 1 from it
-		if isinstance(reactionIDs, six.string_types):
+		if isinstance(reactionIDs, str):
 			reactionIDs = [reactionIDs]
 
 		# If no reactions specified, enable all kinetic reactions
@@ -1493,7 +1492,7 @@ class FluxBalanceAnalysis(object):
 
 	def disableKineticTargets(self, reactionIDs=None):
 		# If a single value is passed in, make a list of length 1 from it
-		if isinstance(reactionIDs, six.string_types):
+		if isinstance(reactionIDs, str):
 			reactionIDs = [reactionIDs]
 
 		# If no reactions specified, disable all kinetic reactions

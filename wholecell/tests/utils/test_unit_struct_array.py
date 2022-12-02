@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.units import g, mol
 import numpy as np
-import six
 
 import unittest
 
@@ -20,14 +19,14 @@ class Test_unit_struct_array(unittest.TestCase):
 		self.us_array = UnitStructArray(self.struct_array, self.units)
 
 	def test_init(self):
-		with six.assertRaisesRegex(self,
+		with self.assertRaisesRegex(
 			Exception,
 			'^UnitStructArray must be initialized with a numpy array!\n$',
 		):
 			# noinspection PyTypeChecker
 			UnitStructArray(1., {'hello': 'goodbye'})
 
-		with six.assertRaisesRegex(self,
+		with self.assertRaisesRegex(
 			Exception,
 			'^UnitStructArray must be initialized with a dict storing '
 			'units!\n$',
@@ -35,7 +34,7 @@ class Test_unit_struct_array(unittest.TestCase):
 			# noinspection PyTypeChecker
 			UnitStructArray(self.struct_array, 'foo')
 
-		with six.assertRaisesRegex(self,
+		with self.assertRaisesRegex(
 			Exception,
 			'Struct array fields do not match unit fields!\n',
 		):
@@ -97,10 +96,7 @@ class Test_unit_struct_array(unittest.TestCase):
 			(self.us_array['mass'] == g * np.array([1., 2., 3.])).all()
 		)
 
-		with six.assertRaisesRegex(self,
-			Exception,
-			'Units do not match!\n',
-		):
+		with self.assertRaisesRegex(Exception, 'Units do not match!\n'):
 			self.us_array['mass'] = mol * np.array([1., 2., 3.])
 
 
@@ -112,7 +108,7 @@ class Test_unit_struct_array(unittest.TestCase):
 
 		assert (self.us_array['id'] == np.array(names)).all()
 
-		with six.assertRaisesRegex(self,
+		with self.assertRaisesRegex(
 			Exception,
 			'Units do not match! Quantity has units your input does not!\n',
 		):

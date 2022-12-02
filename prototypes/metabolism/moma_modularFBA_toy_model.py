@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
-import six
 
 KCAT_MAX = 1.4e6
 
@@ -124,7 +123,7 @@ wildtypeBiomassFlux = fba.getBiomassReactionFlux()
 
 # Adjust kcats
 targetFluxes = {}
-for reactionID, enzymeID in six.viewitems(reactionEnzymes):
+for reactionID, enzymeID in reactionEnzymes.items():
 	targetFluxes[reactionID] = enzymeConcentrations[enzymeID] * enzymeKcats[enzymeID]
 targetFluxes["v_biomass"] = wildtypeBiomassFlux
 
@@ -132,7 +131,8 @@ errors, rates = checkErrors(targetFluxes)
 
 errors_dict = dict(zip(enzymeKcats, errors))
 
-kcat_adjustments = {enzymeID: error / enzymeConcentrations[enzymeID] for enzymeID, error in six.viewitems(errors_dict)}
+kcat_adjustments = {enzymeID: error / enzymeConcentrations[enzymeID]
+	for enzymeID, error in errors_dict.items()}
 
-for enzymeID, error in six.viewitems(kcat_adjustments):
+for enzymeID, error in kcat_adjustments.items():
 	print("{} kcat error is {}.".format(enzymeID, error))

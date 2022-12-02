@@ -6,12 +6,10 @@ _These guidelines are condensed from the PEP8 and Google style guides here, alon
 * See [Google's Python style guide](https://google.github.io/styleguide/pyguide.html)
 * See our [March 12, 2018 meeting slides](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_55) with notes on the tradeoffs between alternatives.
 
-## Note: Python 2 and 3 compatibility
-The project has transitioned to Python 3.
+## Note: The project has transitioned to Python 3.
 
-We have not yet removed Python 2 compatibility elements such as
+We have not yet removed all the Python 2 compatibility imports:
 `from __future__ import absolute_import, division, print_function`
-and uses of the `six` compatibility library.
 
 
 # Style Guides

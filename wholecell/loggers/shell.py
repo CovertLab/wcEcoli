@@ -12,10 +12,10 @@ import datetime
 import numpy as np
 import os
 import sys
+from time import monotonic as monotonic_seconds
 from typing import Iterable, Optional
 
 import wholecell.loggers.logger
-from wholecell.utils.py3 import monotonic_seconds
 
 
 SPACER = "  "

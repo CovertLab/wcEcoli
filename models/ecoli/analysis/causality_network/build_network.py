@@ -64,7 +64,6 @@ import pickle
 import json
 
 from typing import Union
-import six
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,
@@ -708,7 +707,7 @@ class BuildNetwork(object):
 		metabolite_ids = []
 
 		# Loop through all reactions
-		for reaction_id, stoich_dict in six.viewitems(reaction_stoich):
+		for reaction_id, stoich_dict in reaction_stoich.items():
 
 			node_type = 'Metabolism'
 

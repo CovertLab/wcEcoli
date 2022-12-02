@@ -14,7 +14,6 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-import six
 
 PLOT_GENES_OF_INTEREST = False
 PLOT_DENOMINATOR_N_EACH_FREQ_GROUP = False
@@ -295,7 +294,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		geneFunctions = validation_data.geneFunctions.geneFunctions
 		unknown = {"r": 0, "g": 0, "b": 0}
 		resistance = {"r": 0, "g": 0, "b": 0}
-		for frameID, function_ in six.viewitems(geneFunctions):
+
+		for frameID, function_ in geneFunctions.items():
 			try:
 				i = np.where([frameID in x for x in mRNA_cistron_ids_ordered])[0][0]
 			# Skip over genes that aren't used in the simulation

@@ -12,13 +12,11 @@ from typing import Dict
 import Bio.Seq
 import numpy as np
 import scipy.interpolate
-import six
 import sympy
 from sympy.matrices import dense
 import unum
 
 from wholecell.utils import constants
-from wholecell.utils.py3 import ANY_STRING
 import wholecell.utils.unit_struct_array
 
 
@@ -81,7 +79,7 @@ def is_leaf(value, leaves=LEAF_TYPES):
 	through the object tree.
 	"""
 	if isinstance(value, (collections.Mapping, collections.Sequence)):
-		return isinstance(value, ANY_STRING)
+		return isinstance(value, (bytes, str))
 	return (callable(value)                 # it's callable
 			or isinstance(value, leaves)    # it's an instance of a declared leaf type
 			or not has_python_vars(value))  # an object without Python instance variables
@@ -118,13 +116,13 @@ def object_tree(obj, path='', debug=None):
 		return obj
 	elif isinstance(obj, collections.Mapping):
 		return {key: object_tree(value, "{}['{}']".format(path, key), debug)
-			for (key, value) in six.viewitems(obj)}
+			for (key, value) in obj.items()}
 	elif isinstance(obj, collections.Sequence):
 		return [object_tree(subobj, "{}[{}]".format(path, index), debug) for index, subobj in enumerate(obj)]
 	else:
 		attrs = all_vars(obj)
 		tree = {key: object_tree(value, "{}.{}".format(path, key), debug)
-				for (key, value) in six.viewitems(attrs)}
+				for (key, value) in attrs.items()}
 		tree['!type'] = type(obj)
 
 		return tree
@@ -249,8 +247,8 @@ def diff_trees(a, b):
 
 	# treat str and Python 2 unicode as the same leaf type
 	# ditto for int and Python 2 long
-	if (_are_instances_of(a, b, six.string_types)
-			or _are_instances_of(a, b, six.integer_types)):
+	if (_are_instances_of(a, b, str)
+			or _are_instances_of(a, b, int)):
 		if a != b:
 			return elide(a), elide(b)
 
@@ -386,9 +384,7 @@ def compare_ndarrays(array1, array2):
 def load_tree(path):
 	"""Load a .cPickle file as an object_tree."""
 	with open(path, "rb") as f:
-		# Extra kwargs only in PY3+ for compatibility with PY2 pickle files.
-		kwargs = {} if six.PY2 else dict(fix_imports=True, encoding='latin1')
-		data = pickle.load(f, **kwargs)
+		data = pickle.load(f, fix_imports=True, encoding='latin1')
 	return object_tree(data)
 
 

@@ -14,8 +14,6 @@ from collections import defaultdict
 import cplex
 import numpy as np
 from scipy.sparse import coo_matrix
-import six
-
 from ._base import NetworkFlowProblemBase
 
 
@@ -125,7 +123,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 		return self._objective[flow]
 
 	def getFlowRates(self, flows):
-		if isinstance(flows, six.string_types):
+		if isinstance(flows, str):
 			flows = (flows,)
 
 		self._solve()
@@ -162,7 +160,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 			raise RuntimeError("Equality constraints not yet built. Finish construction of the problem before accessing S matrix.")
 		A = np.zeros((len(self._materialCoeffs), len(self._flows)))
 		self._materialIdxLookup = {}
-		for materialIdx, (material, pairs) in enumerate(sorted(six.viewitems(self._materialCoeffs))):
+		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.items())):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
 				A[materialIdx, pair[1]] = pair[0]
@@ -197,7 +195,7 @@ class NetworkFlowCPLEX(NetworkFlowProblemBase):
 
 		# avoid creating duplicate constraints
 		self._materialIdxLookup = {}
-		for materialIdx, (material, pairs) in enumerate(sorted(six.viewitems(self._materialCoeffs))):
+		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.items())):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
 				A[materialIdx, pair[1]] = pair[0]

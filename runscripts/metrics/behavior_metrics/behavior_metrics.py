@@ -20,7 +20,6 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants, filepath, units, toya
 from wholecell.utils.dependency_graph import DependencyGraph
 from wholecell.utils.protein_counts import get_simulated_validation_counts
-from wholecell.utils.py3 import String
 
 
 def calc_end_start_ratio(data):
@@ -312,7 +311,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _calculate_operation(op_config, data):
-		# type: (Dict[str, Any], Dict[String, Any]) -> Any
+		# type: (Dict[str, Any], Dict[str, Any]) -> Any
 		op_func = MODE_FUNC_MAP[op_config["function"]]
 		func_args = [
 			BehaviorMetrics._resolve_func_arg(arg, data) for arg in op_config["args"]
@@ -320,7 +319,7 @@ class BehaviorMetrics(object):
 		return op_func(*func_args)
 
 	def load_data_from_config(self, data_conf_json, pickles=None):
-		# type: (Dict[String, Any], Optional[dict]) -> Dict[String, Any]
+		# type: (Dict[str, Any], Optional[dict]) -> Dict[str, Any]
 		"""Load data as specified in a configuration JSON.
 
 		The configuration JSON should be structured as follows:
@@ -445,7 +444,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _resolve_dotted_name(obj, name):
-		# type: (object, String) -> Any
+		# type: (object, str) -> Any
 		names = name.split(".")
 		for name_part in names:
 			obj = getattr(obj, name_part)
@@ -465,7 +464,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units(unit_def):
-		# type: (Union[String, Dict[String, Any]]) -> Unum
+		# type: (Union[str, Dict[str, Any]]) -> Unum
 		"""Get an Unum object that can store the specified units
 
 		Arguments:
@@ -482,7 +481,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units_str(unit_str):
-		# type: (String) -> Unum
+		# type: (str) -> Unum
 		"""Get an Unum object from a unit string.
 
 		Arguments:
@@ -511,7 +510,7 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def parse_units_dict(unit_dict):
-		# type: (Dict[String, Any]) -> Unum
+		# type: (Dict[str, Any]) -> Unum
 		"""Get an Unum object from a JSON object.
 
 		Arguments:
@@ -551,12 +550,12 @@ class BehaviorMetrics(object):
 
 	@staticmethod
 	def _eval_atomic_unit_str(unit_str):
-		# type: (String) -> Unum
+		# type: (str) -> Unum
 		return 1 if unit_str == "1" else getattr(units, unit_str)
 
 	@staticmethod
 	def order_operations(operation_configs):
-		# type: (Dict[String, Dict[String, Any]]) -> Sequence[String]
+		# type: (Dict[str, Dict[str, Any]]) -> Sequence[str]
 		"""Sorts operation configs for evaluation.
 
 		Operations can take the results of other operations as input, so

@@ -12,12 +12,12 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
+from time import monotonic as monotonic_seconds
 from typing import Callable, List
 
 import numpy as np
 
 from wholecell.io.tablereader import TableReader
-from wholecell.utils.py3 import monotonic_seconds
 
 
 ITERS = 10

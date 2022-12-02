@@ -12,7 +12,6 @@ import unittest
 import pytest
 
 from wholecell.utils import filepath
-import six
 
 
 class Test_filepath(unittest.TestCase):
@@ -65,7 +64,7 @@ class Test_filepath(unittest.TestCase):
 		self.assertTrue(timestamp.startswith('20'),
 			'Timestamp "{}" starts with "20"'.format(timestamp))
 		self.assertEqual(len(timestamp), 15, 'len(timestamp)')
-		six.assertRegex(self, timestamp, filepath.TIMESTAMP_PATTERN)
+		self.assertRegex(timestamp, filepath.TIMESTAMP_PATTERN)
 
 	def test_json_files(self):
 		"""Test read_json_file(), write_json_file."""

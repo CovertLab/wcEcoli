@@ -19,7 +19,6 @@ from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
 import scipy.sparse
-import six
 
 from reconstruction.ecoli.initialization import create_bulk_container
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
@@ -602,7 +601,7 @@ def buildTfConditionCellSpecifications(
 			fcData = sim_data.tf_to_fold_change[tf]
 		if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
 			fcDataTmp = sim_data.tf_to_fold_change[tf].copy()
-			for key, value in six.viewitems(fcDataTmp):
+			for key, value in fcDataTmp.items():
 				fcData[key] = 1. / value
 		expression, cistron_expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription,

@@ -13,10 +13,7 @@ import os
 import subprocess
 from typing import Any, Generator, Optional, Sequence, Tuple
 
-import six
-
 import wholecell
-from wholecell.utils.py3 import String
 
 
 TIMEOUT = 60  # seconds
@@ -155,10 +152,10 @@ def git_branch():
 					   fallback=os.environ.get("IMAGE_GIT_BRANCH", '--'))
 
 def write_file(filename, content):
-	# type: (str, String) -> None
+	# type: (str, str) -> None
 	"""Write text string `content` as a utf-8 text file."""
 	with io.open(filename, 'w', encoding='utf-8') as f:
-		f.write(six.text_type(content))
+		f.write(str(content))
 
 def write_json_file(filename, obj, indent=4):
 	# type: (str, Any, int) -> None

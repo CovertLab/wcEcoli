@@ -5,7 +5,6 @@ SimulationData for translation process
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-import six
 
 from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import data, units
@@ -194,7 +193,7 @@ class Translation(object):
 			) + self.next_aa_pad
 
 		self.translation_sequences = np.full((len(sequences), max_len), polymerize.PAD_VALUE, dtype=np.int8)
-		aa_ids_single_letter = six.viewkeys(sim_data.amino_acid_code_to_id_ordered)
+		aa_ids_single_letter = sim_data.amino_acid_code_to_id_ordered.keys()
 		aaMapping = {aa: i for i, aa in enumerate(aa_ids_single_letter)}
 		for i, sequence in enumerate(sequences):
 			for j, letter in enumerate(sequence):

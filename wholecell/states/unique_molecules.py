@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 from copy import deepcopy
 
 import numpy as np
-import six
 
 import wholecell.states.internal_state
 import wholecell.views.view
@@ -65,7 +64,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 			self._submass_diff_names.append(massDiffPropertyName)
 			self._submass_diff_name_to_index[massDiffPropertyName] = index
 
-		for molDef in six.viewvalues(self.unique_molecule_definitions):
+		for molDef in self.unique_molecule_definitions.values():
 			molDef.update(defaultMassAttributes)
 
 		self.container = UniqueObjectsContainer(
@@ -125,7 +124,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 			if req["type"] == "submass":
 				process_index = req["process_index"]
 
-				for attribute, values in six.viewitems(req["added_masses"]):
+				for attribute, values in req["added_masses"].items():
 					submass_index = self._submass_diff_name_to_index[attribute]
 					process_mass_diffs[process_index, submass_index] += values.sum()
 
@@ -150,7 +149,7 @@ class UniqueMolecules(wholecell.states.internal_state.InternalState):
 				process_mass_diffs[process_index, :] += masses_per_molecule * req["nObjects"]
 
 				# Add submass differences that the molecules were initialized with
-				for attribute, values in six.viewitems(req["attributes"]):
+				for attribute, values in req["attributes"].items():
 					if attribute in self._submass_diff_names:
 						submass_index = self._submass_diff_name_to_index[attribute]
 						process_mass_diffs[process_index, submass_index] += values.sum()
@@ -217,7 +216,7 @@ class UniqueMoleculesView(wholecell.views.view.View):
 		self.cached_attributes = {}
 
 		# self._query must be the name of a unique molecule
-		assert isinstance(self._query, six.string_types)
+		assert isinstance(self._query, str)
 
 	def _updateQuery(self):
 		# TODO: generalize this logic (both here and in the state)

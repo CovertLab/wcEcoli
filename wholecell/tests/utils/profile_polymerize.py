@@ -19,15 +19,14 @@ kernprof doesn't support that.
 from __future__ import absolute_import, division, print_function
 
 import builtins
-from io import StringIO
-import sys
-import os
 import cProfile
+from io import StringIO
+import os
 import pstats
+import sys
+from time import monotonic as monotonic_seconds
 
 import numpy as np
-
-from wholecell.utils.py3 import monotonic_seconds
 
 
 # EXPECTS: The current working directory is "wcEcoli/".

@@ -22,7 +22,6 @@ from future.utils import raise_with_traceback
 import ruamel.yaml as yaml
 
 from wholecell.utils import filepath as fp
-from wholecell.utils.py3 import ANY_STRING
 
 
 STDOUT_PATH = '>'    # special path that captures stdout + stderror
@@ -47,11 +46,11 @@ def _copy_as_list(value):
 	# type: (Iterable[str]) -> List[str]
 	"""Copy an iterable of strings as a list. Fail fast on improper input."""
 
-	assert isinstance(value, Iterable) and not isinstance(value, ANY_STRING), (
+	assert isinstance(value, Iterable) and not isinstance(value, (bytes, str)), (
 		'Expected a list-like Iterable, not {!r}'.format(value))
 	result = list(value)
 	for s in result:
-		assert isinstance(s, ANY_STRING), 'Expected a string, not {!r}'.format(s)
+		assert isinstance(s, (bytes, str)), 'Expected a string, not {!r}'.format(s)
 	return result
 
 def _copy_path_list(value, internal_prefix, is_output=False):

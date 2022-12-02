@@ -44,12 +44,12 @@ from __future__ import absolute_import, division, print_function
 from functools import reduce
 import os
 import sys
+from time import process_time as process_time_seconds
 import zlib
 
 import numpy as np
 
 from wholecell.io.tablereader import TableReader
-from wholecell.utils.py3 import process_time_seconds
 
 
 CHUNK_HEADER_SIZE = 8

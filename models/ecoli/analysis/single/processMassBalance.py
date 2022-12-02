@@ -6,7 +6,6 @@ import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-import six
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -83,7 +82,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		plt.text(THRESHOLD, index[-1], "electron", rotation = "vertical", va = "center", ha = "right")
 
-		for name, mass in six.viewitems(REPRESENTATIVE_MASSES):
+		for name, mass in REPRESENTATIVE_MASSES.items():
 			plt.axvline(mass, color = "k")
 			plt.text(mass, index[-1], name, rotation = "vertical", va = "center", ha = "right")
 

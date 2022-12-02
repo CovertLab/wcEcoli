@@ -10,7 +10,7 @@ import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
-import six
+
 
 class CellDivision(wholecell.processes.process.Process):
 	""" CellDivision """
@@ -88,14 +88,14 @@ class CellDivision(wholecell.processes.process.Process):
 		else:
 			# Calculate dry mass before timestep
 			all_submasses_pre_timestep = sum(
-				state.mass() for state in six.viewvalues(self.internal_states))
+				state.mass() for state in self.internal_states.values())
 			dry_mass_pre_timestep = all_submasses_pre_timestep.sum() - all_submasses_pre_timestep[
 				self.water_index]
 
 			# Calculate dry mass added in this timestep
 			all_submass_diffs = sum(
 				state.process_mass_diffs().sum(axis=0)
-				for state in six.viewvalues(self.internal_states))
+				for state in self.internal_states.values())
 			dry_mass_added = all_submass_diffs.sum() - all_submass_diffs[
 				self.water_index]
 

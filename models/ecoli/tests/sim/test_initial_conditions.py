@@ -9,7 +9,6 @@ from __future__ import absolute_import, division, print_function
 import unittest
 
 import numpy as np
-import six
 
 from wholecell.utils import units
 
@@ -198,19 +197,13 @@ class Test_InitialConditions(unittest.TestCase):
 
 	def test_determine_chromosome_state_inputs(self):
 
-		with six.assertRaisesRegex(self,
-			AssertionError,
-			"^tau value can't be negative.$"
-		):
+		with self.assertRaisesRegex(AssertionError, "^tau value can't be negative.$"):
 			tau = -60. * units.min
 			replichore_length = 2319838 * units.nt
 			oric_state, replisome_state, domain_state = determine_chromosome_state(
 				tau, replichore_length, N_MAX_REPLISOMES, -1, cell_mass_from_tau(tau), CRITICAL_MASS, REPLICATION_RATE)
 
-		with six.assertRaisesRegex(self,
-			AssertionError,
-			"^replichore_length must be positive.$"
-		):
+		with self.assertRaisesRegex(AssertionError, "^replichore_length must be positive.$"):
 			tau = 60. * units.min
 			replichore_length = -2319838 * units.nt
 			oric_state, replisome_state, domain_state = determine_chromosome_state(

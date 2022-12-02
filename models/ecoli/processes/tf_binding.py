@@ -12,7 +12,6 @@ import wholecell.processes.process
 from wholecell.utils.constants import REQUEST_PRIORITY_TF_BINDING
 from wholecell.utils.random import stochasticRound
 from wholecell.utils import units
-import six
 
 
 class TfBinding(wholecell.processes.process.Process):
@@ -81,7 +80,7 @@ class TfBinding(wholecell.processes.process.Process):
 
 	def calculateRequest(self):
 		# Request all counts of active transcription factors
-		for view in six.viewvalues(self.active_tf_view):
+		for view in self.active_tf_view.values():
 			view.requestAll()
 
 		# Request edit access to promoter molecules
