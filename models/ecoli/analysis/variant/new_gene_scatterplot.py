@@ -13,7 +13,8 @@ from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLOR
 
 
 FONT_SIZE=9
-MAX_CELL_LENGTH = 180  # filter sims that reach the max time of 180 min
+MAX_CELL_LENGTH = 180
+MAX_CELL_LENGTH += 1 # comment out this line to filter sims that reach the max time of 180 min
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
 
 
@@ -57,11 +58,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			doubling_times[variant] = dt[dt < MAX_CELL_LENGTH]
 
 			if len(all_cells) >= MIN_LATE_CELL_INDEX:
-				early_cell_index = list(range(MIN_LATE_CELL_INDEX))
-				late_cell_index = list(range(MIN_LATE_CELL_INDEX, len(all_cells)))
+				all_cells_gens = [int(c.split("/")[-2][-6:]) for c in all_cells]
+				early_cell_index = [i for i,v in enumerate(all_cells_gens) if v < MIN_LATE_CELL_INDEX]
+				late_cell_index = [i for i,v in enumerate(all_cells_gens) if v >= MIN_LATE_CELL_INDEX]
 
-				doubling_times_early_gens[variant] = doubling_times[variant][early_cell_index]
-				doubling_times_late_gens[variant] = doubling_times[variant][late_cell_index]
+				dt_early_cells = dt[early_cell_index]
+				dt_late_cells = dt[late_cell_index]
+
+				doubling_times_early_gens[variant] = dt_early_cells[dt_early_cells < MAX_CELL_LENGTH ]
+				doubling_times_late_gens[variant] = dt_late_cells[dt_late_cells < MAX_CELL_LENGTH ]
 
 			if variant == min_variant: ### TODO flag new gene mRNAs and proteins more efficiently
 				# Extract mRNA indexes for each new gene
@@ -125,8 +130,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print("---Plotting---")
 		for i in range(len(new_gene_mRNA_ids)):
 			_, axes = plt.subplots(2, 1, figsize=(10, 10))
-			self.scatter(axes[0], new_gene_monomer_counts[i], doubling_times, 'Log10(' + new_gene_monomer_ids[i][:-3] +' Counts + 1)', 'Doubling Time (min)', sf=2, xlim=[-1,8], ylim=[30, 100])
-			self.scatter(axes[1], new_gene_mRNA_counts[i], doubling_times, 'Log10(' + new_gene_mRNA_ids[i][:-3] +' Counts + 1)', 'Doubling Time (min)', sf=2, xlim=[-1,8], ylim=[30, 100])
+			self.scatter(axes[0], new_gene_monomer_counts[i], doubling_times, 'Log10(' + new_gene_monomer_ids[i][:-3] +' Counts + 1)', 'Doubling Time (min)', sf=2, xlim=[-1,8], ylim=[30, 185])
+			self.scatter(axes[1], new_gene_mRNA_counts[i], doubling_times, 'Log10(' + new_gene_mRNA_ids[i][:-3] +' Counts + 1)', 'Doubling Time (min)', sf=2, xlim=[-1,8], ylim=[30, 185])
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName+'_all_gens_'+new_gene_monomer_ids[i][:-3], metadata)
 
@@ -136,10 +141,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
 				self.scatter(axes[0], new_gene_monomer_counts_early_gens[i], doubling_times_early_gens,
 							 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
-							 xlim=[-1, 8], ylim=[30, 100])
+							 xlim=[-1, 8], ylim=[30, 185])
 				self.scatter(axes[1], new_gene_mRNA_counts_early_gens[i], doubling_times_early_gens,
 							 'Log10(' + new_gene_mRNA_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
-							 xlim=[-1, 8], ylim=[30, 100])
+							 xlim=[-1, 8], ylim=[30, 185])
 				plt.tight_layout()
 				exportFigure(plt, plotOutDir, plotOutFileName + '_early_gens_' + new_gene_monomer_ids[i][:-3], metadata)
 
@@ -148,10 +153,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
 				self.scatter(axes[0], new_gene_monomer_counts_late_gens[i], doubling_times_late_gens,
 							 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
-							 xlim=[-1, 8], ylim=[30, 100])
+							 xlim=[-1, 8], ylim=[30, 185])
 				self.scatter(axes[1], new_gene_mRNA_counts_late_gens[i], doubling_times_late_gens,
 							 'Log10(' + new_gene_mRNA_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
-							 xlim=[-1, 8], ylim=[30, 100])
+							 xlim=[-1, 8], ylim=[30, 185])
 				plt.tight_layout()
 				exportFigure(plt, plotOutDir, plotOutFileName + '_late_gens_' + new_gene_monomer_ids[i][:-3],
 							 metadata)
