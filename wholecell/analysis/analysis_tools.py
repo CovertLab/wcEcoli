@@ -292,3 +292,51 @@ def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 				raise
 
 	return np.vstack(data) if data else np.array([])
+
+# TODO: see if there is a way to average over the counts needed for new gene analysis that doesn't need to use the following function
+def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
+		remove_first: bool = False, ignore_exception: bool = False,
+		fun: Callable = None) -> np.ndarray:
+	"""
+		Reads column data from multiple cells and assembles into a single array.
+
+		Args:
+			cell_paths: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			table: name of the table to read data from
+			column: name of the column to read data from
+			remove_first: if True, removes the first column of data from each cell
+				which might be set to a default value in some cases
+			ignore_exception: if True, ignores any exceptions encountered while reading
+			fun: function to apply to data in each generation (eg. np.mean will
+				return and array with the mean value for each generation instead
+				of each time point)
+
+		Returns:
+			stacked data (n time points, m subcolumns) with a unique numerical identifier for each cell in cell_paths
+
+		"""
+
+	if fun is None:
+		fun = lambda x: x
+
+	data = []
+	counter = 0
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		try:
+			reader = TableReader(os.path.join(sim_out_dir, table))
+			column_data = fun(reader.readColumn(column, squeeze=False)[_remove_first(remove_first)])
+			data.append(np.ones_like(column_data)*counter)
+
+		except Exception as e:
+			if ignore_exception:
+				print(f'Ignored exception in read_stacked_columns for {sim_out_dir}: {e!r}')
+				continue
+			else:
+				raise
+
+		counter += 1
+
+	return np.vstack(data) if data else np.array([])
