@@ -55,7 +55,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		reached_count_gen = {}
 
+		print("---Data Extraction---")
 		for variant in self.ap.get_variants():
+			print("Variant: ", variant)
 			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			if len(all_cells) == 0:
 				continue
@@ -78,6 +80,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				doubling_times_late_gens[variant] = dt_late_cells[dt_late_cells < MAX_CELL_LENGTH ]
 
 
+		print("---Plotting---")
 		# LATE GENS
 		_, axes = plt.subplots(2, 1, figsize=(10, 10))
 		self.hist(axes[0], doubling_times_late_gens, 'Doubling Time (min)')

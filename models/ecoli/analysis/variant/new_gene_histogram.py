@@ -46,6 +46,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
 		for variant in variants:
+			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			if len(all_cells) == 0:
 				continue
@@ -84,7 +85,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_mRNA_counts_late_gens = [{} for id in new_gene_mRNA_ids]
 				new_gene_monomer_counts_late_gens = [{} for id in new_gene_monomer_ids]
 
-			print("Variant: ",variant)
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts_var = np.ones(len(all_cells))
 				new_gene_monomer_counts_var = np.ones(len(all_cells))
