@@ -13,7 +13,7 @@ from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLOR
 
 FONT_SIZE=9
 MAX_CELL_LENGTH = 180
-MAX_CELL_LENGTH += 1 # comment out this line to filter sims that reach the max time of 180 min
+#MAX_CELL_LENGTH += 1 # comment out this line to filter sims that reach the max time of 180 min
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
 COUNT_GENERATION = 7 # count number of sims that reached this generation per variant
 
