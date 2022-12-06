@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import os
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, stacked_cell_identification
 from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
 
 
@@ -89,25 +89,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_mRNA_counts_late_gens = [{} for id in new_gene_mRNA_ids]
 				new_gene_monomer_counts_late_gens = [{} for id in new_gene_monomer_ids]
 
+			all_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts')
+			all_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts')
+
+			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
+			cell_ids, idx, cell_total_timesteps = np.unique(cell_id_vector, return_inverse=True, return_counts=True)
 			for i in range(len(new_gene_mRNA_ids)):
-				new_gene_mRNA_counts_var = np.ones(len(all_cells))
-				new_gene_monomer_counts_var = np.ones(len(all_cells))
-				for gen in range(len(all_cells)):
-					sim_dir = all_cells[gen]
-					simOutDir = os.path.join(sim_dir, 'simOut')
-					mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-					monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
 
-					mRNA_counts_gen = mRNA_counts_reader.readColumn('mRNA_counts')
-					new_gene_mRNA_counts_gen = mRNA_counts_gen[:, new_gene_mRNA_indexes[i]]
-					new_gene_mRNA_counts_var[gen] = np.mean(new_gene_mRNA_counts_gen)
+				new_gene_mRNA_counts_var = all_mRNA_counts[:, new_gene_mRNA_indexes[i]]
+				new_gene_monomer_counts_var = all_monomer_counts[:, new_gene_monomer_indexes[i]]
 
-					monomer_counts_gen = monomer_counts_reader.readColumn('monomerCounts')
-					new_gene_monomer_counts_gen = monomer_counts_gen[:, new_gene_monomer_indexes[i]]
-					new_gene_monomer_counts_var[gen] = np.mean(new_gene_monomer_counts_gen)
+				sum_new_gene_mRNA_counts = np.bincount(idx, weights=new_gene_mRNA_counts_var)
+				avg_new_gene_mRNA_counts = sum_new_gene_mRNA_counts / cell_total_timesteps
 
-				new_gene_mRNA_counts[i][variant] = np.log10(new_gene_mRNA_counts_var + 1)
-				new_gene_monomer_counts[i][variant] = np.log10(new_gene_monomer_counts_var + 1)
+				sum_new_gene_monomer_counts = np.bincount(idx, weights=new_gene_monomer_counts_var)
+				avg_new_gene_monomer_counts = sum_new_gene_monomer_counts / cell_total_timesteps
+
+				new_gene_mRNA_counts[i][variant] = np.log10(avg_new_gene_mRNA_counts + 1)
+				new_gene_monomer_counts[i][variant] = np.log10(avg_new_gene_monomer_counts + 1)
 
 				if len(all_cells) >= MIN_LATE_CELL_INDEX:
 					new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index]
