@@ -6,10 +6,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import os
+import pickle
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, stacked_cell_identification
 from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
+from unum.units import g, mol
 
 
 FONT_SIZE=9
@@ -41,6 +43,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.legend()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		with open(simDataFile, 'rb') as f:
+			sim_data = pickle.load(f)
+
 		total_protein_mass = {}
 
 		# Data extraction
@@ -81,6 +86,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_monomer_mass_fraction_early_gens = [{} for id in new_gene_monomer_ids]
 				new_gene_monomer_mass_fraction_late_gens = [{} for id in new_gene_monomer_ids]
 
+				new_gene_monomer_masses = [1 for id in new_gene_monomer_ids]
+				for i in range(len(new_gene_monomer_ids)):
+					# TODO: better way to handle unum and conversion
+					new_gene_monomer_masses[i] = float((sim_data.getter.get_mass(new_gene_monomer_ids[i]) /1000 * 0.0000016605402 )/(1*g/mol)) # convert from g/mol to fg
+
 			all_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts')
 
 			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
@@ -93,10 +103,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_protein_mass = sum_protein_mass / cell_total_timesteps
 			total_protein_mass[variant] = avg_protein_mass
 
-			# TODO: Get molecular weight of new gene proteins
-			molecular_weight = 27 * 0.0000016605402  # hardcode mw of GFP for now, 27 kD -> convert to fg
-
-
 			# Get new gene protein counts
 			for i in range(len(new_gene_monomer_ids)):
 				new_gene_monomer_counts_var = all_monomer_counts[:, new_gene_monomer_indexes[i]]
@@ -105,7 +111,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_new_gene_monomer_counts = sum_new_gene_monomer_counts / cell_total_timesteps
 
 				new_gene_monomer_counts[i][variant] = np.log10(avg_new_gene_monomer_counts + 1)
-				new_gene_monomer_mass_fraction[i][variant] = (avg_new_gene_monomer_counts * molecular_weight)/avg_protein_mass
+				new_gene_monomer_mass_fraction[i][variant] = (avg_new_gene_monomer_counts * new_gene_monomer_masses[i] )/avg_protein_mass
 
 				if len(all_cells) >= MIN_LATE_CELL_INDEX:
 					new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index]
