@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.1
-# Date and time generated: September 8, 2022, 10:40:29
+# Version: 26.5
+# Date and time generated: December 16, 2022, 14:49:03
 "id"	"stoichiometry"	"common_name"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"
@@ -973,7 +973,7 @@
 "METHGLYSYN-CPLX_RXN"	{"METHGLYSYN-CPLX": 1, "METHGLYSYN-MONOMER": -6}	"methylglyoxal synthase"
 "METHYLENETHFREDUCT-CPLX_RXN"	{"METHYLENETHFREDUCT-CPLX": 1, "METHYLENETHFREDUCT-MONOMER": -4}	null
 "METNIQ-METHIONINE-ABC-CPLX_RXN"	{"METNIQ-METHIONINE-ABC-CPLX": 1, "ABC-MONOMER": -2, "METI-MONOMER": -2, "METQ-MONOMER": -1}	"L-methionine/D-methionine ABC transporter"
-"MUTHLS-CPLX_RXN"	{"MUTHLS-CPLX": 1, "EG11281-MONOMER": null, "EG10625-MONOMER": -2, "EG10624-MONOMER": null}	"MutHLS complex, methyl-directed mismatch repair"
+"MUTHLS-CPLX_RXN"	{"MUTHLS-CPLX": 1, "EG11281-MONOMER": null, "EG10625-MONOMER": -2, "EG10624-MONOMER": null}	"methyl-directed mismatch repair system"
 "N-ACETYLTRANSFER-CPLX_RXN"	{"N-ACETYLTRANSFER-CPLX": 1, "N-ACETYLTRANSFER-MONOMER": -6}	"N-acetylglutamate synthase"
 "NAD-SYNTH-CPLX_RXN"	{"NAD-SYNTH-CPLX": 1, "NAD-SYNTH-MONOMER": -2}	"NH<sub>3</sub>-dependent NAD<sup>+</sup> synthetase"
 "NADH-DHI-CPLX_RXN"	{"NADH-DHI-CPLX": 1, "NUOA-MONOMER": -1, "NUOH-MONOMER": -1, "NUOJ-MONOMER": -1, "NUOK-MONOMER": -1, "NUOL-MONOMER": -1, "NUOM-MONOMER": -1, "NUON-MONOMER": -1, "CPLX0-3361": -1}	"NADH:quinone oxidoreductase I"
