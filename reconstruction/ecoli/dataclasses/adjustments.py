@@ -17,6 +17,10 @@ class Adjustments(object):
 			adj["name"]: adj["value"]
 			for adj in raw_data.adjustments.translation_efficiencies_adjustments
 		}
+		self.balanced_translation_efficiencies = [
+			adj["proteins"]
+			for adj in raw_data.adjustments.balanced_translation_efficiencies
+		]
 		self.rna_expression_adjustments = {
 			adj["name"]: adj["value"]
 			for adj in raw_data.adjustments.rna_expression_adjustments
