@@ -16,7 +16,7 @@ FONT_SIZE=9
 MAX_CELL_LENGTH = 180
 #MAX_CELL_LENGTH += 1 # comment out this line to filter sims that reach the max time of 180 min
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
-
+MAX_VARIANT = 10 # do not include any variant >= this index
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def scatter(self, ax, new_gene_data,doubling_time_data, xlabel,ylabel, xlim=None,ylim=None, sf=1):
@@ -49,7 +49,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
 		for variant in variants:
-			if variant >= 10:
+			if variant >= MAX_VARIANT:
 				continue
 
 			print("Variant: ",variant)
@@ -71,6 +71,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				doubling_times_early_gens[variant] = dt_early_cells[dt_early_cells < MAX_CELL_LENGTH ]
 				doubling_times_late_gens[variant] = dt_late_cells[dt_late_cells < MAX_CELL_LENGTH ]
+
+				### TODO: need some assert statement here for MIN_LATE_CELL_INDEX???
 
 			if variant == min_variant: ### TODO flag new gene mRNAs and proteins more efficiently
 				# Extract mRNA indexes for each new gene
@@ -101,32 +103,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_mRNA_counts_late_gens = [{} for id in new_gene_mRNA_ids]
 				new_gene_monomer_counts_late_gens = [{} for id in new_gene_monomer_ids]
 
-			all_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts')
-			all_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts')
+			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts',fun=lambda x: np.mean(x[:,new_gene_mRNA_indexes],axis=0))
+			avg_new_gene_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
-			cell_ids, idx, cell_total_timesteps = np.unique(cell_id_vector, return_inverse=True, return_counts=True)
-			for i in range(len(new_gene_mRNA_ids)):
+			for i in range(len(new_gene_mRNA_ids)): ### TODO: MORE EFFICIENT WAY TO DO THIS?
+				new_gene_mRNA_counts[i][variant] = np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
+				new_gene_monomer_counts[i][variant] = np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
-				new_gene_mRNA_counts_var = all_mRNA_counts[:, new_gene_mRNA_indexes[i]]
-				new_gene_monomer_counts_var = all_monomer_counts[:, new_gene_monomer_indexes[i]]
+				new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index]
+				new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index]
 
-				sum_new_gene_mRNA_counts = np.bincount(idx, weights=new_gene_mRNA_counts_var)
-				avg_new_gene_mRNA_counts = sum_new_gene_mRNA_counts / cell_total_timesteps
-
-				sum_new_gene_monomer_counts = np.bincount(idx, weights=new_gene_monomer_counts_var)
-				avg_new_gene_monomer_counts = sum_new_gene_monomer_counts / cell_total_timesteps
-
-				new_gene_mRNA_counts[i][variant] = np.log10(avg_new_gene_mRNA_counts + 1)
-				new_gene_monomer_counts[i][variant] = np.log10(avg_new_gene_monomer_counts + 1)
-
-				if len(all_cells) >= MIN_LATE_CELL_INDEX:
-					new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index]
-					new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index]
-
-					new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index]
-					new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index]
-
+				new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index]
+				new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index]
 
 		# Plotting
 		print("---Plotting---")
