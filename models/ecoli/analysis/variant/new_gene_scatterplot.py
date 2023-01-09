@@ -1,5 +1,5 @@
 """
-Plot mRNA and protein counts for new genes, colored by variant, for all generations, early generations, and late (i.e. not early) generations
+Plot mRNA and protein counts for new genes, colored by variant, for all generations, early generations, or late (i.e. not early) generations
 """
 
 import numpy as np
@@ -11,12 +11,13 @@ from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, stacked_cell_identification
 from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
 
+exclude_timeout_cells = 1 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
+exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late generationss in addition to all generations
 
 FONT_SIZE=9
-MAX_CELL_LENGTH = 180
-#MAX_CELL_LENGTH += 1 # comment out this line to filter sims that reach the max time of 180 min
-MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
 MAX_VARIANT = 10 # do not include any variant >= this index
+MAX_CELL_LENGTH = 180
+MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def scatter(self, ax, new_gene_data,doubling_time_data, xlabel,ylabel, xlim=None,ylim=None, sf=1):
@@ -44,6 +45,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		doubling_times_early_gens = {}
 		doubling_times_late_gens = {}
 
+		print("Running analysis script with exclude_timeout_cells=", exclude_timeout_cells, " and exclude_early_gens=", exclude_early_gens)
+
 		# Data extraction
 		print("---Data Extraction---")
 		variants = self.ap.get_variants()
@@ -61,7 +64,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 			doubling_times[variant] = dt[dt < MAX_CELL_LENGTH]
 
-			if len(all_cells) >= MIN_LATE_CELL_INDEX:
+			if exclude_early_gens:
 				all_cells_gens = [int(c.split("/")[-2][-6:]) for c in all_cells]
 				early_cell_index = [i for i,v in enumerate(all_cells_gens) if v < MIN_LATE_CELL_INDEX]
 				late_cell_index = [i for i,v in enumerate(all_cells_gens) if v >= MIN_LATE_CELL_INDEX]
@@ -71,8 +74,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				doubling_times_early_gens[variant] = dt_early_cells[dt_early_cells < MAX_CELL_LENGTH ]
 				doubling_times_late_gens[variant] = dt_late_cells[dt_late_cells < MAX_CELL_LENGTH ]
-
-				### TODO: need some assert statement here for MIN_LATE_CELL_INDEX???
 
 			if variant == min_variant: ### TODO flag new gene mRNAs and proteins more efficiently
 				# Extract mRNA indexes for each new gene
@@ -97,24 +98,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_mRNA_counts = [{} for id in new_gene_mRNA_ids]
 				new_gene_monomer_counts = [{} for id in new_gene_monomer_ids]
 
-				new_gene_mRNA_counts_early_gens = [{} for id in new_gene_mRNA_ids]
-				new_gene_monomer_counts_early_gens = [{} for id in new_gene_monomer_ids]
+				if exclude_early_gens:
+					new_gene_mRNA_counts_early_gens = [{} for id in new_gene_mRNA_ids]
+					new_gene_monomer_counts_early_gens = [{} for id in new_gene_monomer_ids]
 
-				new_gene_mRNA_counts_late_gens = [{} for id in new_gene_mRNA_ids]
-				new_gene_monomer_counts_late_gens = [{} for id in new_gene_monomer_ids]
+					new_gene_mRNA_counts_late_gens = [{} for id in new_gene_mRNA_ids]
+					new_gene_monomer_counts_late_gens = [{} for id in new_gene_monomer_ids]
 
 			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts',fun=lambda x: np.mean(x[:,new_gene_mRNA_indexes],axis=0))
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			for i in range(len(new_gene_mRNA_ids)): ### TODO: MORE EFFICIENT WAY TO DO THIS?
+			if exclude_timeout_cells:
+				avg_new_gene_mRNA_counts = avg_new_gene_mRNA_counts[dt < MAX_CELL_LENGTH]
+				avg_new_gene_monomer_counts = avg_new_gene_monomer_counts[dt < MAX_CELL_LENGTH]
+
+			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts[i][variant] = np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
 				new_gene_monomer_counts[i][variant] = np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
-				new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index]
-				new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index]
+				if exclude_early_gens:
+					new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index]
+					new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index]
 
-				new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index]
-				new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index]
+					new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index]
+					new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index]
 
 		# Plotting
 		print("---Plotting---")
@@ -125,9 +132,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName+'_all_gens_'+new_gene_monomer_ids[i][:-3], metadata)
 
-		if len(all_cells) >= MIN_LATE_CELL_INDEX:
-			# EARLY GENS
-			for i in range(len(new_gene_mRNA_ids)):
+			if exclude_early_gens:
+				# EARLY GENS
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
 				self.scatter(axes[0], new_gene_monomer_counts_early_gens[i], doubling_times_early_gens,
 							 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
@@ -138,8 +144,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.tight_layout()
 				exportFigure(plt, plotOutDir, plotOutFileName + '_early_gens_' + new_gene_monomer_ids[i][:-3], metadata)
 
-			# LATE GENS
-			for i in range(len(new_gene_mRNA_ids)):
+				# LATE GENS
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
 				self.scatter(axes[0], new_gene_monomer_counts_late_gens[i], doubling_times_late_gens,
 							 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)', 'Doubling Time (min)', sf=2,
