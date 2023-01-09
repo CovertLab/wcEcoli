@@ -16,8 +16,10 @@ exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late 
 
 FONT_SIZE=9
 MAX_VARIANT = 10 # do not include any variant >= this index
-MAX_CELL_LENGTH = 180
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
+MAX_CELL_LENGTH = 180
+if exclude_timeout_cells:
+	MAX_CELL_LENGTH += 1000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def scatter(self, ax, new_gene_data,doubling_time_data, xlabel,ylabel, xlim=None,ylim=None, sf=1):
@@ -108,20 +110,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts',fun=lambda x: np.mean(x[:,new_gene_mRNA_indexes],axis=0))
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			if exclude_timeout_cells:
-				avg_new_gene_mRNA_counts = avg_new_gene_mRNA_counts[dt < MAX_CELL_LENGTH]
-				avg_new_gene_monomer_counts = avg_new_gene_monomer_counts[dt < MAX_CELL_LENGTH]
+			avg_new_gene_mRNA_counts = avg_new_gene_mRNA_counts[dt < MAX_CELL_LENGTH]
+			avg_new_gene_monomer_counts = avg_new_gene_monomer_counts[dt < MAX_CELL_LENGTH]
 
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts[i][variant] = np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
 				new_gene_monomer_counts[i][variant] = np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
 				if exclude_early_gens:
-					new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index]
-					new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index]
+					new_gene_mRNA_counts_early_gens[i][variant] = new_gene_mRNA_counts[i][variant][early_cell_index][dt_early_cells < MAX_CELL_LENGTH ]
+					new_gene_monomer_counts_early_gens[i][variant] = new_gene_monomer_counts[i][variant][early_cell_index][dt_early_cells < MAX_CELL_LENGTH ]
 
-					new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index]
-					new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index]
+					new_gene_mRNA_counts_late_gens[i][variant] = new_gene_mRNA_counts[i][variant][late_cell_index][dt_late_cells < MAX_CELL_LENGTH ]
+					new_gene_monomer_counts_late_gens[i][variant] = new_gene_monomer_counts[i][variant][late_cell_index][dt_late_cells < MAX_CELL_LENGTH ]
 
 		# Plotting
 		print("---Plotting---")
