@@ -55,6 +55,12 @@ class Metabolism(object):
 		self._build_ppgpp_reactions(raw_data, sim_data)
 		self._build_transport_reactions(raw_data, sim_data)
 		self._build_amino_acid_pathways(raw_data, sim_data)
+		self._add_metabolite_charge(raw_data)
+
+	def _add_metabolite_charge(self, raw_data):
+		self.metabolite_charge = {}
+		for met in raw_data.metabolites:
+			self.metabolite_charge[met["id"]] = met["molecular_charge"]
 
 	def _set_solver_values(self, constants):
 		"""
@@ -229,7 +235,7 @@ class Metabolism(object):
 					relative_changes[media][met] = change
 
 		# save concentrations as class variables
-		unique_ids, counts = np.unique(metaboliteIDs, return_counts=True)
+		unique_ids, relative_changes = np.unique(metaboliteIDs, return_counts=True)
 		if np.any(counts > 1):
 			raise ValueError('Multiple concentrations for metabolite(s): {}'.format(', '.join(unique_ids[counts > 1])))
 

@@ -47,8 +47,6 @@ class SimulationDataEcoli(object):
 		# TODO: Check that media condition is valid
 		self.basal_expression_condition = basal_expression_condition
 
-		self._add_metabolite_charge(raw_data)
-
 		self._add_molecular_weight_keys(raw_data)
 		self._add_compartment_keys(raw_data)
 		self._add_base_codes(raw_data)
@@ -87,22 +85,11 @@ class SimulationDataEcoli(object):
 		self.pPromoterBound = {}
 
 
-
-
-
-	def _add_metabolite_charge(self, raw_data):
-		self.metabolite_charge = {}
-		for met in raw_data.metabolites:
-			self.metabolite_charge[met["id"]] = met["molecular_charge"]
-
-
-
 	def _add_molecular_weight_keys(self, raw_data):
 		self.submass_name_to_index = {
 			mw_key["submass_name"]: mw_key["index"]
 			for mw_key in raw_data.molecular_weight_keys
 			}
-
 
 	def _add_compartment_keys(self, raw_data):
 		self.compartment_abbrev_to_index = {
@@ -113,6 +100,9 @@ class SimulationDataEcoli(object):
 			compartment["id"]: i
 			for i,compartment in enumerate(raw_data.compartments)
 		}
+		self.compartment_abbrev_to_id = {}
+		for compartment in raw_data.compartments:
+			self.compartment_abbrev_to_id[compartment["abbrev"]] = compartment["id"]
 
 
 	def _add_base_codes(self, raw_data):
