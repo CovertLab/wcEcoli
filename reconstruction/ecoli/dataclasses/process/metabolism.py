@@ -235,7 +235,7 @@ class Metabolism(object):
 					relative_changes[media][met] = change
 
 		# save concentrations as class variables
-		unique_ids, relative_changes = np.unique(metaboliteIDs, return_counts=True)
+		unique_ids, counts = np.unique(metaboliteIDs, return_counts=True)
 		if np.any(counts > 1):
 			raise ValueError('Multiple concentrations for metabolite(s): {}'.format(', '.join(unique_ids[counts > 1])))
 
