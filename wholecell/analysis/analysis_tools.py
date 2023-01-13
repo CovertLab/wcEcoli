@@ -293,7 +293,6 @@ def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 
 	return np.vstack(data) if data else np.array([])
 
-# TODO: see if there is a way to average over the counts needed for new gene analysis that doesn't need to use the following function
 def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 		remove_first: bool = False, ignore_exception: bool = False,
 		fun: Callable = None) -> np.ndarray:
@@ -340,3 +339,21 @@ def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 		counter += 1
 
 	return np.vstack(data) if data else np.array([])
+
+def index_of_first(data: np.ndarray, max_value: float):
+	'''
+	Determines the index of the first value in data that is >= max_value
+
+	Args:
+		data: np.ndarray of dimention (l,) for any l
+		max_value:
+
+	Returns:
+		int index of first value in data >= max_value, or len(data) if no values are >= max_value
+
+	'''
+	idx = np.where(data >= max_value)[0]
+	if len(idx) == 0:
+		return len(data)
+	else:
+		return idx[0]
