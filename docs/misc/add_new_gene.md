@@ -46,11 +46,14 @@ The following steps occur in incorporating the new genes into the chromosome:
 * Analysis scripts
   * `models/ecoli/analysis/single/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation
   * `models/ecoli/analysis/multigen/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation (extention for multiple generations)
-  * `models/ecoli/analysis/variant/new_gene_histogram.py` creates one figure with two plots for each new gene - one with a histogram of the mRNA counts for that new gene, and one with a histogram of the protein counts for that new gene, both are colored by variant index
-  * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with a histogram of the instantaneous growth rate, both colored by variant index
-  * `models/ecoli/analysis/variant/new_gene_scatterplot.py` creates one figure with two plots for each new gene - one with a scatterplot of the mRNA counts for that new gene vs the doubling time, and one with a scatterplot of the protein counts for that new gene vs the doubling time, both are colored by variant index
+  * `models/ecoli/analysis/variant/newGeneCounts.py` creates histograms and scatterplots for each new gene - one with the mRNA counts for that new gene, and one with the protein counts for that new gene, both are colored by variant index
+  * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with the proportion of seeds that successfully reached the maximum generation in the simulation, both colored by variant index
+  * `models/ecoli/analysis/variant/ribosome_counts_histogram.py` creates a histogram of the ribosome counts, colored by variant index
+  * `models/ecoli/analysis/variant/rnap_counts_histogram.py` creates a histogram of the RNA polymerase counts, colored by variant index
+  * `models/ecoli/analysis/variant/ppgpp_concentration_histogram.py` creates a histogram of the ppGpp concentration, colored by variant index
+  * `models/ecoli/analysis/variant/new_gene_protein_mass_fraction_histogram.py` creates a histogram of the proportion of total protein mass that is accounted for by new gene proteins, colored by variant index
 
-Note: for the latter three scripts, the average value for each generation is plotted. In addition, three separate figures are created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
  ---
 
@@ -64,6 +67,6 @@ Note: The numbers after new_gene_expression must be integers. A different simula
 
 `python models/ecoli/analysis/multigen/newGeneCounts.py` 
 
-`python models/ecoli/analysis/variant/new_gene_histogram.py`
+`python models/ecoli/analysis/variant/newGeneCounts.py`
 
 `python models/ecoli/analysis/variant/doubling_time_histogram.py`
