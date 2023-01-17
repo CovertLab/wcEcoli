@@ -9,7 +9,7 @@ import pickle
 import os
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, index_of_first
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, index_of_first, labeled_indexable_hist, labeled_indexable_scatter
 from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
 
 exclude_timeout_cells = 1 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
@@ -24,53 +24,9 @@ if exclude_timeout_cells:
 	MAX_CELL_LENGTH += 1000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def scatter(self, ax, new_gene_data,doubling_time_data, data_start, data_end, xlabel,ylabel, xlim=None,ylim=None, sf=1):
-		for variant, variant_data in new_gene_data.items():
-			variant_data = variant_data[data_start:data_end]
-			dt_data = doubling_time_data[variant][data_start:data_end]
-
-			color = COLORS[variant % len(COLORS)]
-			mean = dt_data.mean()
-			std = dt_data.std()
-			mean_new_gene = variant_data.mean()
-			ax.scatter(variant_data, dt_data, color=color, alpha=0.5,
-				label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-			ax.scatter(mean_new_gene,mean,color=color,alpha=0.5,marker='x')
-
-		if xlim:
-			ax.set_xlim(xlim)
-		if ylim:
-			ax.set_ylim(ylim)
-		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
-		ax.tick_params(labelsize=FONT_SIZE)
-		ax.legend()
-
-	def hist(self, ax, data, data_start, data_end, xlabel, bin_width=1., xlim=None, sf=1):
-		if xlim:
-			bins = np.histogram(range(xlim[0],xlim[1]+1), bins=int(np.ceil((xlim[1]-xlim[0])/bin_width)))[1]
-
-		for variant, variant_data in data.items():
-			variant_data = variant_data[data_start:data_end]
-
-			color = COLORS[variant % len(COLORS)]
-			if not xlim:
-				bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
-			mean = variant_data.mean()
-			std = variant_data.std()
-			ax.hist(variant_data, bins, color=color, alpha=0.5,
-				label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-			ax.axvline(mean, color=color, linestyle='--', linewidth=1)
-
-		if xlim:
-			ax.set_xlim(xlim)
-		self.remove_border(ax)
-		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-		ax.tick_params(labelsize=FONT_SIZE)
-		ax.legend()
-
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		print("Running analysis script with exclude_timeout_cells=", exclude_timeout_cells, " and exclude_early_gens=", exclude_early_gens)
+		print("Running analysis script with exclude_timeout_cells=", exclude_timeout_cells,
+			  " and exclude_early_gens=", exclude_early_gens)
 
 		# Determine new gene ids
 		with open(simDataFile, 'rb') as f:
@@ -124,11 +80,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							   enumerate(monomer_counts_reader.readAttribute('monomerIds'))}
 				new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for monomer_id in new_gene_monomer_ids]
 
-			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts',fun=lambda x: np.mean(x[:,new_gene_mRNA_indexes],axis=0))
+			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts')
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			avg_new_gene_mRNA_counts = avg_new_gene_mRNA_counts[dt < MAX_CELL_LENGTH]
-			avg_new_gene_monomer_counts = avg_new_gene_monomer_counts[dt < MAX_CELL_LENGTH]
+			avg_new_gene_mRNA_counts = avg_new_gene_mRNA_counts[:exclude_timeout_index,]
+			avg_new_gene_monomer_counts = avg_new_gene_monomer_counts[:exclude_timeout_index,]
 
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts[i][variant] = np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
@@ -155,18 +111,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			std_monomer_xlab = 'Log10(' + new_gene_monomer_ids[i][:-3] + ' Counts + 1)'
 			for j in range(len(data_start)):
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
-				self.scatter(axes[0], new_gene_monomer_counts[i], doubling_times, data_start[j], data_end[j], std_monomer_xlab, std_ylab, sf=std_sf,
-							 xlim=std_xlim, ylim=std_ylim)
-				self.scatter(axes[1], new_gene_mRNA_counts[i], doubling_times, data_start[j], data_end[j], std_mRNA_xlab, std_ylab, sf=std_sf,
-							 xlim=std_xlim, ylim=std_ylim)
+				labeled_indexable_scatter(self, axes[0], new_gene_monomer_counts[i], doubling_times, data_start[j], data_end[j], COLORS,
+							 std_monomer_xlab, std_ylab, sf=std_sf, xlim=std_xlim, ylim=std_ylim)
+				labeled_indexable_scatter(self, axes[1], new_gene_mRNA_counts[i], doubling_times, data_start[j], data_end[j], COLORS,
+							 std_mRNA_xlab, std_ylab, sf=std_sf, xlim=std_xlim, ylim=std_ylim)
 				plt.tight_layout()
 				exportFigure(plt, plotOutDir, plotOutFileName+plot_label[j]+'scatterplot_' + new_gene_monomer_ids[i][:-3], metadata)
 
 				_, axes = plt.subplots(2, 1, figsize=(10, 10))
-				self.hist(axes[0], new_gene_monomer_counts[i], data_start[j], data_end[j], std_monomer_xlab, bin_width=std_bin_width, sf=std_sf,
-						  xlim=std_xlim)
-				self.hist(axes[1], new_gene_mRNA_counts[i], data_start[j], data_end[j], std_mRNA_xlab, bin_width=std_bin_width, sf=std_sf,
-						  xlim=std_xlim)
+				labeled_indexable_hist(self, axes[0], new_gene_monomer_counts[i], data_start[j], data_end[j], COLORS,
+									   std_monomer_xlab, bin_width=std_bin_width, sf=std_sf, xlim=std_xlim)
+				labeled_indexable_hist(self, axes[1], new_gene_mRNA_counts[i], data_start[j], data_end[j], COLORS,
+									   std_mRNA_xlab, bin_width=std_bin_width, sf=std_sf, xlim=std_xlim)
 				plt.tight_layout()
 				exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j] + 'histogram_' + new_gene_monomer_ids[i][:-3], metadata)
 		plt.close("all")

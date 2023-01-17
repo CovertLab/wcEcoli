@@ -1,5 +1,5 @@
 """
-Plot doubling time for all generations, early generations, and late (i.e. not early) generations
+Plot doubling time for all generations, early generations, and/or late (i.e. not early) generations
 Plot percentage of simulations that reach a given generation number for each variant
 """
 
@@ -7,35 +7,23 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, index_of_first, labeled_indexable_hist
 from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
 
+exclude_timeout_cells = 1 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
+exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late generationss in addition to all generations
 
 FONT_SIZE=9
-MAX_CELL_LENGTH = 180
-#MAX_CELL_LENGTH += 1 # comment out this line to filter sims that reach the max time of 180 min
+MAX_VARIANT = 10 # do not include any variant >= this index
+MAX_CELL_INDEX = 8 # do not include any generation >= this index
+COUNT_INDEX = 5 # Count number of sims that reach this generation (remember index 7 corresponds to generation 8)
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
-COUNT_GENERATION = 7 # count number of sims that reached this generation per variant
+MAX_CELL_LENGTH = 180
+if exclude_timeout_cells:
+	MAX_CELL_LENGTH += 1000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def hist(self, ax, data, xlabel, bin_width=1., xlim=None, sf=1):
-		for variant, variant_data in data.items():
-			color = COLORS[variant % len(COLORS)]
-			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
-			mean = variant_data.mean()
-			std = variant_data.std()
-			ax.hist(variant_data, bins, color=color, alpha=0.5,
-				label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-			ax.axvline(mean, color=color, linestyle='--', linewidth=1)
-
-		if xlim:
-			ax.set_xlim(xlim)
-		self.remove_border(ax)
-		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-		ax.tick_params(labelsize=FONT_SIZE)
-		ax.legend()
-
-	def bar(self, ax, data, xlabel, ylabel, bin_width=1., xlim=None, sf=1):
+	def bar(self, ax, data, xlabel, ylabel, xlim=None):
 		for variant, variant_data in data.items():
 			color = COLORS[variant % len(COLORS)]
 			ax.bar(variant, variant_data, color=color, label=f'Var {variant}')
@@ -49,68 +37,58 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.legend()
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		doubling_times = {}
-		doubling_times_early_gens = {}
-		doubling_times_late_gens = {}
+		print("Running analysis script with exclude_timeout_cells=", exclude_timeout_cells,
+			  " and exclude_early_gens=",exclude_early_gens)
 
+		# Data extraction
+		print("---Data Extraction---")
+		doubling_times = {}
 		reached_count_gen = {}
 
-		print("---Data Extraction---")
-		for variant in self.ap.get_variants():
-			print("Variant: ", variant)
+		variants = self.ap.get_variants()
+		for variant in variants:
+			if variant >= MAX_VARIANT:
+				continue
+
+			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			if len(all_cells) == 0:
 				continue
 
+			# Doubling times
 			dt = read_stacked_columns(all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times[variant] = dt[dt < MAX_CELL_LENGTH]
+			exclude_timeout_index = index_of_first(dt,MAX_CELL_LENGTH)
+			doubling_times[variant] = dt[:exclude_timeout_index]
 
-			all_cells_gens = [int(c.split("/")[-2][-6:]) for c in all_cells]
-			reached_count_gen[variant] = all_cells_gens.count(COUNT_GENERATION)/all_cells_gens.count(0)
+			# Count the number of simulations that reach generation COUNT_INDEX + 1
+			all_cells_gens = [int(c.split("/")[-2][-6:]) for c in all_cells][:exclude_timeout_index]
+			reached_count_gen[variant] = all_cells_gens.count(COUNT_INDEX)/all_cells_gens.count(0)
 
-			if len(all_cells) >= MIN_LATE_CELL_INDEX:
-				early_cell_index = [i for i,v in enumerate(all_cells_gens) if v < MIN_LATE_CELL_INDEX]
-				late_cell_index = [i for i,v in enumerate(all_cells_gens) if v >= MIN_LATE_CELL_INDEX]
-
-				dt_early_cells = dt[early_cell_index]
-				dt_late_cells = dt[late_cell_index]
-
-				doubling_times_early_gens[variant] = dt_early_cells[dt_early_cells < MAX_CELL_LENGTH ]
-				doubling_times_late_gens[variant] = dt_late_cells[dt_late_cells < MAX_CELL_LENGTH ]
-
-
+		# Plotting
 		print("---Plotting---")
-		# LATE GENS
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
-		self.hist(axes[0], doubling_times_late_gens, 'Doubling Time (min)')
-		self.bar(axes[1], reached_count_gen, 'Variant','Percentage of Sims that Reached Generation ' + str(COUNT_GENERATION+1))
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName+'_lategens', metadata)
+		std_xlim = [30,185]
+		std_dt_xlab = 'Doubling Time (min)'
+		std_bar_xlab = 'Variant'
+		std_bar_ylab = 'Percentage of Sims that Reached Generation ' + str(COUNT_INDEX+1)
 
-		axes[0].set_xlim([30, 185])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_lategens_trimmed', metadata)
+		data_start = [0]
+		data_end = [MAX_CELL_INDEX]
+		plot_label = ['_all_gens']
+		if exclude_early_gens:
+			data_start += [0,MIN_LATE_CELL_INDEX]
+			data_end += [MIN_LATE_CELL_INDEX,MAX_CELL_INDEX]
+			plot_label += ['_early_gens', '_late_gens']
 
-		# EARLY GENS
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
-		self.hist(axes[0], doubling_times_early_gens, 'Doubling Time (min)')
-		self.bar(axes[1], reached_count_gen, 'Variant','Percentage of Sims that Reached Generation ' + str(COUNT_GENERATION+1))
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName + '_earlygens', metadata)
+		for j in range(len(data_start)):
+			_, axes = plt.subplots(2, 1, figsize=(10, 10))
+			labeled_indexable_hist(self, axes[0], doubling_times, data_start[j], data_end[j], COLORS, std_dt_xlab)
+			self.bar(axes[1], reached_count_gen, std_bar_xlab, std_bar_ylab)
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName+plot_label[j], metadata)
 
-		axes[0].set_xlim([30, 185])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_earlygens_trimmed', metadata)
-
-		# ALL GENS
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
-		self.hist(axes[0], doubling_times, 'Doubling Time (min)')
-		self.bar(axes[1], reached_count_gen, 'Variant','Percentage of Sims that Reached Generation ' + str(COUNT_GENERATION+1))
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName+'_allgens', metadata)
-
-		axes[0].set_xlim([30, 185])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_allgens_trimmed', metadata)
-
+			axes[0].set_xlim(std_xlim)
+			exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j] + '_trimmed', metadata)
 
 if __name__ == "__main__":
 	Plot().cli()

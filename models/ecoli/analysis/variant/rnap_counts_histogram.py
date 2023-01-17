@@ -1,52 +1,50 @@
 """
-Plot number of ribosomes for all generations, early generations, and late (i.e. not early) generations
+Plot number of ribosomes for all generations, early generations, and/or late (i.e. not early) generations
 """
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, stacked_cell_identification, read_stacked_bulk_molecules
+from wholecell.analysis.analysis_tools import exportFigure, stacked_cell_identification, read_stacked_columns, \
+	read_stacked_bulk_molecules, index_of_first, labeled_indexable_hist
 from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
 
+exclude_timeout_cells = 1 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
+exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late generationss in addition to all generations
 
 FONT_SIZE=9
+MAX_VARIANT = 10 # do not include any variant >= this index
+MAX_CELL_INDEX = 8 # do not include any generation >= this index
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
+MAX_CELL_LENGTH = 180
+if exclude_timeout_cells:
+	MAX_CELL_LENGTH += 1000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def hist(self, ax, data, xlabel, bin_width=1., xlim=None, sf=1):
-		for variant, variant_data in data.items():
-			color = COLORS[variant % len(COLORS)]
-			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
-			mean = variant_data.mean()
-			std = variant_data.std()
-			ax.hist(variant_data, bins, color=color, alpha=0.5,
-				label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-			ax.axvline(mean, color=color, linestyle='--', linewidth=1)
-
-		if xlim:
-			ax.set_xlim(xlim)
-		self.remove_border(ax)
-		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-		ax.tick_params(labelsize=FONT_SIZE)
-		ax.legend()
-
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		rnap_counts = {}
-		rnap_counts_early_gens = {}
-		rnap_counts_late_gens = {}
+		print("Running analysis script with exclude_timeout_cells=", exclude_timeout_cells,
+			  " and exclude_early_gens=", exclude_early_gens)
 
+		# Data extraction
 		print("---Data Extraction---")
-		for variant in self.ap.get_variants():
-
-			if variant >= 10:
+		rnap_counts = {}
+		variants = self.ap.get_variants()
+		for variant in variants:
+			if variant >= MAX_VARIANT:
 				continue
 
-			print("Variant: ", variant)
+			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			if len(all_cells) == 0:
 				continue
 
+			# Doubling times
+			dt = read_stacked_columns(all_cells, 'Main', 'time',
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			exclude_timeout_index = index_of_first(dt,MAX_CELL_LENGTH)
+
+			# RNA polymerase counts
 			rnapId = ["APORNAP-CPLX[c]"]
 			(rnapCountsBulk,) = read_stacked_bulk_molecules(all_cells, (rnapId,))
 
@@ -55,43 +53,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
 			avg_rnap_counts = sum_rnap_counts / cell_total_timesteps
 
-			rnap_counts[variant] = avg_rnap_counts
+			rnap_counts[variant] = avg_rnap_counts[:exclude_timeout_index]
 
-			all_cells_gens = [int(c.split("/")[-2][-6:]) for c in all_cells]
-			early_cell_index = [i for i,v in enumerate(all_cells_gens) if v < MIN_LATE_CELL_INDEX]
-			late_cell_index = [i for i,v in enumerate(all_cells_gens) if v >= MIN_LATE_CELL_INDEX]
-
-			rnap_counts_early_gens[variant] = rnap_counts[variant][early_cell_index]
-			rnap_counts_late_gens[variant] = rnap_counts[variant][late_cell_index]
-
+		# Plotting
 		print("---Plotting---")
-		# LATE GENS
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
-		self.hist(axes[0], rnap_counts_late_gens, 'RNA Polymerase Counts',bin_width=250,sf=0)
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName+'_lategens', metadata)
+		std_bin_width = 250
+		std_sf = 0
+		std_xlim = [1000,7000]
+		std_xlab = 'RNA Polymerase Counts'
 
-		axes[0].set_xlim([1000,7000])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_lategens_trimmed', metadata)
+		data_start = [0]
+		data_end = [MAX_CELL_INDEX]
+		plot_label = ['_all_gens']
+		if exclude_early_gens:
+			data_start += [0,MIN_LATE_CELL_INDEX]
+			data_end += [MIN_LATE_CELL_INDEX,MAX_CELL_INDEX]
+			plot_label += ['_early_gens', '_late_gens']
 
-		# EARLY GENS
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
-		self.hist(axes[0], rnap_counts_early_gens, 'RNA Polymerase Counts',bin_width=250,sf=0)
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName + '_earlygens', metadata)
+		for j in range(len(data_start)):
+			_, axes = plt.subplots(1, 1, figsize=(10, 5))
+			labeled_indexable_hist(self, axes, rnap_counts, data_start[j], data_end[j], COLORS,
+								   std_xlab, bin_width=std_bin_width, sf=std_sf)
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j], metadata)
 
-		axes[0].set_xlim([1000,7000])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_earlygens_trimmed', metadata)
-
-		# ALL GENS
-		_, axes = plt.subplots(2, 1, figsize=(10, 10))
-		self.hist(axes[0], rnap_counts, 'RNA Polymerase Counts',bin_width=250,sf=0)
-		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName+'_allgens', metadata)
-
-		axes[0].set_xlim([1000,7000])
-		exportFigure(plt, plotOutDir, plotOutFileName + '_allgens_trimmed', metadata)
-
+			axes.set_xlim(std_xlim)
+			exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j] + '_trimmed', metadata)
 
 if __name__ == "__main__":
 	Plot().cli()
