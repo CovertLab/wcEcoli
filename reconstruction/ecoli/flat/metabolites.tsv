@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 27.0
-# Date and time generated: December 12, 2022, 10:27:07
+# Version: 26.5
+# Date and time generated: December 16, 2022, 14:49:26
 "id"	"common_name"	"synonyms"	"chemical_formula"	"mw"	"molecular_charge"
 "--TRANS-ACENAPHTHENE-12-DIOL"	"(+/-)-<i>trans</i>-acenaphthene-1,2-diol"	["<i>trans</i>-1,2-acenaphthylene glycol"]	"C12H10O2"	186.21	0
 "1-2-Beta-D-Glucans"	"a 1,2-&beta;-D-glucan"	[]	null	null	0
