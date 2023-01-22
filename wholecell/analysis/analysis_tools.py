@@ -331,7 +331,7 @@ def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 
 		except Exception as e:
 			if ignore_exception:
-				print(f'Ignored exception in read_stacked_columns for {sim_out_dir}: {e!r}')
+				print(f'Ignored exception in stacked_cell_identification for {sim_out_dir}: {e!r}')
 				continue
 			else:
 				raise
@@ -340,110 +340,57 @@ def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 
 	return np.vstack(data) if data else np.array([])
 
-def index_of_first(data: np.ndarray, max_value: float):
+def stacked_cell_max_mask(cell_paths: np.ndarray, table: str, column: str, max_value: float,
+		remove_first: bool = False, ignore_exception: bool = False,
+		fun: Callable = None) -> np.ndarray:
 	"""
-	Determines the index of the first value in data that is >= max_value
+	Returns single boolean array to indicate whether each value in the column data (from multiple cells) occurs before the first
+	value >= max_value in that simulation (seed).
 
 	Args:
-		data: np.ndarray of dimention (l,) for any l
-		max_value:
+		cell_paths: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		table: name of the table to read data from
+		column: name of the column to read data from
+		max_value: values after the first value >= max_value in each cell will correspond to false
+		remove_first: if True, removes the first column of data from each cell
+			which might be set to a default value in some cases
+		ignore_exception: if True, ignores any exceptions encountered while reading
+		fun: function to apply to data in each generation (eg. np.mean will
+			return and array with the mean value for each generation instead
+			of each time point)
 
 	Returns:
-		int index of first value in data >= max_value, or len(data) if no values are >= max_value
+		stacked data (n time points, m subcolumns) with a boolean mask for each cell in cell_paths
+
+	TODO: extend to be compatible with multiple values per cell
 
 	"""
 
-	idx = np.where(data >= max_value)[0]
-	if len(idx) == 0:
-		return len(data)
-	else:
-		return idx[0]
+	if fun is None:
+		fun = lambda x: x
 
-### COMMON PLOTS ###
-def labeled_indexable_hist(obj, ax, data, data_start, data_end, colors, xlabel, bin_width=1., xlim=None, sf=1, font_size=9):
-	"""
-	Creates a histogram of (subset of) data, with label for mean and standard deviation of data for each variant
+	boolean_data = []
+	first_max_not_seen = 1 # for each simulation, this will keep track of whether we have already seen a value >= max_value
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		try:
+			gen_index = int(sim_dir.split("/")[-2][-6:])
+			if gen_index == 0:
+				first_max_not_seen = 1 # reset flag for new simulation
+			reader = TableReader(os.path.join(sim_out_dir, table))
+			column_data = fun(reader.readColumn(column, squeeze=False)[_remove_first(remove_first)])
+			assert len(column_data) == 1, "stacked_cell_max_mask cannot yet accomodate multiple values per generation"
+			if (first_max_not_seen == 1) and (column_data >= max_value): # this would be the first value >= max_value seen for this simulation
+				first_max_not_seen = 0
+			boolean_data.append(bool(first_max_not_seen))
 
-	Args:
-		obj: specify the Plot object
-		ax: Axes object
-		data: data to plot
-		data_start: index of generation to start from
-		data_end: index of generation to end at (exclusive)
-		colors: list of colors to use for each variant
-		xlabel: x-axis label for plot
-		bin_width: used in conjunction with xlim to determine number of bins
-		xlim: specify x-axis plotting region
-		sf: scale factor
-		font_size: font size for labeling axes
+		except Exception as e:
+			if ignore_exception:
+				print(f'Ignored exception in stacked_cell_max_mask for {sim_out_dir}: {e!r}')
+				continue
+			else:
+				raise
 
-	Returns: histogram of data, colored by variant, for generations indexed by data_start:data_end
-
-	"""
-
-	if xlim:
-		bins = np.histogram(range(xlim[0],xlim[1]+1), bins=int(np.ceil((xlim[1]-xlim[0])/bin_width)))[1]
-
-	for variant, variant_data in data.items():
-		variant_data = variant_data[data_start:data_end]
-
-		color = colors[variant % len(colors)]
-		if not xlim:
-			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
-		mean = variant_data.mean()
-		std = variant_data.std()
-		ax.hist(variant_data, bins, color=color, alpha=0.5,
-			label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-		ax.axvline(mean, color=color, linestyle='--', linewidth=1)
-
-	if xlim:
-		ax.set_xlim(xlim)
-	obj.remove_border(ax)
-	ax.set_xlabel(xlabel, fontsize=font_size)
-	ax.tick_params(labelsize=font_size)
-	ax.legend()
-
-def labeled_indexable_scatter(obj, ax, xdata, ydata, data_start, data_end, colors, xlabel, ylabel, xlim=None, ylim=None, sf=1, font_size=9):
-	"""
-	Creates a scatterplot of (subset of) data, with label for mean and standard deviation of data for each variant
-
-	Args:
-		obj: specify the Plot object
-		ax: Axes object
-		xdata: data to plot on x axes
-		ydata: data to plot on y axes
-		data_start: index of generation to start from
-		data_end: index of generation to end at (exclusive)
-		colors: list of colors to use for each variant
-		xlabel: x-axis label for plot
-		ylabel: y-axis label for plot
-		xlim: specify x-axis plotting region
-		ylim: specify y-axis plotting region
-		sf: scale factor
-		font_size: font size for labeling axes
-
-	Returns: scatterplot of data, colored by variant, for generations indexed by data_start:data_end
-
-	"""
-
-	for variant, variant_data in xdata.items():
-		variant_xdata = variant_data[data_start:data_end]
-		variant_ydata = ydata[variant][data_start:data_end]
-
-		color = colors[variant % len(colors)]
-		mean = variant_ydata.mean()
-		std = variant_ydata.std()
-		mean_new_gene = variant_xdata.mean()
-		ax.scatter(variant_xdata, variant_ydata, color=color, alpha=0.5,
-			label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
-		ax.scatter(mean_new_gene,mean,color=color,alpha=0.5,marker='x')
-
-	if xlim:
-		ax.set_xlim(xlim)
-	if ylim:
-		ax.set_ylim(ylim)
-	obj.remove_border(ax)
-	ax.set_xlabel(xlabel, fontsize=font_size)
-	ax.set_ylabel(ylabel, fontsize=font_size)
-	ax.tick_params(labelsize=font_size)
-	ax.legend()
+	return np.vstack(boolean_data) if boolean_data else np.array([])

@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt
 import os
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, index_of_first, labeled_indexable_hist
-from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, stacked_cell_max_mask
+from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS, labeled_indexable_hist
 
 exclude_timeout_cells = 1 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
 exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late generationss in addition to all generations
@@ -19,8 +19,8 @@ MAX_VARIANT = 10 # do not include any variant >= this index
 MAX_CELL_INDEX = 8 # do not include any generation >= this index
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
 MAX_CELL_LENGTH = 180
-if exclude_timeout_cells:
-	MAX_CELL_LENGTH += 1000
+if (exclude_timeout_cells==0):
+	MAX_CELL_LENGTH += 1000000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -30,6 +30,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Data extraction
 		print("---Data Extraction---")
 		ribosome_counts = {}
+		generations = {}
 
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
@@ -42,10 +43,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if len(all_cells) == 0:
 				continue
 
-			# Doubling times
-			dt = read_stacked_columns(all_cells, 'Main', 'time',
+			exclude_timeout_cell_mask = stacked_cell_max_mask(all_cells, 'Main', 'time', MAX_CELL_LENGTH,
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			exclude_timeout_index = index_of_first(dt,MAX_CELL_LENGTH)
+			all_cells_gens = np.array([int(c.split("/")[-2][-6:]) for c in all_cells])[exclude_timeout_cell_mask]
+			generations[variant] = all_cells_gens
 
 			# Ribosome counts
 			if variant == min_variant:
@@ -56,7 +57,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			avg_ribosome_counts = read_stacked_columns(all_cells, 'UniqueMoleculeCounts','uniqueMoleculeCounts',
 													   fun=lambda x: np.mean(x[:,ribosomeIndex],axis=0))
-			ribosome_counts[variant] = avg_ribosome_counts[:exclude_timeout_index]
+			ribosome_counts[variant] = avg_ribosome_counts[exclude_timeout_cell_mask]
 
 		# Plotting
 		print("---Plotting---")
@@ -75,7 +76,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for j in range(len(data_start)):
 			_, axes = plt.subplots(1, 1, figsize=(10, 5))
-			labeled_indexable_hist(self, axes, ribosome_counts, data_start[j], data_end[j], COLORS,
+			labeled_indexable_hist(self, axes, ribosome_counts, generations, data_start[j], data_end[j], COLORS,
 								   std_xlab, bin_width=std_bin_width, sf=std_sf)
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j], metadata)

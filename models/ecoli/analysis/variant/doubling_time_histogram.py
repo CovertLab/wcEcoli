@@ -7,8 +7,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, index_of_first, labeled_indexable_hist
-from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns, stacked_cell_max_mask
+from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as COLORS, labeled_indexable_hist
 
 exclude_timeout_cells = 1 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
 exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late generationss in addition to all generations
@@ -16,11 +16,11 @@ exclude_early_gens = 1 # 1 to plot early (before MIN_LATE_CELL_INDEX), and late 
 FONT_SIZE=9
 MAX_VARIANT = 10 # do not include any variant >= this index
 MAX_CELL_INDEX = 8 # do not include any generation >= this index
-COUNT_INDEX = 5 # Count number of sims that reach this generation (remember index 7 corresponds to generation 8)
+COUNT_INDEX = 7 # Count number of sims that reach this generation (remember index 7 corresponds to generation 8)
 MIN_LATE_CELL_INDEX = 4 # generations before this may not be representative of dynamics due to how they are initialized
 MAX_CELL_LENGTH = 180
-if exclude_timeout_cells:
-	MAX_CELL_LENGTH += 1000
+if (exclude_timeout_cells==0):
+	MAX_CELL_LENGTH += 1000000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def bar(self, ax, data, xlabel, ylabel, xlim=None):
@@ -44,9 +44,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print("---Data Extraction---")
 		doubling_times = {}
 		reached_count_gen = {}
+		generations = {}
 
 		variants = self.ap.get_variants()
 		for variant in variants:
+
 			if variant >= MAX_VARIANT:
 				continue
 
@@ -55,16 +57,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if len(all_cells) == 0:
 				continue
 
+			exclude_timeout_cell_mask = stacked_cell_max_mask(all_cells, 'Main', 'time', MAX_CELL_LENGTH,
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			all_cells_gens = np.array([int(c.split("/")[-2][-6:]) for c in all_cells])[exclude_timeout_cell_mask]
+			generations[variant] = all_cells_gens
+
 			# Doubling times
 			dt = read_stacked_columns(all_cells, 'Main', 'time',
-				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			exclude_timeout_index = index_of_first(dt,MAX_CELL_LENGTH)
-			doubling_times[variant] = dt[:exclude_timeout_index]
+									  fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			doubling_times[variant] = dt[exclude_timeout_cell_mask]
 
 			# Count the number of simulations that reach generation COUNT_INDEX + 1
-			all_cells_gens = [int(c.split("/")[-2][-6:]) for c in all_cells][:exclude_timeout_index]
-			reached_count_gen[variant] = all_cells_gens.count(COUNT_INDEX)/all_cells_gens.count(0)
-
+			reached_count_gen[variant] = np.count_nonzero(all_cells_gens == COUNT_INDEX)/np.count_nonzero(all_cells_gens == 0)
+			
 		# Plotting
 		print("---Plotting---")
 		std_xlim = [30,185]
@@ -82,7 +87,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for j in range(len(data_start)):
 			_, axes = plt.subplots(2, 1, figsize=(10, 10))
-			labeled_indexable_hist(self, axes[0], doubling_times, data_start[j], data_end[j], COLORS, std_dt_xlab)
+			labeled_indexable_hist(self, axes[0], doubling_times, generations, data_start[j], data_end[j], COLORS, std_dt_xlab)
 			self.bar(axes[1], reached_count_gen, std_bar_xlab, std_bar_ylab)
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName+plot_label[j], metadata)
