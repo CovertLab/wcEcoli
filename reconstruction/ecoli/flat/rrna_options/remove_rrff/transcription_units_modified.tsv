@@ -1,0 +1,5 @@
+# List of transcription units to modify when the 'remove_rrff' option is used for building raw_data.
+"id"	"common_name"	"genes"	"left_end_pos"	"right_end_pos"	"direction"	"evidence"
+"TU0-1191"	"rrsD-ileU-alaU-rrlD-rrfD-thrV"	["EG30103", "EG30073", "EG30080", "EG30009", "EG30044", "EG30087"]	3423371	3429047	"-"	["EV-EXP-IDA-BOUNDARIES-DEFINED"]
+"TU0-1192"	"rrsD-ileU-alaU-rrlD-rrfD-thrV"	["EG30103", "EG30073", "EG30080", "EG30009", "EG30044", "EG30087"]	3423371	3428940	"-"	["EV-EXP-IDA-BOUNDARIES-DEFINED"]
+"TU0-45227"	"rrsD-ileU-alaU-rrlD-rrfD-thrV"	["EG30103", "EG30073", "EG30080", "EG30009", "EG30044", "EG30087"]	3423371	3429047	"-"	["EV-EXP-IDA-BOUNDARIES-DEFINED"]

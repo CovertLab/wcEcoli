@@ -22,6 +22,8 @@ variants = [
 	'remove_aas_shift',
 	'remove_one_aa',
 	'remove_one_aa_shift',
+	'rrna_operon_knockout',
+	'rrna_location',
 	'rrna_orientation',
 	'tf_activity',
 	'time_step',

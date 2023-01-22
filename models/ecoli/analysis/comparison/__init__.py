@@ -20,6 +20,7 @@ ACTIVE = [
 	"protein_stoichiometry.py",
 	"proteomics_fluxomics_comparison.py",
 	"proteomics_fluxomics_validation.py",
+	"tRNA_cistron_expression.py"
 ]
 
 TAGS = {

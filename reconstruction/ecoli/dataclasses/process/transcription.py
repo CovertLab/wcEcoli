@@ -1027,6 +1027,16 @@ class Transcription(object):
 		self.rna_maturation_stoich_matrix = self.cistron_tu_mapping_matrix[
 			:, unprocessed_rna_indexes][mature_rna_cistron_indexes, :]
 
+		# Build matrix of the end positions of each mature RNA within each
+		# unprocessed RNA
+		self.mature_rna_end_positions = np.zeros(
+			self.rna_maturation_stoich_matrix.shape)
+		(rows, columns) = self.rna_maturation_stoich_matrix.nonzero()
+
+		for (i, j) in zip(rows, columns):
+			self.mature_rna_end_positions[i, j] = self.cistron_start_end_pos_in_tu[
+				(mature_rna_cistron_indexes[i], unprocessed_rna_indexes[j])][1]
+
 		# Get mapping matrix from mature RNA to processing enzymes that are
 		# needed to get the mature forms
 		mature_rna_to_enzyme_list = {

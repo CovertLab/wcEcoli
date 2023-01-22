@@ -77,10 +77,10 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		RNAs = self.uniqueMolecules.container.objectsInCollection('RNA')
 		ribosomes = self.uniqueMolecules.container.objectsInCollection(
 			'active_ribosome')
-		is_full_transcript_RNA, unique_index_RNA, can_translate = RNAs.attrs(
-			'is_full_transcript', 'unique_index', 'can_translate')
-		protein_index_ribosomes, mRNA_index_ribosomes = ribosomes.attrs(
-			'protein_index', 'mRNA_index')
+		is_full_transcript_RNA, unique_index_RNA, can_translate, TU_index = RNAs.attrs(
+			'is_full_transcript', 'unique_index', 'can_translate', 'TU_index')
+		protein_index_ribosomes, mRNA_index_ribosomes, massDiff_protein_ribosomes = ribosomes.attrs(
+			'protein_index', 'mRNA_index', 'massDiff_protein')
 
 		# Get mask for ribosomes that are translating proteins on partially
 		# transcribed mRNAs
@@ -106,13 +106,25 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.rRNA16S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_16S])
 		self.rRNA23S_init_prob = np.sum(rRNA_cistrons_init_prob[self.rRNA_is_23S])
 
-		# Get mRNA unique index
-		self.mRNA_unique_index = unique_index_RNA[can_translate]
+		# Get fully transcribed translatable mRNA index
+		is_full_mRNA = can_translate & is_full_transcript_RNA
+		self.mRNA_unique_index = unique_index_RNA[is_full_mRNA]
+		self.mRNA_TU_index = TU_index[is_full_mRNA]
+
 
 		# Get counts of ribosomes attached to the same mRNA
 		bincount_minlength = max(self.mRNA_unique_index) + 1
 		bincount_ribosome_on_mRNA = np.bincount(mRNA_index_ribosomes, minlength=bincount_minlength)
 		self.n_ribosomes_on_each_mRNA = bincount_ribosome_on_mRNA[self.mRNA_unique_index]
+
+		# Initialize array representing protein mass for each mRNA
+		self.protein_mass_on_polysomes = np.zeros(
+			len(self.n_ribosomes_on_each_mRNA))
+
+		# Get protein mass on each polysome
+		self.protein_mass_on_polysomes = np.bincount(
+			mRNA_index_ribosomes, weights=massDiff_protein_ribosomes,
+			minlength=bincount_minlength)[self.mRNA_unique_index]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
@@ -126,7 +138,9 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			subcolumns = subcolumns)
 
 		tableWriter.set_variable_length_columns(
-			'n_ribosomes_on_each_mRNA'
+			'n_ribosomes_on_each_mRNA',
+			'mRNA_TU_index',
+			'protein_mass_on_polysomes',
 			)
 
 	def tableAppend(self, tableWriter):
@@ -157,5 +171,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			probTranslationPerTranscript = self.probTranslationPerTranscript,
 			n_ribosomes_per_transcript = self.n_ribosomes_per_transcript,
 			n_ribosomes_on_partial_mRNA_per_transcript = self.n_ribosomes_on_partial_mRNA_per_transcript,
-			n_ribosomes_on_each_mRNA = self.n_ribosomes_on_each_mRNA
+			n_ribosomes_on_each_mRNA = self.n_ribosomes_on_each_mRNA,
+			mRNA_TU_index = self.mRNA_TU_index,
+			protein_mass_on_polysomes = self.protein_mass_on_polysomes,
 			)

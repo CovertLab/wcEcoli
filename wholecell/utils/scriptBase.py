@@ -56,7 +56,10 @@ PARCA_KEYS = (
 	'new_genes',
 	'cpus',
 	'variable_elongation_transcription',
-	'variable_elongation_translation')
+	'variable_elongation_translation',
+	'remove_rrna_operons',
+	'remove_rrff',
+	)
 
 SIM_KEYS = (
 	'timeline',
@@ -402,6 +405,12 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			help="Fit ribosome expression to protein synthesis demands.")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
 			help="Fit RNA polymerase expression to protein synthesis demands.")
+		self.define_parameter_bool(parser, 'remove_rrna_operons', False,
+		    help="Remove the seven rRNA operons. Does not have any effect if"
+		         " operon option is set to 'off'.")
+		self.define_parameter_bool(parser, 'remove_rrff', False,
+		    help="Remove the rrfF gene. If operon option is set to 'on',"
+		         " removes the rrfF gene from the rrnD operon.")
 
 		self.define_parameter_bool(parser, 'debug_parca', False,
 			help='Make Parca calculate only one arbitrarily-chosen transcription'

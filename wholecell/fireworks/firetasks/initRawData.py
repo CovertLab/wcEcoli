@@ -12,7 +12,12 @@ class InitRawDataTask(FiretaskBase):
 
 	_fw_name = "InitRawDataTask"
 	required_params = ["output"]
-	optional_params = ['operons','new_genes']
+	optional_params = [
+		'operons',
+		'new_genes',
+		'remove_rrna_operons',
+		'remove_rrff',
+		]
 
 	def run_task(self, fw_spec):
 		operon_option = self.get('operons') or DEFAULT_OPERON_OPTION
@@ -23,7 +28,10 @@ class InitRawDataTask(FiretaskBase):
 
 		raw_data = KnowledgeBaseEcoli(
 			operons_on=(operon_option == 'on'),
-			new_genes_option=new_gene_option)
+			new_genes_option=new_gene_option,
+			remove_rrna_operons=self.get('remove_rrna_operons', False),
+			remove_rrff=self.get('remove_rrff', False),
+			)
 
 		print(f"{time.ctime()}: Saving raw_data")
 

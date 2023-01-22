@@ -8,8 +8,6 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
 
@@ -74,6 +72,8 @@ class RunParca(scriptBase.ScriptBase):
 			'description': args.description,
 			'operons': args.operons,
 			'new_genes': args.new_genes,
+			'remove_rrna_operons': args.remove_rrna_operons,
+			'remove_rrff': args.remove_rrff,
 			'time': args.time,
 			'python': sys.version.splitlines()[0],
 		}
