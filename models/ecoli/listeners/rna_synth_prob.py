@@ -48,6 +48,8 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.tu_is_overcrowded = np.zeros(self.n_TU, np.float64)
 		self.promoter_copy_number = np.zeros(self.n_TU, np.int16)
 		self.rna_synth_prob_per_cistron = np.zeros(self.n_cistron, np.float64)
+		self.total_rna_init = 0
+		self.expected_rna_init_per_cistron = np.zeros(self.n_cistron, np.float64)
 
 		self.pPromoterBound = np.zeros(self.n_TF, np.float64)
 		self.nPromoterBound = np.zeros(self.n_TF, np.float64)
@@ -82,12 +84,20 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.bound_TF_coordinates = all_coordinates[bound_promoter_indexes]
 		self.bound_TF_domains = all_domains[bound_promoter_indexes]
 
-		rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
+		actual_rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.actual_rna_synth_prob)
-		if rna_synth_prob_per_cistron.sum() != 0:
-			self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron / rna_synth_prob_per_cistron.sum()
+		self.expected_rna_init_per_cistron = actual_rna_synth_prob_per_cistron * self.total_rna_init
+		if actual_rna_synth_prob_per_cistron.sum() != 0:
+			self.actual_rna_synth_prob_per_cistron = actual_rna_synth_prob_per_cistron / actual_rna_synth_prob_per_cistron.sum()
 		else:
-			self.rna_synth_prob_per_cistron = rna_synth_prob_per_cistron
+			self.actual_rna_synth_prob_per_cistron = actual_rna_synth_prob_per_cistron
+		target_rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
+			self.target_rna_synth_prob)
+		if target_rna_synth_prob_per_cistron.sum() != 0:
+			self.target_rna_synth_prob_per_cistron = target_rna_synth_prob_per_cistron / target_rna_synth_prob_per_cistron.sum()
+		else:
+			self.target_rna_synth_prob_per_cistron = target_rna_synth_prob_per_cistron
+
 		self.n_bound_TF_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.n_bound_TF_per_TU).astype(np.int16).T
 
@@ -99,7 +109,9 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			'target_rna_synth_prob': 'rnaIds',
 			'actual_rna_synth_prob': 'rnaIds',
 			'tu_is_overcrowded': 'rnaIds',
-			'rna_synth_prob_per_cistron': 'cistron_ids',
+			'actual_rna_synth_prob_per_cistron': 'cistron_ids',
+			'target_rna_synth_prob_per_cistron': 'cistron_ids',
+			'expected_rna_init_per_cistron': 'cistron_ids',
 			'pPromoterBound': 'tf_ids',
 			'nPromoterBound': 'tf_ids',
 			'nActualBound': 'tf_ids',
@@ -129,7 +141,9 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			target_rna_synth_prob = self.target_rna_synth_prob,
 			actual_rna_synth_prob =	self.actual_rna_synth_prob,
 			tu_is_overcrowded = self.tu_is_overcrowded,
-			rna_synth_prob_per_cistron = self.rna_synth_prob_per_cistron,
+			actual_rna_synth_prob_per_cistron = self.actual_rna_synth_prob_per_cistron,
+			target_rna_synth_prob_per_cistron = self.target_rna_synth_prob_per_cistron,
+			expected_rna_init_per_cistron = self.expected_rna_init_per_cistron,
 			promoter_copy_number = self.promoter_copy_number,
 			gene_copy_number = self.gene_copy_number,
 			pPromoterBound = self.pPromoterBound,
