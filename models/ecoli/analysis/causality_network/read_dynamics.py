@@ -29,7 +29,7 @@ REQUIRED_COLUMNS = [
 	("Main", "time"),
 	("Mass", "cellMass"),
 	("Mass", "dryMass"),
-	("RNACounts", "RNA_counts"),
+	("RNACounts", "mRNA_counts"),
 	("RnaMaturationListener", "unprocessed_rnas_consumed"),
 	("RnaSynthProb", "gene_copy_number"),
 	("RnaSynthProb", "pPromoterBound"),
