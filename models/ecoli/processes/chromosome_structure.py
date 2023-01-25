@@ -356,7 +356,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 						mature_rna_end_pos = self.mature_rna_end_positions[
 							:, self.unprocessed_rna_index_mapping[ri]]
 						mature_rnas_produced = np.logical_and(
-							mature_rna_end_pos != 0, mature_rna_end_pos <= sl)
+							mature_rna_end_pos != 0, mature_rna_end_pos < sl)
 
 						# Increment counts of mature RNAs
 						mature_rna_counts += mature_rnas_produced
