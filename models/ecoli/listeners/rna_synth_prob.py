@@ -86,7 +86,11 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 
 		actual_rna_synth_prob_per_cistron = self.cistron_tu_mapping_matrix.dot(
 			self.actual_rna_synth_prob)
+		# The expected value of rna initiations per cistron. Realized values
+		# during simulation will be different, because they will be integers
+		# drawn from a multinomial distribution
 		self.expected_rna_init_per_cistron = actual_rna_synth_prob_per_cistron * self.total_rna_init
+
 		if actual_rna_synth_prob_per_cistron.sum() != 0:
 			self.actual_rna_synth_prob_per_cistron = actual_rna_synth_prob_per_cistron / actual_rna_synth_prob_per_cistron.sum()
 		else:

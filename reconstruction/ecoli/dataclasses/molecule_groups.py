@@ -139,10 +139,9 @@ class MoleculeGroups(object):
 			'rrnE_rRNA': rrnE_rRNA,
 			'rrnG_rRNA': rrnG_rRNA,
 			'rrnH_rRNA': rrnH_rRNA,
-			'rrn_operons': ['rrnA_rRNA', 'rrnB_rRNA','rrnC_rRNA','rrnD_rRNA',
+			'rrn_operons': ['rrnA_rRNA', 'rrnB_rRNA', 'rrnC_rRNA','rrnD_rRNA',
 				'rrnE_rRNA', 'rrnG_rRNA', 'rrnH_rRNA'],
 
-			''
 
 			'lipids': ['CPD-8260[c]', 'CPD-12819[c]', 'CPD-12824[c]'],
 			'polyamines': ['GAMMA-GLUTAMYL-PUTRESCINE[c]', 'PUTRESCINE[c]',

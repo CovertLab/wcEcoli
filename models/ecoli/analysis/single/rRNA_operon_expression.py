@@ -2,8 +2,6 @@
 Plot various expression-related properties for rRNA operons
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import numpy as np
 
@@ -55,8 +53,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		rna_synth_prob = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
 		actual_cistron_synth_prob = rna_synth_prob.readColumn("actual_rna_synth_prob_per_cistron")
 		target_cistron_synth_prob = rna_synth_prob.readColumn("target_rna_synth_prob_per_cistron")
-		cistron_ids = np.array(rna_synth_prob.readAttribute("cistron_ids"))
-		rRNA_idxs = [np.where(cistron_ids == rRNA_id)[0][0] for rRNA_id in cistron_rRNA_ids]
+		cistron_id_to_index = {cistron_id: i for (i, cistron_id) in enumerate(
+			rna_synth_prob.readAttribute("cistron_ids"))}
+		rRNA_idxs = np.array([cistron_id_to_index[rRNA_id] for rRNA_id in cistron_rRNA_ids])
 		rRNA_actual_synth_prob = actual_cistron_synth_prob[:, rRNA_idxs]
 		rRNA_target_synth_prob = target_cistron_synth_prob[:, rRNA_idxs]
 		grouped_rRNA_actual_synth_prob = np.array(
@@ -65,27 +64,17 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			rRNA_cistron_to_type_mapping_matrix @ rRNA_target_synth_prob.T)
 
 		# Expected transcription initiation events
-		# This is with a new listener!
 		expected_rna_init_per_cistron = rna_synth_prob.readColumn("expected_rna_init_per_cistron")
 		rRNA_expected_rna_init = expected_rna_init_per_cistron[:, rRNA_idxs]
 		rRNA_expected_rna_init_rate = np.array([rna_init / timestep for rna_init in rRNA_expected_rna_init.T]).T
 		grouped_rRNA_expected_rna_init_rate = np.array(
 			rRNA_cistron_to_type_mapping_matrix @ rRNA_expected_rna_init_rate.T)
 
-		# Actual transcription initiation events
-		rnap_data = TableReader(os.path.join(simOutDir, "RnapData"))
-		rna_init_event_per_cistron = rnap_data.readColumn("rna_init_event_per_cistron")
-		cistron_ids = np.array(rnap_data.readAttribute("cistron_ids"))
-		rRNA_idxs = [np.where(cistron_ids == rRNA_id)[0][0] for rRNA_id in cistron_rRNA_ids]
-		rRNA_actual_rna_init = rna_init_event_per_cistron[:, rRNA_idxs]
-		rRNA_actual_rna_init_rate = np.array([rna_init / timestep for rna_init in rRNA_actual_rna_init.T]).T
-		grouped_rRNA_actual_rna_init_rate = np.array(rRNA_cistron_to_type_mapping_matrix @ rRNA_actual_rna_init_rate.T)
-
 		# Gene dosage
-		gene_ids = np.array(rna_synth_prob.readAttribute("gene_ids"))
 		gene_copy_number = rna_synth_prob.readColumn("gene_copy_number")
-		gene_ids = np.array(rna_synth_prob.readAttribute("gene_ids"))
-		rRNA_gene_idxs = [np.where(gene_ids == gene_id)[0][0] for gene_id in gene_rRNA_ids]
+		gene_id_to_index = {gene_id: i for (i, gene_id) in enumerate(
+			rna_synth_prob.readAttribute("gene_ids"))}
+		rRNA_gene_idxs = np.array([gene_id_to_index[gene_rRNA_id] for gene_rRNA_id in gene_rRNA_ids])
 		rRNA_gene_dosages = gene_copy_number[:, rRNA_gene_idxs]
 		grouped_rRNA_gene_dosages = np.array(rRNA_cistron_to_type_mapping_matrix @ rRNA_gene_dosages.T)
 
@@ -97,8 +86,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Partial rRNAs, or RNAPs on rrn genes
 		rna_counts = TableReader(os.path.join(simOutDir, "RNACounts"))
 		partial_rRNA_cistron_counts = rna_counts.readColumn("partial_rRNA_cistron_counts")
-		rna_ids = np.array(rna_counts.readAttribute("rRNA_cistron_ids"))
-		rRNA_idxs = [np.where(rna_ids == rRNA_id)[0][0] for rRNA_id in cistron_rRNA_ids]
+		rna_id_to_index = {rna_id: i for (i, rna_id) in enumerate(
+			rna_counts.readAttribute("rRNA_cistron_ids"))}
+		rRNA_idxs = np.array([rna_id_to_index[rRNA_id] for rRNA_id in cistron_rRNA_ids])
 		RNAP_on_rRNA_counts = partial_rRNA_cistron_counts[:, rRNA_idxs]
 		grouped_RNAP_on_rRNA_counts = np.array(
 			rRNA_cistron_to_type_mapping_matrix @ RNAP_on_rRNA_counts.T)
