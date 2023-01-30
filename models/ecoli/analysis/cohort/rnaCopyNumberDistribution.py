@@ -78,7 +78,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				# Get required tables
 				bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-				mRNA_counts_reader = TableReader(os.path.join(simOutDir, "mRNACounts"))
+				RNA_counts_reader = TableReader(os.path.join(simOutDir, "RNACounts"))
 				time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
 
 				# Pick out random timepoint
@@ -93,7 +93,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				# Read counts of all bulk molecules and mRNAs
 				bulkCounts = bulkMolecules.readColumn("counts")
-				mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
+				mRNA_counts = RNA_counts_reader.readColumn('mRNA_counts')
 
 				# Sum up counts from both readers to get total counts
 				rna_counts = bulkCounts[idx_timepoint, idx_rna_bulk_molecules]

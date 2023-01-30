@@ -47,8 +47,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load simData from first simulation
 		simOutDir = os.path.join(allDir[0], "simOut")
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, "mRNACounts"))
-		mRNA_cistron_ids = mRNA_counts_reader.readAttribute("mRNA_cistron_ids")
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, "RNACounts"))
+		mRNA_cistron_ids = RNA_counts_reader.readAttribute("mRNA_cistron_ids")
 		cistron_id_to_index = {
 			cistron_id: i for (i, cistron_id) in enumerate(mRNA_cistron_ids)
 			}
@@ -114,8 +114,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			proteinMonomerCounts = monomerCounts.readColumn("monomerCounts")
 
 			# Read in RNA cistron counts
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir, "mRNACounts"))
-			mRNA_cistron_counts = mRNA_counts_reader.readColumn("mRNA_cistron_counts")
+			RNA_counts_reader = TableReader(os.path.join(simOutDir, "RNACounts"))
+			mRNA_cistron_counts = RNA_counts_reader.readColumn("mRNA_cistron_counts")
 
 			LINEWIDTH = 1
 

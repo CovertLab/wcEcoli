@@ -75,7 +75,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
 
 			all_mRNA_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'mRNA_cistron_counts', ignore_exception=True)
+				cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
 
 			for i in range(len(gene_group_indexes)):
 				operon_mRNA_counts = all_mRNA_counts[:, np.array(mRNA_group_indexes[i])]

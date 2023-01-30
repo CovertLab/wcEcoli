@@ -76,12 +76,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		# Load tables and attributes for mRNAs
-		mRNA_reader = TableReader(
-			os.path.join(cell_paths[0], 'simOut', 'mRNACounts'))
+		RNA_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'RNACounts'))
 		mass_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'Mass'))
 
-		mRNA_ids = mRNA_reader.readAttribute('mRNA_cistron_ids')
+		mRNA_ids = RNA_reader.readAttribute('mRNA_cistron_ids')
 		mass_unit =	mass_reader.readAttribute('cellDry_units')
 		assert mass_unit == 'fg'
 
@@ -105,7 +105,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Read columns
 		# remove_first=True because countsToMolar is 0 at first time step
 		mRNA_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_cistron_counts',
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 			remove_first=True, ignore_exception=True)
 		counts_to_molar = read_stacked_columns(
 			cell_paths, 'EnzymeKinetics', 'countsToMolar',
