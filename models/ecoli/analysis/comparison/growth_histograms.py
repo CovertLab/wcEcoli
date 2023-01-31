@@ -82,7 +82,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
 				remove_first=True, ignore_exception=True)
 			rrna_fraction_prob, trna_fraction_prob, mrna_fraction_prob = read_stacked_columns(
-				cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron',
+				cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron',
 				remove_first=True, ignore_exception=True, fun=convert_to_fraction).T
 			(ppgpp_counts, uncharged_trna_counts, charged_trna_counts, aa_counts,
 				inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,

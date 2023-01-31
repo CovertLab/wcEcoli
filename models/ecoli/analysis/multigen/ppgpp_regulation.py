@@ -45,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cell_paths = self.ap.get_cells()
 		time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze() / 60  # min
 		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar').squeeze()
-		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron')
+		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron')
 		reaction_rates = np.vstack((
 			read_stacked_columns(cell_paths, 'GrowthLimits', 'rela_syn').sum(axis=1),
 			read_stacked_columns(cell_paths, 'GrowthLimits', 'spot_syn').squeeze(),

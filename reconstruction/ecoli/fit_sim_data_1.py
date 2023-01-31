@@ -192,6 +192,7 @@ def input_adjustments(sim_data, cell_specs, debug=False, **kwargs):
 
 	# Make adjustments for metabolic enzymes
 	setTranslationEfficiencies(sim_data)
+	set_balanced_translation_efficiencies(sim_data)
 	setRNAExpression(sim_data)
 	setRNADegRates(sim_data)
 	setProteinDegRates(sim_data)
@@ -965,6 +966,31 @@ def setTranslationEfficiencies(sim_data):
 	for protein in sim_data.adjustments.translation_efficiencies_adjustments:
 		idx = np.where(sim_data.process.translation.monomer_data["id"] == protein)[0]
 		sim_data.process.translation.translation_efficiencies_by_monomer[idx] *= sim_data.adjustments.translation_efficiencies_adjustments[protein]
+
+
+def set_balanced_translation_efficiencies(sim_data):
+	"""
+	Sets the translation efficiencies of a group of proteins to be equal to the
+	mean value of all proteins within the group.
+
+	Requires
+	--------
+	- List of proteins that should have balanced translation efficiencies.
+
+	Modifies
+	--------
+	- Translation efficiencies of proteins within each specified group.
+	"""
+	monomer_id_to_index = {
+		monomer['id'][:-3]: i for (i, monomer) in enumerate(
+			sim_data.process.translation.monomer_data)
+		}
+
+	for proteins in sim_data.adjustments.balanced_translation_efficiencies:
+		protein_indexes = np.array([monomer_id_to_index[m] for m in proteins])
+		mean_trl_eff = sim_data.process.translation.translation_efficiencies_by_monomer[protein_indexes].mean()
+		sim_data.process.translation.translation_efficiencies_by_monomer[protein_indexes] = mean_trl_eff
+
 
 def setRNAExpression(sim_data):
 	"""

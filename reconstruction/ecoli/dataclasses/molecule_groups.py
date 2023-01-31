@@ -38,6 +38,30 @@ class MoleculeGroups(object):
 			rna['id'] + '[c]' for rna in raw_data.rnas
 			if rna['id'].startswith('RRF')]
 
+		# Build list of rRNA cistron IDs from raw data
+		rrnA_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] == 'A']
+		rrnB_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] == 'B']
+		rrnC_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] == 'C']
+		rrnD_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] in ['D', 'F']]
+		rrnE_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] == 'E']
+		rrnG_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] == 'G']
+		rrnH_rRNA = [
+			rna['id'] for rna in raw_data.rnas
+			if rna['type'] == 'rRNA' and rna['id'][3] == 'H']
+
+
 		# Build list of ribosomal proteins from raw data
 		monomer_ids = set([monomer['id'] for monomer in raw_data.proteins])
 
@@ -108,6 +132,17 @@ class MoleculeGroups(object):
 			's50_23s_rRNA': s50_23s_rRNA,
 			's50_5s_rRNA': s50_5s_rRNA,
 
+			'rrnA_rRNA': rrnA_rRNA,
+			'rrnB_rRNA': rrnB_rRNA,
+			'rrnC_rRNA': rrnC_rRNA,
+			'rrnD_rRNA': rrnD_rRNA,
+			'rrnE_rRNA': rrnE_rRNA,
+			'rrnG_rRNA': rrnG_rRNA,
+			'rrnH_rRNA': rrnH_rRNA,
+			'rrn_operons': ['rrnA_rRNA', 'rrnB_rRNA', 'rrnC_rRNA','rrnD_rRNA',
+				'rrnE_rRNA', 'rrnG_rRNA', 'rrnH_rRNA'],
+
+
 			'lipids': ['CPD-8260[c]', 'CPD-12819[c]', 'CPD-12824[c]'],
 			'polyamines': ['GAMMA-GLUTAMYL-PUTRESCINE[c]', 'PUTRESCINE[c]',
 				'GLUTATHIONYLSPERMIDINE[c]', 'SPERMIDINE[c]',
@@ -135,6 +170,20 @@ class MoleculeGroups(object):
 			'ribosomal_proteins': ribosomal_proteins,
 
 			'carbon_sources': ['GLC[p]', 'ACET[p]', 'SUC[p]'],
+
+			# Common names of the seven rRNA operons
+			'rRNA_operons': [
+				'rrnA', 'rrnB', 'rrnC', 'rrnD', 'rrnE', 'rrnG', 'rrnH'],
+
+			# List of IDs of genes that consist each of the seven rRNA operons
+			'rrnA': ['EG30070', 'EG30077', 'EG30008', 'EG30043', 'EG30084'],
+			'rrnB': ['EG30071', 'EG30078', 'EG30032', 'EG30085'],
+			'rrnC': ['EG30072', 'EG30079', 'EG30033', 'EG30086'],
+			'rrnD': ['EG30091', 'EG30103', 'EG30073', 'EG30080', 'EG30009',
+				'EG30044', 'EG30087'],
+			'rrnE': ['EG30074', 'EG30081', 'EG30034', 'EG30088'],
+			'rrnG': ['EG30075', 'EG30082', 'EG30035', 'EG30089'],
+			'rrnH': ['EG30076', 'EG30083', 'EG30010', 'EG30045', 'EG30090'],
 		}
 
 		# Initialize molecule groups for how molecules are split between two

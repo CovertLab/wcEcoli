@@ -79,14 +79,14 @@ class RNACounts(wholecell.listeners.listener.Listener):
 		# Calculate counts of mRNA cistrons from transcription unit counts
 		# TODO (ggsun): Partial RNA cistron counts should take into account
 		# 	the lengths of each RNA transcript.
-		self.mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
-			all_TU_counts)[self.cistron_is_mRNA]
+		cistron_counts = self.cistron_tu_mapping_matrix.dot(
+			all_TU_counts)
+		self.mRNA_cistron_counts = cistron_counts[self.cistron_is_mRNA]
 		self.full_mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
 			full_TU_counts)[self.cistron_is_mRNA]
 		self.partial_mRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
 			partial_TU_counts)[self.cistron_is_mRNA]
-		self.partial_rRNA_cistron_counts = self.cistron_tu_mapping_matrix.dot(
-			all_TU_counts)[self.cistron_is_rRNA]
+		self.partial_rRNA_cistron_counts = cistron_counts[self.cistron_is_rRNA]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {

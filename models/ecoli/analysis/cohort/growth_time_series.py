@@ -242,7 +242,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			remove_first=True)
 		unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
 			remove_first=True)
-		rna_fraction_prob = read_stacked_columns(cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron',
+		rna_fraction_prob = read_stacked_columns(cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron',
 			remove_first=True, fun=convert_to_fraction)
 		(ppgpp_counts, uncharged_trna_counts, charged_trna_counts, aa_counts,
 			inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,

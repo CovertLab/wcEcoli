@@ -1,8 +1,6 @@
 """
-Plot expression and related properties for rRNA operons
+Plot various expression-related properties for rRNA operons
 """
-
-from __future__ import absolute_import, division, print_function
 
 import os
 import numpy as np
@@ -11,273 +9,222 @@ from matplotlib import pyplot as plt
 import pickle
 
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
 
-MA_WINDOWS = [200] # moving average window to plot timeseries, in timesteps
-COLORS = ['r']
 LABELPAD = 10
 FONTSIZE = 15
-LEGEND_FONT = 10
-
+COLORS = ['b', 'r', 'g', 'c']
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-	# TODO: add ppGpp plot
-	def make_plot(self, axs, time, var, titles, ma=MA_WINDOWS, ylim=None,
-				  c=COLORS, label=""):
-		if ma:
-			var = self.moving_average(var, ma)
-			time = self.moving_average(time, ma)
-			for (i, mv_avg) in enumerate(var):
-				if len(np.shape(mv_avg)) > 1:
-					for (j, subvar) in enumerate(mv_avg):
-						axs[j].plot(time[i], subvar, c=c[i], label=label+"Mov avg window %fs" % int(ma[i] * self.avg_timestep))
-						axs[j].tick_params(axis='both')
-						if i==0 and titles:
-							axs[j].set_title(titles[j], pad=LABELPAD, fontsize=FONTSIZE)
-						if ylim:
-							axs[j].set_ylim(ylim)
-						if i == len(ma) - 1:
-							axs[j].legend(fontsize=LEGEND_FONT)
-				else:
-					axs.plot(time[i], mv_avg, c=c[i], label=label+"Mov avg window %fs" % int(ma[i] * self.avg_timestep))
-					axs.tick_params(axis='both')
-					if titles:
-						axs.set_title(titles, pad=LABELPAD, fontsize=FONTSIZE)
-					if ylim:
-						axs.set_ylim(ylim)
-					if i == len(ma) - 1:
-						axs.legend(fontsize=LEGEND_FONT)
-		else:
-			if len(np.shape(var)) > 1:
-				var = var.T
-				for (j, subvar) in enumerate(var):
-					axs[j].plot(time, subvar, c=COLORS[0])
-					axs[j].tick_params(axis='both')
-					if titles:
-						axs[j].set_title(titles[j], pad=LABELPAD, fontsize=FONTSIZE)
-					if ylim:
-						axs[j].set_ylim(ylim)
-			else:
-				axs.plot(time, var, c=COLORS[0])
-				axs.tick_params(axis='both')
-				if titles:
-					axs.set_title(titles, pad=LABELPAD, fontsize=FONTSIZE)
-				if ylim:
-					axs.set_ylim(ylim)
-
-	def moving_average(self, timeseries, ma):
-		# Takes the moving average to show the timescale of dynamics
-		convs = [np.ones(window) / window for window in ma]
-		if len(np.shape(timeseries)) > 1:
-			timeseries = timeseries.T
-			moving_averages = []
-			for conv in convs:
-				mov_avg = [np.convolve(series, conv, mode='valid')
-					for series in timeseries]
-				moving_averages.append(np.array(mov_avg))
-			return moving_averages
-		else:
-			return [np.convolve(timeseries, conv, mode='valid') for conv in convs]
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		sim_data = pickle.load(open(simDataFile, "rb"))
 		transcription = sim_data.process.transcription
-		rRNA_ids = transcription.rna_data['id'][transcription.rna_data['is_rRNA']]
-		num_rRNAs = len(rRNA_ids)
+		is_rRNA_cistron = transcription.cistron_data['is_rRNA']
+		cistron_rRNA_ids = transcription.cistron_data['id'][is_rRNA_cistron]
+		gene_rRNA_ids = transcription.cistron_data['gene_id'][is_rRNA_cistron]
+
+		molecule_groups = sim_data.molecule_groups
+		cistrons_of_rRNA_TUs = [
+			getattr(molecule_groups, operon) for operon in
+			molecule_groups.rrn_operons]
+		rRNA_operon_names = molecule_groups.rrn_operons
+		rRNA_cistron_types = ["5S", "23S", "16S"]
+
+		rRNA_TU_to_cistron_mapping_matrix = np.array([
+			np.isin(cistron_rRNA_ids, cistrons)
+			for cistrons in cistrons_of_rRNA_TUs])
+		rRNA_cistron_to_type_mapping_matrix = np.array([
+			transcription.cistron_data['is_5S_rRNA'][is_rRNA_cistron],
+			transcription.cistron_data['is_16S_rRNA'][is_rRNA_cistron],
+			transcription.cistron_data['is_23S_rRNA'][is_rRNA_cistron]])
 
 		# Time
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
 		initial_time = main_reader.readAttribute("initialTime")
 		time = (main_reader.readColumn("time") - initial_time)/60
 		timestep = main_reader.readColumn("timeStepSec")
-		self.avg_timestep = np.mean(timestep)
 
 		# Transcriptional probabilities
 		rna_synth_prob = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-		actual_synth_prob = rna_synth_prob.readColumn("actual_rna_synth_prob")
-		target_synth_prob = rna_synth_prob.readColumn("target_rna_synth_prob")
-		is_overcrowded = rna_synth_prob.readColumn("tu_is_overcrowded")
-		rna_ids = np.array(rna_synth_prob.readAttribute("rnaIds"))
-		rRNA_idxs = [np.where(rna_ids == rRNA_id)[0][0] for rRNA_id in rRNA_ids]
-		rRNA_actual_synth_prob = actual_synth_prob[:, rRNA_idxs]
-		rRNA_target_synth_prob = target_synth_prob[:, rRNA_idxs]
-		rRNA_is_overcrowded_fraction = np.mean(is_overcrowded[:, rRNA_idxs], axis=0)
-		total_rRNA_is_overcrowded_fraction = np.mean([is_overcrowded[i, rRNA_idxs].any()
-														 for i in range(np.shape(rRNA_is_overcrowded_fraction)[0])])
-		total_rRNA_actual_synth_prob = np.sum(rRNA_actual_synth_prob, axis=1)
-		total_rRNA_target_synth_prob = np.sum(rRNA_target_synth_prob, axis=1)
+		actual_cistron_synth_prob = rna_synth_prob.readColumn("actual_rna_synth_prob_per_cistron")
+		target_cistron_synth_prob = rna_synth_prob.readColumn("target_rna_synth_prob_per_cistron")
+		cistron_id_to_index = {cistron_id: i for (i, cistron_id) in enumerate(
+			rna_synth_prob.readAttribute("cistron_ids"))}
+		rRNA_idxs = np.array([cistron_id_to_index[rRNA_id] for rRNA_id in cistron_rRNA_ids])
+		rRNA_actual_synth_prob = actual_cistron_synth_prob[:, rRNA_idxs]
+		rRNA_target_synth_prob = target_cistron_synth_prob[:, rRNA_idxs]
+		grouped_rRNA_actual_synth_prob = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ rRNA_actual_synth_prob.T)
+		grouped_rRNA_target_synth_prob = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ rRNA_target_synth_prob.T)
+
+		# Expected transcription initiation events
+		expected_rna_init_per_cistron = rna_synth_prob.readColumn("expected_rna_init_per_cistron")
+		rRNA_expected_rna_init = expected_rna_init_per_cistron[:, rRNA_idxs]
+		rRNA_expected_rna_init_rate = np.array([rna_init / timestep for rna_init in rRNA_expected_rna_init.T]).T
+		grouped_rRNA_expected_rna_init_rate = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ rRNA_expected_rna_init_rate.T)
+
+		# Gene dosage
+		gene_copy_number = rna_synth_prob.readColumn("gene_copy_number")
+		gene_id_to_index = {gene_id: i for (i, gene_id) in enumerate(
+			rna_synth_prob.readAttribute("gene_ids"))}
+		rRNA_gene_idxs = np.array([gene_id_to_index[gene_rRNA_id] for gene_rRNA_id in gene_rRNA_ids])
+		rRNA_gene_dosages = gene_copy_number[:, rRNA_gene_idxs]
+		grouped_rRNA_gene_dosages = np.array(rRNA_cistron_to_type_mapping_matrix @ rRNA_gene_dosages.T)
+
+		# Initiations per gene dosage
+		rRNA_initiation_per_gene_dosage = rRNA_expected_rna_init_rate / rRNA_gene_dosages
+		grouped_rRNA_initiation_per_gene_dosage = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ rRNA_initiation_per_gene_dosage.T)
 
 		# Partial rRNAs, or RNAPs on rrn genes
 		rna_counts = TableReader(os.path.join(simOutDir, "RNACounts"))
-		partial_rRNA_counts = rna_counts.readColumn("partial_rRNA_counts")
-		rna_ids = np.array(rna_counts.readAttribute("rRNA_ids"))
-		rRNA_idxs = [np.where(rna_ids == rRNA_id)[0][0] for rRNA_id in rRNA_ids]
-		RNAP_on_rRNA_counts = partial_rRNA_counts[:, rRNA_idxs]
-		total_RNAP_on_rRNA_counts = np.sum(RNAP_on_rRNA_counts, axis=1)
+		partial_rRNA_cistron_counts = rna_counts.readColumn("partial_rRNA_cistron_counts")
+		rna_id_to_index = {rna_id: i for (i, rna_id) in enumerate(
+			rna_counts.readAttribute("rRNA_cistron_ids"))}
+		rRNA_idxs = np.array([rna_id_to_index[rRNA_id] for rRNA_id in cistron_rRNA_ids])
+		RNAP_on_rRNA_counts = partial_rRNA_cistron_counts[:, rRNA_idxs]
+		grouped_RNAP_on_rRNA_counts = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ RNAP_on_rRNA_counts.T)
 
-		# Transcription initiation events
-		rnap_data = TableReader(os.path.join(simOutDir, "RnapData"))
-		rna_init_event = rnap_data.readColumn("rnaInitEvent")
-		rna_ids = np.array(rnap_data.readAttribute("rnaIds"))
-		rRNA_idxs = [np.where(rna_ids == rRNA_id)[0][0] for rRNA_id in rRNA_ids]
-		rRNA_init_events = rna_init_event[:, rRNA_idxs]
-		rRNA_init_per_sec = np.array([rna_init / timestep for rna_init in rRNA_init_events.T]).T
+		# Active RNAP fraction on rrn genes
+		unique_molecules = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		unique_molecule_ids = unique_molecules.readAttribute("uniqueMoleculeIds")
+		rnap_idx = unique_molecule_ids.index('active_RNAP')
+		unique_molecule_counts = unique_molecules.readColumn("uniqueMoleculeCounts")
+		active_RNAP_counts = unique_molecule_counts[:, rnap_idx]
+		RNAP_active_fraction_on_rRNA = np.array(
+			[RNAP_counts / active_RNAP_counts for RNAP_counts in RNAP_on_rRNA_counts.T]).T
+		grouped_RNAP_active_fraction_on_rRNA = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ RNAP_active_fraction_on_rRNA.T)
 
-		ribosome_data = TableReader(os.path.join(simOutDir, "RibosomeData"))
-		total_rRNA_initiated = ribosome_data.readColumn("total_rRNA_initiated", squeeze=True)
-		total_rRNA_init_per_sec = total_rRNA_initiated / timestep
-		rRNA5S_initiated = ribosome_data.readColumn("rRNA5S_initiated", squeeze=True)
-		rRNA5S_init_per_sec = rRNA5S_initiated / timestep
-		rRNA16S_initiated = ribosome_data.readColumn("rRNA16S_initiated", squeeze=True)
-		rRNA16S_init_per_sec = rRNA16S_initiated / timestep
-		rRNA23S_initiated = ribosome_data.readColumn("rRNA23S_initiated", squeeze=True)
-		rRNA23S_init_per_sec = rRNA23S_initiated / timestep
-
-		# For each TU, get a cistron from it and calculate its gene dosage
-		rna_synth_prob = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-		gene_ids = np.array(rna_synth_prob.readAttribute("gene_ids"))
-		gene_copy_number = rna_synth_prob.readColumn("gene_copy_number")
-		rRNA_cistron_idxs = np.array([transcription.rna_id_to_cistron_indexes(rRNA_id)[0]
-			for rRNA_id in rRNA_ids])
-		rRNA_cistron_ids = transcription.cistron_data['gene_id'][rRNA_cistron_idxs]
-		rRNA_gene_idxs = []
-		for cistron in rRNA_cistron_ids:
-			rRNA_gene_idxs.extend(np.where(gene_ids == cistron)[0])
-		rRNA_gene_dosage = gene_copy_number[:, rRNA_gene_idxs]
-		total_rRNA_gene_dosage = [np.sum(rRNA, axis=0) for rRNA in rRNA_gene_dosage]
-
-		# Initiations per gene dosage
-		rRNA_initiation_per_gene_dosage = rRNA_init_per_sec / rRNA_gene_dosage
-		total_rRNA_initiation_per_gene_dosage = total_rRNA_init_per_sec / total_rRNA_gene_dosage
-
-		# Counts of various ribosome-related molecules and RNAPs
+		# Counts of accumulated rRNAs
 		ribosome_30S_id = [sim_data.molecule_ids.s30_full_complex]
 		ribosome_50S_id = [sim_data.molecule_ids.s50_full_complex]
 		rRNA_5S_ids = sim_data.molecule_groups.s50_5s_rRNA
 		rRNA_16S_ids = sim_data.molecule_groups.s30_16s_rRNA
 		rRNA_23S_ids = sim_data.molecule_groups.s50_23s_rRNA
-		inactive_rnap_id = [sim_data.molecule_ids.full_RNAP]
 
 		(ribosome_30S_counts, ribosome_50S_counts, rRNA_5S_counts,
-		rRNA_16S_counts, rRNA_23S_counts, inactive_RNAP_counts) = read_bulk_molecule_counts(
+		rRNA_16S_counts, rRNA_23S_counts) = read_bulk_molecule_counts(
 			simOutDir, (ribosome_30S_id, ribosome_50S_id, rRNA_5S_ids,
-			rRNA_16S_ids, rRNA_23S_ids, inactive_rnap_id))
-		rRNA_5S_counts = np.sum(rRNA_5S_counts, axis=1)
-		rRNA_16S_counts = np.sum(rRNA_16S_counts, axis=1)
-		rRNA_23S_counts = np.sum(rRNA_23S_counts, axis=1)
+			rRNA_16S_ids, rRNA_23S_ids))
+		free_rRNA_5S_counts = np.sum(rRNA_5S_counts, axis=1)
+		free_rRNA_16S_counts = np.sum(rRNA_16S_counts, axis=1)
+		free_rRNA_23S_counts = np.sum(rRNA_23S_counts, axis=1)
 
-		unique_molecules = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-		unique_molecule_ids = unique_molecules.readAttribute("uniqueMoleculeIds")
 		ribosome_idx = unique_molecule_ids.index('active_ribosome')
-		rnap_idx = unique_molecule_ids.index('active_RNAP')
-		unique_molecule_counts = unique_molecules.readColumn("uniqueMoleculeCounts")
 		active_ribosome = unique_molecule_counts[:, ribosome_idx]
-		active_RNAP_counts = unique_molecule_counts[:, rnap_idx]
-		total_RNAP_counts = active_RNAP_counts + inactive_RNAP_counts
 		total_30S_counts = ribosome_30S_counts + active_ribosome
 		total_50S_counts = ribosome_50S_counts + active_ribosome
+		total_rRNA_5S_counts = free_rRNA_5S_counts + total_50S_counts
+		total_rRNA_16S_counts = free_rRNA_16S_counts + total_30S_counts
+		total_rRNA_23S_counts = free_rRNA_23S_counts + total_50S_counts
 
-		RNAP_active_fraction_on_rRNA = np.array([RNAP_counts / active_RNAP_counts for RNAP_counts in RNAP_on_rRNA_counts.T]).T
-		RNAP_total_fraction_on_rRNA = np.array([RNAP_counts / total_RNAP_counts for RNAP_counts in RNAP_on_rRNA_counts.T]).T
-		total_RNAP_active_fraction_on_rRNA = total_RNAP_on_rRNA_counts / active_RNAP_counts
-		total_RNAP_total_fraction_on_rRNA = total_RNAP_on_rRNA_counts / total_RNAP_counts
-
-		# Get rRNA common names for operons
-		rRNA_operon_to_name = {"TU0-1181[c]": "rrnA", "TU0-1182[c]": "rrnB",
-			"TU0-1183[c]": "rrnC", "TU0-1186[c]": "rrnE", "TU0-1187[c]": "rrnG",
-			"TU0-1189[c]": "rrnH", "TU0-1191[c]": "rrnD"
-			}
+		# Concentration of ppGpp
+		bulk_molecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
+		ppGpp_id = sim_data.molecule_ids.ppGpp
+		ppGpp_index = bulk_molecules.readAttribute('objectNames').index(ppGpp_id)
+		n_avogadro = sim_data.constants.n_avogadro
+		counts_to_moles = (1 / n_avogadro).asNumber(units.mol)
+		ppGpp_conc = bulk_molecules.readColumn('counts')[:, ppGpp_index] * counts_to_moles
 
 		## Make figure
 		# Ncols is number of rRNA TUs, 1 for total, and 3 for 5S/16S/23S
-		ncols = num_rRNAs + 1 + 3
+		ncols = 8
 		nrows=7
 
 		fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 5 * nrows), sharex='all')
-		# Plot operon-level rRNA initiation events
+		# Make the plots
 		axs[0, 0].set_ylabel("Initiations per second", labelpad=LABELPAD)
-		rRNA_names = [rRNA_operon_to_name[rRNA] if rRNA in rRNA_operon_to_name
-			else rRNA for rRNA in rRNA_ids]
-		self.make_plot(axs=[axs[0, i] for i in range(num_rRNAs)], time=time, var=rRNA_init_per_sec,
-					   titles=rRNA_names, ylim=[0, 4])
-		self.make_plot(axs=axs[0, num_rRNAs], time=time, var=total_rRNA_init_per_sec,
-					   titles="Total rRNAs", ylim=[0, 15])
-		for i in range(ncols):
+		axs[1, 0].set_ylabel("Target and actual rRNA synthesis probabilities", labelpad=LABELPAD)
+		axs[2, 0].set_ylabel("rRNA gene dosages", labelpad=LABELPAD),
+		axs[3, 0].set_ylabel("Initiations per second per gene dosage", labelpad=LABELPAD)
+		axs[4, 0].set_ylabel("RNAP counts on rrn genes", labelpad=LABELPAD)
+		axs[5, 0].set_ylabel("Fraction of active RNAPs on rrn genes", labelpad=LABELPAD)
+		axs[6, 0].set_ylabel("rRNA counts")
+		for i in range(len(rRNA_operon_names)):
+			this_operon_idxs = np.where(rRNA_TU_to_cistron_mapping_matrix[i, :] == 1)[0]
+			for (n, idx) in enumerate(this_operon_idxs):
+				axs[0, i].plot(time, rRNA_expected_rna_init_rate[:, idx],
+							   c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[0,i].legend()
+				axs[0,i].set_ylim(0, 3)
+				axs[1, i].plot(time, rRNA_actual_synth_prob[:, idx],
+							   c=COLORS[n],label=cistron_rRNA_ids[idx]+" actual")
+				axs[1, i].plot(time, rRNA_target_synth_prob[:, idx],
+							   linestyle='dashed', c=COLORS[n],
+							   label=cistron_rRNA_ids[idx]+" target")
+				axs[1, i].legend()
+				axs[1, i].set_ylim(0, 0.03)
+				axs[2, i].plot(time, rRNA_gene_dosages[:, idx],
+							   c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[2, i].legend()
+				axs[2, i].set_ylim(0, 5)
+				axs[3, i].plot(time, rRNA_initiation_per_gene_dosage[:, idx],
+							   c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[3, i].legend()
+				axs[3, i].set_ylim(0, 1)
+				axs[4, i].plot(time, RNAP_on_rRNA_counts[:, idx],
+							   c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[4, i].legend()
+				axs[4, i].set_ylim(0, 100)
+				axs[5, i].plot(time, RNAP_active_fraction_on_rRNA[:, idx],
+							   c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[5, i].legend()
+				axs[5, i].set_ylim(0, 0.15)
+			axs[0, i].set_title(rRNA_operon_names[i])
 			axs[0, i].set_xlabel("Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
 
-		# Plot gene dosage of each operon
-		axs[1, 0].set_ylabel("Gene dosage", labelpad=LABELPAD, fontsize=FONTSIZE)
-		self.make_plot(axs=[axs[1, i] for i in range(num_rRNAs)], time=time, var=rRNA_gene_dosage,
-					   titles=None, ma=None, ylim=[0, 5])
-		self.make_plot(axs=axs[1, num_rRNAs], time=time, var=total_rRNA_gene_dosage,
-					   titles=None, ma=None, ylim=[0, 5])
+		for idx in range(np.shape(rRNA_cistron_to_type_mapping_matrix)[0]):
+			axs[0, len(rRNA_operon_names)].plot(time, grouped_rRNA_expected_rna_init_rate[idx],
+												c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[0, len(rRNA_operon_names)].legend()
+			axs[1, len(rRNA_operon_names)].plot(time, grouped_rRNA_actual_synth_prob[idx],
+												c=COLORS[idx], label=rRNA_cistron_types[idx]+" actual")
+			axs[1, len(rRNA_operon_names)].plot(time, grouped_rRNA_target_synth_prob[idx],
+												c=COLORS[idx], linestyle='dashed',
+												label=rRNA_cistron_types[idx]+" target")
+			axs[1, len(rRNA_operon_names)].legend()
+			axs[2, len(rRNA_operon_names)].plot(time, grouped_rRNA_gene_dosages[idx],
+												c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[2, len(rRNA_operon_names)].legend()
+			axs[3, len(rRNA_operon_names)].plot(time, grouped_rRNA_initiation_per_gene_dosage[idx],
+												c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[3, len(rRNA_operon_names)].legend()
+			axs[4, len(rRNA_operon_names)].plot(time, grouped_RNAP_on_rRNA_counts[idx],
+												c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[4, len(rRNA_operon_names)].legend()
+			axs[5, len(rRNA_operon_names)].plot(time, grouped_RNAP_active_fraction_on_rRNA[idx],
+												c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[5, len(rRNA_operon_names)].legend()
+		axs[0, len(rRNA_operon_names)].set_title("Total")
+		axs[0, len(rRNA_operon_names)].set_xlabel("Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
 
-		# Plot the rRNA initiation events per gene dosage
-		axs[2, 0].set_ylabel("Initiations per second per gene dosage", labelpad=LABELPAD, fontsize=FONTSIZE)
-		self.make_plot(axs=[axs[2,i] for i in range(num_rRNAs)], time=time, var=rRNA_initiation_per_gene_dosage,
-					   titles=None, ylim=[0, 1])
-		self.make_plot(axs=axs[2, num_rRNAs], time=time, var=total_rRNA_initiation_per_gene_dosage,
-					   titles=None, ylim=[0, 1])
+		axs[6, 0].plot(time, total_rRNA_5S_counts, c=COLORS[0], label="5S rRNA")
+		axs[6, 0].plot(time, total_rRNA_23S_counts, c=COLORS[1], label="23S rRNA")
+		axs[6, 0].plot(time, total_rRNA_16S_counts, c=COLORS[2], label="16S rRNA")
+		axs[6, 0].set_title("Total rRNA counts")
+		axs[6, 0].legend()
 
-		# Plot effective initiation events of 5S, 16S, and 23S rRNA
-		self.make_plot(axs=axs[0, num_rRNAs+1], time=time, var=rRNA5S_init_per_sec,
-					   titles="5S rRNA inits", ylim=[0, 15])
-		self.make_plot(axs=axs[0, num_rRNAs+2], time=time, var=rRNA16S_init_per_sec,
-					   titles="16S rRNA inits", ylim=[0, 15])
-		self.make_plot(axs=axs[0, num_rRNAs+3], time=time, var=rRNA23S_init_per_sec,
-					   titles="23S rRNA inits", ylim=[0, 15])
+		axs[6, 1].plot(time, total_30S_counts, label="30S subunit")
+		axs[6, 1].plot(time, total_50S_counts, label="50S subunit")
+		axs[6, 1].set_title("Total ribosomal subunit counts")
+		axs[6, 1].legend()
 
-		# Plot the target and actual synthesis probabilities of rRNA operons
-		axs[3, 0].set_ylabel("Target and actual rRNA synthesis probabilities")
-		self.make_plot(axs=[axs[3, i] for i in range(num_rRNAs)], time=time, var=rRNA_actual_synth_prob,
-					   titles=None, c=['r'], label="Actual: ")
-		self.make_plot(axs=[axs[3, i] for i in range(num_rRNAs)], time=time, var=rRNA_target_synth_prob,
-					   titles=None, c=['g'],  ylim=[0, 0.04], label="Target: ")
-		for i in range(num_rRNAs):
-			axs[3, i].text(np.mean(time), axs[3, i].get_ylim()[1],
-						"Overcrowded time fraction: %f"%rRNA_is_overcrowded_fraction[i])
-		self.make_plot(axs=axs[3, num_rRNAs], time=time, var=total_rRNA_actual_synth_prob,
-					   titles=None, c=['r'], label="Actual: ")
-		self.make_plot(axs=axs[3, num_rRNAs], time=time, var=total_rRNA_target_synth_prob,
-					   titles=None, c=['g'], ylim=(0, None), label="Target: ")
-		axs[3, num_rRNAs].text(np.mean(time), axs[3, num_rRNAs].get_ylim()[1],
-							"Overcrowded time fraction: %f"%total_rRNA_is_overcrowded_fraction)
+		axs[6, 2].plot(time, free_rRNA_5S_counts, c=COLORS[0], label="5S rRNA")
+		axs[6, 2].plot(time, free_rRNA_23S_counts, c=COLORS[1], label="23S rRNA")
+		axs[6, 2].plot(time, free_rRNA_16S_counts, c=COLORS[2], label="16S rRNA")
+		axs[6, 2].set_title("Free rRNA counts")
+		axs[6, 2].legend()
 
-		# Plot the number of RNAPs on rrn genes
-		axs[4, 0].set_ylabel("Counts of RNAPs on rrn genes")
-		self.make_plot(axs=[axs[4, i] for i in range(num_rRNAs)], time=time, var=RNAP_on_rRNA_counts,
-					   titles=None, c=['r', 'b'], ylim=[0, 200])
-		self.make_plot(axs=axs[4, num_rRNAs], time=time, var=total_RNAP_on_rRNA_counts,
-					   titles=None, c=['r', 'b'], ylim=[0, 1000])
-
-		# Plot the fraction of active or total RNAPs on rrn genes
-		axs[5, 0].set_ylabel("Fraction of total/active RNAPs on rrn genes")
-		self.make_plot(axs=[axs[5, i] for i in range(num_rRNAs)], time=time,
-					   var=RNAP_total_fraction_on_rRNA,
-					   titles=None, c=['g', 'k'], ylim=[0, 0.2])
-		self.make_plot(axs=[axs[5, i] for i in range(num_rRNAs)], time=time,
-					   var=RNAP_active_fraction_on_rRNA,
-					   titles=None, c=['r','b'])
-		self.make_plot(axs=axs[5, num_rRNAs], time=time, var=total_RNAP_active_fraction_on_rRNA,
-					   titles=None, c=['m', 'y'],  ylim=[0, None])
-		self.make_plot(axs=axs[5, num_rRNAs], time=time, var=total_RNAP_total_fraction_on_rRNA,
-					   titles=None, c=['g', 'k'])
-
-		# Plot the amount of (active or inactive) ribosomal subunits
-		axs[6, 0].set_ylabel("Counts", labelpad=LABELPAD, fontsize=FONTSIZE)
-		self.make_plot(axs=axs[6, 0], time=time, var=total_30S_counts,
-					   titles="Total 30S", ylim=(0, None))
-		self.make_plot(axs=axs[6, 1], time=time, var=total_50S_counts,
-					   titles="Total 50S", ylim=(0, None))
-
-		# Plot the amount of uncomplexed rRNAs
-		self.make_plot(axs=axs[6, 2], time=time, var=rRNA_5S_counts,
-					   titles="Free 5S rRNA", ylim=(0, None))
-		self.make_plot(axs=axs[6, 3], time=time, var=rRNA_16S_counts,
-					   titles="Free 16S rRNA", ylim=(0, None))
-		self.make_plot(axs=axs[6, 4], time=time, var=rRNA_23S_counts,
-					   titles="Free 23S rRNA", ylim=(0, None))
+		axs[6, 3].plot(time, ppGpp_conc)
+		axs[6, 3].set_title("ppGpp concentration")
+		axs[6, 3].set_ylabel("Concentration (mol)")
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
