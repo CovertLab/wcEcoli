@@ -49,7 +49,7 @@ if Unum.__truediv__ == Unum.__div__:
 	Unum.__truediv__ = __truediv__
 	Unum.__rtruediv__ = __rtruediv__
 
-
+# noinspection PyShadowingBuiltins
 def sum(array, axis = None, dtype=None, out=None, keepdims=False):
 	if not isinstance(array, Unum):
 		raise Exception("Only works on Unum!")
@@ -57,6 +57,7 @@ def sum(array, axis = None, dtype=None, out=None, keepdims=False):
 	units = getUnit(array)
 	return units * np.sum(array.asNumber(), axis, dtype, out, keepdims)
 
+# noinspection PyShadowingBuiltins
 def abs(array):
 	if not isinstance(array, Unum):
 		raise Exception("Only works on Unum!")
