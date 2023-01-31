@@ -29,9 +29,9 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-		all_mRNA_cistron_idx = {cistron: i for i, cistron in enumerate(mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
+		all_mRNA_cistron_idx = {cistron: i for i, cistron in enumerate(RNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
 
 		cistron_ids = [
 			"G7355_RNA", "EG11783_RNA", "G7742_RNA", "G6253_RNA", "EG10632_RNA",

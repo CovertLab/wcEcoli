@@ -6,11 +6,10 @@ ChromosomeStructure process
 - Reset the boundaries and linking numbers of chromosomal segments.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process
+from wholecell.utils import units
 from wholecell.utils.polymerize import buildSequences
 
 
@@ -28,9 +27,10 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		super(ChromosomeStructure, self).initialize(sim, sim_data)
 
 		# Load parameters
-		self.RNA_sequences = sim_data.process.transcription.transcription_sequences
+		transcription = sim_data.process.transcription
+		self.rna_sequences = transcription.transcription_sequences
 		self.protein_sequences = sim_data.process.translation.translation_sequences
-		self.n_TUs = len(sim_data.process.transcription.rna_data)
+		self.n_TUs = len(transcription.rna_data)
 		self.n_TFs = len(sim_data.process.transcription_regulation.tf_ids)
 		self.n_amino_acids = len(sim_data.molecule_groups.amino_acids)
 		self.n_fragment_bases = len(sim_data.molecule_groups.polymerized_ntps)
@@ -39,7 +39,16 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		self.max_coordinates = replichore_lengths[0]
 		self.relaxed_DNA_base_pairs_per_turn = sim_data.process.chromosome_structure.relaxed_DNA_base_pairs_per_turn
 		self.terC_index = sim_data.process.chromosome_structure.terC_dummy_molecule_index
-		
+		mature_rna_ids = transcription.mature_rna_data['id']
+		self.n_mature_rnas = len(mature_rna_ids)
+		self.mature_rna_end_positions = transcription.mature_rna_end_positions
+		self.mature_rna_nt_counts = transcription.mature_rna_data['counts_ACGU'].asNumber(units.nt).astype(np.int)
+		unprocessed_rna_indexes = np.where(
+			transcription.rna_data['is_unprocessed'])[0]
+		self.unprocessed_rna_index_mapping = {
+			rna_index: i for (i, rna_index) in enumerate(unprocessed_rna_indexes)
+			}
+
 		# Load sim options
 		self.calculate_superhelical_densities = sim._superhelical_density
 
@@ -48,6 +57,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 
 		# Load bulk molecule views
 		self.inactive_RNAPs = self.bulkMoleculeView(sim_data.molecule_ids.full_RNAP)
+		self.mature_rnas = self.bulkMoleculesView(mature_rna_ids)
 		self.fragmentBases = self.bulkMoleculesView(sim_data.molecule_groups.polymerized_ntps)
 		self.ppi = self.bulkMoleculeView(sim_data.molecule_ids.ppi)
 		self.active_tfs = self.bulkMoleculesView(
@@ -89,6 +99,9 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 
 		# Request water to degrade polypeptides from removed ribosomes
 		self.water.requestAll()
+
+		# Request ppi to add to mature RNAs generated from incomplete RNAs
+		self.ppi.requestAll()
 
 
 	def evolveState(self):
@@ -321,22 +334,52 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 			incomplete_sequence_lengths = transcript_lengths[
 				removed_RNAs_mask]
 			n_initiated_sequences = np.count_nonzero(incomplete_sequence_lengths)
+			n_ppi_added = n_initiated_sequences
 
 			if n_initiated_sequences > 0:
+				incomplete_rna_indexes = RNA_TU_indexes[removed_RNAs_mask]
+
 				incomplete_sequences = buildSequences(
-					self.RNA_sequences,
-					RNA_TU_indexes[removed_RNAs_mask],
+					self.rna_sequences,
+					incomplete_rna_indexes,
 					np.zeros(n_total_collisions, dtype=np.int64),
 					np.full(n_total_collisions, incomplete_sequence_lengths.max()))
 
+				mature_rna_counts = np.zeros(self.n_mature_rnas, dtype=np.int64)
 				base_counts = np.zeros(self.n_fragment_bases, dtype=np.int64)
 
-				for sl, seq in zip(incomplete_sequence_lengths, incomplete_sequences):
-					base_counts += np.bincount(seq[:sl], minlength=self.n_fragment_bases)
+				for ri, sl, seq in zip(incomplete_rna_indexes, incomplete_sequence_lengths, incomplete_sequences):
+					# Check if incomplete RNA is an unprocessed RNA
+					if ri in self.unprocessed_rna_index_mapping:
+						# Find mature RNA molecules that would need to be added
+						# given the length of the incomplete RNA
+						mature_rna_end_pos = self.mature_rna_end_positions[
+							:, self.unprocessed_rna_index_mapping[ri]]
+						mature_rnas_produced = np.logical_and(
+							mature_rna_end_pos != 0, mature_rna_end_pos < sl)
 
-				# Increment counts of fragment NTPs and phosphates
+						# Increment counts of mature RNAs
+						mature_rna_counts += mature_rnas_produced
+
+						# Increment counts of fragment NTPs, but exclude bases
+						# that are part of the mature RNAs generated
+						base_counts += (
+							np.bincount(seq[:sl], minlength=self.n_fragment_bases)
+							- self.mature_rna_nt_counts[mature_rnas_produced, :].sum(axis=0))
+
+						# Exclude ppi molecules that are part of mature RNAs
+						n_ppi_added -= mature_rnas_produced.sum()
+					else:
+						base_counts += np.bincount(
+							seq[:sl], minlength=self.n_fragment_bases)
+
+				# Increment counts of mature RNAs, fragment NTPs and phosphates
+				self.mature_rnas.countsInc(mature_rna_counts)
 				self.fragmentBases.countsInc(base_counts)
-				self.ppi.countInc(n_initiated_sequences)
+				if n_ppi_added > 0:
+					self.ppi.countInc(n_ppi_added)
+				else:
+					self.ppi.countDec(-n_ppi_added)
 
 		# Get mask for ribosomes that are bound to nonexisting mRNAs
 		remaining_RNA_unique_indexes = RNA_unique_indexes[

@@ -32,10 +32,10 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		complexIds.append(sim_data.molecule_ids.s50_full_complex)
 
 		# Load count data for mRNAs
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
 		all_mRNA_cistron_indexes = {rna: i for i, rna in
-			enumerate(mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+			enumerate(RNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
 		rna_indexes = np.array([all_mRNA_cistron_indexes[rna] for rna in cistron_ids], int)
 		rna_cistron_counts = mRNA_cistron_counts[:, rna_indexes]
 		(freeProteinCounts, freeRRnaCounts, complexCounts) = read_bulk_molecule_counts(

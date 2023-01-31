@@ -296,6 +296,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			"RibosomeData", "rRNA_init_prob_TU", rRNA_initiations / float(n_RNAPs_to_activate))
 		self.writeToListener("RibosomeData", "total_rna_init", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
+		self.writeToListener("RnaSynthProb", "total_rna_init", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "rnaInitEvent", rna_init_event)
 
 

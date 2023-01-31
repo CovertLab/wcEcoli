@@ -29,11 +29,11 @@ REQUIRED_COLUMNS = [
 	("Main", "time"),
 	("Mass", "cellMass"),
 	("Mass", "dryMass"),
-	("mRNACounts", "mRNA_counts"),
+	("RNACounts", "mRNA_counts"),
 	("RnaMaturationListener", "unprocessed_rnas_consumed"),
 	("RnaSynthProb", "gene_copy_number"),
 	("RnaSynthProb", "pPromoterBound"),
-	("RnaSynthProb", "rna_synth_prob_per_cistron"),
+	("RnaSynthProb", "actual_rna_synth_prob_per_cistron"),
 	("RnaSynthProb", "promoter_copy_number"),
 	("RnaSynthProb", "n_bound_TF_per_TU"),
 	("RnaSynthProb", "n_bound_TF_per_cistron"),
@@ -234,7 +234,7 @@ def read_gene_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	gene_index = indexes["Genes"][node_id]
 
 	dynamics = {
-		"transcription probability": columns[("RnaSynthProb", "rna_synth_prob_per_cistron")][:, gene_index],
+		"transcription probability": columns[("RnaSynthProb", "actual_rna_synth_prob_per_cistron")][:, gene_index],
 		"gene copy number": columns[("RnaSynthProb", "gene_copy_number")][:, gene_index],
 		}
 	dynamics_units = {
@@ -252,7 +252,7 @@ def read_rna_dynamics(sim_data, node, node_id, columns, indexes, volume):
 
 	# If RNA is an mRNA, get counts from mRNA counts listener
 	if node_id in indexes["mRNAs"]:
-		counts = columns[("mRNACounts", "mRNA_counts")][:, indexes["mRNAs"][node_id]]
+		counts = columns[("RNACounts", "mRNA_counts")][:, indexes["mRNAs"][node_id]]
 	# If not, get counts from bulk molecules listener
 	else:
 		counts = columns[("BulkMolecules", "counts")][:, indexes["BulkMolecules"][node_id]]

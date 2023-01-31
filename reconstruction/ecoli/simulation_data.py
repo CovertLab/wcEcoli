@@ -91,7 +91,6 @@ class SimulationDataEcoli(object):
 			for mw_key in raw_data.molecular_weight_keys
 			}
 
-
 	def _add_compartment_keys(self, raw_data):
 		self.compartment_abbrev_to_index = {
 			compartment["abbrev"]: i
@@ -101,6 +100,9 @@ class SimulationDataEcoli(object):
 			compartment["id"]: i
 			for i,compartment in enumerate(raw_data.compartments)
 		}
+		self.compartment_abbrev_to_id = {}
+		for compartment in raw_data.compartments:
+			self.compartment_abbrev_to_id[compartment["abbrev"]] = compartment["id"]
 
 
 	def _add_base_codes(self, raw_data):
@@ -331,3 +333,4 @@ class SimulationDataEcoli(object):
 			exp /= exp.sum()
 		transcription.exp_free /= transcription.exp_free.sum()
 		transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
+

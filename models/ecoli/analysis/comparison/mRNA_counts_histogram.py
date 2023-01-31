@@ -37,7 +37,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
 
 			mRNA_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'full_mRNA_counts',
+				cell_paths, 'RNACounts', 'full_mRNA_counts',
 				ignore_exception=True, fun=lambda x: x[0])
 
 			total_mRNA_counts = mRNA_counts.sum(axis=1)

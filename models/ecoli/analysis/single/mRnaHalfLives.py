@@ -34,8 +34,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		sim_length = sim_time[-1] - sim_time[0]
 
 		# Read counts of mRNAs
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_counts = RNA_counts_reader.readColumn('mRNA_counts')
 		mRNA_counts_mean = mRNA_counts.mean(axis=0)
 
 		# Read number of degradation events

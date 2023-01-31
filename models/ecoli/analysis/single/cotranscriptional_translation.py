@@ -30,19 +30,19 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 		ribosome_reader = TableReader(os.path.join(simOutDir, 'RibosomeData'))
 
 		# Load data
 		initial_time = main_reader.readAttribute('initialTime')
 		time = main_reader.readColumn('time') - initial_time
-		mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
-		all_mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
-		full_mRNA_counts = mRNA_counts_reader.readColumn('full_mRNA_counts')
-		partial_mRNA_counts = mRNA_counts_reader.readColumn('partial_mRNA_counts')
-		all_mRNA_cistron_counts = mRNA_counts_reader.readColumn(
+		mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		all_mRNA_counts = RNA_counts_reader.readColumn('mRNA_counts')
+		full_mRNA_counts = RNA_counts_reader.readColumn('full_mRNA_counts')
+		partial_mRNA_counts = RNA_counts_reader.readColumn('partial_mRNA_counts')
+		all_mRNA_cistron_counts = RNA_counts_reader.readColumn(
 			'mRNA_cistron_counts')
-		partial_mRNA_cistron_counts = mRNA_counts_reader.readColumn(
+		partial_mRNA_cistron_counts = RNA_counts_reader.readColumn(
 			'partial_mRNA_cistron_counts')
 		protein_ids = ribosome_reader.readAttribute('monomerIds')
 		all_ribosome_counts = ribosome_reader.readColumn('n_ribosomes_per_transcript')

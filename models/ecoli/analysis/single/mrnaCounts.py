@@ -25,13 +25,13 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mRNA_ids = sim_data.process.transcription.rna_data['id'][is_mRNA]
 
 		# Get reader for mRNA counts
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 
 		# Check that the order of mRNAs in table matches that of KB
-		assert np.all(mRNA_ids == mRNA_counts_reader.readAttribute('mRNA_ids'))
+		assert np.all(mRNA_ids == RNA_counts_reader.readAttribute('mRNA_ids'))
 
 		# Read final mRNA counts from reader
-		counts = mRNA_counts_reader.readColumn('mRNA_counts')[-1, :]
+		counts = RNA_counts_reader.readColumn('mRNA_counts')[-1, :]
 
 		plt.figure(figsize = (8.5, 11))
 

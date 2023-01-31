@@ -22,9 +22,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cell_paths = self.ap.get_cells()
 
 		simOutDir = os.path.join(cell_paths[0], "simOut")
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_ids = mRNA_counts_reader.readAttribute('mRNA_ids')
-		mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_ids = RNA_counts_reader.readAttribute('mRNA_ids')
+		mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 		monomer_counts_reader = TableReader(os.path.join(simOutDir, 'MonomerCounts'))
 		all_monomer_ids = monomer_counts_reader.readAttribute('monomerIds')
 
@@ -53,9 +53,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		tu_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_counts')[:, tu_index]
+			cell_paths, 'RNACounts', 'mRNA_counts')[:, tu_index]
 		cistron_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
 		monomer_counts = read_stacked_columns(
 			cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indexes]
 

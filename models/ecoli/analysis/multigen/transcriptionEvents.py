@@ -24,10 +24,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Get mRNA data
 		sim_data = pickle.load(open(simDataFile, "rb"))
-		rnaIds = sim_data.process.transcription.rna_data["id"]
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIndexes = np.where(isMRna)[0]
-		mRnaIds = np.array([rnaIds[x] for x in mRnaIndexes])
 
 		# Get whether or not mRNAs were transcribed
 		time = []
@@ -45,9 +43,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rnaSynthProb.close()
 			simulatedSynthProbs.append(simulatedSynthProb)
 
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			moleculeCounts = mRNA_counts_reader.readColumn("mRNA_counts")
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			moleculeCounts = RNA_counts_reader.readColumn("mRNA_counts")
 			moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
 			mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
 			transcribedBool.append(mRnasTranscribed)

@@ -45,9 +45,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rnaSynthProb.close()
 			simulatedSynthProbs.append(simulatedSynthProb)
 
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			moleculeCounts = mRNA_counts_reader.readColumn("mRNA_counts")
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			moleculeCounts = RNA_counts_reader.readColumn("mRNA_counts")
 			moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
 			mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
 			transcribedBool.append(mRnasTranscribed)

@@ -242,14 +242,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			remove_first=True)
 		unique_mol_counts = read_stacked_columns(cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
 			remove_first=True)
-		rna_fraction_prob = read_stacked_columns(cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron',
+		rna_fraction_prob = read_stacked_columns(cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron',
 			remove_first=True, fun=convert_to_fraction)
 		(ppgpp_counts, uncharged_trna_counts, charged_trna_counts, aa_counts,
 			inactive_rnap_counts, ribosome_subunit_counts) = read_stacked_bulk_molecules(cell_paths,
 				([ppgpp_id], uncharged_trna_names, charged_trna_names, aa_ids, [rnap_id], ribosome_subunit_ids),
 				remove_first=True)
 		excess, synth_fractions, _ = calculate_ribosome_excesses(sim_data, cell_paths)
-		mrna_counts = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
+		mrna_counts = read_stacked_columns(cell_paths, 'RNACounts', 'mRNA_counts', remove_first=True, fun=axis_sum).squeeze()
 		rna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
 			remove_first=True, fun=reduce_rna_synthesis(slice(None)))
 		mrna_produced_mass = read_stacked_columns(cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized',
