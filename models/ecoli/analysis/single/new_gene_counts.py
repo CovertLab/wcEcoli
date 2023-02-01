@@ -2,8 +2,6 @@
 Plot mRNA and protein counts for new genes
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

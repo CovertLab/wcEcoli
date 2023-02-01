@@ -127,6 +127,9 @@ def labeled_indexable_hist(obj, ax, data, gen_data, gen_start, gen_end, colors, 
 		variant_gen_data = gen_data[variant]
 		variant_data = variant_data[(variant_gen_data >= gen_start) & (variant_gen_data < gen_end)]
 
+		if not variant_data.any():
+			continue
+
 		color = colors[variant % len(colors)]
 		if not xlim:
 			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
@@ -171,6 +174,9 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start, gen_en
 		variant_gen_data = gen_data[variant]
 		variant_xdata = variant_data[(variant_gen_data >= gen_start) & (variant_gen_data < gen_end)]
 		variant_ydata = ydata[variant][(variant_gen_data >= gen_start) & (variant_gen_data < gen_end)]
+
+		if not (variant_xdata.any() or variant_ydata.any()):
+			continue
 
 		color = colors[variant % len(colors)]
 		mean = variant_ydata.mean()

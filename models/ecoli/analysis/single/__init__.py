@@ -42,6 +42,7 @@ ACTIVE = [
 	"metabolites.py",
 	"mrnaCounts.py",
 	"mrnaVsProteinCounts.py",
+	"new_gene_counts.py",
 	"ntpCounts.py",
 	"outer_membrane_expression.py",
 	"polysome_counts.py",
