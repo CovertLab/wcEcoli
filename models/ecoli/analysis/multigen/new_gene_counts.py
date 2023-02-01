@@ -32,13 +32,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
 		new_gene_mRNA_ids = [k for k, v in mRNA_idx.items() if k.startswith('NG')]
 		new_gene_mRNA_indexes = [v for k, v in mRNA_idx.items() if k.startswith('NG')]
-		assert len(new_gene_mRNA_ids) != 0, 'no new gene mRNAs found'
+		if len(new_gene_mRNA_ids) != 0:
+			print("This plot is intended to be run on simulations where the"
+				  " new gene option was enabled, but no new gene mRNAs were "
+				  "found.")
+			return
 
 		# Extract protein ids for each new gene
 		monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
 		monomer_idx = {monomer: i for i, monomer in enumerate(monomer_counts_reader.readAttribute('monomerIds'))}
 		new_gene_monomer_ids = [k for k, v in monomer_idx.items() if k.startswith('NG')]
-		assert len(new_gene_monomer_ids) != 0, 'no new gene proteins found'
+		if len(new_gene_monomer_ids) != 0:
+			print("This plot is intended to be run on simulations where the "
+				  "new gene option was enabled, but no new gene proteins were "
+				  "found.")
+			return
 
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')

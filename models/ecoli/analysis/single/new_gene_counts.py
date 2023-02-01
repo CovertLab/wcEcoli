@@ -24,7 +24,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		new_gene_mRNA_ids  = [k for k,v in mRNA_idx.items() if k.startswith('NG')]
 		new_gene_mRNA_indexes = [v for k, v in mRNA_idx.items() if k.startswith('NG')]
 
-		assert len(new_gene_mRNA_ids) != 0, 'no new gene mRNAs found'
+		if len(new_gene_mRNA_ids) != 0:
+			print("This plot is intended to be run on simulations where the"
+				  " new gene option was enabled, but no new gene mRNAs were "
+				  "found.")
+			return
 		new_gene_mRNA_counts = mRNA_counts[:, new_gene_mRNA_indexes]
 
 		# Extract protein counts for each new gene
@@ -35,7 +39,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		new_gene_monomer_ids = [k for k, v in monomer_idx.items() if k.startswith('NG')]
 		new_gene_monomer_indexes = [v for k, v in monomer_idx.items() if k.startswith('NG')]
 
-		assert len(new_gene_monomer_ids) != 0, 'no new gene proteins found'
+		if len(new_gene_monomer_ids) != 0:
+			print("This plot is intended to be run on simulations where the "
+				  "new gene option was enabled, but no new gene proteins "
+				  "were "
+				  "found.")
+			return
 		new_gene_monomer_counts = monomer_counts[:, new_gene_monomer_indexes]
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))

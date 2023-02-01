@@ -36,8 +36,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
 		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
 		new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
-		assert len(new_gene_mRNA_ids) != 0, 'no new gene mRNAs found'
-		assert len(new_gene_monomer_ids) != 0, 'no new gene proteins found'
+		if len(new_gene_mRNA_ids) != 0:
+			print("This plot is intended to be run on simulations where the"
+				  " new gene option was enabled, but no new gene mRNAs were "
+				  "found.")
+			return
+		if len(new_gene_monomer_ids) != 0:
+			print("This plot is intended to be run on simulations where the "
+				  "new gene option was enabled, but no new gene proteins "
+				  "were "
+				  "found.")
+			return
 		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), 'number of new gene monomers and mRNAs should be equal'
 
 		# Data extraction
