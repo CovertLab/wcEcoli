@@ -47,20 +47,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         simOutDir = os.path.join(cell_paths[0], "simOut")
 
         # Time
-        main_reader = TableReader(os.path.join(simOutDir, "Main"))
-        initial_time = main_reader.readAttribute("initialTime")
-        # TODO: is this right with the initial time?
-        time = (read_stacked_columns(cell_paths, 'Main', 'time',
-                                    remove_first=True).squeeze() - initial_time) / 60
+        time = read_stacked_columns(cell_paths, 'Main', 'time', remove_first=True) / 60
         timestep = read_stacked_columns(cell_paths, 'Main', 'timeStepSec', remove_first=True).squeeze()
 
         # Transcriptional probabilities
         actual_cistron_synth_prob = read_stacked_columns(cell_paths, 'RnaSynthProb',
-                                                         "actual_rna_synth_prob_per_cistron",
-                                                         remove_first=True)
+            "actual_rna_synth_prob_per_cistron", remove_first=True)
         target_cistron_synth_prob = read_stacked_columns(cell_paths, 'RnaSynthProb',
-                                                         'target_rna_synth_prob_per_cistron',
-                                                         remove_first=True)
+            'target_rna_synth_prob_per_cistron', remove_first=True)
 
         rna_synth_prob = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
         cistron_id_to_index = {cistron_id: i for (i, cistron_id) in enumerate(
@@ -75,9 +69,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Expected transcription initiation events
         expected_rna_init_per_cistron = read_stacked_columns(cell_paths,
-                                                             'RnaSynthProb',
-                                                             'expected_rna_init_per_cistron',
-                                                             remove_first=True)
+             'RnaSynthProb', 'expected_rna_init_per_cistron', remove_first=True)
         rRNA_expected_rna_init = expected_rna_init_per_cistron[:, rRNA_idxs]
         rRNA_expected_rna_init_rate = np.array(
             [rna_init / timestep for rna_init in rRNA_expected_rna_init.T]).T
@@ -86,7 +78,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Gene dosage
         gene_copy_number = read_stacked_columns(cell_paths, 'RnaSynthProb',
-                                                'gene_copy_number', remove_first=True)
+            'gene_copy_number', remove_first=True)
 
         gene_id_to_index = {gene_id: i for (i, gene_id) in enumerate(
             rna_synth_prob.readAttribute("gene_ids"))}
@@ -103,9 +95,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Partial rRNAs, or RNAPs on rrn genes
         partial_rRNA_cistron_counts = read_stacked_columns(cell_paths,
-                                                           'RNACounts',
-                                                           'partial_rRNA_cistron_counts',
-                                                           remove_first=True)
+            'RNACounts', 'partial_rRNA_cistron_counts', remove_first=True)
 
         rna_counts = TableReader(os.path.join(simOutDir, "RNACounts"))
         rna_id_to_index = {rna_id: i for (i, rna_id) in enumerate(
