@@ -100,7 +100,8 @@ def plotSplom(arrayOfdataArrays, nameArray="", stdArrays=None, labels=None, fig=
 
 def labeled_indexable_hist(obj, ax, data, gen_data, gen_start, gen_end, colors, xlabel, bin_width=1., xlim=None, sf=1, font_size=9):
 	"""
-	Creates a histogram of (subset of) data, with label for mean and standard deviation of data for each variant
+	Creates a histogram of (subset of) data, with label for mean and standard
+	deviation of data for each variant
 
 	Args:
 		obj: specify the Plot object
@@ -116,23 +117,28 @@ def labeled_indexable_hist(obj, ax, data, gen_data, gen_start, gen_end, colors, 
 		sf: scale factor
 		font_size: font size for labeling axes
 
-	Returns: histogram of data, colored by variant, for data corresponding to generation indexes in [gen_start:gen_end]
+	Returns:
+		histogram of data, colored by variant, for data corresponding to
+			generation indexes in [gen_start:gen_end]
 
 	"""
 
 	if xlim:
-		bins = np.histogram(range(xlim[0],xlim[1]+1), bins=int(np.ceil((xlim[1]-xlim[0])/bin_width)))[1]
+		bins = np.histogram(range(xlim[0],xlim[1]+1),
+							bins=int(np.ceil((xlim[1]-xlim[0])/bin_width)))[1]
 
 	for variant, variant_data in data.items():
 		variant_gen_data = gen_data[variant]
-		variant_data = variant_data[(variant_gen_data >= gen_start) & (variant_gen_data < gen_end)]
+		variant_data = variant_data[(variant_gen_data >= gen_start) &
+									(variant_gen_data < gen_end)]
 
 		if not variant_data.any():
 			continue
 
 		color = colors[variant % len(colors)]
 		if not xlim:
-			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min()) / bin_width)))
+			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min())
+									  / bin_width)))
 		mean = variant_data.mean()
 		std = variant_data.std()
 		ax.hist(variant_data, bins, color=color, alpha=0.5,
@@ -146,9 +152,12 @@ def labeled_indexable_hist(obj, ax, data, gen_data, gen_start, gen_end, colors, 
 	ax.tick_params(labelsize=font_size)
 	ax.legend()
 
-def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start, gen_end, colors, xlabel, ylabel, xlim=None, ylim=None, sf=1, font_size=9):
+def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
+							  gen_end, colors, xlabel, ylabel, xlim=None,
+							  ylim=None, sf=1, font_size=9):
 	"""
-	Creates a scatterplot of (subset of) data, with label for mean and standard deviation of data for each variant
+	Creates a scatterplot of (subset of) data, with label for mean and
+	standard deviation of data for each variant
 
 	Args:
 		obj: specify the Plot object
@@ -166,14 +175,18 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start, gen_en
 		sf: scale factor
 		font_size: font size for labeling axes
 
-	Returns: scatterplot of data, colored by variant, for data corresponding to generation indexes in [gen_start:gen_end]
+	Returns:
+		scatterplot of data, colored by variant, for data corresponding
+	 		to generation indexes in [gen_start:gen_end]
 
 	"""
 
 	for variant, variant_data in xdata.items():
 		variant_gen_data = gen_data[variant]
-		variant_xdata = variant_data[(variant_gen_data >= gen_start) & (variant_gen_data < gen_end)]
-		variant_ydata = ydata[variant][(variant_gen_data >= gen_start) & (variant_gen_data < gen_end)]
+		variant_xdata = variant_data[(variant_gen_data >= gen_start) &
+									 (variant_gen_data < gen_end)]
+		variant_ydata = ydata[variant][(variant_gen_data >= gen_start) &
+									   (variant_gen_data < gen_end)]
 
 		if not (variant_xdata.any() or variant_ydata.any()):
 			continue

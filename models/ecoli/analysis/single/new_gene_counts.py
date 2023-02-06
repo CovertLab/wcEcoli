@@ -3,48 +3,66 @@ Plot mRNA and protein counts for new genes
 """
 
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
-from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
+from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
 from six.moves import cPickle,range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		### TODO flag new gene mRNAs and proteins more efficiently
-		# Extract mRNA counts for each new gene
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
-		mRNA_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
+	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile,
+				validationDataFile, metadata):
 
-		new_gene_mRNA_ids  = [k for k,v in mRNA_idx.items() if k.startswith('NG')]
-		new_gene_mRNA_indexes = [v for k, v in mRNA_idx.items() if k.startswith('NG')]
-
-		if len(new_gene_mRNA_ids) != 0:
+		# Determine new gene ids
+		with open(simDataFile, 'rb') as f:
+			sim_data = pickle.load(f)
+		mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
+		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+		new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
+		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
+										monomer_sim_data['id']))
+		new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
+								for mRNA_id in new_gene_mRNA_ids]
+		if len(new_gene_mRNA_ids) == 0:
 			print("This plot is intended to be run on simulations where the"
 				  " new gene option was enabled, but no new gene mRNAs were "
 				  "found.")
 			return
-		new_gene_mRNA_counts = mRNA_counts[:, new_gene_mRNA_indexes]
-
-		# Extract protein counts for each new gene
-		monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
-		monomer_counts = monomer_counts_reader.readColumn('monomerCounts')
-		monomer_idx = {monomer: i for i, monomer in enumerate(monomer_counts_reader.readAttribute('monomerIds'))}
-
-		new_gene_monomer_ids = [k for k, v in monomer_idx.items() if k.startswith('NG')]
-		new_gene_monomer_indexes = [v for k, v in monomer_idx.items() if k.startswith('NG')]
-
-		if len(new_gene_monomer_ids) != 0:
+		if len(new_gene_monomer_ids) == 0:
 			print("This plot is intended to be run on simulations where the "
 				  "new gene option was enabled, but no new gene proteins "
 				  "were "
 				  "found.")
 			return
+		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids),\
+			'number of new gene monomers and mRNAs should be equal'
+
+		# Extract mRNA indexes for each new gene
+		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
+													  'mRNACounts'))
+		mRNA_idx_dict = {rna[:-3]: i for i, rna in enumerate(
+			mRNA_counts_reader.readAttribute('mRNA_ids'))}
+		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
+								 new_gene_mRNA_ids]
+
+		# Extract protein indexes for each new gene
+		monomer_counts_reader = TableReader(
+			os.path.join(simOutDir, "MonomerCounts"))
+		monomer_idx_dict = {monomer: i for i, monomer in
+							enumerate(monomer_counts_reader.readAttribute(
+								'monomerIds'))}
+		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
+									monomer_id in new_gene_monomer_ids]
+
+		# Extract mRNA and monomer counts for each new gene
+		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
+		monomer_counts = monomer_counts_reader.readColumn('monomerCounts')
+		new_gene_mRNA_counts = mRNA_counts[:, new_gene_mRNA_indexes]
 		new_gene_monomer_counts = monomer_counts[:, new_gene_monomer_indexes]
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
@@ -57,7 +75,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Protein Counts
 		plt.subplot(2, 1, 1)
 		for m in range(len(new_gene_monomer_ids)):
-			plt.plot(time / 60., new_gene_monomer_counts[:,m], label = new_gene_monomer_ids[m])
+			plt.plot(time / 60., new_gene_monomer_counts[:,m],
+					 label = new_gene_monomer_ids[m])
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
 		plt.title("New Gene Protein Counts")
@@ -66,7 +85,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# mRNA Counts
 		plt.subplot(2, 1, 2)
 		for r in range(len(new_gene_mRNA_ids)):
-			plt.plot(time / 60., new_gene_mRNA_counts[:,r], label = new_gene_mRNA_ids[r])
+			plt.plot(time / 60., new_gene_mRNA_counts[:,r],
+					 label = new_gene_mRNA_ids[r])
 		plt.xlabel("Time (min)")
 		plt.ylabel("mRNA Counts")
 		plt.title("New Gene mRNA Counts")
