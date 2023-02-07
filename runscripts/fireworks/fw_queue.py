@@ -88,17 +88,14 @@ Modeling options:
 		once a given mass has been added to the cell
 	OPERONS (str, "on"): run with operons "off", "on" (actually monocistronic
 		or polycistronic), or "both" (into adjacent output directories)
-<<<<<<< HEAD
 	NEW_GENES (str,"off"): run with new genes "off" or specify a new_gene_data
 		subdirectory name to add those genes to the chromosome.
-=======
 	REMOVE_RRNA_OPERONS (int, "0"): if nonzero, remove the seven rRNA operons
 		from the simulation, and express each rRNA as individual transcription
 		units. Does not have any effect if OPERONS is set to "off".
 	REMOVE_RRFF (int, "0"): if nonzero, remove the rrfF gene the simulation.
 		If OPERONS is set to "on", this also removes the rrfF gene from the
 		rrnD rRNA operon.
->>>>>>> master
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable

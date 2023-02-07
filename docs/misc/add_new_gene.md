@@ -8,7 +8,7 @@ Addition of new genes to the chromosome<br>(in progress)
   * <b>ID of new genes, RNAs, and proteins MUST begin with NG</b>
   * Necessary data files:
     * `insertion_location.tsv` - Specify desired genome insertion location
-    * `genes.tsv` - List of the genes you would like to insert, with relative coordinates within the sequence to be inserted
+    * `genes.tsv` - List of the genes you would like to insert, with relative coordinates within the sequence to be inserted. Note that only a single contiguous gene insertion is supported at this time.
     * `gene_sequences.tsv` - Sequences of genes to be inserted
     * `rnas.tsv` - RNAs corresponding to those genes
     * `proteins.tsv` - Proteins corresponding to those genes
