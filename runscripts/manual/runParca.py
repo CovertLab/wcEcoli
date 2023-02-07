@@ -71,6 +71,7 @@ class RunParca(scriptBase.ScriptBase):
 			'git_branch': fp.git_branch(),
 			'description': args.description,
 			'operons': args.operons,
+			'new_genes': args.new_genes,
 			'remove_rrna_operons': args.remove_rrna_operons,
 			'remove_rrff': args.remove_rrff,
 			'time': args.time,

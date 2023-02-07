@@ -6,8 +6,10 @@ from __future__ import absolute_import, division, print_function
 
 import matplotlib.pyplot as plt
 from scipy import stats
+import numpy as np
 from six.moves import range
 
+DEFAULT_MATPLOTLIB_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 COLORS_LARGE = ["#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059",
 		"#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87",
@@ -95,3 +97,114 @@ def plotSplom(arrayOfdataArrays, nameArray="", stdArrays=None, labels=None, fig=
 		plottingIndex += 1
 
 	return fig
+
+def labeled_indexable_hist(obj, ax, data, gen_data, gen_start, gen_end, colors, xlabel, bin_width=1., xlim=None, sf=1, font_size=9):
+	"""
+	Creates a histogram of (subset of) data, with label for mean and standard
+	deviation of data for each variant
+
+	Args:
+		obj: specify the Plot object
+		ax: Axes object
+		data: data to plot
+		gen_data: generation index corresponding to each data point
+		gen_start: index of generation to start from (inclusive)
+		gen_end: index of generation to end at (exclusive)
+		colors: list of colors to use for each variant
+		xlabel: x-axis label for plot
+		bin_width: used in conjunction with xlim to determine number of bins
+		xlim: specify x-axis plotting region
+		sf: scale factor
+		font_size: font size for labeling axes
+
+	Returns:
+		histogram of data, colored by variant, for data corresponding to
+			generation indexes in [gen_start:gen_end]
+
+	"""
+
+	if xlim:
+		bins = np.histogram(range(xlim[0],xlim[1]+1),
+							bins=int(np.ceil((xlim[1]-xlim[0])/bin_width)))[1]
+
+	for variant, variant_data in data.items():
+		variant_gen_data = gen_data[variant]
+		variant_data = variant_data[(variant_gen_data >= gen_start) &
+									(variant_gen_data < gen_end)]
+
+		if not variant_data.any():
+			continue
+
+		color = colors[variant % len(colors)]
+		if not xlim:
+			bins = max(1, int(np.ceil((variant_data.max() - variant_data.min())
+									  / bin_width)))
+		mean = variant_data.mean()
+		std = variant_data.std()
+		ax.hist(variant_data, bins, color=color, alpha=0.5,
+			label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
+		ax.axvline(mean, color=color, linestyle='--', linewidth=1)
+
+	if xlim:
+		ax.set_xlim(xlim)
+	obj.remove_border(ax)
+	ax.set_xlabel(xlabel, fontsize=font_size)
+	ax.tick_params(labelsize=font_size)
+	ax.legend()
+
+def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
+							  gen_end, colors, xlabel, ylabel, xlim=None,
+							  ylim=None, sf=1, font_size=9):
+	"""
+	Creates a scatterplot of (subset of) data, with label for mean and
+	standard deviation of data for each variant
+
+	Args:
+		obj: specify the Plot object
+		ax: Axes object
+		xdata: data to plot on x axes
+		ydata: data to plot on y axes
+		gen_data: generation index corresponding to each data point
+		gen_start: index of generation to start from (inclusive)
+		gen_end: index of generation to end at (exclusive)
+		colors: list of colors to use for each variant
+		xlabel: x-axis label for plot
+		ylabel: y-axis label for plot
+		xlim: specify x-axis plotting region
+		ylim: specify y-axis plotting region
+		sf: scale factor
+		font_size: font size for labeling axes
+
+	Returns:
+		scatterplot of data, colored by variant, for data corresponding
+	 		to generation indexes in [gen_start:gen_end]
+
+	"""
+
+	for variant, variant_data in xdata.items():
+		variant_gen_data = gen_data[variant]
+		variant_xdata = variant_data[(variant_gen_data >= gen_start) &
+									 (variant_gen_data < gen_end)]
+		variant_ydata = ydata[variant][(variant_gen_data >= gen_start) &
+									   (variant_gen_data < gen_end)]
+
+		if not (variant_xdata.any() or variant_ydata.any()):
+			continue
+
+		color = colors[variant % len(colors)]
+		mean = variant_ydata.mean()
+		std = variant_ydata.std()
+		mean_new_gene = variant_xdata.mean()
+		ax.scatter(variant_xdata, variant_ydata, color=color, alpha=0.5,
+			label=f'Var {variant}: {mean:.{sf}f} +/- {std:.{sf+1}f}')
+		ax.scatter(mean_new_gene,mean,color=color,alpha=0.5,marker='x')
+
+	if xlim:
+		ax.set_xlim(xlim)
+	if ylim:
+		ax.set_ylim(ylim)
+	obj.remove_border(ax)
+	ax.set_xlabel(xlabel, fontsize=font_size)
+	ax.set_ylabel(ylabel, fontsize=font_size)
+	ax.tick_params(labelsize=font_size)
+	ax.legend()

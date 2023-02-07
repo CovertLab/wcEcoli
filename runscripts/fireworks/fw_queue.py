@@ -88,6 +88,8 @@ Modeling options:
 		once a given mass has been added to the cell
 	OPERONS (str, "on"): run with operons "off", "on" (actually monocistronic
 		or polycistronic), or "both" (into adjacent output directories)
+	NEW_GENES (str,"off"): run with new genes "off" or specify a new_gene_data
+		subdirectory name to add those genes to the chromosome.
 	REMOVE_RRNA_OPERONS (int, "0"): if nonzero, remove the seven rRNA operons
 		from the simulation, and express each rRNA as individual transcription
 		units. Does not have any effect if OPERONS is set to "off".
@@ -294,6 +296,7 @@ GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULA
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 OPERONS = get_environment("OPERONS", constants.DEFAULT_OPERON_OPTION)
 assert OPERONS in constants.EXTENDED_OPERON_OPTIONS, f'{OPERONS=} needs to be in {constants.EXTENDED_OPERON_OPTIONS}'
+NEW_GENES = get_environment("NEW_GENES", constants.DEFAULT_NEW_GENES_OPTION)
 REMOVE_RRNA_OPERONS = bool(int(get_environment("REMOVE_RRNA_OPERONS", DEFAULT_SIMULATION_KWARGS["remove_rrna_operons"])))
 REMOVE_RRFF = bool(int(get_environment("REMOVE_RRFF", DEFAULT_SIMULATION_KWARGS["remove_rrff"])))
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
@@ -453,6 +456,7 @@ class WorkflowBuilder:
 			"git_branch": filepath.git_branch(),
 			"description": os.environ.get("DESC", ""),
 			"operons": self.operons,
+			"new_genes": NEW_GENES,
 			"remove_rrna_operons": REMOVE_RRNA_OPERONS,
 			"remove_rrff": REMOVE_RRFF,
 			"time": SUBMISSION_TIME,
@@ -511,6 +515,7 @@ class WorkflowBuilder:
 		fw_init_raw_data = self.add_firework(
 			InitRawDataTask(
 				operons=self.operons,
+				new_genes=NEW_GENES,
 				remove_rrna_operons=REMOVE_RRNA_OPERONS,
 				remove_rrff=REMOVE_RRFF,
 				output=os.path.join(KB_DIRECTORY, constants.SERIALIZED_RAW_DATA)),
