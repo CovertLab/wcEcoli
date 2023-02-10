@@ -41,6 +41,7 @@ ACTIVE = [
 	"ribosomeUsage.py",
 	# "rnaVsProteinPerCell.py",
 	"rna_decay_03_high.py",
+	"rRNA_operon_expression.py",
 	"subgenerationalTranscription.py",
 	"tf_binding.py",
 	"timeStep.py",
