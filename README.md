@@ -2,7 +2,7 @@
 
 This repository contains work to date on the [Covert Lab's](https://www.covert.stanford.edu/) Whole Cell Model for [*Escherichia coli*](https://en.wikipedia.org/wiki/Escherichia_coli), as well as some effort to create a framework for building whole cell models in general.
 
-You can reach us at [AllenCenterCovertLab](mailto:allencentercovertlab@gmail.com).
+You can reach us at [WholeCellTeam](mailto:wholecellteam@lists.stanford.edu).
 
 
 ## Setup
