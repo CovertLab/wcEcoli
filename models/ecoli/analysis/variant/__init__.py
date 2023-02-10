@@ -16,7 +16,6 @@ ACTIVE = [
 	"growth_expression_comparison.py",
 	"growth_rate_time_series.py",
 	"growth_trajectory.py",
-	"instantaneous_growth_rate_histogram.py",
 	"massFractionSummary.py",
 	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",
