@@ -39,8 +39,6 @@ Conclusions 2018-11-15:
 	  messages. Negative WBITS (compression window size) saves 6 bytes.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 from functools import reduce
 import os
 import sys

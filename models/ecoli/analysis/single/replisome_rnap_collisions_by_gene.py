@@ -3,8 +3,6 @@ Plots the number of collisions between RNAPs and replisomes that occur on each
 gene. Only the top N genes with the most collisions are plotted.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

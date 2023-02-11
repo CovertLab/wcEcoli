@@ -2,8 +2,6 @@
 Plots various simulation components that may be limiting growth
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

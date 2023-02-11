@@ -4,8 +4,6 @@ gene (transcription unit), and compares the distance to the known size of the
 molecular footprint of RNAP.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

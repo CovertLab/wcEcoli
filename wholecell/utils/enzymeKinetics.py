@@ -4,8 +4,6 @@ EnzymeKinetics
 Takes in enzyme kinetics data on initialization, and returns dicts of rate estimates when passed
 metabolite and enzyme concentrations at runtime.
 """
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 from wholecell.utils import units

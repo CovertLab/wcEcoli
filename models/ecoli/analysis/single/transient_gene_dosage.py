@@ -3,9 +3,6 @@ Analysis plot to check the effects of transient gene dosage on transcription
 probabilities of RNAs.
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 import os
 import pickle
 

@@ -4,8 +4,6 @@ Some of the functions contain default values specific to E coli. Please read
 before you use. References for the numbers are included in each function.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 import scipy.constants
 from unum import Unum

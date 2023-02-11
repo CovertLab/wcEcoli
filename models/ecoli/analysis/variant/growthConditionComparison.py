@@ -3,9 +3,6 @@ Plot to compare cell properties across different growth conditions similar to De
 Multiple generations of the same variant will be plotted together
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 import os
 import pickle
 

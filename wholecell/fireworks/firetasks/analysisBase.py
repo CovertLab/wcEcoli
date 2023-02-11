@@ -4,8 +4,6 @@ Abstract base class for a Firetask that runs a category of analysis plots.
 If the `DEBUG_GC` environment variable is true, enable memory leak detection.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import abc
 from collections import OrderedDict
 import datetime

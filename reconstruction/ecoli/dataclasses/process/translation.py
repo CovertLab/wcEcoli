@@ -2,8 +2,6 @@
 SimulationData for translation process
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 from wholecell.sim.simulation import MAX_TIME_STEP

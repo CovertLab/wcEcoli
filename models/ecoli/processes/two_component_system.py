@@ -4,8 +4,6 @@ Two component system
 Two component system sub-model
 
 """
-from __future__ import absolute_import, division, print_function
-
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM

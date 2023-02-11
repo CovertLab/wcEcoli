@@ -1,8 +1,6 @@
 """
 Classes for the Nodes and Edges of a causality network.
 """
-from __future__ import absolute_import, division, print_function
-
 from typing import Optional, Union
 
 # Filenames

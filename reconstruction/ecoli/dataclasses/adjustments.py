@@ -5,8 +5,6 @@ Raw tsv files in 'reconstruction/ecoli/flat/adjustments'
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 class Adjustments(object):
 
 	def __init__(self, raw_data):

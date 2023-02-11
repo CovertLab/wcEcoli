@@ -17,8 +17,6 @@ alias of choice):
 	alias lsd="python runscripts/debug/load_sim_data.py"
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 import sys

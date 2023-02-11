@@ -14,8 +14,6 @@ Initializes the environment using conditions and time series from raw_data.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 from typing import Any, Dict
 
 import numpy as np

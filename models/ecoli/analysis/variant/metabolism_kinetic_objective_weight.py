@@ -2,8 +2,6 @@
 Analyze results from metabolism_kinetic_objective_weight variant
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 from typing import Dict, List, Sequence, Tuple

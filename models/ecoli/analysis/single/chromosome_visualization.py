@@ -3,8 +3,6 @@ Generates a .json file containing the dynamic locations of molecules bound to
 the chromosome.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import json
 import os
 import pickle

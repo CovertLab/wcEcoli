@@ -2,8 +2,6 @@
 SimulationData process associated data
 """
 
-from __future__ import absolute_import, division, print_function
-
 from .chromosome_structure import ChromosomeStructure
 from .complexation import Complexation
 from .equilibrium import Equilibrium

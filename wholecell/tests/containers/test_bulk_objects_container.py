@@ -4,8 +4,6 @@ test_bulk_objects_container.py
 @data: Created 2/27/2014
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 import shutil

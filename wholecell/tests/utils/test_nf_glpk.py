@@ -1,7 +1,5 @@
 # TODO(Jerry): Fill out test_nf_glpk() and add a performance test.
 
-from __future__ import absolute_import, division, print_function
-
 import unittest
 
 import swiglpk as glp

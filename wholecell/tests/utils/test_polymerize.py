@@ -5,8 +5,6 @@ Test polymerize.py
 	pytest wholecell/tests/utils/test_polymerize.py
 """
 
-from __future__ import absolute_import, division, print_function
-
 from wholecell.utils.polymerize import (buildSequences, polymerize,
 	computeMassIncrease, sum_monomers, sum_monomers_reference_implementation)
 

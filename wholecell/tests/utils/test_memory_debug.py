@@ -24,8 +24,6 @@ Following PEP 442, objects with a __del__() method don't end up in gc.garbage
 anymore."
 """
 
-from __future__ import absolute_import, division, print_function
-
 import gc
 import sys
 import unittest

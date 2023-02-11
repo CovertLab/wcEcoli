@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import, division, print_function
-
 from chunk import Chunk
 import os
 import json

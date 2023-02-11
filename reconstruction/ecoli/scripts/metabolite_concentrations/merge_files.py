@@ -8,8 +8,6 @@ Usage with paths to tsv files to merge:
 	./merge_files [TSV1 TSV2 ...]
 """
 
-from __future__ import absolute_import, division, print_function
-
 import io
 import os
 import sys

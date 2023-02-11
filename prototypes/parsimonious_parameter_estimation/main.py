@@ -4,8 +4,6 @@
 See README.md or description.pdf.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from argparse import ArgumentParser

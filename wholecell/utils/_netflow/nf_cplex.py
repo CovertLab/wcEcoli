@@ -3,8 +3,6 @@ NetworkFlow interface to the CPLEX solver package. This package supports both
 linear and quadratic objectives.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 from collections import defaultdict
 
 # NOTE: This file assumes callers catch the ImportError if IBM CPLEX is not

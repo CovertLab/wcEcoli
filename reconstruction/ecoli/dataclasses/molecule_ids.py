@@ -2,8 +2,6 @@
 SimulationData moleculeIds
 """
 
-from __future__ import absolute_import, division, print_function
-
 class MoleculeIds(object):
 	"""
 	Helper class to extract molecule IDs of "special" molecules. All values

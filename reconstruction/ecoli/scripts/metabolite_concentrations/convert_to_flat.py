@@ -23,8 +23,6 @@ Enables Robust Amino Acid Biosynthesis in E. coli by Enforcing Enzyme Overabunda
 https://ars.els-cdn.com/content/image/1-s2.0-S2405471218304794-mmc2.xlsx
 """
 
-from __future__ import absolute_import, division, print_function
-
 import io
 import os
 import sys

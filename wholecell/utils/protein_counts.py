@@ -1,7 +1,5 @@
 """Utilities for counting simulated proteins"""
 
-from __future__ import absolute_import, division, print_function
-
 from typing import cast, List, Tuple
 
 import numpy as np

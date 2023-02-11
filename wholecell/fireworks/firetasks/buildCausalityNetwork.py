@@ -2,7 +2,6 @@
 Run the analysis scripts that generate input files to the Causality Network
 tool.
 """
-from __future__ import absolute_import, division, print_function
 
 import datetime
 import time

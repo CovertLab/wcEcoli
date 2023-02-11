@@ -5,8 +5,6 @@ on each output measure and individual parameter values for the most
 significant parameters for each output difference measure.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from functools import reduce
 import io
 import operator

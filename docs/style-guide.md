@@ -8,9 +8,6 @@ _These guidelines are condensed from the PEP8 and Google style guides here, alon
 
 ## Note: The project has transitioned to Python 3.
 
-We have not yet removed all the Python 2 compatibility imports:
-`from __future__ import absolute_import, division, print_function`
-
 
 # Style Guides
 
@@ -49,11 +46,8 @@ and we can plan to:
 
         find . -name '*.py' -exec awk '{ if (length($0) > max) max = length($0) } END { if (max > 199) print max, FILENAME }' {} \;
 
-* Don't use implicit relative imports (e.g. `import sibling` where `sibling` is in the same directory) because it can import the wrong file (e.g. `import random`), it can import the same module twice (really?), and it doesn't work in Python 3.
+* Use absolute imports or explicit relative imports:
 
-  Instead use absolute imports or explicit relative imports:
-
-      from __future__ import absolute_import  # prevents implicit relative imports
       from . import sibling
       from path.to.mypkg import sibling
       from .sibling import example
@@ -111,7 +105,7 @@ and we can plan to:
 * Module content order:
 
       """Module docstring."""
-      from __future__ import ...
+      __future__ imports
       __all__ = ['a', 'b', 'c']  # and other "dunder" settings like __version__ and __author__
       imports
       code

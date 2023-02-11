@@ -2,8 +2,6 @@
 Plots frequency of observing at least 1 transcript during a cell's life.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

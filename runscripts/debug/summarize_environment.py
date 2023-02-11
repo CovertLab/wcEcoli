@@ -5,8 +5,6 @@ Summarize info on the Python runtime environment that's useful for
 debugging and performance tuning.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import multiprocessing
 import numpy as np
 import os

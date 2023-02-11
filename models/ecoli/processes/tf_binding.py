@@ -4,8 +4,6 @@ TfBinding
 Bind transcription factors to DNA
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process

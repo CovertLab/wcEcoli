@@ -2,8 +2,6 @@
 Plot for dynamics of DnaA proteins binding to DnaA boxes across the chromosome
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

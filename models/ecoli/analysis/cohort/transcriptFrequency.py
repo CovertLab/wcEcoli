@@ -3,8 +3,6 @@ Plots transcript frequency (ie. frequency of observing at least
 one copy of transcript) at the 4th generation across 32 seeds.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

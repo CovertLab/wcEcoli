@@ -2,7 +2,6 @@
 
 """Tests for behavior metrics"""
 
-from __future__ import absolute_import, division, print_function
 from typing import Dict
 import unittest
 

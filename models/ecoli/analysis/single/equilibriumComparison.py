@@ -2,8 +2,6 @@
 Plot empirical Kd's (from the simulation) and their expected value (from the sim_data)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

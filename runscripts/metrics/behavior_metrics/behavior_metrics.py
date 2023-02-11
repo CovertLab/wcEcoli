@@ -3,8 +3,6 @@
 """Compute metrics for model behavior and check expected bounds
 """
 
-from __future__ import absolute_import, division, print_function
-
 from collections import namedtuple
 import importlib
 from os import path

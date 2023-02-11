@@ -2,8 +2,6 @@
 Plot RNA polymerase counts and counts of mRNA precursors
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

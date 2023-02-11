@@ -8,8 +8,6 @@ TODO:
 - match sigma factors to promoters
 """
 
-from __future__ import absolute_import, division, print_function
-
 from typing import cast
 
 import numpy as np

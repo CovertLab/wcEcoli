@@ -3,8 +3,6 @@ ValidationData for Ecoli
 
 Raw data processed into forms convienent for validation and analysis
 """
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from unum import Unum
 

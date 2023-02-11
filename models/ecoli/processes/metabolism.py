@@ -8,8 +8,6 @@ TODO:
 - handle oneSidedReaction constraints
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from scipy.sparse import csr_matrix
 from typing import List, Optional, Set, Tuple

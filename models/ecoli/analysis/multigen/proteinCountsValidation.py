@@ -2,8 +2,6 @@
 Compare protein counts to Schmidt 2015 data set
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

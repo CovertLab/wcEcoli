@@ -8,8 +8,6 @@ to specific molecules.
 SEE THE decomp2() CAUTION ABOUT PERSISTENT DATA (PICKLE) FORMAT.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from copy import deepcopy
 from itertools import product
 from enum import Enum

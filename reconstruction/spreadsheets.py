@@ -4,8 +4,6 @@ allowing for basic type parsing and fields that are dictionaries or lists. The
 reader also supports units and comment lines.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from contextlib import contextmanager
 import csv
 import io

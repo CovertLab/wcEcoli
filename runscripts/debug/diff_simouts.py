@@ -16,8 +16,6 @@ Example command line:
 See the `-h` command line usage help.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import numpy as np
 import os

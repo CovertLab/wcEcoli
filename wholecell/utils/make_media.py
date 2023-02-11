@@ -34,8 +34,6 @@ Example:
 
 '''
 
-from __future__ import absolute_import, division, print_function
-
 from wholecell.utils import units
 
 INF = float("inf")

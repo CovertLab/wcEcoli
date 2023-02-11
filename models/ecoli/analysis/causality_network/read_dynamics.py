@@ -2,8 +2,6 @@
 Reads dynamics data for each of the nodes of a causality network from a single
 simulation.
 """
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 import json

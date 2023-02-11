@@ -4,8 +4,6 @@ EvaluationTime
 Large-scale, low-overhead evaluation time tracker for process/state operations.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from time import monotonic as monotonic_seconds
 
 import numpy as np

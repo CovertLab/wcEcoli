@@ -9,9 +9,6 @@ Expected variant indices (dependent on sorted order from reconstruction/ecoli/fl
 	0-26
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 def timelines(sim_data, index):
 	saved_timelines = sim_data.external_state.saved_timelines
 	timeline_ids = sorted(saved_timelines)

@@ -9,8 +9,6 @@ Modification includes:
 - adjusted parameters
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import io
 import os

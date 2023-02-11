@@ -2,8 +2,6 @@
 Test unit_struct_array.py
 """
 
-from __future__ import absolute_import, division, print_function
-
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.units import g, mol
 import numpy as np

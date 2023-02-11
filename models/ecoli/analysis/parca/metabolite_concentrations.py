@@ -5,8 +5,6 @@ TODO:
 	include species/conc from getBiomassAsConcentrations
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 from typing import cast, Dict, List

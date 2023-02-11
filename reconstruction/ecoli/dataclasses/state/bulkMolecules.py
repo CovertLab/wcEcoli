@@ -2,8 +2,6 @@
 SimulationData for bulk molecules state
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 from wholecell.utils import units

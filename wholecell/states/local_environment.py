@@ -17,8 +17,6 @@ External state that represents environmental molecules and conditions.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 from typing import Dict, Set, Tuple
 
 import numpy as np

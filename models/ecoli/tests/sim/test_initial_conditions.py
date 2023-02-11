@@ -4,8 +4,6 @@ Test_InitialConditions.py
 Tests the initial conditions code of the model.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import unittest
 
 import numpy as np

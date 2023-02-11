@@ -2,8 +2,6 @@
 Plots average RNA counts per cell vs average protein counts per cell.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

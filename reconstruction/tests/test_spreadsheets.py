@@ -1,6 +1,4 @@
 """Unit test for the spreadsheets module."""
-from __future__ import absolute_import, division, print_function
-
 from io import BytesIO, TextIOWrapper
 import os
 import unittest

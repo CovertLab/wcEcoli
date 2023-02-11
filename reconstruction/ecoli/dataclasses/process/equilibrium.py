@@ -6,8 +6,6 @@ fluxesAndMoleculesToSS()
 	Consider relocating (since it's useful for both the parca and simulation)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from scipy import integrate
 import sympy as sp

@@ -2,8 +2,6 @@
 Plots counts of 30S rRNA, associated proteins, and complexes
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

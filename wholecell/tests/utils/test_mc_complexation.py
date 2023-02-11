@@ -2,8 +2,6 @@
 Test polymerize_new.py
 """
 
-from __future__ import absolute_import, division, print_function
-
 from wholecell.utils.mc_complexation import mccBuildMatrices, mccFormComplexesWithPrebuiltMatrices
 
 import numpy as np

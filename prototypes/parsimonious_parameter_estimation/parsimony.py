@@ -2,8 +2,6 @@
 Functions related to finding 'unit parsimonious perturbation vectors'.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 def construct_parsimony_objects(

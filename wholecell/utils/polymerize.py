@@ -10,8 +10,6 @@ TODO:
 - document algorithm/corner cases (should already exist somewhere...)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 from ._build_sequences import buildSequences, computeMassIncrease

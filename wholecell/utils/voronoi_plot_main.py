@@ -56,8 +56,6 @@ exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
 
 """
-from __future__ import absolute_import, division, print_function
-
 from typing import cast, Iterable, List, Optional, Union
 
 import numpy as np

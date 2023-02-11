@@ -4,8 +4,6 @@ count-derived surface area calculations of the inner and outer leaflets
 of the outer membrane.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

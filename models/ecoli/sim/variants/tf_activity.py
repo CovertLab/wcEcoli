@@ -15,8 +15,6 @@ Expected variant indices (dependent on length of sim_data.tfToActiveInactiveCond
 		(odd values will be active TF, even values will be inactive TF)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 CONTROL_OUTPUT = dict(

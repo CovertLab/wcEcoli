@@ -2,8 +2,6 @@
 Plots rRNA expression-related properties for all generations
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import matplotlib.pyplot as plt

@@ -4,8 +4,6 @@
 Aggregate data from Javi's repo to compare to fold_changes.tsv included in wcm.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import io
 import os

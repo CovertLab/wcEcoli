@@ -3,8 +3,6 @@ Plots the histograms of the copy number of each protein at each generation for
 multiple-seed simulations.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

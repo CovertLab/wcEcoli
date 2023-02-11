@@ -4,8 +4,6 @@ Units
 Defines/registers custom units for Pint
 """
 
-from __future__ import absolute_import, division, print_function
-
 import scipy.constants
 import numpy as np
 # noinspection PyUnresolvedReferences

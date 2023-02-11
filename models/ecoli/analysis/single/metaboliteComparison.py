@@ -2,8 +2,6 @@
 Compare metabolite concentrations to target concentrations in FBA objective
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

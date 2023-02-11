@@ -1,6 +1,4 @@
 """Unit test for the tsv module."""
-from __future__ import absolute_import, division, print_function
-
 from io import BytesIO
 from itertools import zip_longest
 import unittest

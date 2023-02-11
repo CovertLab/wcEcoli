@@ -15,8 +15,6 @@ EG10539_RNA	5.3	livJ	Branched chain amino acid ABC transporter - periplasmic bin
 (sorted from sim_data.transcription.process.rnaData, mrna only, elements in range -125:-115)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

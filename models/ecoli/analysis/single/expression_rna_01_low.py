@@ -15,8 +15,6 @@ EG11060_RNA	0.24	ushA	UDP-sugar hydrolase / 5'-ribonucleotidase / 5'-deoxyribonu
 (sorted from sim_data.transcription.process.rnaData, mrna only, elements in range -1505:-1495)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

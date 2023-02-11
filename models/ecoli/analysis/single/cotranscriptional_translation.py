@@ -2,8 +2,6 @@
 Patterns of co-transcriptional translation in the E. coli WCM
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

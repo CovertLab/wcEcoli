@@ -11,8 +11,6 @@ similar results to their paper figure although not explicitly shown in their
 mathematica file.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import io
 import os

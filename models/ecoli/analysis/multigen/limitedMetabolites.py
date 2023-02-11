@@ -2,8 +2,6 @@
 Produces histograms of frequency that production of a metabolite is limited (at least 50 time steps set by WINDOW)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

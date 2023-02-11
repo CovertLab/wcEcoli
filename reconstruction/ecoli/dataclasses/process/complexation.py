@@ -2,8 +2,6 @@
 SimulationData for the Complexation process
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from wholecell.utils import units
 from wholecell.utils.mc_complexation import mccBuildMatrices
