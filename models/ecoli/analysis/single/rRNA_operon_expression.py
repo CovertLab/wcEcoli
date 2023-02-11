@@ -9,18 +9,14 @@ from matplotlib import pyplot as plt
 import pickle
 
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
 
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 LABELPAD = 10
 FONTSIZE = 15
 COLORS = ['b', 'r', 'g', 'c']
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		sim_data = pickle.load(open(simDataFile, "rb"))
 		transcription = sim_data.process.transcription
@@ -104,17 +100,18 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		grouped_RNAP_active_fraction_on_rRNA = np.array(
 			rRNA_cistron_to_type_mapping_matrix @ RNAP_active_fraction_on_rRNA.T)
 
-		# Counts of accumulated rRNAs
+		# Counts of accumulated rRNAs and ppGpp
 		ribosome_30S_id = [sim_data.molecule_ids.s30_full_complex]
 		ribosome_50S_id = [sim_data.molecule_ids.s50_full_complex]
 		rRNA_5S_ids = sim_data.molecule_groups.s50_5s_rRNA
 		rRNA_16S_ids = sim_data.molecule_groups.s30_16s_rRNA
 		rRNA_23S_ids = sim_data.molecule_groups.s50_23s_rRNA
+		ppGpp_id = [sim_data.molecule_ids.ppGpp]
 
 		(ribosome_30S_counts, ribosome_50S_counts, rRNA_5S_counts,
-		rRNA_16S_counts, rRNA_23S_counts) = read_bulk_molecule_counts(
+		rRNA_16S_counts, rRNA_23S_counts, ppGpp_counts) = read_bulk_molecule_counts(
 			simOutDir, (ribosome_30S_id, ribosome_50S_id, rRNA_5S_ids,
-			rRNA_16S_ids, rRNA_23S_ids))
+			rRNA_16S_ids, rRNA_23S_ids, ppGpp_id))
 		free_rRNA_5S_counts = np.sum(rRNA_5S_counts, axis=1)
 		free_rRNA_16S_counts = np.sum(rRNA_16S_counts, axis=1)
 		free_rRNA_23S_counts = np.sum(rRNA_23S_counts, axis=1)
@@ -128,13 +125,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		total_rRNA_23S_counts = free_rRNA_23S_counts + total_50S_counts
 
 		# Concentration of ppGpp
-		bulk_molecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		ppGpp_id = sim_data.molecule_ids.ppGpp
-		ppGpp_index = bulk_molecules.readAttribute('objectNames').index(ppGpp_id)
-		n_avogadro = sim_data.constants.n_avogadro
-		counts_to_moles = (1 / n_avogadro).asNumber(units.mol)
-		ppGpp_conc = bulk_molecules.readColumn('counts')[:, ppGpp_index] * counts_to_moles
-
+		counts_to_molar = TableReader(os.path.join(simOutDir, 'EnzymeKinetics')).readColumn('countsToMolar').squeeze()
+		ppGpp_conc = ppGpp_counts * counts_to_molar
 
 		## Make figure
 		# Ncols is number of rRNA TUs, 1 for total, and 3 for 5S/16S/23S

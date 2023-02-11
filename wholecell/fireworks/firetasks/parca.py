@@ -27,6 +27,7 @@ class ParcaTask(FiretaskBase):
 		'rnapoly_fitting']
 	optional_params = [
 		'operons',
+		'new_genes',
 		'load_intermediate',
 		'save_intermediates',
 		'intermediates_directory',
@@ -57,6 +58,7 @@ class ParcaTask(FiretaskBase):
 		tasks = [
 			InitRawDataTask(
 				operons=self.get('operons'),
+				new_genes=self.get('new_genes'),
 				remove_rrna_operons=self.get('remove_rrna_operons', False),
 				remove_rrff=self.get('remove_rrff', False),
 				output=raw_data_file),
