@@ -5,13 +5,11 @@ Plot mRNA and protein counts for new genes
 import os
 import pickle
 
-import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import cPickle,range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
