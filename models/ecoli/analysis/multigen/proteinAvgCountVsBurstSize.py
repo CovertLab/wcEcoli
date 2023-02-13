@@ -1,7 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -16,7 +14,7 @@ CLOSE_TO_DOUBLE = 0.1
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get all ids required
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		# Get all cells
 		allDir = self.ap.get_cells()

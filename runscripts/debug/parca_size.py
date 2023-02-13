@@ -7,8 +7,6 @@ Usage (SIMDIR is a path to simulation output containing a kb/ directory):
 	runscripts/debug/parca_size.py SIMDIR
 """
 
-from __future__ import absolute_import, division, print_function
-
 from pprint import pprint
 import sys
 

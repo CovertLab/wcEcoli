@@ -1,10 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -17,7 +15,7 @@ THRESHOLD = 1e-13  # roughly, the mass of an electron
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		main_reader = TableReader(os.path.join(simOutDir, "Main"))
 		mass = TableReader(os.path.join(simOutDir, "Mass"))

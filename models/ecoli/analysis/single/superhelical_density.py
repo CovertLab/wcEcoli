@@ -2,10 +2,8 @@
 Plots heatmap of superhelical densities across the chromosome over time
 """
 
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -52,7 +50,7 @@ def add_colorbar_subplot(ax, fig, heatmap):
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		if not metadata.get('superhelical_density'):
 			print('Sim option to calculate superhelical densities was not set.')

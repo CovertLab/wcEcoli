@@ -5,20 +5,17 @@ on each output measure and individual parameter values for the most
 significant parameters for each output difference measure.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from functools import reduce
 import io
 import operator
 import os
-import re
+import pickle
 
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 from scipy import special, stats
-from six.moves import cPickle, range, zip
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -173,9 +170,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		global sim_data
 		global validation_data
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		with open(validationDataFile, 'rb') as f:
-			validation_data = cPickle.load(f)
+			validation_data = pickle.load(f)
 
 		# sim_data information
 		total_params = sum(number_params(sim_data))

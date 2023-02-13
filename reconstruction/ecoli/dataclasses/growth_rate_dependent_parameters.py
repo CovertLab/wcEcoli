@@ -10,8 +10,6 @@ from scipy.optimize import minimize
 import unum
 
 from wholecell.utils import fitting, units
-import six
-
 
 NORMAL_CRITICAL_MASS = 975 * units.fg
 SLOW_GROWTH_FACTOR = 1.2  # adjustment for smaller cells
@@ -178,11 +176,11 @@ class Mass(object):
 		D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams[0]))
 		D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams[0]))
 
-		total = np.sum([y for y in six.viewvalues(D)])
-		for key, value in six.viewitems(D):
+		total = np.sum([y for y in D.values()])
+		for key, value in D.items():
 			if key != 'dna':
 				D[key] = value / total
-		assert np.absolute(np.sum([x for x in six.viewvalues(D)]) - 1.) < 1e-3
+		assert np.absolute(np.sum([x for x in D.values()]) - 1.) < 1e-3
 		return D
 
 	def get_mass_fractions_from_rna_protein_ratio(self, ratio):
@@ -198,7 +196,7 @@ class Mass(object):
 	def get_component_masses(self, doubling_time):
 		D = {}
 		massFraction = self.get_mass_fractions(doubling_time)
-		for key, value in six.viewitems(massFraction):
+		for key, value in massFraction.items():
 			D[key + "Mass"] = value * self.get_avg_cell_dry_mass(doubling_time)
 
 		return D

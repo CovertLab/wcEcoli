@@ -4,8 +4,6 @@ Abstract base class for a Firetask that runs a category of analysis plots.
 If the `DEBUG_GC` environment variable is true, enable memory leak detection.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import abc
 from collections import OrderedDict
 import datetime
@@ -19,13 +17,11 @@ from typing import Dict, List
 from fireworks import FiretaskBase
 import matplotlib as mpl
 from PIL import Image
-from six.moves import zip
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from wholecell.utils import data
 from wholecell.utils import parallelization
 import wholecell.utils.filepath as fp
-from wholecell.utils.py3 import monotonic_seconds
 
 
 # Used to set the backend to Agg before pyplot imports in other scripts.
@@ -155,7 +151,7 @@ class AnalysisBase(FiretaskBase):
 		compiled_image.close()
 
 	def run_task(self, fw_spec):
-		start_real_sec = monotonic_seconds()
+		start_real_sec = time.monotonic()
 		print("\n{}: --- Starting {} ---".format(
 			time.ctime(), type(self).__name__))
 
@@ -218,7 +214,7 @@ class AnalysisBase(FiretaskBase):
 			print('{}: Compiling images'.format(time.ctime()))
 			self.compile_images(fileList)
 
-		elapsed_real_sec = monotonic_seconds() - start_real_sec
+		elapsed_real_sec = time.monotonic() - start_real_sec
 
 		duration = datetime.timedelta(seconds=elapsed_real_sec)
 		if exceptionFileList:

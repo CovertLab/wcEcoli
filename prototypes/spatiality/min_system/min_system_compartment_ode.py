@@ -4,15 +4,12 @@ Min system modeled by compartmentalized ODEs/toast-slice model
 
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
 from wholecell.utils import units
 from wholecell.utils import spatial_tool
-from six.moves import range
 
 
 # From colorbrewer2.org, qualitative 8-class set 1

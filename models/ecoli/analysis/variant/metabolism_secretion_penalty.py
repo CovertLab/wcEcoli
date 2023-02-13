@@ -5,8 +5,6 @@ penalty on growth, flux correlation and exchanges.
 TODO: read and plot central carbon validation correlation
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from matplotlib import pyplot as plt

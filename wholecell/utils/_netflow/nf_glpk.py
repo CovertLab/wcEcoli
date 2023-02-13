@@ -23,19 +23,13 @@ environment, losing state info.
 
 # TODO(Jerry): Check that integer arguments are in range so GLPK won't exit?
 
-from __future__ import absolute_import, division, print_function
-
 from collections import defaultdict
 from enum import Enum
 
 import numpy as np
 from scipy.sparse import coo_matrix
-import six
 import swiglpk as glp
-
 from ._base import NetworkFlowProblemBase
-from six.moves import range
-from six.moves import zip
 
 class MessageLevel(Enum):
 	OFF = glp.GLP_MSG_OFF  # no output
@@ -333,7 +327,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		return self._objective[flow]
 
 	def getFlowRates(self, flows):
-		if isinstance(flows, six.string_types):
+		if isinstance(flows, str):
 			flows = (flows,)
 
 		self._solve()
@@ -412,7 +406,7 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		A = np.zeros((n_coeffs, n_flows))
 		# avoid creating duplicate constraints
 		self._materialIdxLookup = {}
-		for materialIdx, (material, pairs) in enumerate(sorted(six.viewitems(self._materialCoeffs))):
+		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.items())):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
 				A[materialIdx, pair[1]] = pair[0]

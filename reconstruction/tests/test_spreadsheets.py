@@ -1,9 +1,6 @@
 """Unit test for the spreadsheets module."""
-from __future__ import absolute_import, division, print_function
-
 from io import BytesIO, TextIOWrapper
 import os
-import six
 import unittest
 
 from reconstruction.spreadsheets import JsonReader, JsonWriter, read_tsv, tsv_reader
@@ -30,7 +27,7 @@ NONPRIVATE_FIELD_NAMES = ['id', 'ourLocation', 'mass']
 class Test_Spreadsheets(unittest.TestCase):
 	def test_json_reader(self):
 		byte_stream = BytesIO(INPUT_DATA)
-		read_stream = byte_stream if six.PY2 else TextIOWrapper(byte_stream)
+		read_stream = TextIOWrapper(byte_stream)
 		reader = JsonReader(read_stream)
 		l = list(reader)
 		assert len(l) == 2
@@ -48,7 +45,7 @@ class Test_Spreadsheets(unittest.TestCase):
 
 	def test_json_reader_with_private_field(self):
 		byte_stream = BytesIO(INPUT_DATA_WITH_PRIVATE_FIELD)
-		read_stream = byte_stream if six.PY2 else TextIOWrapper(byte_stream)
+		read_stream = TextIOWrapper(byte_stream)
 		reader = JsonReader(read_stream)
 		l = list(reader)
 		assert len(l) == 2
@@ -73,11 +70,7 @@ class Test_Spreadsheets(unittest.TestCase):
 		assert row1[CHEMOSTAT_20] == 9
 		assert CHEMOSTAT_20 in row1
 
-		if six.PY2:
-			# reader.fieldnames contains UTF-8 `bytes`. rows keys are unicode strings.
-			assert CHEMOSTAT_20.encode('utf-8') in fieldnames
-		else:
-			assert CHEMOSTAT_20 in fieldnames
+		assert CHEMOSTAT_20 in fieldnames
 
 	def test_read_tsv(self):
 		entries = read_tsv(JAVIER_TABLE)
@@ -85,8 +78,7 @@ class Test_Spreadsheets(unittest.TestCase):
 
 	def test_json_writer(self):
 		byte_stream = BytesIO()
-		write_stream = byte_stream if six.PY2 else TextIOWrapper(
-			byte_stream, line_buffering=True)
+		write_stream = TextIOWrapper(byte_stream, line_buffering=True)
 		key2 = u'key \u20ac.'
 		field_names = ['key1', key2, '33.3']
 		writer = JsonWriter(write_stream, field_names)

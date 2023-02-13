@@ -2,13 +2,10 @@
 RnapData
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.listeners.listener
 from models.ecoli.processes.transcript_elongation import get_mapping_arrays
-from six.moves import zip
 
 VERBOSE = False
 

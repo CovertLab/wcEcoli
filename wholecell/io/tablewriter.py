@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import json
 import numpy as np
@@ -9,8 +7,6 @@ from typing import Any, Dict, List, Optional, Set
 import zlib
 
 from wholecell.utils import filepath
-import six
-
 
 __all__ = [
 	"TableWriter",
@@ -567,8 +563,8 @@ class TableWriter(object):
 
 		# Later calls - check for missing or unrecognized fields
 		else:
-			missingFields = six.viewkeys(self._columns) - six.viewkeys(namesAndValues)
-			unrecognizedFields = six.viewkeys(namesAndValues) - six.viewkeys(self._columns)
+			missingFields = self._columns.keys() - namesAndValues.keys()
+			unrecognizedFields = namesAndValues.keys() - self._columns.keys()
 
 			if missingFields:
 				raise MissingFieldError(
@@ -580,7 +576,7 @@ class TableWriter(object):
 					"Unrecognized fields: {}".format(", ".join(unrecognizedFields))
 					)
 
-		for name, value in six.viewitems(namesAndValues):
+		for name, value in namesAndValues.items():
 			self._columns[name].append(value)
 
 
@@ -611,7 +607,7 @@ class TableWriter(object):
 		# check before modifying self._attributes
 		sanitized = {}  # type: Dict[str, Any]
 
-		for name, value in six.viewitems(namesAndValues):
+		for name, value in namesAndValues.items():
 			if name in self._attributes:
 				raise AttributeAlreadyExistsError(
 					"An attribute named '{}' already exists.".format(name)
@@ -662,7 +658,7 @@ class TableWriter(object):
 
 		"""
 		if self._columns is not None:
-			for column in six.viewvalues(self._columns):
+			for column in self._columns.values():
 				column.close()
 
 

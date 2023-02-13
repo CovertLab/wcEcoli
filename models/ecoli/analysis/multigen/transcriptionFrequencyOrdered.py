@@ -2,10 +2,8 @@
 Plots frequency of observing at least 1 transcript during a cell's life.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,11 +21,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
 		essential_cistrons = validation_data.essential_genes.essential_cistrons
 
 		# Get mRNA cistron data
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		cistron_ids = sim_data.process.transcription.cistron_data["id"]
 		is_mRNA = sim_data.process.transcription.cistron_data['is_mRNA']
 		mRNA_cistron_indexes = np.where(is_mRNA)[0]

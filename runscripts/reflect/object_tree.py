@@ -1,7 +1,8 @@
-import collections
+from collections.abc import Mapping, Sequence
 import functools
 import numbers
 import os
+import pickle
 from pprint import pformat
 import re
 import sys
@@ -11,14 +12,11 @@ from typing import Dict
 import Bio.Seq
 import numpy as np
 import scipy.interpolate
-import six
-from six.moves import cPickle, range
 import sympy
 from sympy.matrices import dense
 import unum
 
 from wholecell.utils import constants
-from wholecell.utils.py3 import ANY_STRING
 import wholecell.utils.unit_struct_array
 
 
@@ -80,8 +78,8 @@ def is_leaf(value, leaves=LEAF_TYPES):
 	Predicate to determine if we have reached the end of how deep we want to traverse
 	through the object tree.
 	"""
-	if isinstance(value, (collections.Mapping, collections.Sequence)):
-		return isinstance(value, ANY_STRING)
+	if isinstance(value, (Mapping, Sequence)):
+		return isinstance(value, (bytes, str))
 	return (callable(value)                 # it's callable
 			or isinstance(value, leaves)    # it's an instance of a declared leaf type
 			or not has_python_vars(value))  # an object without Python instance variables
@@ -116,15 +114,15 @@ def object_tree(obj, path='', debug=None):
 		if callable(obj) and (debug == 'CALLABLE'):
 			print('{}: {}'.format(path, obj))
 		return obj
-	elif isinstance(obj, collections.Mapping):
+	elif isinstance(obj, Mapping):
 		return {key: object_tree(value, "{}['{}']".format(path, key), debug)
-			for (key, value) in six.viewitems(obj)}
-	elif isinstance(obj, collections.Sequence):
+			for (key, value) in obj.items()}
+	elif isinstance(obj, Sequence):
 		return [object_tree(subobj, "{}[{}]".format(path, index), debug) for index, subobj in enumerate(obj)]
 	else:
 		attrs = all_vars(obj)
 		tree = {key: object_tree(value, "{}.{}".format(path, key), debug)
-				for (key, value) in six.viewitems(attrs)}
+				for (key, value) in attrs.items()}
 		tree['!type'] = type(obj)
 
 		return tree
@@ -191,7 +189,7 @@ def size_tree(o, cutoff=0.1):
 		return size,
 
 	# if it is a dictionary, then get the size of keys and values
-	elif isinstance(o, collections.Mapping):
+	elif isinstance(o, Mapping):
 		sizes = {}
 		total_size = size
 		for key, value in o.items():
@@ -208,7 +206,7 @@ def size_tree(o, cutoff=0.1):
 		return return_val(total_size, sizes)
 
 	# if it is a sequence, then get the size of each element
-	elif isinstance(o, collections.Sequence):
+	elif isinstance(o, Sequence):
 		sizes = []
 		total_size = size
 		for value in o:
@@ -249,8 +247,8 @@ def diff_trees(a, b):
 
 	# treat str and Python 2 unicode as the same leaf type
 	# ditto for int and Python 2 long
-	if (_are_instances_of(a, b, six.string_types)
-			or _are_instances_of(a, b, six.integer_types)):
+	if (_are_instances_of(a, b, str)
+			or _are_instances_of(a, b, int)):
 		if a != b:
 			return elide(a), elide(b)
 
@@ -288,7 +286,7 @@ def diff_trees(a, b):
 			return elide(a), elide(b)
 
 	# if they are dictionaries then diff the value under each key
-	elif isinstance(a, collections.Mapping):
+	elif isinstance(a, Mapping):
 		diff = {}
 		na = Repr('--')
 		nb = Repr('--')
@@ -299,7 +297,7 @@ def diff_trees(a, b):
 		return diff
 
 	# if they are sequences then compare each element at each index
-	elif isinstance(a, collections.Sequence):
+	elif isinstance(a, Sequence):
 		if len(a) > len(b):
 			b = list(b) + (len(a) - len(b)) * [Repr('--')]
 		elif len(b) > len(a):
@@ -386,9 +384,7 @@ def compare_ndarrays(array1, array2):
 def load_tree(path):
 	"""Load a .cPickle file as an object_tree."""
 	with open(path, "rb") as f:
-		# Extra kwargs only in PY3+ for compatibility with PY2 pickle files.
-		kwargs = {} if six.PY2 else dict(fix_imports=True, encoding='latin1')
-		data = cPickle.load(f, **kwargs)
+		data = pickle.load(f, fix_imports=True, encoding='latin1')
 	return object_tree(data)
 
 

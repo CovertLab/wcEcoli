@@ -14,7 +14,7 @@ import numpy as np
 
 from models.ecoli.sim.variants.apply_variant import apply_variant
 from models.ecoli.sim.parameter_search.base_parameter_search import Parameter
-from wholecell.fireworks.firetasks import FitSimDataTask, InitRawDataTask, SimulationTask, SimulationDaughterTask, VariantSimDataTask
+from wholecell.fireworks.firetasks import FitSimDataTask, InitRawDataTask, SimulationTask, SimulationDaughterTask
 from wholecell.sim.simulation import ALTERNATE_KWARG_NAMES
 from wholecell.utils import constants, data, parallelization, scriptBase, units
 import wholecell.utils.filepath as fp

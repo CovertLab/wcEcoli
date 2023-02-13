@@ -1,7 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,13 +7,12 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import zip
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		carbon_sources = sim_data.molecule_groups.carbon_sources
 
 		# Exchange flux

@@ -8,8 +8,6 @@ TODO:
 - add (d)NTP byproduct concentrations
 """
 
-from __future__ import absolute_import, division, print_function
-
 from copy import copy
 import itertools
 import re
@@ -24,8 +22,6 @@ from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
 # NOTE: Importing SimulationDataEcoli would make a circular reference so use Any.
 #from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.utils import units
-import six
-from six.moves import range, zip
 
 KINETIC_CONSTRAINT_CONC_UNITS = units.umol / units.L
 K_CAT_UNITS = 1 / units.s
@@ -201,7 +197,8 @@ class Metabolism(object):
 		metaboliteConcentrations.append(ppi_conc)
 
 		# include metabolites that are part of biomass
-		for key, value in six.viewitems(sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time)):
+		d = sim_data.mass.getBiomassAsConcentrations(sim_data.doubling_time)
+		for key, value in d.items():
 			metaboliteIDs.append(key)
 			metaboliteConcentrations.append(value.asNumber(METABOLITE_CONCENTRATION_UNITS))
 
@@ -2320,6 +2317,6 @@ class ConcentrationUpdates(object):
 			moleculeSetAmounts[moleculeName + "[p]"] = amountToSet * self.units
 			moleculeSetAmounts[moleculeName + "[c]"] = amountToSet * self.units
 
-		for moleculeName, scaleFactor in six.viewitems(self.molecule_scale_factors):
+		for moleculeName, scaleFactor in self.molecule_scale_factors.items():
 			moleculeSetAmounts[moleculeName] = scaleFactor * concDict[moleculeName] * self.units
 		return moleculeSetAmounts

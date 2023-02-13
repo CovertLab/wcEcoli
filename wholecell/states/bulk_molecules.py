@@ -7,10 +7,7 @@ State which represents for a class of molecules the bulk copy numbers.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
-from six.moves import zip
 
 import wholecell.states.internal_state
 import wholecell.views.view

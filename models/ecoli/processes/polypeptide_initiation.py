@@ -4,14 +4,11 @@ PolypeptideInitiation
 Polypeptide initiation sub-model.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
-from six.moves import zip
 
 
 class PolypeptideInitiation(wholecell.processes.process.Process):

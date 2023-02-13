@@ -8,7 +8,6 @@ from typing import Tuple
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-import os
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths

@@ -2,13 +2,11 @@
 CSV reader and writer that default to TAB delimiters.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from collections import OrderedDict
 import csv
 
 from io import TextIOWrapper
-from typing import Any, cast, Dict, IO, Iterable, List, Optional, Sequence, Text, Type, Union
+from typing import Any, cast, Collection, Dict, IO, Iterable, List, Optional, Sequence, Text, Type, Union
 
 
 DIALECT = Union[str, csv.Dialect, Type[csv.Dialect]]
@@ -138,7 +136,7 @@ class dict_reader(object):
 
 
 def dict_writer(f, fieldnames, dialect='excel', **kwargs):
-	# type: (IO[bytes], Iterable[str], DIALECT, **Any) -> csv.DictWriter
+	# type: (IO[bytes], Collection[str], DIALECT, **Any) -> csv.DictWriter
 	"""Open a csv DictWriter() defaulting to TAB delimiters.
 
 	REQUIRES: `csvfile` must be a buffered byte writer, e.g. from

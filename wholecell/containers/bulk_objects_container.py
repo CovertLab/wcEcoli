@@ -1,11 +1,7 @@
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from typing import Any, cast, Iterable
 import zlib
-
-from wholecell.utils.py3 import String
 
 ZLIB_LEVEL = 7
 
@@ -105,7 +101,7 @@ class BulkObjectsContainer(object):
 	"""
 
 	def __init__(self, objectNames, dtype = np.int64):
-		# type: (Iterable[String], Any) -> None
+		# type: (Iterable[str], Any) -> None
 		# Copy the object names into a tuple to ensure they are ordered and
 		# immutable
 		self._objectNames = tuple(objectNames)

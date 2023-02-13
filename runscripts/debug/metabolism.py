@@ -3,14 +3,12 @@
 Tools and analysis to debug metabolism problems.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import os
+import pickle
 from typing import List
 
 import numpy as np
-from six.moves import cPickle, range, zip
 
 from models.ecoli.processes.metabolism import (CONC_UNITS, CONVERSION_UNITS,
 	FluxBalanceAnalysisModel, GDCW_BASIS)
@@ -77,7 +75,7 @@ class MetabolismDebug(scriptBase.ScriptBase):
 		"""
 
 		with open(sim_data_file, 'rb') as f:
-			self.sim_data = cPickle.load(f)
+			self.sim_data = pickle.load(f)
 		self.exchange_molecules = np.array(self.sim_data.external_state.all_external_exchange_molecules)
 
 		# Listeners used

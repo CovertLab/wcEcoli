@@ -14,16 +14,12 @@ Initializes the environment using conditions and time series from raw_data.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 from typing import Any, Dict
 
 import numpy as np
 
 from wholecell.utils import units
 from wholecell.utils.make_media import Media
-import six
-
 
 # threshold (units.mmol / units.L) separates concentrations that are import constrained with
 # max flux = 0 from unconstrained molecules.
@@ -92,14 +88,14 @@ class ExternalState(object):
 			mol["molecule id"]: mol["molecule id"] + mol["exchange molecule location"]
 			for mol_index, mol in enumerate(raw_data.condition.environment_molecules)
 			}
-		self.exchange_to_env_map = {v: k for k, v in six.viewitems(self.env_to_exchange_map)}
+		self.exchange_to_env_map = {v: k for k, v in self.env_to_exchange_map.items()}
 
 		# make dict with exchange molecules for all saved environments, using env_to_exchange_map
 		self.exchange_dict = {}
-		for media, concentrations in six.viewitems(self.saved_media):
+		for media, concentrations in self.saved_media.items():
 			self.exchange_dict[media] = {
 				self.env_to_exchange_map[mol]: conc
-				for mol, conc in six.viewitems(concentrations)
+				for mol, conc in concentrations.items()
 				}
 
 	def exchange_data_from_concentrations(self, molecules):
@@ -136,7 +132,8 @@ class ExternalState(object):
 
 		oxygen_id = 'OXYGEN-MOLECULE[p]'
 
-		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in six.viewitems(molecules)}
+		exchange_molecules = {self.env_to_exchange_map[mol]: conc for mol, conc in
+			molecules.items()}
 
 		# Unconstrained uptake if greater than import threshold
 		importUnconstrainedExchangeMolecules = {molecule_id

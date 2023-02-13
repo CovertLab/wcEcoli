@@ -2,10 +2,8 @@
 Plots transcription events across multiple generations
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,7 +21,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# Get mRNA data
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIndexes = np.where(isMRna)[0]
 

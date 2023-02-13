@@ -8,17 +8,14 @@ Usage example:
 	python wholecell/tests/io/measure_bulk_reader.py out/sim_desc/wildtype_000000/000000/generation_000000/000000/simOut
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
+from time import monotonic as monotonic_seconds
 from typing import Callable, List
 
 import numpy as np
-from six.moves import range
 
 from wholecell.io.tablereader import TableReader
-from wholecell.utils.py3 import monotonic_seconds
 
 
 ITERS = 10

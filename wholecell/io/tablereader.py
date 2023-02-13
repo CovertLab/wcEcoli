@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import, division, print_function
-
 from chunk import Chunk
 import os
 import json
@@ -10,7 +8,6 @@ import zlib
 
 from wholecell.utils import filepath
 from . import tablewriter as tw
-from six.moves import zip
 
 __all__ = [
 	"TableReader",

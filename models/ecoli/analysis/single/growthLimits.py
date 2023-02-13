@@ -2,13 +2,11 @@
 Plots various simulation components that may be limiting growth
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -18,7 +16,7 @@ from wholecell.io.tablereader import TableReader
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		moleculeIds = sim_data.molecule_groups.amino_acids
 		moleculeIds.extend(sim_data.molecule_groups.ntps)

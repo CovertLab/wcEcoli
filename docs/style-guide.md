@@ -6,12 +6,7 @@ _These guidelines are condensed from the PEP8 and Google style guides here, alon
 * See [Google's Python style guide](https://google.github.io/styleguide/pyguide.html)
 * See our [March 12, 2018 meeting slides](https://docs.google.com/presentation/d/1pf6GQmMwbUoeASmNk1bmjYZ-PteJ0tSFH0v6P6vd5eE/edit#slide=id.g313d94100c_0_55) with notes on the tradeoffs between alternatives.
 
-## Note: Python 2 and 3 compatibility
-The project has transitioned to Python 3.
-
-We have not yet removed Python 2 compatibility elements such as
-`from __future__ import absolute_import, division, print_function`
-and uses of the `six` compatibility library.
+## Note: The project has transitioned to Python 3.
 
 
 # Style Guides
@@ -51,11 +46,8 @@ and we can plan to:
 
         find . -name '*.py' -exec awk '{ if (length($0) > max) max = length($0) } END { if (max > 199) print max, FILENAME }' {} \;
 
-* Don't use implicit relative imports (e.g. `import sibling` where `sibling` is in the same directory) because it can import the wrong file (e.g. `import random`), it can import the same module twice (really?), and it doesn't work in Python 3.
+* Use absolute imports or explicit relative imports:
 
-  Instead use absolute imports or explicit relative imports:
-
-      from __future__ import absolute_import  # prevents implicit relative imports
       from . import sibling
       from path.to.mypkg import sibling
       from .sibling import example
@@ -113,7 +105,7 @@ and we can plan to:
 * Module content order:
 
       """Module docstring."""
-      from __future__ import ...
+      __future__ imports
       __all__ = ['a', 'b', 'c']  # and other "dunder" settings like __version__ and __author__
       imports
       code
@@ -219,7 +211,7 @@ Programming tips:
 
 * Use string methods instead of the string module. They're faster and have the same API as Unicode strings.
 * String `.startswith()` and `.endswith()` are less error prone than string slicing.
-* Use e.g. `isinstance(obj, int)` instead of `type(obj) is type(1)` to check an object's type. Use `isinstance(obj, basestring)` to accept both str and unicode.
+* Use e.g. `isinstance(obj, int)` instead of `type(obj) is type(1)` to check an object's type.
   * Better yet, avoid checking types except to catch common errors. It's cleaner to call different function for distinct input patterns or use O-O dispatch.
 
 * Use `' '.join()` rather than looping over `a_string += stuff` to combine strings since `join()` takes linear time rather than O(_n_^2) time.
@@ -500,11 +492,11 @@ Some generic types (_sources_ like Tuple[t1, t2] and FrozenSet[t]) are _covarian
 
 [Summarized from sources like [PythonSpeed](https://wiki.python.org/moin/PythonSpeed).]
 
-* Testing membership in a set or a dict is very fast, `O(n)`, unlike a list, tuple, or array.
+* Testing membership in a set or a dict is very fast, `O(1)`, unlike a list, tuple, or array.
 * Sorting a list using a _sort key_ is faster than using a _comparison function._
 * Mapping a function over a list, or using a list comprehension or generator comprehension, should be faster than a `for` loop since it pushes the loop work into compiled C code.
 * Local variables are faster to access than global variables, builtins, and attribute lookups.
-* Iterators are generally more memory-friendly and scalable than list operations, e.g. `xrange()`, `itertools.imap()`, `dict.iteritems` vs. `range()`, `map()`, `dict.items()`.
+* Iterators are more memory-friendly and scalable than list operations, so in Python 3 a method like `a_dict.items()` returns an iterator. (Call `list(a_dict.items())` if you need a list.)
 * Core building blocks are coded in optimized C, including the builtin datatypes (lists, tuples, sets, and dictionaries) and extension modules like `array`, `itertools`, and `collections.deque`.
 * Builtin functions run faster than hand-built equivalents, e.g. `map(operator.add, v1, v2)` is faster than `map(lambda x, y: x+y, v1, v2)`.
 * For queue applications using `pop(0)` or `insert(0,v)`, `collections.deque()` offers superior `O(1)` performance over a list because it avoids the `O(n)` step of rebuilding a list for each insertion or deletion.

@@ -2,7 +2,6 @@
 Run the analysis scripts that generate input files to the Causality Network
 tool.
 """
-from __future__ import absolute_import, division, print_function
 
 import datetime
 import time
@@ -11,7 +10,6 @@ from fireworks import FiretaskBase, explicit_serialize
 from models.ecoli.analysis.causality_network import read_dynamics
 from models.ecoli.analysis.causality_network.build_network import BuildNetwork
 from wholecell.utils import filepath as fp
-from wholecell.utils.py3 import monotonic_seconds
 
 
 @explicit_serialize
@@ -31,7 +29,7 @@ class BuildCausalityNetworkTask(FiretaskBase):
 		]
 
 	def run_task(self, fw_spec):
-		start_real_sec = monotonic_seconds()
+		start_real_sec = time.monotonic()
 		print("\n{}: --- Starting {} ---".format(
 			time.ctime(), type(self).__name__))
 
@@ -53,7 +51,7 @@ class BuildCausalityNetworkTask(FiretaskBase):
 			node_list,
 			edge_list)
 
-		elapsed_real_sec = monotonic_seconds() - start_real_sec
+		elapsed_real_sec = time.monotonic() - start_real_sec
 
 		duration = datetime.timedelta(seconds=elapsed_real_sec)
 		print("{}: Completed building the Causality network in {}".format(

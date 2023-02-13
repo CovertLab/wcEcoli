@@ -13,7 +13,6 @@ from typing import Any, Dict
 
 import wholecell.loggers.logger
 from wholecell.io.tablewriter import TableWriter
-import six
 
 # TODO: let loaded simulation resume logging in a copied file
 
@@ -63,7 +62,8 @@ class Disk(wholecell.loggers.logger.Logger):
 		sim.tableCreate(self.mainFile)
 
 		# TODO: separate checkpointing and logging
-		for name, obj in itertools.chain(six.viewitems(sim.internal_states), six.viewitems(sim.external_states), six.viewitems(sim.listeners)):
+		for name, obj in itertools.chain(sim.internal_states.items(), sim.external_states.items(),
+										 sim.listeners.items()):
 			saveFile = TableWriter(os.path.join(self.outDir, name))
 
 			obj.tableCreate(saveFile)
@@ -88,14 +88,14 @@ class Disk(wholecell.loggers.logger.Logger):
 		# Close files
 		self.mainFile.close()
 
-		for saveFile in six.viewvalues(self.saveFiles):
+		for saveFile in self.saveFiles.values():
 			saveFile.close()
 
 
 	def copyData(self, sim):
 		sim.tableAppend(self.mainFile)
 
-		for obj, saveFile in six.viewitems(self.saveFiles):
+		for obj, saveFile in self.saveFiles.items():
 			obj.tableAppend(saveFile)
 
 

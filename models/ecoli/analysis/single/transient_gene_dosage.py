@@ -3,15 +3,12 @@ Analysis plot to check the effects of transient gene dosage on transcription
 probabilities of RNAs.
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-from six.moves import cPickle
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -21,7 +18,7 @@ from wholecell.io.tablereader import TableReader
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Read from sim_data
 		transcription = sim_data.process.transcription

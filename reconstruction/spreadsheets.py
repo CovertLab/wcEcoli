@@ -4,8 +4,6 @@ allowing for basic type parsing and fields that are dictionaries or lists. The
 reader also supports units and comment lines.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from contextlib import contextmanager
 import csv
 import io
@@ -26,9 +24,8 @@ def comment_line(line):
 	return line.lstrip().startswith('#')
 
 
-# TODO(jerry): Rename tsv_reader() et al to tsv_json_reader()?
 # TODO(jerry): Implementing this on wholecell.io.tsv.dict_reader/dict_writer
-#  would simplify it, but not as much after we delete the PY2 code.
+#  would simplify it a little.
 
 @contextmanager
 def tsv_reader(filename):

@@ -3,8 +3,6 @@ SimulationData state associated data
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 from wholecell.utils import units
 
 from reconstruction.ecoli.dataclasses.state.bulkMolecules import BulkMolecules

@@ -1,6 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import bokeh.io
 import bokeh.io.state
@@ -9,14 +8,12 @@ from bokeh.plotting import figure, ColumnDataSource
 from matplotlib import pyplot as plt
 import numpy as np
 
-from six.moves import cPickle
 import scipy.stats
 
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import filepath
-from six.moves import zip
 
 
 NUMERICAL_ZERO = 1e-12
@@ -47,7 +44,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		targetToTfType = {}
 
 		for variant, simDir in zip(variants, all_cells):
-			sim_data = cPickle.load(open(self.ap.get_variant_kb(variant), "rb"))
+			sim_data = pickle.load(open(self.ap.get_variant_kb(variant), "rb"))
 
 			delta_prob = sim_data.process.transcription_regulation.delta_prob
 

@@ -3,15 +3,13 @@ Plots the histograms of the copy number of each protein at each generation for
 multiple-seed simulations.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 from itertools import cycle
-from six.moves import cPickle, range, zip
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.io.tablereader import TableReader
@@ -39,7 +37,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_dirs_grouped_by_gen.append(self.ap.get_cells(generation = [gen_idx]))
 
 		# Load simDataFile and get constants
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		sim_data = pickle.load(open(simDataFile, 'rb'))
 		cell_density = sim_data.constants.cell_density
 		ids_translation = sim_data.process.translation.monomer_data["id"]
 		n_proteins = len(ids_translation)

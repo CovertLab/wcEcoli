@@ -11,7 +11,6 @@ import numpy as np
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath
-from wholecell.utils.py3 import ANY_STRING
 
 LOW_RES_DIR = 'low_res_plots'
 SVG_DIR = 'svg_plots'
@@ -143,7 +142,7 @@ def _check_bulk_inputs(mol_names: Union[Tuple[Sequence[str], ...], Sequence[str]
 
 	# Check for string instead of array since it will cause mol_indices lookup to fail
 	for names in mol_names:
-		if isinstance(names, ANY_STRING):
+		if isinstance(names, (bytes, str)):
 			raise Exception('mol_names tuple must contain arrays not strings like {!r}'.format(names))
 
 	return mol_names
@@ -322,7 +321,7 @@ def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 		try:
 			reader = TableReader(os.path.join(sim_out_dir, table))
 			column_data = reader.readColumn(column, squeeze=False)
-			[_remove_first(remove_first)]
+			# [_remove_first(remove_first)]
 			data.append(np.ones_like(column_data)*counter)
 
 		except Exception as e:

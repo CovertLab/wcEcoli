@@ -9,6 +9,7 @@ import binascii
 import functools
 import itertools
 import os
+import pickle
 import time
 import traceback
 from typing import Callable, List
@@ -18,8 +19,6 @@ from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
 import scipy.sparse
-import six
-from six.moves import cPickle, range, zip
 
 from reconstruction.ecoli.initialization import create_bulk_container
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
@@ -148,9 +147,9 @@ def save_state(func):
 					f' or {cell_specs_file}) to load. Make sure to save intermediates'
 					' before trying to load them.')
 			with open(sim_data_file, 'rb') as f:
-				sim_data = cPickle.load(f)
+				sim_data = pickle.load(f)
 			with open(cell_specs_file, 'rb') as f:
-				cell_specs = cPickle.load(f)
+				cell_specs = pickle.load(f)
 			print(f'Loaded sim_data and cell_specs for {func_name}')
 		# Skip running or loading if a later function will be loaded
 		else:
@@ -162,9 +161,9 @@ def save_state(func):
 		if kwargs.get('save_intermediates', False) and intermediates_dir != '' and sim_data is not None:
 			os.makedirs(intermediates_dir, exist_ok=True)
 			with open(sim_data_file, 'wb') as f:
-				cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+				pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 			with open(cell_specs_file, 'wb') as f:
-				cPickle.dump(cell_specs, f, protocol=cPickle.HIGHEST_PROTOCOL)
+				pickle.dump(cell_specs, f, protocol=pickle.HIGHEST_PROTOCOL)
 			print(f'Saved data for {func_name}')
 
 		# Record which functions have been run to know if the loaded function has run
@@ -603,7 +602,7 @@ def buildTfConditionCellSpecifications(
 			fcData = sim_data.tf_to_fold_change[tf]
 		if choice == "__inactive" and conditionValue != sim_data.conditions["basal"]:
 			fcDataTmp = sim_data.tf_to_fold_change[tf].copy()
-			for key, value in six.viewitems(fcDataTmp):
+			for key, value in fcDataTmp.items():
 				fcData[key] = 1. / value
 		expression, cistron_expression = expressionFromConditionAndFoldChange(
 			sim_data.process.transcription,
@@ -3600,7 +3599,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 
 	if os.path.exists(km_filepath):
 		with open(km_filepath, "rb") as f:
-			Km_cache = cPickle.load(f)
+			Km_cache = pickle.load(f)
 
 		# KmCooperativeModel fits a set of Km values to give the expected degradation rates.
 		# It takes 1.5 - 3 minutes to recompute.
@@ -3628,7 +3627,7 @@ def setKmCooperativeEndoRNonLinearRNAdecay(sim_data, bulkContainer):
 			degradation_rates_s=degradation_rates_s)
 
 		with open(km_filepath, "wb") as f:
-			cPickle.dump(Km_cache, f, protocol=cPickle.HIGHEST_PROTOCOL)
+			pickle.dump(Km_cache, f, protocol=pickle.HIGHEST_PROTOCOL)
 	else:
 		if VERBOSE:
 			print("Not running non-linear optimization--using cached result {}".format(km_filepath))

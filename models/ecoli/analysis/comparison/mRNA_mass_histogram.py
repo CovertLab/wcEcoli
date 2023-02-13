@@ -15,7 +15,6 @@ from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader, TableReaderError
-from wholecell.utils import units
 
 
 FIGSIZE = (4, 4)

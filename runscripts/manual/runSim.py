@@ -17,8 +17,6 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import re
 import os
 import sys
@@ -27,7 +25,6 @@ from typing import Tuple
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
-from six.moves import range
 
 
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)

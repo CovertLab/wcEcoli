@@ -2,13 +2,11 @@
 Plots counts of 30S rRNA, associated proteins, and complexes
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY
@@ -23,7 +21,7 @@ FONT = {
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		proteinIds = sim_data.molecule_groups.s30_proteins
 		cistron_ids = [sim_data.process.translation.monomer_data['cistron_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
 		rRnaIds = sim_data.molecule_groups.s30_16s_rRNA

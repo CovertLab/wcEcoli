@@ -2,10 +2,8 @@
 Compare protein counts to Wisniewski 2014 and Schmidt 2015 data sets
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -21,8 +19,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, "rb"))
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
 
 		sim_monomer_ids = sim_data.process.translation.monomer_data["id"]
 		wisniewski_ids = validation_data.protein.wisniewski2014Data["monomerId"]

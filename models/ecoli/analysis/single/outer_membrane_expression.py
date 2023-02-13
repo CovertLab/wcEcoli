@@ -3,8 +3,6 @@ Plot of outer membrane major components expression
 Note: This is not an exhaustive list of all components of outer membrane.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import pickle
 

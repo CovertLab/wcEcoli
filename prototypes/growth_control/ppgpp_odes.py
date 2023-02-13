@@ -11,20 +11,17 @@ similar results to their paper figure although not explicitly shown in their
 mathematica file.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import io
 import os
+from time import monotonic as monotonic_seconds
 
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.integrate import odeint
 from scipy.integrate import ode
-from six.moves import range, zip
 
 from wholecell.io import tsv
-from wholecell.utils.py3 import monotonic_seconds
 from wholecell.utils import parallelization
 
 

@@ -56,8 +56,6 @@ exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
 
 """
-from __future__ import absolute_import, division, print_function
-
 from typing import cast, Iterable, List, Optional, Union
 
 import numpy as np
@@ -67,7 +65,6 @@ from scipy.spatial import ConvexHull
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import matplotlib.pyplot as plt
-from six.moves import range, zip
 
 
 COLORS_256 = [

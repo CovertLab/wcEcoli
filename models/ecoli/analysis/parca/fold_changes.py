@@ -2,8 +2,8 @@
 Compare fold changes from different sources.
 """
 
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
@@ -18,7 +18,7 @@ from wholecell.utils import constants
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
 		with open(os.path.join(input_dir, constants.SERIALIZED_RAW_DATA), 'rb') as f:
-			raw_data = cPickle.load(f)
+			raw_data = pickle.load(f)
 
 		# Load original fold change data
 		original_fold_changes = {}

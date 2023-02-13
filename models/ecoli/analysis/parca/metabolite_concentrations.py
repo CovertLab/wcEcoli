@@ -5,21 +5,18 @@ TODO:
 	include species/conc from getBiomassAsConcentrations
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 from typing import cast, Dict, List
 
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 from scipy import stats
-from six.moves import cPickle, range
 
 from models.ecoli.analysis import parcaAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.utils import constants, units
-from six.moves import zip
 
 
 CONC_UNITS = units.mmol / units.L
@@ -32,9 +29,9 @@ SANDER_KEY = 'Sander Concentration'
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
 		with open(os.path.join(input_dir, constants.SERIALIZED_RAW_DATA), 'rb') as f:
-			raw_data = cPickle.load(f)
+			raw_data = pickle.load(f)
 		with open(sim_data_file, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Extract raw concentrations
 		concentrations = {}  # type: Dict[str, Dict[str, List]]

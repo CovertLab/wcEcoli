@@ -2,8 +2,6 @@
 Produces histograms of frequency that production of a metabolite is limited (at least 50 time steps set by WINDOW)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np
@@ -12,7 +10,6 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import range
 
 WINDOW = 50
 
