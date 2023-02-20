@@ -114,7 +114,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# Extract mRNA indexes for each new gene
 				mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-															  'mRNACounts'))
+															  'RNACounts'))
 				mRNA_idx_dict = {rna[:-3]: i for i, rna in
 					enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
 				new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id)
@@ -129,7 +129,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					for monomer_id in new_gene_monomer_ids]
 
 			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells,
-				'mRNACounts', 'mRNA_counts',
+				'RNACounts', 'mRNA_counts',
 				fun=lambda x: np.mean(x[:,new_gene_mRNA_indexes],axis=0))
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
 				'MonomerCounts', 'monomerCounts',
