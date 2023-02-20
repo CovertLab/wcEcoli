@@ -12,17 +12,20 @@ Modifies:
 	sim_data.process.transcription_regulation.delta_prob
 	sim_data.process.translation.translation_efficiencies_by_monomer
 
-Expected variant indices (int):
+Expected variant indices (int, positive):
 	0: control (knockout new gene expression)
-	any other int (negative or positive): converted to an index for a list of
+	z > 0: converted to an index for a list of
 		new gene expression variant factor and an index for a list of new gene
 		translation efficiency values
+		separator = number of translation efficiency values to try
+		expression index = index div separator + 1
+		translation efficiency index = index mod separator
 
 New gene expression factor:
 	x > 0: multiply new gene expression by a factor of 10^(x-1)
 
 New gene translation efficiency value (normalized):
-	0 < y: set new gene translation efficiency to y
+	y > 0: set new gene translation efficiency to y
 """
 
 CONTROL_OUTPUT = dict(
@@ -34,10 +37,10 @@ CONTROL_OUTPUT = dict(
 # which are written to simulation metadata for later use in analysis scripts
 NEW_GENE_EXPRESSION_FACTORS = [0, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [5, 1, 0.1, 0.01]
-assert len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) % 2 == 0,\
-		"For the indexing to work, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES " \
-		"must be of even length"
-SEPARATOR = int(len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) / 2)
+#assert len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) % 2 == 0,\
+#		"For the indexing to work, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES " \
+#		"must be of even length"
+SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 
 def new_gene_expression_and_translation_efficiency(sim_data, index):
 	# Determine ids and indices of new genes
@@ -81,12 +84,14 @@ def new_gene_expression_and_translation_efficiency(sim_data, index):
 		# Note: this value should not matter since gene is knocked out
 		trl_eff_value = min(trl_eff_data)
 	else:
-		expression_list_index = (abs(index)+1) // SEPARATOR
 		trl_eff_list_index = index % SEPARATOR
-		if index < 0:
-			trl_eff_list_index -= SEPARATOR # Convert to negative index
+		if trl_eff_list_index == 0:
+			expression_list_index = index // SEPARATOR
+		else:
+			expression_list_index = index // SEPARATOR + 1
 
-		expression_factor = NEW_GENE_EXPRESSION_FACTORS[expression_list_index]
+		expression_factor = 10**(NEW_GENE_EXPRESSION_FACTORS[
+		expression_list_index] - 1)
 		trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_VALUES[trl_eff_list_index]
 
 	# Modify expression and translation efficiency for new genes
@@ -102,8 +107,8 @@ def new_gene_expression_and_translation_efficiency(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	return dict(
-		shortName = "{}_NGEXP",
-		desc = "Changed expression of new genes by a factor of {}.".format(
+		shortName = "{}_NGEXP_TRLEFF",
+		desc = "Changed expression of new genes by variant index {}.".format(
 			expression_factor) + ". Set translation efficiency of new genes "
 								 "to {}".format(trl_eff_value)
 		), sim_data

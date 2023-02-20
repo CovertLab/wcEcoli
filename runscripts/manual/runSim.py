@@ -113,7 +113,7 @@ class RunSimulation(scriptBase.ScriptBase):
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
 
 			metadata.update(
-				new_gene_expression_factos=NEW_GENE_EXPRESSION_FACTORS,
+				new_gene_expression_factors=NEW_GENE_EXPRESSION_FACTORS,
 				new_gene_translation_efficiency_values=
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,)
 
