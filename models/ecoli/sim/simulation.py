@@ -22,6 +22,7 @@ from models.ecoli.processes.equilibrium import Equilibrium
 from models.ecoli.processes.tf_binding import TfBinding
 from models.ecoli.processes.tf_unbinding import TfUnbinding
 from models.ecoli.processes.two_component_system import TwoComponentSystem
+from models.ecoli.processes.metabolism_vio import MetabolismVio
 
 # Listeners
 from models.ecoli.listeners.mass import Mass
@@ -85,6 +86,9 @@ class EcoliSimulation(Simulation):
 		),
 		(
 			ChromosomeStructure,
+		),
+		(
+			MetabolismVio,
 		),
 		(
 			Metabolism,

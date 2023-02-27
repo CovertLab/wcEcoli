@@ -222,11 +222,12 @@ class KnowledgeBaseEcoli(object):
 			# These files do not need to be joined to existing files
 			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'insertion_location.tsv'))
 			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'gene_sequences.tsv'))
+			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'metabolic_reactions_new.tsv'))
 
 			# These files need to be joined to existing files
 			new_gene_shared_files = ['genes', 'rnas', 'proteins',
 									 'rna_half_lives',
-									 'protein_half_lives_measured']
+									 'protein_half_lives_measured', 'metabolites']
 			for f in new_gene_shared_files:
 				file_path = os.path.join(new_gene_path, f + '.tsv')
 				"""

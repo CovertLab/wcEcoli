@@ -1,0 +1,6 @@
+"id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
+"NG001_RNA"	"vioA"	["vioA"]	"mRNA"	[]	"NG001"	["NG-VioA-MONOMER"]	null	[]
+"NG002_RNA"	"vioB"	["vioB"]	"mRNA"	[]	"NG002"	["NG-VioB-MONOMER"]	null	[]
+"NG003_RNA"	"vioC"	["vioC"]	"mRNA"	[]	"NG003"	["NG-VioC-MONOMER"]	null	[]
+"NG004_RNA"	"vioD"	["vioD"]	"mRNA"	[]	"NG004"	["NG-VioD-MONOMER"]	null	[]
+"NG005_RNA"	"vioE"	["vioE"]	"mRNA"	[]	"NG005"	["NG-VioE-MONOMER"]	null	[]

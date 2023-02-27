@@ -97,6 +97,9 @@ class Metabolism(object):
 			'Lempp Concentration',
 			'Kochanowski Concentration',
 			'Sander Concentration',
+			'Chen Concentration',
+			'Kumar Concentration',
+			'Heeswijk Concentration'
 			]
 		excluded = {
 			'Park Concentration': {
