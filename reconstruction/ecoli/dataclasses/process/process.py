@@ -12,7 +12,7 @@ from .transcription import Transcription
 from .transcription_regulation import TranscriptionRegulation
 from .translation import Translation
 from .two_component_system import TwoComponentSystem
-from .metabolism_vio import MetabolismVio
+from .metabolism_new_pathway import MetabolismNewPathway
 
 
 class Process(object):
@@ -30,4 +30,5 @@ class Process(object):
 		self.transcription_regulation = TranscriptionRegulation(raw_data, sim_data)
 		self.translation = Translation(raw_data, sim_data)
 		self.two_component_system = TwoComponentSystem(raw_data, sim_data)
-		self.metabolism_vio = MetabolismVio(raw_data, sim_data)
+		self.metabolism_new_pathway = MetabolismNewPathway(raw_data, sim_data)
+		

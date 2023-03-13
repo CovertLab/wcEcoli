@@ -8,7 +8,7 @@ from wholecell.utils import data
 
 
 
-class MetabolismVio(object):
+class MetabolismNewPathway(object):
     def __init__(self, raw_data, sim_data):
         # Build the abstractions needed for the metabolism of violacein
         molecules = []  # list of all molecules involved in the pathway
@@ -28,85 +28,102 @@ class MetabolismVio(object):
         compartment_ids_to_abbreviations = {
             comp['id']: comp['abbrev'] for comp in raw_data.compartments
         }
-        for reactionIndex, reaction in enumerate(raw_data.new_gene_data.vioAE.metabolic_reactions_new):
-            reactionName = reaction["id"]
-            if reactionName not in rxnIds:
-                rxnIds.append(reactionName)
-                ratesFwd.append(reaction["forward_rate"])
-                ratesRev.append(reaction["reverse_rate"])
+        try:
+            new_genes_folder = getattr(raw_data.new_gene_data, dir(raw_data.new_gene_data)[-1])
+            if new_genes_folder.metabolic_reactions_new:
+                for reactionIndex, reaction in enumerate(new_genes_folder.metabolic_reactions_new):
+                    reactionName = reaction["id"]
+                    if reactionName not in rxnIds:
+                        rxnIds.append(reactionName)
+                        ratesFwd.append(reaction["forward_rate"])
+                        ratesRev.append(reaction["reverse_rate"])
 
-                try:
-                    enzymes.append(reaction["catalyzed_by"][0])
-                except:
-                    enzymes.append(None)
-                reactionIndex = len(rxnIds) - 1
+                        try:
+                            enzymes.append(reaction["catalyzed_by"][0])
+                        except:
+                            enzymes.append(None)
+                        reactionIndex = len(rxnIds) - 1
 
-            #Build stoichiometry matrix
-            for mol_id, coeff in reaction["stoichiometry"].items():
-                # Replace miscRNA subunit IDs with TU IDs
-                if mol_id in miscrnas_with_singleton_tus:
-                    mol_id = sim_data.getter.get_singleton_tu_id(mol_id)
+                    #Build stoichiometry matrix
+                    for mol_id, coeff in reaction["stoichiometry"].items():
+                        # Replace miscRNA subunit IDs with TU IDs
+                        if mol_id in miscrnas_with_singleton_tus:
+                            mol_id = sim_data.getter.get_singleton_tu_id(mol_id)
 
-                mol_id_with_compartment = "{}[{}]".format(
-                    mol_id.split('[')[0],
-                    compartment_ids_to_abbreviations[mol_id.split('[')[1][:-1]]
-                )
+                        mol_id_with_compartment = "{}[{}]".format(
+                            mol_id.split('[')[0],
+                            compartment_ids_to_abbreviations[mol_id.split('[')[1][:-1]]
+                        )
 
-                if mol_id_with_compartment not in molecules:
-                    molecules.append(mol_id_with_compartment)
-                    molecule_index = len(molecules) - 1
-                else:
-                    molecule_index = molecules.index(mol_id_with_compartment)
-
-
-                assert (coeff % 1) == 0
-
-                stoichMatrixI.append(molecule_index)
-                stoichMatrixJ.append(reactionIndex)
-                stoichMatrixV.append(coeff)
-
-                # Find molecular mass of the molecule and add to mass matrix
-                molecularMass = sim_data.getter.get_mass(mol_id_with_compartment.split('[')[0]).asNumber(units.g / units.mol)
-                stoichMatrixMass.append(molecularMass)
-
-        self.molecule_names = np.array(molecules, dtype='U')
-        self.rxn_ids = rxnIds
-        self.enzymes = enzymes
-        self.rates_fwd = np.array(ratesFwd)
-        self.rates_rev = np.array(ratesRev)
-
-        self._stoichMatrixI = np.array(stoichMatrixI)
-        self._stoichMatrixJ = np.array(stoichMatrixJ)
-        self._stoichMatrixV = np.array(stoichMatrixV)
-
-        self._stoich_matrix_mass = np.array(stoichMatrixMass)
-        self.balance_matrix = self.stoich_matrix() * self.mass_matrix()
-
-        # Find the mass balance of each equation in the balanceMatrix
-
-        massBalanceArray = self.mass_balance()
+                        if mol_id_with_compartment not in molecules:
+                            molecules.append(mol_id_with_compartment)
+                            molecule_index = len(molecules) - 1
+                        else:
+                            molecule_index = molecules.index(mol_id_with_compartment)
 
 
-        # The stoichometric matrix should balance out to numerical zero. This gives an error with smaller number.
-        assert np.max(np.absolute(massBalanceArray)) < 1e-2
+                        assert (coeff % 1) == 0
 
-        # Build matrices
-        self._populate_derivative()
+                        stoichMatrixI.append(molecule_index)
+                        stoichMatrixJ.append(reactionIndex)
+                        stoichMatrixV.append(coeff)
+
+                        # Find molecular mass of the molecule and add to mass matrix
+                        molecularMass = sim_data.getter.get_mass(mol_id_with_compartment.split('[')[0]).asNumber(units.g / units.mol)
+                        stoichMatrixMass.append(molecularMass)
+
+                self.molecule_names = np.array(molecules, dtype='U')
+                self.rxn_ids = rxnIds
+                self.enzymes = enzymes
+                self.rates_fwd = np.array(ratesFwd)
+                self.rates_rev = np.array(ratesRev)
+
+                self._stoichMatrixI = np.array(stoichMatrixI)
+                self._stoichMatrixJ = np.array(stoichMatrixJ)
+                self._stoichMatrixV = np.array(stoichMatrixV)
+
+                self._stoich_matrix_mass = np.array(stoichMatrixMass)
+                print('There are metabolic reactions to be added')
+                self.balance_matrix = self.stoich_matrix() * self.mass_matrix()
+
+                # Find the mass balance of each equation in the balanceMatrix
+
+                massBalanceArray = self.mass_balance()
+
+
+                # The stoichometric matrix should balance out to numerical zero. This gives an error with smaller number.
+                assert np.max(np.absolute(massBalanceArray)) < 1e-9
+
+                # Build matrices
+                self._populate_derivative()
+            else:
+                print('There is no metabolic reaction to be added')
+        except Exception as e:
+            print('No extra genes were added')
+            print(e)
+
 
     def __getstate__(self):
         """Return the state to pickle, omitting derived attributes that
         __setstate__() will recompute, esp. the ode_derivatives
         that don't pickle.
         """
-        return data.dissoc_strict(self.__dict__, (
-            'symbolic_rates',
-            '_rates',
-            '_stoich_matrix'))
+        try:
+            return data.dissoc_strict(self.__dict__, (
+                'symbolic_rates',
+                '_rates',
+                '_stoich_matrix'))
+        except:
+            return 0
+
 
     def __setstate__(self, state):
         """Restore instance attributes, recomputing some of them."""
-        self.__dict__.update(state)
-        self._populate_derivative()
+        try:
+            self.__dict__.update(state)
+            self._populate_derivative()
+        except:
+            return 0
 
     def stoich_matrix(self):
         '''
@@ -180,9 +197,8 @@ class MetabolismVio(object):
             rates.append(reactantFlux - productFlux)
         return y, rates
 
-    def molecules_to_next_time_step(self, moleculeCounts, enzymeNames, enzymeDict, cellVolume,
-                                    nAvogadro, timeStepSec, random_state, method, min_time_step=None,
-                                    jit=True):
+    def molecules_to_next_time_step(self, moleculeCounts, moleculeNames, enzymeNames, enzymeDict, cellVolume,
+                                    nAvogadro, timeStepSec, method, jit=True):
         """
         Calculates the changes in the counts of molecules in the next timestep
         by solving an initial value ODE problem.
@@ -193,7 +209,6 @@ class MetabolismVio(object):
             cellVolume (float): current volume of cell
             nAvogadro (float): Avogadro's number
             timeStepSec (float): current length of timestep in seconds
-            random_state (RandomState object): process random state
             method (str): name of the ODE method to use
             min_time_step (int): if not None, timeStepSec will be scaled down until
                 it is below min_time_step if negative counts are encountered
@@ -232,7 +247,7 @@ class MetabolismVio(object):
             derivatives = self.derivatives
 
         sol = scipy.integrate.solve_ivp(
-            lambda t, y: derivatives([0, timeStepSec], y_init, enzymeC), [0, timeStepSec], y_init,
+            lambda t, y: derivatives([0, timeStepSec], y_init, enzymeC, moleculeNames), [0, timeStepSec], y_init,
             method=method, t_eval=[0, timeStepSec], atol=1e-8)
         y = sol.y.T
 
@@ -245,7 +260,7 @@ class MetabolismVio(object):
 
         return moleculesNeeded, allMoleculesChanges
 
-    def derivatives(self, t, y, enzymeC):
+    def derivatives(self, t, y, enzymeC, moleculeNames):
         """
         Calculate derivatives from stoichiometry and rates with argument order
         for solve_ivp.
@@ -254,15 +269,15 @@ class MetabolismVio(object):
         return self._stoich_matrix.dot(np.multiply(enzymeC, self._rates[0](y, t)))
 
 
-    def derivatives_jit(self, t, y, enzymeC):
+    def derivatives_jit(self, t, y, enzymeC,moleculeNames):
         """
         Calculate derivatives from stoichiometry and rates with argument order
         for solve_ivp.
         """
-        #print('Current conc ', y)
-        #print('S ', self._stoich_matrix)
-        #print('enzyme ', enzymeC)
+        print({k:v for k,v in zip(moleculeNames,y)})
+        print('enzyme ', enzymeC)
         print('rates ', self._rates[0](y, t))
+        print('S ', self._stoich_matrix)
         return self._stoich_matrix.dot(np.multiply(enzymeC, self._rates[0](y, t)))
 
     def _make_derivative(self):

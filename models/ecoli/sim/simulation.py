@@ -22,7 +22,6 @@ from models.ecoli.processes.equilibrium import Equilibrium
 from models.ecoli.processes.tf_binding import TfBinding
 from models.ecoli.processes.tf_unbinding import TfUnbinding
 from models.ecoli.processes.two_component_system import TwoComponentSystem
-from models.ecoli.processes.metabolism_vio import MetabolismVio
 
 # Listeners
 from models.ecoli.listeners.mass import Mass
@@ -47,6 +46,12 @@ from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
 from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
 
+try:
+	from models.ecoli.processes.metabolism_new_pathway import MetabolismNewPathway
+	ext_pathway = True
+except:
+	ext_pathway = False
+	print('No external pathway found')
 
 class EcoliSimulation(Simulation):
 	_internalStateClasses = (
@@ -87,16 +92,28 @@ class EcoliSimulation(Simulation):
 		(
 			ChromosomeStructure,
 		),
-		(
-			MetabolismVio,
-		),
+	)
+	if ext_pathway:
+		_processClasses+=(
+			(
+				MetabolismNewPathway,
+			),
+			(
+				Metabolism,
+			),
+			(
+				CellDivision,
+			),
+		)
+	else:
+		_processClasses+=(
 		(
 			Metabolism,
 		),
 		(
 			CellDivision,
 		),
-	)
+		)
 
 	_listenerClasses = (
 		Mass,

@@ -99,7 +99,7 @@ class Metabolism(object):
 			'Sander Concentration',
 			'Chen Concentration',
 			'Kumar Concentration',
-			'Heeswijk Concentration'
+			'Heeswijk Concentration',
 			]
 		excluded = {
 			'Park Concentration': {

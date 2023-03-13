@@ -228,6 +228,7 @@ class KnowledgeBaseEcoli(object):
 			new_gene_shared_files = ['genes', 'rnas', 'proteins',
 									 'rna_half_lives',
 									 'protein_half_lives_measured', 'metabolites']
+
 			for f in new_gene_shared_files:
 				file_path = os.path.join(new_gene_path, f + '.tsv')
 				"""
@@ -372,14 +373,16 @@ class KnowledgeBaseEcoli(object):
 				added_data = getattr(added_data, attr)
 
 			# Check columns are the same for each dataset
-			col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
-			if col_diff:
-				raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
-					f'because columns do not match (different columns: {col_diff}).')
+			if added_data:
+				col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
+				if col_diff:
+					raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
+						f'because columns do not match (different columns: {col_diff}).')
 
-			# Join datasets
-			for row in added_data:
-				data.append(row)
+				# Join datasets
+				for row in added_data:
+					data.append(row)
+
 
 	def _modify_data(self):
 		"""
