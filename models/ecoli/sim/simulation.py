@@ -1,4 +1,5 @@
 from wholecell.sim.simulation import Simulation
+import os
 
 # States
 from wholecell.states.bulk_molecules import BulkMolecules
@@ -45,13 +46,7 @@ from models.ecoli.listeners.rna_maturation_listener import RnaMaturationListener
 from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
 from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
-
-try:
-	from models.ecoli.processes.metabolism_new_pathway import MetabolismNewPathway
-	ext_pathway = True
-except:
-	ext_pathway = False
-	print('No external pathway found')
+from models.ecoli.processes.metabolism_new_pathway import MetabolismNewPathway
 
 class EcoliSimulation(Simulation):
 	_internalStateClasses = (
@@ -92,28 +87,16 @@ class EcoliSimulation(Simulation):
 		(
 			ChromosomeStructure,
 		),
-	)
-	if ext_pathway:
-		_processClasses+=(
-			(
-				MetabolismNewPathway,
-			),
-			(
-				Metabolism,
-			),
-			(
-				CellDivision,
-			),
-		)
-	else:
-		_processClasses+=(
+		(
+			MetabolismNewPathway,
+		),
 		(
 			Metabolism,
 		),
 		(
 			CellDivision,
 		),
-		)
+	)
 
 	_listenerClasses = (
 		Mass,
