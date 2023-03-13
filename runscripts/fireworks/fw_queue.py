@@ -485,6 +485,18 @@ class WorkflowBuilder:
 			"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 			}
 
+		if VARIANT == 'new_gene_expression_and_translation_efficiency':
+			# Record the values used in this variant for analysis scripts
+			from models.ecoli.sim.variants\
+				.new_gene_expression_and_translation_efficiency import \
+				NEW_GENE_EXPRESSION_FACTORS, \
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
+
+			self.metadata.update({
+				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
+				"new_gene_translation_efficiency_values":
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES})
+
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
 		filepath.write_json_file(metadata_path, self.metadata)
