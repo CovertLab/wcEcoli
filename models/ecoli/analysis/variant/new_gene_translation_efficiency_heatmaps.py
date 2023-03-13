@@ -15,7 +15,6 @@ Plots:
 TODO:
 - Accomodate more than one new gene
 - Read in the needed variant values from metadata rather than input
-- Option for early vs late gen plotting
 """
 
 import numpy as np
@@ -26,8 +25,6 @@ from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
 	read_stacked_columns, stacked_cell_threshold_mask, \
 	read_stacked_bulk_molecules, stacked_cell_identification
-from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS as \
-	COLORS
 from unum.units import g, mol
 
 from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
@@ -46,8 +43,8 @@ addition to all generations
 exclude_early_gens = 1
 
 FONT_SIZE=9
-MAX_VARIANT = 37 # do not include any variant >= this index
-MAX_CELL_INDEX = 8 # do not include any generation >= this index
+MAX_VARIANT = 43 # do not include any variant >= this index
+MAX_CELL_INDEX = 16 # do not include any generation >= this index
 
 """
 Count number of sims that reach this generation (remember index 7 
@@ -66,22 +63,8 @@ if (exclude_timeout_cells==0):
 	MAX_CELL_LENGTH += 1000000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def bar(self, ax, data, xlabel, ylabel, xlim=None,ylim=None):
-		for variant, variant_data in data.items():
-			color = COLORS[variant % len(COLORS)]
-			ax.bar(variant, variant_data, color=color, label=f'Var {variant}')
-
-		if xlim:
-			ax.set_xlim(xlim)
-		if ylim:
-			ax.set_ylim(ylim)
-		self.remove_border(ax)
-		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
-		ax.tick_params(labelsize=FONT_SIZE)
-		ax.legend()
-
-	def heatmap(self, ax, mask, data, xlabel, ylabel, xlabels,
+	### TODO: move to analysis_tools
+	def heatmap(self, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 				ylabels, title):
 		im = ax.imshow(data, cmap="GnBu")
 		ax.set_xticks(np.arange(len(xlabels)))
@@ -94,8 +77,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(ylabels)):
 			for j in range(len(xlabels)):
 				if mask[i,j]:
+					col = "k"
+					if completion_data[i,j] < 0.9:
+						col = "r"
 					text = ax.text(j, i, data[i, j],
-								   ha="center", va="center", color="k")
+								   ha="center", va="center", color=col)
 		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
 		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
 		ax.set_title(title)
@@ -146,29 +132,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variant_mask[trl_eff_list_index, expression_list_index] = True
 
 		# Create data structures that we will use for the heatmaps
-		doubling_times_heatmap = np.zeros((
+		doubling_times_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		completed_gens_heatmap = np.zeros((
+		completed_gens_heatmap = np.zeros(( 1,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS)))
-		avg_rnap_counts_heatmap = np.zeros((
+		avg_rnap_counts_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		avg_ribosome_counts_heatmap = np.zeros((
+		avg_ribosome_counts_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		avg_ppgpp_counts_heatmap = np.zeros((
+		avg_ppgpp_counts_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
 		# TODO: Expand to Accomodate Multiple New Genes
-		avg_new_gene_mRNA_counts_heatmap = np.zeros((
+		avg_new_gene_mRNA_counts_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		avg_new_gene_monomer_counts_heatmap = np.zeros((
+		avg_new_gene_monomer_counts_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		avg_new_gene_monomer_mass_fraction_heatmap = np.zeros((
+		avg_new_gene_monomer_mass_fraction_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
 
@@ -316,7 +302,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rnapId = ["APORNAP-CPLX[c]"]
 			(rnapCountsBulk,) = read_stacked_bulk_molecules(all_cells,
 															(rnapId,))
-
 			cell_id_vector = stacked_cell_identification(all_cells,
 														 'Main',
 														 'time')
@@ -324,7 +309,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				cell_id_vector, return_inverse=True, return_counts=True)
 			sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
 			avg_rnap_counts = sum_rnap_counts / cell_total_timesteps
-
 			rnap_counts[variant] = avg_rnap_counts[exclude_timeout_cell_mask]
 
 			# ppGpp counts
@@ -335,116 +319,199 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Add values to heatmap data structures
 			exp_index, trl_eff_index = variant_index_to_list_indices[variant]
-			doubling_times_heatmap[trl_eff_index, exp_index] = round(np.mean(
+			doubling_times_heatmap[0, trl_eff_index, exp_index] = round(
+				np.mean(
 				doubling_times[variant]))
-			completed_gens_heatmap[trl_eff_index, exp_index] = \
+			completed_gens_heatmap[0, trl_eff_index, exp_index] = \
 				round(reached_count_gen[variant],2)
 			i = 0 ### TODO: accomodate multiple new genes
-			avg_new_gene_mRNA_counts_heatmap[trl_eff_index, exp_index] = \
+			avg_new_gene_mRNA_counts_heatmap[0, trl_eff_index, exp_index] = \
 				round(np.mean(new_gene_mRNA_counts[i][variant]), 2)
-			avg_new_gene_monomer_counts_heatmap[trl_eff_index, exp_index] = \
+			avg_new_gene_monomer_counts_heatmap[0, trl_eff_index, exp_index]\
+				= \
 				round(np.mean(new_gene_monomer_counts[i][variant]), 2)
-			avg_new_gene_monomer_mass_fraction_heatmap[trl_eff_index,exp_index]	= \
+			avg_new_gene_monomer_mass_fraction_heatmap[0, trl_eff_index,\
+														exp_index]	= \
 				round(np.mean(new_gene_monomer_mass_fraction[i][variant]), 2)
-			avg_ribosome_counts_heatmap[trl_eff_index, exp_index] = int(round(
+			avg_ribosome_counts_heatmap[0, trl_eff_index, exp_index] = int(
+				round(
 				np.mean(ribosome_counts[variant])))
-			avg_rnap_counts_heatmap[trl_eff_index, exp_index] = round(
+			avg_rnap_counts_heatmap[0, trl_eff_index, exp_index] = round(
 				np.mean(rnap_counts[variant]))
-			avg_ppgpp_counts_heatmap[trl_eff_index, exp_index] = round(
-				np.mean(ppgpp_counts[variant]))
+			avg_ppgpp_counts_heatmap[0, trl_eff_index, exp_index] = round(
+				np.mean(ppgpp_counts[variant]), 1)
+
+			if exclude_early_gens == 1:
+				# Add early gen values to the heatmap structure
+				early_cell_mask = generations[variant] < MIN_LATE_CELL_INDEX
+				if len(early_cell_mask) == 1:
+					early_cell_mask = early_cell_mask[0]
+
+				doubling_times_heatmap[1, trl_eff_index, exp_index] = round(
+					np.mean(doubling_times[variant][early_cell_mask]))
+				i = 0  ### TODO: accomodate multiple new genes
+				avg_new_gene_mRNA_counts_heatmap[1, trl_eff_index, exp_index]\
+					= \
+					round(np.mean(new_gene_mRNA_counts[i][variant][early_cell_mask]), 2)
+				avg_new_gene_monomer_counts_heatmap[
+					1, trl_eff_index, exp_index] \
+					= \
+					round(np.mean(new_gene_monomer_counts[i][variant][early_cell_mask]), 2)
+
+				avg_new_gene_monomer_mass_fraction_heatmap[1, trl_eff_index, \
+														   exp_index] = \
+					round(np.mean(new_gene_monomer_mass_fraction[i][variant][early_cell_mask]),
+						  2)
+				avg_ribosome_counts_heatmap[1, trl_eff_index, exp_index] = \
+					int(round(np.mean(ribosome_counts[variant][early_cell_mask])))
+				avg_rnap_counts_heatmap[1, trl_eff_index, exp_index] = round(
+					np.mean(rnap_counts[variant][early_cell_mask]))
+				avg_ppgpp_counts_heatmap[1, trl_eff_index, exp_index] = round(
+					np.mean(ppgpp_counts[variant][early_cell_mask]), 1)
+
+				# Add late gen values to the heatmap structure
+				late_cell_mask = np.logical_and((generations[variant] >=
+								  MIN_LATE_CELL_INDEX), \
+								 (generations[variant] < MAX_CELL_INDEX))
+				if len(late_cell_mask) == 1:
+					late_cell_mask = late_cell_mask[0]
+				if sum(late_cell_mask) != 0:
+					doubling_times_heatmap[2, trl_eff_index, exp_index] = round(
+						np.mean(doubling_times[variant][late_cell_mask]))
+					i = 0  ### TODO: accomodate multiple new genes
+					avg_new_gene_mRNA_counts_heatmap[2, trl_eff_index,exp_index] = \
+						round(np.mean(new_gene_mRNA_counts[i][variant][late_cell_mask]), 2)
+					avg_new_gene_monomer_counts_heatmap[2, trl_eff_index, exp_index] = \
+						round(np.mean(new_gene_monomer_counts[i][variant][late_cell_mask]), 2)
+					avg_new_gene_monomer_mass_fraction_heatmap[2, trl_eff_index, exp_index] = \
+						round(np.mean(new_gene_monomer_mass_fraction[i][variant][late_cell_mask]),
+							  2)
+					avg_ribosome_counts_heatmap[2, trl_eff_index, exp_index] = \
+						int(round(np.mean(ribosome_counts[variant][late_cell_mask])))
+					avg_rnap_counts_heatmap[2, trl_eff_index, exp_index] = \
+						round(np.mean(rnap_counts[variant][late_cell_mask]))
+					avg_ppgpp_counts_heatmap[2, trl_eff_index, exp_index] = \
+						round(np.mean(ppgpp_counts[variant][late_cell_mask]), 1)
 		
 		# Plotting
 		print("---Plotting---")
-		### TODO: Add back in separate plotting for early and late gens
-		# Doubling Time
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, doubling_times_heatmap,
-					 "Expression Variant", "Translation "
-								   "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, "Doubling Times")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'doubling_time_heatmap')
+		plot_descr = ["_all_gens"]
+		if exclude_early_gens == 1:
+			plot_descr += ["_early_gens", "_late_gens"]
+
 		# Percent Completion
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, completed_gens_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
+		fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+		self.heatmap(ax, variant_mask, completed_gens_heatmap[0, :, :],
+					 completed_gens_heatmap[0, :, :],
+					 "Expression Variant",
+					 "Translation Efficiency Value (Normalized)",
 					 NEW_GENE_EXPRESSION_FACTORS,
 					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
 					 "Percentage of Sims that Reached Generation " \
-					   + str(COUNT_INDEX+1))
+					 + str(COUNT_INDEX + 1))
 		fig.tight_layout()
 		plt.show()
 		exportFigure(plt, plotOutDir, 'completed_gens_heatmap')
-		# New Gene mRNA Counts
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, avg_new_gene_mRNA_counts_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "Log(New Gene mRNA Counts+1)")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'new_gene_mRNA_heatmap')
-		# New Gene Monomer Counts
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, avg_new_gene_monomer_counts_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "Log(New Gene Protein Counts+1)")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'new_gene_monomer_heatmap')
-		# New Gene Monomer Mass Fraction
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask,
-					 avg_new_gene_monomer_mass_fraction_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "New Gene Monomer Mass Fraction")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'new_gene_monomer_mass_fraction_heatmap')
-		# Ribosome Counts
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, avg_ribosome_counts_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "Ribosome Counts")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'ribosome_heatmap')
-		# RNA Polymerase Counts
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, avg_rnap_counts_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "RNA Polymerase Counts")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'rnap_heatmap')
-		# ppGpp Concentration
-		fig, ax = plt.subplots()
-		self.heatmap(ax, variant_mask, avg_ppgpp_counts_heatmap,
-					 "Expression Variant", "Translation "
-					 "Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "ppGpp Concentration (uM)")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir, 'ppgpp_heatmap')
+
+		for j in range(len(plot_descr)):
+
+			# Doubling Time
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask, doubling_times_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Doubling Times")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'doubling_time_heatmap' +
+						 plot_descr[j])
+
+			# New Gene mRNA Counts
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 avg_new_gene_mRNA_counts_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Log(New Gene mRNA Counts+1)")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'new_gene_mRNA_heatmap' + plot_descr[j])
+
+			# New Gene Monomer Counts
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 avg_new_gene_monomer_counts_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Log(New Gene Protein Counts+1)")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'new_gene_monomer_heatmap' + plot_descr[j])
+
+			# New Gene Monomer Mass Fraction
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 avg_new_gene_monomer_mass_fraction_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "New Gene Monomer Mass Fraction")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir,
+						 'new_gene_monomer_mass_fraction_heatmap' + plot_descr[j])
+
+			# Ribosome Counts
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask, avg_ribosome_counts_heatmap[j, :,:],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Ribosome Counts")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'ribosome_heatmap' + plot_descr[j])
+
+			# RNA Polymerase Counts
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask, avg_rnap_counts_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "RNA Polymerase Counts")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'rnap_heatmap' + plot_descr[j])
+
+			# ppGpp Concentration
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask, avg_ppgpp_counts_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "ppGpp Concentration (uM)")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'ppgpp_heatmap' + plot_descr[j])
+
+			plt.close('all')
 
 if __name__ == "__main__":
 	Plot().cli()
