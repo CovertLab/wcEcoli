@@ -4,6 +4,11 @@ This repository contains work to date on the [Covert Lab's](https://www.covert.s
 
 You can reach us at [WholeCellTeam](mailto:wholecellteam@lists.stanford.edu).
 
+For details on the publication tentatively titled "Cross-evaluation of
+*E. coli*’s operon structures via a whole-cell model suggests alternative
+cellular benefits for low- versus high-expressing operons" (Sun et al., 2023),
+including instructions on how to reproduce the figures, refer to the
+[Operons](#Operons) section.
 
 ## Setup
 
@@ -287,3 +292,7 @@ Another runscript will allow you to search for parameters or optimize parameters
 ```
 runscripts/manual/parameter_search.py output-dir --solver spsa --method quick_example -c 4
 ```
+
+## Operons
+
+Details on operons paper
