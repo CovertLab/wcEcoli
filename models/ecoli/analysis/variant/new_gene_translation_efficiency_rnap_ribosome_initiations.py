@@ -4,11 +4,9 @@ new_gene_expression_and_translation_efficiency variant.
 
 Plots:
 - RNAP initiation rate for each new gene
-- Number of ribosomes per transcript for each new gene
-- Number of ribosomes on partial mRNA per transcript for each new gene
+- Ribisosome initiation rate for each new gene
 
 TODO:
-- Ribisosome initiation rate for each new gene
 - Accomodate more than one new gene
 - Read in the needed variant values from metadata rather than input
 """
@@ -19,8 +17,7 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
-	read_stacked_columns, stacked_cell_threshold_mask, \
-	read_stacked_bulk_molecules, stacked_cell_identification
+	read_stacked_columns, stacked_cell_threshold_mask
 
 from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
 	import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
@@ -38,7 +35,7 @@ addition to all generations
 exclude_early_gens = 1
 
 FONT_SIZE=9
-MAX_VARIANT = 10 #43 # 37 #43 # do not include any variant >= this index
+MAX_VARIANT = 25 # do not include any variant >= this index
 MAX_CELL_INDEX = 16 # do not include any generation >= this index
 
 """
@@ -134,11 +131,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_new_gene_rnap_init_rate_heatmap = np.zeros(( 3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		avg_new_gene_ribosomes_per_transcript_heatmap = np.zeros((3,
-			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		avg_new_gene_ribosomes_on_partial_mRNA_per_transcript_heatmap = \
-			np.zeros((3,
+		avg_new_gene_ribosome_init_rate_heatmap = np.zeros((3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
 
@@ -171,15 +164,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print("---Data Extraction---")
 		reached_count_gen = {}
 		generations = {}
-
-		# rnap init events per new gene per time
-		# TODO: per gene copy
+		# rnap init events per new gene copy per time
 		new_gene_rnap_init_rate = [{} for id in new_gene_mRNA_ids]
-
-		new_gene_ribosomes_per_transcript = [{} for id in new_gene_mRNA_ids]
-		new_gene_ribosomes_on_partial_mRNA_per_transcript = [{} for id in
-												 new_gene_mRNA_ids]
-		# TODO: Ribosome init rate per mRNA copy per time
+		# ribosome init events per new gene mRNA per time
+		new_gene_ribosome_init_rate = [{} for id in new_gene_mRNA_ids]
 
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
@@ -214,6 +202,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')
 
+				# Extract cistron indexes for each new gene
 				rnap_reader = TableReader(os.path.join(simOutDir,
 															  'RnapData'))
 				cistron_idx_dict = {cis: i for i, cis in
@@ -222,6 +211,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_cistron_indexes = [cistron_idx_dict.get(mRNA_id)
 										 for mRNA_id in new_gene_mRNA_ids]
 
+				# Extract mRNA indexes for each new gene
+				mRNA_counts_reader = TableReader(os.path.join(simOutDir,
+															  'RNACounts'))
+				mRNA_idx_dict = {rna[:-3]: i for i, rna in
+								 enumerate(mRNA_counts_reader.readAttribute(
+									 'mRNA_ids'))}
+				new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id)
+										 for mRNA_id in new_gene_mRNA_ids]
+
+				# Extract monomer indexes for each new gene
 				ribosome_reader = TableReader(os.path.join(simOutDir,
 														   'RibosomeData'))
 				monomer_idx_dict = {monomer: i for i, monomer in
@@ -231,39 +230,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 										 for monomer_id in
 											new_gene_monomer_ids]
 
-			### TODO: figure out how to get the number of gene copies for
-			# each new gene
+			avg_new_gene_copy_number = read_stacked_columns(
+				all_cells, 'RnaSynthProb', 'gene_copy_number',
+				fun=lambda
+					x: np.mean(x[:, new_gene_cistron_indexes], axis=0))
 
-			### TODO: Divide RNAP init rate by the number of gene copies
 			avg_new_gene_rnap_init_rate = read_stacked_columns(
 				all_cells, 'RnapData', 'rna_init_event_per_cistron', fun=lambda
-					x: np.mean(x[:, new_gene_cistron_indexes], axis=0))
+					x: np.mean(x[:, new_gene_cistron_indexes], axis=0)) / \
+										  avg_new_gene_copy_number
 			avg_new_gene_rnap_init_rate = avg_new_gene_rnap_init_rate[exclude_timeout_cell_mask,]
 
-			avg_new_gene_ribosomes_per_transcript = read_stacked_columns(
-				all_cells, 'RibosomeData', 'n_ribosomes_per_transcript',
-				fun=lambda
-					x: np.mean(x[:, new_gene_monomer_indexes], axis=0))
-			avg_new_gene_ribosomes_per_transcript = \
-				avg_new_gene_ribosomes_per_transcript[exclude_timeout_cell_mask,]
+			avg_new_gene_mRNA_counts = read_stacked_columns(
+				all_cells, 'RNACounts', 'mRNA_counts', fun=lambda
+					x: np.mean(x[:, new_gene_mRNA_indexes], axis=0))
+			avg_new_gene_mRNA_counts = \
+				avg_new_gene_mRNA_counts[exclude_timeout_cell_mask,]
 
-			avg_new_gene_ribosomes_on_partial_mRNA_per_transcript = \
-				read_stacked_columns(
-				all_cells, 'RibosomeData',
-					'n_ribosomes_on_partial_mRNA_per_transcript',
+			avg_new_gene_ribosome_init_rate = read_stacked_columns(
+				all_cells, 'RibosomeData', 'ribosome_init_event_per_monomer',
 				fun=lambda
-					x: np.mean(x[:, new_gene_monomer_indexes], axis=0))
-			avg_new_gene_ribosomes_on_partial_mRNA_per_transcript = \
-				avg_new_gene_ribosomes_on_partial_mRNA_per_transcript[exclude_timeout_cell_mask,]
+					x: np.mean(x[:, new_gene_monomer_indexes], axis=0)) / \
+											  avg_new_gene_mRNA_counts
+			avg_new_gene_ribosome_init_rate = avg_new_gene_ribosome_init_rate[
+				exclude_timeout_cell_mask,]
 
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_rnap_init_rate[i][variant] = \
 					avg_new_gene_rnap_init_rate[:, i]
-				new_gene_ribosomes_per_transcript[i][variant] = \
-					avg_new_gene_ribosomes_per_transcript[:, i]
-				new_gene_ribosomes_on_partial_mRNA_per_transcript[i][
-					variant] = \
-					avg_new_gene_ribosomes_on_partial_mRNA_per_transcript[:, i]
+				new_gene_ribosome_init_rate[i][variant] = \
+					avg_new_gene_ribosome_init_rate[:, i]
 
 			# Add values to heatmap data structures
 			exp_index, trl_eff_index = variant_index_to_list_indices[variant]
@@ -272,16 +268,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			i = 0 ### TODO: accomodate multiple new genes
 			avg_new_gene_rnap_init_rate_heatmap[0, trl_eff_index, exp_index] = \
 				round(np.mean(new_gene_rnap_init_rate[i][variant]), 2)
-			avg_new_gene_ribosomes_per_transcript_heatmap[0, trl_eff_index, exp_index]\
-				= \
-				round(np.mean(new_gene_ribosomes_per_transcript[i][variant]), 2)
-			avg_new_gene_ribosomes_on_partial_mRNA_per_transcript_heatmap[
-				0, trl_eff_index, exp_index] \
-				= \
-				round(np.mean(
-					new_gene_ribosomes_on_partial_mRNA_per_transcript[i][
-						variant]),
-					  2)
+			avg_new_gene_ribosome_init_rate_heatmap[0, trl_eff_index, exp_index] = \
+				round(np.mean(new_gene_ribosome_init_rate[i][variant]), 2)
 
 			if exclude_early_gens == 1:
 				# Add early gen values to the heatmap structure
@@ -293,20 +281,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_new_gene_rnap_init_rate_heatmap[1, trl_eff_index, exp_index]\
 					= round(np.mean(new_gene_rnap_init_rate[i][variant][
 									  early_cell_mask]), 2)
-				avg_new_gene_ribosomes_per_transcript_heatmap[
+				avg_new_gene_ribosome_init_rate_heatmap[
 					1, trl_eff_index, exp_index] \
-					= round(np.mean(new_gene_ribosomes_per_transcript[i][variant][
+					= round(np.mean(new_gene_ribosome_init_rate[i][variant][
 										early_cell_mask]), 2)
-				avg_new_gene_ribosomes_on_partial_mRNA_per_transcript_heatmap[
-					1, trl_eff_index, exp_index] \
-					= round(
-					np.mean(new_gene_ribosomes_on_partial_mRNA_per_transcript[i][
-								variant][
-								early_cell_mask]), 2)
 
 				# Add late gen values to the heatmap structure
 				late_cell_mask = np.logical_and((generations[variant] >=
-								  MIN_LATE_CELL_INDEX), \
+								  MIN_LATE_CELL_INDEX),
 								 (generations[variant] < MAX_CELL_INDEX))
 				if len(late_cell_mask) == 1:
 					late_cell_mask = late_cell_mask[0]
@@ -316,20 +298,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						2, trl_eff_index,exp_index] = \
 						round(np.mean(new_gene_rnap_init_rate[i][variant][
 										  late_cell_mask]), 2)
-					avg_new_gene_ribosomes_per_transcript_heatmap[
+					avg_new_gene_ribosome_init_rate_heatmap[
 						2, trl_eff_index, exp_index] = \
-						round(np.mean(new_gene_ribosomes_per_transcript[i][
-										  variant][
-										  late_cell_mask]), 2)
-					avg_new_gene_ribosomes_on_partial_mRNA_per_transcript_heatmap[
-						2, trl_eff_index, exp_index] = \
-						round(np.mean(
-							new_gene_ribosomes_on_partial_mRNA_per_transcript[i][
-										  variant][
+						round(np.mean(new_gene_ribosome_init_rate[i][variant][
 										  late_cell_mask]), 2)
 
 
-		
 		# Plotting
 		print("---Plotting---")
 		plot_descr = ["_all_gens"]
@@ -352,38 +326,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			exportFigure(plt, plotOutDir, 'new_gene_rnap_init_rate_heatmap' +
 						 plot_descr[j])
 
-			# New Gene Ribosomes Per Transcript
+			# New Gene Ribosome Initiation Rate
 			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 			self.heatmap(ax, variant_mask,
-						 avg_new_gene_ribosomes_per_transcript_heatmap[j, :, :],
+						 avg_new_gene_ribosome_init_rate_heatmap[j, :, :],
 						 completed_gens_heatmap[0, :, :],
 						 "Expression Variant",
 						 "Translation Efficiency Value (Normalized)",
 						 NEW_GENE_EXPRESSION_FACTORS,
 						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-						 "Ribosomes Per Transcript")
+						 "Ribosome Initialization Rate")
 			fig.tight_layout()
 			plt.show()
 			exportFigure(plt, plotOutDir,
-						 'new_gene_ribosomes_per_transcript_heatmap' +
-						 plot_descr[j])
-
-			# New Gene Ribosomes on Partial mRNA Per Transcript
-			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-			self.heatmap(ax, variant_mask,
-						 avg_new_gene_ribosomes_on_partial_mRNA_per_transcript_heatmap[
-						 j, :, :], completed_gens_heatmap[0, :, :],
-						 "Expression Variant",
-						 "Translation Efficiency Value (Normalized)",
-						 NEW_GENE_EXPRESSION_FACTORS,
-						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-						 "Ribosomes on Partial mRNA Per Transcript")
-			fig.tight_layout()
-			plt.show()
-			exportFigure(plt, plotOutDir,
-						 'new_gene_ribosomes_on_partial_mRNA_per_transcript_heatmap' +
-						 plot_descr[j])
-
+						 'new_gene_ribosome_init_rate_heatmap' + plot_descr[j])
 
 		plt.close('all')
 

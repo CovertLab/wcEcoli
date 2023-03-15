@@ -66,6 +66,8 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.translationSupply = np.zeros(21, np.float64)
 		self.numTrpATerminated = 0.
 		self.probTranslationPerTranscript = np.zeros(self.nMonomers, np.float64)
+		self.ribosome_init_event_per_monomer = np.zeros(self.nMonomers,
+													   np.int64)
 
 		# Attributes computed by the listener
 		self.n_ribosomes_per_transcript = np.zeros(self.nMonomers, np.int64)
@@ -169,6 +171,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			translationSupply = self.translationSupply,
 			numTrpATerminated = self.numTrpATerminated,
 			probTranslationPerTranscript = self.probTranslationPerTranscript,
+			ribosome_init_event_per_monomer = self.ribosome_init_event_per_monomer,
 			n_ribosomes_per_transcript = self.n_ribosomes_per_transcript,
 			n_ribosomes_on_partial_mRNA_per_transcript = self.n_ribosomes_on_partial_mRNA_per_transcript,
 			n_ribosomes_on_each_mRNA = self.n_ribosomes_on_each_mRNA,

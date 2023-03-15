@@ -211,6 +211,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
 		self.writeToListener("RibosomeData", "probTranslationPerTranscript", proteinInitProb)
+		self.writeToListener("RibosomeData", "ribosome_init_event_per_monomer",
+							 n_new_proteins)
 
 	def _calculateActivationProb(
 			self, fracActiveRibosome, proteinLengths, ribosomeElongationRates,
