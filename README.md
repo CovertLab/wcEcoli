@@ -295,4 +295,11 @@ runscripts/manual/parameter_search.py output-dir --solver spsa --method quick_ex
 
 ## Operons
 
-Details on operons paper
+This section contains details regarding the updates to the model featured in
+the publication "Cross-evaluation of *E. coli*’s operon structures via a 
+whole-cell model suggests alternative cellular benefits for low- versus 
+high-expressing operons" (Sun et al., 2023).
+
+![operon_fig1a](docs/operons_figure_1a.png "Operons Figure 1A")
+
+In this work, we 
