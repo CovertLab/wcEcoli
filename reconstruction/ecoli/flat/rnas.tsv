@@ -2892,8 +2892,6 @@
 "G0-17114_RNA"	"spfP"	["spfP", "b4837", "ECK4694"]	"mRNA"	[]	"G0-17114"	["MONOMER0-4560"]	null	[]
 "RNA0-432"	"small regulatory RNA FimR2"	["FimR2", "sRNA_35"]	"miscRNA"	[]	"G0-17115"	[]	null	[]
 "RNA0-434"	"small regulatory RNA GlnZ"	["glnA 3<sup>A</sup> UTR", "GlnZ"]	"miscRNA"	[]	"G0-17117"	[]	null	[]
-"RNA0-434"	"small regulatory RNA GlnZ"	["glnA 3<sup>A</sup> UTR", "GlnZ"]	"miscRNA"	[]	"G0-17117"	[]	null	[]
-"RNA0-435"	"small antisense RNA AsflhD"	["AsflhD"]	"miscRNA"	[]	"G0-17119"	[]	null	[]
 "RNA0-435"	"small antisense RNA AsflhD"	["AsflhD"]	"miscRNA"	[]	"G0-17119"	[]	null	[]
 "RNA0-436"	"small antisense RNA StfZ"	["StfZ"]	"miscRNA"	[]	"G0-17120"	[]	null	[]
 "RNA0-437"	"small antisense RNA AsCRP"	[]	"miscRNA"	[]	"G0-17122"	[]	null	[]
