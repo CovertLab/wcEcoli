@@ -148,7 +148,7 @@ class Simulation():
 
 		# vivarium-ecoli save boolean
 		self.save_status = False
-		self.save_times = [0, 2, 4, 100]
+		self.save_times = [0]
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -357,9 +357,66 @@ class Simulation():
 				else:
 					return super(NpEncoder, self).default(obj)
 
-		states = self.get_states()
+		# states = self.get_states()
+		states = self.get_states_numpy()
 		with open(path, 'w') as outfile:
 			json.dump(states, outfile, cls=NpEncoder)
+
+	def get_states_numpy(self):
+		bulk_molecules = self.internal_states['BulkMolecules']
+		bulk_counts = bulk_molecules.container.counts()
+		bulk_names = np.array(bulk_molecules.container.objectNames())
+		bulk_masses = bulk_molecules._moleculeMass
+		bulk_mass_names = bulk_molecules._submass_name_to_index
+
+		bulk_dtype = [('id', bulk_names.dtype), ('count', bulk_counts.dtype)]
+		for submass in bulk_mass_names.keys():
+			bulk_dtype.append((submass + '_submass', bulk_masses.dtype))
+		bulk_array = np.empty(len(bulk_counts), dtype=bulk_dtype)
+		bulk_array['id'] = bulk_names
+		bulk_array['count'] = bulk_counts
+		for submass, col in bulk_mass_names.items():
+			bulk_array[submass + '_submass'] = bulk_masses[:, col]
+
+		unique_molecules = self.internal_states['UniqueMolecules'].container
+		unique_collections = unique_molecules._collections
+		unique_keys = unique_molecules._nameToIndexMapping
+		
+		unique_arrays = {}
+		unique_dtypes = {}
+		for key, idx in unique_keys.items():
+			unique_arrays[key] = unique_collections[idx].tolist()
+			unique_dtypes[key] = str(unique_collections[idx].dtype)
+
+		environment = self.external_states['Environment'].container
+		environment_names = environment.objectNames()
+		environment_counts = environment.counts()
+		environment_concentrations = {
+			environment_names[index]: environment_counts[index]
+			for index in np.arange(len(environment_names))}
+
+		mass_listener = self.listeners['Mass']
+		listeners = {
+			'mass': {
+				'cell_mass': mass_listener.cellMass,
+				'dry_mass': mass_listener.dryMass,
+    			'water_mass': mass_listener.waterMass,
+				'dry_mass': mass_listener.dryMass,
+				'rnaMass': mass_listener.rnaMass,
+				'rRnaMass': mass_listener.rRnaMass,
+				'tRnaMass': mass_listener.tRnaMass,
+				'mRnaMass': mass_listener.mRnaMass,
+				'dnaMass': mass_listener.dnaMass,
+				'proteinMass': mass_listener.proteinMass,
+				'smallMoleculeMass': mass_listener.smallMoleculeMass}}
+
+		return {
+			'bulk': bulk_array.tolist(),
+			'unique': unique_arrays,
+			'environment': environment_concentrations,
+			'listeners': listeners,
+			'bulk_dtypes': str(bulk_array.dtype),
+			'unique_dtypes': unique_dtypes}
 
 	def run_for(self, run_for):
 		self.run_incremental(self.time() + run_for)
