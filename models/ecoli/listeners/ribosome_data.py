@@ -65,7 +65,11 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.processElongationRate = 0.
 		self.translationSupply = np.zeros(21, np.float64)
 		self.numTrpATerminated = 0.
-		self.probTranslationPerTranscript = np.zeros(self.nMonomers, np.float64)
+		self.target_prob_translation_per_transcript = np.zeros(self.nMonomers,
+													 np.float64)
+		self.actual_prob_translation_per_transcript = np.zeros(self.nMonomers,
+														np.float64)
+		self.mRNA_is_overcrowded = np.zeros(self.nMonomers, np.float64)
 		self.ribosome_init_event_per_monomer = np.zeros(self.nMonomers,
 													   np.int64)
 
@@ -130,7 +134,9 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'probTranslationPerTranscript': 'monomerIds',
+			'target_prob_translation_per_transcript': 'monomerIds',
+			'actual_prob_translation_per_transcript': 'monomerIds',
+			'mRNA_is_overcrowded': 'monomerIds',
 			'n_ribosomes_per_transcript': 'monomerIds',
 			'n_ribosomes_on_partial_mRNA_per_transcript': 'monomerIds',
 			}
@@ -170,7 +176,11 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			processElongationRate = self.processElongationRate,
 			translationSupply = self.translationSupply,
 			numTrpATerminated = self.numTrpATerminated,
-			probTranslationPerTranscript = self.probTranslationPerTranscript,
+			target_prob_translation_per_transcript=self
+			.target_prob_translation_per_transcript,
+			actual_prob_translation_per_transcript=self
+			.actual_prob_translation_per_transcript,
+			mRNA_is_overcrowded = self.mRNA_is_overcrowded,
 			ribosome_init_event_per_monomer = self.ribosome_init_event_per_monomer,
 			n_ribosomes_per_transcript = self.n_ribosomes_per_transcript,
 			n_ribosomes_on_partial_mRNA_per_transcript = self.n_ribosomes_on_partial_mRNA_per_transcript,

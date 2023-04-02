@@ -38,7 +38,7 @@ REQUIRED_COLUMNS = [
 	("RnaSynthProb", "n_bound_TF_per_TU"),
 	("RnaSynthProb", "n_bound_TF_per_cistron"),
 	("RnapData", "rnaInitEvent"),
-	("RibosomeData", "probTranslationPerTranscript"),
+	("RibosomeData", "actual_prob_translation_per_transcript"),
 	]
 
 def get_safe_name(s):
@@ -336,7 +336,7 @@ def read_translation_dynamics(sim_data, node, node_id, columns, indexes, volume)
 	translation_idx = indexes["TranslatedRnas"][rna_id]
 
 	dynamics = {
-		'translation probability': columns[("RibosomeData", "probTranslationPerTranscript")][:, translation_idx],
+		'translation probability': columns[("RibosomeData", "actual_prob_translation_per_transcript")][:, translation_idx],
 		}
 	dynamics_units = {
 		'translation probability': PROB_UNITS,
