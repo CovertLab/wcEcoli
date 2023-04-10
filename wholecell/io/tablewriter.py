@@ -187,7 +187,7 @@ class _Column(object):
 
 		self._path = path
 		self._data = open(path, "wb")
-		self._dtype = None
+		self._dtype: Optional[np.dtype[Any]] = None
 		self._compression_type = compression_type
 		self._current_data_block = []  # type: List[bytes]
 

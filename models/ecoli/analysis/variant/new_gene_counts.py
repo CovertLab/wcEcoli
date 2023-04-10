@@ -77,8 +77,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print("---Data Extraction---")
 		doubling_times = {}
 		generations = {}
-		new_gene_mRNA_counts = [{} for id in new_gene_mRNA_ids]
-		new_gene_monomer_counts = [{} for id in new_gene_monomer_ids]
+		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
+		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
 
 		variants = self.ap.get_variants()
 		min_variant = min(variants)

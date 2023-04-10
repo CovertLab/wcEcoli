@@ -286,4 +286,4 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         plt.close("all")
 
 if __name__ == "__main__":
-	Plot().cli()
+    Plot().cli()

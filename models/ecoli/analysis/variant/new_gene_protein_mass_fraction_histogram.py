@@ -74,9 +74,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Data extraction
 		print("---Data Extraction---")
 		generations = {}
-		new_gene_monomer_counts = [{} for id in new_gene_monomer_ids]
-		new_gene_monomer_mass_fraction = [{} for id in new_gene_monomer_ids]
-		new_gene_monomer_masses = [1 for id in new_gene_monomer_ids]
+		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
+		new_gene_monomer_mass_fraction = [{} for id_ in new_gene_monomer_ids]
+		new_gene_monomer_masses = [1 for id_ in new_gene_monomer_ids]
 		for i in range(len(new_gene_monomer_ids)):
 			new_gene_monomer_masses[i] = float(
 				(sim_data.getter.get_mass(new_gene_monomer_ids[i]) / 1000

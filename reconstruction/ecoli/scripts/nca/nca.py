@@ -4,7 +4,7 @@
 NCA methods to use to solve E = AP given E and specified network connections in A.
 """
 
-from typing import Callable, cast, Dict, List, Set, Tuple
+from typing import Callable, cast, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import scipy.linalg
@@ -455,7 +455,7 @@ def iterative_sub_nca(
         E: np.ndarray,
         A: np.ndarray,
         tfs: np.ndarray,
-        statistics: Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[str, Dict[str, int]], np.ndarray], None] = None,
+        statistics: Optional[Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[str, Dict[str, int]], np.ndarray], None]] = None,
         statistics_args: Tuple = (),
         n_iters: int = 100,
         splits: int = 2,
