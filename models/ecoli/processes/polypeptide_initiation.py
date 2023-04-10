@@ -164,7 +164,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		while np.any(protein_init_prob > max_p_per_protein):
 			protein_init_prob[is_overcrowded] = max_p_per_protein[
 				is_overcrowded]
-			assert protein_init_prob[~is_overcrowded].sum() != 0 # TODO handle this some other way?
+			assert protein_init_prob[~is_overcrowded].sum() != 0
 			scale_the_rest_by = (
 				(1. - protein_init_prob[is_overcrowded].sum())
 				/ protein_init_prob[~is_overcrowded].sum()
