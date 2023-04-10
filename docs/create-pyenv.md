@@ -135,7 +135,7 @@ This page goes through the Python environment setup steps in more detail and wit
    library.
 
    ```bash
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.13
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.11.3
    ```
 
 ### Anywhere else
@@ -147,7 +147,7 @@ the above command that has `--enable-shared`.
 1. Use `pyenv`.
 
    ```bash
-   pyenv install 3.8.13
+   pyenv install 3.11.3
    ```
 
 
@@ -162,7 +162,7 @@ virtualenv.
 
    ```bash
    cd ~/dev/wcEcoli  # or wherever you cloned the `wcEcoli` project to
-   pyenv virtualenv 3.8.13 wcEcoli3 && pyenv local wcEcoli3
+   pyenv virtualenv 3.11.3 wcEcoli3 && pyenv local wcEcoli3
    ```
 
 1. Upgrade this virtual environment's installers.
@@ -221,14 +221,14 @@ virtualenv.
    installation errors.
 
    ```shell script
-   pip install numpy==1.20.0  # see requirements.txt for the right version
+   pip install numpy==1.24.2  # see requirements.txt for the right version
    ```
 
    **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
    instead so pip will compile numpy from source code using `~/.numpy-site.cfg`:
 
    ```shell script
-   pip install numpy==1.20.0 --no-binary numpy  # see requirements.txt for the right version
+   pip install numpy==1.24.2 --no-binary numpy  # see requirements.txt for the right version
    ```
 
 1. Install the packages listed in `requirements.txt`.
@@ -339,7 +339,7 @@ especially when called from multiple processes.
    Go back to that step, run
 
    ```shell script
-   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.8.13 --force
+   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.11.3 --force
    ```
 
    then delete and recreate the virtualenv `wcEcoli3`.

@@ -69,7 +69,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		def read_sims_for_mRNA(ap):
 			mRNA_coexp_probs = np.zeros(len(gene_group_indexes))
-			is_expressed = np.zeros(len(gene_group_indexes), dtype=np.bool)
+			is_expressed = np.zeros(len(gene_group_indexes), dtype=bool)
 
 			# Ignore data from first two gens
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
@@ -89,7 +89,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		def read_sims_for_protein(ap):
 			protein_coexp_probs = np.zeros(len(gene_group_indexes))
-			is_lowly_expressed = np.zeros(len(gene_group_indexes), dtype=np.bool)
+			is_lowly_expressed = np.zeros(len(gene_group_indexes), dtype=bool)
 			mean_monomer_counts = np.zeros(len(gene_group_indexes))
 
 			# Ignore data from first two gens
