@@ -59,12 +59,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		print("Running analysis script with exclude_timeout_cells=",
-			  exclude_timeout_cells, " and exclude_early_gens=",
-			  exclude_early_gens)
+		# print("Running analysis script with exclude_timeout_cells=",
+		# 	  exclude_timeout_cells, " and exclude_early_gens=",
+		# 	  exclude_early_gens)
 
 		# Data extraction
-		print("---Data Extraction---")
 		doubling_times = {}
 		reached_count_gen = {}
 		generations = {}
@@ -75,7 +74,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if variant >= MAX_VARIANT:
 				continue
 
-			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant],
 										  only_successful=True)
 			if len(all_cells) == 0:
@@ -100,9 +98,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			num_zero_gen = len(self.ap.get_cells(variant=[variant],
 							  generation = [0], only_successful=True))
 			reached_count_gen[variant] = num_count_gen / num_zero_gen
-			
+
 		# Plotting
-		print("---Plotting---")
 		std_xlim = [30,185]
 		std_dt_xlab = 'Doubling Time (min)'
 		std_bar_xlab = 'Variant'

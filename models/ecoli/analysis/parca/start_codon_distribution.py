@@ -19,8 +19,8 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
 
-		if metadata['operons'] != 'off':
-			print('The operons option must be set to off -- skipping analysis.')
+		if sim_data.operons_on:
+			print('The operons option must be set to off for this plot -- skipping analysis.')
 			return
 
 		# Get distributions of start codons and N-terminal amino acids

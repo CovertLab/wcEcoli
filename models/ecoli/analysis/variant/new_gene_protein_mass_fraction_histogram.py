@@ -42,9 +42,9 @@ if (exclude_timeout_cells==0):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		print("Running analysis script with exclude_timeout_cells=",
-			  exclude_timeout_cells,
-			  " and exclude_early_gens=", exclude_early_gens)
+		# print("Running analysis script with exclude_timeout_cells=",
+		# 	  exclude_timeout_cells,
+		# 	  " and exclude_early_gens=", exclude_early_gens)
 
 		# Determine new gene ids
 		with open(simDataFile, 'rb') as f:
@@ -72,7 +72,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'number of new gene monomers and mRNAs should be equal'
 
 		# Data extraction
-		print("---Data Extraction---")
 		generations = {}
 		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
 		new_gene_monomer_mass_fraction = [{} for id_ in new_gene_monomer_ids]
@@ -88,7 +87,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if variant >= MAX_VARIANT:
 				continue
 
-			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant],
 										  only_successful=True)
 			if len(all_cells) == 0:
@@ -135,7 +133,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					 new_gene_monomer_masses[i] )/avg_protein_mass.flatten()
 
 		# Plotting
-		print("---Plotting---")
 		std_xlim = [0,1]
 		std_sf = 2
 		std_bin_width = 0.05

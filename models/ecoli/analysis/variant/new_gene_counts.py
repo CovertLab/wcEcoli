@@ -45,9 +45,9 @@ MAX_YLIM_PLOT = MAX_CELL_LENGTH
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		print("Running analysis script with exclude_timeout_cells=",
-			  exclude_timeout_cells,
-			  " and exclude_early_gens=", exclude_early_gens)
+		# print("Running analysis script with exclude_timeout_cells=",
+		# 	  exclude_timeout_cells,
+		# 	  " and exclude_early_gens=", exclude_early_gens)
 
 		# Determine new gene ids
 		with open(simDataFile, 'rb') as f:
@@ -74,7 +74,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'number of new gene monomers and mRNAs should be equal'
 
 		# Data extraction
-		print("---Data Extraction---")
 		doubling_times = {}
 		generations = {}
 		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
@@ -88,7 +87,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if variant >= MAX_VARIANT:
 				continue
 
-			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant],
 										  only_successful=True)
 			if len(all_cells) == 0:
@@ -139,7 +137,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_new_gene_mRNA_counts[exclude_timeout_cell_mask,]
 			avg_new_gene_monomer_counts = \
 				avg_new_gene_monomer_counts[exclude_timeout_cell_mask,]
-			
+
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts[i][variant] = \
 					np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
@@ -147,7 +145,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
 		# Plotting
-		print("---Plotting---")
 		std_bin_width = 0.25
 		std_sf = 2
 		std_xlim = [-1,8]
