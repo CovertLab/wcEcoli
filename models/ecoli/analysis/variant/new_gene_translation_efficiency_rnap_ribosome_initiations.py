@@ -35,7 +35,7 @@ addition to all generations
 exclude_early_gens = 1
 
 FONT_SIZE=9
-MAX_VARIANT = 25 # do not include any variant >= this index
+MAX_VARIANT = 43 # do not include any variant >= this index
 MAX_CELL_INDEX = 16 # do not include any generation >= this index
 
 """
@@ -50,7 +50,7 @@ due to how they are initialized
 """
 MIN_LATE_CELL_INDEX = 4
 
-MAX_CELL_LENGTH = 36000
+MAX_CELL_LENGTH = 18000
 if (exclude_timeout_cells==0):
 	MAX_CELL_LENGTH += 1000000
 

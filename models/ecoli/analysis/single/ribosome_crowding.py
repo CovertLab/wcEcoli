@@ -2,7 +2,7 @@
 Comparison of target synthesis probabilites vs actual synthesis
 probabilites for
 transcription units whose synthesis probabilities exceeded the limit set by the
-physical size and the elongation rates of RNA polymerases.
+physical size and the elongation rates of ribosomes.
 """
 
 import os
