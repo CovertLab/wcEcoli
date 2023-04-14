@@ -46,6 +46,7 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 		active_replisomes = self.uniqueMolecules.container.objectsInCollection('active_replisome')
 		oriCs = self.uniqueMolecules.container.objectsInCollection('oriC')
 
+		# TODO: Get these listeners in vivarium-ecoli
 		self.numberOfOric = len(oriCs)
 
 		self.fork_coordinates, self.fork_domains, self.fork_unique_index = active_replisomes.attrs(
@@ -76,3 +77,17 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 			free_DnaA_boxes = self.free_DnaA_boxes,
 			total_DnaA_boxes = self.total_DnaA_boxes,
 			)
+	
+	def get_dict(self):
+		return {
+			'replication_data': {
+				'fork_coordinates': self.fork_coordinates,
+				'fork_domains': self.fork_domains,
+				'fork_unique_index': self.fork_unique_index,
+				'number_of_oric': self.numberOfOric,
+				'critical_mass_per_oriC': self.criticalMassPerOriC,
+				'critical_initiation_mass': self.criticalInitiationMass,
+				'free_DnaA_boxes': self.free_DnaA_boxes,
+				'total_DnaA_boxes': self.total_DnaA_boxes,
+			}
+		}

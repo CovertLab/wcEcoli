@@ -78,6 +78,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			unique_index_RNA[np.logical_not(is_full_transcript_RNA)])
 
 		# Get counts of ribosomes for each type
+		# TODO: Get these listeners in vivarium-ecoli
 		self.n_ribosomes_per_transcript = np.bincount(
 			protein_index_ribosomes, minlength=self.nMonomers)
 		self.n_ribosomes_on_partial_mRNA_per_transcript = np.bincount(
@@ -122,3 +123,32 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			n_ribosomes_per_transcript = self.n_ribosomes_per_transcript,
 			n_ribosomes_on_partial_mRNA_per_transcript = self.n_ribosomes_on_partial_mRNA_per_transcript,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'ribosome_data': {
+				'aa_count_in_sequence': self.aaCountInSequence,
+				'aa_counts': self.aaCounts,
+				'actual_elongations': self.actualElongations,
+				'actual_elongation_hist': self.actualElongationHist,
+				'elongations_non_terminating_hist': self.elongationsNonTerminatingHist,
+				'did_terminate': self.didTerminate,
+				'did_initialize': self.didInitialize,
+				'termination_loss': self.terminationLoss,
+				'effective_elongation_rate': self.effectiveElongationRate,
+				'rrn16S_produced': self.rrn16S_produced,
+				'rrn23S_produced': self.rrn23S_produced,
+				'rrn5S_produced': self.rrn5S_produced,
+				'rrn16S_init_prob': self.rrn16S_init_prob,
+				'rrn23S_init_prob': self.rrn23S_init_prob,
+				'rrn5S_init_prob': self.rrn5S_init_prob,
+				'total_rna_init': self.total_rna_init,
+				'process_elongation_rate': self.processElongationRate,
+				'translation_supply': self.translationSupply,
+				'num_trpA_terminated': self.numTrpATerminated,
+				'prob_translation_per_transcript': self.probTranslationPerTranscript,
+				'n_ribosomes_per_transcript': self.n_ribosomes_per_transcript,
+				'n_ribosomes_on_partial_mRNA_per_transcript': self.n_ribosomes_on_partial_mRNA_per_transcript,
+			}
+		}

@@ -8,16 +8,12 @@ from __future__ import absolute_import, division, print_function
 
 from typing import cast
 
-import ipdb
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 from six.moves import zip
-
-from wholecell.utils.migration.write_json import write_json
-from wholecell.utils.migration_utils import arrays_to, add_elements
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
@@ -68,16 +64,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.ribosome30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
 		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
 
-		self.ribosome30S_name = sim_data.molecule_ids.s30_full_complex
-		self.ribosome50S_name = sim_data.molecule_ids.s50_full_complex
-
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
-		self.ribosome_index = 0
-        
-        # Save updates
-		self.save_times= [2, 12, 102]
-		self.update_to_save = {}
 
 	def calculateRequest(self):
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -180,16 +168,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			start_index += counts
 
 		# Create active 70S ribosomes and assign their attributes
-		new_ribosomes = arrays_to(
-			n_ribosomes_to_activate, {
-				'unique_index': np.arange(self.ribosome_index, self.ribosome_index + n_ribosomes_to_activate),
-				'protein_index': protein_indexes,
-				'peptide_length': np.zeros(cast(int, n_ribosomes_to_activate), dtype=np.int64),
-				'mRNA_index': mRNA_indexes,
-				'pos_on_mRNA': np.zeros(cast(int, n_ribosomes_to_activate), dtype=np.int64)})
-
-		self.ribosome_index += n_ribosomes_to_activate
-
 		self.active_ribosomes.moleculesNew(
 			n_ribosomes_to_activate,
 			protein_index=protein_indexes,
@@ -205,22 +183,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
 		self.writeToListener("RibosomeData", "probTranslationPerTranscript", proteinInitProb)
-
-		self.update_to_save = {
-            'subunits': {
-                self.ribosome30S_name: -n_new_proteins.sum(),
-                self.ribosome50S_name: -n_new_proteins.sum()},
-            'active_ribosome': add_elements(new_ribosomes, 'unique_index'),
-            'listeners': {
-                'ribosome_data': {
-                    'ribosomes_initialized': n_new_proteins.sum(),
-                    'prob_translation_per_transcript': proteinInitProb,
-                    'ribosomeElongationRate': self.ribosomeElongationRate}}}
-		if self._sim.time() in self.save_times:
-			write_json(f'out/migration/polypeptide_initiation_update_t{int(self._sim.time())}.json',
-					   self.update_to_save)
-	
-  
 
 	def _calculateActivationProb(self, fracActiveRibosome, proteinLengths, ribosomeElongationRates, proteinInitProb, timeStepSec):
 		"""

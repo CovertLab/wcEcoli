@@ -72,3 +72,12 @@ class mRNACounts(wholecell.listeners.listener.Listener):
 			full_mRNA_counts = self.full_mRNA_counts,
 			partial_mRNA_counts = self.partial_mRNA_counts,
 			)
+
+	def get_dict(self):
+		return {
+			'mrna_counts': {
+				'mRNA_counts': self.mRNA_counts,
+				'full_mRNA_counts': self.full_mRNA_counts,
+				'partial_mRNA_counts': self.partial_mRNA_counts,
+			}
+		}

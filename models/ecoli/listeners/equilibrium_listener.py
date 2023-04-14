@@ -54,3 +54,11 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			reactionRates = self.reactionRates,
 			)
+
+	
+	def get_dict(self):
+		return {
+			'equilibrium_listener': {
+				'reaction_rates': self.reactionRates
+			}
+		}

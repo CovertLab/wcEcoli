@@ -25,6 +25,27 @@ import wholecell.loggers.disk
 from six.moves import range
 import six
 
+# Used to save states for vivarium-ecoli
+from unum import Unum
+INFINITY = float('inf')
+class NpEncoder(json.JSONEncoder):
+	def default(self, obj):
+		if isinstance(obj, np.integer):
+			return int(obj)
+		elif isinstance(obj, np.ndarray):
+			return obj.tolist()
+		elif obj == INFINITY:
+			return '__INFINITY__'
+		elif isinstance(obj, np.floating):
+			return float(obj)
+		elif isinstance(obj, np.bool_):
+			return bool(obj)
+		elif isinstance(obj, Unum):
+			return obj.asNumber()
+		else:
+			return super(NpEncoder, self).default(obj)
+
+
 MAX_TIME_STEP = 2.
 DEFAULT_SIMULATION_KWARGS = dict(
 	timeline = '0 minimal',
@@ -146,9 +167,8 @@ class Simulation():
 		# Initialize simulation from fit KB
 		self._initialize(sim_data)
 
-		# vivarium-ecoli save boolean
-		self.save_status = False
-		self.save_times = [0]
+		# vivarium-ecoli save times
+		self.save_times = [0, 2080]
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -271,9 +291,6 @@ class Simulation():
 				self.finalize()
 				break
 
-			# save_time = 0 --> make into a list of times??
-			# added save_status boolean
-
 			time = int(self.time())
 			if time in self.save_times:
 				self.write_states(f'out/wcecoli_t{time}.json')
@@ -283,9 +300,23 @@ class Simulation():
 			self._timeTotal += self._timeStepSec
 
 			self._pre_evolve_state()
-			for processes in self._processClasses:
+			for layer, processes in enumerate(self._processClasses):
+				# Save after each "layer" of processes so Metabolism and
+				# ChromosomeStructure get accurate state
+				if time in self.save_times:
+					self.write_states(f'out/wcecoli_t{time}_before_layer_{layer}.json')
 				self._evolveState(processes)
+			# Get most up-to-date simulation state for listener migration tests
+			if time in self.save_times:
+				self.write_states(f'out/wcecoli_t{time}_before_post.json')
 			self._post_evolve_state()
+			# Get most up-to-date listener values
+			if time in self.save_times:
+				listener_data = {}
+				for listener in self.listeners.values():
+					listener_data = {**listener_data, **listener.get_dict()}
+				with open(f'out/wcecoli_listeners_t{time}.json', 'w') as outfile:
+					json.dump(listener_data, outfile, cls=NpEncoder)
 
 
 	def get_states(self):
@@ -339,24 +370,6 @@ class Simulation():
 			'listeners': listeners}
 
 	def write_states(self, path):
-		import json
-		INFINITY = float('inf')
-
-		class NpEncoder(json.JSONEncoder):
-			def default(self, obj):
-				if isinstance(obj, np.integer):
-					return int(obj)
-				elif isinstance(obj, np.ndarray):
-					return obj.tolist()
-				elif obj == INFINITY:
-					return '__INFINITY__'
-				elif isinstance(obj, np.floating):
-					return float(obj)
-				elif isinstance(obj, np.bool_):
-					return bool(obj)
-				else:
-					return super(NpEncoder, self).default(obj)
-
 		# states = self.get_states()
 		states = self.get_states_numpy()
 		with open(path, 'w') as outfile:
@@ -460,6 +473,9 @@ class Simulation():
 
 	# Calculate temporal evolution
 	def _evolveState(self, processes):
+		# Keep track of time to determine whether to save state
+		time = int(self.time()) - 2
+
 		# Update queries
 		# TODO: context manager/function calls for this logic?
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
@@ -470,6 +486,15 @@ class Simulation():
 		# Calculate requests
 		for i, process in enumerate(six.viewvalues(self.processes)):
 			if process.__class__ in processes:
+				if time in self.save_times:
+					# When saving states for migration tests,
+					# have to reseed for one-to-one comparison
+					if process.name() == 'Complexation':
+						from arrow import StochasticSystem
+						process.system = StochasticSystem(
+							process.stoichMatrix.T, random_seed=0)
+					if process.name() == 'TfBinding':
+						process.randomState = np.random.RandomState(seed=0)
 				t = monotonic_seconds()
 				process.calculateRequest()
 				self._eval_time.calculate_request_times[i] += monotonic_seconds() - t
@@ -478,6 +503,15 @@ class Simulation():
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
 			t = monotonic_seconds()
 			state.partition(processes)
+			# Save allocated counts for migration tests
+			if time in self.save_times and state.name() == 'BulkMolecules':
+				bulk_allocated = state._countsAllocatedInitial
+				bulk_overrides = {}
+				for process_name, process_idx in state._processID_to_index.items():
+					bulk_overrides[process_name] = bulk_allocated[:, process_idx]
+				out_name = f'out/bulk_partitioned_t{time}.json'
+				with open(out_name, 'w') as f:
+					json.dump(bulk_overrides, f, cls=NpEncoder)
 			self._eval_time.partition_times[i] += monotonic_seconds() - t
 
 		# Simulate submodels
@@ -493,10 +527,66 @@ class Simulation():
 				raise Exception("The timestep (%.3f) was too long at step %i, failed on process %s" % (self._timeStepSec, self.simulationStep(), str(process.name())))
 
 		# Merge state
+		process_names = list(self.processes.keys())
+		updates = {process_name: {} for process_name in process_names}
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
 			t = monotonic_seconds()
+			if time in self.save_times:
+				# Save final bulk counts calculated by each process
+				if state.name() == 'BulkMolecules':
+					bulk_final = state._countsAllocatedFinal
+					for process_name, process_idx in state._processID_to_index.items():
+						updates[process_name]['bulk'] = bulk_final[:, process_idx]
+				elif state.name() == 'UniqueMolecules':
+					container = state.container
+					unique_updates = container._requests
+					# Map collection index to molecule type (RNA: 1, etc.)
+					coll_idx_to_name = {v: k for k, v in
+						container._nameToIndexMapping.items()}
+					for update in unique_updates:
+						# Each update has associated process index that can
+						# be mapped back to a process name
+						process_name = process_names[update['process_index']]
+						curr_update = updates[process_name].setdefault(
+							'unique', {})
+						# Edit, delete, and submass updates have a globalIndexes
+						# key that is equivalent to the unique_index attribute
+						# in vivarium-ecoli
+						globalIndexes = update.get('globalIndexes', None)
+						if globalIndexes is not None:
+							if len(globalIndexes) == 0:
+								continue
+							coll_idx = container._globalReference[
+								'_collectionIndex'][globalIndexes[0]]
+							coll_name = coll_idx_to_name[coll_idx]
+							curr_update = updates[process_name]['unique'
+								].setdefault(coll_name, {})
+							update_type = update['type']
+							if update_type == 'edit':
+								curr_update['set'] = update['attributes']
+							elif update_type == 'delete':
+								curr_update['delete'] = globalIndexes
+							elif update_type == 'submass':
+								added_masses = update['added_masses']
+								for mass_type, mass_val in added_masses.items():
+									coll = container.objectsInCollection(coll_name)
+									curr_mass = coll.attr(mass_type)
+									curr_update['set'][mass_type] = \
+										curr_mass + mass_val
+						# Updates that add new molecules have a collectionName
+						# key that specify the type of molecule being added
+						else:
+							coll_name = update['collectionName']
+							curr_update = updates[process_name]['unique'
+								].setdefault(coll_name, {})
+							curr_update['new'] = update['attributes']
+
 			state.merge(processes)
 			self._eval_time.merge_times[i] += monotonic_seconds() - t
+		
+		if time in self.save_times:
+			with open(f'out/process_updates_t{time}.json', 'w')	as f:
+				json.dump(updates, f, cls=NpEncoder)
 
 		# update environment state
 		for state in six.viewvalues(self.external_states):

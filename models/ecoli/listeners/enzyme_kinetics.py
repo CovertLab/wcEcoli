@@ -84,3 +84,18 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
                         targetFluxesLower = self.targetFluxesLower,
 			actualFluxes = self.actualFluxes,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'enzyme_kinetics': {
+				'metabolite_counts_init': self.metaboliteCountsInit,
+				'metabolite_counts_final': self.metaboliteCountsFinal,
+				'counts_to_molar': self.countsToMolar,
+				'enzyme_counts_init': self.enzymeCountsInit,
+				'target_fluxes': self.targetFluxes,
+				'target_fluxes_upper': self.targetFluxesUpper,
+				'target_fluxes_lower': self.targetFluxesLower,
+				'actual_fluxes': self.actualFluxes,
+			}
+		}

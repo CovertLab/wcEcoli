@@ -54,3 +54,11 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			complexationEvents = self.complexationEvents,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'complexation_listener': {
+				'complexation_events': self.complexationEvents
+			}
+		}

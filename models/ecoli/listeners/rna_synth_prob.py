@@ -58,6 +58,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 
 
 	def update(self):
+		# TODO: Get these listeners in vivarium-ecoli
 		promoters = self.uniqueMolecules.container.objectsInCollection('promoter')
 		TU_indexes, all_coordinates, all_domains, bound_TFs = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF"
@@ -109,3 +110,20 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			bound_TF_coordinates = self.bound_TF_coordinates,
 			bound_TF_domains = self.bound_TF_domains,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'rna_synth_prob': {
+				'rna_synth_prob': self.rnaSynthProb,
+				'gene_copy_number': self.gene_copy_number,
+				'p_promoter_bound': self.pPromoterBound,
+				'n_promoter_bound': self.nPromoterBound,
+				'n_actual_bound': self.nActualBound,
+				'n_available_promoters': self.n_available_promoters,
+				'n_bound_TF_per_TU': self.n_bound_TF_per_TU,
+				'bound_TF_indexes': self.bound_TF_indexes,
+				'bound_TF_coordinates': self.bound_TF_coordinates,
+				'bound_TF_domains': self.bound_TF_domains,
+			}
+		}

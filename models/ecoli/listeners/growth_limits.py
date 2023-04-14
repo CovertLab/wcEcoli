@@ -117,3 +117,28 @@ class GrowthLimits(wholecell.listeners.listener.Listener):
 			aa_supply_aa_conc = self.aa_supply_aa_conc,
 			aa_supply_fraction = self.aa_supply_fraction,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'growth_limits': {
+				'active_ribosome_allocated': self.activeRibosomeAllocated,
+				'aa_pool_size': self.aaPoolSize,
+				'aa_request_size': self.aaRequestSize,
+				'aa_allocated': self.aaAllocated,
+				'aas_used': self.aasUsed,
+				'fraction_trna_charged': self.fraction_trna_charged,
+				'net_charged': self.net_charged,
+				'ntp_pool_size': self.ntpPoolSize,
+				'ntp_request_size': self.ntpRequestSize,
+				'ntp_allocated': self.ntpAllocated,
+				'ntp_used': self.ntpUsed,
+				'rela_syn': self.rela_syn,
+				'spot_syn': self.spot_syn,
+				'spot_deg': self.spot_deg,
+				'aa_supply': self.aa_supply,
+				'aa_supply_enzymes': self.aa_supply_enzymes,
+				'aa_supply_aa_conc': self.aa_supply_aa_conc,
+				'aa_supply_fraction': self.aa_supply_fraction,
+			}
+		}

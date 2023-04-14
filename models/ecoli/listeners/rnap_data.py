@@ -59,6 +59,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 
 
 	def update(self):
+		# TODO: Get these listeners in vivarium-ecoli
 		active_rnaps = self.uniqueMolecules.container.objectsInCollection(
 			'active_RNAP')
 		RNAs = self.uniqueMolecules.container.objectsInCollection('RNA')
@@ -131,3 +132,26 @@ class RnapData(wholecell.listeners.listener.Listener):
 			headon_collision_coordinates=self.headon_collision_coordinates,
 			codirectional_collision_coordinates=self.codirectional_collision_coordinates,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'rnap_data': {
+				'active_rnap_coordinates': self.active_rnap_coordinates,
+				'active_rnap_domain_indexes': self.active_rnap_domain_indexes,
+				'active_rnap_unique_indexes': self.active_rnap_unique_indexes,
+				'active_rnap_n_bound_ribosomes': self.active_rnap_n_bound_ribosomes,
+				'actual_elongations': self.actualElongations,
+				'did_terminate': self.didTerminate,
+				'did_initialize': self.didInitialize,
+				'did_stall': self.didStall,
+				'termination_loss': self.terminationLoss,
+				'rna_init_event': self.rnaInitEvent,
+				'n_total_collisions': self.n_total_collisions,
+				'n_headon_collisions': self.n_headon_collisions,
+				'n_codirectional_collisions': self.n_codirectional_collisions,
+				'n_removed_ribosomes': self.n_removed_ribosomes,
+				'headon_collision_coordinates': self.headon_collision_coordinates,
+				'codirectional_collision_coordinates': self.codirectional_collision_coordinates,
+			}
+		}

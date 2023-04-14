@@ -145,3 +145,10 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
 			)
+	
+	def get_dict(self): 
+		return {
+			'monomer_counts': {
+				'monomer_counts': self.monomerCounts
+			}
+		}

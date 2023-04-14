@@ -163,3 +163,28 @@ class EvaluationTime(wholecell.listeners.listener.Listener):
 			update_total = self.update_total,
 			append_total = self.append_total,
 			)
+
+	
+	def get_dict(self):
+		# TODO: Add these listeners to vivarium-ecoli
+		return {
+			'evaluation_time': {
+				'clock_time': self.clock_time,
+				'update_queries_times': self.update_queries_times,
+				'partition_times': self.partition_times,
+				'merge_times': self.merge_times,
+				'calculate_mass_times': self.calculate_mass_times,
+				'calculate_request_times': self.calculate_request_times,
+				'evolve_state_times': self.evolve_state_times,
+				'update_times': self.update_times,
+				'append_times': self.append_times,
+				'update_queries_total': self.update_queries_total,
+				'partition_total': self.partition_total,
+				'merge_total': self.merge_total,
+				'calculate_mass_total': self.calculate_mass_total,
+				'calculate_request_total': self.calculate_request_total,
+				'evolve_state_total': self.evolve_state_total,
+				'update_total': self.update_total,
+				'append_total': self.append_total,
+			}
+		}

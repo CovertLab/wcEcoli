@@ -18,7 +18,6 @@ from six.moves import zip
 
 import wholecell.processes.process
 from wholecell.utils import units
-from wholecell.utils.migration.write_json import write_json
 
 
 class TranscriptInitiation(wholecell.processes.process.Process):
@@ -106,15 +105,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.copy_number = sim_data.process.replication.get_average_copy_number
 		self.ppgpp_regulation = sim._ppgpp_regulation
 
-		# saving updates
-		self.update_to_save = {}
-		self.saved = False
-
 
 	def calculateRequest(self):
-		# Migration: save factors influencing promoter initiation probabilities
-		self.probability_factors = {}
-
 		# Get all inactive RNA polymerases
 		self.inactive_RNAPs.requestAll()
 
@@ -124,8 +116,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		if self.full_chromosomes.total_count() > 0:
 			# Get attributes of promoters
 			TU_index, bound_TF = self.promoters.attrs("TU_index", "bound_TF")
-
-			self.probability_factors['bound_TF'] = bound_TF
 
 			if self.ppgpp_regulation:
 				cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
@@ -137,8 +127,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 			else:
 				basal_prob = self.basal_prob
-
-			self.probability_factors["basal_prob"] = basal_prob
 
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (basal_prob[TU_index] +
@@ -157,8 +145,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			if not self.ppgpp_regulation:
 				# Adjust synthesis probabilities depending on environment
 				synthProbFractions = self.rnaSynthProbFractions[current_media_id]
-				
-				self.probability_factors["synthProbFractions"] = synthProbFractions
 
 				# Create masks for different types of RNAs
 				is_mrna = np.isin(TU_index, self.idx_mRNA)
@@ -181,9 +167,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 						self.rnaSynthProbRnaPolymerase[current_media_id]
 						)),
 					TU_index)
-				
-				self.probability_factors["rnaSynthProbRProtein"] = self.rnaSynthProbRProtein[current_media_id]
-				self.probability_factors["rnaSynthProbRnaPolymerase"] = self.rnaSynthProbRnaPolymerase[current_media_id]
 
 				assert self.promoter_init_probs[is_fixed].sum() < 1.0
 
@@ -224,11 +207,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# Compute synthesis probabilities of each transcription unit
 		TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
 		self.writeToListener("RnaSynthProb", "rnaSynthProb", TU_synth_probs)
-
-		self.update_to_save = {
-			'listeners': {
-				'rna_synth_prob': {
-					'rna_synth_prob': TU_synth_probs}}}
 
 		# Shuffle synthesis probabilities if we're running the variant that
 		# calls this (In general, this should lead to a cell which does not
@@ -274,20 +252,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			coordinates = coordinates,
 			direction = direction)
 
-		self.update_to_save['active_RNAPs'] = {
-			'_add' : [{'key' : RNAP_indexes[i],
-					   'state' : {'unique_index' : RNAP_indexes[i],
-								  'domain_index' : domain_index_rnap[i],
-								  'coordinates' : coordinates[i],
-								  'direction' : direction[i]}}
-					  for i in range(len(RNAP_indexes))]
-		}
-
 		# Decrement counts of inactive RNAPs
 		self.inactive_RNAPs.countDec(n_initiations.sum())
-
-		self.update_to_save['molecules'] = {
-			'APORNAP-CPLX[c]': -n_initiations.sum()}
 
 		# Add partially transcribed RNAs
 		is_mRNA = np.isin(TU_index_partial_RNAs, self.idx_mRNA)
@@ -300,35 +266,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			can_translate=is_mRNA,
 			RNAP_index=RNAP_indexes)
 
-		self.update_to_save['RNAs'] = {'_add':
-										   [{'key': i,
-											 'state': {'unique_index': i,
-													   'TU_index': TU_index_partial_RNAs[i],
-													   'transcript_length': 0,
-													   'is_mRNA': is_mRNA[i],
-													   'is_full_transcript': False,
-													   'can_translate': is_mRNA[i],
-													   'RNAP_index': RNAP_indexes[i]}}
-											for i in range(n_RNAPs_to_activate)]}
-
 		# Create masks for ribosomal RNAs
 		is_5Srrna = np.isin(TU_index, self.idx_5SrRNA)
 		is_16Srrna = np.isin(TU_index, self.idx_16SrRNA)
 		is_23Srrna = np.isin(TU_index, self.idx_23SrRNA)
-
-		self.update_to_save['listeners']['ribosome_data'] = {
-			'rrn16S_produced': n_initiations[is_16Srrna].sum(),
-			'rrn23S_produced': n_initiations[is_23Srrna].sum(),
-			'rrn5S_produced': n_initiations[is_5Srrna].sum(),
-
-			'rrn16S_init_prob': n_initiations[is_16Srrna].sum() / float(n_RNAPs_to_activate),
-			'rrn23S_init_prob': n_initiations[is_23Srrna].sum() / float(n_RNAPs_to_activate),
-			'rrn5S_init_prob': n_initiations[is_5Srrna].sum() / float(n_RNAPs_to_activate),
-			'total_rna_init': n_RNAPs_to_activate}
-
-		self.update_to_save['listeners']['rnap_data'] = {
-			'didInitialize': n_RNAPs_to_activate,
-			'rnaInitEvent': TU_to_promoter.dot(n_initiations)}
 
 		# Write outputs to listeners
 		self.writeToListener(
@@ -350,15 +291,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		self.writeToListener("RnapData", "didInitialize", n_RNAPs_to_activate)
 		self.writeToListener("RnapData", "rnaInitEvent", TU_to_promoter.dot(n_initiations))
-
-		if not self.saved:
-			write_json(f'out/migration/transcript_initiation_update_t{int(self._sim.time())}.json',
-					   self.update_to_save)
-			
-			write_json(f'out/migration/transcript_initiation_probability_factors_t{int(self._sim.time())}.json',
-					   self.probability_factors)
-			
-			self.saved = True
 
 
 	def _calculateActivationProb(self, fracActiveRnap, rnaLengths, rnaPolymeraseElongationRates, synthProb):

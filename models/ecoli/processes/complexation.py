@@ -18,8 +18,6 @@ import wholecell.processes.process
 # Maximum unsigned int value + 1 for randint() to seed srand from C stdlib
 RAND_MAX = 2**31
 
-from wholecell.utils.migration.write_json import write_json
-
 class Complexation(wholecell.processes.process.Process):
     """ Complexation """
 
@@ -47,10 +45,6 @@ class Complexation(wholecell.processes.process.Process):
         # Build views
         self.moleculeNames = sim_data.process.complexation.molecule_names
         self.molecules = self.bulkMoleculesView(self.moleculeNames)
-  
-        # saving updates
-        self.save_time = [2, 4, 10, 102]
-        self.update_to_save = {}
 
 
     def calculateRequest(self):
@@ -65,9 +59,6 @@ class Complexation(wholecell.processes.process.Process):
 
     def evolveState(self):
         moleculeCounts = self.molecules.counts()
-        
-        # Manually reinitialize StochasticSystem with seed=0 to match vivarium
-        # self.system = StochasticSystem(self.stoichMatrix.T, random_seed=0)
 
         result = self.system.evolve(
             self._sim.timeStepSec(), moleculeCounts, self.rates)
@@ -77,19 +68,4 @@ class Complexation(wholecell.processes.process.Process):
         self.molecules.countsIs(updatedMoleculeCounts)
 
         # Write outputs to listeners
-        # self.writeToListener("ComplexationListener", "complexationEvents", events)
-
-        if self._sim.time() in self.save_time:
-            delta = updatedMoleculeCounts - moleculeCounts
-            molecules_update = {
-                molecule: delta[index]
-                for index, molecule in enumerate(self.moleculeNames)}
-            self.update_to_save = {'molecules': molecules_update}
-            write_json(f'out/migration/complexation_update_t{int(self._sim.time())}.json',
-                        self.update_to_save) 
-            
-            molecules_allocated = {
-                molecule: moleculeCounts[index]
-                for index, molecule in enumerate(self.moleculeNames)}
-            write_json(f'out/migration/complexation_partitioned_t{int(self._sim.time())}.json',
-                       molecules_allocated)
+        self.writeToListener("ComplexationListener", "complexationEvents", events)
