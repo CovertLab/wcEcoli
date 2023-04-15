@@ -168,7 +168,8 @@ class Simulation():
 		self._initialize(sim_data)
 
 		# vivarium-ecoli save times
-		self.save_times = [0, 2080]
+		self.save_times = [0, 2132]
+		shutil.rmtree('out/migration')
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -293,7 +294,8 @@ class Simulation():
 
 			time = int(self.time())
 			if time in self.save_times:
-				self.write_states(f'out/wcecoli_t{time}.json')
+				os.makedirs('out/migration', exist_ok=True)
+				self.write_states(f'out/migration/wcecoli_t{time}.json')
 
 			self._simulationStep += 1
 
@@ -304,18 +306,18 @@ class Simulation():
 				# Save after each "layer" of processes so Metabolism and
 				# ChromosomeStructure get accurate state
 				if time in self.save_times:
-					self.write_states(f'out/wcecoli_t{time}_before_layer_{layer}.json')
+					self.write_states(f'out/migration/wcecoli_t{time}_before_layer_{layer}.json')
 				self._evolveState(processes)
 			# Get most up-to-date simulation state for listener migration tests
 			if time in self.save_times:
-				self.write_states(f'out/wcecoli_t{time}_before_post.json')
+				self.write_states(f'out/migration/wcecoli_t{time}_before_post.json')
 			self._post_evolve_state()
 			# Get most up-to-date listener values
 			if time in self.save_times:
 				listener_data = {}
 				for listener in self.listeners.values():
 					listener_data = {**listener_data, **listener.get_dict()}
-				with open(f'out/wcecoli_listeners_t{time}.json', 'w') as outfile:
+				with open(f'out/migration/wcecoli_listeners_t{time}.json', 'w') as outfile:
 					json.dump(listener_data, outfile, cls=NpEncoder)
 
 
@@ -493,8 +495,7 @@ class Simulation():
 						from arrow import StochasticSystem
 						process.system = StochasticSystem(
 							process.stoichMatrix.T, random_seed=0)
-					if process.name() == 'TfBinding':
-						process.randomState = np.random.RandomState(seed=0)
+					process.randomState = np.random.RandomState(seed=0)
 				t = monotonic_seconds()
 				process.calculateRequest()
 				self._eval_time.calculate_request_times[i] += monotonic_seconds() - t
@@ -503,15 +504,28 @@ class Simulation():
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
 			t = monotonic_seconds()
 			state.partition(processes)
-			# Save allocated counts for migration tests
+			# Save requested and allocated counts for migration tests
 			if time in self.save_times and state.name() == 'BulkMolecules':
 				bulk_allocated = state._countsAllocatedInitial
-				bulk_overrides = {}
-				for process_name, process_idx in state._processID_to_index.items():
-					bulk_overrides[process_name] = bulk_allocated[:, process_idx]
-				out_name = f'out/bulk_partitioned_t{time}.json'
-				with open(out_name, 'w') as f:
-					json.dump(bulk_overrides, f, cls=NpEncoder)
+				bulk_requested = state._countsRequested
+				try:
+					bulk_allocated_dict = json.load(open(
+						f'out/migration/bulk_partitioned_t{time}.json', 'r'))
+					bulk_requested_dict = json.load(open(
+						f'out/migration/bulk_requested_t{time}.json', 'r'))
+				except FileNotFoundError:
+					bulk_allocated_dict = {}
+					bulk_requested_dict = {}
+				for process in processes:
+					process_idx = state._processID_to_index[process.name()]
+					bulk_allocated_dict[process.name()] = bulk_allocated[
+						:, process_idx]
+					bulk_requested_dict[process.name()] = bulk_requested[
+						:, process_idx]
+				with open(f'out/migration/bulk_partitioned_t{time}.json', 'w') as f:
+					json.dump(bulk_allocated_dict, f, cls=NpEncoder)
+				with open(f'out/migration/bulk_requested_t{time}.json', 'w') as f:
+					json.dump(bulk_requested_dict, f, cls=NpEncoder)
 			self._eval_time.partition_times[i] += monotonic_seconds() - t
 
 		# Simulate submodels
@@ -527,22 +541,30 @@ class Simulation():
 				raise Exception("The timestep (%.3f) was too long at step %i, failed on process %s" % (self._timeStepSec, self.simulationStep(), str(process.name())))
 
 		# Merge state
-		process_names = list(self.processes.keys())
-		updates = {process_name: {} for process_name in process_names}
+		if time in self.save_times:
+			try:
+				updates = json.load(open(
+					f'out/migration/process_updates_t{time}.json', 'r'))
+			except FileNotFoundError:
+				updates = {process.name(): {} for process in processes}
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
 			t = monotonic_seconds()
 			if time in self.save_times:
 				# Save final bulk counts calculated by each process
 				if state.name() == 'BulkMolecules':
 					bulk_final = state._countsAllocatedFinal
-					for process_name, process_idx in state._processID_to_index.items():
-						updates[process_name]['bulk'] = bulk_final[:, process_idx]
+					for process in processes:
+						process_idx = state._processID_to_index[process.name()]
+						updates.setdefault(process.name(), {'bulk': {}})
+						updates[process.name()]['bulk'] = bulk_final[
+							:, process_idx]
 				elif state.name() == 'UniqueMolecules':
 					container = state.container
 					unique_updates = container._requests
 					# Map collection index to molecule type (RNA: 1, etc.)
 					coll_idx_to_name = {v: k for k, v in
 						container._nameToIndexMapping.items()}
+					process_names = list(self.processes.keys())
 					for update in unique_updates:
 						# Each update has associated process index that can
 						# be mapped back to a process name
@@ -565,27 +587,36 @@ class Simulation():
 							if update_type == 'edit':
 								curr_update['set'] = update['attributes']
 							elif update_type == 'delete':
-								curr_update['delete'] = globalIndexes
+								unique_arr = container._collections[coll_idx]
+								active_unique = unique_arr[
+									unique_arr['_entryState'].view(np.bool_)]
+								sorter = np.argsort(
+									active_unique['_globalIndex'])
+								active_idx = sorter[np.searchsorted(
+									active_unique['_globalIndex'],
+									globalIndexes, sorter=sorter)]
+								curr_update['delete'] = active_idx
 							elif update_type == 'submass':
 								added_masses = update['added_masses']
-								for mass_type, mass_val in added_masses.items():
-									coll = container.objectsInCollection(coll_name)
+								for mass_type, masses in added_masses.items():
+									coll = container.objectsInCollection(
+										coll_name)
 									curr_mass = coll.attr(mass_type)
 									curr_update['set'][mass_type] = \
-										curr_mass + mass_val
+										curr_mass + masses
 						# Updates that add new molecules have a collectionName
 						# key that specify the type of molecule being added
 						else:
 							coll_name = update['collectionName']
 							curr_update = updates[process_name]['unique'
 								].setdefault(coll_name, {})
-							curr_update['new'] = update['attributes']
+							curr_update['add'] = update['attributes']
 
 			state.merge(processes)
 			self._eval_time.merge_times[i] += monotonic_seconds() - t
 		
 		if time in self.save_times:
-			with open(f'out/process_updates_t{time}.json', 'w')	as f:
+			with open(f'out/migration/process_updates_t{time}.json', 'w')	as f:
 				json.dump(updates, f, cls=NpEncoder)
 
 		# update environment state
