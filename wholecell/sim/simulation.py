@@ -168,7 +168,7 @@ class Simulation():
 		self._initialize(sim_data)
 
 		# vivarium-ecoli save times
-		self.save_times = [0, 2132]
+		self.save_times = [0, 2104]
 		shutil.rmtree('out/migration')
 
 	# Link states and processes
@@ -495,6 +495,13 @@ class Simulation():
 						from arrow import StochasticSystem
 						process.system = StochasticSystem(
 							process.stoichMatrix.T, random_seed=0)
+					elif process.name() == 'Metabolism':
+						from models.ecoli.processes.metabolism import FluxBalanceAnalysisModel
+						process.model = FluxBalanceAnalysisModel(
+							sim_data=self.get_sim_data(),
+							timeline=self.external_states['Environment'].current_timeline,
+							include_ppgpp=not self._ppgpp_regulation or not self._trna_charging
+						)
 					process.randomState = np.random.RandomState(seed=0)
 				t = monotonic_seconds()
 				process.calculateRequest()
@@ -558,6 +565,11 @@ class Simulation():
 						updates.setdefault(process.name(), {'bulk': {}})
 						updates[process.name()]['bulk'] = bulk_final[
 							:, process_idx]
+						# Save this for metabolism
+						if process.name() == 'PolypeptideElongation':
+							updates['PolypeptideElongation'][
+								'gtp_to_hydrolyze'] = self.processes[
+									'PolypeptideElongation'].gtp_to_hydrolyze
 				elif state.name() == 'UniqueMolecules':
 					container = state.container
 					unique_updates = container._requests

@@ -171,8 +171,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# If all conditions are met, initiate a round of replication on every
 		# origin of replication
 		if initiate_replication:
-			from wholecell.utils.forkedPdb import ForkedPdb
-			ForkedPdb().set_trace()
 			# Get attributes of existing oriCs and domains
 			domain_index_existing_oric = self.oriCs.attr('domain_index')
 
