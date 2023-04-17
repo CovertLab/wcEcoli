@@ -1,11 +1,13 @@
 """
-Comparison of target synthesis probabilites vs actual synthesis
-probabilites for
-transcription units whose synthesis probabilities exceeded the limit set by the
-physical size and the elongation rates of ribosomes.
-"""
+Produces a txt file containing a list of genes and the index of variants
+where those genes were overcrowded by ribosomes. Here, overcrowded by
+ribosomes is defined as the actual probability of translation per
+transcript being less than the target probability of translation per
+transcript on average for at least one generation in at least one seed for
+that variant index.
 
-# TODO: add seeds, add output for total number overcrowded genes per variant
+TODO: Filter early vs late gens, sims that times out
+"""
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -53,17 +55,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					os.path.join(simOutDir, 'RibosomeData'))
 				monomer_ids = ribosome_reader.readAttribute('monomerIds')
 
-			mRNA_is_overcrowded = read_stacked_columns(all_cells,
-				'RibosomeData', 'mRNA_is_overcrowded', fun=lambda x: sum(x))
+			avg_actual_prob_translation_per_transcript = read_stacked_columns(all_cells,
+				'RibosomeData', 'actual_prob_translation_per_transcript',
+				fun=lambda x: np.mean(x, axis = 0))
+			avg_target_prob_translation_per_transcript = read_stacked_columns(
+				all_cells,
+				'RibosomeData', 'target_prob_translation_per_transcript',
+				fun=lambda x: np.mean(x, axis = 0))
 
-			# Get indexes of proteins corresponding to mRNAs that were overcrowded
-			# at some point in the sim
-			overcrowded_monomer_indexes = np.where(mRNA_is_overcrowded.sum(
-				axis=0))[0]
-			n_overcrowded_monomers = len(overcrowded_monomer_indexes)
+			# Get indexes of proteins corresponding to mRNAs that on
+			# average were overcrowded in any generation for any seed
+			avg_overcrowded_monomer_indexes = np.where(
+				sum(avg_actual_prob_translation_per_transcript <
+				avg_target_prob_translation_per_transcript) > 0)[0]
 
 			# Record that these genes were overcrowded this variant
-			for monomer_index in overcrowded_monomer_indexes:
+			for monomer_index in avg_overcrowded_monomer_indexes:
 				if monomer_index not in overcrowded_monomer_index_dict:
 					overcrowded_monomer_index_dict[monomer_index] = []
 
@@ -91,8 +98,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		print(os.path.join(plotOutDir, plotOutFileName + ".txt"))
 
-		with open(os.path.join(plotOutDir, plotOutFileName + ".txt"),
-							   'w') as f:
+		with open(os.path.join(plotOutDir, plotOutFileName + ".txt"),'w') as f:
 			for monomer_id in overcrowded_monomer_index_dict:
 				overcrowded_variant_string = ", ".join(map(str,
 					overcrowded_monomer_index_dict[
