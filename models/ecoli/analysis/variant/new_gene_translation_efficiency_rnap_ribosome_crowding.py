@@ -28,8 +28,30 @@ from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS\
 from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
 	import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
 
+# 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
+exclude_timeout_cells = 1
+
+"""
+1 to plot early (before MIN_LATE_CELL_INDEX), and late generations in
+addition to all generations
+"""
+exclude_early_gens = 1
+
 FONT_SIZE=9
 MAX_VARIANT = 43 # do not include any variant >= this index
+MAX_CELL_INDEX = 16 # do not include any generation >= this index
+
+"""
+generations before this may not be representative of dynamics 
+due to how they are initialized
+"""
+MIN_LATE_CELL_INDEX = 4
+
+MAX_CELL_LENGTH = 18000
+if (exclude_timeout_cells==0):
+	MAX_CELL_LENGTH += 1000000
+
+MAX_YLIM_PLOT = MAX_CELL_LENGTH
 
 """
 Count number of sims that reach this generation (remember index 7 
@@ -67,6 +89,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 
 		reached_count_gen = {}
+		generations = {}
 
 		variants = self.ap.get_variants()
 		variant_index_to_values = {}
@@ -109,10 +132,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		completed_gens_heatmap = np.zeros(
 			(1, len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			 len(NEW_GENE_EXPRESSION_FACTORS)))
-		rnap_crowding_heatmap = np.zeros((1,
+		rnap_crowding_heatmap = np.zeros((3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-		ribosome_crowding_heatmap = np.zeros((1,
+		ribosome_crowding_heatmap = np.zeros((3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
 
@@ -129,6 +152,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			if len(all_cells) == 0:
 				continue
+
+			exclude_timeout_cell_mask = stacked_cell_threshold_mask(
+				all_cells, 'Main', 'time', MAX_CELL_LENGTH,
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			all_cells_gens = np.array([int(os.path.basename(os.path.dirname(
+				cell_path))[-6:]) for cell_path in all_cells])[
+				exclude_timeout_cell_mask]
+			generations[variant] = all_cells_gens
 
 			# Count the number of simulations that reach gen COUNT_INDEX + 1
 			num_count_gen = len(self.ap.get_cells(variant=[variant],
@@ -180,41 +211,74 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ribosome_crowding_heatmap[0, trl_eff_index, exp_index] = \
 				n_overcrowded_monomers
 
+			if exclude_early_gens == 1:
+				# Add early gen values to the heatmap structure
+				early_cell_mask = generations[variant] < MIN_LATE_CELL_INDEX
+				if len(early_cell_mask) == 1:
+					early_cell_mask = early_cell_mask[0]
+
+				rnap_crowding_heatmap[1, trl_eff_index, exp_index] = \
+					len(np.where(sum((avg_actual_rna_synth_prob <
+					avg_target_rna_synth_prob)[early_cell_mask, :]) > 0)[0])
+				ribosome_crowding_heatmap[1, trl_eff_index, exp_index] = \
+					len(np.where(sum((avg_actual_prob_translation_per_transcript <
+					avg_target_prob_translation_per_transcript)[
+					early_cell_mask,:]) > 0)[0])
+
+				# Add late gen values to the heatmap structure
+				late_cell_mask = np.logical_and((generations[variant] >=
+								  MIN_LATE_CELL_INDEX),
+								 (generations[variant] < MAX_CELL_INDEX))
+				if len(late_cell_mask) == 1:
+					late_cell_mask = late_cell_mask[0]
+				if sum(late_cell_mask) != 0:
+					rnap_crowding_heatmap[2, trl_eff_index, exp_index] = \
+						len(np.where(sum((avg_actual_rna_synth_prob <
+						avg_target_rna_synth_prob)[late_cell_mask, :]) > 0)[0])
+					ribosome_crowding_heatmap[2, trl_eff_index, exp_index] = \
+						len(np.where(sum((avg_actual_prob_translation_per_transcript <
+						avg_target_prob_translation_per_transcript)[
+						late_cell_mask,:]) > 0)[0])
+
 		# Plotting
 		print("---Plotting---")
 		plot_descr = ["_all_gens"]
+		if exclude_early_gens == 1:
+			plot_descr += ["_early_gens", "_late_gens"]
 
-		# RNA Polymerase Crowding
-		fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-		self.heatmap(ax, variant_mask,
-					 rnap_crowding_heatmap[0, :, :],
-					 completed_gens_heatmap[0, :, :],
-					 "Expression Variant",
-					 "Translation Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "RNA Polymerase Crowding: # of TUs")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir,
-					 'rnap_crowding_heatmap' +
-					 plot_descr[0])
+		for j in range(len(plot_descr)):
 
-		# Ribosome Crowding
-		fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-		self.heatmap(ax, variant_mask,
-					 ribosome_crowding_heatmap[0, :, :],
-					 completed_gens_heatmap[0, :, :],
-					 "Expression Variant",
-					 "Translation Efficiency Value (Normalized)",
-					 NEW_GENE_EXPRESSION_FACTORS,
-					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "Ribosome Crowding: # of Monomers")
-		fig.tight_layout()
-		plt.show()
-		exportFigure(plt, plotOutDir,
-					 'ribosome_crowding_heatmap' +
-					 plot_descr[0])
+			# RNA Polymerase Crowding
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 rnap_crowding_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "RNA Polymerase Crowding: # of TUs")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir,
+						 'rnap_crowding_heatmap' +
+						 plot_descr[j])
+
+			# Ribosome Crowding
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 ribosome_crowding_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Ribosome Crowding: # of Monomers")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir,
+						 'ribosome_crowding_heatmap' +
+						 plot_descr[j])
 
 		plt.close('all')
 
