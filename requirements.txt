@@ -53,7 +53,9 @@ wheel>=0.40.0
 #
 # bokeh==1.4.0 is the last version compatible with Python 2. Now irrelevant.
 #
-# FireWorks requires pymongo; dnspython enables pymongo to access server clusters..
+# FireWorks requires pymongo.
+# dnspython enables pymongo to access server clusters (mongodb+srv:// URIs).
+# pymongo[ocsp] adds dependencies for Sherlock to access Atlas server clusters.
 # pytest-cov is for `pytest --cov`.
 numpy==1.24.2
 scipy==1.10.1
@@ -81,7 +83,7 @@ mypy==1.2.0
 pandas==2.0.0
 Pillow==9.5.0
 plotly==5.14.1
-pymongo==4.3.3
+pymongo[ocsp]==4.3.3
 pytest==7.3.1
 pytest-cov==4.0.0
 PyYAML==6.0
@@ -97,6 +99,14 @@ types-mock==5.0.0.6
 types-PyYAML==6.0.12.9
 types-requests==2.28.11.17
 types-urllib3==1.26.25.10
+
+## Added by pymongo[ocsp]:
+attrs==23.1.0
+cffi==1.15.1
+cryptography==40.0.2
+pycparser==2.21
+pyOpenSSL==23.1.1
+service-identity==21.1.0
 
 ## Added by pip freeze:
 appnope==0.1.3

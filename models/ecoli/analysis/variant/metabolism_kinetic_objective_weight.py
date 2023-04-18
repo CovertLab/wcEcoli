@@ -262,7 +262,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
 
 		plt.figure(figsize = (8.5, 22))
-		plt.style.use('seaborn-deep')
+		plt.style.use('seaborn-v0_8-deep')
 		subplots = 9
 
 		# Growth rates
