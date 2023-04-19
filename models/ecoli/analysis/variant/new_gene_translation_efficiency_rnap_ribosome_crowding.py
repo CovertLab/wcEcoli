@@ -5,14 +5,15 @@ new_gene_expression_and_translation_efficiency variant.
 Plots:
 - Number of TUs overcrowded by RNA polymerases
 - Number of Monomers overcrowded by ribosomes
-- TODO: Add heatmap for number of time steps new genes are overcrowded on avg (generation, seed) by RNA polymerases and ribsosomes
+- Number of time steps new genes are overcrowded on avg (generation,
+seed) by RNA polymerases and ribsosomes
 
 Here, overcrowded is defined as the actual probability being less than the
 target probability transcript on average for at least one generation in at
 least one seed for that variant index.
 """
 
-### TODO: filter sims that timed out
+### TODO: filter sims that timed out, accomodate multiple new genes
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -245,19 +246,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# overcrowding occurs for new genes per generation
 			new_gene_num_time_steps_rnap_overcrowded = read_stacked_columns(
 				all_cells, 'RnaSynthProb', 'tu_is_overcrowded',
-				fun=lambda x: np.sum(x[:,new_gene_RNA_indexes],axis=0))
-			new_gene_proportion_time_rnap_overcrowded = \
-				new_gene_num_time_steps_rnap_overcrowded / (
-					new_gene_num_time_steps_rnap_overcrowded.shape[0])
+				fun=lambda x: np.sum(x[:,new_gene_RNA_indexes],
+				axis=0) / (x[:,new_gene_RNA_indexes].shape[0]))
 
 			# Average fraction of time steps that ribosome
 			# overcrowding occurs for new genes per generation
 			new_gene_num_time_steps_ribosome_overcrowded = read_stacked_columns(
 				all_cells, 'RibosomeData', 'mRNA_is_overcrowded',
-				fun=lambda x: np.sum(x[:, new_gene_monomer_indexes], axis=0))
-			new_gene_proportion_time_ribosome_overcrowded = \
-				new_gene_num_time_steps_ribosome_overcrowded / (
-				new_gene_num_time_steps_ribosome_overcrowded.shape[0])
+				fun=lambda x: np.sum(x[:, new_gene_monomer_indexes],
+				axis=0)/(x[:,new_gene_monomer_indexes].shape[0]))
 
 			# RNA polymerase overcrowding
 			avg_actual_rna_synth_prob = read_stacked_columns(all_cells,
@@ -298,16 +295,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			i = 0 ### TODO: accomodate multiple new genes
 			avg_time_new_gene_rnap_overcrowded_heatmap[0, trl_eff_index, exp_index] =\
-				round(np.mean(new_gene_proportion_time_rnap_overcrowded[i,:]), 2)
+				round(np.mean(new_gene_num_time_steps_rnap_overcrowded[i,:]), 2)
 			avg_time_new_gene_ribosome_overcrowded_heatmap[0, trl_eff_index, exp_index] =\
-				round(np.mean(new_gene_proportion_time_ribosome_overcrowded[i, :]), 2)
+				round(np.mean(new_gene_num_time_steps_ribosome_overcrowded[i, :]), 2)
 
 			rnap_crowding_heatmap[0, trl_eff_index, exp_index] = \
 				n_overcrowded_tus
 			ribosome_crowding_heatmap[0, trl_eff_index, exp_index] = \
 				n_overcrowded_monomers
-
-			### TODO: Exclude timeout cells
 
 			if exclude_early_gens == 1:
 				# Add early gen values to the heatmap structure
@@ -318,14 +313,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				i = 0  ### TODO: accomodate multiple new genes
 				avg_time_new_gene_rnap_overcrowded_heatmap[
 					1, trl_eff_index, exp_index] = \
-					round(np.mean(new_gene_proportion_time_rnap_overcrowded[:,
+					round(np.mean(new_gene_num_time_steps_rnap_overcrowded[:,
 						i][early_cell_mask]), 2)
 				avg_time_new_gene_ribosome_overcrowded_heatmap[
 					1, trl_eff_index, exp_index] = \
-					round(np.mean(
-						new_gene_proportion_time_ribosome_overcrowded[:,
-						i][early_cell_mask]),
-						  2)
+					round(np.mean(new_gene_num_time_steps_ribosome_overcrowded[:,
+						i][early_cell_mask]),2)
 
 				rnap_crowding_heatmap[1, trl_eff_index, exp_index] = \
 					len(np.where(sum((avg_actual_rna_synth_prob <
@@ -346,14 +339,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					avg_time_new_gene_rnap_overcrowded_heatmap[
 						2, trl_eff_index, exp_index] = \
 						round(np.mean(
-							new_gene_proportion_time_rnap_overcrowded[:,
+							new_gene_num_time_steps_rnap_overcrowded[:,
 							i][late_cell_mask]), 2)
 					avg_time_new_gene_ribosome_overcrowded_heatmap[
 						2, trl_eff_index, exp_index] = \
 						round(np.mean(
-							new_gene_proportion_time_ribosome_overcrowded[:,
-							i][late_cell_mask]),
-							  2)
+							new_gene_num_time_steps_ribosome_overcrowded[:,
+							i][late_cell_mask]), 2)
 					rnap_crowding_heatmap[2, trl_eff_index, exp_index] = \
 						len(np.where(sum((avg_actual_rna_synth_prob <
 						avg_target_rna_synth_prob)[late_cell_mask, :]) > 0)[0])
