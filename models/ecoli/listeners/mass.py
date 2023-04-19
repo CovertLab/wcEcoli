@@ -266,7 +266,7 @@ class Mass(wholecell.listeners.listener.Listener):
 				'projection_mass': self.projection_mass,
 				'cytosol_mass': self.cytosol_mass,
 				'extracellular_mass': self.extracellular_mass,
-				'flagellum': self.flagellum_mass,
+				'flagellum_mass': self.flagellum_mass,
 				'membrane_mass': self.membrane_mass,
 				'outer_membrane_mass': self.outer_membrane_mass,
 				'periplasm_mass': self.periplasm_mass,
@@ -274,7 +274,7 @@ class Mass(wholecell.listeners.listener.Listener):
 				'inner_membrane_mass': self.inner_membrane_mass,
 				# Process mass differences not fully functional yet in vivarium-ecoli
 				#'processMassDifferences': self.processMassDifferences.astype(np.float64),
-				'small_molecule_mass': self.smallMoleculeMass,
+				'smallMolecule_mass': self.smallMoleculeMass,
 				'instantaneous_growth_rate': self.instantaniousGrowthRate,
 				'volume': self.volume,
 				'protein_mass_fraction': self.proteinMassFraction,

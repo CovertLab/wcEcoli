@@ -169,7 +169,11 @@ class Simulation():
 
 		# vivarium-ecoli save times
 		self.save_times = [0, 2104]
-		shutil.rmtree('out/migration')
+		# self.save_times = list(range(2050, 2150, 2)) + list(range(0, 32, 2))
+		shutil.rmtree('out/migration', ignore_errors=True)
+		# Add location tags to environment exchange for migration tests
+		self.viv_exchange_map = {v: k for k, v
+			in sim_data.external_state.exchange_to_env_map.items()}
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -320,59 +324,7 @@ class Simulation():
 				with open(f'out/migration/wcecoli_listeners_t{time}.json', 'w') as outfile:
 					json.dump(listener_data, outfile, cls=NpEncoder)
 
-
-	def get_states(self):
-		bulk = self.internal_states['BulkMolecules'].container
-		bulk_names = bulk.objectNames()
-		bulk_counts = bulk.counts()
-		bulk_molecules = {
-			bulk_names[index]: bulk_counts[index]
-			for index in np.arange(len(bulk_names))}
-
-		unique = self.internal_states['UniqueMolecules'].container
-		unique_molecules = {}
-		unique_names = unique.objectNames()
-		for name in unique_names:
-			types = unique.get_attribute_dtypes(name)
-			attrs = unique.objectsInCollection(name).attrsAsStructArray()
-			records = {}
-			for struct in attrs:
-				record = {}
-				for index, attr in enumerate(types.keys()):
-					record[attr] = struct[index]
-				records[int(record['unique_index'])] = record
-			unique_molecules[name] = records
-
-		environment = self.external_states['Environment'].container
-		environment_names = environment.objectNames()
-		environment_counts = environment.counts()
-		environment_concentrations = {
-			environment_names[index]: environment_counts[index]
-			for index in np.arange(len(environment_names))}
-
-		mass_listener = self.listeners['Mass']
-		listeners = {
-			'mass': {
-				'cell_mass': mass_listener.cellMass,
-				'dry_mass': mass_listener.dryMass,
-    			'water_mass': mass_listener.waterMass,
-				'dry_mass': mass_listener.dryMass,
-				'rnaMass': mass_listener.rnaMass,
-				'rRnaMass': mass_listener.rRnaMass,
-				'tRnaMass': mass_listener.tRnaMass,
-				'mRnaMass': mass_listener.mRnaMass,
-				'dnaMass': mass_listener.dnaMass,
-				'proteinMass': mass_listener.proteinMass,
-				'smallMoleculeMass': mass_listener.smallMoleculeMass}}
-
-		return {
-			'bulk': bulk_molecules,
-			'unique': unique_molecules,
-			'environment': environment_concentrations,
-			'listeners': listeners}
-
 	def write_states(self, path):
-		# states = self.get_states()
 		states = self.get_states_numpy()
 		with open(path, 'w') as outfile:
 			json.dump(states, outfile, cls=NpEncoder)
@@ -409,21 +361,52 @@ class Simulation():
 		environment_concentrations = {
 			environment_names[index]: environment_counts[index]
 			for index in np.arange(len(environment_names))}
+		environment_exchange = self.external_states[
+			'Environment'].get_environment_change()
+		environment_concentrations['exchange'] = {
+			self.viv_exchange_map[k]: v for k, v
+			in environment_exchange.items()
+		}
 
 		mass_listener = self.listeners['Mass']
+		ribosome_listener = self.listeners['RibosomeData']
 		listeners = {
 			'mass': {
 				'cell_mass': mass_listener.cellMass,
 				'dry_mass': mass_listener.dryMass,
     			'water_mass': mass_listener.waterMass,
 				'dry_mass': mass_listener.dryMass,
-				'rnaMass': mass_listener.rnaMass,
-				'rRnaMass': mass_listener.rRnaMass,
-				'tRnaMass': mass_listener.tRnaMass,
-				'mRnaMass': mass_listener.mRnaMass,
-				'dnaMass': mass_listener.dnaMass,
-				'proteinMass': mass_listener.proteinMass,
-				'smallMoleculeMass': mass_listener.smallMoleculeMass}}
+				'rna_mass': mass_listener.rnaMass,
+				'rRna_mass': mass_listener.rRnaMass,
+				'tRna_mass': mass_listener.tRnaMass,
+				'mRna_mass': mass_listener.mRnaMass,
+				'dna_mass': mass_listener.dnaMass,
+				'protein_mass': mass_listener.proteinMass,
+				'smallMolecule_mass': mass_listener.smallMoleculeMass,
+				'projection_mass': mass_listener.projection_mass,
+				'cytosol_mass': mass_listener.cytosol_mass,
+				'extracellular_mass': mass_listener.extracellular_mass,
+				'flagellum_mass': mass_listener.flagellum_mass,
+				'membrane_mass': mass_listener.membrane_mass,
+				'outer_membrane_mass': mass_listener.outer_membrane_mass,
+				'periplasm_mass': mass_listener.periplasm_mass,
+				'pilus_mass': mass_listener.pilus_mass,
+				'inner_membrane_mass': mass_listener.inner_membrane_mass,
+				'instantaneous_growth_rate': mass_listener.instantaniousGrowthRate,
+				'volume': mass_listener.volume,
+				'protein_mass_fraction': mass_listener.proteinMassFraction,
+				'rna_mass_fraction': mass_listener.rnaMassFraction,
+				'dry_mass_fold_change': mass_listener.dryMassFoldChange,
+				'protein_mass_fold_change': mass_listener.proteinMassFoldChange,
+				'rna_mass_fold_change': mass_listener.rnaMassFoldChange,
+				'small_molecule_fold_change': mass_listener.smallMoleculeFoldChange,
+				'expected_mass_fold_change': mass_listener.expectedMassFoldChange,
+				},
+			'ribosome_data': {
+				# Necessary for polypeptide initiation
+				'effective_elongation_rate': \
+					ribosome_listener.effectiveElongationRate
+			}}
 
 		return {
 			'bulk': bulk_array.tolist(),
@@ -510,6 +493,9 @@ class Simulation():
 		# Partition states among processes
 		for i, state in enumerate(six.viewvalues(self.internal_states)):
 			t = monotonic_seconds()
+			# Reset random state so partitioning can be directly compared
+			if time in self.save_times and state.name() == 'BulkMolecules':
+				state.randomState = np.random.RandomState(seed=0)
 			state.partition(processes)
 			# Save requested and allocated counts for migration tests
 			if time in self.save_times and state.name() == 'BulkMolecules':
@@ -567,9 +553,9 @@ class Simulation():
 							:, process_idx]
 						# Save this for metabolism
 						if process.name() == 'PolypeptideElongation':
-							updates['PolypeptideElongation'][
-								'gtp_to_hydrolyze'] = self.processes[
-									'PolypeptideElongation'].gtp_to_hydrolyze
+							updates['PolypeptideElongation']['process_state'
+								] = {'gtp_to_hydrolyze': self.processes[
+									'PolypeptideElongation'].gtp_to_hydrolyze}
 				elif state.name() == 'UniqueMolecules':
 					container = state.container
 					unique_updates = container._requests
@@ -626,14 +612,22 @@ class Simulation():
 
 			state.merge(processes)
 			self._eval_time.merge_times[i] += monotonic_seconds() - t
-		
-		if time in self.save_times:
-			with open(f'out/migration/process_updates_t{time}.json', 'w')	as f:
-				json.dump(updates, f, cls=NpEncoder)
 
 		# update environment state
 		for state in six.viewvalues(self.external_states):
 			state.update()
+			if time in self.save_times and state.name() == 'Environment':
+				process_names = [process.name() for process in processes]
+				if 'Metabolism' in process_names:
+					environment_exchange = state.get_environment_change()
+					updates['Metabolism']['environment'] = {
+						'exchange': {self.viv_exchange_map[k]: v for k, v
+						in environment_exchange.items()}
+					}
+		
+		if time in self.save_times:
+			with open(f'out/migration/process_updates_t{time}.json', 'w')	as f:
+				json.dump(updates, f, cls=NpEncoder)
 
 	def _post_evolve_state(self):
 		# Calculate mass of all molecules after evolution
