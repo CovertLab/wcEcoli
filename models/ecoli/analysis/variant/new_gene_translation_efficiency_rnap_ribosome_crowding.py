@@ -12,7 +12,7 @@ target probability transcript on average for at least one generation in at
 least one seed for that variant index.
 """
 
-### TODO: filter early vs late gens, sims that timed out, etc
+### TODO: filter sims that timed out
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -85,6 +85,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 
+		print("Running analysis script with exclude_timeout_cells=",
+			  exclude_timeout_cells, " and exclude_early_gens=",
+			  exclude_early_gens)
+
 		# TODO: READ IN EXP AND TRL EFF LISTS FROM SIM METADATA INSTEAD OF IMPORT
 		SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 
@@ -92,6 +96,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		generations = {}
 
 		variants = self.ap.get_variants()
+		min_variant = min(variants)
 		variant_index_to_values = {}
 		variant_index_to_list_indices = {}
 		variant_mask = np.zeros((  # Track whether we ran this sim
@@ -138,6 +143,38 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ribosome_crowding_heatmap = np.zeros((3,
 			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
 			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+		# TODO: Expand to Accomodate Multiple New Genes
+		avg_time_new_gene_rnap_overcrowded_heatmap = np.zeros(( 3,
+			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
+			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+		avg_time_new_gene_ribosome_overcrowded_heatmap = np.zeros(( 3,
+			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
+			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+
+		# Determine new gene ids
+		with open(simDataFile, 'rb') as f:
+			sim_data = pickle.load(f)
+		mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
+		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+		new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']][
+			'id'].tolist()
+		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
+										monomer_sim_data['id']))
+		new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
+								for mRNA_id in new_gene_mRNA_ids]
+		if len(new_gene_mRNA_ids) == 0:
+			print("This plot is intended to be run on simulations where the"
+				  " new gene option was enabled, but no new gene mRNAs were "
+				  "found.")
+			return
+		if len(new_gene_monomer_ids) == 0:
+			print("This plot is intended to be run on simulations where the "
+				  "new gene option was enabled, but no new gene proteins "
+				  "were "
+				  "found.")
+			return
+		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
+			'number of new gene monomers and mRNAs should be equal'
 
 		# Data extraction
 		print("---Data Extraction---")
@@ -169,6 +206,58 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 												 generation=[0],
 												 only_successful=True))
 			reached_count_gen[variant] = num_count_gen / num_zero_gen
+
+			# New gene mRNA and monomer counts
+			if variant == min_variant:
+				sim_dir = all_cells[0]
+				simOutDir = os.path.join(sim_dir, 'simOut')
+
+				# Extract mRNA indexes for each new gene
+				mRNA_counts_reader = TableReader(os.path.join(simOutDir,
+															  'RNACounts'))
+				mRNA_idx_dict = {rna[:-3]: i for i, rna in
+								 enumerate(mRNA_counts_reader.readAttribute(
+									 'mRNA_ids'))}
+				new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id)
+										 for mRNA_id in new_gene_mRNA_ids]
+
+				# Extract RNA indexes for each new gene
+				rnap_reader = TableReader(os.path.join(simOutDir,
+															  'RnaSynthProb'))
+				RNA_idx_dict = {rna[:-3]: i for i, rna in
+								 enumerate(rnap_reader.readAttribute(
+									 'rnaIds'))}
+				new_gene_RNA_indexes = [RNA_idx_dict.get(mRNA_id)
+										 for mRNA_id in new_gene_mRNA_ids]
+
+				# Extract protein indexes for each new gene
+				monomer_counts_reader = TableReader(os.path.join(
+					simOutDir, "MonomerCounts"))
+				monomer_idx_dict = {monomer: i for i, monomer in
+									enumerate(
+										monomer_counts_reader.readAttribute(
+											'monomerIds'))}
+				new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id)
+											for monomer_id in
+											new_gene_monomer_ids]
+
+			# Average fraction of time steps that RNA polymerase
+			# overcrowding occurs for new genes per generation
+			new_gene_num_time_steps_rnap_overcrowded = read_stacked_columns(
+				all_cells, 'RnaSynthProb', 'tu_is_overcrowded',
+				fun=lambda x: np.sum(x[:,new_gene_RNA_indexes],axis=0))
+			new_gene_proportion_time_rnap_overcrowded = \
+				new_gene_num_time_steps_rnap_overcrowded / (
+					new_gene_num_time_steps_rnap_overcrowded.shape[0])
+
+			# Average fraction of time steps that ribosome
+			# overcrowding occurs for new genes per generation
+			new_gene_num_time_steps_ribosome_overcrowded = read_stacked_columns(
+				all_cells, 'RibosomeData', 'mRNA_is_overcrowded',
+				fun=lambda x: np.sum(x[:, new_gene_monomer_indexes], axis=0))
+			new_gene_proportion_time_ribosome_overcrowded = \
+				new_gene_num_time_steps_ribosome_overcrowded / (
+				new_gene_num_time_steps_ribosome_overcrowded.shape[0])
 
 			# RNA polymerase overcrowding
 			avg_actual_rna_synth_prob = read_stacked_columns(all_cells,
@@ -206,16 +295,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				variant]
 			completed_gens_heatmap[0, trl_eff_index, exp_index] = \
 				round(reached_count_gen[variant], 2)
+
+			i = 0 ### TODO: accomodate multiple new genes
+			avg_time_new_gene_rnap_overcrowded_heatmap[0, trl_eff_index, exp_index] =\
+				round(np.mean(new_gene_proportion_time_rnap_overcrowded[i,:]), 2)
+			avg_time_new_gene_ribosome_overcrowded_heatmap[0, trl_eff_index, exp_index] =\
+				round(np.mean(new_gene_proportion_time_ribosome_overcrowded[i, :]), 2)
+
 			rnap_crowding_heatmap[0, trl_eff_index, exp_index] = \
 				n_overcrowded_tus
 			ribosome_crowding_heatmap[0, trl_eff_index, exp_index] = \
 				n_overcrowded_monomers
+
+			### TODO: Exclude timeout cells
 
 			if exclude_early_gens == 1:
 				# Add early gen values to the heatmap structure
 				early_cell_mask = generations[variant] < MIN_LATE_CELL_INDEX
 				if len(early_cell_mask) == 1:
 					early_cell_mask = early_cell_mask[0]
+
+				i = 0  ### TODO: accomodate multiple new genes
+				avg_time_new_gene_rnap_overcrowded_heatmap[
+					1, trl_eff_index, exp_index] = \
+					round(np.mean(new_gene_proportion_time_rnap_overcrowded[:,
+						i][early_cell_mask]), 2)
+				avg_time_new_gene_ribosome_overcrowded_heatmap[
+					1, trl_eff_index, exp_index] = \
+					round(np.mean(
+						new_gene_proportion_time_ribosome_overcrowded[:,
+						i][early_cell_mask]),
+						  2)
 
 				rnap_crowding_heatmap[1, trl_eff_index, exp_index] = \
 					len(np.where(sum((avg_actual_rna_synth_prob <
@@ -232,6 +342,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				if len(late_cell_mask) == 1:
 					late_cell_mask = late_cell_mask[0]
 				if sum(late_cell_mask) != 0:
+					i = 0  ### TODO: accomodate multiple new genes
+					avg_time_new_gene_rnap_overcrowded_heatmap[
+						2, trl_eff_index, exp_index] = \
+						round(np.mean(
+							new_gene_proportion_time_rnap_overcrowded[:,
+							i][late_cell_mask]), 2)
+					avg_time_new_gene_ribosome_overcrowded_heatmap[
+						2, trl_eff_index, exp_index] = \
+						round(np.mean(
+							new_gene_proportion_time_ribosome_overcrowded[:,
+							i][late_cell_mask]),
+							  2)
 					rnap_crowding_heatmap[2, trl_eff_index, exp_index] = \
 						len(np.where(sum((avg_actual_rna_synth_prob <
 						avg_target_rna_synth_prob)[late_cell_mask, :]) > 0)[0])
@@ -247,6 +369,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plot_descr += ["_early_gens", "_late_gens"]
 
 		for j in range(len(plot_descr)):
+			# New Gene RNA Polymerase Crowding - Fraction of Time Steps
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 avg_time_new_gene_rnap_overcrowded_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Fraction of Time RNA Polymerase Crowded New Gene")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'new_gene_rnap_crowding_heatmap' +
+						 plot_descr[j])
+
+			# New Gene Ribosome Crowding - Fraction of Time Steps
+			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+			self.heatmap(ax, variant_mask,
+						 avg_time_new_gene_ribosome_overcrowded_heatmap[j, :, :],
+						 completed_gens_heatmap[0, :, :],
+						 "Expression Variant",
+						 "Translation Efficiency Value (Normalized)",
+						 NEW_GENE_EXPRESSION_FACTORS,
+						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 "Fraction of Time Ribosome Crowded New Gene")
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir,
+						 'new_gene_ribosome_crowding_heatmap' +
+						 plot_descr[j])
 
 			# RNA Polymerase Crowding
 			fig, ax = plt.subplots(1, 1, figsize=(10, 5))
