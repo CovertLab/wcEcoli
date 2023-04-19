@@ -517,7 +517,7 @@ class Workflow(object):
 		with open(lpad_filename) as f:
 			yml = yaml.YAML(typ='safe')
 			config = yml.load(f)
-			lpad = LaunchPad(**config)
+			lpad = LaunchPad.from_dict(config)
 
 		# (See the "ASSUMES" comment above about 'localhost'.)
 		config['host'] = (DEFAULT_FIREWORKER_LAUNCHPAD_HOST
