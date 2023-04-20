@@ -27,7 +27,7 @@ class WorkflowCLI(scriptBase.ScriptBase):
 	DOCKER_IMAGE = 'python:3.11.3'
 	DEFAULT_TIMEOUT = Task.DEFAULT_TIMEOUT  # in seconds
 
-	def __init__(self, internal_prefix='/tmp'):
+	def __init__(self, internal_prefix: str = '/tmp'):
 		super().__init__()
 		self.storage_prefix = ''
 		self.internal_prefix = pp.join(pp.sep, internal_prefix, '')

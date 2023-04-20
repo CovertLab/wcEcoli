@@ -712,7 +712,7 @@ def iterative_sub_nca(
         # Check if solution has converged
         E_est = A_est.dot(P_est)
         predicted_mask = E_est.sum(1) != 0
-        error = np.linalg.norm(E[predicted_mask, :] - E_est[predicted_mask, :])
+        error = float(np.linalg.norm(E[predicted_mask, :] - E_est[predicted_mask, :]))
         # TODO: better criteria for exiting
         if np.abs(error - old_error) / error < error_threshold:
             break
