@@ -1,11 +1,10 @@
 """
 Produces a txt file for all, early, and late generations containing a list of
 transcription units and the index of variants where those genes were
-overcrowded by
-RNA polymerases. Here, overcrowded by RNA polymerases is defined as the actual
-probability of RNA synthesis being less than the target
-probability of RNA synthesis on average for at least one
-generation in at least one seed for that variant index.
+overcrowded by RNA polymerases. Here, overcrowded by RNA polymerases is
+defined as the actual probability of RNA synthesis being less than the target
+probability of RNA synthesis on average for at least one generation in at
+least one seed for that variant index.
 
 TODO: Filter sims that timed out
 """
@@ -75,14 +74,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				rnap_reader = TableReader(
 					os.path.join(simOutDir, 'RnaSynthProb'))
 				rna_ids = rnap_reader.readAttribute('rnaIds')
-
-			# avg_actual_prob_translation_per_transcript = read_stacked_columns(all_cells,
-			# 	'RibosomeData', 'actual_prob_translation_per_transcript',
-			# 	fun=lambda x: np.mean(x, axis = 0))
-			# avg_target_prob_translation_per_transcript = read_stacked_columns(
-			# 	all_cells,
-			# 	'RibosomeData', 'target_prob_translation_per_transcript',
-			# 	fun=lambda x: np.mean(x, axis = 0))
 
 			# RNA polymerase overcrowding
 			avg_actual_rna_synth_prob = read_stacked_columns(all_cells,
