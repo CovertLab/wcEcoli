@@ -55,16 +55,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
 
+		all_generations = {}
+
 		for variant in variants:
 
 			if variant >= MAX_VARIANT:
 				continue
 
 			print("Variant: ",variant)
-			all_cells = self.ap.get_cells(variant=[variant],
-										  only_successful=True)
+			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
 			if len(all_cells) == 0:
 				continue
+
+			all_cells_gens = \
+				np.array([int(os.path.basename(os.path.dirname(
+					cell_path))[-6:]) for cell_path in all_cells])
+			all_generations[variant] = all_cells_gens
 
 			# Get tu ids
 			if variant == min_variant:
@@ -83,29 +89,44 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'RnaSynthProb','target_rna_synth_prob',
 				fun=lambda x: np.mean(x, axis=0))
 
-			# Get indexes of proteins corresponding to mRNAs that on
-			# average were overcrowded in any generation for any seed
-			overcrowded_gens, avg_overcrowded_tu_indexes = np.where(
-				avg_actual_rna_synth_prob <
-					avg_target_rna_synth_prob)
+			avg_overcrowded_tu_indexes = np.where(
+				sum(avg_actual_rna_synth_prob <
+					avg_target_rna_synth_prob) > 0)[0]
+
+			if exclude_early_gens == 1:
+				early_cell_mask = all_generations[variant] < MIN_LATE_CELL_INDEX
+				if len(early_cell_mask) == 1:
+					early_cell_mask = early_cell_mask[0]
+				avg_overcrowded_tu_indexes_early = np.where(
+					sum((avg_actual_rna_synth_prob <
+						 avg_target_rna_synth_prob)[early_cell_mask]) > 0)[0]
+
+				late_cell_mask = all_generations[variant] >= MIN_LATE_CELL_INDEX
+				if len(late_cell_mask) == 1:
+					late_cell_mask = late_cell_mask[0]
+				avg_overcrowded_tu_indexes_late = np.where(
+					sum((avg_actual_rna_synth_prob <
+						 avg_target_rna_synth_prob)[late_cell_mask]) > 0)[0]
 
 			# Record that these genes were overcrowded this variant
-			for i in range(len(avg_overcrowded_tu_indexes)):
-				gen = overcrowded_gens[i]
-				tu_index = avg_overcrowded_tu_indexes[i]
+			for tu_index in avg_overcrowded_tu_indexes:
 				if tu_index not in overcrowded_tu_index_dicts[0]:
-					for j in range(len(overcrowded_tu_index_dicts)):
-						overcrowded_tu_index_dicts[j][tu_index] = []
+					overcrowded_tu_index_dicts[0][tu_index] = []
+				overcrowded_tu_index_dicts[0][tu_index].append(
+					variant)
 
-				for j in range(len(overcrowded_tu_index_dicts)):
-					if j == 1 and gen >= MIN_LATE_CELL_INDEX:
-						continue
-					if j == 2 and gen < MIN_LATE_CELL_INDEX:
-						continue
-					if variant not in overcrowded_tu_index_dicts[j][
-						tu_index]:
-						overcrowded_tu_index_dicts[j][tu_index].append(
-							variant)
+			if exclude_early_gens == 1:
+				for tu_index in avg_overcrowded_tu_indexes_early:
+					if tu_index not in overcrowded_tu_index_dicts[1]:
+						overcrowded_tu_index_dicts[1][tu_index] = []
+					overcrowded_tu_index_dicts[1][tu_index].append(
+						variant)
+
+				for tu_index in avg_overcrowded_tu_indexes_late:
+					if tu_index not in overcrowded_tu_index_dicts[2]:
+						overcrowded_tu_index_dicts[2][tu_index] = []
+					overcrowded_tu_index_dicts[2][tu_index].append(
+						variant)
 
 		# Determine the ids corresponding to these tus
 		overcrowded_tu_indexes = overcrowded_tu_index_dicts[0].keys()

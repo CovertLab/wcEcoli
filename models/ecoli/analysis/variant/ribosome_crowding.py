@@ -54,6 +54,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
+		all_generations = {}
 
 		for variant in variants:
 
@@ -65,6 +66,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 										  only_successful=True)
 			if len(all_cells) == 0:
 				continue
+
+			all_cells_gens = \
+				np.array([int(os.path.basename(os.path.dirname(
+					cell_path))[-6:]) for cell_path in all_cells])
+			all_generations[variant] = all_cells_gens
 
 			# Get monomer ids
 			if variant == min_variant:
@@ -83,29 +89,46 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'RibosomeData', 'target_prob_translation_per_transcript',
 				fun=lambda x: np.mean(x, axis = 0))
 
-			# Get indexes of proteins corresponding to mRNAs that on
-			# average were overcrowded in any generation for any seed
-			overcrowded_gens, avg_overcrowded_monomer_indexes = np.where(
-				avg_actual_prob_translation_per_transcript <
-					avg_target_prob_translation_per_transcript)
+			avg_overcrowded_monomer_indexes = np.where(
+				sum(avg_actual_prob_translation_per_transcript <
+					avg_target_prob_translation_per_transcript) > 0)[0]
+
+			if exclude_early_gens == 1:
+				early_cell_mask = all_generations[variant] < MIN_LATE_CELL_INDEX
+				if len(early_cell_mask) == 1:
+					early_cell_mask = early_cell_mask[0]
+				avg_overcrowded_monomer_indexes_early = np.where(
+					sum((avg_actual_prob_translation_per_transcript <
+						avg_target_prob_translation_per_transcript)[
+							early_cell_mask]) > 0)[0]
+
+				late_cell_mask = all_generations[variant] >= MIN_LATE_CELL_INDEX
+				if len(late_cell_mask) == 1:
+					late_cell_mask = late_cell_mask[0]
+				avg_overcrowded_monomer_indexes_late = np.where(
+					sum((avg_actual_prob_translation_per_transcript <
+						avg_target_prob_translation_per_transcript)[
+							late_cell_mask]) > 0)[0]
 
 			# Record that these genes were overcrowded this variant
-			for i in range(len(avg_overcrowded_monomer_indexes)):
-				gen = overcrowded_gens[i]
-				monomer_index = avg_overcrowded_monomer_indexes[i]
+			for monomer_index in avg_overcrowded_monomer_indexes:
 				if monomer_index not in overcrowded_monomer_index_dicts[0]:
-					for j in range(len(overcrowded_monomer_index_dicts)):
-						overcrowded_monomer_index_dicts[j][monomer_index] = []
+					overcrowded_monomer_index_dicts[0][monomer_index] = []
+				overcrowded_monomer_index_dicts[0][monomer_index].append(
+					variant)
 
-				for j in range(len(overcrowded_monomer_index_dicts)):
-					if j == 1 and gen >= MIN_LATE_CELL_INDEX:
-						continue
-					if j == 2 and gen < MIN_LATE_CELL_INDEX:
-						continue
-					if variant not in overcrowded_monomer_index_dicts[j][
-						monomer_index]:
-						overcrowded_monomer_index_dicts[j][monomer_index].append(
-							variant)
+			if exclude_early_gens == 1:
+				for monomer_index in avg_overcrowded_monomer_indexes_early:
+					if monomer_index not in overcrowded_monomer_index_dicts[1]:
+						overcrowded_monomer_index_dicts[1][monomer_index] = []
+					overcrowded_monomer_index_dicts[1][monomer_index].append(
+						variant)
+
+				for monomer_index in avg_overcrowded_monomer_indexes_late:
+					if monomer_index not in overcrowded_monomer_index_dicts[2]:
+						overcrowded_monomer_index_dicts[2][monomer_index] = []
+					overcrowded_monomer_index_dicts[2][monomer_index].append(
+						variant)
 
 		# Determine the gene ids corresponding to these proteins
 		with open(simDataFile, 'rb') as f:
