@@ -11,7 +11,6 @@ Plots:
 TODO:
 - Accomodate more than one new gene
 - Read in the needed variant values from metadata rather than input
-- Read in new gene sequence values from simulation data
 """
 
 import numpy as np
@@ -20,9 +19,7 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
-    read_stacked_columns, stacked_cell_threshold_mask, \
-    read_stacked_bulk_molecules, stacked_cell_identification
-from unum.units import g, mol
+    read_stacked_columns, stacked_cell_threshold_mask
 
 from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
     import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
@@ -129,34 +126,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
                 expression_list_index, trl_eff_list_index])
             variant_mask[trl_eff_list_index, expression_list_index] = True
 
-        # Create data structures that we will use for the heatmaps
-        doubling_times_heatmap = np.zeros((3,
-                                           len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-                                           len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-        completed_gens_heatmap = np.zeros((1,
-                                           len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-                                           len(NEW_GENE_EXPRESSION_FACTORS)))
-        # TODO: Expand to Accomodate Multiple New Genes
-        avg_new_gene_mRNA_mass_fraction_heatmap = np.zeros((3,
-                                                            len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-                                                            len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-        avg_new_gene_mRNA_ATP_fraction_heatmap = np.zeros((3,
-            len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-            len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-        avg_new_gene_mRNA_GTP_fraction_heatmap = np.zeros((3,
-                                                           len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-                                                           len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-        avg_new_gene_mRNA_CTP_fraction_heatmap = np.zeros((3,
-                                                           len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-                                                           len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-        avg_new_gene_mRNA_UTP_fraction_heatmap = np.zeros((3,
-                                                           len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-                                                           len(NEW_GENE_EXPRESSION_FACTORS))) - 1
-
-        # Determine new gene ids
+        # Determine NTP ids
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
 
+        ntp_ids = list(sim_data.ntp_code_to_id_ordered.values())
+
+        # Create data structures that we will use for the heatmaps
+        doubling_times_heatmap = np.zeros((3,
+            len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
+            len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+        completed_gens_heatmap = np.zeros((1,
+            len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
+            len(NEW_GENE_EXPRESSION_FACTORS)))
+        # TODO: Expand to Accomodate Multiple New Genes
+        avg_new_gene_mRNA_ntp_fraction_heatmaps = {}
+        for ntp_id in ntp_ids:
+            avg_new_gene_mRNA_ntp_fraction_heatmaps[ntp_id] = np.zeros((3,
+                len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
+                len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+
+        # Determine new gene ids
         mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
         monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
         new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']][
@@ -179,18 +169,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
         assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
             'number of new gene monomers and mRNAs should be equal'
 
-        # TODO: load the new gene sequences in from somewhere else
         # Determine number of NTPs per new gene mRNA
-        from Bio import Seq
-        new_gene_mRNA_NTP_counts = [{} for id in new_gene_mRNA_ids]
-        new_gene_seq = [
-            "ATGAGTAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCAACATACGGAAAACTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCAAGATACCCAGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAAAGAACTATATTTTTCAAAGATGACGGGAACTACAAGACACGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATAGAATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTTGGACACAAATTGGAATACAACTATAACTCACACAATGTATACATCATGGCAGACAAACAAAAGAATGGAATCAAAGTTAACTTCAAAATTAGACACAACATTGAAGATGGAAGCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCCACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGAGAGACCACATGGTCCTTCTTGAGTTTGTAACAGCTGCTGGGATTACACATGGCATGGATGAACTATACAAATAG"]
+        new_gene_mRNA_ntp_counts = [{} for id in new_gene_mRNA_ids]
+        all_rna_counts_ACGU = sim_data.process.transcription.rna_data[
+            'counts_ACGU'].asNumber()
+        rna_ids = sim_data.process.transcription.rna_data['id']
+        rna_id_to_index_mapping = {rna[:-3]: i for i, rna in
+                                 enumerate(rna_ids)}
         for i in range(len(new_gene_mRNA_ids)):
-            curr_seq = Seq.Seq(new_gene_seq[i])
-            new_gene_mRNA_NTP_counts[i]['ATP'] = curr_seq.count('A')
-            new_gene_mRNA_NTP_counts[i]['GTP'] = curr_seq.count('G')
-            new_gene_mRNA_NTP_counts[i]['CTP'] = curr_seq.count('C')
-            new_gene_mRNA_NTP_counts[i]['UTP'] = curr_seq.count('T')
+            new_gene_mRNA_index = rna_id_to_index_mapping[new_gene_mRNA_ids[i]]
+            for ntp_index in range(len(ntp_ids)):
+                new_gene_mRNA_ntp_counts[i][ntp_ids[ntp_index]] = \
+                    all_rna_counts_ACGU[new_gene_mRNA_index, ntp_index]
+
+        all_mRNA_counts_ACGU = \
+            all_rna_counts_ACGU[sim_data.process.transcription.rna_data[
+            "is_mRNA"]]
 
         # Data extraction
         print("---Data Extraction---")
@@ -198,17 +192,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
         reached_count_gen = {}
         generations = {}
         new_gene_mRNA_counts = [{} for id in new_gene_mRNA_ids]
-        new_gene_mRNA_mass_fraction = [{} for id in new_gene_mRNA_ids]
-        new_gene_mRNA_masses = [1 for id in new_gene_mRNA_ids]
-        ATP_counts = {}
-        GTP_counts = {}
-        CTP_counts = {}
-        UTP_counts = {}
-        for i in range(len(new_gene_mRNA_ids)):
-            new_gene_mRNA_masses[i] = float(
-                (sim_data.getter.get_mass(new_gene_mRNA_ids[i]) / 1000
-                 * 0.0000016605402) / (
-                            1 * g / mol))  # convert from g/mol to fg
+        all_mRNA_ntp_totals = {} # {variant: {NTP id: values}}
 
         variants = self.ap.get_variants()
         min_variant = min(variants)
@@ -267,59 +251,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
                 avg_new_gene_mRNA_counts[exclude_timeout_cell_mask,]
 
             for i in range(len(new_gene_mRNA_ids)):
-                new_gene_mRNA_counts[i][variant] = \
-                    np.log10(avg_new_gene_mRNA_counts[:, i] + 1)
+                new_gene_mRNA_counts[i][variant] = avg_new_gene_mRNA_counts[:, i]
 
-            # Total NTP Counts
-            ATPCountsBulk, GTPCountsBulk, CTPCountsBulk, UTPCountsBulk = \
-                read_stacked_bulk_molecules(all_cells,
-                                            (["ATP[c]"], ["GTP[c]"],
-                                             ["CTP[c]"], ["UTP[c]"]))
-            cell_id_vector = stacked_cell_identification(all_cells,
-                                                         'Main',
-                                                         'time')
-            cell_ids, idx, cell_total_timesteps = np.unique(
-                cell_id_vector, return_inverse=True, return_counts=True)
-
-            sum_ATP_counts = np.bincount(idx, weights=ATPCountsBulk)
-            avg_ATP_counts = sum_ATP_counts / cell_total_timesteps
-            ATP_counts[variant] = avg_ATP_counts[exclude_timeout_cell_mask]
-
-            sum_GTP_counts = np.bincount(idx, weights=GTPCountsBulk)
-            avg_GTP_counts = sum_GTP_counts / cell_total_timesteps
-            GTP_counts[variant] = avg_GTP_counts[exclude_timeout_cell_mask]
-
-            sum_CTP_counts = np.bincount(idx, weights=CTPCountsBulk)
-            avg_CTP_counts = sum_CTP_counts / cell_total_timesteps
-            CTP_counts[variant] = avg_CTP_counts[exclude_timeout_cell_mask]
-
-            sum_UTP_counts = np.bincount(idx, weights=UTPCountsBulk)
-            avg_UTP_counts = sum_UTP_counts / cell_total_timesteps
-            UTP_counts[variant] = avg_UTP_counts[exclude_timeout_cell_mask]
+            # Total NTPs in all mRNAs
+            avg_mRNA_counts = read_stacked_columns(
+                all_cells, 'RNACounts', 'mRNA_counts', fun=lambda
+                    x: np.mean(x, axis=0))
+            all_mRNA_ntp_totals[variant] = {}
+            for ntp_index in range(len(ntp_ids)):
+                all_mRNA_ntp_totals[variant][ntp_ids[ntp_index]] = \
+                    (avg_mRNA_counts @ all_mRNA_counts_ACGU[:,ntp_index])[
+                        exclude_timeout_cell_mask]
 
             # Add values to heatmap data structures
             exp_index, trl_eff_index = variant_index_to_list_indices[variant]
             doubling_times_heatmap[0, trl_eff_index, exp_index] = round(
-                np.mean(
-                    doubling_times[variant]))
+                np.mean(doubling_times[variant]))
             completed_gens_heatmap[0, trl_eff_index, exp_index] = \
                 round(reached_count_gen[variant], 2)
             i = 0  ### TODO: accomodate multiple new genes
-            avg_new_gene_mRNA_ATP_fraction_heatmap[0, trl_eff_index,
-                exp_index] = round(np.mean( (new_gene_mRNA_counts[i][variant] *
-                new_gene_mRNA_NTP_counts[i]["ATP"]) / ATP_counts[variant]), 6)
-
-            avg_new_gene_mRNA_GTP_fraction_heatmap[0, trl_eff_index,
-                exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant] *
-                new_gene_mRNA_NTP_counts[i]["GTP"]) / GTP_counts[variant]), 6)
-
-            avg_new_gene_mRNA_CTP_fraction_heatmap[0, trl_eff_index,
-                exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant] *
-                new_gene_mRNA_NTP_counts[i]["CTP"]) / CTP_counts[variant]), 6)
-
-            avg_new_gene_mRNA_UTP_fraction_heatmap[0, trl_eff_index,
-                exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant] *
-                new_gene_mRNA_NTP_counts[i]["UTP"]) / UTP_counts[variant]), 6)
+            for ntp_id in ntp_ids:
+                avg_new_gene_mRNA_ntp_fraction_heatmaps[ntp_id][0,
+                    trl_eff_index, exp_index] = round(np.mean(
+                    (new_gene_mRNA_counts[i][variant] *
+                    new_gene_mRNA_ntp_counts[i][ntp_id]) /
+                    all_mRNA_ntp_totals[variant][ntp_id]), 4)
 
             if exclude_early_gens == 1:
                 # Add early gen values to the heatmap structure
@@ -330,25 +286,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
                 doubling_times_heatmap[1, trl_eff_index, exp_index] = round(
                     np.mean(doubling_times[variant][early_cell_mask]))
                 i = 0  ### TODO: accomodate multiple new genes
-                avg_new_gene_mRNA_ATP_fraction_heatmap[1, trl_eff_index,
-                    exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant][
-                    early_cell_mask] * new_gene_mRNA_NTP_counts[i]["ATP"]) /
-                    ATP_counts[variant][early_cell_mask]), 6)
-
-                avg_new_gene_mRNA_GTP_fraction_heatmap[1, trl_eff_index,
-                    exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant][
-                    early_cell_mask] * new_gene_mRNA_NTP_counts[i]["GTP"]) /
-                    GTP_counts[variant][early_cell_mask]), 6)
-
-                avg_new_gene_mRNA_CTP_fraction_heatmap[1, trl_eff_index,
-                    exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant][
-                    early_cell_mask] * new_gene_mRNA_NTP_counts[i]["CTP"]) /
-                    CTP_counts[variant][early_cell_mask]), 6)
-
-                avg_new_gene_mRNA_UTP_fraction_heatmap[1, trl_eff_index,
-                    exp_index] = round(np.mean((new_gene_mRNA_counts[i][variant][
-                    early_cell_mask] * new_gene_mRNA_NTP_counts[i]["UTP"]) /
-                    UTP_counts[variant][early_cell_mask]), 6)
+                for ntp_id in ntp_ids:
+                    avg_new_gene_mRNA_ntp_fraction_heatmaps[ntp_id][1,
+                        trl_eff_index, exp_index] = round(
+                            np.mean((new_gene_mRNA_counts[i][variant] *
+                            new_gene_mRNA_ntp_counts[i][ntp_id]) /
+                            all_mRNA_ntp_totals[variant][ntp_id]), 4)
 
                 # Add late gen values to the heatmap structure
                 late_cell_mask = np.logical_and((generations[variant] >=
@@ -362,29 +305,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
                         2, trl_eff_index, exp_index] = round(
                         np.mean(doubling_times[variant][late_cell_mask]))
                     i = 0  ### TODO: accomodate multiple new genes
-                    avg_new_gene_mRNA_ATP_fraction_heatmap[2, trl_eff_index,
-                        exp_index] = round(np.mean(
-                        (new_gene_mRNA_counts[i][variant][late_cell_mask] *
-                        new_gene_mRNA_NTP_counts[i]["ATP"]) /
-                        ATP_counts[variant][late_cell_mask]), 6)
-
-                    avg_new_gene_mRNA_GTP_fraction_heatmap[2, trl_eff_index,
-                        exp_index] = round(np.mean(
-                        (new_gene_mRNA_counts[i][variant][late_cell_mask] *
-                        new_gene_mRNA_NTP_counts[i]["GTP"]) /
-                        GTP_counts[variant][late_cell_mask]), 6)
-
-                    avg_new_gene_mRNA_CTP_fraction_heatmap[2, trl_eff_index,
-                        exp_index] = round(np.mean(
-                        (new_gene_mRNA_counts[i][variant][late_cell_mask] *
-                        new_gene_mRNA_NTP_counts[i]["CTP"]) /
-                        CTP_counts[variant][late_cell_mask]), 6)
-
-                    avg_new_gene_mRNA_UTP_fraction_heatmap[2, trl_eff_index,
-                        exp_index] = round(np.mean(
-                        (new_gene_mRNA_counts[i][variant][late_cell_mask] *
-                        new_gene_mRNA_NTP_counts[i]["UTP"]) /
-                        UTP_counts[variant][late_cell_mask]), 6)
+                    for ntp_id in ntp_ids:
+                        avg_new_gene_mRNA_ntp_fraction_heatmaps[ntp_id][2,
+                            trl_eff_index, exp_index] = round(
+                            np.mean((new_gene_mRNA_counts[i][variant] *
+                            new_gene_mRNA_ntp_counts[i][ntp_id]) /
+                            all_mRNA_ntp_totals[variant][ntp_id]), 4)
 
         # Plotting
         print("---Plotting---")
@@ -393,65 +319,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
             plot_descr += ["_early_gens", "_late_gens"]
 
         for j in range(len(plot_descr)):
-            # New Gene mRNA ATP Fraction
-            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
-                         avg_new_gene_mRNA_ATP_fraction_heatmap[j, :, :],
-                         completed_gens_heatmap[0, :, :],
-                         "Expression Variant",
-                         "Translation Efficiency Value (Normalized)",
-                         NEW_GENE_EXPRESSION_FACTORS,
-                         NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-                         "New Gene mRNA ATP Fraction")
-            fig.tight_layout()
-            plt.show()
-            exportFigure(plt, plotOutDir,
-                         'new_gene_mRNA_ATP_fraction_heatmap' + plot_descr[j])
-
-            # New Gene mRNA GTP Fraction
-            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
-                         avg_new_gene_mRNA_GTP_fraction_heatmap[j, :, :],
-                         completed_gens_heatmap[0, :, :],
-                         "Expression Variant",
-                         "Translation Efficiency Value (Normalized)",
-                         NEW_GENE_EXPRESSION_FACTORS,
-                         NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-                         "New Gene mRNA GTP Fraction")
-            fig.tight_layout()
-            plt.show()
-            exportFigure(plt, plotOutDir,
-                         'new_gene_mRNA_GTP_fraction_heatmap' + plot_descr[j])
-
-            # New Gene mRNA CTP Fraction
-            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
-                         avg_new_gene_mRNA_CTP_fraction_heatmap[j, :, :],
-                         completed_gens_heatmap[0, :, :],
-                         "Expression Variant",
-                         "Translation Efficiency Value (Normalized)",
-                         NEW_GENE_EXPRESSION_FACTORS,
-                         NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-                         "New Gene mRNA CTP Fraction")
-            fig.tight_layout()
-            plt.show()
-            exportFigure(plt, plotOutDir,
-                         'new_gene_mRNA_CTP_fraction_heatmap' + plot_descr[j])
-
-            # New Gene mRNA UTP Fraction
-            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
-                         avg_new_gene_mRNA_UTP_fraction_heatmap[j, :, :],
-                         completed_gens_heatmap[0, :, :],
-                         "Expression Variant",
-                         "Translation Efficiency Value (Normalized)",
-                         NEW_GENE_EXPRESSION_FACTORS,
-                         NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-                         "New Gene mRNA UTP Fraction")
-            fig.tight_layout()
-            plt.show()
-            exportFigure(plt, plotOutDir,
-                         'new_gene_mRNA_UTP_fraction_heatmap' + plot_descr[j])
+            # New Gene mRNA NTP Fractions
+            for ntp_id in ntp_ids:
+                fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+                self.heatmap(ax, variant_mask,
+                             avg_new_gene_mRNA_ntp_fraction_heatmaps[ntp_id][j, :, :],
+                             completed_gens_heatmap[0, :, :],
+                             "Expression Variant",
+                             "Translation Efficiency Value (Normalized)",
+                             NEW_GENE_EXPRESSION_FACTORS,
+                             NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+                             "New Gene mRNA " + ntp_id[:-3] + " Fraction")
+                fig.tight_layout()
+                plt.show()
+                exportFigure(plt, plotOutDir,
+                    'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap' + plot_descr[j])
 
             plt.close('all')
 
