@@ -56,6 +56,8 @@ class Test_openblas_threads(unittest.TestCase):
 		thread_range = [str(c) for c in range(1, parallelization.cpus() + 1)] + ['']
 		print('{:>7}  {:>26} {:>26} {:>11}'.format('THREADS', 'DOT PRODUCT', 'DIFF FROM 1 THREAD', 'NANOSECS'))
 
+		# NOTE: Setting OPENBLAS_NUM_THREADS affects OpenBLAS but it's unlikely
+		# to affect macOS Accelerate or other BLAS libraries.
 		for num_threads in thread_range:
 			env = dict(os.environ, OPENBLAS_NUM_THREADS=num_threads)
 			command = 'python -m wholecell.tests.utils.test_openblas_threads DOT'.split()

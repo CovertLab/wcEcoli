@@ -171,27 +171,35 @@ virtualenv.
    pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
    ```
 
-1. ***CONDITIONAL:*** Link numpy and scipy to a manually-installed \[that is, not provided by the numpy and scipy installers] OpenBLAS.
+1. ***CONDITIONAL:*** Link numpy and scipy to the BLAS linear algebra library
+   of your choice.
 
-   **See Issue #931.** There are several degrees of freedom for installing
-   OpenBLAS, numpy, and scipy that might change the computed results. We do not know
-   how to set up environments to get consistent results across platforms.
-   The simplest and fastest setup is to install numpy and scipy from binary "wheels"
-   with their embedded copies of OpenBLAS using `pip install` **without** the
-   `--no-binary numpy,scipy` option.
-   Using the same BLAS implementation should help with portable reproducibility,
-   and numpy's embedded copy is compiled with gcc/gfortran for every platform, so
-   this is the recommended way to go.
+   See Issue #931. There are several degrees of freedom for installing
+   a BLAS library, numpy, and scipy that might change the computed results.
+   We do not know how to set up environments to get consistent cross-platform
+   results. Unfortunately, that means WCM simulation results and bugs can vary
+   across platforms.
 
-   Still, there's a case for using a package manager to install OpenBLAS or
-   compiling OpenBLAS from source code, then linking numpy and scipy to it as
+   The simplest setup is to `pip install` numpy and scipy from binary "wheels"
+   **without** the `--no-binary numpy,scipy` option. This uses their default
+   BLAS library -- usually an embedded copy of OpenBLAS. This is usually the
+   way to go.
+
+   Still, you can use a package manager to install a specific version of the
+   OpenBLAS library to help with consistency or bug fixes. On macOS 13.3+, the
+   macOS Accelerate library is now suitable and it should be better tuned for
+   the hardware. There are reports of a dramatic speedup for various operations
+   but `test_openblas_threads.py` is measuring roughly a 2x speedup computing a
+   dot product. Accelerate will become numpy's default choice on macOS 14+.
+
+   Then link numpy and scipy to your chosen BLAS library the way
    `cloud/docker/runtime/Dockerfile` _optionally_ does when building the
    wcm-runtime Docker Image.
 
-   In that case, you need to locate the OpenBLAS library.
+   To use the OpenBLAS library, you need to know where it is.
    * Brew on Intel macOS installs OpenBLAS in `/usr/local/opt/openblas/`.  
      (To check, run `brew --prefix openblas`.)
-   * Brew on Apple Silicon macOS installs OpenBLAS in `/opt/homebrew/opt/openblas`.
+   * Brew on Apple Silicon (M1+) macOS installs OpenBLAS in `/opt/homebrew/opt/openblas`.
    * For other package managers, find out where they installed `lib/libopenblas*`.
    * Compiling OpenBLAS from source in Ubuntu goes into `/opt/OpenBLAS/` by default.
    * Compiling from source with
@@ -201,11 +209,12 @@ virtualenv.
      (Using an environment module to load the OpenBLAS when installing numpy and
      scipy works if the same environment module is loaded at runtime.)
 
-   To link numpy and scipy to a manually-installed OpenBLAS, create a `~/.numpy-site.cfg` file pointing to
-   it and remember to run `pip install <<packages>> --no-binary numpy,scipy` in the
+   To link numpy and scipy to OpenBLAS, create a `~/.numpy-site.cfg` file
+   that points to it. Copy the following lines to `~/.numpy-site.cfg`,
+   adjusting the paths as needed,
+   and remember to run `pip install <<packages>> --no-binary numpy` or
+   `pip install <<packages>> --no-binary numpy,scipy` in the
    pip-install steps below.
-
-   Copy these lines to `~/.numpy-site.cfg`, adjusting the paths as needed:
 
       ```
       [openblas]
@@ -215,20 +224,42 @@ virtualenv.
       runtime_library_dirs = /usr/local/opt/openblas/lib
       ```
 
+   To link numpy to Accelerate, create a `~/.numpy-site.cfg` file like
+   this (or go without the file since Accelerate is now the default),
+   and remember to run `pip install <<packages>> --no-binary numpy` in the
+   pip-install steps below.
+
+      ```
+      [accelerate]
+      libraries = Accelerate, vecLib
+      ```
+
+   In late 2023, numpy binary wheels are expected to use Accelerate on macOS 1.14+.
+
+   **Recommendation:** On macOS 13.3+, use
+   `pip install numpy==1.24.3 --no-binary numpy`
+   to link numpy to the macOS Accelerate library. Otherwise use
+   `pip install numpy==1.24.3`
+   to use numpy's built-in copy of OpenBLAS.
+
+   After installing numpy and scipy, run the `summarize_environment.py` script
+   to verify that they're linked to the desired BLAS implementation.
+
+
 1. Install NumPy.
 
    Install numpy before installing `scipy` and `stochastic-arrow` to avoid
    installation errors.
 
    ```shell script
-   pip install numpy==1.24.2  # see requirements.txt for the right version
+   pip install numpy==1.24.3  # see requirements.txt for the right version
    ```
 
    **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
    instead so pip will compile numpy from source code using `~/.numpy-site.cfg`:
 
    ```shell script
-   pip install numpy==1.24.2 --no-binary numpy  # see requirements.txt for the right version
+   pip install numpy==1.24.3 --no-binary numpy  # see requirements.txt for the right version
    ```
 
 1. Install the packages listed in `requirements.txt`.

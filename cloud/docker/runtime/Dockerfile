@@ -52,8 +52,8 @@ RUN if [ "${COMPILE_BLAS}" != 0 ]; then \
 ARG NO_AVX2=0
 ENV NO_AVX2="$NO_AVX2"
 
-# Install openblas (must be 0.3.5+) for numpy, scipy, and Aesara.
-ENV OPENBLAS_LABEL=v0.3.21
+# Install OpenBLAS for numpy, scipy, and Aesara.
+ENV OPENBLAS_LABEL=v0.3.23
 RUN if [ -f ~/.numpy-site.cfg ]; then \
     (mkdir -p openblas && cd openblas \
     && curl -SL https://github.com/xianyi/OpenBLAS/archive/${OPENBLAS_LABEL}.tar.gz | tar -xz \
@@ -77,7 +77,7 @@ RUN (b1="" \
     && if [ -f ~/.numpy-site.cfg ] ; then b1="--no-binary=numpy,scipy"; fi \
     && echo "Installing pips with '$b1'" \
     && pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir numpy==1.24.2 $b1 \
+    && pip install --no-cache-dir numpy==1.24.3 $b1 \
     && pip install --no-cache-dir -r requirements.txt $b1 \
     && umask 000 && mkdir -p /.aesara)
 
