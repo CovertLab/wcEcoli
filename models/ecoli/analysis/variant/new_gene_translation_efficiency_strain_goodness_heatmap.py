@@ -39,7 +39,7 @@ addition to all generations
 exclude_early_gens = 1
 
 FONT_SIZE=9
-MAX_VARIANT = 43 # do not include any variant >= this index
+MAX_VARIANT = 55 # do not include any variant >= this index
 MAX_CELL_INDEX = 16 # do not include any generation >= this index
 
 """
@@ -61,7 +61,7 @@ if (exclude_timeout_cells==0):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	### TODO: move to analysis_tools
 	def heatmap(self, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-				ylabels, title):
+				ylabels, title, textsize):
 		im = ax.imshow(data, cmap="GnBu")
 		ax.set_xticks(np.arange(len(xlabels)))
 		ax.set_xticklabels(xlabels)
@@ -77,7 +77,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					if completion_data[i,j] < 0.9:
 						col = "r"
 					text = ax.text(j, i, data[i, j],
-								   ha="center", va="center", color=col)
+								   ha="center", va="center", color=col,
+								   fontsize = textsize)
 		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
 		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
 		ax.set_title(title)
@@ -235,22 +236,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for i in range(len(new_gene_monomer_ids)):
 				new_gene_monomer_counts[i][variant] = \
 					avg_new_gene_monomer_counts[:, i]
+				# TODO: resolve this edge case in a nicer way
+				if len(new_gene_monomer_counts[i][variant].shape) == 2:
+					count_gen_mask = count_gen_mask[0]
 				avg_new_gene_monomer_counts_for_strain_goodness = \
 					avg_new_gene_monomer_counts[:, i][count_gen_mask]
 				dt_for_strain_goodness = doubling_times[variant][
-					count_gen_mask]
+					count_gen_mask].squeeze()
 				new_gene_strain_goodness[i][variant] = \
 					avg_new_gene_monomer_counts_for_strain_goodness\
 					/dt_for_strain_goodness * math.log(2)
+				print(avg_new_gene_monomer_counts_for_strain_goodness)
+				print(dt_for_strain_goodness)
+				print(new_gene_strain_goodness[i][variant])
 
 			# Add values to heatmap data structures
 			exp_index, trl_eff_index = variant_index_to_list_indices[variant]
 			completed_gens_heatmap[0, trl_eff_index, exp_index] = \
 				round(reached_count_gen[variant],2)
 			i = 0 ### TODO: accomodate multiple new genes
-			avg_new_gene_strain_goodness_heatmap[0, trl_eff_index, exp_index] \
-				= \
-				round(np.mean(new_gene_strain_goodness[i][variant]))
+			if len(new_gene_strain_goodness[i][variant]) != 0:
+				avg_new_gene_strain_goodness_heatmap[0, trl_eff_index, exp_index] \
+					= round(np.mean(new_gene_strain_goodness[i][variant]))
 		
 		# Plotting
 		print("---Plotting---")
@@ -265,7 +272,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					 "Translation Efficiency Value (Normalized)",
 					 NEW_GENE_EXPRESSION_FACTORS,
 					 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-					 "Strain Goodness Metric")
+					 "Strain Goodness Metric", "x-small")
 		fig.tight_layout()
 		plt.show()
 		exportFigure(plt, plotOutDir, 'new_gene_strain_goodness' + plot_descr[0])

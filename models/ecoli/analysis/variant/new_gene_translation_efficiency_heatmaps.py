@@ -65,7 +65,7 @@ if (exclude_timeout_cells==0):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	### TODO: move to analysis_tools
 	def heatmap(self, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-				ylabels, title):
+				ylabels, title, textsize = "medium"):
 		im = ax.imshow(data, cmap="GnBu")
 		ax.set_xticks(np.arange(len(xlabels)))
 		ax.set_xticklabels(xlabels)
@@ -81,7 +81,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					if completion_data[i,j] < 0.9:
 						col = "r"
 					text = ax.text(j, i, data[i, j],
-								   ha="center", va="center", color=col)
+								   ha="center", va="center", color=col,
+								   fontsize=textsize)
 		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
 		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
 		ax.set_title(title)
@@ -480,7 +481,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 "Translation Efficiency Value (Normalized)",
 						 NEW_GENE_EXPRESSION_FACTORS,
 						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-						 "Ribosome Counts")
+						 "Ribosome Counts", "x-small")
 			fig.tight_layout()
 			plt.show()
 			exportFigure(plt, plotOutDir, 'ribosome_heatmap' + plot_descr[j])
@@ -493,7 +494,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 "Translation Efficiency Value (Normalized)",
 						 NEW_GENE_EXPRESSION_FACTORS,
 						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
-						 "RNA Polymerase Counts")
+						 "RNA Polymerase Counts", "x-small")
 			fig.tight_layout()
 			plt.show()
 			exportFigure(plt, plotOutDir, 'rnap_heatmap' + plot_descr[j])
