@@ -8,7 +8,6 @@ Plots:
 
 TODO:
 - Accomodate more than one new gene
-- Read in the needed variant values from metadata rather than input
 """
 
 import numpy as np
@@ -18,9 +17,6 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
 	read_stacked_columns, stacked_cell_threshold_mask
-
-from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
-	import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
 
 import os.path
 import pickle
@@ -85,15 +81,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			  exclude_timeout_cells, " and exclude_early_gens=",
 			  exclude_early_gens)
 
-		# TODO: READ IN EXP AND TRL EFF LISTS FROM SIM METADATA INSTEAD OF IMPORT
-		SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
+		# Map variant indices to expression factors and translation efficiency
+		# values
+		if 'new_gene_expression_factors' not in metadata or \
+				'new_gene_translation_efficiency_values' not in metadata:
+			print("This plot is intended to be run on simulations where the"
+				  " new gene expression-translation efficiency variant was "
+				  "enabled, but no parameters for this variant were found.")
+
+		new_gene_expression_factors = metadata[
+			'new_gene_expression_factors']
+		new_gene_translation_efficiency_values = metadata[
+			'new_gene_translation_efficiency_values']
+
+		separator = len(new_gene_translation_efficiency_values)
 
 		variants = self.ap.get_variants()
 		variant_index_to_values = {}
 		variant_index_to_list_indices = {}
 		variant_mask = np.zeros(( # Track whether we ran this sim
-			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-			len(NEW_GENE_EXPRESSION_FACTORS)), dtype=bool)
+			len(new_gene_translation_efficiency_values),
+			len(new_gene_expression_factors)), dtype=bool)
 
 		for index in variants:
 			if index >= MAX_VARIANT:
@@ -102,20 +110,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if index == 0:
 				expression_list_index = 0
 				trl_eff_list_index = len(
-					NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) - 1
+					new_gene_translation_efficiency_values) - 1
 				expression_variant_index = 0
 				# Note: this value should not matter since gene is knocked out
 				trl_eff_value = 0
 			else:
-				trl_eff_list_index = index % SEPARATOR
+				trl_eff_list_index = index % separator
 				if trl_eff_list_index == 0:
-					expression_list_index = index // SEPARATOR
+					expression_list_index = index // separator
 				else:
-					expression_list_index = index // SEPARATOR + 1
+					expression_list_index = index // separator + 1
 
-				expression_variant_index = NEW_GENE_EXPRESSION_FACTORS[
+				expression_variant_index = new_gene_expression_factors[
 											   expression_list_index]
-				trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_VALUES[
+				trl_eff_value = new_gene_translation_efficiency_values[
 					trl_eff_list_index]
 			variant_index_to_values[index] = np.array([
 				expression_variant_index, trl_eff_value])
@@ -125,15 +133,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Create data structures that we will use for the heatmaps
 		completed_gens_heatmap = np.zeros(
-			(1,len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-			 len(NEW_GENE_EXPRESSION_FACTORS)))
+			(1,len(new_gene_translation_efficiency_values),
+			 len(new_gene_expression_factors)))
 		# TODO: Expand to Accomodate Multiple New Genes
 		avg_new_gene_rnap_init_rate_heatmap = np.zeros(( 3,
-			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+			len(new_gene_translation_efficiency_values),
+			len(new_gene_expression_factors))) - 1
 		avg_new_gene_ribosome_init_rate_heatmap = np.zeros((3,
-			len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES),
-			len(NEW_GENE_EXPRESSION_FACTORS))) - 1
+			len(new_gene_translation_efficiency_values),
+			len(new_gene_expression_factors))) - 1
 
 		# TODO: make this a helper function
 		# Determine new gene ids
@@ -318,8 +326,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 completed_gens_heatmap[0, :, :],
 						 "Expression Variant",
 						 "Translation Efficiency Value (Normalized)",
-						 NEW_GENE_EXPRESSION_FACTORS,
-						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 new_gene_expression_factors,
+						 new_gene_translation_efficiency_values,
 						 "RNA Polymerase Initialization Rate")
 			fig.tight_layout()
 			plt.show()
@@ -333,8 +341,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 completed_gens_heatmap[0, :, :],
 						 "Expression Variant",
 						 "Translation Efficiency Value (Normalized)",
-						 NEW_GENE_EXPRESSION_FACTORS,
-						 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+						 new_gene_expression_factors,
+						 new_gene_translation_efficiency_values,
 						 "Ribosome Initialization Rate")
 			fig.tight_layout()
 			plt.show()
