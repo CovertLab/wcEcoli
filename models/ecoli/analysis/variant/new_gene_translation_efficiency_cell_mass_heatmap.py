@@ -23,6 +23,7 @@ from matplotlib import pyplot as plt
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
     read_stacked_columns, stacked_cell_threshold_mask
+from wholecell.analysis.plotting_tools import heatmap
 
 import os.path
 
@@ -57,30 +58,6 @@ if (exclude_timeout_cells == 0):
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-    ### TODO: move to analysis_tools
-    def heatmap(self, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-                ylabels, title, textsize="medium"):
-        im = ax.imshow(data, cmap="GnBu")
-        ax.set_xticks(np.arange(len(xlabels)))
-        ax.set_xticklabels(xlabels)
-        ax.set_yticks(np.arange(len(
-            ylabels)))
-        ax.set_yticklabels(ylabels)
-        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-                 rotation_mode="anchor")
-        for i in range(len(ylabels)):
-            for j in range(len(xlabels)):
-                if mask[i, j]:
-                    col = "k"
-                    if completion_data[i, j] < 0.9:
-                        col = "r"
-                    text = ax.text(j, i, data[i, j],
-                                   ha="center", va="center", color=col,
-                                   fontsize=textsize)
-        ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-        ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
-        ax.set_title(title)
-
     def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
                 validationDataFile, metadata):
 
@@ -237,13 +214,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
             avg_volume_heatmap[0, trl_eff_index, exp_index] = round(np.mean(
                 avg_volume), 2)
             avg_mass_heatmap[0, trl_eff_index, exp_index] = round(
-                np.mean(avg_mass), 2)
+                np.mean(avg_mass))
             avg_dry_mass_heatmap[0, trl_eff_index, exp_index] = round(
-                np.mean(avg_dry_mass), 2)
+                np.mean(avg_dry_mass))
             avg_mRNA_mass_heatmap[0, trl_eff_index, exp_index] = round(
                 np.mean(avg_mRNA_mass), 2)
             avg_monomer_mass_heatmap[0, trl_eff_index, exp_index] = round(
-                np.mean(avg_monomer_mass), 2)
+                np.mean(avg_monomer_mass))
 
             if exclude_early_gens == 1:
                 # Add early gen values to the heatmap structure
@@ -254,13 +231,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
                 avg_volume_heatmap[1, trl_eff_index, exp_index] = round(
                     np.mean(avg_volume[early_cell_mask]), 2)
                 avg_mass_heatmap[1, trl_eff_index, exp_index] = round(
-                    np.mean(avg_mass[early_cell_mask]), 2)
+                    np.mean(avg_mass[early_cell_mask]))
                 avg_dry_mass_heatmap[1, trl_eff_index, exp_index] = round(
-                    np.mean(avg_dry_mass[early_cell_mask]), 2)
+                    np.mean(avg_dry_mass[early_cell_mask]))
                 avg_mRNA_mass_heatmap[1, trl_eff_index, exp_index] = round(
                     np.mean(avg_mRNA_mass[early_cell_mask]), 2)
                 avg_monomer_mass_heatmap[1, trl_eff_index, exp_index] = round(
-                    np.mean(avg_monomer_mass[early_cell_mask]), 2)
+                    np.mean(avg_monomer_mass[early_cell_mask]))
 
                 # Add late gen values to the heatmap structure
                 late_cell_mask = np.logical_and((generations[variant] >=
@@ -271,13 +248,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
                     avg_volume_heatmap[2, trl_eff_index, exp_index] = round(
                         np.mean(avg_volume[late_cell_mask]), 2)
                     avg_mass_heatmap[2, trl_eff_index, exp_index] = round(
-                        np.mean(avg_mass[late_cell_mask]), 2)
+                        np.mean(avg_mass[late_cell_mask]))
                     avg_dry_mass_heatmap[2, trl_eff_index, exp_index] = round(
-                        np.mean(avg_dry_mass[late_cell_mask]), 2)
+                        np.mean(avg_dry_mass[late_cell_mask]))
                     avg_mRNA_mass_heatmap[2, trl_eff_index, exp_index] = round(
                         np.mean(avg_mRNA_mass[late_cell_mask]), 2)
                     avg_monomer_mass_heatmap[2, trl_eff_index, exp_index] = round(
-                        np.mean(avg_monomer_mass[late_cell_mask]), 2)
+                        np.mean(avg_monomer_mass[late_cell_mask]))
 
         # Plotting
         print("---Plotting---")
@@ -288,7 +265,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
         for j in range(len(plot_descr)):
             # Volume
             fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
+            heatmap(self, ax, variant_mask,
                          avg_volume_heatmap[j, :, :],
                          completed_gens_heatmap[0, :, :],
                          "Expression Variant",
@@ -303,7 +280,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
             # Mass
             fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
+            heatmap(self, ax, variant_mask,
                          avg_mass_heatmap[j, :, :],
                          completed_gens_heatmap[0, :, :],
                          "Expression Variant",
@@ -318,7 +295,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
             # Dry Mass
             fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
+            heatmap(self, ax, variant_mask,
                          avg_dry_mass_heatmap[j, :, :],
                          completed_gens_heatmap[0, :, :],
                          "Expression Variant",
@@ -333,7 +310,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
             # mRNA Mass
             fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
+            heatmap(self, ax, variant_mask,
                          avg_mRNA_mass_heatmap[j, :, :],
                          completed_gens_heatmap[0, :, :],
                          "Expression Variant",
@@ -348,7 +325,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
             # Protein Mass
             fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
+            heatmap(self, ax, variant_mask,
                          avg_monomer_mass_heatmap[j, :, :],
                          completed_gens_heatmap[0, :, :],
                          "Expression Variant",

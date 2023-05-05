@@ -208,3 +208,53 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
 	ax.set_ylabel(ylabel, fontsize=font_size)
 	ax.tick_params(labelsize=font_size)
 	ax.legend()
+
+def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
+			ylabels, title, box_text_size = "medium", font_size=9):
+	"""
+	Args:
+		obj: specify the Plot object
+		ax: Axes object
+		mask: Only plot values where mask is true, must match dimensions of
+		data
+		data: 2-dimensional numpy array of data to plot
+		completion_data: Percent of seeds that successfully completed all
+		generations that contributed to this value, must match dimensions of
+		data
+		xlabel: x-axis label for plot
+		ylabel: y-axis label for plot
+		xlabels: tick values for x-axis
+		ylabels: tick values for y-axis
+		title: plot title
+		box_text_size: size of text value to be printed in box
+		font_size: font size for labeling axes
+
+	Returns:
+		heatmap of data, colored by value, for data corresponding to
+			different parameter values in 2 dimensions
+
+	"""
+
+	assert(mask.shape == completion_data.shape == data.shape)
+	im = ax.imshow(data, cmap="GnBu")
+	ax.set_xticks(np.arange(len(xlabels)))
+	ax.set_xticklabels(xlabels)
+	ax.set_yticks(np.arange(len(
+		ylabels)))
+	ax.set_yticklabels(ylabels)
+	plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+			 rotation_mode="anchor")
+	for i in range(len(ylabels)):
+		for j in range(len(xlabels)):
+			if mask[i,j]:
+				col = "k"
+				if completion_data[i,j] == 0:
+					continue
+				if completion_data[i,j] < 0.9:
+					col = "r"
+				text = ax.text(j, i, data[i, j],
+							   ha="center", va="center", color=col,
+							   fontsize=box_text_size)
+	ax.set_xlabel(xlabel, fontsize=font_size)
+	ax.set_ylabel(ylabel, fontsize=font_size)
+	ax.set_title(title)

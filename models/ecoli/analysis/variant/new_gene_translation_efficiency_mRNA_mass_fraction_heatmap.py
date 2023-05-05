@@ -20,6 +20,7 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
     read_stacked_columns, stacked_cell_threshold_mask
+from wholecell.analysis.plotting_tools import heatmap
 from unum.units import g, mol
 
 import os.path
@@ -56,29 +57,6 @@ if (exclude_timeout_cells == 0):
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-    ### TODO: move to analysis_tools
-    def heatmap(self, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-                ylabels, title):
-        im = ax.imshow(data, cmap="GnBu")
-        ax.set_xticks(np.arange(len(xlabels)))
-        ax.set_xticklabels(xlabels)
-        ax.set_yticks(np.arange(len(
-            ylabels)))
-        ax.set_yticklabels(ylabels)
-        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-                 rotation_mode="anchor")
-        for i in range(len(ylabels)):
-            for j in range(len(xlabels)):
-                if mask[i, j]:
-                    col = "k"
-                    if completion_data[i, j] < 0.9:
-                        col = "r"
-                    text = ax.text(j, i, data[i, j],
-                                   ha="center", va="center", color=col)
-        ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-        ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
-        ax.set_title(title)
-
     def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
                 validationDataFile, metadata):
 
@@ -303,7 +281,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
         for j in range(len(plot_descr)):
             # New Gene mRNA Mass Fraction
             fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-            self.heatmap(ax, variant_mask,
+            heatmap(self, ax, variant_mask,
                          avg_new_gene_mRNA_mass_fraction_heatmap[j, :, :],
                          completed_gens_heatmap[0, :, :],
                          "Expression Variant",

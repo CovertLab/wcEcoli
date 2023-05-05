@@ -21,6 +21,7 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
 	read_stacked_columns, stacked_cell_threshold_mask
+from wholecell.analysis.plotting_tools import heatmap
 
 import os.path
 import pickle
@@ -55,30 +56,6 @@ if (exclude_timeout_cells==0):
 	MAX_CELL_LENGTH += 1000000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	### TODO: move to analysis_tools
-	def heatmap(self, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-				ylabels, title, textsize):
-		im = ax.imshow(data, cmap="GnBu")
-		ax.set_xticks(np.arange(len(xlabels)))
-		ax.set_xticklabels(xlabels)
-		ax.set_yticks(np.arange(len(
-			ylabels)))
-		ax.set_yticklabels(ylabels)
-		plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-				 rotation_mode="anchor")
-		for i in range(len(ylabels)):
-			for j in range(len(xlabels)):
-				if mask[i,j]:
-					col = "k"
-					if completion_data[i,j] < 0.9:
-						col = "r"
-					text = ax.text(j, i, data[i, j],
-								   ha="center", va="center", color=col,
-								   fontsize = textsize)
-		ax.set_xlabel(xlabel, fontsize=FONT_SIZE)
-		ax.set_ylabel(ylabel, fontsize=FONT_SIZE)
-		ax.set_title(title)
-
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 
@@ -137,16 +114,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			variant_mask[trl_eff_list_index, expression_list_index] = True
 
 		# Create data structures that we will use for the heatmaps
-		doubling_times_heatmap = np.zeros(( 3,
-			len(new_gene_translation_efficiency_values),
-			len(new_gene_expression_factors))) - 1
 		completed_gens_heatmap = np.zeros(( 1,
 			len(new_gene_translation_efficiency_values),
 			len(new_gene_expression_factors)))
 		# TODO: Expand to Accomodate Multiple New Genes
-		avg_new_gene_monomer_counts_heatmap = np.zeros(( 3,
-			len(new_gene_translation_efficiency_values),
-			len(new_gene_expression_factors))) - 1
 		avg_new_gene_strain_goodness_heatmap = np.zeros((1,
 			len(new_gene_translation_efficiency_values),
 			len(new_gene_expression_factors))) - 1
@@ -273,7 +244,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# New Gene Monomer Counts
 		fig, ax = plt.subplots(1, 1, figsize=(10, 5))
-		self.heatmap(ax, variant_mask,
+		heatmap(self, ax, variant_mask,
 					 avg_new_gene_strain_goodness_heatmap[0, :, :],
 					 completed_gens_heatmap[0, :, :],
 					 "Expression Variant",
