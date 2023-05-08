@@ -116,7 +116,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			# Sample initial mRNA counts from each cell
 			all_initial_counts = read_stacked_columns(
 				cell_paths, 'mRNACounts', 'mRNA_cistron_counts',
-				fun=lambda x: x[0])
+				fun=lambda x: x[0], ignore_exception=True)
 
 			return all_initial_counts
 
