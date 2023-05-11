@@ -140,9 +140,13 @@ This page goes through the Python environment setup steps in more detail and wit
 
 ### Anywhere else
 
-Note: If running Parca gets an error message that "the loader can't load libpython"
+**Note:** If running Parca gets an error message that "the loader can't load libpython"
 or an error related to "shared objects" and "needing to compile with -fPIC", use
 the above command that has `--enable-shared`.
+
+**Note:** If `pyenv install` produces an error message like
+`No module named _lizma` in WSL on Windows, try running
+`sudo apt install liblzma_dev`, then uninstall and reinstall Python with pyenv.
 
 1. Use `pyenv`.
 

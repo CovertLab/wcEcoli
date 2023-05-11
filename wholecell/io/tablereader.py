@@ -1,9 +1,9 @@
 
-from chunk import Chunk
+from wholecell.io.chunk import Chunk
 import os
 import json
 import numpy as np
-from typing import Any, Callable, Iterable, List, Text, Tuple, Union
+from typing import Any, Callable, List, Text, Tuple, Union
 import zlib
 
 from wholecell.utils import filepath
