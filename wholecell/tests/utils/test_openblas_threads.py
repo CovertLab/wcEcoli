@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 """
-Test numpy dot products with different numbers of OpenBLAS threads, as
-controlled via the OPENBLAS_NUM_THREADS environment variable.
+Test a Numpy dot product. Repeat with different values of the
+OPENBLAS_NUM_THREADS environment variable which should vary the parallelism
+**if** Numpy is installed to use OpenBLAS.
 
 Check that the result using 1 thread is as expected to test if the wcEcoli
 simulation results might be consistent across platforms.
 
-Actually, if Numpy is installed to use a different BLAS library than OpenBLAS,
-this will test that library, and OPENBLAS_NUM_THREADS is unlikely to matter.
-
-The number of OpenBLAS threads can change the dot product computation,
+The number of BLAS threads can change the dot product computation,
 presumably by changing evaluation order and thus floating point rounding.
 
 Any of these ways works to run this test. The first one is quiet if the test
@@ -54,6 +52,7 @@ class Test_openblas_threads(unittest.TestCase):
 		products = []
 		total_nanoseconds = 0.0
 		thread_range = [str(c) for c in range(1, parallelization.cpus() + 1)] + ['']
+		print('OPENBLAS')
 		print('{:>7}  {:>26} {:>26} {:>11}'.format('THREADS', 'DOT PRODUCT', 'DIFF FROM 1 THREAD', 'NANOSECS'))
 
 		# NOTE: Setting OPENBLAS_NUM_THREADS affects OpenBLAS but it's unlikely
