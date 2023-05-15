@@ -12,9 +12,9 @@ presumably by changing evaluation order and thus floating point rounding.
 
 Any of these ways works to run this test. The first one is quiet if the test
 passes. The others always show stdout:
-	pytest wholecell/tests/utils/test_openblas_threads.py
-	python -m wholecell.tests.utils.test_openblas_threads
-	wholecell/tests/utils/test_openblas_threads.py
+	pytest wholecell/tests/utils/test_blas.py
+	python -m wholecell.tests.utils.test_blas
+	wholecell/tests/utils/test_blas.py
 """
 
 import os
@@ -46,9 +46,11 @@ def dot_product() -> tuple[float, float]:
 	return dot, elapsed_nanoseconds
 
 
-class Test_openblas_threads(unittest.TestCase):
-	def test_openblas(self):
-		"""Compare a dot product running with various numbers of OpenBLAS threads."""
+class Test_blas(unittest.TestCase):
+	def test_dot_product(self):
+		"""Compare a dot product running with various numbers of OpenBLAS
+		threads -- which matters **if** Numpy is installed to use OpenBLAS.
+		"""
 		products = []
 		total_nanoseconds = 0.0
 		thread_range = [str(c) for c in range(1, parallelization.cpus() + 1)] + ['']
@@ -59,7 +61,7 @@ class Test_openblas_threads(unittest.TestCase):
 		# to affect macOS Accelerate or other BLAS libraries.
 		for num_threads in thread_range:
 			env = dict(os.environ, OPENBLAS_NUM_THREADS=num_threads)
-			command = 'python -m wholecell.tests.utils.test_openblas_threads DOT'.split()
+			command = 'python -m wholecell.tests.utils.test_blas DOT'.split()
 			output = fp.run_cmd(command, env=env).split(',')
 			dot = float(output[0])
 			nanoseconds = float(output[1])

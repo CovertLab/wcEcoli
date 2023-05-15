@@ -12,7 +12,7 @@
 ##
 ## If OpenBLAS uses multiple threads, it will produce slightly different results
 ## and usually runs significantly slower, esp. when called from multiple
-## processes. See wholecell/tests/utils/test_openblas_threads.py .
+## processes. See wholecell/tests/utils/test_blas.py .
 ## To fix that, set the environment variable:
 #   export OPENBLAS_NUM_THREADS=1
 #

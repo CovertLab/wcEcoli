@@ -189,12 +189,11 @@ virtualenv.
    BLAS library -- usually an embedded copy of OpenBLAS. This is usually the
    way to go.
 
-   Still, you can use a package manager to install a specific version of the
+   (You can use a package manager to install a specific version of the
    OpenBLAS library to help with consistency or bug fixes. On macOS 13.3+, the
-   macOS Accelerate library is now suitable and it should be better tuned for
-   the hardware. There are reports of a dramatic speedup for various operations
-   but `test_openblas_threads.py` is measuring roughly a 2x speedup computing a
-   dot product. Accelerate will become numpy's default choice on macOS 14+.
+   macOS Accelerate library has suitable APIs to replace OpenBLAS. There are
+   reports of a dramatic speedup on Apple Silicon, but numpy 1.24.3 is not quite
+   ready to use it. Accelerate will become numpy's default choice on macOS 14+.)
 
    Then link numpy and scipy to your chosen BLAS library the way
    `cloud/docker/runtime/Dockerfile` _optionally_ does when building the
