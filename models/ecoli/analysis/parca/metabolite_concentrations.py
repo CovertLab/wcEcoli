@@ -27,7 +27,8 @@ SANDER_KEY = 'Sander Concentration'
 
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
-	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
+	def do_plot(self, input_dir: str, plot_out_dir: str, plot_out_filename: str, sim_data_file: str,
+				validation_data_file: str, metadata: dict):
 		with open(os.path.join(input_dir, constants.SERIALIZED_RAW_DATA), 'rb') as f:
 			raw_data = pickle.load(f)
 		with open(sim_data_file, 'rb') as f:

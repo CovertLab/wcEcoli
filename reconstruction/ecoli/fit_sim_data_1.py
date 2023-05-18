@@ -2392,7 +2392,7 @@ def expressionFromConditionAndFoldChange(transcription, condPerturbations, tfFCs
 			sorted(zip(indexes, fcs), key=lambda pair: pair[0])]
 
 		# Adjust expression based on fold change and normalize
-		indexes_bool = np.zeros(len(expression), dtype=np.bool)
+		indexes_bool = np.zeros(len(expression), dtype=bool)
 		indexes_bool[indexes] = 1
 		fcs = np.array(fcs)
 		scaleTheRestBy = (1. - (expression[indexes] * fcs).sum()) / (

@@ -292,7 +292,7 @@ class KnowledgeBaseEcoli(object):
 	def _load_sequence(self, file_path):
 		from Bio import SeqIO
 
-		with open(file_path, "rU") as handle:
+		with open(file_path, "r") as handle:
 			for record in SeqIO.parse(handle, "fasta"):
 				return record.seq
 
@@ -546,7 +546,6 @@ class KnowledgeBaseEcoli(object):
 		relative locations of the new genes.
 		"""
 		from Bio import Seq
-		from Bio import Alphabet
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -555,7 +554,7 @@ class KnowledgeBaseEcoli(object):
 		new_genes_data = getattr(nested_data,'genes')
 		seq_data = getattr(nested_data,'gene_sequences')
 
-		insertion_seq = Seq.Seq('',Alphabet.SingleLetterAlphabet())
+		insertion_seq = Seq.Seq('')
 		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
 		assert new_genes_data[0]['left_end_pos'] == 0, \
 			'first gene in new sequence must start at relative coordinate 0'
@@ -565,13 +564,13 @@ class KnowledgeBaseEcoli(object):
 				seq_row = next((row for row in seq_data
 								if row['id'] == gene['id']), None)
 				seq_string = seq_row['gene_seq']
-				seq_addition = Seq.Seq(seq_string,Alphabet.SingleLetterAlphabet())
+				seq_addition = Seq.Seq(seq_string)
 				insertion_seq += seq_addition
 			else:
 				seq_row = next((row for row in seq_data
 								if row['id'] == gene['id']), None)
 				seq_string = seq_row['gene_seq']
-				seq_addition = Seq.Seq(seq_string, Alphabet.SingleLetterAlphabet())
+				seq_addition = Seq.Seq(seq_string)
 				insertion_seq += seq_addition.reverse_complement()
 
 			assert len(seq_addition) == (gene['right_end_pos'] -

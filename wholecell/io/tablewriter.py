@@ -187,7 +187,7 @@ class _Column(object):
 
 		self._path = path
 		self._data = open(path, "wb")
-		self._dtype = None
+		self._dtype: Optional[np.dtype[Any]] = None
 		self._compression_type = compression_type
 		self._current_data_block = []  # type: List[bytes]
 
@@ -221,7 +221,7 @@ class _Column(object):
 		Get the description of the column data type in JSON format.
 		"""
 		assert self._dtype
-		descr = self._dtype.descr
+		descr: Any = self._dtype.descr
 		if len(descr) == 1 and descr[0][0] == "":
 			descr = descr[0][1]
 		descr_json = json.dumps(descr, separators=(',', ':')).encode('utf-8')

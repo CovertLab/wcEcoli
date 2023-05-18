@@ -24,7 +24,7 @@ NULP = 0  # float comparison tolerance, in Number of Units in the Last Place
 
 # Objects with a list of attributes to compare
 SPECIAL_OBJECTS = {
-	scipy.interpolate._cubic.CubicSpline: ['x', 'c', 'axis'],
+	scipy.interpolate.CubicSpline: ['x', 'c', 'axis'],
 	wholecell.utils.unit_struct_array.UnitStructArray: ['struct_array', 'units'],
 	}
 

@@ -223,7 +223,6 @@ import os
 import sys
 from typing import Any, Dict, List, Optional, Union
 
-import yaml
 from fireworks import FiretaskBase, Firework, LaunchPad, Workflow, ScriptTask
 
 from wholecell.fireworks.firetasks import InitRawDataTask
@@ -944,8 +943,7 @@ class WorkflowBuilder:
 
 def upload_workflow(workflow: Workflow):
 	"""Upload a Fireworks Workflow to the LaunchPad."""
-	with open(LAUNCHPAD_FILE) as f:
-		lpad = LaunchPad(**yaml.safe_load(f))
+	lpad = LaunchPad.from_file(LAUNCHPAD_FILE)
 	lpad.add_wf(workflow)
 
 

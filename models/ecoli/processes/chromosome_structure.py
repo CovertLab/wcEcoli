@@ -42,7 +42,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		mature_rna_ids = transcription.mature_rna_data['id']
 		self.n_mature_rnas = len(mature_rna_ids)
 		self.mature_rna_end_positions = transcription.mature_rna_end_positions
-		self.mature_rna_nt_counts = transcription.mature_rna_data['counts_ACGU'].asNumber(units.nt).astype(np.int)
+		self.mature_rna_nt_counts = transcription.mature_rna_data['counts_ACGU'].asNumber(units.nt).astype(int)
 		unprocessed_rna_indexes = np.where(
 			transcription.rna_data['is_unprocessed'])[0]
 		self.unprocessed_rna_index_mapping = {

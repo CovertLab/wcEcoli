@@ -72,7 +72,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		# Normalize counts from two conditions
 		ratio = m1[all_plotted_mRNA_mask].sum()/m2[all_plotted_mRNA_mask].sum()
-		m2 = ratio * m2.astype(np.float)
+		m2 = ratio * m2.astype(float)
 
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)

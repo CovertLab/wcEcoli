@@ -53,7 +53,7 @@ COLORS_256 = [ # From colorbrewer2.org, qualitative 8-class set 1
 	[247,129,191]
 	]
 
-with plt.style.context('seaborn-colorblind'):
+with plt.style.context('seaborn-v0_8-colorblind'):
 	COLORS_COLORBLIND = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 def plotSplom(arrayOfdataArrays, nameArray="", stdArrays=None, labels=None, fig=None, plotCorrCoef=True, formatString='o'):

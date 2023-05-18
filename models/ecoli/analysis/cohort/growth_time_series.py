@@ -177,7 +177,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		rna_mw_synth = rna_mw[:n_transcribed_rnas]
 		is_mrna = np.concatenate((
 			transcription.rna_data['is_mRNA'],
-			np.zeros(len(transcription.mature_rna_data), dtype=np.bool)
+			np.zeros(len(transcription.mature_rna_data), dtype=bool)
 			))
 		is_mrna_synth = is_mrna[:n_transcribed_rnas]
 		is_rrna = np.concatenate((

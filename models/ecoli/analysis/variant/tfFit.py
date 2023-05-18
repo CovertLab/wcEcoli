@@ -3,7 +3,7 @@ import pickle
 
 import bokeh.io
 import bokeh.io.state
-from bokeh.models import HoverTool, Panel, Tabs
+from bokeh.models import HoverTool, TabPanel, Tabs
 from bokeh.plotting import figure, ColumnDataSource
 from matplotlib import pyplot as plt
 import numpy as np
@@ -253,7 +253,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				condition=targetCondition,
 				))
 			fig.scatter('x', 'y', source=source)
-			tabs.append(Panel(child=fig, title=title))
+			tabs.append(TabPanel(child=fig, title=title))
 
 		tab_plot = Tabs(tabs=tabs)
 		bokeh.io.save(tab_plot)

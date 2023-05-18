@@ -24,7 +24,7 @@ ACTIVE = [
 	"massFractionToUnity.py",
 	"massShift.py",
 	"mene_limitations.py",
-	"new_gene_counts.py"
+	"new_gene_counts.py",
 	# "probProteinExistAndDouble.py",
 	"polycistronic_transcription.py",
 	"ppgpp_regulation.py",
