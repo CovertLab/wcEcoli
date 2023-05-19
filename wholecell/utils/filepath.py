@@ -3,28 +3,15 @@ filepath.py
 File and filename path utilities.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import datetime
 import errno
 import json
 import io
 import os
-import sys
-from six.moves import range
-if os.name == 'posix' and sys.version_info[0] < 3:
-	# noinspection PyPackageRequirements
-	import subprocess32 as subprocess2
-	subprocess = subprocess2
-else:
-	import subprocess as subprocess3
-	subprocess = subprocess3
+import subprocess
 from typing import Any, Generator, Optional, Sequence, Tuple
 
-import six
-
 import wholecell
-from wholecell.utils.py3 import String
 
 
 TIMEOUT = 60  # seconds
@@ -163,10 +150,10 @@ def git_branch():
 					   fallback=os.environ.get("IMAGE_GIT_BRANCH", '--'))
 
 def write_file(filename, content):
-	# type: (str, String) -> None
+	# type: (str, str) -> None
 	"""Write text string `content` as a utf-8 text file."""
 	with io.open(filename, 'w', encoding='utf-8') as f:
-		f.write(six.text_type(content))
+		f.write(str(content))
 
 def write_json_file(filename, obj, indent=4):
 	# type: (str, Any, int) -> None

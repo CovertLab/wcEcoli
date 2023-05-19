@@ -2,10 +2,9 @@
 Compare fluxes in simulation to target fluxes
 """
 
-from __future__ import absolute_import, division, print_function
-
 import io
 import os
+import pickle
 import re
 
 import bokeh.io
@@ -15,7 +14,6 @@ from bokeh.models import HoverTool
 from bokeh.plotting import figure, ColumnDataSource
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, zip
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
@@ -38,7 +36,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 		# allDir = self.ap.get_cells(generation = [0, 1, 2])
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		allTargetFluxList = []
 		allActualFluxList = []
@@ -130,7 +128,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ax = plt.axes()
 		plt.loglog(axes_limits, axes_limits, 'k')
 		plt.loglog(targetAve, actualAve, "ob", markeredgewidth = 0.25, alpha = 0.25)
-		plt.loglog(boundaryTargetAve, boundaryActualAve, "ob", c='r', markeredgewidth=0.25, alpha=0.9, label='boundary fluxes')
+		plt.loglog(boundaryTargetAve, boundaryActualAve, "o", c='r', markeredgewidth=0.25, alpha=0.9, label='boundary fluxes')
 		plt.xlabel("Target Flux (mmol/g/hr)")
 		plt.ylabel("Actual Flux (mmol/g/hr)")
 		plt.minorticks_off()

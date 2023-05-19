@@ -4,15 +4,12 @@
 Aggregate data from Javi's repo to compare to fold_changes.tsv included in wcm.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import argparse
 import io
 import os
 from typing import Any, Dict, Iterable, List, Tuple
 
 import numpy as np
-from six.moves import zip
 
 from reconstruction.spreadsheets import tsv_writer
 from wholecell.io import tsv

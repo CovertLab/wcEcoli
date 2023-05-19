@@ -9,18 +9,14 @@ from matplotlib import pyplot as plt
 import pickle
 
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
 
-from reconstruction.ecoli.knowledge_base_raw import KnowledgeBaseEcoli
-from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 LABELPAD = 10
 FONTSIZE = 15
-COLORS = ['b', 'r', 'g', 'c']
+COLORS = ['C0', 'C1', 'C2', 'royalblue']
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
-
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		sim_data = pickle.load(open(simDataFile, "rb"))
 		transcription = sim_data.process.transcription
@@ -63,6 +59,15 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		grouped_rRNA_target_synth_prob = np.array(
 			rRNA_cistron_to_type_mapping_matrix @ rRNA_target_synth_prob.T)
 
+		# Actual transcription initiation events
+		rnap_data_reader = TableReader(os.path.join(simOutDir, "RnapData"))
+		actual_rna_init_per_cistron = rnap_data_reader.readColumn("rna_init_event_per_cistron")
+		rRNA_actual_rna_init = actual_rna_init_per_cistron[:, rRNA_idxs]
+		rRNA_actual_rna_init_rate = np.array(
+			[rna_init / timestep for rna_init in rRNA_actual_rna_init.T]).T
+		grouped_rRNA_actual_rna_init_rate = np.array(
+			rRNA_cistron_to_type_mapping_matrix @ rRNA_actual_rna_init_rate.T)
+
 		# Expected transcription initiation events
 		expected_rna_init_per_cistron = rna_synth_prob.readColumn("expected_rna_init_per_cistron")
 		rRNA_expected_rna_init = expected_rna_init_per_cistron[:, rRNA_idxs]
@@ -104,17 +109,18 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		grouped_RNAP_active_fraction_on_rRNA = np.array(
 			rRNA_cistron_to_type_mapping_matrix @ RNAP_active_fraction_on_rRNA.T)
 
-		# Counts of accumulated rRNAs
+		# Counts of accumulated rRNAs and ppGpp
 		ribosome_30S_id = [sim_data.molecule_ids.s30_full_complex]
 		ribosome_50S_id = [sim_data.molecule_ids.s50_full_complex]
 		rRNA_5S_ids = sim_data.molecule_groups.s50_5s_rRNA
 		rRNA_16S_ids = sim_data.molecule_groups.s30_16s_rRNA
 		rRNA_23S_ids = sim_data.molecule_groups.s50_23s_rRNA
+		ppGpp_id = [sim_data.molecule_ids.ppGpp]
 
 		(ribosome_30S_counts, ribosome_50S_counts, rRNA_5S_counts,
-		rRNA_16S_counts, rRNA_23S_counts) = read_bulk_molecule_counts(
+		rRNA_16S_counts, rRNA_23S_counts, ppGpp_counts) = read_bulk_molecule_counts(
 			simOutDir, (ribosome_30S_id, ribosome_50S_id, rRNA_5S_ids,
-			rRNA_16S_ids, rRNA_23S_ids))
+			rRNA_16S_ids, rRNA_23S_ids, ppGpp_id))
 		free_rRNA_5S_counts = np.sum(rRNA_5S_counts, axis=1)
 		free_rRNA_16S_counts = np.sum(rRNA_16S_counts, axis=1)
 		free_rRNA_23S_counts = np.sum(rRNA_23S_counts, axis=1)
@@ -128,106 +134,137 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		total_rRNA_23S_counts = free_rRNA_23S_counts + total_50S_counts
 
 		# Concentration of ppGpp
-		bulk_molecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-		ppGpp_id = sim_data.molecule_ids.ppGpp
-		ppGpp_index = bulk_molecules.readAttribute('objectNames').index(ppGpp_id)
-		n_avogadro = sim_data.constants.n_avogadro
-		counts_to_moles = (1 / n_avogadro).asNumber(units.mol)
-		ppGpp_conc = bulk_molecules.readColumn('counts')[:, ppGpp_index] * counts_to_moles
-
+		counts_to_molar = TableReader(os.path.join(simOutDir, 'EnzymeKinetics')).readColumn('countsToMolar').squeeze()
+		ppGpp_conc = ppGpp_counts * counts_to_molar * 1000  # uM
 
 		## Make figure
-		# Ncols is number of rRNA TUs, 1 for total, and 3 for 5S/16S/23S
-		ncols = 8
-		nrows=7
+		# ncols is number of rRNA operons + 1 for total
+		ncols = len(rRNA_operon_names) + 1
+		nrows = 8
 
-		fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(5 * ncols, 5 * nrows), sharex='all')
+		fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(3.5 * ncols, 3.5 * nrows), sharex='all')
+
 		# Make the plots
-		axs[0, 0].set_ylabel("Initiations per second", labelpad=LABELPAD)
-		axs[1, 0].set_ylabel("Target and actual rRNA synthesis probabilities", labelpad=LABELPAD)
-		axs[2, 0].set_ylabel("rRNA gene dosages", labelpad=LABELPAD),
-		axs[3, 0].set_ylabel("Initiations per second per gene dosage", labelpad=LABELPAD)
-		axs[4, 0].set_ylabel("RNAP counts on rrn genes", labelpad=LABELPAD)
-		axs[5, 0].set_ylabel("Fraction of active RNAPs on rrn genes", labelpad=LABELPAD)
-		axs[6, 0].set_ylabel("rRNA counts")
-		for i in range(len(rRNA_operon_names)):
+		axs[0, 0].set_ylabel("Actual initiations per second", labelpad=LABELPAD)
+		axs[1, 0].set_ylabel("Expected initiations per second", labelpad=LABELPAD)
+		axs[2, 0].set_ylabel("Synthesis probabilities", labelpad=LABELPAD)
+		axs[3, 0].set_ylabel("Gene dosages", labelpad=LABELPAD),
+		axs[4, 0].set_ylabel("Initiations per second per gene copy", labelpad=LABELPAD)
+		axs[5, 0].set_ylabel("Active RNAP counts", labelpad=LABELPAD)
+		axs[6, 0].set_ylabel("Fraction of active RNAPs", labelpad=LABELPAD)
+		axs[7, 0].set_ylabel("Counts")
+
+		for i in range(ncols - 1):
 			this_operon_idxs = np.where(rRNA_TU_to_cistron_mapping_matrix[i, :] == 1)[0]
+
 			for (n, idx) in enumerate(this_operon_idxs):
-				axs[0, i].plot(time, rRNA_expected_rna_init_rate[:, idx],
-							   c=COLORS[n], label=cistron_rRNA_ids[idx])
-				axs[0,i].legend()
-				axs[0,i].set_ylim(0, 3)
-				axs[1, i].plot(time, rRNA_actual_synth_prob[:, idx],
+				axs[0, i].plot(
+					time, rRNA_actual_rna_init_rate[:, idx],
+					c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[0, i].legend(loc=1)
+				axs[0, i].set_ylim(0, 10)
+
+				axs[1, i].plot(
+					time, rRNA_expected_rna_init_rate[:, idx],
+					c=COLORS[n], label=cistron_rRNA_ids[idx])
+				axs[1, i].legend(loc=1)
+				axs[1, i].set_ylim(0, 3)
+
+				axs[2, i].plot(time, rRNA_actual_synth_prob[:, idx],
 							   c=COLORS[n],label=cistron_rRNA_ids[idx]+" actual")
-				axs[1, i].plot(time, rRNA_target_synth_prob[:, idx],
+				axs[2, i].plot(time, rRNA_target_synth_prob[:, idx],
 							   linestyle='dashed', c=COLORS[n],
 							   label=cistron_rRNA_ids[idx]+" target")
-				axs[1, i].legend()
-				axs[1, i].set_ylim(0, 0.03)
-				axs[2, i].plot(time, rRNA_gene_dosages[:, idx],
+				axs[2, i].legend(loc=1)
+				axs[2, i].set_ylim(0, 0.03)
+
+				axs[3, i].plot(time, rRNA_gene_dosages[:, idx],
 							   c=COLORS[n], label=cistron_rRNA_ids[idx])
-				axs[2, i].legend()
-				axs[2, i].set_ylim(0, 5)
-				axs[3, i].plot(time, rRNA_initiation_per_gene_dosage[:, idx],
+				axs[3, i].legend(loc=1)
+				axs[3, i].set_ylim(0, 10)
+
+				axs[4, i].plot(time, rRNA_initiation_per_gene_dosage[:, idx],
 							   c=COLORS[n], label=cistron_rRNA_ids[idx])
-				axs[3, i].legend()
-				axs[3, i].set_ylim(0, 1)
-				axs[4, i].plot(time, RNAP_on_rRNA_counts[:, idx],
+				axs[4, i].legend(loc=1)
+				axs[4, i].set_ylim(0, 1)
+
+				axs[5, i].plot(time, RNAP_on_rRNA_counts[:, idx],
 							   c=COLORS[n], label=cistron_rRNA_ids[idx])
-				axs[4, i].legend()
-				axs[4, i].set_ylim(0, 100)
-				axs[5, i].plot(time, RNAP_active_fraction_on_rRNA[:, idx],
+				axs[5, i].legend(loc=1)
+				axs[5, i].set_ylim(0, 200)
+
+				axs[6, i].plot(time, RNAP_active_fraction_on_rRNA[:, idx],
 							   c=COLORS[n], label=cistron_rRNA_ids[idx])
-				axs[5, i].legend()
-				axs[5, i].set_ylim(0, 0.15)
+				axs[6, i].legend(loc=1)
+				axs[6, i].set_ylim(0, 0.15)
+
 			axs[0, i].set_title(rRNA_operon_names[i])
-			axs[0, i].set_xlabel("Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
+			axs[nrows - 1, i].set_xlabel("Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
 
 		for idx in range(np.shape(rRNA_cistron_to_type_mapping_matrix)[0]):
-			axs[0, len(rRNA_operon_names)].plot(time, grouped_rRNA_expected_rna_init_rate[idx],
-												c=COLORS[idx], label=rRNA_cistron_types[idx])
-			axs[0, len(rRNA_operon_names)].legend()
-			axs[1, len(rRNA_operon_names)].plot(time, grouped_rRNA_actual_synth_prob[idx],
-												c=COLORS[idx], label=rRNA_cistron_types[idx]+" actual")
-			axs[1, len(rRNA_operon_names)].plot(time, grouped_rRNA_target_synth_prob[idx],
-												c=COLORS[idx], linestyle='dashed',
-												label=rRNA_cistron_types[idx]+" target")
-			axs[1, len(rRNA_operon_names)].legend()
-			axs[2, len(rRNA_operon_names)].plot(time, grouped_rRNA_gene_dosages[idx],
-												c=COLORS[idx], label=rRNA_cistron_types[idx])
-			axs[2, len(rRNA_operon_names)].legend()
-			axs[3, len(rRNA_operon_names)].plot(time, grouped_rRNA_initiation_per_gene_dosage[idx],
-												c=COLORS[idx], label=rRNA_cistron_types[idx])
-			axs[3, len(rRNA_operon_names)].legend()
-			axs[4, len(rRNA_operon_names)].plot(time, grouped_RNAP_on_rRNA_counts[idx],
-												c=COLORS[idx], label=rRNA_cistron_types[idx])
-			axs[4, len(rRNA_operon_names)].legend()
-			axs[5, len(rRNA_operon_names)].plot(time, grouped_RNAP_active_fraction_on_rRNA[idx],
-												c=COLORS[idx], label=rRNA_cistron_types[idx])
-			axs[5, len(rRNA_operon_names)].legend()
-		axs[0, len(rRNA_operon_names)].set_title("Total")
-		axs[0, len(rRNA_operon_names)].set_xlabel("Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
+			axs[0, ncols - 1].plot(
+				time, grouped_rRNA_actual_rna_init_rate[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[0, ncols - 1].legend(loc=1)
 
-		axs[6, 0].plot(time, total_rRNA_5S_counts, c=COLORS[0], label="5S rRNA")
-		axs[6, 0].plot(time, total_rRNA_23S_counts, c=COLORS[1], label="23S rRNA")
-		axs[6, 0].plot(time, total_rRNA_16S_counts, c=COLORS[2], label="16S rRNA")
-		axs[6, 0].set_title("Total rRNA counts")
-		axs[6, 0].legend()
+			axs[1, ncols - 1].plot(
+				time, grouped_rRNA_expected_rna_init_rate[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[1, ncols - 1].legend(loc=1)
 
-		axs[6, 1].plot(time, total_30S_counts, label="30S subunit")
-		axs[6, 1].plot(time, total_50S_counts, label="50S subunit")
-		axs[6, 1].set_title("Total ribosomal subunit counts")
-		axs[6, 1].legend()
+			axs[2, ncols - 1].plot(
+				time, grouped_rRNA_actual_synth_prob[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx] + " actual")
+			axs[2, ncols - 1].plot(
+				time, grouped_rRNA_target_synth_prob[idx],
+				c=COLORS[idx], linestyle='dashed',
+				label=rRNA_cistron_types[idx] + " target")
+			axs[2, ncols - 1].legend(loc=1)
 
-		axs[6, 2].plot(time, free_rRNA_5S_counts, c=COLORS[0], label="5S rRNA")
-		axs[6, 2].plot(time, free_rRNA_23S_counts, c=COLORS[1], label="23S rRNA")
-		axs[6, 2].plot(time, free_rRNA_16S_counts, c=COLORS[2], label="16S rRNA")
-		axs[6, 2].set_title("Free rRNA counts")
-		axs[6, 2].legend()
+			axs[3, ncols - 1].plot(
+				time, grouped_rRNA_gene_dosages[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[3, ncols - 1].legend(loc=1)
 
-		axs[6, 3].plot(time, ppGpp_conc)
-		axs[6, 3].set_title("ppGpp concentration")
-		axs[6, 3].set_ylabel("Concentration (mol)")
+			axs[4, ncols - 1].plot(
+				time, grouped_rRNA_initiation_per_gene_dosage[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[4, ncols - 1].legend(loc=1)
+
+			axs[5, ncols - 1].plot(
+				time, grouped_RNAP_on_rRNA_counts[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[5, ncols - 1].legend(loc=1)
+
+			axs[6, ncols - 1].plot(
+				time, grouped_RNAP_active_fraction_on_rRNA[idx],
+				c=COLORS[idx], label=rRNA_cistron_types[idx])
+			axs[6, ncols - 1].legend(loc=1)
+
+		axs[0, ncols - 1].set_title("All operons")
+		axs[nrows - 1, ncols - 1].set_xlabel(
+			"Time (min)", labelpad=LABELPAD, fontsize=FONTSIZE)
+
+		axs[7, 0].plot(time, total_rRNA_5S_counts, c=COLORS[0], label="5S rRNA")
+		axs[7, 0].plot(time, total_rRNA_23S_counts, c=COLORS[1], label="23S rRNA")
+		axs[7, 0].plot(time, total_rRNA_16S_counts, c=COLORS[2], label="16S rRNA")
+		axs[7, 0].set_title("Total rRNA counts")
+		axs[7, 0].legend(loc=1)
+
+		axs[7, 1].plot(time, total_30S_counts, label="30S subunit")
+		axs[7, 1].plot(time, total_50S_counts, label="50S subunit")
+		axs[7, 1].set_title("Total ribosomal subunit counts")
+		axs[7, 1].legend(loc=1)
+
+		axs[7, 2].plot(time, free_rRNA_5S_counts, c=COLORS[0], label="5S rRNA")
+		axs[7, 2].plot(time, free_rRNA_23S_counts, c=COLORS[1], label="23S rRNA")
+		axs[7, 2].plot(time, free_rRNA_16S_counts, c=COLORS[2], label="16S rRNA")
+		axs[7, 2].set_title("Free rRNA counts")
+		axs[7, 2].legend(loc=1)
+
+		axs[7, 3].plot(time, ppGpp_conc)
+		axs[7, 3].set_title("ppGpp concentration")
+		axs[7, 3].set_ylabel("Concentration (uM)")
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

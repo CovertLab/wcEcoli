@@ -1,7 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -20,7 +18,7 @@ GROWTH_UNITS = units.fg / units.s
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 		externalExchangeFluxes = fbaResults.readColumn("externalExchangeFluxes")

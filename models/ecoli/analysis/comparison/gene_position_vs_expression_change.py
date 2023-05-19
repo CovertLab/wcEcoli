@@ -8,20 +8,14 @@ from typing import Tuple
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-import os
-import re
-from scipy.stats import pearsonr
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from models.ecoli.processes.metabolism import (
-	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS)
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
-from wholecell.utils.protein_counts import get_simulated_validation_counts
 from wholecell.utils import units
 
 NUMERICAL_ZERO = 1e-10

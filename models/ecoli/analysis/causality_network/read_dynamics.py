@@ -2,10 +2,8 @@
 Reads dynamics data for each of the nodes of a causality network from a single
 simulation.
 """
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 import json
 import hashlib
 from typing import Any, Tuple
@@ -53,7 +51,7 @@ def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
 def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list):
 		"""Convert the sim's dynamics data to a Causality seriesOut.zip file."""
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Read all required tables from simOutDir
 		columns = {}

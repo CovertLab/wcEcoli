@@ -5,8 +5,6 @@ by default the ACTIVE plots listed in that package's `__init__.py`.
 If the `DEBUG_GC` environment variable is true, enable memory leak detection.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from fireworks import explicit_serialize
 
 from wholecell.fireworks.firetasks.analysisBase import AnalysisBase

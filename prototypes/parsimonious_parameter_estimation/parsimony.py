@@ -2,10 +2,7 @@
 Functions related to finding 'unit parsimonious perturbation vectors'.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
-from six.moves import range
 
 def construct_parsimony_objects(
 		perturbed_parameter_directions,

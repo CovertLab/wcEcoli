@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import shutil
 import tempfile
@@ -23,9 +21,6 @@ from wholecell.io.tablewriter import (BLOCK_BYTES_GOAL,
 	TableWriter, MissingFieldError, TableExistsError, UnrecognizedFieldError,
 	VariableEntrySizeError, AttributeAlreadyExistsError, AttributeTypeError,
 	V2_DIR_COLUMNS)
-from six.moves import range
-import six
-
 
 COLUMNS = 'x y z theta'.split()
 DATA = {key: np.arange(10.0) + ord(key[0]) for key in COLUMNS}
@@ -64,7 +59,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		writer = TableWriter(self.table_path)
 		writer.append(**DATA)
 
-		d2 = {key: -10 * value for key, value in six.viewitems(DATA)}
+		d2 = {key: -10 * value for key, value in DATA.items()}
 		writer.append(**d2)
 
 		no_theta = dict(d2)
@@ -200,7 +195,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 	def test_attributes(self):
 		'''Test a table with attributes and no columns.'''
 		def check_attributes(attribute_dict):
-			for k, v in six.viewitems(attribute_dict):
+			for k, v in attribute_dict.items():
 				self.assertEqual(attribute_dict[k], reader.readAttribute(k))
 
 		self.make_test_dir()
@@ -208,7 +203,7 @@ class Test_TableReader_Writer(unittest.TestCase):
 		d1 = dict(mercury=1, venus=2, earth=3, mars=4)
 		d2 = dict(jupiter=[50, 60, 70], saturn='Saturn')
 		d3 = dict(uranus=700.0, neptune=800.5)
-		keys = six.viewkeys(d1) | six.viewkeys(d2) | six.viewkeys(d3)
+		keys = d1.keys() | d2.keys() | d3.keys()
 
 		# --- Write ---
 		writer = TableWriter(self.table_path)
@@ -240,8 +235,8 @@ class Test_TableReader_Writer(unittest.TestCase):
 		'''
 		self.make_test_dir()
 		d0 = {key: 19 for key in DATA}
-		d2 = {key: value.reshape(2, -1) for key, value in six.viewitems(DATA)}
-		d3 = {key: value[2:] for key, value in six.viewitems(DATA)}
+		d2 = {key: value.reshape(2, -1) for key, value in DATA.items()}
+		d3 = {key: value[2:] for key, value in DATA.items()}
 
 		# --- Write ---
 		writer = TableWriter(self.table_path)

@@ -2,10 +2,8 @@
 Plots frequency of observing at least 1 transcript during a cell's life.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import bokeh.io
 import bokeh.io.state
@@ -28,7 +26,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# Get mRNA data
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		rnaIds = sim_data.process.transcription.rna_data["id"]
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIds = np.where(isMRna)[0]

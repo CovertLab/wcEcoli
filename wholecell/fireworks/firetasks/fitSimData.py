@@ -1,8 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import time
 import os
+import pickle
 import shutil
 import sys
 
@@ -49,7 +47,7 @@ class FitSimDataTask(FiretaskBase):
 			try:
 				shutil.copyfile(self["cached_data"], self["output_data"])
 				with open(self["output_data"], "rb") as f:
-					sim_data = cPickle.load(f)
+					sim_data = pickle.load(f)
 				self.save_metrics_data(sim_data)
 				mod_time = time.ctime(os.path.getctime(self["cached_data"]))
 				print("Copied sim data from cache (last modified {})".format(mod_time))
@@ -61,7 +59,7 @@ class FitSimDataTask(FiretaskBase):
 		cpus = self["cpus"]
 
 		with open(self["input_data"], "rb") as f:
-			raw_data = cPickle.load(f)
+			raw_data = pickle.load(f)
 
 		sim_data = fitSimData_1(
 			raw_data, cpus=cpus, debug=self["debug"],
@@ -76,11 +74,10 @@ class FitSimDataTask(FiretaskBase):
 
 		sys.setrecursionlimit(4000)  # limit found manually
 		with open(self["output_data"], "wb") as f:
-			cPickle.dump(sim_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+			pickle.dump(sim_data, f, protocol=pickle.HIGHEST_PROTOCOL)
 		self.save_metrics_data(sim_data)
 
 	def save_metrics_data(self, sim_data):
 		metrics_data = get_metrics_data_dict(sim_data)
 		with open(self["output_metrics_data"], "wb") as f:
-			cPickle.dump(
-				metrics_data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+			pickle.dump(metrics_data, f, protocol=pickle.HIGHEST_PROTOCOL)

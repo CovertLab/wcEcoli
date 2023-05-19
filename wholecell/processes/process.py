@@ -4,8 +4,6 @@ Process
 Process submodel base class. Defines interface that processes expose to the simulation and to the states.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import warnings
 
 import wholecell.states.bulk_molecules

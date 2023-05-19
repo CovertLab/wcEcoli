@@ -10,10 +10,8 @@ on a per amino acid basis with a sum from all relevant species.
 TODO: add amino acids and other metabolites involved in charging reactions
 '''
 
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
@@ -91,7 +89,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		transcription = sim_data.process.transcription
 		synthetase_names = transcription.synthetase_names

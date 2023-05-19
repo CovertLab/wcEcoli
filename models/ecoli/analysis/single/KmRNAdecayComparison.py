@@ -2,12 +2,11 @@
 Plots counts of rna degraded and the resulting free NMPs
 """
 
-from __future__ import absolute_import, division, print_function
+import pickle
 
 import numpy as np
 from numpy.polynomial.polynomial import Polynomial
 from matplotlib import pyplot as plt
-from six.moves import cPickle
 
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
@@ -17,7 +16,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		KmFirstOrderDecay = sim_data.process.rna_decay.Km_first_order_decay
 		KmNonLinearDecay = np.concatenate((

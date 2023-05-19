@@ -10,8 +10,6 @@ TODO:
 elongation or allow for exclusive unique molecule requests)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process

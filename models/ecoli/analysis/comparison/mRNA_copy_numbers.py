@@ -129,7 +129,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		# Normalize counts from two conditions
 		ratio = c1.mean(axis=0).sum()/c2.mean(axis=0).sum()
-		c2 = ratio * c2.astype(np.float)
+		c2 = ratio * c2.astype(float)
 
 		# Calculate mean and variance
 		m1 = c1.mean(axis=0)

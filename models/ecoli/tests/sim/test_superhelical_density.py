@@ -3,8 +3,6 @@ test_superhelical_density.py
 
 @data: Created 4/28/2020
 """
-from __future__ import absolute_import, division, print_function
-
 import unittest
 
 import numpy as np

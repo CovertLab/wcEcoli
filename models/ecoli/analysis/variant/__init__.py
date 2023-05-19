@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -16,7 +14,6 @@ ACTIVE = [
 	"growth_expression_comparison.py",
 	"growth_rate_time_series.py",
 	"growth_trajectory.py",
-	"instantaneous_growth_rate_histogram.py",
 	"massFractionSummary.py",
 	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",

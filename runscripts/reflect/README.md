@@ -17,8 +17,8 @@ import runscripts.reflect.object_tree as o
 Then, get the object you wish to examine. In our case we are going to take a look at `sim_data`:
 
 ```python
-from six.moves import cPickle
-sim_data = cPickle.load(io.open('out/manual/kb/simData.cPickle', "rb"))
+import pickle
+sim_data = pickle.load(io.open('out/manual/kb/simData.cPickle', "rb"))
 ```
 
 Now that we have our object, we can transform it into a nested dictionary:

@@ -10,13 +10,10 @@ TODO:
 - document algorithm/corner cases (should already exist somewhere...)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 from ._build_sequences import buildSequences, computeMassIncrease
 from ._fastsums import sum_monomers, sum_monomers_reference_implementation
-from six.moves import range
 
 # Reexport these Cython functions. Declaring them avoids
 # "unused import statement" warnings.

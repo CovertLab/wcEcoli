@@ -4,12 +4,11 @@ EvaluationTime
 Large-scale, low-overhead evaluation time tracker for process/state operations.
 """
 
-from __future__ import absolute_import, division, print_function
+from time import monotonic as monotonic_seconds
 
 import numpy as np
 
 import wholecell.listeners.listener
-from wholecell.utils.py3 import monotonic_seconds
 
 
 class EvaluationTime(wholecell.listeners.listener.Listener):

@@ -2,7 +2,6 @@
 Plots dynamics of variables related to the RNA maturation process.
 """
 
-import pickle
 import os
 
 from matplotlib import pyplot as plt
@@ -10,7 +9,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import singleAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
+from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 
 

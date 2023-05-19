@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import, division, print_function
-
 import os
-
-from six.moves import input
 
 import wholecell.utils.filepath as fp
 

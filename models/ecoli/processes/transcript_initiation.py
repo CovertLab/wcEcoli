@@ -8,13 +8,10 @@ TODO:
 - match sigma factors to promoters
 """
 
-from __future__ import absolute_import, division, print_function
+from typing import cast
 
 import numpy as np
 import scipy.sparse
-from typing import cast
-
-from six.moves import zip
 
 import wholecell.processes.process
 from wholecell.utils import units

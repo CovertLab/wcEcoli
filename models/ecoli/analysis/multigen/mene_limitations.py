@@ -1,12 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 from typing import cast
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
@@ -47,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		allDir = self.ap.get_cells(seed = [0])
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		cellDensity = sim_data.constants.cell_density
 
 		cistron_ids = sim_data.process.transcription.cistron_data["id"]

@@ -2,8 +2,6 @@
 SimulationData moleculeGroups
 """
 
-from __future__ import absolute_import, division, print_function
-
 POLYMERIZED_FRAGMENT_PREFIX = 'polymerized_'
 
 class MoleculeGroups(object):

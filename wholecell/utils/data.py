@@ -2,12 +2,8 @@
 Miscellaneous data structure utilities.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 from typing import Any, Dict, Iterable, Mapping
-
-from six import string_types
 
 
 def dissoc(mapping, keys):
@@ -64,4 +60,4 @@ def select_keys(mapping, keys, **kwargs):
 def startswith(obj, prefix):
 	# type: (Any, str) -> bool
 	"""Return True if obj is a string that starts with the given prefix."""
-	return isinstance(obj, string_types) and obj.startswith(prefix)
+	return isinstance(obj, str) and obj.startswith(prefix)

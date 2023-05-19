@@ -2,13 +2,11 @@
 Comparison of average amino acid concentrations to expected concentrations
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, range
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -20,7 +18,7 @@ from wholecell.utils import units
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		aa_ids = sim_data.molecule_groups.amino_acids
 		targets = np.array([sim_data.process.metabolism.conc_dict[key].asNumber(units.mmol / units.L) for key in aa_ids])

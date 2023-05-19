@@ -2,14 +2,12 @@
 Plot usage statistics of ribosomes
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -28,7 +26,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			firstCellLineage.append(self.ap.get_cells(generation = [gen_idx])[0])
 
 		# Get sim data from cPickle file
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		# Create new figure and set size
 		fig = plt.figure()

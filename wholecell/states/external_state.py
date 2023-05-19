@@ -5,9 +5,6 @@ State variable base class. Defines the interface states expose to the simulation
 
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 class ExternalState(object):
 	""" External State """
 

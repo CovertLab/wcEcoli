@@ -10,8 +10,6 @@ TODO:
 - document algorithm (not terribly complicated)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 cimport numpy as np
 
@@ -167,6 +165,7 @@ cpdef tuple mccFormComplexesWithPrebuiltMatrices(
 				break
 
 		# Perform the reaction
+		# TODO: reactionIndex is uninitialized if nReactions == 0. Raise an error?
 		for subunitIndex in range(maxMoleculeTypes):
 			moleculeIndex = moleculeIndexes[reactionIndex, subunitIndex]
 

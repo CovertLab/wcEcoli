@@ -33,7 +33,6 @@ SIM_RAW_SCATTER_STYLE = dict(
 
 SIM_MEAN_LINE_STYLE = dict(
     color = "black",
-    fmt = ' ',
     marker = 'o',
     markersize = 1,
     linewidth = 0.5,

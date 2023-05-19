@@ -2,16 +2,13 @@
 divide_cell.py
 Functions needed for division from mother cell into daughter cells
 """
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 import os
-from six.moves import cPickle
+import pickle
 from copy import deepcopy
 
 from wholecell.utils.constants import SERIALIZED_INHERITED_STATE
 from wholecell.utils import filepath
-from six.moves import zip
 
 BINOMIAL_COEFF = 0.5
 
@@ -501,13 +498,13 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 def save_inherited_state(daughter_path, **inherited_state):
 	"""Save the `inherited_state` dict for a daughter cell."""
 	with open(daughter_path, 'wb') as f:
-		cPickle.dump(inherited_state, f, cPickle.HIGHEST_PROTOCOL)
+		pickle.dump(inherited_state, f, pickle.HIGHEST_PROTOCOL)
 
 
 def load_inherited_state(daughter_path):
 	"""Load `inherited_state` dict to initialize a daughter cell."""
 	with open(daughter_path, "rb") as f:
-		inherited_state = cPickle.load(f)
+		inherited_state = pickle.load(f)
 	return inherited_state
 
 

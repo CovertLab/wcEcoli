@@ -27,8 +27,6 @@ Expected variant indices:
 	1+: random set of parameters is adjusted
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from typing import Tuple
 

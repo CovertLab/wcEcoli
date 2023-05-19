@@ -10,14 +10,11 @@ Results for solver options:
   OSQP: gives different results and has floating point issues for 0 and 1 but is faster
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
+from time import monotonic as monotonic_seconds
 
 from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
-
-from wholecell.utils.py3 import monotonic_seconds
 
 
 solvers = ['GLPK', 'ECOS', 'SCS', 'OSQP']

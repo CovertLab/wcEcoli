@@ -54,17 +54,14 @@ which assigns that node dynamics from listener output:
 
 	node.read_dynamics(dynamics, dynamics_units)
 """
-from __future__ import absolute_import, division, print_function
-
 from collections import Counter
 import numpy as np
 import re
 import os
+import pickle
 import json
 
 from typing import Union
-import six
-from six.moves import cPickle, zip
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,
@@ -146,7 +143,7 @@ class BuildNetwork(object):
 	def __init__(self, sim_data_file, output_dir, check_sanity=False):
 		"""
 		Args:
-			sim_data_file: path to the variant sim_data cPickle file used for
+			sim_data_file: path to the variant sim_data pickle file used for
 			building the network.
 			output_dir: output directory for the node list and edge list files.
 			check_sanity: if set to True, checks if there are any nodes with
@@ -156,7 +153,7 @@ class BuildNetwork(object):
 		"""
 		# Open simulation data and save as attribute
 		with open(sim_data_file, 'rb') as f:
-			self.sim_data = cPickle.load(f)
+			self.sim_data = pickle.load(f)
 
 		self.output_dir = output_dir
 		self.check_sanity = check_sanity
@@ -708,7 +705,7 @@ class BuildNetwork(object):
 		metabolite_ids = []
 
 		# Loop through all reactions
-		for reaction_id, stoich_dict in six.viewitems(reaction_stoich):
+		for reaction_id, stoich_dict in reaction_stoich.items():
 
 			node_type = 'Metabolism'
 

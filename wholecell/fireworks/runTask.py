@@ -3,8 +3,6 @@ A command line to invoke a WCM Firetask with the given argument dict.
 This is used to run a Firetask in a Docker container.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import sys
 import json
 from typing import Sequence, Type

@@ -36,21 +36,27 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		overcrowded_tu_indexes = np.where(tu_is_overcrowded.sum(axis=0))[0]
 		n_overcrowded_tus = len(overcrowded_tu_indexes)
 
-		# Plot the target vs actual rna synthesis probabilites of these TUs
-		plt.figure(figsize=(6, 1.5*n_overcrowded_tus))
+		if n_overcrowded_tus > 0:
+			# Plot the target vs actual rna synthesis probabilites of these TUs
+			plt.figure(figsize=(6, 1.5*n_overcrowded_tus))
 
-		for i, tu_index in enumerate(overcrowded_tu_indexes):
-			ax = plt.subplot(n_overcrowded_tus, 1, i + 1)
-			ax.plot(time_min, target_rna_synth_prob[:, tu_index], label='target')
-			ax.plot(time_min, actual_rna_synth_prob[:, tu_index], label='actual')
-			ax.set_ylabel(f'{tu_ids[i][:-3]}\nsynthesis probs')
+			for i, tu_index in enumerate(overcrowded_tu_indexes):
+				ax = plt.subplot(n_overcrowded_tus, 1, i + 1)
+				ax.plot(time_min, target_rna_synth_prob[:, tu_index], label='target')
+				ax.plot(time_min, actual_rna_synth_prob[:, tu_index], label='actual')
+				ax.set_ylabel(f'{tu_ids[i][:-3]}\nsynthesis probs')
 
-			if i == 0:
-				ax.set_title(f'Total number of overcrowded TUs: {n_overcrowded_tus}')
-				ax.legend(loc=1)
+				if i == 0:
+					ax.set_title(f'Total number of overcrowded TUs: {n_overcrowded_tus}')
+					ax.legend(loc=1)
 
-			if i == n_overcrowded_tus - 1:
-				ax.set_xlabel('Time [min]')
+				if i == n_overcrowded_tus - 1:
+					ax.set_xlabel('Time [min]')
+		else:
+			# Generate empty plot if no overcrowding occurred
+			plt.figure(figsize=(6, 1.5))
+			ax = plt.subplot(1, 1, 1)
+			ax.set_title('No TUs were overcrowded.')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

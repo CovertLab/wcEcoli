@@ -7,13 +7,10 @@ contains MinD-ATP and MinE-MinD-ATP.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from scipy.ndimage import convolve
 
 import matplotlib
-from six.moves import range
 
 ANIMATE = True
 SAVE_PLOT = True

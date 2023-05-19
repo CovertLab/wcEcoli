@@ -2,13 +2,11 @@
 Plot trp regulation
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -22,7 +20,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDirs = self.ap.get_cells()
 
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		nAvogadro = sim_data.constants.n_avogadro
 		cellDensity = sim_data.constants.cell_density
 

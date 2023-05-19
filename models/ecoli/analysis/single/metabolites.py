@@ -2,10 +2,8 @@
 Shows fold change of metabolites over the course of the simulation
 """
 
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -21,7 +19,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		aa_ids = sim_data.molecule_groups.amino_acids
 
 		# Listeners used

@@ -4,9 +4,6 @@ These are primarily used to support simulations that require behavior that
 cannot be modeled at this time.
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 class SimulationHook(object):
 	_name = 'SimulationHook'
 

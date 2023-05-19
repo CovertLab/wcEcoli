@@ -10,8 +10,6 @@ directory (File -> Download -> Tab-separated values (.tsv, current sheet))
 - Run this script: `runscripts/reconstruction/metabolism_kinetics/convert_to_flat.py`
 """
 
-from __future__ import absolute_import, division, print_function
-
 import io
 import json
 import os

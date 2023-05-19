@@ -77,7 +77,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			all_monomer_counts_mean = all_monomer_counts.mean(axis=0)
 
 			# Initialize array of maximum coefficients of variation
-			is_constitutive = np.zeros(len(operon_monomer_indexes), dtype=np.bool)
+			is_constitutive = np.zeros(len(operon_monomer_indexes), dtype=bool)
 			max_cv = np.zeros(len(operon_monomer_indexes))
 
 			# Loop through each operon

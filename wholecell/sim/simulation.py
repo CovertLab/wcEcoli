@@ -3,26 +3,21 @@ Simulation
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 import binascii
 import collections
 import os.path
 import shutil
-import uuid
+from time import monotonic as monotonic_seconds
 from typing import Callable, Sequence, Tuple
+import uuid
 
 import numpy as np
 
 from wholecell.listeners.evaluation_time import EvaluationTime
 from wholecell.utils import filepath
-from wholecell.utils.py3 import monotonic_seconds
 
 import wholecell.loggers.shell
 import wholecell.loggers.disk
-
-from six.moves import range
-import six
 
 MAX_TIME_STEP = 1.
 DEFAULT_SIMULATION_KWARGS = dict(
@@ -131,13 +126,13 @@ class Simulation():
 					listenerClass.name()))
 
 		# Set instance attributes
-		for attrName, value in six.viewitems(DEFAULT_SIMULATION_KWARGS):
+		for attrName, value in DEFAULT_SIMULATION_KWARGS.items():
 			if attrName in kwargs:
 				value = kwargs[attrName]
 
 			setattr(self, "_" + attrName, value)
 
-		unknownKeywords = six.viewkeys(kwargs) - six.viewkeys(DEFAULT_SIMULATION_KWARGS)
+		unknownKeywords = kwargs.keys() - DEFAULT_SIMULATION_KWARGS.keys()
 
 		if any(unknownKeywords):
 			print("Unknown keyword arguments: {}".format(unknownKeywords))
@@ -182,59 +177,59 @@ class Simulation():
 		self._isDead = False
 		self._finalized = False
 
-		for state_name, internal_state in six.viewitems(self.internal_states):
+		for state_name, internal_state in self.internal_states.items():
 			# initialize random streams
 			internal_state.seed = self._seedFromName(state_name)
 			internal_state.randomState = np.random.RandomState(seed=internal_state.seed)
 
 			internal_state.initialize(self, sim_data)
 
-		for external_state in six.viewvalues(self.external_states):
+		for external_state in self.external_states.values():
 			external_state.initialize(self, sim_data, self._timeline)
 
-		for process_name, process in six.viewitems(self.processes):
+		for process_name, process in self.processes.items():
 			# initialize random streams
 			process.seed = self._seedFromName(process_name)
 			process.randomState = np.random.RandomState(seed=process.seed)
 
 			process.initialize(self, sim_data)
 
-		for listener in six.viewvalues(self.listeners):
+		for listener in self.listeners.values():
 			listener.initialize(self, sim_data)
 
-		for hook in six.viewvalues(self.hooks):
+		for hook in self.hooks.values():
 			hook.initialize(self, sim_data)
 
-		for internal_state in six.viewvalues(self.internal_states):
+		for internal_state in self.internal_states.values():
 			internal_state.allocate()
 
-		for listener in six.viewvalues(self.listeners):
+		for listener in self.listeners.values():
 			listener.allocate()
 
 		self._initialConditionsFunction(sim_data)
 
 		self._timeTotal = self.initialTime()
 
-		for hook in six.viewvalues(self.hooks):
+		for hook in self.hooks.values():
 			hook.postCalcInitialConditions(self)
 
 		# Make permanent reference to evaluation time listener
 		self._eval_time = self.listeners["EvaluationTime"]
 
 		# Perform initial mass calculations
-		for state in six.viewvalues(self.internal_states):
+		for state in self.internal_states.values():
 			state.calculateMass()
 
 		# Update environment state according to the current time in time series
-		for external_state in six.viewvalues(self.external_states):
+		for external_state in self.external_states.values():
 			external_state.update()
 
 		# Perform initial listener update
-		for listener in six.viewvalues(self.listeners):
+		for listener in self.listeners.values():
 			listener.initialUpdate()
 
 		# Start logging
-		for logger in six.viewvalues(self.loggers):
+		for logger in self.loggers.values():
 			logger.initialize(self)
 
 	def _initLoggers(self):
@@ -307,7 +302,7 @@ class Simulation():
 
 		if not self._finalized:
 			# Run post-simulation hooks
-			for hook in six.viewvalues(self.hooks):
+			for hook in self.hooks.values():
 				hook.finalize(self)
 
 			# Divide mother into daughter cells
@@ -315,7 +310,7 @@ class Simulation():
 				self.daughter_paths = self._divideCellFunction()
 
 			# Finish logging
-			for logger in six.viewvalues(self.loggers):
+			for logger in self.loggers.values():
 				logger.finalize(self)
 
 			self._finalized = True
@@ -324,11 +319,11 @@ class Simulation():
 		self._adjustTimeStep()
 
 		# Run pre-evolveState hooks
-		for hook in six.viewvalues(self.hooks):
+		for hook in self.hooks.values():
 			hook.preEvolveState(self)
 
 		# Reset process mass difference arrays
-		for state in six.viewvalues(self.internal_states):
+		for state in self.internal_states.values():
 			state.reset_process_mass_diffs()
 
 		# Reset values in evaluationTime listener
@@ -338,65 +333,65 @@ class Simulation():
 	def _evolveState(self, processes):
 		# Update queries
 		# TODO: context manager/function calls for this logic?
-		for i, state in enumerate(six.viewvalues(self.internal_states)):
+		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
 			state.updateQueries()
 			self._eval_time.update_queries_times[i] += monotonic_seconds() - t
 
 		# Calculate requests
-		for i, process in enumerate(six.viewvalues(self.processes)):
+		for i, process in enumerate(self.processes.values()):
 			if process.__class__ in processes:
 				t = monotonic_seconds()
 				process.calculateRequest()
 				self._eval_time.calculate_request_times[i] += monotonic_seconds() - t
 
 		# Partition states among processes
-		for i, state in enumerate(six.viewvalues(self.internal_states)):
+		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
 			state.partition(processes)
 			self._eval_time.partition_times[i] += monotonic_seconds() - t
 
 		# Simulate submodels
-		for i, process in enumerate(six.viewvalues(self.processes)):
+		for i, process in enumerate(self.processes.values()):
 			if process.__class__ in processes:
 				t = monotonic_seconds()
 				process.evolveState()
 				self._eval_time.evolve_state_times[i] += monotonic_seconds() - t
 
 		# Check that timestep length was short enough
-		for process_name, process in six.viewitems(self.processes):
+		for process_name, process in self.processes.items():
 			if process_name in processes and not process.wasTimeStepShortEnough():
 				raise Exception("The timestep (%.3f) was too long at step %i, failed on process %s" % (self._timeStepSec, self.simulationStep(), str(process.name())))
 
 		# Merge state
-		for i, state in enumerate(six.viewvalues(self.internal_states)):
+		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
 			state.merge(processes)
 			self._eval_time.merge_times[i] += monotonic_seconds() - t
 
 		# update environment state
-		for state in six.viewvalues(self.external_states):
+		for state in self.external_states.values():
 			state.update()
 
 	def _post_evolve_state(self):
 		# Calculate mass of all molecules after evolution
-		for i, state in enumerate(six.viewvalues(self.internal_states)):
+		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
 			state.calculateMass()
 			self._eval_time.calculate_mass_times[i] = monotonic_seconds() - t
 
 		# Update listeners
-		for i, listener in enumerate(six.viewvalues(self.listeners)):
+		for i, listener in enumerate(self.listeners.values()):
 			t = monotonic_seconds()
 			listener.update()
 			self._eval_time.update_times[i] = monotonic_seconds() - t
 
 		# Run post-evolveState hooks
-		for hook in six.viewvalues(self.hooks):
+		for hook in self.hooks.values():
 			hook.postEvolveState(self)
 
 		# Append loggers
-		for i, logger in enumerate(six.viewvalues(self.loggers)):
+		for i, logger in enumerate(self.loggers.values()):
 			t = monotonic_seconds()
 			logger.append(self)
 			# Note: these values are written at the next timestep
@@ -454,7 +449,7 @@ class Simulation():
 		# Adjust timestep if needed or at a frequency of updateTimeStepFreq regardless
 		validTimeSteps = self._maxTimeStep * np.ones(len(self.processes))
 		resetTimeStep = False
-		for i, process in enumerate(six.viewvalues(self.processes)):
+		for i, process in enumerate(self.processes.values()):
 			if not process.isTimeStepShortEnough(self._timeStepSec, self._timeStepSafetyFraction) or self.simulationStep() % self._updateTimeStepFreq == 0:
 				validTimeSteps[i] = self._findTimeStep(0., self._maxTimeStep, process.isTimeStepShortEnough)
 				resetTimeStep = True

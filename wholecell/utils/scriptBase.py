@@ -22,7 +22,6 @@ from typing import Any, Callable, cast, Iterable, List, Optional, Tuple
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
-from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 
 
 METADATA_KEYS = (
@@ -660,11 +659,11 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			if location:
 				location = ' at ' + location
 
-			start_real_sec = monotonic_seconds()
+			start_real_sec = time.monotonic()
 			print('{}: {}{}'.format(time.ctime(), self.description(), location))
 			pp.pprint({'Arguments': vars(args)})
 
-			start_process_sec = process_time_seconds()
+			start_process_sec = time.process_time()
 			try:
 				self.run(args)
 			except Exception as e:
@@ -674,9 +673,9 @@ class ScriptBase(metaclass=abc.ABCMeta):
 					exceptions.append((params, e))
 				else:
 					raise
-			elapsed_process = process_time_seconds() - start_process_sec
+			elapsed_process = time.process_time() - start_process_sec
 
-			elapsed_real_sec = monotonic_seconds() - start_real_sec
+			elapsed_real_sec = time.monotonic() - start_real_sec
 			print("{}: Elapsed time {:1.2f} sec ({}); CPU {:1.2f} sec".format(
 				time.ctime(),
 				elapsed_real_sec,

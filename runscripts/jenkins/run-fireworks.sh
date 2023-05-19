@@ -7,8 +7,8 @@ set -e
 # Singleshot might seg fault as well for long single tasks over 2 hr and 10 min
 
 # rlaunch rapidfire --nlaunches 0 2> >(tee -a stderr.log >&2)
-while [ $(lpad get_fws -s READY -d count) -ge 1 ]; do
-  rlaunch singleshot 2> >(tee -a stderr.log >&2)
+while [ "$(lpad get_fws -s READY -d count)" -ge 1 ]; do
+  PYTHONWARNINGS=default rlaunch singleshot 2> >(tee -a stderr.log >&2)
   echo >> stderr.log
 done
 

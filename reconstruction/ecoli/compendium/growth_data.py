@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from scipy.optimize import curve_fit
 from wholecell.utils import units
@@ -28,11 +26,11 @@ class GrowthData(object):
 
 		# The type stub (just in PyCharm?) is wrong about curve_fit's arg p0.
 		# noinspection PyTypeChecker
-		p0 = (0, 0, 0, 0)  # type: float
-		self.dryMassParams, _ = curve_fit(exp2, self.tau_d, self._dryMass, p0=p0)
-		self.proteinMassParams, _ = curve_fit(exp2, self.tau_d, self._proteinMass, p0=p0)
-		self.rnaMassParams, _ = curve_fit(exp2, self.tau_d, self._rnaMass, p0=p0)
-		self.dnaMassParams, _ = curve_fit(exp2, self.tau_d, self._dnaMass, p0=p0)
+		p0 = (0, 0, 0, 0)
+		self.dryMassParams, *_ = curve_fit(exp2, self.tau_d, self._dryMass, p0=p0)
+		self.proteinMassParams, *_ = curve_fit(exp2, self.tau_d, self._proteinMass, p0=p0)
+		self.rnaMassParams, *_ = curve_fit(exp2, self.tau_d, self._rnaMass, p0=p0)
+		self.dnaMassParams, *_ = curve_fit(exp2, self.tau_d, self._dnaMass, p0=p0)
 
 		self.chromMass = self._chromMass(kb)
 

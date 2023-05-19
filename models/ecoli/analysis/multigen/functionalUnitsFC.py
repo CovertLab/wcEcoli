@@ -1,7 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,14 +7,13 @@ import matplotlib.pyplot as plt
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-from six.moves import zip
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Check if cache from rnaVsProteinPerCell.py exists
 		if os.path.exists(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle")):
-			rnaVsProteinPerCell = cPickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
+			rnaVsProteinPerCell = pickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
 			avgProteinCounts_forAllCells = rnaVsProteinPerCell["protein"]
 			avgProteinCounts_perCell = avgProteinCounts_forAllCells / float(32)
 		else:
@@ -25,7 +22,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Check if cache from figure5B_E_F_G.py exist
 		if os.path.exists(os.path.join(plotOutDir, "figure5B.pickle")):
-			figure5B_data = cPickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
+			figure5B_data = pickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
 			colors = figure5B_data["colors"]
 			mrnaIds = figure5B_data["id"].tolist()
 		else:
@@ -34,7 +31,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Check if cache functionalUnits.py exist
 		if os.path.exists(os.path.join(plotOutDir, "functionalUnits.cPickle")):
-			functionalUnits_data = cPickle.load(open(os.path.join(plotOutDir, "functionalUnits.cPickle"), "rb"))
+			functionalUnits_data = pickle.load(open(os.path.join(plotOutDir, "functionalUnits.cPickle"), "rb"))
 			minProteinCounts = functionalUnits_data["minProteinCounts"]
 			monomersInManyComplexes_dict = functionalUnits_data["monomersInvolvedInManyComplexes_dict"]
 		else:
@@ -44,13 +41,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Check if cache ratioFinalToInitialCountMultigen.pickle from figure5_c.py (cohort analysis) exists
 		cohortPlotOutDir = "out/SET_A/20170407.100507.741102__SET_A_32_gens_8_seeds_basal_with_growth_noise_and_D_period/wildtype_000000/plotOut/" # todo, generalize
 		if os.path.exists(os.path.join(cohortPlotOutDir, "ratioFinalToInitialCountMultigen.pickle")):
-			ratioFinalToInitialCountMultigen = cPickle.load(open(os.path.join(plotOutDir,"ratioFinalToInitialCountMultigen.pickle"), "rb"))
+			ratioFinalToInitialCountMultigen = pickle.load(open(os.path.join(plotOutDir,"ratioFinalToInitialCountMultigen.pickle"), "rb"))
 		else:
 			print("Requires ratioFinalToInitialCountMultigen.pickle from figure5_c.py")
 			return
 
 		# Load sim data
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.cistron_to_monomer_mapping] # orders rna IDs to match monomer IDs
 		rnaIds = rnaIds.tolist()
 		ids_complexation = sim_data.process.complexation.molecule_names # Complexe of proteins, and protein monomers

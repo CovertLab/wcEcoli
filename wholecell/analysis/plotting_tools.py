@@ -2,12 +2,9 @@
 Reusable plotting functions and tools
 """
 
-from __future__ import absolute_import, division, print_function
-
 import matplotlib.pyplot as plt
 from scipy import stats
 import numpy as np
-from six.moves import range
 
 DEFAULT_MATPLOTLIB_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
@@ -56,7 +53,7 @@ COLORS_256 = [ # From colorbrewer2.org, qualitative 8-class set 1
 	[247,129,191]
 	]
 
-with plt.style.context('seaborn-colorblind'):
+with plt.style.context('seaborn-v0_8-colorblind'):
 	COLORS_COLORBLIND = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 def plotSplom(arrayOfdataArrays, nameArray="", stdArrays=None, labels=None, fig=None, plotCorrCoef=True, formatString='o'):

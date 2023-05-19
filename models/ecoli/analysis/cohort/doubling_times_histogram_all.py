@@ -12,13 +12,11 @@ standardize the output across sets of simulations.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -58,7 +56,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation = list(range(FIRST_GENERATION, n_gens))
 			)
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		doubling_times_minutes = []
 

@@ -4,15 +4,12 @@ Plots environment nutrient concentrations
 
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import math
 
 import numpy as np
 from matplotlib import pyplot as plt
 import itertools
-from six.moves import zip
 
 from wholecell.io.tablereader import TableReader
 

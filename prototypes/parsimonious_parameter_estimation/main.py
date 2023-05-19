@@ -4,8 +4,6 @@
 See README.md or description.pdf.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from argparse import ArgumentParser
@@ -15,7 +13,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from . import parsimony
-from six.moves import range
 
 # TODO: replace some of the uglier structures with collections.namedtuple classes
 

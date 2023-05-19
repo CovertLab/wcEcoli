@@ -7,8 +7,6 @@ _fastsums.pyx
 Fast group sums to speed up polymerize.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 cimport numpy as np
 cimport cython

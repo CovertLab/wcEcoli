@@ -1,14 +1,11 @@
 # Toy model of jFBA using a simplified metabolic network from Fig. 4 and Table 1 of M. Covert's 2001 paper
 # Implemented using modular_FBA
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from wholecell.utils.modular_fba import FluxBalanceAnalysis
 import matplotlib.pyplot as plt
 from wholecell.analysis.analysis_tools import exportFigure
 import os
-from six.moves import zip
 
 reactions_file = "reactions.tsv"
 transportFluxes_file = "transport_fluxes.tsv"
@@ -19,7 +16,7 @@ FBAObjectives_file = "FBA_objectives.tsv"
 # Define file parsing
 def parseFile(filename):
 	out = []
-	F = open(filename, mode = "rU")
+	F = open(filename, mode = "r")
 	
 	for line in F:
 		line_list = line.split()
@@ -42,7 +39,7 @@ def parseFile(filename):
 
 def getValues(filename):
 	out = dict()
-	F = open(filename, mode = "rU")
+	F = open(filename, mode = "r")
 
 	for line in F:
 		line_list = line.split()

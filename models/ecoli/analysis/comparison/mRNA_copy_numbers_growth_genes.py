@@ -3,13 +3,11 @@ Generates a comparison scatter plot of mRNA copy numbers for growth genes (genes
 encoding for RNA polymerase or ribosomal subunits) from two sets of simulations,
 one without operons and one with operons.
 """
-import itertools
+
 import os
 from typing import Tuple
 
-import csv
 from matplotlib import pyplot as plt
-import matplotlib.gridspec as gridspec
 # noinspection PyUnresolvedReferences
 import numpy as np
 
@@ -74,7 +72,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		# Normalize counts from two conditions
 		ratio = m1[all_plotted_mRNA_mask].sum()/m2[all_plotted_mRNA_mask].sum()
-		m2 = ratio * m2.astype(np.float)
+		m2 = ratio * m2.astype(float)
 
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)

@@ -4,8 +4,6 @@ Plots all reduced cost and shadow prices on separate subplots
 Identifies outliers for each and plots those on separate subplots
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np

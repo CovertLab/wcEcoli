@@ -14,8 +14,6 @@ flags when done. It should work fine to nest `with detect_leaks(False)` for a
 block of code inside `with detect_leaks(True)`.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from contextlib import contextmanager
 import gc
 import os

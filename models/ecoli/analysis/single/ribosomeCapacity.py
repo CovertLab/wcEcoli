@@ -2,13 +2,11 @@
 Plots ribosome capacity
 """
 
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
+import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-import os
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -24,7 +22,7 @@ FONT = {
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Load data from KB
 		nAvogadro = sim_data.constants.n_avogadro

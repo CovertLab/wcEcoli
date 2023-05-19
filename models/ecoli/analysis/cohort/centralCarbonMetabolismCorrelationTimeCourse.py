@@ -1,10 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -24,8 +22,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Get all cells in each seed
 
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		cellDensity = sim_data.constants.cell_density
 
