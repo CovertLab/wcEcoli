@@ -112,6 +112,28 @@ out/20220822.165041__SET_E_8_gens_128_seeds_operons_on_with_glucose_minimal_medi
 out/20220822.164908__SET_A_8_gens_128_seeds_operons_off_with_glucose_minimal_media
 
 
+## Temporary
+python models/ecoli/analysis/comparison/doubling_time_histogram.py \
+out/20230505.171423__SET_G_8_gens_128_seeds_operons_v1_with_rich_media \
+out/20230505.171407__SET_F_8_gens_128_seeds_operons_off_with_rich_media
+
+python models/ecoli/analysis/comparison/mRNA_copy_numbers_growth_genes.py \
+out/20230505.171423__SET_G_8_gens_128_seeds_operons_v1_with_rich_media \
+out/20230505.171407__SET_F_8_gens_128_seeds_operons_off_with_rich_media
+
+python models/ecoli/analysis/comparison/mRNA_copy_numbers_growth_genes.py \
+out/20230505.171440__SET_H_8_gens_128_seeds_operons_v2_with_rich_media \
+out/20230505.171407__SET_F_8_gens_128_seeds_operons_off_with_rich_media
+
+python models/ecoli/analysis/comparison/doubling_time_histogram.py \
+out/20230505.171440__SET_H_8_gens_128_seeds_operons_v2_with_rich_media \
+out/20230505.171407__SET_F_8_gens_128_seeds_operons_off_with_rich_media
+
+python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
+out/20230505.171440__SET_H_8_gens_128_seeds_operons_v2_with_rich_media \
+out/20230505.171407__SET_F_8_gens_128_seeds_operons_off_with_rich_media
+
+
 ## Table S1
 python models/ecoli/analysis/parca/mRNA_transcript_table.py \
 out/20220822.165041__SET_E_8_gens_128_seeds_operons_on_with_glucose_minimal_media

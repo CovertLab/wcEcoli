@@ -49,6 +49,33 @@ SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
+## Set F - no operons, rich media
+# Used for comparisons in Figures 1, 2, 3, 4, 5
+DESC="SET F 8 gens 128 seeds operons off with rich media" \
+OPERONS="off" \
+VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set G - operons v1, rich media
+# Used for comparisons in Figures 2
+DESC="SET G 8 gens 128 seeds operons v1 with rich media" \
+OPERONS="v1" \
+VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set H - operons v2, rich media
+# Used for comparisons in Figures 2, 3
+DESC="SET H 8 gens 128 seeds operons v2 with rich media" \
+OPERONS="v2" \
+VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
 
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
