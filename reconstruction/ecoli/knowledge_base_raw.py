@@ -214,7 +214,7 @@ class KnowledgeBaseEcoli(object):
 				'genes': 'rrna_options.remove_rrff.genes_removed',
 				'rnas': 'rrna_options.remove_rrff.rnas_removed',
 				})
-			if self.operons_on:
+			if self.operon_option != "off":
 				self.modified_data.update({
 					'transcription_units': 'rrna_options.remove_rrff.transcription_units_modified',
 					})
