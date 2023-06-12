@@ -5,8 +5,6 @@ Raw tsv files in 'reconstruction/ecoli/flat/adjustments'
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 class Adjustments(object):
 
 	def __init__(self, raw_data):
@@ -17,6 +15,10 @@ class Adjustments(object):
 			adj["name"]: adj["value"]
 			for adj in raw_data.adjustments.translation_efficiencies_adjustments
 		}
+		self.balanced_translation_efficiencies = [
+			adj["proteins"]
+			for adj in raw_data.adjustments.balanced_translation_efficiencies
+		]
 		self.rna_expression_adjustments = {
 			adj["name"]: adj["value"]
 			for adj in raw_data.adjustments.rna_expression_adjustments

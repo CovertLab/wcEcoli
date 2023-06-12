@@ -17,8 +17,8 @@ import runscripts.reflect.object_tree as o
 Then, get the object you wish to examine. In our case we are going to take a look at `sim_data`:
 
 ```python
-from six.moves import cPickle
-sim_data = cPickle.load(io.open('out/manual/kb/simData.cPickle', "rb"))
+import pickle
+sim_data = pickle.load(io.open('out/manual/kb/simData.cPickle', "rb"))
 ```
 
 Now that we have our object, we can transform it into a nested dictionary:
@@ -74,4 +74,15 @@ Check options with:
 
 ```bash
 runscripts/reflect/model_inspection.py -h
+```
+
+## find_valid_connections
+
+Find valid reactions and metabolites in the reaction network and identify enzymes associated with those reactions.  Valid reactions will contain only metabolites recognized in the model and be part of a pathway from a valid metabolite source (import from the media or a tracked concentration in the model) to a valid metabolite destination (exported from the cell or a tracked concentration in the model).  If this is not the case, then the reaction would not be able to carry any flux and is effectively not implemented in the model.  Information is saved to .tsv files.
+
+### usage
+
+Provide the path to a sim_data object as an arg to the script:
+```bash
+runscripts/reflect/find_valid_connections.py out/manual/kb/simData.cPickle
 ```

@@ -3,8 +3,6 @@ ValidationData for Ecoli
 
 Raw data processed into forms convienent for validation and analysis
 """
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 from unum import Unum
 
@@ -41,19 +39,7 @@ class ValidationDataEcoli(object):
 		self.geneFunctions = GeneFunctions(validation_data_raw)
 		self.macromolecular_growth_rate_modulation = MacromolecularGrowthRateModulation(validation_data_raw)
 
-		self._add_dna_footprint_sizes(validation_data_raw)
 		self._add_amino_acid_growth_rates(validation_data_raw)
-
-	def _add_dna_footprint_sizes(self, validation_data_raw):
-		"""
-		Adds dictionary of DNA footprint sizes. Keys are the IDs of the
-		DNA-binding molecules; values are the sizes of their molecular
-		footprints on the DNA.
-		"""
-		self.dna_footprint_sizes = {}
-
-		for row in validation_data_raw.dna_footprint_sizes:
-			self.dna_footprint_sizes[row["molecule_ID"]] = row["footprint_size"]
 
 	def _add_amino_acid_growth_rates(self, validation_data_raw):
 		"""

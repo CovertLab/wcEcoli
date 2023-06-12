@@ -9,7 +9,7 @@ import abc
 import argparse
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from models.ecoli.analysis.analysisPlot import AnalysisPlot
 from wholecell.utils import constants, data, scriptBase, parallelization
@@ -36,7 +36,7 @@ class AnalysisBase(scriptBase.ScriptBase, metaclass=abc.ABCMeta):
 		self.plot_name = ''  # falsy => add_argument('-p')
 		if analysis_plotter:
 			module = sys.modules[type(analysis_plotter).__module__]
-			self.plot_name = os.path.basename(module.__file__)
+			self.plot_name = os.path.basename(module.__file__ or '')
 
 	def description(self):
 		"""Describe the command line program."""

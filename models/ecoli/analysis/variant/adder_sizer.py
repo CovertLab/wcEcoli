@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np
@@ -23,6 +21,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		if self.ap.n_generation == 1:
 			print("Need more data to create addedMass")
+			return
+
+		if self.ap.n_variant == 1:
+			print("Need more variant sims -- skipping analysis")
 			return
 
 		allScatter = plt.figure()

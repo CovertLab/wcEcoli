@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import json
 import numpy as np
@@ -9,8 +7,6 @@ from typing import Any, Dict, List, Optional, Set
 import zlib
 
 from wholecell.utils import filepath
-import six
-
 
 __all__ = [
 	"TableWriter",
@@ -191,7 +187,7 @@ class _Column(object):
 
 		self._path = path
 		self._data = open(path, "wb")
-		self._dtype = None
+		self._dtype: Optional[np.dtype[Any]] = None
 		self._compression_type = compression_type
 		self._current_data_block = []  # type: List[bytes]
 
@@ -225,7 +221,7 @@ class _Column(object):
 		Get the description of the column data type in JSON format.
 		"""
 		assert self._dtype
-		descr = self._dtype.descr
+		descr: Any = self._dtype.descr
 		if len(descr) == 1 and descr[0][0] == "":
 			descr = descr[0][1]
 		descr_json = json.dumps(descr, separators=(',', ':')).encode('utf-8')
@@ -567,8 +563,8 @@ class TableWriter(object):
 
 		# Later calls - check for missing or unrecognized fields
 		else:
-			missingFields = six.viewkeys(self._columns) - six.viewkeys(namesAndValues)
-			unrecognizedFields = six.viewkeys(namesAndValues) - six.viewkeys(self._columns)
+			missingFields = self._columns.keys() - namesAndValues.keys()
+			unrecognizedFields = namesAndValues.keys() - self._columns.keys()
 
 			if missingFields:
 				raise MissingFieldError(
@@ -580,7 +576,7 @@ class TableWriter(object):
 					"Unrecognized fields: {}".format(", ".join(unrecognizedFields))
 					)
 
-		for name, value in six.viewitems(namesAndValues):
+		for name, value in namesAndValues.items():
 			self._columns[name].append(value)
 
 
@@ -611,7 +607,7 @@ class TableWriter(object):
 		# check before modifying self._attributes
 		sanitized = {}  # type: Dict[str, Any]
 
-		for name, value in six.viewitems(namesAndValues):
+		for name, value in namesAndValues.items():
 			if name in self._attributes:
 				raise AttributeAlreadyExistsError(
 					"An attribute named '{}' already exists.".format(name)
@@ -662,7 +658,7 @@ class TableWriter(object):
 
 		"""
 		if self._columns is not None:
-			for column in six.viewvalues(self._columns):
+			for column in self._columns.values():
 				column.close()
 
 

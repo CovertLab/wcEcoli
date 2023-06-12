@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
+import pickle
 import time
 
 from models.ecoli.sim.variants import nameToFunctionMapping
@@ -16,7 +14,7 @@ def apply_variant(sim_data_file, variant_type, variant_index):
 		raise Exception("%s is not a valid variant function!" % variant_type)
 
 	with open(sim_data_file, "rb") as f:
-		sim_data = cPickle.load(f)
+		sim_data = pickle.load(f)
 
 	operon_msg = (f", Operons: {sim_data.operon_option}"
 				  if hasattr(sim_data, 'operon_option') else '')

@@ -3,19 +3,16 @@ Plots the number of collisions between RNAPs and replisomes that occur on each
 gene. Only the top N genes with the most collisions are plotted.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from six.moves import zip
 
 
 PLOT_TOP_N_GENES = 25
@@ -23,7 +20,7 @@ PLOT_TOP_N_GENES = 25
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Listeners used
 		rnap_data_reader = TableReader(os.path.join(simOutDir, "RnapData"))
@@ -100,7 +97,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax = plt.subplot(1, 2, 1)
 		ax.bar(list(range(PLOT_TOP_N_GENES)), n_codirectional_per_gene[codirectional_rank],
 			color="darkblue")
-		ax.set_xticks(list(range(PLOT_TOP_N_GENES)))
+		ax.set_xticks(range(PLOT_TOP_N_GENES))
 		ax.set_xticklabels(codirectional_top_genes, rotation=90)
 		ax.set_title("Co-directional (Total = %d)"%(n_total_codirectional, ))
 		ax.set_ylabel("Number of collisions")
@@ -108,9 +105,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		ax.spines['right'].set_visible(False)
 
 		ax = plt.subplot(1, 2, 2)
-		ax.bar(list(range(PLOT_TOP_N_GENES)), n_headon_per_gene[headon_rank],
+		ax.bar(range(PLOT_TOP_N_GENES), n_headon_per_gene[headon_rank],
 			color="crimson")
-		ax.set_xticks(list(range(PLOT_TOP_N_GENES)))
+		ax.set_xticks(range(PLOT_TOP_N_GENES))
 		ax.set_xticklabels(headon_top_genes, rotation=90)
 		ax.set_title("Head-on (Total = %d)"%(n_total_headon, ))
 		ax.spines['top'].set_visible(False)

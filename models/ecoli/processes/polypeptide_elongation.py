@@ -311,7 +311,7 @@ class BaseElongationModel(object):
 		self.process = process
 		self.basal_elongation_rate = sim_data.constants.ribosome_elongation_rate_basal.asNumber(units.aa / units.s)
 		self.ribosomeElongationRateDict = sim_data.process.translation.ribosomeElongationRateDict
-		self.uncharged_trna_names = sim_data.process.transcription.rna_data['id'][sim_data.process.transcription.rna_data['is_tRNA']]
+		self.uncharged_trna_names = sim_data.process.transcription.uncharged_trna_names
 		self.aaNames = sim_data.molecule_groups.amino_acids
 		self.proton = self.process.bulkMoleculeView(sim_data.molecule_ids.proton)
 		self.water = self.process.bulkMoleculeView(sim_data.molecule_ids.water)

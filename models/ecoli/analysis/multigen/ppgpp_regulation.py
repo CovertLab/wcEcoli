@@ -45,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cell_paths = self.ap.get_cells()
 		time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze() / 60  # min
 		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar').squeeze()
-		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'rna_synth_prob_per_cistron')
+		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron')
 		reaction_rates = np.vstack((
 			read_stacked_columns(cell_paths, 'GrowthLimits', 'rela_syn').sum(axis=1),
 			read_stacked_columns(cell_paths, 'GrowthLimits', 'spot_syn').squeeze(),
@@ -53,7 +53,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			)).T
 		ppgpp_count, = read_stacked_bulk_molecules(cell_paths, [sim_data.molecule_ids.ppGpp])
 		ppgpp_conc = ppgpp_count * counts_to_molar * 1000  # uM
-		mrna_cistron_count = read_stacked_columns(cell_paths, 'mRNACounts', 'mRNA_cistron_counts')
+		mrna_cistron_count = read_stacked_columns(cell_paths, 'RNACounts', 'mRNA_cistron_counts')
 		synthase_counts = mrna_cistron_count[:, synthase_cistron_idx_mrnas]
 
 		extra_plots = 4  # traces in addition to fractions

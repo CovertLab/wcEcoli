@@ -1,14 +1,11 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from models.ecoli.analysis.single.centralCarbonMetabolism import net_flux
 from models.ecoli.processes.metabolism import (COUNTS_UNITS, VOLUME_UNITS,
 	TIME_UNITS)
 from wholecell.analysis.analysis_tools import exportFigure
@@ -25,8 +22,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Get all cells in each seed
 
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		cellDensity = sim_data.constants.cell_density
 
@@ -47,9 +44,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				massListener.close()
 
 				fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-				reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-				reactionFluxes = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.array(fbaResults.readColumn("reactionFluxes"))
-				fbaResults.close()
+				reaction_ids = np.array(
+					fbaResults.readAttribute("base_reaction_ids"))
+				reactionFluxes = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.array(
+					fbaResults.readColumn("base_reaction_fluxes"))
+				rxn_id_to_index = {
+					rxn_id: i for (i, rxn_id) in enumerate(reaction_ids)
+				}
 
 				dryMassFracAverage = np.mean(dryMass / cellMass)
 
@@ -58,7 +59,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				netFluxes = []
 				for toyaReactionID in toya_reactions:
-					fluxTimeCourse = net_flux(toyaReactionID, reactionIDs, reactionFluxes).asNumber(FLUX_UNITS).squeeze()
+					fluxTimeCourse = reactionFluxes[:, rxn_id_to_index[toyaReactionID]].asNumber(FLUX_UNITS).squeeze()
 					netFluxes.append(fluxTimeCourse)
 
 				trimmedReactions = FLUX_UNITS * np.array(netFluxes)

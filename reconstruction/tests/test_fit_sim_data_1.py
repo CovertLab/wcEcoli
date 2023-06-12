@@ -2,8 +2,6 @@
 Test fitkb1.py
 """
 
-from __future__ import absolute_import, division, print_function
-
 import unittest
 
 from reconstruction.ecoli.fit_sim_data_1 import (totalCountFromMassesAndRatios,

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -7,7 +5,6 @@ import os
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader, TableReaderError
-from six.moves import range
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):

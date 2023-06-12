@@ -10,8 +10,6 @@ TODO:
 elongation or allow for exclusive unique molecule requests)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process
@@ -46,11 +44,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.chromosome_length = self.replichore_lengths.sum()
 		self.n_fragment_bases = len(sim_data.molecule_groups.polymerized_ntps)
 		self.recycle_stalled_elongation = sim._recycle_stalled_elongation
-
-		# ID Groups of rRNAs
-		self.idx_16S_rRNA = np.where(sim_data.process.transcription.rna_data['is_16S_rRNA'])[0]
-		self.idx_23S_rRNA = np.where(sim_data.process.transcription.rna_data['is_23S_rRNA'])[0]
-		self.idx_5S_rRNA = np.where(sim_data.process.transcription.rna_data['is_5S_rRNA'])[0]
 
 		# Mask for mRNAs
 		self.is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
@@ -253,21 +246,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		terminated_RNAs = np.bincount(
 			TU_index_partial_RNAs[did_terminate_mask],
 			minlength = self.rnaSequences.shape[0])
-
-		# Assume transcription from all rRNA genes produce rRNAs from the first
-		# operon. This is done to simplify the complexation reactions that
-		# produce ribosomal subunits.
-		n_total_16Srrna = terminated_RNAs[self.idx_16S_rRNA].sum()
-		n_total_23Srrna = terminated_RNAs[self.idx_23S_rRNA].sum()
-		n_total_5Srrna = terminated_RNAs[self.idx_5S_rRNA].sum()
-
-		terminated_RNAs[self.idx_16S_rRNA] = 0
-		terminated_RNAs[self.idx_23S_rRNA] = 0
-		terminated_RNAs[self.idx_5S_rRNA] = 0
-
-		terminated_RNAs[self.idx_16S_rRNA[0]] = n_total_16Srrna
-		terminated_RNAs[self.idx_23S_rRNA[0]] = n_total_23Srrna
-		terminated_RNAs[self.idx_5S_rRNA[0]] = n_total_5Srrna
 
 		# Update is_full_transcript attribute of RNAs
 		is_full_transcript_updated = is_full_transcript.copy()

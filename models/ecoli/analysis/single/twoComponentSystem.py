@@ -2,19 +2,16 @@
 Plot two component system counts
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import zip
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -22,7 +19,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		TCS_IDS = []
 		moleculeTypeOrder = ["HK", "PHOSPHO-HK", "LIGAND", "HK-LIGAND", "PHOSPHO-HK-LIGAND", "RR", "PHOSPHO-RR"]
 		moleculeTypeColor = ["b", "b", "orange", "g", "g", "r", "r"]
@@ -64,7 +61,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 
 		for idx in range(len(sim_data.molecule_groups.twoComponentSystems)):
-			grid_loc = idx + 1 + (cols*(num_subentries + 1))*( idx / cols)
+			grid_loc = idx + 1 + (cols*(num_subentries + 1))*int(idx / cols)
 			current_RR = str(sim_data.molecule_groups.twoComponentSystems[idx]["molecules"]["RR"])
 			if RR_phosphorylation[current_RR].size == 1:
 				new_RR = True
@@ -76,7 +73,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 					if moleculeTypeOrder[subentryIdx] == "PHOSPHO-RR":
 						RRP[:] = moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro)
-
 
 				ax = plt.subplot(rows*(num_subentries + 2), cols, grid_loc + (cols * subentryIdx))
 				ax.plot(time / 60., moleculeCounts[:, (idx * num_subentries) + subentryIdx] / (cellVolume * nAvogadro), linewidth = 1, color = moleculeTypeColor[subentryIdx])

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 from fireworks import FiretaskBase, explicit_serialize
@@ -27,13 +25,17 @@ class ParcaTask(FiretaskBase):
 		'rnapoly_fitting']
 	optional_params = [
 		'operons',
+		'new_genes',
 		'load_intermediate',
 		'save_intermediates',
 		'intermediates_directory',
 		'cpus',
 		'debug',
 		'variable_elongation_transcription',
-		'variable_elongation_translation']
+		'variable_elongation_translation',
+		'remove_rrna_operons',
+		'remove_rrff',
+		]
 
 	def _get_default(self, key):
 		return self.get(key, DEFAULT_SIMULATION_KWARGS[key])
@@ -54,6 +56,9 @@ class ParcaTask(FiretaskBase):
 		tasks = [
 			InitRawDataTask(
 				operons=self.get('operons'),
+				new_genes=self.get('new_genes'),
+				remove_rrna_operons=self.get('remove_rrna_operons', False),
+				remove_rrff=self.get('remove_rrff', False),
 				output=raw_data_file),
 
 			FitSimDataTask(

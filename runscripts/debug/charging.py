@@ -619,7 +619,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 			])
 		def update_graph(n_clicks: int, ribosome_adjustment: str,
 				timestep_adjustment: str, *inputs: Any,
-				) -> Dict:
+				) -> go.Figure:
 			"""
 			Update the plot based on selection changes.
 
@@ -627,6 +627,7 @@ class ChargingDebug(scriptBase.ScriptBase):
 				plotly figure
 			"""
 
+			_ = n_clicks
 			ribosome_adjustment = float(ribosome_adjustment)
 			timestep_adjustment = float(timestep_adjustment)
 			synthetase_adjustments = np.array(inputs[:n_aas], float)
@@ -660,12 +661,12 @@ class ChargingDebug(scriptBase.ScriptBase):
 			net_ppgpp = np.array(n_synth) - np.array(n_deg)
 
 			fig = plotly.subplots.make_subplots(rows=1, cols=3)
-			fig.append_trace(go.Scatter(x=t, y=v_rib, name='Elongation rate'), row=1, col=1)
+			fig.add_trace(go.Scatter(x=t, y=v_rib, name='Elongation rate'), row=1, col=1)
 			for f, aa in zip(f_charged, aa_ids):
-				fig.append_trace(go.Scatter(x=t, y=f, name=aa), row=1, col=2)
-			fig.append_trace(go.Scatter(x=t, y=n_synth, name='ppGpp synthesis reactions'), row=1, col=3)
-			fig.append_trace(go.Scatter(x=t, y=n_deg, name='ppGpp degradation reactions'), row=1, col=3)
-			fig.append_trace(go.Scatter(x=t, y=net_ppgpp, name='Net ppGpp reactions'), row=1, col=3)
+				fig.add_trace(go.Scatter(x=t, y=f, name=aa), row=1, col=2)
+			fig.add_trace(go.Scatter(x=t, y=n_synth, name='ppGpp synthesis reactions'), row=1, col=3)
+			fig.add_trace(go.Scatter(x=t, y=n_deg, name='ppGpp degradation reactions'), row=1, col=3)
+			fig.add_trace(go.Scatter(x=t, y=net_ppgpp, name='Net ppGpp reactions'), row=1, col=3)
 
 			fig.update_xaxes(title_text='Timestep', row=1, col=2)
 			fig.update_yaxes(title_text='Elongation rate (AA/s)', row=1, col=1)

@@ -31,7 +31,7 @@ def calcInitialConditions(sim, sim_data):
 		randomState, massCoeff, sim._ppgpp_regulation, sim._trna_attenuation)
 	cell_mass = init.calculate_cell_mass(sim.internal_states)
 	init.initializeUniqueMoleculesFromBulk(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass,
-		randomState, sim._superhelical_density, sim._ppgpp_regulation, sim._trna_attenuation)
+		randomState, sim._superhelical_density, sim._ppgpp_regulation, sim._trna_attenuation, sim._mechanistic_replisome)
 
 	# Must be called after unique and bulk molecules are initialized to get
 	# concentrations for ribosomes, tRNA, synthetases etc from cell volume
@@ -67,7 +67,7 @@ def initialize_trna_charging(sim_data, states, variable_elongation):
 	aa_from_trna = transcription.aa_from_trna
 	bulk_molecules = states['BulkMolecules'].container
 	synthetases = bulk_molecules.countsView(transcription.synthetase_names)
-	uncharged_trna = bulk_molecules.countsView(transcription.rna_data['id'][transcription.rna_data['is_tRNA']])
+	uncharged_trna = bulk_molecules.countsView(transcription.uncharged_trna_names)
 	charged_trna = bulk_molecules.countsView(transcription.charged_trna_names)
 	aas = bulk_molecules.countsView(sim_data.molecule_groups.amino_acids)
 	ribosome_counts = states['UniqueMolecules'].container.counts(['active_ribosome'])

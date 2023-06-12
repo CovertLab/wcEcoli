@@ -8,7 +8,6 @@ from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
 import os
-import re
 from scipy.stats import pearsonr
 
 from models.ecoli.analysis import comparisonAnalysisPlot
@@ -20,7 +19,7 @@ from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
-from wholecell.utils.protein_counts import get_simulated_validation_counts
+
 from wholecell.utils import units
 
 
@@ -36,6 +35,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		# Read data from sim_data
 		cell_density = sim_data1.constants.cell_density
 
@@ -46,18 +49,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Get list of relevant reaction IDs and indexes
 		fba_reader = TableReader(
 			os.path.join(ap1.get_cells()[0], 'simOut', 'FBAResults'))
-		sim_rxn_ids = fba_reader.readAttribute('reactionIDs')
-
-		relevant_sim_rxn_indexes = []
-		relevant_sim_rxn_ids = []
-		for val_rxn_id in val_rxn_ids:
-			for i, sim_rxn_id in enumerate(sim_rxn_ids):
-				if re.findall(val_rxn_id, sim_rxn_id) and i not in relevant_sim_rxn_indexes:
-					relevant_sim_rxn_indexes.append(i)
-					relevant_sim_rxn_ids.append(sim_rxn_id)
-
-		relevant_sim_rxn_indexes = np.array(relevant_sim_rxn_indexes)
-
+		sim_rxn_ids = fba_reader.readAttribute('base_reaction_ids')
+		sim_rxn_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(sim_rxn_ids)
+		}
 
 		def read_sim_protein_counts(ap):
 			# Ignore data from first two gens
@@ -90,7 +85,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			# Get flux for each reaction at each timestep
 			sim_fluxes = (
 				(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-				* (read_stacked_columns(cell_paths, 'FBAResults', 'reactionFluxes', ignore_exception=True)[:, relevant_sim_rxn_indexes] / conversion_coeffs)
+				* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
 				).asNumber(units.mmol / units.g / units.h)
 
 			# Add up all fluxes that contribute to each value in validation data
@@ -98,21 +93,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			rxn_id_to_sim_flux_std = {}
 
 			for val_rxn_id in val_rxn_ids:
-				rxn_found = False
-				total_fluxes = np.zeros(sim_fluxes.shape[0])
-
-				for i, sim_rxn_id in enumerate(relevant_sim_rxn_ids):
-					if re.findall(val_rxn_id, sim_rxn_id):
-						rxn_found = True
-						stoich = 1
-						if re.findall('(reverse)', sim_rxn_id):
-							stoich = -1
-
-						total_fluxes += stoich * sim_fluxes[:, i]
-
-				if rxn_found:
-					rxn_id_to_sim_flux_mean[val_rxn_id] = total_fluxes.mean()
-					rxn_id_to_sim_flux_std[val_rxn_id] = total_fluxes.std()
+				if val_rxn_id in sim_rxn_id_to_index:
+					fluxes = sim_fluxes[:, sim_rxn_id_to_index[val_rxn_id]]
+					rxn_id_to_sim_flux_mean[val_rxn_id] = fluxes.mean()
+					rxn_id_to_sim_flux_std[val_rxn_id] = fluxes.std()
 
 			return rxn_id_to_sim_flux_mean, rxn_id_to_sim_flux_std
 

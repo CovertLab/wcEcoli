@@ -2,8 +2,6 @@
 Submodel for chromosome replication
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process
@@ -41,6 +39,14 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.replication_coordinate = sim_data.process.transcription.rna_data[
 			"replication_coordinate"]
 		self.D_period = sim_data.process.replication.d_period.asNumber(units.s)
+		replisome_trimer_subunit_masses = np.vstack([
+			sim_data.getter.get_submass_array(x).asNumber(units.fg/units.count)
+			for x in sim_data.molecule_groups.replisome_trimer_subunits])
+		replisome_monomer_subunit_masses = np.vstack([
+			sim_data.getter.get_submass_array(x).asNumber(units.fg/units.count)
+			for x in sim_data.molecule_groups.replisome_monomer_subunits])
+		replisome_mass_array = 3*replisome_trimer_subunit_masses.sum(axis=0) + replisome_monomer_subunit_masses.sum(axis=0)
+		self.replisome_protein_mass = replisome_mass_array.sum()
 
 		# Create molecule views for replisome subunits, active replisomes,
 		# origins of replication, chromosome domains, and free active TFs
@@ -202,12 +208,16 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 				np.array([True, False], dtype=bool), n_oriC)
 			domain_index_new_replisome = np.repeat(
 				domain_index_existing_oric, 2)
+			massDiff_protein_new_replisome = np.full(n_new_replisome,
+				self.replisome_protein_mass if self.mechanistic_replisome else 0.)
 
 			self.active_replisomes.moleculesNew(
 				n_new_replisome,
 				coordinates=coordinates_replisome,
 				right_replichore=right_replichore,
-				domain_index=domain_index_new_replisome)
+				domain_index=domain_index_new_replisome,
+				massDiff_protein=massDiff_protein_new_replisome,
+				)
 
 			# Add and set attributes of new chromosome domains. All new domains
 			# should have have no children domains.

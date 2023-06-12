@@ -2,14 +2,13 @@
 Variant to compare the impacts of reversing the orientation of rRNA genes.
 
 Modifies:
-	sim_data.process.transcription.rnaData["is_forward"]
+	sim_data.process.transcription.rna_data["is_forward"]
+	sim_data.process.transcription.rna_data["replication_coordinate"]
 
 Expected variant indices:
 	0: control
-	1: reverse orientation of all rRNA genes
+	1: reverse orientation of all rRNA-encoding genes
 """
-
-from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from wholecell.utils import units
@@ -34,8 +33,8 @@ def rrna_orientation(sim_data, index):
 		is_forward[is_rrna] = ~is_forward[is_rrna]
 
 		return dict(
-			shortName = "rrna_reversed",
-			desc = "Simulation with all rRNA orientations reversed"
+			shortName = "rrna_orientation_reversed",
+			desc = "Simulation with the orientations of all rRNA genes reversed"
 			), sim_data
 
 	else:

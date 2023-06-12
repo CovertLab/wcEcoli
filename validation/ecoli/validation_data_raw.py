@@ -5,8 +5,6 @@ Raw validation data for Ecoli. Contains raw data processed
 directly from TSV flat files.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 from reconstruction.spreadsheets import read_tsv
 
@@ -14,7 +12,6 @@ FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = (
 	"amino_acid_growth_rates.tsv",
 	"amino_acid_growth_rates_dose_response.tsv",
-	"dna_footprint_sizes.tsv",
 	"essential_genes.tsv",
 	"geneFunctions.tsv",
 	"houser2015_javier_table.tsv",

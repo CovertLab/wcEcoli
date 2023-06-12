@@ -1,11 +1,13 @@
 """
 UnitStructArray
 
-Wraps Numpy struct arrays using Pint units. Will assure that correct units are
+Wraps Numpy struct arrays using Unum units. Will assure that correct units are
 being used while loading constants.
-"""
 
-from __future__ import absolute_import, division, print_function
+TODO: Unum is a defunct project. Its source repo is no longer online. Either
+switch to a newer package like Pint or copy and improve the Unum source code
+from its Python package.
+"""
 
 import numpy as np
 from typing import Dict, Optional
@@ -14,7 +16,7 @@ import unum
 from wholecell.utils import units as units_pkg
 
 class UnitStructArray(object):
-	"""Wraps Numpy structured arrays using Pint units. Will assure that correct
+	"""Wraps Numpy structured arrays using Unum units. Will assure that correct
 	units are being used while loading constants.
 	"""
 

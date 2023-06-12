@@ -4,7 +4,6 @@ Faster implementation of nonnegative least squares.
 
 import numpy as np
 from scipy.optimize import nnls
-from scipy.sparse import issparse
 
 def fast_nnls(A, b):
 	"""

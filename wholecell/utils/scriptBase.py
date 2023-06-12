@@ -22,7 +22,6 @@ from typing import Any, Callable, cast, Iterable, List, Optional, Tuple
 import wholecell.utils.filepath as fp
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
-from wholecell.utils.py3 import monotonic_seconds, process_time_seconds
 
 
 METADATA_KEYS = (
@@ -53,9 +52,13 @@ PARCA_KEYS = (
 	'ribosome_fitting',
 	'rnapoly_fitting',
 	'operons',
+	'new_genes',
 	'cpus',
 	'variable_elongation_transcription',
-	'variable_elongation_translation')
+	'variable_elongation_translation',
+	'remove_rrna_operons',
+	'remove_rrff',
+	)
 
 SIM_KEYS = (
 	'timeline',
@@ -374,6 +377,12 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			choices=constants.OPERON_OPTIONS,
 			help='Turn operons off/on (actually monocistronic/polycistronic).')
 
+	def define_parameter_new_genes(self, parser: argparse.ArgumentParser) -> None:
+		self.define_option(parser,
+			'new-genes', str,
+			default=constants.DEFAULT_NEW_GENES_OPTION,
+			help='Turn new genes off or specify a new_gene_data subdirectory name.')
+
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None
 		"""Define Parca task options EXCEPT the elongation options."""
@@ -390,10 +399,17 @@ class ScriptBase(metaclass=abc.ABCMeta):
 					 ' through --no-debug-parca).')
 
 		self.define_parameter_operons(parser)
+		self.define_parameter_new_genes(parser)
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
 			help="Fit RNA polymerase expression to protein synthesis demands.")
+		self.define_parameter_bool(parser, 'remove_rrna_operons', False,
+		    help="Remove the seven rRNA operons. Does not have any effect if"
+		         " operon option is set to 'off'.")
+		self.define_parameter_bool(parser, 'remove_rrff', False,
+		    help="Remove the rrfF gene. If operon option is set to 'on',"
+		         " removes the rrfF gene from the rrnD operon.")
 
 		self.define_parameter_bool(parser, 'debug_parca', False,
 			help='Make Parca calculate only one arbitrarily-chosen transcription'
@@ -441,6 +457,10 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		self.define_option(parser, 'init_sims', int, 1, flag='i',
 			help='Number of initial sims (cell lineages) per variant. The'
 				 ' lineages get sequential seeds starting with the --seed value.')
+		if manual_script:
+			parser.add_argument(dashize('--total_init_sims'), type=int,
+				help='(int) Total number of initial simulations to write into'
+					 ' the metadata.json file. Default = the value of init_sims.')
 
 	def define_sim_options(self, parser):
 		# type: (argparse.ArgumentParser) -> None
@@ -639,11 +659,11 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			if location:
 				location = ' at ' + location
 
-			start_real_sec = monotonic_seconds()
+			start_real_sec = time.monotonic()
 			print('{}: {}{}'.format(time.ctime(), self.description(), location))
 			pp.pprint({'Arguments': vars(args)})
 
-			start_process_sec = process_time_seconds()
+			start_process_sec = time.process_time()
 			try:
 				self.run(args)
 			except Exception as e:
@@ -653,9 +673,9 @@ class ScriptBase(metaclass=abc.ABCMeta):
 					exceptions.append((params, e))
 				else:
 					raise
-			elapsed_process = process_time_seconds() - start_process_sec
+			elapsed_process = time.process_time() - start_process_sec
 
-			elapsed_real_sec = monotonic_seconds() - start_real_sec
+			elapsed_real_sec = time.monotonic() - start_real_sec
 			print("{}: Elapsed time {:1.2f} sec ({}); CPU {:1.2f} sec".format(
 				time.ctime(),
 				elapsed_real_sec,

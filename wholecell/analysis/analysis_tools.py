@@ -5,13 +5,12 @@ Analysis script toolbox functions
 from __future__ import annotations
 
 import os
-from typing import Callable, Iterator, List, Sequence, Tuple, Union
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import filepath
-from wholecell.utils.py3 import ANY_STRING
 
 LOW_RES_DIR = 'low_res_plots'
 SVG_DIR = 'svg_plots'
@@ -143,7 +142,7 @@ def _check_bulk_inputs(mol_names: Union[Tuple[Sequence[str], ...], Sequence[str]
 
 	# Check for string instead of array since it will cause mol_indices lookup to fail
 	for names in mol_names:
-		if isinstance(names, ANY_STRING):
+		if isinstance(names, (bytes, str)):
 			raise Exception('mol_names tuple must contain arrays not strings like {!r}'.format(names))
 
 	return mol_names
@@ -249,7 +248,7 @@ def read_stacked_bulk_molecules(
 
 def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 		remove_first: bool = False, ignore_exception: bool = False,
-		fun: Callable = None) -> np.ndarray:
+		fun: Optional[Callable] = None) -> np.ndarray:
 	"""
 	Reads column data from multiple cells and assembles into a single array.
 
@@ -292,3 +291,116 @@ def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 				raise
 
 	return np.vstack(data) if data else np.array([])
+
+def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
+		remove_first: bool = False, ignore_exception: bool = False,
+		) -> np.ndarray:
+	"""
+	Reads column data from multiple cells and assembles into a single array.
+
+	Args:
+		cell_paths: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		table: name of the table to read data from
+		column: name of the column to read data from
+		remove_first: if True, removes the first column of data from each cell
+			which might be set to a default value in some cases
+		ignore_exception: if True, ignores any exceptions encountered while reading
+
+	Returns:
+		stacked data (n time points, m subcolumns) with a unique numerical
+			identifier for each cell in cell_paths
+
+	"""
+
+	data = []
+	counter = 0
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		try:
+			reader = TableReader(os.path.join(sim_out_dir, table))
+			column_data = reader.readColumn(column, squeeze=False)
+			# [_remove_first(remove_first)]
+			data.append(np.ones_like(column_data)*counter)
+
+		except Exception as e:
+			if ignore_exception:
+				print(f'Ignored exception in stacked_cell_identification for'
+					  f' {sim_out_dir}: {e!r}')
+				continue
+			else:
+				raise
+
+		counter += 1
+
+	return np.vstack(data) if data else np.array([])
+
+def stacked_cell_threshold_mask(cell_paths: np.ndarray, table: str, column:
+str,
+		threshold_value: float, remove_first: bool = False,
+		ignore_exception: bool = False, fun: Optional[Callable] = None) -> np.ndarray:
+	"""
+	Returns single boolean array to indicate whether each value in the column
+	data (from multiple cells) occurs before the first
+	value >= threshold_value in that simulation (seed).
+
+	Args:
+		cell_paths: paths to all cells to read data from (directories should
+			contain a simOut/ subdirectory), typically the return from
+			AnalysisPaths.get_cells()
+		table: name of the table to read data from
+		column: name of the column to read data from
+		threshold_value: values after the first value >= threshold_value in
+			each cell will correspond to false
+		remove_first: if True, removes the first column of data from each cell
+			which might be set to a default value in some cases
+		ignore_exception: if True, ignores any exceptions encountered while
+			reading
+		fun: function to apply to data in each generation (eg. np.mean will
+			return and array with the mean value for each generation instead
+			of each time point)
+
+	Returns:
+		stacked data (n time points, m subcolumns) with a boolean mask for each
+		 	cell in cell_paths
+
+	TODO: extend to be compatible with multiple values per cell
+
+	"""
+
+	if fun is None:
+		fun = lambda x: x
+
+	boolean_data = []
+	"""
+	For each simulation, first_threshold_not_seen will keep track of whether we
+	have already seen a value >= threshold_value
+	"""
+	first_threshold_not_seen = True #
+	for sim_dir in cell_paths:
+		sim_out_dir = os.path.join(sim_dir, 'simOut')
+		try:
+			gen_index = int(os.path.basename(os.path.dirname(sim_dir))[-6:])
+			if gen_index == 0:
+				first_threshold_not_seen = True # reset flag for new simulation
+			reader = TableReader(os.path.join(sim_out_dir, table))
+			column_data = fun(reader.readColumn(column, squeeze=False)
+							  [_remove_first(remove_first)])
+			assert len(column_data) == 1, \
+				"stacked_cell_threshold_mask cannot yet accomodate multiple " \
+				"values per generation"
+			if (first_threshold_not_seen == True) and \
+					(column_data >= threshold_value):
+				first_threshold_not_seen = False
+			boolean_data.append(bool(first_threshold_not_seen))
+
+		except Exception as e:
+			if ignore_exception:
+				print(f'Ignored exception in stacked_cell_threshold_mask for'
+					  f' {sim_out_dir}: {e!r}')
+				continue
+			else:
+				raise
+
+	return np.vstack(boolean_data) if boolean_data else np.array([])

@@ -2,11 +2,8 @@
 Central carbon metabolism comparison to Toya et al for figure 3c
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
-import re
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -18,73 +15,54 @@ from wholecell.analysis.analysis_tools import exportFigure
 
 from models.ecoli.processes.metabolism import COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS
 from models.ecoli.analysis import multigenAnalysisPlot
-import six
-from six.moves import zip
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get all cells
-		allDir = self.ap.get_cells()
-		# allDir = self.ap.get_cells(generation = [0, 1, 2])
+		cell_paths = self.ap.get_cells()
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
-		metaboliteNames = np.array(sorted(sim_data.process.metabolism.conc_dict.keys()))
-		nMetabolites = len(metaboliteNames)
-
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
 		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 		toyaFluxes = validation_data.reactionFlux.toya2010fluxes["reactionFlux"]
 		toyaStdev = validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]
 		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		cellDensity = sim_data.constants.cell_density
+		sim_data = pickle.load(open(simDataFile, 'rb'))
 
 		modelFluxes = {}
 		toyaOrder = []
+
 		for rxn in toyaReactions:
 			modelFluxes[rxn] = []
 			toyaOrder.append(rxn)
 
-		for simDir in allDir:
+		mmol_per_g_per_h = units.mmol / units.g / units.h
+		for simDir in cell_paths:
 			simOutDir = os.path.join(simDir, "simOut")
-
-			mainListener = TableReader(os.path.join(simOutDir, "Main"))
-			mainListener.close()
 
 			massListener = TableReader(os.path.join(simOutDir, "Mass"))
 			cellMass = massListener.readColumn("cellMass")
 			dryMass = massListener.readColumn("dryMass")
-			massListener.close()
-
 			coefficient = dryMass / cellMass * sim_data.constants.cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-			reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-			reactionFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("reactionFluxes").T / coefficient).T
-			fbaResults.close()
+			base_reaction_ids = fbaResults.readAttribute("base_reaction_ids")
+			base_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fbaResults.readColumn("base_reaction_fluxes").T / coefficient).T
+			base_reaction_id_to_index = {
+				rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+			}
 
 			for toyaReaction in toyaReactions:
-				fluxTimeCourse = []
-
-				for rxn in reactionIDs:
-					if re.findall(toyaReaction, rxn):
-						reverse = 1
-						if re.findall("(reverse)", rxn):
-							reverse = -1
-
-						if len(fluxTimeCourse):
-							fluxTimeCourse += reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
-						else:
-							fluxTimeCourse = reverse * reactionFluxes[:, np.where(reactionIDs == rxn)]
-
-				if len(fluxTimeCourse):
-					modelFluxes[toyaReaction].append(np.mean(fluxTimeCourse).asNumber(units.mmol / units.g / units.h))
+				if toyaReaction in base_reaction_id_to_index:
+					rxn_index = base_reaction_id_to_index[toyaReaction]
+					fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
+					modelFluxes[toyaReaction].append(
+						np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
 
 		toyaVsReactionAve = []
-		for rxn, toyaFlux in six.viewitems(toyaFluxesDict):
+		for rxn, toyaFlux in toyaFluxesDict.items():
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append((np.mean(modelFluxes[rxn]), toyaFlux.asNumber(units.mmol / units.g / units.h), np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(units.mmol / units.g / units.h)))
 

@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 from wholecell.sim.simulation import Simulation
 
 # States
@@ -11,6 +9,7 @@ from wholecell.states.local_environment import LocalEnvironment
 from models.ecoli.processes.complexation import Complexation
 from models.ecoli.processes.metabolism import Metabolism
 from models.ecoli.processes.rna_degradation import RnaDegradation
+from models.ecoli.processes.rna_maturation import RnaMaturation
 from models.ecoli.processes.cell_division import CellDivision
 from models.ecoli.processes.chromosome_replication import ChromosomeReplication
 from models.ecoli.processes.chromosome_structure import ChromosomeStructure
@@ -37,10 +36,11 @@ from models.ecoli.listeners.enzyme_kinetics import EnzymeKinetics
 from models.ecoli.listeners.growth_limits import GrowthLimits
 from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
 from models.ecoli.listeners.monomer_counts import MonomerCounts
-from models.ecoli.listeners.mRNA_counts import mRNACounts
+from models.ecoli.listeners.RNA_counts import RNACounts
 from models.ecoli.listeners.complexation_listener import ComplexationListener
 from models.ecoli.listeners.equilibrium_listener import EquilibriumListener
 from models.ecoli.listeners.dna_supercoiling import DnaSupercoiling
+from models.ecoli.listeners.rna_maturation_listener import RnaMaturationListener
 
 from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
@@ -71,14 +71,17 @@ class EcoliSimulation(Simulation):
 			TfBinding,
 		),
 		(
-			RnaDegradation,
 			TranscriptInitiation,
-			TranscriptElongation,
 			PolypeptideInitiation,
-			PolypeptideElongation,
 			ChromosomeReplication,
 			ProteinDegradation,
+			RnaDegradation,
 			Complexation,
+		),
+		(
+			TranscriptElongation,
+			PolypeptideElongation,
+			RnaMaturation,
 		),
 		(
 			ChromosomeStructure,
@@ -104,10 +107,11 @@ class EcoliSimulation(Simulation):
 		GrowthLimits,
 		RnaSynthProb,
 		MonomerCounts,
-		mRNACounts,
+		RNACounts,
 		ComplexationListener,
 		EquilibriumListener,
 		DnaSupercoiling,
+		RnaMaturationListener,
 		)
 
 	_hookClasses = ()

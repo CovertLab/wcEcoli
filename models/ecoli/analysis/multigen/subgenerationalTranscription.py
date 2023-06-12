@@ -2,19 +2,16 @@
 Plots Figure 5B.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
-import six
 
 PLOT_GENES_OF_INTEREST = False
 PLOT_DENOMINATOR_N_EACH_FREQ_GROUP = False
@@ -41,8 +38,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print("Skipping -- figure5B only runs for multigen")
 			return
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
 
 		# Get mRNA cistrons data
 		cistron_ids = sim_data.process.transcription.cistron_data["id"]
@@ -65,12 +62,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				time_eachGen.append(main_reader.readColumn("time").tolist()[0])
 
 			rnaSynthProb = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("rna_synth_prob_per_cistron")[:, mRNA_cistron_indexes], axis = 0)
+			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("actual_rna_synth_prob_per_cistron")[:, mRNA_cistron_indexes], axis = 0)
 			simulatedSynthProbs.append(simulatedSynthProb)
 
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			moleculeCounts = mRNA_counts_reader.readColumn("mRNA_cistron_counts")
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			moleculeCounts = RNA_counts_reader.readColumn("mRNA_cistron_counts")
 			moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
 			mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
 			transcribedBool.append(mRnasTranscribed)
@@ -97,14 +94,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_cistron_ids_ordered = mRNA_cistron_ids[indexingOrder]
 
 		## Commented code is used when PLOT_GENES_OF_INTEREST is True
-		# raw_data = cPickle.load(open("out/SET_A_000000/rawData.cPickle", "rb"))
+		# raw_data = pickle.load(open("out/SET_A_000000/rawData.cPickle", "rb"))
 		# geneIdToGeneSymbol = {x["id"]: x["symbol"] for x in raw_data.genes}
 		# geneSymbolsOrdered = [geneIdToGeneSymbol[x] for x in geneIdsOrdered]
-		# cPickle.dump({"geneId": geneIdsOrdered, "geneSymbol": geneSymbolsOrdered}, open(os.path.join(plotOutDir, "figure5B_genes.pickle"), "wb"))
+		# pickle.dump({"geneId": geneIdsOrdered, "geneSymbol": geneSymbolsOrdered}, open(os.path.join(plotOutDir, "figure5B_genes.pickle"), "wb"))
 
 		alwaysPresentIndexes = np.where(transcribedBoolOrdered == 1.)[0]
 		neverPresentIndexes = np.where(transcribedBoolOrdered == 0.)[0]
-		sometimesPresentIndexes = np.array([x for x in np.arange(len(transcribedBoolOrdered)) if x not in alwaysPresentIndexes and x not in neverPresentIndexes])
+		sometimesPresentIndexes = np.array([
+			x for x in np.arange(len(transcribedBoolOrdered))
+			if x not in alwaysPresentIndexes and x not in neverPresentIndexes],
+			dtype=int)
 		colors = np.repeat(COLOR_FSUB, len(transcribedBoolOrdered))
 		colors[alwaysPresentIndexes] = COLOR_F1
 		colors[neverPresentIndexes] = COLOR_F0
@@ -223,7 +223,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		alwaysAxis.set_ylabel("Freq. = 1", fontsize = 14)
 		sometimesAxis.set_ylabel("0 < Freq. < 1", fontsize = 14)
 		sometimesAxis.set_xlabel("Time (gens)", fontsize = 14)
-		sometimesAxis.set_xticklabels(np.arange(FIRST_N_GENS + 1))
+		sometimesAxis.set_xticklabels(np.arange(len(time_eachGen)))
 		exportFigure(plt, plotOutDir, "figure5B__bottom", metadata)
 		plt.close("all")
 
@@ -292,7 +292,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		geneFunctions = validation_data.geneFunctions.geneFunctions
 		unknown = {"r": 0, "g": 0, "b": 0}
 		resistance = {"r": 0, "g": 0, "b": 0}
-		for frameID, function_ in six.viewitems(geneFunctions):
+
+		for frameID, function_ in geneFunctions.items():
 			try:
 				i = np.where([frameID in x for x in mRNA_cistron_ids_ordered])[0][0]
 			# Skip over genes that aren't used in the simulation

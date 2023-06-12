@@ -17,8 +17,6 @@ Run with '-h' for command line help.
 Set PYTHONPATH when running this.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import re
 import os
 import sys
@@ -27,7 +25,6 @@ from typing import Tuple
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
-from six.moves import range
 
 
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
@@ -101,7 +98,9 @@ class RunSimulation(scriptBase.ScriptBase):
 			analysis_type=None,
 			variant=variant_type,
 			total_variants=str(variant_spec[2] + 1 - variant_spec[1]),
-			total_gens=args.total_gens or args.generations)
+			total_gens=args.total_gens or args.generations,
+			total_init_sims=args.total_init_sims or args.init_sims,
+			)
 		metadata_dir = fp.makedirs(args.sim_path, constants.METADATA_DIR)
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
 		fp.write_json_file(metadata_path, metadata)

@@ -2,8 +2,6 @@
 Plot upper and lower flux targets
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np
@@ -12,7 +10,6 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):

@@ -2,13 +2,11 @@
 Plots counts of rna degraded and the resulting free NMPs
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
@@ -22,7 +20,7 @@ FONT = {
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		ntp_ids = ['ATP[c]', 'CTP[c]', 'GTP[c]', 'UTP[c]']
 		endoRnaseIds = sim_data.process.rna_decay.endoRNase_ids
@@ -33,7 +31,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			simOutDir, (RnaseIds, exoRnaseIds, endoRnaseIds, ntp_ids))
 
 		rnaDegradationListenerFile = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
-		countRnaDegraded = rnaDegradationListenerFile.readColumn('countRnaDegraded')
+		count_RNA_degraded = rnaDegradationListenerFile.readColumn('count_RNA_degraded')
 		FractionActiveEndoRNases = rnaDegradationListenerFile.readColumn('FractionActiveEndoRNases')
 		DiffRelativeFirstOrderDecay = rnaDegradationListenerFile.readColumn('DiffRelativeFirstOrderDecay')
 		fragmentBasesDigested = rnaDegradationListenerFile.readColumn('fragmentBasesDigested')
@@ -69,7 +67,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 
 		ax = plt.subplot(n_rows, n_cols, 3)
-		plt.plot(time / 60., countRnaDegraded.sum(axis = 1))
+		plt.plot(time / 60., count_RNA_degraded.sum(axis = 1))
 		plt.ylabel("RNAs degraded", fontsize = 9)
 		yloc = plt.MaxNLocator(max_yticks); ax.yaxis.set_major_locator(yloc)
 

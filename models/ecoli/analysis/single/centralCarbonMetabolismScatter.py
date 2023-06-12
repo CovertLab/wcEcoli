@@ -1,7 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -45,8 +43,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			Fluxes and standard deviations are numpy arrays with units
 			FLUX_UNITS.
 		"""
-		validation_data = cPickle.load(open(validation_data_file, "rb"))
-		sim_data = cPickle.load(open(sim_data_file, "rb"))
+		validation_data = pickle.load(open(validation_data_file, "rb"))
+		sim_data = pickle.load(open(sim_data_file, "rb"))
 		cell_density = sim_data.constants.cell_density
 
 		mass_listener = TableReader(os.path.join(sim_out_dir, "Mass"))
@@ -81,22 +79,21 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			fluxes for each reaction. Fluxes array has units FLUX_UNITS.
 		"""
 		fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
-		reaction_ids = np.array(fba_results.readAttribute("reactionIDs"))
+		base_reaction_ids = np.array(fba_results.readAttribute("base_reaction_ids"))
 		reaction_fluxes = FLUX_UNITS * np.array(
-			fba_results.readColumn("reactionFluxes")
+			fba_results.readColumn("base_reaction_fluxes")
 		)
-		fba_results.close()
-		return reaction_ids, reaction_fluxes
+		return base_reaction_ids, reaction_fluxes
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
 		# type: (str, str, str, str, str, Optional[dict]) -> None
-		reaction_ids, reaction_fluxes = Plot.load_fba_data(simOutDir)
+		sim_reaction_ids, sim_reaction_fluxes = Plot.load_fba_data(simOutDir)
 		toya_reactions, toya_fluxes, toya_stdevs = Plot.load_toya_data(
 			validationDataFile, simDataFile, simOutDir)
 
 		sim_flux_means, sim_flux_stdevs = toya.process_simulated_fluxes(
-			toya_reactions, reaction_ids, reaction_fluxes
+			toya_reactions, sim_reaction_ids, sim_reaction_fluxes
 		)
 		toya_flux_means = toya.process_toya_data(
 			toya_reactions, toya_reactions, toya_fluxes)

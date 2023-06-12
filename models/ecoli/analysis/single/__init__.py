@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -42,8 +40,10 @@ ACTIVE = [
 	"metabolites.py",
 	"mrnaCounts.py",
 	"mrnaVsProteinCounts.py",
+	"new_gene_counts.py",
 	"ntpCounts.py",
 	"outer_membrane_expression.py",
+	"polysome_counts.py",
 	"processMassBalance.py",
 	"processMassBalanceDynamics.py",
 	"proteinCounts.py",
@@ -57,12 +57,15 @@ ACTIVE = [
 	"ribosome50SCounts.py",
 	"ribosomeCapacity.py",
 	"ribosomeCounts.py",
+	"rna_maturation.py",
 	"rnaDegradationCounts.py",
 	"rnaSynthesisProbabilities.py",
 	"rnapCapacity.py",
 	"rnapCounts.py",
+	"rnap_crowding.py",
 	"rnap_stalled.py",
 	"rnaseCounts.py",
+	"rRNA_operon_expression.py",
 	"superhelical_density.py",
 	"surface_area_comparison.py",
 	"transcriptional_attenuation.py",
@@ -160,6 +163,7 @@ TAGS = {
 		"mrnaCounts.py",
 		"mrnaVsProteinCounts.py",
 		"rnaSynthesisProbabilities.py",
+		"rnap_crowding.py",
 		"rnapCapacity.py",
 		"rnapCounts.py",
 		"superhelical_density.py",

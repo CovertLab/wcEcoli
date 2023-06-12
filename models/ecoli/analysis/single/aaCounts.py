@@ -2,12 +2,10 @@
 Plot amino acid counts
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
@@ -16,7 +14,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
+		sim_data = pickle.load(open(simDataFile, 'rb'))
 
 		aaIDs = sim_data.molecule_groups.amino_acids
 		(aaCounts,) = read_bulk_molecule_counts(simOutDir, (aaIDs,))

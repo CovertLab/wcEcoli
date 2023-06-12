@@ -5,8 +5,6 @@ EnzymeKinetics listener. Tracks information about enzyme kinetics.
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.listeners.listener

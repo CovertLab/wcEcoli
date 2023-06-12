@@ -4,13 +4,11 @@ test_bulk_objects_container.py
 @data: Created 2/27/2014
 '''
 
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 import shutil
 import tempfile
-from typing import Iterable
+from typing import Any
 import unittest
 
 import numpy as np
@@ -283,8 +281,8 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		container = BulkObjectsContainer(ELEMENTS, dtype=np.float64)
 		container.countsIs(1 + 1234.56 * np.arange(len(ELEMENTS)))
 
-		data = cPickle.dumps(container, cPickle.HIGHEST_PROTOCOL)
-		container2 = cPickle.loads(data)
+		data = pickle.dumps(container, pickle.HIGHEST_PROTOCOL)
+		container2 = pickle.loads(data)
 		# print("Pickled a BulkObjectsContainer of {} float64 to {} bytes".format(
 		# 	len(ELEMENT_NAMES), len(data)))
 
@@ -300,8 +298,8 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		container3 = BulkObjectsContainer(ELEMENTS, dtype=np.int16)
 		container3.countsIs(301 * np.arange(len(ELEMENTS)))
 
-		data = cPickle.dumps(container3, cPickle.HIGHEST_PROTOCOL)
-		container4 = cPickle.loads(data)
+		data = pickle.dumps(container3, pickle.HIGHEST_PROTOCOL)
+		container4 = pickle.loads(data)
 		# print("Pickled a BulkObjectsContainer of {} int16 to {} bytes".format(
 		# 	len(ELEMENT_NAMES), len(data)))
 
@@ -314,23 +312,24 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		self.assertEqual(1010 + e, container4.count('Einsteinium'))
 
 	def test_cannot_pickle(self):
+		# type: () -> None
 		"""Try to pickle a container whose dtype has fields or a subarray."""
 		container = BulkObjectsContainer(ELEMENTS, dtype=[('U', 'f4'), ('b', 'i4')])
 		with self.assertRaises(ValueError):
-			cPickle.dumps(container)
+			pickle.dumps(container)
 
 		container = BulkObjectsContainer(ELEMENTS, dtype='(2,3)f8')
 		with self.assertRaises(ValueError):
-			cPickle.dumps(container)
+			pickle.dumps(container)
 
 		with self.assertRaises(TypeError):
-			# Suppress PyCharm's type check then test that the bad arg type
+			# Suppress static type checks, then test that the bad arg type
 			# gets caught at run time -- currently by BOC's dumps() method.
 			# Why doesn't mypy catch this bad type?
 			# noinspection PyTypeChecker
-			bad_names = [OBJECT_NAMES, OBJECT_NAMES]  # type: Iterable[str]
+			bad_names: Any = [OBJECT_NAMES, OBJECT_NAMES]
 			container = BulkObjectsContainer(bad_names, dtype='f8')
-			cPickle.dumps(container)
+			pickle.dumps(container)
 
 	def test_write_table(self):
 		"""Test writing the container to a Table."""

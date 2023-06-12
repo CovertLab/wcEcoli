@@ -2,13 +2,11 @@
 Plot RNAse counts
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import singleAnalysisPlot
@@ -18,7 +16,7 @@ from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		endoRnaseIds = sim_data.process.rna_decay.endoRNase_ids
 		exoRnaseIds = sim_data.molecule_groups.exoRNases
@@ -29,9 +27,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		RNase_RnaIDS = np.concatenate((endoRnase_RnaIDs, exoRnase_RnaIDs))
 
 		# Load count data for mRNAs
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-		all_mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
+		all_mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 
 		# Get counts for RNase proteins and mRNAs
 		(RNase_counts,) = read_bulk_molecule_counts(simOutDir, (RNase_IDS,))

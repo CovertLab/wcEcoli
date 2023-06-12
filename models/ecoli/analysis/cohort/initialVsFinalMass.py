@@ -1,14 +1,12 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np
+from numpy.polynomial.polynomial import Polynomial
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
-from six.moves import range
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -18,6 +16,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		max_cells_in_gen = 0
 		for genIdx in range(self.ap.n_generation):
 			n_cells = len(self.ap.get_cells(generation = [genIdx]))
+
+			if n_cells == 1:
+				print('Not enough seeds run -- skipping analysis.')
+				return
+
 			if n_cells > max_cells_in_gen:
 				max_cells_in_gen = n_cells
 
@@ -44,12 +47,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		for idx, axes in enumerate(axesList):
 			axes.plot(initial_masses[:, idx], final_masses[:, idx], 'o')
-			z = np.polyfit(initial_masses[:, idx], final_masses[:, idx], 1)
-			p = np.poly1d(z)
+			p = Polynomial.fit(initial_masses[:, idx], final_masses[:, idx], 1)
 			axes.plot(initial_masses[:, idx], p(initial_masses[:, idx]), '--')
 			text_x = np.mean(axes.get_xlim())
 			text_y = np.mean(axes.get_ylim()) + np.mean(axes.get_ylim())*0.1
-			axes.text(text_x, text_y, r"$m_f$=%.3f$\times$$m_i$ + %.3f" % (z[0], z[1]))
+			axes.text(text_x, text_y, r"$m_f$=%.3f$\times$$m_i$ + %.3f" % (p.coef[0], p.coef[1]))
 
 
 		axesList[-1].set_xlabel("Initial mass (pg)")

@@ -122,6 +122,11 @@ Docker mechanics.
 * [Background on the model](background.md)
 * [Coding style guide](style-guide.md)
 
+## administration
+
+* [Administering our Google Cloud Project](google-cloud-admin.md)
+* [Administering borealis](https://github.com/CovertLab/borealis#whats-next)
+
 ## relevant papers
 
 * [Simultaneous cross-evaluation of heterogeneous _E. coli_ datasets via mechanistic simulation](https://science.sciencemag.org/content/369/6502/eaav3751.full), _Science_, 24 July 2020

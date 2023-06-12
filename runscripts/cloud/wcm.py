@@ -150,7 +150,9 @@ class WcmWorkflow(Workflow):
 			python=sys.version.splitlines()[0],
 			variant=variant_type,
 			total_variants=str(variant_count),
-			total_gens=args['generations'])
+			total_gens=args['generations'],
+			total_init_sims=args['init_sims'],
+		)
 
 		python_args = dict(output_file=metadata_file, data=metadata)  # type: Dict[str, Any]
 		metadata_task = self.add_python_task(WriteJsonTask, python_args,

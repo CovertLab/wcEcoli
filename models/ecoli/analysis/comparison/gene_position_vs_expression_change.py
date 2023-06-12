@@ -8,20 +8,14 @@ from typing import Tuple
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-import os
-import re
-from scipy.stats import pearsonr
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from models.ecoli.processes.metabolism import (
-	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS)
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
-from wholecell.utils.protein_counts import get_simulated_validation_counts
 from wholecell.utils import units
 
 NUMERICAL_ZERO = 1e-10
@@ -37,6 +31,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
+
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
 
 		transcription = sim_data2.process.transcription
 		operons = transcription.operons

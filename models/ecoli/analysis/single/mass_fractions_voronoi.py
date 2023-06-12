@@ -2,9 +2,9 @@
 Plot the Voronoi diagram of mass fractions
 """
 
-from __future__ import absolute_import, division, print_function
 import os
-from six.moves import cPickle
+import pickle
+
 import numpy as np
 from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
@@ -18,7 +18,7 @@ SEED = 0 # random seed
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		np.random.seed(SEED)
 

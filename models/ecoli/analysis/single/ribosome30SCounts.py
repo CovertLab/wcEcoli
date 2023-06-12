@@ -2,13 +2,11 @@
 Plots counts of 30S rRNA, associated proteins, and complexes
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.sparkline import sparklineAxis, setAxisMaxMinY
@@ -23,16 +21,16 @@ FONT = {
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		proteinIds = sim_data.molecule_groups.s30_proteins
 		cistron_ids = [sim_data.process.translation.monomer_data['cistron_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
 		rRnaIds = sim_data.molecule_groups.s30_16s_rRNA
 		complexIds = [sim_data.molecule_ids.s30_full_complex]
 
 		# Load count data for mRNAs
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-		all_mRNA_cistron_indexes = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
+		all_mRNA_cistron_indexes = {rna: i for i, rna in enumerate(RNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
 		rna_indexes = np.array([all_mRNA_cistron_indexes[rna] for rna in cistron_ids], int)
 		rna_cistron_counts = mRNA_cistron_counts[:, rna_indexes]
 		(freeProteinCounts, freeRRnaCounts, complexCounts) = read_bulk_molecule_counts(

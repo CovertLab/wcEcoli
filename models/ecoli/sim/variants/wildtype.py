@@ -14,9 +14,6 @@ Running runSim.py with `-v wildtype 0 1` gives two variants with identical outpu
 This is useful for testing repeatability.
 """
 
-from __future__ import absolute_import, division, print_function
-
-
 CONTROL_OUTPUT = dict(
 	shortName = "wildtype",
 	desc = "Wildtype simulation"

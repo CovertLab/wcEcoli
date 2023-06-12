@@ -10,8 +10,6 @@ from scipy.optimize import minimize
 import unum
 
 from wholecell.utils import fitting, units
-import six
-
 
 NORMAL_CRITICAL_MASS = 975 * units.fg
 SLOW_GROWTH_FACTOR = 1.2  # adjustment for smaller cells
@@ -178,11 +176,11 @@ class Mass(object):
 		D["solublePool"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._solublePoolMassFractionParams[0]))
 		D["inorganicIon"] = float(interpolate.splev(doubling_time.asNumber(units.min), self._inorganicIonMassFractionParams[0]))
 
-		total = np.sum([y for y in six.viewvalues(D)])
-		for key, value in six.viewitems(D):
+		total = np.sum([y for y in D.values()])
+		for key, value in D.items():
 			if key != 'dna':
 				D[key] = value / total
-		assert np.absolute(np.sum([x for x in six.viewvalues(D)]) - 1.) < 1e-3
+		assert np.absolute(np.sum([x for x in D.values()]) - 1.) < 1e-3
 		return D
 
 	def get_mass_fractions_from_rna_protein_ratio(self, ratio):
@@ -198,7 +196,7 @@ class Mass(object):
 	def get_component_masses(self, doubling_time):
 		D = {}
 		massFraction = self.get_mass_fractions(doubling_time)
-		for key, value in six.viewitems(massFraction):
+		for key, value in massFraction.items():
 			D[key + "Mass"] = value * self.get_avg_cell_dry_mass(doubling_time)
 
 		return D
@@ -208,13 +206,10 @@ class Mass(object):
 		Measured RNA subgroup mass fractions. Fractions should change in other
 		conditions with growth rate (see transcription.get_rna_fractions()).
 		"""
-
 		return {
-			'23S': self._rrna23s_mass_sub_fraction,
-			'16S': self._rrna16s_mass_sub_fraction,
-			'5S': self._rrna5s_mass_sub_fraction,
-			'trna': self._trna_mass_sub_fraction,
-			'mrna': self._mrna_mass_sub_fraction,
+			'rRNA': self._rrna23s_mass_sub_fraction + self._rrna16s_mass_sub_fraction + self._rrna5s_mass_sub_fraction,
+			'tRNA': self._trna_mass_sub_fraction,
+			'mRNA': self._mrna_mass_sub_fraction,
 			}
 
 	def getBiomassAsConcentrations(self, doubling_time, rp_ratio=None):
@@ -382,7 +377,7 @@ class Mass(object):
 		self._trna_growth_rates = growth_rate_unit * np.array([x['growth rate'].asNumber() for x in raw_data.trna_data.trna_growth_rates])
 
 		trna_ratio_to_16SrRNA_by_growth_rate = []
-		for gr in self._trna_growth_rates: # This is a little crazy...
+		for gr in self._trna_growth_rates: # TODO: This is a little crazy...
 			trna_ratio_to_16SrRNA_by_growth_rate.append([x['ratio to 16SrRNA'] for x in getattr(raw_data.trna_data, "trna_ratio_to_16SrRNA_" + str(gr.asNumber()).replace('.','p'))])
 		self._trna_ratio_to_16SrRNA_by_growth_rate = np.array(trna_ratio_to_16SrRNA_by_growth_rate)
 

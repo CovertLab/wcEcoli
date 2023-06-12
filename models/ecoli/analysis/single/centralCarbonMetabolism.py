@@ -1,8 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
-import re
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -26,8 +23,8 @@ AVERAGE_COLOR_OPPOSITE_SIGN = 'red'
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		validation_data = cPickle.load(open(validationDataFile, "rb"))
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 
 		cellDensity = sim_data.constants.cell_density
 
@@ -41,9 +38,11 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		massListener.close()
 
 		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
-		reactionIDs = np.array(fbaResults.readAttribute("reactionIDs"))
-		reactionFluxes = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.array(fbaResults.readColumn("reactionFluxes"))
-		fbaResults.close()
+		reaction_ids = np.array(fbaResults.readAttribute("base_reaction_ids"))
+		reactionFluxes = (COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS) * np.array(fbaResults.readColumn("base_reaction_fluxes"))
+		rxn_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(reaction_ids)
+		}
 
 		dryMassFracAverage = np.mean(dryMass / cellMass)
 
@@ -56,7 +55,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		idx = -1
 		for idx, fluxName in enumerate(toya_reactions):
-			reactionTimeCourse = net_flux(fluxName, reactionIDs, reactionFluxes).asNumber(FLUX_UNITS).squeeze()
+			reactionTimeCourse = reactionFluxes[:, rxn_id_to_index[fluxName]].asNumber(FLUX_UNITS).squeeze()
 			if reactionTimeCourse[BURN_IN_TIMESTEPS:].any():
 				line_color = WITH_FLUX_COLOR
 			else:
@@ -94,25 +93,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
-
-def net_flux(reactionID, reactionIDs, reactionFluxes):
-	fluxTimeCourse = []
-
-	for rxn in reactionIDs:
-		if re.findall(reactionID, rxn):
-			reverse = 1
-			if re.findall("(reverse)", rxn):
-				reverse = -1
-
-			if len(fluxTimeCourse):
-				fluxTimeCourse += reverse * reactionFluxes[:,
-				np.where(reactionIDs == rxn)]
-			else:
-				fluxTimeCourse = reverse * reactionFluxes[:,
-				np.where(reactionIDs == rxn)]
-
-	return fluxTimeCourse
-
 
 if __name__ == "__main__":
 	Plot().cli()

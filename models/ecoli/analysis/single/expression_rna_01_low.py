@@ -15,8 +15,6 @@ EG11060_RNA	0.24	ushA	UDP-sugar hydrolase / 5'-ribonucleotidase / 5'-deoxyribonu
 (sorted from sim_data.transcription.process.rnaData, mrna only, elements in range -1505:-1495)
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np
@@ -25,14 +23,13 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-		all_mRNA_cistron_idx = {cistron: i for i, cistron in enumerate(mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
+		all_mRNA_cistron_idx = {cistron: i for i, cistron in enumerate(RNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
 
 		cistron_ids = [
 			"G7355_RNA", "EG11783_RNA", "G7742_RNA", "G6253_RNA", "EG10632_RNA",

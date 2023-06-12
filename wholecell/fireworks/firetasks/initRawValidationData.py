@@ -1,6 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
+import pickle
 import time
 
 from fireworks import FiretaskBase, explicit_serialize
@@ -21,4 +19,4 @@ class InitRawValidationDataTask(FiretaskBase):
 		print("%s: Saving validation_data_raw" % (time.ctime()))
 
 		with open(self["output"], "wb") as fh:
-			cPickle.dump(validation_data_raw, fh, protocol=cPickle.HIGHEST_PROTOCOL)
+			pickle.dump(validation_data_raw, fh, protocol=pickle.HIGHEST_PROTOCOL)

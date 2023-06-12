@@ -56,8 +56,6 @@ exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 plt.close("all")
 
 """
-from __future__ import absolute_import, division, print_function
-
 from typing import cast, Iterable, List, Optional, Union
 
 import numpy as np
@@ -67,7 +65,6 @@ from scipy.spatial import ConvexHull
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import matplotlib.pyplot as plt
-from six.moves import range, zip
 
 
 COLORS_256 = [
@@ -873,8 +870,8 @@ class VoronoiMaster(object):
                 total += self._find_total(value)
         return total
 
-    def _compute_boundaries(self, dic,
-                            side_length = (4, 4),
+    def _compute_boundaries(self, dic: dict,
+                            side_length: tuple[int, int] = (4, 4),
                             custom_shape_vertices = None,
                             voronoi_list_old = None):
         """
@@ -1184,7 +1181,7 @@ class VoronoiMaster(object):
 
         return voronoi
 
-    def _divide_polygons(self, sites, canvas_obj, args):
+    def _divide_polygons(self, sites, canvas_obj: PolygonClass, args):
         n_corners = canvas_obj.n_corners
         n_sites = len(sites)
 
@@ -1202,7 +1199,7 @@ class VoronoiMaster(object):
             above_below_sites = (np.dot(sites, np.array([a, b])) - c) >= 0
             above_below_corners = (np.dot(
                 canvas_obj.xy, np.array([a, b])) - c) >= 0
-            polygons_all = []
+            polygons_all: List[Optional[PolygonClass]] = []
 
             # 3. assign the corners which is on the same side as each site, and
             # determine the final coordinates of the 2 polygons.
@@ -1245,7 +1242,7 @@ class VoronoiMaster(object):
 
             # 3. group the corners, edges, intersection points that are on the
             # same side as each site and form the coordinates of each polygon.
-            polygons_all = [None for _ in range(3)]  # type: List[Optional[PolygonClass]]
+            polygons_all = [None for _ in range(3)]
             indices = np.arange(3)
             for i in range(3):
                 ab_corners_temp = above_below_corners[:,indices != i]
@@ -1311,7 +1308,7 @@ class VoronoiMaster(object):
             # 2. by referring to the ab_corners_table and ab_sites_table
             # find the coordinates of each polygon.
             polygons_all = [None for _ in range(n_sites)]
-            corner_polygon_all = [np.arange(0) for _ in range(n_sites)]
+            corner_polygon_all: List[np.ndarray] = [np.arange(0) for _ in range(n_sites)]
             indices = np.arange(3)
             for k in range(n_sites):
                 iP_index_required = np.where(

@@ -2,15 +2,12 @@
 Analyze results from metabolism_kinetic_objective_weight variant
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
-import re
+import pickle
 from typing import Dict, List, Sequence, Tuple
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, range
 
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.analysis import variantAnalysisPlot
@@ -19,7 +16,6 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import parallelization, units
 from wholecell.utils.sparkline import whitePadSparklineAxis
-from six.moves import zip
 
 
 MODEL_FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
@@ -51,7 +47,7 @@ def analyze_variant(args):
 	n_sims = 0
 
 	# Load sim_data attributes for the given variant
-	sim_data = cPickle.load(open(ap.get_variant_kb(variant), 'rb'))
+	sim_data = pickle.load(open(ap.get_variant_kb(variant), 'rb'))
 	cell_density = sim_data.constants.cell_density
 	n_avogadro = sim_data.constants.n_avogadro
 	lambdas = sim_data.process.metabolism.kinetic_objective_weight
@@ -127,25 +123,16 @@ def analyze_variant(args):
 
 		# Toya comparison
 		# Toya units read in as mmol/g/hr
-		reaction_ids = np.array(fba_results_reader.readAttribute('reactionIDs'))
-		reaction_fluxes = MODEL_FLUX_UNITS * fba_results_reader.readColumn('reactionFluxes').T
-		reaction_fluxes = (reaction_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS).T
+		base_reaction_ids = np.array(fba_results_reader.readAttribute('base_reaction_ids'))
+		sim_reaction_fluxes = MODEL_FLUX_UNITS * fba_results_reader.readColumn('base_reaction_fluxes').T
+		sim_reaction_fluxes = (sim_reaction_fluxes / dcw_to_volume).asNumber(DCW_FLUX_UNITS).T
+		sim_rxn_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+		}
 
 		for toya_reaction_id in toya_reactions:
-			flux_time_course = []  # type: List[np.ndarray]
-
-			for rxn in reaction_ids:
-				if re.findall(toya_reaction_id, rxn):
-					reverse = 1
-					if re.findall('(reverse)', rxn):
-						reverse = -1
-
-					if len(flux_time_course):
-						flux_time_course += reverse * reaction_fluxes[1:, np.where(reaction_ids == rxn)]
-					else:
-						flux_time_course = reverse * reaction_fluxes[1:, np.where(reaction_ids == rxn)]
-
-			if len(flux_time_course):
+			if toya_reaction_id in sim_rxn_id_to_index:
+				flux_time_course = sim_reaction_fluxes[1:, sim_rxn_id_to_index[toya_reaction_id]]
 				flux_ave = np.mean(flux_time_course)
 				toya_model_fluxes[toya_reaction_id].append(flux_ave)
 
@@ -202,7 +189,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		# Load validation data
-		validation_data = cPickle.load(open(validationDataFile, 'rb'))
+		validation_data = pickle.load(open(validationDataFile, 'rb'))
 		toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
 		toya_fluxes = np.array([x.asNumber(DCW_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
 		outlier_filter = [False if rxn in OUTLIER_REACTIONS else True for rxn in toya_reactions]
@@ -275,7 +262,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		lambdas = [np.log10(x) if x != 0 else np.nanmin(np.log10(lambdas[lambdas != 0]))-1 for x in lambdas]
 
 		plt.figure(figsize = (8.5, 22))
-		plt.style.use('seaborn-deep')
+		plt.style.use('seaborn-v0_8-deep')
 		subplots = 9
 
 		# Growth rates

@@ -51,11 +51,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			for cistron_id in cistron_ids]
 
 		def read_sims(ap):
-			cell_paths = ap.get_cells(seed=[2])
+			cell_paths = ap.get_cells(seed=[0])
 
 			simOutDir = os.path.join(cell_paths[0], "simOut")
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-			mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+			RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+			mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 			monomer_counts_reader = TableReader(os.path.join(simOutDir, 'MonomerCounts'))
 			all_monomer_ids = monomer_counts_reader.readAttribute('monomerIds')
 
@@ -72,7 +72,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			gen_start_time = read_stacked_columns(
 				cell_paths, 'Main', 'time', fun=lambda x: x[0])
 			cistron_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
+				cell_paths, 'RNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
 			monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indexes]
 
@@ -125,7 +125,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax3.set_xlim([0, time_off[-1] / 60])
 		ax3.set_ylim([0, 300])
 		ax3.set_yticks([0, 300])
-		ax3.set_xticks(list(gen_start_time_off / 60) + [time_off[-1]/60])
+		ax3.set_xticks((gen_start_time_off / 60).flatten().tolist() + [time_off.flatten()[-1]/60])
 		ax3.set_xticklabels(np.arange(len(gen_start_time_off) + 1))
 
 		# Plot counts of each protein when operon="on"
@@ -143,8 +143,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax4.spines["left"].set_visible(False)
 		ax4.get_yaxis().set_visible(False)
 		ax4.set_xlim([0, time_on[-1]/60])
-		ax4.set_xticks(list(gen_start_time_on / 60) + [time_on[-1] / 60])
-		ax4.set_xticklabels(np.arange(len(gen_start_time_on) + 1))
+		ax4.set_xticks((gen_start_time_on / 60).flatten().tolist() + [time_on.flatten()[-1] / 60])
+		ax4.set_xticklabels(np.arange(len(gen_start_time_on) + 1).tolist())
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

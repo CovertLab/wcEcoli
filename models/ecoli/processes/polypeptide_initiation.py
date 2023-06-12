@@ -4,14 +4,11 @@ PolypeptideInitiation
 Polypeptide initiation sub-model.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
-from six.moves import zip
 
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
@@ -46,12 +43,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			for (i, monomer) in enumerate(sim_data.process.translation.monomer_data)
 			}
 		self.monomer_index_to_tu_indexes = sim_data.relation.monomer_index_to_tu_indexes
-
-		# Determine changes from parameter shuffling variant
-		if (hasattr(sim_data.process.translation, "translationEfficienciesShuffleIdxs")
-				and sim_data.process.translation.translationEfficienciesShuffleIdxs is not None):
-			shuffleIdxs = sim_data.process.translation.translationEfficienciesShuffleIdxs
-			self.translationEfficiencies = self.translationEfficiencies[shuffleIdxs]
 
 		# Create view on to active 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')

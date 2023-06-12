@@ -121,13 +121,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			bulkMoleculeCounts = bulkMoleculesReader.readColumn("counts")
 
 			# Load data from mRNA counts listener
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-			all_mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
-			mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
+			RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+			all_mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
+			mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
 
 			# Get the synthesis probability for all regulated genes
 			rnaSynthProbReader = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-			synthProbs = rnaSynthProbReader.readColumn("rnaSynthProb")
+			synthProbs = rnaSynthProbReader.readColumn("actual_rna_synth_prob")
 			cistron_ids = sim_data.process.transcription.cistron_data['id']
 			cistron_synth_probs = cistron_tu_mapping_matrix.dot(synthProbs.T).T
 

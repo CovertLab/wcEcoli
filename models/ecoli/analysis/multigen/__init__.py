@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -26,6 +24,7 @@ ACTIVE = [
 	"massFractionToUnity.py",
 	"massShift.py",
 	"mene_limitations.py",
+	"new_gene_counts.py",
 	# "probProteinExistAndDouble.py",
 	"polycistronic_transcription.py",
 	"ppgpp_regulation.py",
@@ -41,6 +40,7 @@ ACTIVE = [
 	"ribosomeUsage.py",
 	# "rnaVsProteinPerCell.py",
 	"rna_decay_03_high.py",
+	"rRNA_operon_expression.py",
 	"subgenerationalTranscription.py",
 	"tf_binding.py",
 	"timeStep.py",

@@ -4,12 +4,12 @@ constants.py
 Simulation constants.  Biological constants should go into the knowledge base.
 '''
 
-from __future__ import absolute_import, division, print_function
-
 
 OPERON_OPTIONS = ('off', 'v1', 'v2', 'v3', 'on')
 EXTENDED_OPERON_OPTIONS = OPERON_OPTIONS + ('both',)
-DEFAULT_OPERON_OPTION = 'off'
+DEFAULT_OPERON_OPTION = 'on'
+
+DEFAULT_NEW_GENES_OPTION = 'off'
 
 SERIALIZED_RAW_DATA = "rawData.cPickle"
 SERIALIZED_RAW_VALIDATION_DATA = "rawValidationData.cPickle"

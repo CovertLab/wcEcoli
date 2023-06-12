@@ -2,14 +2,11 @@
 Plot trp regulation
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-import six
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -23,7 +20,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDirs = self.ap.get_cells()
 
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		nAvogadro = sim_data.constants.n_avogadro
 		cellDensity = sim_data.constants.cell_density
 
@@ -63,10 +60,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			bulkMoleculeCounts = bulkMoleculesReader.readColumn("counts")
 
 			# Load data from mRNA counts listener
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			all_mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
-			mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			all_mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
+			mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
 
 			# Load data from RnaSynthProb listener
 			rna_synth_prob_reader = TableReader(
@@ -133,7 +130,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			proteomeMassFraction = trpAMass.asNumber(units.fg) / proteinMass.asNumber(units.fg)
 
 			# Get the synthesis probability for all regulated genes
-			synthProbs = rna_synth_prob_reader.readColumn("rnaSynthProb")[:, target_idx]
+			synthProbs = rna_synth_prob_reader.readColumn("actual_rna_synth_prob")[:, target_idx]
 			trpRBound = rna_synth_prob_reader.readColumn("nActualBound")[:, trpRIndex]
 
 			rna_synth_prob_reader.close()

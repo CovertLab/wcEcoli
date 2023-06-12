@@ -29,6 +29,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		def read_sims(ap, sim_data):
 			rna_lengths = sim_data.process.transcription.rna_data['length'].asNumber(units.nt)
 			is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
@@ -37,7 +41,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
 
 			mRNA_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'full_mRNA_counts', ignore_exception=True)
+				cell_paths, 'RNACounts', 'full_mRNA_counts', ignore_exception=True)
 
 			mean_mRNA_counts = mRNA_counts.mean(axis=0)
 			mRNA_lengths = rna_lengths[is_mRNA]

@@ -13,8 +13,6 @@ EG10321_RNA	53.2	fliC	Flagellin
 EG10544_RNA	97.5	lpp		Murein lipoprotein
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 
 import numpy as np
@@ -23,14 +21,13 @@ from matplotlib import pyplot as plt
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import singleAnalysisPlot
-from six.moves import range
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
-		all_mRNA_cistron_idx = {rna: i for i, rna in enumerate(mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
+		all_mRNA_cistron_idx = {rna: i for i, rna in enumerate(RNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
 
 		rnaIds = [
 			"EG10367_RNA", "EG11036_RNA", "EG50002_RNA", "EG10671_RNA", "EG50003_RNA",

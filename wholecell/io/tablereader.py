@@ -1,16 +1,13 @@
 
-from __future__ import absolute_import, division, print_function
-
-from chunk import Chunk
+from wholecell.io.chunk import Chunk
 import os
 import json
 import numpy as np
-from typing import Any, Callable, Iterable, List, Text, Tuple, Union
+from typing import Any, Callable, List, Text, Tuple, Union
 import zlib
 
 from wholecell.utils import filepath
 from . import tablewriter as tw
-from six.moves import zip
 
 __all__ = [
 	"TableReader",
@@ -280,10 +277,10 @@ class TableReader(object):
 		# Variable-length columns
 		if variable_length:
 			# Concatenate row sizes array
-			row_sizes_list = [
+			row_sizes_list: List[np.ndarray] = [
 				np.frombuffer(block, tw.ROW_SIZE_CHUNK_DTYPE)
-				for block in row_size_blocks]  # type: List[Iterable[int]]
-			all_row_sizes = np.concatenate(row_sizes_list)
+				for block in row_size_blocks]
+			all_row_sizes: np.ndarray = np.concatenate(row_sizes_list)
 
 			# Initialize results array to NaNs
 			result = np.full((len(all_row_sizes), all_row_sizes.max()), np.nan)

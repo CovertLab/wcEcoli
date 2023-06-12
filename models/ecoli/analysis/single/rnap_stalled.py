@@ -20,10 +20,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		initial_time = main_reader.readAttribute('initialTime')
 		time = main_reader.readColumn('time') - initial_time
 
+		plt.figure(figsize=(6, 3))
 		plt.plot(time / 60., stalled_rnap_counts)
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
 		plt.title("Stalled RNA Polymerase")
+		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 

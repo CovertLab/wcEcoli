@@ -2,13 +2,11 @@
 Plot rna synthesis probabilities
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import numpy as np
-from six.moves import cPickle, zip
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
@@ -18,7 +16,7 @@ from wholecell.io.tablereader import TableReader
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Load info from sim_data
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
@@ -37,7 +35,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		mass_reader = TableReader(os.path.join(simOutDir, "Mass"))
 
 		# Load data
-		rna_synth_prob = rna_synth_prob_reader.readColumn('rnaSynthProb')
+		rna_synth_prob = rna_synth_prob_reader.readColumn('actual_rna_synth_prob')
 		time = rna_synth_prob_reader.readColumn('time')
 		mrna_synth_prob = rna_synth_prob[:, isMRna].sum(axis = 1)
 		trna_synth_prob = rna_synth_prob[:, isTRna].sum(axis = 1)

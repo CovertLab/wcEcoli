@@ -1,16 +1,11 @@
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from wholecell.io.tablereader import TableReader
-
-from six.moves import cPickle
-
 from wholecell.utils import units
-
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -27,7 +22,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return
 
 		# Get all ids reqiured
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		ids_complexation = sim_data.process.complexation.molecule_names # Complexe of proteins, and protein monomers
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes # Only complexes
 		ids_equilibrium = sim_data.process.equilibrium.molecule_names # Complexes of proteins + small molecules, small molecules, protein monomers

@@ -3,9 +3,6 @@ Base class for netflow interfaces with different solver backends.
 All functions required for implementation with modular_fba.py are listed.
 '''
 
-from __future__ import absolute_import, division, print_function
-
-
 class NetworkFlowProblemBase(object):
 	_maximize = True
 	quadratic_objective = False

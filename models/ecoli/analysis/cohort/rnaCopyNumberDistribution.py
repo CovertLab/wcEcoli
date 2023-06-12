@@ -3,15 +3,13 @@ Plots the histograms of the copy number of each RNA at each generation for
 multiple-seed simulations.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 from itertools import cycle
-from six.moves import cPickle, range, zip
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -39,7 +37,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_dirs_grouped_by_gen.append(self.ap.get_cells(generation = [gen_idx]))
 
 		# Load simDataFile
-		simData = cPickle.load(open(simDataFile, 'rb'))
+		simData = pickle.load(open(simDataFile, 'rb'))
 
 		# Get IDs for RNA from simData
 		ids_rna = simData.process.transcription.rna_data["id"]
@@ -78,7 +76,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				# Get required tables
 				bulkMolecules = TableReader(os.path.join(simOutDir, "BulkMolecules"))
-				mRNA_counts_reader = TableReader(os.path.join(simOutDir, "mRNACounts"))
+				RNA_counts_reader = TableReader(os.path.join(simOutDir, "RNACounts"))
 				time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time")
 
 				# Pick out random timepoint
@@ -93,7 +91,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				# Read counts of all bulk molecules and mRNAs
 				bulkCounts = bulkMolecules.readColumn("counts")
-				mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
+				mRNA_counts = RNA_counts_reader.readColumn('mRNA_counts')
 
 				# Sum up counts from both readers to get total counts
 				rna_counts = bulkCounts[idx_timepoint, idx_rna_bulk_molecules]

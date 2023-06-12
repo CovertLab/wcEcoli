@@ -4,7 +4,6 @@ levels of protein monomers that constitute the same protein complex for sims
 with/without polycistronic operons.
 """
 
-from functools import reduce
 import os
 from typing import Tuple
 
@@ -34,6 +33,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# sim_data1.operons_on and sim_data2.operons_on indicate operons on/off.
 		ap1, sim_data1, _ = self.setup(reference_sim_dir)
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
+
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
 
 		# Load from sim_data
 		all_subunit_ids = sim_data1.process.complexation.molecule_names

@@ -56,9 +56,13 @@ class SimulationDataEcoli(object):
 		self.constants = Constants(raw_data)
 		self.adjustments = Adjustments(raw_data)
 
-		# Reference helper functions (can depend on hard-coded attributes)
-		self.molecule_groups = MoleculeGroups(raw_data, self)
+		# Reference helper function for molecule IDs (can depend on preceding
+		# helper functions)
 		self.molecule_ids = MoleculeIds(raw_data, self)
+
+		# Reference helper function for molecule groups (can depend on preceding
+		# helper functions)
+		self.molecule_groups = MoleculeGroups(raw_data, self)
 
 		# Getter functions (can depend on helper functions and reference classes)
 		self.getter = GetterFunctions(raw_data, self)
@@ -87,7 +91,6 @@ class SimulationDataEcoli(object):
 			for mw_key in raw_data.molecular_weight_keys
 			}
 
-
 	def _add_compartment_keys(self, raw_data):
 		self.compartment_abbrev_to_index = {
 			compartment["abbrev"]: i
@@ -97,6 +100,9 @@ class SimulationDataEcoli(object):
 			compartment["id"]: i
 			for i,compartment in enumerate(raw_data.compartments)
 		}
+		self.compartment_abbrev_to_id = {}
+		for compartment in raw_data.compartments:
+			self.compartment_abbrev_to_id[compartment["abbrev"]] = compartment["id"]
 
 
 	def _add_base_codes(self, raw_data):
@@ -107,6 +113,10 @@ class SimulationDataEcoli(object):
 		self.ntp_code_to_id_ordered = collections.OrderedDict(
 			tuple((row["code"], row["id"])
 				  for row in raw_data.base_codes.ntp))
+
+		self.nmp_code_to_id_ordered = collections.OrderedDict(
+			tuple((row["code"], row["id"])
+				  for row in raw_data.base_codes.nmp))
 
 		self.dntp_code_to_id_ordered = collections.OrderedDict(
 			tuple((row["code"], row["id"])
@@ -323,3 +333,4 @@ class SimulationDataEcoli(object):
 			exp /= exp.sum()
 		transcription.exp_free /= transcription.exp_free.sum()
 		transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
+

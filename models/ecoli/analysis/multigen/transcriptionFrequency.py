@@ -2,10 +2,8 @@
 Plots frequency of observing at least 1 transcript during a cell's life.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import bokeh.io
 import bokeh.io.state
@@ -28,7 +26,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# Get mRNA data
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		rnaIds = sim_data.process.transcription.rna_data["id"]
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIds = np.where(isMRna)[0]
@@ -41,13 +39,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			simOutDir = os.path.join(simDir, "simOut")
 
 			rnaSynthProb = TableReader(os.path.join(simOutDir, "RnaSynthProb"))
-			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("rnaSynthProb")[:, mRnaIds], axis = 0)
+			simulatedSynthProb = np.mean(rnaSynthProb.readColumn("actual_rna_synth_prob")[:, mRnaIds], axis = 0)
 			rnaSynthProb.close()
 			simulatedSynthProbs.append(simulatedSynthProb)
 
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			moleculeCounts = mRNA_counts_reader.readColumn("mRNA_counts")
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			moleculeCounts = RNA_counts_reader.readColumn("mRNA_counts")
 			moleculeCountsSumOverTime = moleculeCounts.sum(axis = 0)
 			mRnasTranscribed = np.array([x != 0 for x in moleculeCountsSumOverTime])
 			transcribedBool.append(mRnasTranscribed)

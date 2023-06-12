@@ -8,8 +8,6 @@ Usage with paths to tsv files to merge:
 	./merge_files [TSV1 TSV2 ...]
 """
 
-from __future__ import absolute_import, division, print_function
-
 import io
 import os
 import sys
@@ -18,7 +16,6 @@ import time
 from typing import Dict, List, Tuple
 
 from wholecell.io import tsv
-from wholecell.utils.py3 import String
 
 
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
@@ -26,7 +23,7 @@ OUTPUT_FILE = os.path.join(FILE_LOCATION, 'metabolite_concentrations.tsv')
 
 
 def load_conc(filename):
-	# type: (str) -> Tuple[str, Dict[str, String]]
+	# type: (str) -> Tuple[str, Dict[str, str]]
 	"""
 	Load concentration data from a tsv file.  First column should be metabolite
 	ID and second column should be concentration.  Does not handle more than
@@ -40,7 +37,7 @@ def load_conc(filename):
 		conc: metabolite ID to concentration
 	"""
 
-	conc = {}  # type: Dict[str, String]
+	conc = {}  # type: Dict[str, str]
 	with io.open(filename, 'rb') as f:
 		reader = tsv.reader(f)
 
@@ -58,7 +55,7 @@ def load_conc(filename):
 	return label, conc
 
 def save_conc(conc):
-	# type: (List[Tuple[str, Dict[str, String]]]) -> None
+	# type: (List[Tuple[str, Dict[str, str]]]) -> None
 	"""
 	Save combined concentration data with blank entries for metabolites with
 	unknown concentrations.

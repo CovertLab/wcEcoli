@@ -1,13 +1,10 @@
 """Test the data utility."""
 
-from __future__ import absolute_import, division, print_function
-
 import unittest
 
 import pytest
 
 from wholecell.utils import data
-from six.moves import range
 
 
 class Test_data(unittest.TestCase):

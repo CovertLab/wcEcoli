@@ -2,14 +2,12 @@
 Plots various effects that may be limiting growth
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from math import log10, floor
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -38,7 +36,7 @@ def round_to_1(x):
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		nAvogadro = sim_data.constants.n_avogadro
 		cellDensity = sim_data.constants.cell_density
 		homeostaticRangeObjFractionHigher = sim_data.constants.metabolism_homeostatic_range_obj_fraction_higher

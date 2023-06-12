@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.0
-# Date and time generated: April 20, 2022, 16:49:57
+# Version: 26.5
+# Date and time generated: December 16, 2022, 14:49:05
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
@@ -69,15 +69,23 @@
 "CPLX0-8235_RXN"	{"CPLX0-8235": 1, "CPLX0-8234": null, "FORMALDEHYDE": null}	"FrmR-formaldehyde"
 "CPLX0-8246_RXN"	{"CPLX0-8246": 1, "PD03270": null, "CPD-14488": null}	"ExuR-&alpha;-D-glucuronate"
 "CPLX0-8257_RXN"	{"CPLX0-8257": 1, "G6144-MONOMER": null, "D-XYLONATE": null}	"XynR-D-xylonate"
-"CPLX0-8258_RXN"	{"CPLX0-8258": 1, "CPLX0-8595": null, "CPD0-2705": null}	"ChbR-<i>N</i>-monoacetylchitobiose 6'-phosphate"
+"CPLX0-8258_RXN"	{"CPLX0-8258": 1, "CPLX0-8595": null, "CPD0-2705": null}	"ChbR-6-phospho-&beta;-D-glucosaminyl-(1->4)-<i>N</i>-acetyl-D-glucosamine"
 "CPLX0-8286_CPD-21685_RXN"	{"CPLX0-8286": 1, "CPD-21685": null, "EG11849-MONOMER": null}	"CsqR-6-sulfo-D-quinovose"
+"CPLX0-8286_CPD-21686_RXN"	{"CPLX0-8286": 1, "CPD-21686": null, "EG11849-MONOMER": null}	"CsqR-6-sulfo-D-quinovose"
 "CPLX0-8287_RXN"	{"CPLX0-8287": 1, "CPLX0-8578": null, "D-GALACTONATE": null}	"DgoR-D-galactonate"
 "CPLX0-8293_RXN"	{"CPLX0-8293": 1, "EG12386-MONOMER": null, "GLUTARATE": null}	"GlaR-glutarate"
 "CPLX0-8309_RXN"	{"CPLX0-8309": 1, "G7244-MONOMER": null, "PYRUVATE": null}	"PyrR-pyruvate"
-"CPLX0-8577_RXN"	{"CPLX0-8577": 1, "CPLX0-8576": null, "FRUCTOSELYSINE-6-PHOSPHATE": null}	"FrlR-N<sup>6</sup>-(6-phospho-D-fructosyl)-L-lysine"
+"CPLX0-8577_RXN"	{"CPLX0-8577": 1, "CPLX0-8576": null, "FRUCTOSELYSINE-6-PHOSPHATE": null}	"FrlR- <i>N</i><sup>6</sup>-(1-deoxy-6-<i>O</i>-phospho-D-fructos-1-yl)-L-lysine"
 "CPLX0-8579_RXN"	{"CPLX0-8579": 1, "CPLX0-7418": null, "CPD-110": null}	"MprA-salicylate"
 "CPLX0-8598_RXN"	{"CPLX0-8598": 1, "CPLX0-8597": null, "TRIMETHYLAMINE-N-O": null}	"RcdA-trimethylamine N-oxide"
 "CPLX0-8599_RXN"	{"CPLX0-8599": 1, "CPLX0-8597": null, "TRIS": null}	"RcdA-tris"
+"CPLX0-8952_RXN"	{"CPLX0-8952": 1, "EG12116-MONOMER": null, "CPD-21022": null}	"AcrR-3,6-diaminoacridine"
+"CPLX0-8953_RXN"	{"CPLX0-8953": 1, "EG12116-MONOMER": null, "CPD-20901": null}	"AcrR-rhodamine 6G"
+"CPLX0-9022_RXN"	{"CPLX0-9022": 1, "G7071-MONOMER": null, "S2O3": null}	"Cbl-thiosulfate"
+"CPLX0-9122_RXN"	{"CPLX0-9122": 1, "CPLX0-7708": null, "CU+": null}	"CueR-Cu<SUP>+</SUP>"
+"CPLX0-9152_CPD-16168_RXN"	{"CPLX0-9152": 1, "CPD-16168": null, "G7262-MONOMER": null}	"MurR-N-acetylglucosamine-6-phosphate"
+"CPLX0-9162_CPD-14019_RXN"	{"CPLX0-9162": 1, "CPD-14019": null, "PC00003": null}	"AraC-D-fucose"
+"CPLX0-9265_RXN"	{"CPLX0-9265": 1, "CPLX0-7678": null, "ZN+2": null}	"ZntR-Zn<SUP>2+</SUP>"
 "MONOMER-2720_RXN"	{"MONOMER-2720": 1, "G7071-MONOMER": null, "APS": null}	"Cbl-adenosine 5'-phosphosulfate"
 "MONOMER-47_CPD0-1112_RXN"	{"MONOMER-47": 1, "CPD0-1112": null, "PD00222": null}	"RhaR-L-rhamnose DNA-binding transcriptional activator"
 "MONOMER-47_RHAMNOSE_RXN"	{"MONOMER-47": 1, "RHAMNOSE": null, "PD00222": null}	"RhaR-L-rhamnose DNA-binding transcriptional activator"
@@ -169,7 +177,7 @@
 "MONOMER0-1781_RXN"	{"MONOMER0-1781": 1, "EG11519-MONOMER": null, "NI+2": null}	"NikR-Ni transcriptional repressor"
 "MONOMER0-183_RXN"	{"MONOMER0-183": 1, "PD02936": null, "FORMATE": null}	"FhlA-formate DNA-binding transcriptional activator"
 "MONOMER0-2081_RXN"	{"MONOMER0-2081": 1, "G7331-MONOMER": null, "3-PHENYLPROPIONATE": null}	"DNA-binding transcriptional dual regulator HcaR-3-phenylpropanoate"
-"MONOMER0-2101_CPD-12537_RXN"	{"MONOMER0-2101": 1, "CPD-12537": null, "EG20249-MONOMER": null}	"UxuR-fructuronate"
+"MONOMER0-2101_CPD-12537_RXN"	{"MONOMER0-2101": 1, "CPD-12537": null, "EG20249-MONOMER": null}	"UxuR-D-fructuronate"
 "MONOMER0-2162_RXN"	{"MONOMER0-2162": 1, "G7854-MONOMER": null, "L-ASCORBATE-6-PHOSPHATE": null}	"UlaR-L-ascorbate-6-phosphate"
 "MONOMER0-2201_RXN"	{"MONOMER0-2201": 1, "G6276-MONOMER": null, "GLYOX": null}	"AllR-glyoxylate"
 "MONOMER0-2221_R--ALLANTOIN_RXN"	{"MONOMER0-2221": 1, "R--ALLANTOIN": null, "G6274-MONOMER": null}	"AllS-allantoin DNA-binding transcriptional activator"

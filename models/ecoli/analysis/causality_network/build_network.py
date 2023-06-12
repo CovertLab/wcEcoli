@@ -54,17 +54,14 @@ which assigns that node dynamics from listener output:
 
 	node.read_dynamics(dynamics, dynamics_units)
 """
-from __future__ import absolute_import, division, print_function
-
 from collections import Counter
 import numpy as np
 import re
 import os
+import pickle
 import json
 
 from typing import Union
-import six
-from six.moves import cPickle, zip
 
 from models.ecoli.analysis.causality_network.network_components import (
 	Node, Edge,
@@ -75,6 +72,7 @@ from models.ecoli.analysis.causality_network.network_components import (
 # Suffixes that are added to the node IDs of a particular type of node
 NODE_ID_SUFFIX = {
 	"transcription": "_TRS",
+	"maturation": "_MAT",
 	"translation": "_TRL",
 	"regulation": "_REG",
 	}
@@ -145,7 +143,7 @@ class BuildNetwork(object):
 	def __init__(self, sim_data_file, output_dir, check_sanity=False):
 		"""
 		Args:
-			sim_data_file: path to the variant sim_data cPickle file used for
+			sim_data_file: path to the variant sim_data pickle file used for
 			building the network.
 			output_dir: output directory for the node list and edge list files.
 			check_sanity: if set to True, checks if there are any nodes with
@@ -155,7 +153,7 @@ class BuildNetwork(object):
 		"""
 		# Open simulation data and save as attribute
 		with open(sim_data_file, 'rb') as f:
-			self.sim_data = cPickle.load(f)
+			self.sim_data = pickle.load(f)
 
 		self.output_dir = output_dir
 		self.check_sanity = check_sanity
@@ -192,6 +190,7 @@ class BuildNetwork(object):
 		# Add state/process-specific nodes and edges to the node and edge list
 		self._add_genes()
 		self._add_transcription_and_transcripts()
+		self._add_rna_maturation_and_mature_transcripts()
 		self._add_translation_and_monomers()
 		self._add_complexation_and_complexes()
 		self._add_metabolism_and_metabolites()
@@ -404,6 +403,103 @@ class BuildNetwork(object):
 			self._append_edge("Transcription", rnap_id, transcription_id)
 
 
+	def _add_rna_maturation_and_mature_transcripts(self):
+		"""
+		Add RNA maturation process nodes and mature transcript state nodes to
+		the node list, and edges connected to these nodes to the edge list.
+		"""
+		transcription = self.sim_data.process.transcription
+		mature_rna_ids = transcription.mature_rna_data['id']
+		unprocessed_rna_ids = transcription.rna_data['id'][transcription.rna_data['is_unprocessed']]
+		rna_maturation_stoich_matrix = transcription.rna_maturation_stoich_matrix
+		rna_maturation_enzyme_matrix = transcription.rna_maturation_enzyme_matrix
+		rna_maturation_enzymes = transcription.rna_maturation_enzymes
+		ntp_ids = self.sim_data.molecule_groups.ntps
+		ppi_id = self.sim_data.molecule_ids.ppi
+
+		# Loop through all mature transcripts (in the order listed in
+		# transcription)
+		for mature_rna_id in mature_rna_ids:
+			# Initialize a single transcript node
+			rna_node = Node()
+
+			# Add attributes to the node
+			# Add common name and synonyms
+			rna_id_no_compartment = mature_rna_id[:-3]
+			rna_name = self.common_names.get_common_name(rna_id_no_compartment)
+			rna_synonyms = self.common_names.get_synonyms(rna_id_no_compartment)
+
+			attr = {
+				'node_class': 'State',
+				'node_type': 'RNA',
+				'node_id': mature_rna_id,
+				'name': rna_name,
+				'synonyms': rna_synonyms,
+				'location': molecule_compartment(mature_rna_id),
+				}
+
+			rna_node.read_attributes(**attr)
+
+			# Append transcript node to node_list
+			self.node_list.append(rna_node)
+
+		for i, unprocessed_rna_id in enumerate(unprocessed_rna_ids):
+			# Initialize a single RNA maturation node for each unprocessed transcipt
+			rna_maturation_node = Node()
+
+			# Add attributes to the node
+			rna_id_no_compartment = unprocessed_rna_id[:-3]
+			rna_name = self.common_names.get_common_name(rna_id_no_compartment)
+			rna_synonyms = self.common_names.get_synonyms(rna_id_no_compartment)
+
+			maturation_id = rna_id_no_compartment + NODE_ID_SUFFIX["maturation"]
+			maturation_name = rna_name + " maturation"
+			if isinstance(rna_synonyms, list):
+				maturation_synonyms = [x + " maturation" for x in rna_synonyms]
+			else:
+				maturation_synonyms = [rna_synonyms]
+
+			attr = {
+				'node_class': 'Process',
+				'node_type': 'RNA Maturation',
+				'node_id': maturation_id,
+				'name': maturation_name,
+				'synonyms': maturation_synonyms,
+				}
+			rna_maturation_node.read_attributes(**attr)
+
+			# Append transcription node to node_list
+			self.node_list.append(rna_maturation_node)
+
+			# Get IDs of mature RNAs that are generated from this transcript
+			constituent_transcript_ids = [
+				mature_rna_ids[i] for i
+				in rna_maturation_stoich_matrix.getcol(i).nonzero()[0]]
+
+			# Add edge from the maturation node to mature transcripts
+			for rna_id in constituent_transcript_ids:
+				self._append_edge("RNA Maturation", maturation_id, rna_id)
+
+			# Add edge from the unprocessed rna to the maturation node
+			self._append_edge("RNA Maturation", unprocessed_rna_id, maturation_id)
+
+			# Add edges from maturation node to NTPs
+			for ntp_id in ntp_ids:
+				self._append_edge("RNA Maturation", maturation_id, ntp_id)
+
+			# Add edge from ppi to maturation node
+			self._append_edge("RNA Maturation", ppi_id, maturation_id)
+
+			# Get indexes of enzymes that catalyze the maturation
+			enzyme_indexes = np.where(rna_maturation_enzyme_matrix[i, :])[0]
+
+			# Add edge from each enzyme to maturation node
+			for enzyme_index in enzyme_indexes:
+				self._append_edge(
+					"RNA Maturation", rna_maturation_enzymes[enzyme_index],
+					maturation_id)
+
+
 	def _add_translation_and_monomers(self):
 		"""
 		Add translation process nodes and protein (monomer) state nodes to the
@@ -609,7 +705,7 @@ class BuildNetwork(object):
 		metabolite_ids = []
 
 		# Loop through all reactions
-		for reaction_id, stoich_dict in six.viewitems(reaction_stoich):
+		for reaction_id, stoich_dict in reaction_stoich.items():
 
 			node_type = 'Metabolism'
 
@@ -670,7 +766,7 @@ class BuildNetwork(object):
 		# Add specific charging reactions
 		# TODO (Travis): add charged/uncharged tRNA as RNA not metabolites?
 		transcription = self.sim_data.process.transcription
-		uncharged_trnas = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
+		uncharged_trnas = transcription.uncharged_trna_names
 		charging_stoich = transcription.charging_stoich_matrix().T
 		charging_molecules = np.array(transcription.charging_molecules)
 		synthetases = np.array(transcription.synthetase_names)

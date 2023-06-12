@@ -1,0 +1,24 @@
+# AB media + 0.4% acetate (with gas and trace metals)
+# Media recipe from EcoCyc: MIX0-58
+"molecule id"	"concentration (units.mmol / units.L)"
+"NA+"	135.15
+"Pi"	63.851
+"CL-"	55.389
+"AMMONIUM"	30.272
+"K+"	21.883
+"SULFATE"	15.077
+"MG+2"	2.1
+"CA+2"	0.09
+"FE+3"	0.0031
+"WATER"	Infinity
+"ACET"	67.746
+# Added gases
+"CARBON-DIOXIDE"	Infinity
+"OXYGEN-MOLECULE"	Infinity
+# Added trace metals
+"CO+2"	Infinity
+"FE+2"	Infinity
+"MN+2"	Infinity
+"NI+2"	Infinity
+"ZN+2"	Infinity
+"L-SELENOCYSTEINE"	Infinity

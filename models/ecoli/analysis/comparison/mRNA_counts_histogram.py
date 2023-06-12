@@ -15,7 +15,6 @@ from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader, TableReaderError
-from wholecell.utils import units
 
 
 FIGSIZE = (4, 4)
@@ -29,12 +28,16 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
+		if ap1.n_generation <= 2 or ap2.n_generation <= 2:
+			print('Skipping analysis -- not enough sims run.')
+			return
+
 		def read_sims(ap):
 			# Ignore data from first two gens
 			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
 
 			mRNA_counts = read_stacked_columns(
-				cell_paths, 'mRNACounts', 'full_mRNA_counts',
+				cell_paths, 'RNACounts', 'full_mRNA_counts',
 				ignore_exception=True, fun=lambda x: x[0])
 
 			total_mRNA_counts = mRNA_counts.sum(axis=1)

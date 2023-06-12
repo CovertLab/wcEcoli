@@ -15,10 +15,12 @@ ACTIVE = [
 	"mRNA_length_histogram.py",
 	"mRNA_mass_histogram.py",
 	"polycistronic_transcription.py",
+	"ppgpp_expression_growth_genes.py",
 	"protein_mass_histogram.py",
 	"protein_stoichiometry.py",
 	"proteomics_fluxomics_comparison.py",
 	"proteomics_fluxomics_validation.py",
+	"tRNA_cistron_expression.py",
 ]
 
 TAGS = {

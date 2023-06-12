@@ -6,13 +6,11 @@ Mass listener. Represents the total cellular mass.
 
 # TODO: generalize this logic for use with a generic simulation
 
-from __future__ import absolute_import, division, print_function
-
 import numpy as np
 
 import wholecell.listeners.listener
 from wholecell.utils import units
-import six
+
 
 class Mass(wholecell.listeners.listener.Listener):
 	""" Mass """
@@ -140,11 +138,10 @@ class Mass(wholecell.listeners.listener.Listener):
 		oldDryMass = self.dryMass
 
 		all_submasses = sum(
-			state.mass() for state in six.viewvalues(self.internal_states))
+			state.mass() for state in self.internal_states.values())
 
 		compartment_submasses = sum(
-			state.compartment_mass() for state in six.viewvalues(
-			self.internal_states))
+			state.compartment_mass() for state in self.internal_states.values())
 
 		self.cellMass = all_submasses.sum()  # sum over all submasses
 
@@ -173,7 +170,7 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.volume = self.cellMass / self.cellDensity
 
 		self.processMassDifferences = sum(
-			state.process_mass_diffs() for state in six.viewvalues(self.internal_states)
+			state.process_mass_diffs() for state in self.internal_states.values()
 			).sum(axis=1)
 
 		if self.simulationStep() > 0:

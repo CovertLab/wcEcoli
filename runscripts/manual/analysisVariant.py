@@ -4,8 +4,6 @@ Runs all variant analysis plots for a given sim.
 Run with '-h' for command line help.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import errno
 import os
 

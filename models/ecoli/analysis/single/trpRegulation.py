@@ -2,13 +2,11 @@
 Plot trp regulation
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle, range
 
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
@@ -19,7 +17,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		nAvogadro = sim_data.constants.n_avogadro
 		cellDensity = sim_data.constants.cell_density
 
@@ -84,7 +82,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Get the synthesis probability for all regulated genes
 		synthProbIndex = np.array([rna_idx[x] for x in target_ids])
-		synthProbs = rna_synth_prob_reader.readColumn("rnaSynthProb")[:, synthProbIndex]
+		synthProbs = rna_synth_prob_reader.readColumn("actual_rna_synth_prob")[:, synthProbIndex]
 
 		tf_ids = rna_synth_prob_reader.readAttribute("tf_ids")
 		trpRIndex = [i for i, tf in enumerate(tf_ids) if tf == "CPLX-125"][0]

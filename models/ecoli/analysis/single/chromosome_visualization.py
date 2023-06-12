@@ -3,13 +3,11 @@ Generates a .json file containing the dynamic locations of molecules bound to
 the chromosome.
 """
 
-from __future__ import absolute_import, division, print_function
-
-import os
 import json
+import os
+import pickle
 
 import numpy as np
-from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader
@@ -27,7 +25,7 @@ LAST_TIMESTEP = -1
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Read replichore lengths from sim_data
 		replichore_lengths = sim_data.process.replication.replichore_lengths

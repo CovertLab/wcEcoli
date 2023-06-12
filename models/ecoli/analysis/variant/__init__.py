@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -9,7 +7,7 @@ ACTIVE = [
 	"adder_sizer.py",
 	"cell_growth.py",
 	"doubling_time_histogram.py",
-	"extended_growth_condition_comparison_validation",
+	"doubling_time_histogram_downsample.py",
 	"growthConditionComparison.py",
 	"growth_condition_comparison_validation.py",
 	"growth_correlations.py",
@@ -20,9 +18,14 @@ ACTIVE = [
 	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
+	"new_gene_counts.py",
+	"new_gene_protein_mass_fraction_histogram.py",
 	"param_sensitivity.py",
 	"ppgpp_conc.py",
+	"ppgpp_concentration_histogram.py",
 	"remove_aa_inhibition.py",
+	"ribosome_counts_histogram.py",
+	"rnap_counts_histogram.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"time_step.py",

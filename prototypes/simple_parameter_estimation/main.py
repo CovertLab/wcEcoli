@@ -11,8 +11,6 @@ TODO: shrink color bars, better ticks
 
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
 from typing import Any
 

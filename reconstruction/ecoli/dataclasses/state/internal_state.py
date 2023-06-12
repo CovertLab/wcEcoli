@@ -3,8 +3,6 @@ SimulationData state associated data
 
 """
 
-from __future__ import absolute_import, division, print_function
-
 from wholecell.utils import units
 
 from reconstruction.ecoli.dataclasses.state.bulkMolecules import BulkMolecules
@@ -150,8 +148,6 @@ class InternalState(object):
 		# is bound to
 		# - pos_on_mRNA (64-bit int): Location of the ribosome on the bound
 		# mRNA, in number of bases from the transcription start site
-		# TODO: This is a bad hack that works because in the parca
-		# I have forced expression to be these subunits only
 		ribosome_30S_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.s30_full_complex]
 		ribosome_50S_mass = bulk_molecule_id_to_mass[sim_data.molecule_ids.s50_full_complex]
 		ribosome_mass = ribosome_30S_mass + ribosome_50S_mass
@@ -215,27 +211,18 @@ class InternalState(object):
 		# Add active replisomes
 		# Note that the replisome does not functionally replicate the
 		# chromosome, but instead keeps track of the mass associated with
-		# essential subunits of the replisome complex. The list of essential
-		# subunits and their stoichiometry were taken from Reyes-Lamothe et
-		# al., 2010.
+		# essential subunits of the replisome complex (if the mechanistic
+		# replisome option is turned on). The list of essential subunits and
+		# their stoichiometry were taken from Reyes-Lamothe et al., 2010.
 		replisome_mass = (units.g / units.mol) * np.zeros_like(RNAP_mass)
-
-		trimer_ids = sim_data.molecule_groups.replisome_trimer_subunits
-		monomer_ids = sim_data.molecule_groups.replisome_monomer_subunits
-
-		for trimer_id in trimer_ids:
-			replisome_mass += 3*bulk_molecule_id_to_mass[trimer_id]
-		for monomer_id in monomer_ids:
-			replisome_mass += bulk_molecule_id_to_mass[monomer_id]
-
-		replisomeAttributes = {
+		replisome_attributes = {
 			'domain_index': 'i4',
 			'right_replichore': '?',
 			'coordinates': 'i8',
 			}
 
 		self.unique_molecule.add_to_unique_state(
-			'active_replisome', replisomeAttributes, replisome_mass)
+			'active_replisome', replisome_attributes, replisome_mass)
 
 		# Active replisomes are divided based on their domain index
 		sim_data.molecule_groups.unique_molecules_domain_index_division.append(

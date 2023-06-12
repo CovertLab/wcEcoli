@@ -24,14 +24,11 @@ Following PEP 442, objects with a __del__() method don't end up in gc.garbage
 anymore."
 """
 
-from __future__ import absolute_import, division, print_function
-
 import gc
 import sys
 import unittest
 
 from wholecell.utils import memory_debug
-from six.moves import range
 
 PEP442 = sys.version_info[:2] >= (3, 4)
 

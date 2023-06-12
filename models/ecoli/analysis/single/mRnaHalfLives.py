@@ -2,13 +2,11 @@
 Plot first-order rate constants of mRNAs, observed vs expected.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from six.moves import cPickle
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -22,10 +20,10 @@ MEAN_RNA_COUNT_THRESHOLD = 3
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get the expected degradation rates from KB
-		sim_data = cPickle.load(open(simDataFile, 'rb'))
-		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
+		sim_data = pickle.load(open(simDataFile, 'rb'))
+		is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
 		expected_degradation_rate_constants = np.array(
-			sim_data.process.transcription.rna_data['deg_rate'][isMRna].asNumber()
+			sim_data.process.transcription.rna_data['deg_rate'][is_mRNA].asNumber()
 			)
 
 		# Get length of simulation
@@ -34,14 +32,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		sim_length = sim_time[-1] - sim_time[0]
 
 		# Read counts of mRNAs
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
-		mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_counts = RNA_counts_reader.readColumn('mRNA_counts')
 		mRNA_counts_mean = mRNA_counts.mean(axis=0)
 
 		# Read number of degradation events
 		rna_degradation_reader = TableReader(os.path.join(simOutDir, "RnaDegradationListener"))
-		n_RNA_degraded = rna_degradation_reader.readColumn('countRnaDegraded')
-		n_mRNA_degraded_total = n_RNA_degraded.sum(axis = 0)[isMRna]
+		n_RNA_degraded = rna_degradation_reader.readColumn('count_RNA_degraded')
+		n_mRNA_degraded_total = n_RNA_degraded.sum(axis = 0)[:len(is_mRNA)][is_mRNA]
 
 		# Get mask for RNAs with counts no less than threshold
 		mask = mRNA_counts_mean >= MEAN_RNA_COUNT_THRESHOLD

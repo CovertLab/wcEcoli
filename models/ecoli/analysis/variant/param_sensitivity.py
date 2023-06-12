@@ -5,20 +5,17 @@ on each output measure and individual parameter values for the most
 significant parameters for each output difference measure.
 """
 
-from __future__ import absolute_import, division, print_function
-
 from functools import reduce
 import io
 import operator
 import os
-import re
+import pickle
 
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 from scipy import special, stats
-from six.moves import cPickle, range, zip
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -104,8 +101,12 @@ def analyze_variant(args):
 			cell_mass = mass_reader.readColumn('cellMass')[-5:]
 			coefficient = dry_mass / cell_mass * cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
 
-			reaction_ids = np.array(fba_results_reader.readAttribute("reactionIDs"))
-			reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("reactionFluxes")[-5:].T / coefficient).T
+			base_reaction_ids = np.array(fba_results_reader.readAttribute("base_reaction_ids"))
+			sim_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (fba_results_reader.readColumn("base_reaction_fluxes")[-5:].T / coefficient).T
+			sim_rxn_id_to_index = {
+				rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+			}
+
 		# Exclude failed sims
 		except Exception as e:
 			print('Variant {} exception: {}'.format(variant, e))
@@ -113,22 +114,11 @@ def analyze_variant(args):
 
 		# Extract fluxes in Toya data set from simulation output
 		model_fluxes = np.zeros_like(toya_fluxes)
-		for i, toya_reaction in enumerate(toya_reactions):
-			flux_time_course = []  # type: List[np.ndarray]
-
-			for rxn in reaction_ids:
-				if re.findall(toya_reaction, rxn):
-					reverse = 1
-					if re.findall("(reverse)", rxn):
-						reverse = -1
-
-					if len(flux_time_course):
-						flux_time_course += reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
-					else:
-						flux_time_course = reverse * reaction_fluxes[:, np.where(reaction_ids == rxn)]
-
-			if len(flux_time_course):
-				model_fluxes[i] = np.mean(flux_time_course).asNumber(flux_units)
+		for i, toya_reaction_id in enumerate(toya_reactions):
+			if toya_reaction_id in sim_rxn_id_to_index:
+				flux_time_course = sim_reaction_fluxes[:, sim_rxn_id_to_index[toya_reaction_id]]
+				flux_ave = np.mean(flux_time_course).asNumber(flux_units)
+				model_fluxes[i].append(flux_ave)
 
 		flux_r, _ = stats.pearsonr(toya_fluxes, model_fluxes)
 
@@ -180,9 +170,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		global sim_data
 		global validation_data
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 		with open(validationDataFile, 'rb') as f:
-			validation_data = cPickle.load(f)
+			validation_data = pickle.load(f)
 
 		# sim_data information
 		total_params = sum(number_params(sim_data))

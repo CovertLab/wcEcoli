@@ -2,20 +2,17 @@
 Patterns of co-transcriptional translation in the E. coli WCM
 '''
 
-from __future__ import absolute_import, division, print_function
-
 import os
+import pickle
 
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-from six.moves import cPickle, range
 
 from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from six.moves import zip
 
 PLOT_TOP_N_GENES = 30  # Number of genes to be plotted in panes 2, 3, 6, and 7
 MEMBRANE_COMPARTMENT_IDS = ['w', 'm', 'o', 'p', 'i']
@@ -27,23 +24,23 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'mRNACounts'))
+		RNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 		ribosome_reader = TableReader(os.path.join(simOutDir, 'RibosomeData'))
 
 		# Load data
 		initial_time = main_reader.readAttribute('initialTime')
 		time = main_reader.readColumn('time') - initial_time
-		mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
-		all_mRNA_counts = mRNA_counts_reader.readColumn('mRNA_counts')
-		full_mRNA_counts = mRNA_counts_reader.readColumn('full_mRNA_counts')
-		partial_mRNA_counts = mRNA_counts_reader.readColumn('partial_mRNA_counts')
-		all_mRNA_cistron_counts = mRNA_counts_reader.readColumn(
+		mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		all_mRNA_counts = RNA_counts_reader.readColumn('mRNA_counts')
+		full_mRNA_counts = RNA_counts_reader.readColumn('full_mRNA_counts')
+		partial_mRNA_counts = RNA_counts_reader.readColumn('partial_mRNA_counts')
+		all_mRNA_cistron_counts = RNA_counts_reader.readColumn(
 			'mRNA_cistron_counts')
-		partial_mRNA_cistron_counts = mRNA_counts_reader.readColumn(
+		partial_mRNA_cistron_counts = RNA_counts_reader.readColumn(
 			'partial_mRNA_cistron_counts')
 		protein_ids = ribosome_reader.readAttribute('monomerIds')
 		all_ribosome_counts = ribosome_reader.readColumn('n_ribosomes_per_transcript')

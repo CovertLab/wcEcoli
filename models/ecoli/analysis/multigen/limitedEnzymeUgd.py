@@ -2,10 +2,8 @@
 Plots limited enzyme fluxes, protein counts, and transcription initiation events.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from six.moves import cPickle
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,7 +19,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		sim_data = cPickle.load(open(simDataFile, "rb"))
+		sim_data = pickle.load(open(simDataFile, "rb"))
 		enzymeComplexId = "CPLX0-8098[c]"
 		enzymeMonomerId = "UGD-MONOMER[c]"
 		enzyme_rna_cistron_id = "G7091_RNA"
@@ -36,9 +34,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		enzymeMonomerIndex = moleculeIds.index(enzymeMonomerId)
 		metaboliteIndex = moleculeIds.index(metaboliteId)
 
-		mRNA_counts_reader = TableReader(
-			os.path.join(simOutDir, 'mRNACounts'))
-		all_mRNA_cistron_ids = mRNA_counts_reader.readAttribute('mRNA_cistron_ids')
+		RNA_counts_reader = TableReader(
+			os.path.join(simOutDir, 'RNACounts'))
+		all_mRNA_cistron_ids = RNA_counts_reader.readAttribute('mRNA_cistron_ids')
 		enzyme_rna_cistron_index = all_mRNA_cistron_ids.index(enzyme_rna_cistron_id)
 
 		rnapDataReader = TableReader(os.path.join(simOutDir, "RnapData"))
@@ -64,9 +62,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			enzymeMonomerCounts += moleculeCounts[:, enzymeMonomerIndex].tolist()
 			metaboliteCounts += moleculeCounts[:, metaboliteIndex].tolist()
 
-			mRNA_counts_reader = TableReader(
-				os.path.join(simOutDir, 'mRNACounts'))
-			mRNA_cistron_counts = mRNA_counts_reader.readColumn('mRNA_cistron_counts')
+			RNA_counts_reader = TableReader(
+				os.path.join(simOutDir, 'RNACounts'))
+			mRNA_cistron_counts = RNA_counts_reader.readColumn('mRNA_cistron_counts')
 			enzyme_rna_cistron_counts += mRNA_cistron_counts[:, enzyme_rna_cistron_index].tolist()
 
 			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))

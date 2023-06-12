@@ -4,11 +4,9 @@ test_unique_objects_container.py
 @data: Created 2/27/2014
 '''
 
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import unittest
 import os
+import pickle
 import shutil
 import tempfile
 
@@ -326,8 +324,8 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 	# I/O
 
 	def test_pickle(self):
-		data = cPickle.dumps(self.container)
-		container2 = cPickle.loads(data)
+		data = pickle.dumps(self.container)
+		container2 = pickle.loads(data)
 		self.assertEqual(self.container, container2)
 
 		# print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))
@@ -357,7 +355,7 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 				globalIndexes=np.array([0]),
 			)
 		with self.assertRaises(UniqueObjectsContainerException) as context:
-			cPickle.dumps(self.container)
+			pickle.dumps(self.container)
 
 		self.assertEqual(
 			str(context.exception),
@@ -366,8 +364,8 @@ class Test_UniqueObjectsContainer(unittest.TestCase):
 
 		self.container._requests = []
 
-		data = cPickle.dumps(self.container)
-		container3 = cPickle.loads(data)
+		data = pickle.dumps(self.container)
+		container3 = pickle.loads(data)
 		self.assertEqual(self.container, container3)
 
 		# print("Pickled a UniqueObjectsContainer to {} bytes".format(len(data)))

@@ -2,10 +2,8 @@
 Reads dynamics data for each of the nodes of a causality network from a single
 simulation.
 """
-from __future__ import absolute_import, division, print_function
-
-from six.moves import cPickle
 import os
+import pickle
 import json
 import hashlib
 from typing import Any, Tuple
@@ -29,10 +27,11 @@ REQUIRED_COLUMNS = [
 	("Main", "time"),
 	("Mass", "cellMass"),
 	("Mass", "dryMass"),
-	("mRNACounts", "mRNA_counts"),
+	("RNACounts", "mRNA_counts"),
+	("RnaMaturationListener", "unprocessed_rnas_consumed"),
 	("RnaSynthProb", "gene_copy_number"),
 	("RnaSynthProb", "pPromoterBound"),
-	("RnaSynthProb", "rna_synth_prob_per_cistron"),
+	("RnaSynthProb", "actual_rna_synth_prob_per_cistron"),
 	("RnaSynthProb", "promoter_copy_number"),
 	("RnaSynthProb", "n_bound_TF_per_TU"),
 	("RnaSynthProb", "n_bound_TF_per_cistron"),
@@ -52,7 +51,7 @@ def compact_json(obj, ensure_ascii=False, separators=(',', ':'), **kwargs):
 def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list):
 		"""Convert the sim's dynamics data to a Causality seriesOut.zip file."""
 		with open(simDataFile, 'rb') as f:
-			sim_data = cPickle.load(f)
+			sim_data = pickle.load(f)
 
 		# Read all required tables from simOutDir
 		columns = {}
@@ -115,11 +114,14 @@ def convert_dynamics(simOutDir, seriesOutDir, simDataFile, node_list, edge_list)
 		equilibrium_rxn_ids = sim_data.process.equilibrium.rxn_ids
 		indexes["EquilibriumReactions"] = build_index_dict(equilibrium_rxn_ids)
 
+		unprocessed_rna_ids = TableReader(
+			os.path.join(simOutDir, "RnaMaturationListener")).readAttribute("unprocessed_rna_ids")
+		indexes["UnprocessedRnas"] = build_index_dict(unprocessed_rna_ids)
+
 		tf_ids = sim_data.process.transcription_regulation.tf_ids
 		indexes["TranscriptionFactors"] = build_index_dict(tf_ids)
 
-		rna_ids = sim_data.process.transcription.rna_data["id"]
-		trna_ids = rna_ids[sim_data.process.transcription.rna_data['is_tRNA']]
+		trna_ids = sim_data.process.transcription.uncharged_trna_names
 		indexes["Charging"] = build_index_dict(trna_ids)
 
 		# Cache cell volume array (used for calculating concentrations)
@@ -230,7 +232,7 @@ def read_gene_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	gene_index = indexes["Genes"][node_id]
 
 	dynamics = {
-		"transcription probability": columns[("RnaSynthProb", "rna_synth_prob_per_cistron")][:, gene_index],
+		"transcription probability": columns[("RnaSynthProb", "actual_rna_synth_prob_per_cistron")][:, gene_index],
 		"gene copy number": columns[("RnaSynthProb", "gene_copy_number")][:, gene_index],
 		}
 	dynamics_units = {
@@ -248,7 +250,7 @@ def read_rna_dynamics(sim_data, node, node_id, columns, indexes, volume):
 
 	# If RNA is an mRNA, get counts from mRNA counts listener
 	if node_id in indexes["mRNAs"]:
-		counts = columns[("mRNACounts", "mRNA_counts")][:, indexes["mRNAs"][node_id]]
+		counts = columns[("RNACounts", "mRNA_counts")][:, indexes["mRNAs"][node_id]]
 	# If not, get counts from bulk molecules listener
 	else:
 		counts = columns[("BulkMolecules", "counts")][:, indexes["BulkMolecules"][node_id]]
@@ -356,6 +358,21 @@ def read_complexation_dynamics(sim_data, node, node_id, columns, indexes, volume
 
 	node.read_dynamics(dynamics, dynamics_units)
 
+def read_rna_maturation_dynamics(sim_data, node, node_id, columns, indexes, volume):
+	"""
+	Reads dynamics data for RNA maturation nodes from a simulation output.
+	"""
+	reaction_idx = indexes["UnprocessedRnas"][node_id[:-4] + '[c]']
+
+	dynamics = {
+		'RNA maturation events': columns[("RnaMaturationListener", "unprocessed_rnas_consumed")][:, reaction_idx],
+		}
+	dynamics_units = {
+		'RNA maturation events': COUNT_UNITS,
+		}
+
+	node.read_dynamics(dynamics, dynamics_units)
+
 
 def read_metabolism_dynamics(sim_data, node, node_id, columns, indexes, volume):
 	"""
@@ -459,6 +476,7 @@ TYPE_TO_READER_FUNCTION = {
 	"Translation": read_translation_dynamics,
 	"Complexation": read_complexation_dynamics,
 	"Equilibrium": read_equilibrium_dynamics,
+	"RNA Maturation": read_rna_maturation_dynamics,
 	"Metabolism": read_metabolism_dynamics,
 	"Transport": read_metabolism_dynamics,
 	"Regulation": read_regulation_dynamics,

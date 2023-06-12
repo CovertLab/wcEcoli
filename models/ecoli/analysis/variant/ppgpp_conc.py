@@ -100,7 +100,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		aa_mws = sim_data.getter.get_masses(aa_ids).asNumber(units.fg / units.count)
 		aa_kis = metabolism.aa_kis * 1000
 		max_elong_rate = translation.basal_elongation_rate
-		uncharged_trna_names = transcription.rna_data['id'][transcription.rna_data['is_tRNA']]
+		uncharged_trna_names = transcription.uncharged_trna_names
 		charged_trna_names = transcription.charged_trna_names
 		aa_from_trna = transcription.aa_from_trna.T
 		rna_contains_rprotein = transcription.rna_data['includes_ribosomal_protein'][transcription.rna_data['is_mRNA']]
@@ -140,7 +140,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			time_step = read_stacked_columns(all_cells, 'Main', 'timeStepSec', remove_first=True).squeeze()
 			counts_to_molar = read_stacked_columns(all_cells, 'EnzymeKinetics', 'countsToMolar', remove_first=True).squeeze()
 			unique_mol_counts = read_stacked_columns(all_cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts', remove_first=True)
-			rprotein_rna_counts = read_stacked_columns(all_cells, 'mRNACounts', 'mRNA_counts',
+			rprotein_rna_counts = read_stacked_columns(all_cells, 'RNACounts', 'mRNA_counts',
 				remove_first=True, fun=lambda x: np.sum(x[:, rna_contains_rprotein], 1).reshape(-1, 1)).squeeze()
 			rprotein_monomer_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',
 				remove_first=True, fun=lambda x: np.sum(x[:, rprotein_idx], 1).reshape(-1, 1)).squeeze()
