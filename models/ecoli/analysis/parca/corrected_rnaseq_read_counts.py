@@ -1,17 +1,13 @@
 """
-<<<<<<< HEAD
 Plots the RNA-Seq read counts of short genes before and after correction using
 RNA-Seq read counts of other genes in the same operon.
-=======
-Template for parca analysis plots
->>>>>>> master
 """
 
 import pickle
 import os
 
 from matplotlib import pyplot as plt
-# noinspection PyUnresolvedReferences
+# noinspection PyUnresolvedReferencesg
 import numpy as np
 
 from models.ecoli.analysis import parcaAnalysisPlot
@@ -102,7 +98,6 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
 
-<<<<<<< HEAD
 		# Output table of adjusted genes and their before/after values
 		with open(os.path.join(plot_out_dir, plot_out_filename + '_table.tsv'), 'w') as f:
 			f.write('gene_id\tbefore_correction\tafter_correction\n')
@@ -111,9 +106,6 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 					f'{cistron_id_to_gene_id[all_cistron_ids[gene_index]]}\t'
 					f'{before_adjustment[i]}\t'
 					f'{after_adjustment[i]}\n')
-
-=======
->>>>>>> master
 
 if __name__ == "__main__":
 	Plot().cli()
