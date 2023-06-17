@@ -3,17 +3,20 @@ Plot one value per index via heatmap for
 new_gene_expression_and_translation_efficiency variant.
 
 Possible Plots:
-- Average doubling time
 - Percent of sims that successfully reached a given generation number
+- Average doubling time
+- Average cell volume, mass, dry cell mass, mRNA mass, protein mass
 - Average new gene mRNA count
+- Average new gene mRNA mass fraction
+- Average new gene NTP mass fraction
 - Average new gene protein count
 - Average new gene protein mass fraction
+- Average new gene initialization rate for RNAP and Ribosomes
+- Average fraction of time new gene is overcrowded by RNAP and Ribosomes
+- Average number of overcrowded genes for RNAP and Ribosomes
 - Average number of ribosomes
 - Average number of RNA polymerases
 - Average ppGpp concentration
-
-TODO:
-- Accomodate more than one new gene
 """
 
 import numpy as np
@@ -47,7 +50,7 @@ MAX_CELL_INDEX = 16 # do not include any generation >= this index
 Count number of sims that reach this generation (remember index 7 
 corresponds to generation 8)
 """
-COUNT_INDEX = 5 #15 # TODO: CHANGE THIS BACK TO 16
+COUNT_INDEX = 15
 
 """
 generations before this may not be representative of dynamics 
@@ -95,8 +98,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							"ppgpp_concentration_heatmap",
 							"rnap_counts_heatmap",
 							"ribosome_counts_heatmap",
-							#"rnap_crowding_heatmap", # TODO This one is definitely slower
-							#"ribosome_crowding_heatmap" # TODO This one is definitely slower
+							"rnap_crowding_heatmap", # TODO This one is definitely slower
+							"ribosome_crowding_heatmap", # TODO This one is
+							# definitely slower
 							"new_gene_mRNA_counts_heatmap",
 							"new_gene_mRNA_NTP_fraction_heatmap",
 							"new_gene_monomer_counts_heatmap",
@@ -115,7 +119,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_gene_monomer_indexes = []
 
 		# Details needed to create all possible heatmaps
-		# TODO: make sure all the heatmaps have units
 		heatmap_details = {
 			"doubling_times_heatmap" :
 				{'data_table': 'Main',
@@ -301,9 +304,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 										 "ribosome_crowding_heatmap"}
 		standard_non_new_gene_heatmaps = non_new_gene_heatmaps - \
 										 special_non_new_gene_heatmaps
+
 		# Dictionary for storing the data (numpy arrays) for each heatmap
 		heatmap_data = {}
-
 
 		# Map variant indices to expression factors and translation efficiency
 		# values
@@ -317,7 +320,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'new_gene_expression_factors']
 		new_gene_translation_efficiency_values = metadata[
 			'new_gene_translation_efficiency_values']
-
 		separator = len(new_gene_translation_efficiency_values)
 
 		variants = self.ap.get_variants()
@@ -542,9 +544,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					exclude_timeout_cell_mask]
 
 				heatmap_data["rnap_counts_heatmap"][0, trl_eff_index, exp_index] = round(
-					np.mean(avg_rnap_counts), heatmap_details[
-						"rnap_counts_heatmap"][
-						'num_digits_rounding'])
+					np.mean(avg_rnap_counts), heatmap_details["rnap_counts_heatmap"][
+					'num_digits_rounding'])
 				if exclude_early_gens:
 					heatmap_data["rnap_counts_heatmap"][1, trl_eff_index, exp_index] = round(
 						np.mean(avg_rnap_counts[early_cell_mask]),
@@ -614,7 +615,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							avg_target_prob_translation_per_transcript)[
 							late_cell_mask, :]) > 0)[0])
 
-
 			# New Gene Based Heatmaps
 			if not new_gene_heatmaps:
 				continue
@@ -662,6 +662,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 											for monomer_id in
 											new_gene_monomer_ids]
 
+			# These are used in multiple new gene heatmaps
 			avg_new_gene_mRNA_counts = (read_stacked_columns(
 				all_cells, 'RNACounts', 'mRNA_counts', fun=lambda
 					x: np.mean( x[:, new_gene_mRNA_indexes], axis=0)))[exclude_timeout_cell_mask,]
