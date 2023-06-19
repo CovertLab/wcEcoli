@@ -247,7 +247,7 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 				col = "k"
 				if completion_data[i,j] == 0:
 					continue
-				if completion_data[i,j] < 0.9:
+				if completion_data[i,j] < 0.88:
 					col = "r"
 				text = ax.text(j, i, data[i, j],
 							   ha="center", va="center", color=col,
