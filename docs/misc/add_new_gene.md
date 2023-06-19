@@ -83,8 +83,7 @@ The following steps occur in incorporating the new genes into the chromosome:
   * `models/ecoli/analysis/variant/ppgpp_concentration_histogram.py` creates a histogram of the ppGpp concentration, colored by variant index
   * `models/ecoli/analysis/variant/new_gene_protein_mass_fraction_histogram.py` creates a histogram of the proportion of total protein mass that is accounted for by new gene proteins, colored by variant index
 * New Gene Expression and Translation Efficiency
-  * `models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.
-    py` plots a number of heatmaps, where each square in the heatmap 
+  * `models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py` plots a number of heatmaps, where each square in the heatmap 
     represents an average over all seeds and generations for that variant 
     index (i.e. combination of translation efficiency value and new gene 
     expression factor). The heatmaps are colored by the magnitude of the 
@@ -128,5 +127,4 @@ Note: The numbers after new_gene_expression must be integers. A different simula
 
 `python models/ecoli/analysis/variant/doubling_time_histogram.py`
 
-`python models/ecoli/analysis/variant
-/new_gene_translation_efficiency_heatmaps.py`
+`python models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py`
