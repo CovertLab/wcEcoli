@@ -3,6 +3,7 @@ Reusable plotting functions and tools
 """
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 from scipy import stats
 import numpy as np
 
@@ -207,7 +208,8 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
 	ax.legend()
 
 def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-			ylabels, title, box_text_size = "medium", font_size=9):
+			ylabels, title, box_text_size = "medium", font_size=9,
+			percent_completion_threshold = 0.88):
 	"""
 	Args:
 		obj: specify the Plot object
@@ -225,15 +227,27 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 		title: plot title
 		box_text_size: size of text value to be printed in box
 		font_size: font size for labeling axes
+		percent_completion_threshold: If the percent completion for this
+		parameter combination is lower than the threshold, the number in the
+		box will be colored red. If the threshold is 0, no numbers will be
+		colored red.
 
 	Returns:
-		heatmap of data, colored by value, for data corresponding to
-			different parameter values in 2 dimensions
+		heatmap of data, where squares are colored by value and numbers
+		are colored by the percent of simulations that successfuly completed,
+		for data corresponding to different parameter values in 2 dimensions
 
 	"""
 
 	assert(mask.shape == completion_data.shape == data.shape)
-	im = ax.imshow(data, cmap="GnBu")
+
+	grid_colors = [(255 / 255, 255 / 255, 255 / 255),
+				   (22 / 255, 110 / 255, 164 / 255)]
+	cmap_name = 'blue_cmap'
+	blue_cmap = LinearSegmentedColormap.from_list(cmap_name, grid_colors,
+													N=100)
+
+	im = ax.imshow(data, cmap=blue_cmap)
 	ax.set_xticks(np.arange(len(xlabels)))
 	ax.set_xticklabels(xlabels)
 	ax.set_yticks(np.arange(len(
@@ -245,9 +259,9 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 		for j in range(len(xlabels)):
 			if mask[i,j]:
 				col = "k"
-				if completion_data[i,j] == 0:
+				if completion_data[i,j] == 0 and data[i,j] == -1:
 					continue
-				if completion_data[i,j] < 0.88:
+				if completion_data[i,j] < percent_completion_threshold:
 					col = "r"
 				text = ax.text(j, i, data[i, j],
 							   ha="center", va="center", color=col,

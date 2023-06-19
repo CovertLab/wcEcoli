@@ -98,9 +98,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							"ppgpp_concentration_heatmap",
 							"rnap_counts_heatmap",
 							"ribosome_counts_heatmap",
-							"rnap_crowding_heatmap", # TODO This one is definitely slower
-							"ribosome_crowding_heatmap", # TODO This one is
-							# definitely slower
+							"rnap_crowding_heatmap",
+							"ribosome_crowding_heatmap",
 							"new_gene_mRNA_counts_heatmap",
 							"new_gene_mRNA_NTP_fraction_heatmap",
 							"new_gene_monomer_counts_heatmap",
