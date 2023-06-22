@@ -50,7 +50,7 @@ MAX_CELL_INDEX = 16 # do not include any generation >= this index
 Count number of sims that reach this generation (remember index 7 
 corresponds to generation 8)
 """
-COUNT_INDEX = 15
+COUNT_INDEX = 5#15
 
 """
 generations before this may not be representative of dynamics 
@@ -252,7 +252,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'default_value': -1,
 				 'num_digits_rounding': 4,
 				 'box_text_size': 'small',
-				 'plot_title': 'New Gene mRNA Mass Fraction',
+				 'plot_title': 'New Gene',
 				 },
 			"new_gene_monomer_mass_fraction_heatmap":
 				{'default_value': -1,
@@ -833,9 +833,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		heatmap_x_label = "Expression Variant"
 		heatmap_y_label = "Translation Efficiency Value"
 
-		# TODO: Change these? Make them dynamic?
-		figsize_x = 10
-		figsize_y = 5
+		figsize_x =  2 + len(new_gene_expression_factors)/2
+		figsize_y = 0.5 + len(new_gene_translation_efficiency_values)/2
 
 		# Plot percent completion heatmap
 		fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
@@ -907,7 +906,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							new_gene_expression_factors,
 							new_gene_translation_efficiency_values,
 							heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
-								'plot_title'] + ": " + new_gene_mRNA_ids[i][:-4],
+								'plot_title'] + " " + ntp_id[:-3] +
+								" Fraction: " + new_gene_mRNA_ids[i][:-4],
 							heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
 								'box_text_size'])
 						fig.tight_layout()
