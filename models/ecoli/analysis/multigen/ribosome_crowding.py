@@ -1,8 +1,7 @@
 """
-Comparison of target synthesis probabilites vs actual synthesis
-probabilites for
-transcription units whose synthesis probabilities exceeded the limit set by the
-physical size and the elongation rates of ribosomes.
+Comparison of target translation probabilites vs actual translation
+probabilites for mRNAs whose translation probabilities exceeded the limit
+set by the physical size and the elongation rates of ribosomes.
 """
 
 import os
@@ -15,7 +14,6 @@ import numpy as np
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
-
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
@@ -81,7 +79,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
-
 
 if __name__ == '__main__':
 	Plot().cli()

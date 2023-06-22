@@ -41,6 +41,9 @@ NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [25, 10, 5, 2.5, 1, 0.5, 0.1, 0.05, 0.0
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 
+assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
+	"The first new gene expression factor should always be the control sim"
+
 def new_gene_expression_and_translation_efficiency(sim_data, index):
 	# Determine ids and indices of new genes
 	mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
@@ -79,7 +82,7 @@ def new_gene_expression_and_translation_efficiency(sim_data, index):
 	# Determine factor for new gene expression and value for new
 	# gene translation efficiency
 	if index == 0:
-		expression_factor = 0
+		expression_factor = NEW_GENE_EXPRESSION_FACTORS[0]
 		# Note: this value should not matter since gene is knocked out
 		trl_eff_value = min(trl_eff_data)
 	else:

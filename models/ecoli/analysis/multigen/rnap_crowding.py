@@ -14,7 +14,6 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
-
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
@@ -59,7 +58,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
-
 
 if __name__ == '__main__':
 	Plot().cli()
