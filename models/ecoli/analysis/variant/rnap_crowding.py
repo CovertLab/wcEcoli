@@ -5,19 +5,17 @@ overcrowded by RNA polymerases. Here, overcrowded by RNA polymerases is
 defined as the actual probability of RNA synthesis being less than the target
 probability of RNA synthesis on average for at least one generation in at
 least one seed for that variant index.
-
-TODO: Filter sims that timed out
 """
 
 import numpy as np
-from matplotlib import pyplot as plt
-
-import pickle
 import os
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import read_stacked_columns, \
 	stacked_cell_threshold_mask
+
+# 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
+exclude_timeout_cells = 1
 
 """
 1 to plot early (before MIN_LATE_CELL_INDEX), and late generations in
@@ -35,11 +33,9 @@ due to how they are initialized
 """
 MIN_LATE_CELL_INDEX = 4
 
-"""
-Count number of sims that reach this generation (remember index 7 
-corresponds to generation 8)
-"""
-COUNT_INDEX = 15
+MAX_CELL_LENGTH = 36000
+if (exclude_timeout_cells==0):
+	MAX_CELL_LENGTH += 1000000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
@@ -67,6 +63,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if len(all_cells) == 0:
 				continue
 
+			exclude_timeout_cell_mask = stacked_cell_threshold_mask(
+				all_cells, 'Main', 'time', MAX_CELL_LENGTH,
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 			all_cells_gens = \
 				np.array([int(os.path.basename(os.path.dirname(
 					cell_path))[-6:]) for cell_path in all_cells])
@@ -84,10 +83,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# RNA polymerase overcrowding
 			avg_actual_rna_synth_prob = read_stacked_columns(all_cells,
 				'RnaSynthProb','actual_rna_synth_prob',
-				fun=lambda x: np.mean(x, axis=0))
+				fun=lambda x: np.mean(x, axis=0))[exclude_timeout_cell_mask]
 			avg_target_rna_synth_prob = read_stacked_columns(all_cells,
 				'RnaSynthProb','target_rna_synth_prob',
-				fun=lambda x: np.mean(x, axis=0))
+				fun=lambda x: np.mean(x, axis=0))[exclude_timeout_cell_mask]
 
 			avg_overcrowded_tu_indexes = np.where(
 				sum(avg_actual_rna_synth_prob <
@@ -97,6 +96,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				early_cell_mask = all_generations[variant] < MIN_LATE_CELL_INDEX
 				if len(early_cell_mask) == 1:
 					early_cell_mask = early_cell_mask[0]
+				early_cell_mask = early_cell_mask[exclude_timeout_cell_mask]
 				avg_overcrowded_tu_indexes_early = np.where(
 					sum((avg_actual_rna_synth_prob <
 						 avg_target_rna_synth_prob)[early_cell_mask]) > 0)[0]
@@ -104,6 +104,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				late_cell_mask = all_generations[variant] >= MIN_LATE_CELL_INDEX
 				if len(late_cell_mask) == 1:
 					late_cell_mask = late_cell_mask[0]
+				late_cell_mask = late_cell_mask[exclude_timeout_cell_mask]
 				avg_overcrowded_tu_indexes_late = np.where(
 					sum((avg_actual_rna_synth_prob <
 						 avg_target_rna_synth_prob)[late_cell_mask]) > 0)[0]

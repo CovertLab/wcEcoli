@@ -98,8 +98,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							"ppgpp_concentration_heatmap",
 							"rnap_counts_heatmap",
 							"ribosome_counts_heatmap",
-							"rnap_crowding_heatmap",
-							"ribosome_crowding_heatmap",
+							# "rnap_crowding_heatmap",
+							# "ribosome_crowding_heatmap",
 							"new_gene_mRNA_counts_heatmap",
 							"new_gene_mRNA_NTP_fraction_heatmap",
 							"new_gene_monomer_counts_heatmap",
@@ -478,12 +478,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				early_cell_mask = generations[variant] < MIN_LATE_CELL_INDEX
 				if len(early_cell_mask) == 1:
 					early_cell_mask = early_cell_mask[0]
+				early_cell_mask = early_cell_mask[exclude_timeout_cell_mask]
 				# Add late gen values to the heatmap structure
 				late_cell_mask = np.logical_and((generations[variant] >=
-									MIN_LATE_CELL_INDEX), \
-									(generations[variant] < MAX_CELL_INDEX))
+					MIN_LATE_CELL_INDEX),(generations[variant] < MAX_CELL_INDEX))
 				if len(late_cell_mask) == 1:
 					late_cell_mask = late_cell_mask[0]
+				late_cell_mask = late_cell_mask[exclude_timeout_cell_mask]
 
 			# Completed Gens Heatmap: Count the number of simulations that
 			# reach gen COUNT_INDEX + 1
@@ -559,11 +560,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_actual_rna_synth_prob = read_stacked_columns(
 					all_cells,
 					'RnaSynthProb', 'actual_rna_synth_prob',
-					fun=lambda x: np.mean(x, axis=0))
+					fun=lambda x: np.mean(x, axis=0))[exclude_timeout_cell_mask]
 				avg_target_rna_synth_prob = read_stacked_columns(
 					all_cells,
 					'RnaSynthProb', 'target_rna_synth_prob',
-					fun=lambda x: np.mean(x, axis=0))
+					fun=lambda x: np.mean(x, axis=0))[exclude_timeout_cell_mask]
 
 				# Get indexes of transcription units that on
 				# average were overcrowded in any generation for any seed
@@ -677,7 +678,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					self.save_new_gene_heatmap(heatmap_data,
 						"new_gene_mRNA_counts_heatmap", i, trl_eff_index,
 						exp_index, new_gene_mRNA_counts[i][variant],
-						heatmap_details, early_cell_mask, late_cell_mask);
+						heatmap_details, early_cell_mask, late_cell_mask)
 
 			# New Gene Protein Counts
 			if "new_gene_monomer_counts_heatmap" in heatmaps_to_make:
