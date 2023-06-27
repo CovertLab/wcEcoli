@@ -208,8 +208,8 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
 	ax.legend()
 
 def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-			ylabels, title, box_text_size = "medium", font_size=9,
-			percent_completion_threshold = 0.88):
+			ylabels, title, box_text_size = "medium", ax_font_size=9,
+			title_font_size=9, percent_completion_threshold = 0.88):
 	"""
 	Args:
 		obj: specify the Plot object
@@ -226,7 +226,8 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 		ylabels: tick values for y-axis
 		title: plot title
 		box_text_size: size of text value to be printed in box
-		font_size: font size for labeling axes
+		ax_font_size: font size for labeling axes
+		title_font_size: font size for title
 		percent_completion_threshold: If the percent completion for this
 		parameter combination is lower than the threshold, the number in the
 		box will be colored red. If the threshold is 0, no numbers will be
@@ -266,6 +267,6 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 				text = ax.text(j, i, data[i, j],
 							   ha="center", va="center", color=col,
 							   fontsize=box_text_size)
-	ax.set_xlabel(xlabel, fontsize=font_size)
-	ax.set_ylabel(ylabel, fontsize=font_size)
-	ax.set_title(title)
+	ax.set_xlabel(xlabel, fontsize=ax_font_size)
+	ax.set_ylabel(ylabel, fontsize=ax_font_size)
+	ax.set_title(title, fontsize=title_font_size)

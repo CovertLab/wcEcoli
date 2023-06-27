@@ -169,7 +169,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			protein_init_prob[~is_overcrowded] *= scale_the_rest_by
 			is_overcrowded |= (protein_init_prob > max_p_per_protein)
 
-		# Compute actual synthesis probabilities of each transcription unit
+		# Compute actual transcription probabilities of each transcript
 		actual_protein_init_prob = protein_init_prob.copy()
 		self.writeToListener(
 			"RibosomeData", "actual_prob_translation_per_transcript",

@@ -21,6 +21,7 @@ Possible Plots:
 
 import numpy as np
 from matplotlib import pyplot as plt
+import math
 
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
@@ -71,12 +72,11 @@ if (exclude_timeout_cells==0):
 	MAX_CELL_LENGTH += 1000000
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-	def save_new_gene_heatmap(self, heatmap_data, h, i, trl_eff_index,
+	def save_new_gene_heatmap_data(self, heatmap_data, h, i, trl_eff_index,
 							  exp_index, curr_heatmap_data, heatmap_details,
 							  early_cell_mask, late_cell_mask):
 		heatmap_data[h][i][0, trl_eff_index, exp_index] = round(
-			np.mean(curr_heatmap_data), heatmap_details[h][
-				'num_digits_rounding'])
+			np.mean(curr_heatmap_data), heatmap_details[h]['num_digits_rounding'])
 
 		if exclude_early_gens:
 			heatmap_data[h][i][1, trl_eff_index, exp_index] = \
@@ -688,7 +688,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				for i in range(len(new_gene_mRNA_ids)):
 					new_gene_mRNA_counts[i][variant] = \
 						np.log10(avg_new_gene_mRNA_counts[:, i] + 1)
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_mRNA_counts_heatmap", i, trl_eff_index,
 						exp_index, new_gene_mRNA_counts[i][variant],
 						heatmap_details, early_cell_mask, late_cell_mask)
@@ -698,7 +698,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				for i in range(len(new_gene_mRNA_ids)):
 					new_gene_monomer_counts[i][variant] = \
 						np.log10(avg_new_gene_monomer_counts[:, i] + 1)
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_monomer_counts_heatmap", i,
 						trl_eff_index, exp_index, new_gene_monomer_counts[i][variant],
 						heatmap_details, early_cell_mask, late_cell_mask)
@@ -713,7 +713,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					new_gene_mRNA_mass_fraction = \
 						(avg_new_gene_mRNA_counts[:,i] *
 						new_gene_mRNA_masses[i]) / avg_mRNA_mass[:,i]
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_mRNA_mass_fraction_heatmap",
 						i, trl_eff_index, exp_index,
 						new_gene_mRNA_mass_fraction, heatmap_details,
@@ -769,7 +769,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					new_gene_monomer_mass_fraction = \
 						(avg_new_gene_monomer_counts[:,i] *
 						 new_gene_monomer_masses[i]) / avg_protein_mass[:,i]
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_monomer_mass_fraction_heatmap", i,
 						trl_eff_index, exp_index,
 						new_gene_monomer_mass_fraction,
@@ -786,7 +786,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						x: np.mean(x[:, new_gene_cistron_indexes],
 						axis=0)))[exclude_timeout_cell_mask,] / avg_new_gene_copy_number
 				for i in range(len(new_gene_mRNA_ids)):
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_rnap_init_rate_heatmap", i, trl_eff_index,
 						exp_index, avg_new_gene_rnap_init_rates[:,i],
 						heatmap_details, early_cell_mask, late_cell_mask)
@@ -799,7 +799,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					axis=0)))[exclude_timeout_cell_mask,] / \
 					avg_new_gene_mRNA_counts
 				for i in range(len(new_gene_mRNA_ids)):
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_ribosome_init_rate_heatmap",i, trl_eff_index,
 						exp_index, avg_new_gene_ribosome_init_rates[:,i],
 						heatmap_details, early_cell_mask, late_cell_mask)
@@ -815,7 +815,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					/ (x[:, new_gene_RNA_indexes].shape[0]))
 					)[exclude_timeout_cell_mask,]
 				for i in range(len(new_gene_mRNA_ids)):
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_rnap_time_overcrowded_heatmap", i,
 						trl_eff_index, exp_index,
 						new_gene_num_time_steps_rnap_overcrowded[:,i],
@@ -832,7 +832,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					x[:, new_gene_monomer_indexes].shape[0]))
 					)[exclude_timeout_cell_mask,]
 				for i in range(len(new_gene_mRNA_ids)):
-					self.save_new_gene_heatmap(heatmap_data,
+					self.save_new_gene_heatmap_data(heatmap_data,
 						"new_gene_ribosome_time_overcrowded_heatmap", i,
 						trl_eff_index, exp_index,
 						new_gene_num_time_steps_ribosome_overcrowded[:,i],
@@ -851,14 +851,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Dashboard Plots
 		if dashboard_flag == 1 or dashboard_flag == 2:
-			dashboard_ncols = 4
-			dashboard_nrows = (len(heatmaps_to_make) + 1) // dashboard_ncols + 1
+			if len(heatmaps_to_make) > 3:
+				dashboard_ncols = 4
+				dashboard_nrows = math.ceil((len(heatmaps_to_make) + 1) / dashboard_ncols)
+			else:
+				dashboard_ncols = len(heatmaps_to_make) + 1
+				dashboard_nrows = 1
 
 			for j in range(len(plot_descr)):
 				fig, axs = plt.subplots(nrows=dashboard_nrows,
 					ncols=dashboard_ncols,
-					figsize=(figsize_y * dashboard_ncols,figsize_x * dashboard_nrows)
+					figsize=(figsize_y * dashboard_ncols,figsize_x * dashboard_nrows),
+					layout='constrained'
 					)
+				if dashboard_nrows == 1:
+					axs = np.reshape(axs, (1, dashboard_ncols))
 
 				# Percent Completion Heatmap
 				heatmap(self, axs[0,0], variant_mask,

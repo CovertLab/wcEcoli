@@ -1,7 +1,7 @@
 """
-Comparison of target synthesis probabilites vs actual synthesis probabilites for
-transcription units whose synthesis probabilities exceeded the limit set by the
-physical size and the elongation rates of RNA polymerases.
+Comparison of target synthesis probabilities vs actual synthesis
+probabilities for transcription units whose synthesis probabilities exceeded
+the limit set by the physical size and the elongation rates of RNA polymerases.
 """
 
 import os

@@ -1,6 +1,6 @@
 """
-Comparison of target translation probabilites vs actual translation
-probabilites for mRNAs whose translation probabilities exceeded the limit
+Comparison of target translation probabilities vs actual translation
+probabilities for mRNAs whose translation probabilities exceeded the limit
 set by the physical size and the elongation rates of ribosomes.
 """
 
