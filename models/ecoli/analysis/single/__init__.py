@@ -52,6 +52,7 @@ ACTIVE = [
 	"replisome_counts.py",
 	"replisome_rnap_collisions.py",
 	"replisome_rnap_collisions_by_gene.py",
+	"ribosome_crowding.py",
 	"ribosome_limitation.py",
 	"ribosome30SCounts.py",
 	"ribosome50SCounts.py",
