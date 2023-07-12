@@ -49,7 +49,6 @@ addition to all generations
 EXCLUDE_EARLY_GENS = 1
 
 FONT_SIZE=9
-MAX_VARIANT = 62 # do not include any variant >= this index
 
 """
 Count number of sims that reach this generation (remember index 7 
@@ -331,8 +330,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			len(new_gene_expression_factors)), dtype=bool)
 
 		for index in variants:
-			if index >= MAX_VARIANT:
-				continue
 
 			if index == 0:
 				expression_list_index = 0
@@ -456,9 +453,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
 		for variant in variants:
-
-			if variant >= MAX_VARIANT:
-				continue
 
 			print("Variant: ",variant)
 			all_cells = self.ap.get_cells(variant=[variant],
