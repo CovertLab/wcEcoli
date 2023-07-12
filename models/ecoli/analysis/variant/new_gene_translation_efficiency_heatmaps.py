@@ -40,7 +40,7 @@ Dashboard Flag
 1: Dashboard Only (One file with all plots)
 2: Both Dashboard and Separate
 """
-dashboard_flag = 1
+dashboard_flag = 2
 
 # 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
 exclude_timeout_cells = 1
@@ -52,7 +52,7 @@ addition to all generations
 exclude_early_gens = 1
 
 FONT_SIZE=9
-MAX_VARIANT = 43 # do not include any variant >= this index
+MAX_VARIANT = 62 # do not include any variant >= this index
 MAX_CELL_INDEX = 16 # do not include any generation >= this index
 
 """
@@ -489,15 +489,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if exclude_early_gens == 1:
 				# Add early gen values to the heatmap structure
 				early_cell_mask = generations[variant] < MIN_LATE_CELL_INDEX
-				if len(early_cell_mask) == 1:
-					early_cell_mask = early_cell_mask[0]
 				early_cell_mask = early_cell_mask[exclude_timeout_cell_mask]
+				if len(early_cell_mask) == 1:
+					early_cell_mask = early_cell_mask.reshape(1)
 				# Add late gen values to the heatmap structure
 				late_cell_mask = np.logical_and((generations[variant] >=
 					MIN_LATE_CELL_INDEX),(generations[variant] < MAX_CELL_INDEX))
-				if len(late_cell_mask) == 1:
-					late_cell_mask = late_cell_mask[0]
 				late_cell_mask = late_cell_mask[exclude_timeout_cell_mask]
+				if len(late_cell_mask) == 1:
+					late_cell_mask = late_cell_mask.reshape(1)
 
 			# Completed Gens Heatmap: Count the number of simulations that
 			# reach gen COUNT_INDEX + 1
