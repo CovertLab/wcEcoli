@@ -105,34 +105,35 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_gene_mRNA_indexes = []
 		new_gene_monomer_indexes = []
 
-		# Details needed to create all possible heatmaps
+		"""
+		Details needed to create all possible heatmaps
+		"""
+		# Defaults - unless otherwise specified, these values will be
+		# used for plotting
+		default_is_nonstandard_data_retrieval = False
+		default_value = -1
+		default_remove_first = False
+		default_function_to_apply = lambda x: np.mean(x)
+		default_num_digits_rounding = 2
+		default_box_text_size = 'medium'
+
+		# Specify unique fields and non-default values here
 		heatmap_details = {
 			"doubling_times_heatmap" :
 				{'data_table': 'Main',
 				 'data_column': 'time',
-				 'remove_first': False,
 				 'function_to_apply': lambda x: (x[-1] - x[0]) / 60.,
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
-				 'box_text_size': 'medium',
 				 'plot_title': 'Doubling Time (minutes)',
 				 },
 			"cell_volume_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'cellVolume',
-				 'remove_first': False,
-				 'function_to_apply': lambda x: np.mean(x),
-				 'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
 				 'plot_title': 'Cell Volume (fL)',
 				 },
 			"cell_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'cellMass',
-				 'remove_first': False,
-				 'function_to_apply': lambda x: np.mean(x),
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Cell Mass (fg)',
@@ -140,9 +141,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"cell_dry_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'dryMass',
-				 'remove_first': False,
-				 'function_to_apply': lambda x: np.mean(x),
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Dry Cell Mass (fg)',
@@ -150,19 +148,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"cell_mRNA_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'mRnaMass',
-				 'remove_first': False,
-				 'function_to_apply': lambda x: np.mean(x),
-				 'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
 				 'plot_title': 'Total mRNA Mass (fg)',
 				 },
 			"cell_protein_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'proteinMass',
-				 'remove_first': False,
-				 'function_to_apply': lambda x: np.mean(x),
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Total Protein Mass (fg)',
@@ -171,18 +161,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'data_table': 'GrowthLimits',
 				 'data_column': 'ppgpp_conc',
 				 'remove_first': True,
-				 'function_to_apply': lambda x: np.mean(x),
-				 'default_value': -1,
 				 'num_digits_rounding': 1,
-				 'box_text_size': 'medium',
 				 'plot_title': 'ppGpp Concentration (uM)',
 				 },
 			"rnap_counts_heatmap":
-				{'data_table': 'N/A',
-				 'data_column': 'N/A',
-				 'remove_first': False,
-				 'function_to_apply': lambda x: 0,
-				 'default_value': -1,
+				{'is_nonstandard_data_retrieval': True,
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'RNA Polymerase (RNAP) Counts',
@@ -190,96 +173,64 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"ribosome_counts_heatmap":
 				{'data_table': 'UniqueMoleculeCounts',
 				 'data_column': 'uniqueMoleculeCounts',
-				 'remove_first': False,
 				 'function_to_apply':
 					 lambda x: np.mean(x[:, ribosome_index], axis=0),
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Ribosome Counts',
 				 },
 			"rnap_crowding_heatmap":
-				{'data_table': 'RnaSynthProb',
-				 'data_column': 'N/A',
-				 'remove_first': False,
+				{'is_nonstandard_data_retrieval': True,
+				 'data_table': 'RnaSynthProb',
 				 'function_to_apply': lambda x: np.mean(x, axis = 0),
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
-				 'box_text_size': 'medium',
 				 'plot_title': 'RNAP Crowding: # of TUs',
 				 },
 			"ribosome_crowding_heatmap":
-				{'data_table': 'RibosomeData',
-				 'data_column': 'N/A',
-				 'remove_first': False,
+				{'is_nonstandard_data_retrieval': True,
+				 'data_table': 'RibosomeData',
 				 'function_to_apply': lambda x: np.mean(x, axis = 0),
-				 'default_value': -1,
 				 'num_digits_rounding': 0,
-				 'box_text_size': 'medium',
 				 'plot_title': 'Ribosome Crowding: # of Monomers',
 				 },
 			"new_gene_mRNA_counts_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'Log(New Gene mRNA Counts+1)',
-				 },
+				{'plot_title': 'Log(New Gene mRNA Counts+1)'},
 			"new_gene_monomer_counts_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'Log(New Gene Protein Counts+1)',
-				 },
+				{'plot_title': 'Log(New Gene Protein Counts+1)'},
 			"new_gene_mRNA_mass_fraction_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'New Gene mRNA Mass Fraction',
-				 },
+				{'plot_title': 'New Gene mRNA Mass Fraction'},
 			"new_gene_mRNA_NTP_fraction_heatmap":
-				{'default_value': -1,
+				{'is_nonstandard_data_retrieval': True,
 				 'num_digits_rounding': 4,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'New Gene',
 				 },
 			"new_gene_monomer_mass_fraction_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'New Gene Protein Mass Fraction',
-				 },
+				{'plot_title': 'New Gene Protein Mass Fraction'},
 			"new_gene_rnap_init_rate_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'New Gene RNAP Initialization Rate',
-				 },
+				{'plot_title': 'New Gene RNAP Initialization Rate'},
 			"new_gene_ribosome_init_rate_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'New Gene Ribosome Initalization Rate',
-				 },
+				{'plot_title': 'New Gene Ribosome Initalization Rate'},
 			"new_gene_rnap_time_overcrowded_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'Fraction of Time RNAP Overcrowded '
-							   'New Gene',
-				 },
+				{'plot_title': 'Fraction of Time RNAP Overcrowded New Gene'},
 			"new_gene_ribosome_time_overcrowded_heatmap":
-				{'default_value': -1,
-				 'num_digits_rounding': 2,
-				 'box_text_size': 'medium',
-				 'plot_title': 'Fraction of Time Ribosome Overcrowded New '
-							   'Gene',
-				 },
+				{'plot_title': 'Fraction of Time Ribosome Overcrowded New Gene'},
 		}
 
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
 			"the completed_gens_heatmap is run by default, do not include in heatmaps_to_make"
+		# Check validity of heatmaps and fill in default values where needed
 		for h in heatmaps_to_make:
 			assert h in heatmap_details, "Heatmap " + h + " is not an option"
+			heatmap_details[h]['is_new_gene_heatmap'] = h.startswith(
+				"new_gene_")
+			heatmap_details[h].setdefault('is_nonstandard_data_retrieval',
+						  default_is_nonstandard_data_retrieval)
+			heatmap_details[h].setdefault('default_value', default_value)
+			heatmap_details[h].setdefault('remove_first', default_remove_first)
+			heatmap_details[h].setdefault('function_to_apply', default_function_to_apply)
+			heatmap_details[h].setdefault('num_digits_rounding', default_num_digits_rounding)
+			heatmap_details[h].setdefault('box_text_size', default_box_text_size)
 
 		new_gene_heatmaps = {h for h in heatmaps_to_make
 								 if h.startswith("new_gene_")}
