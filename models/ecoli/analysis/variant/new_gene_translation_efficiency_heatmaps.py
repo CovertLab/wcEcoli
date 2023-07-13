@@ -58,6 +58,35 @@ due to how they are initialized
 MIN_CELL_INDEX = 4
 MAX_CELL_INDEX = 16
 
+"""
+Specify which subset of heatmaps should be made
+Completed_gens heatmap is always made, because it is used to
+create the other heatmaps, and should not be included here.
+The order listed here will be the order of the heatmaps in the
+dashboard plot.
+"""
+heatmaps_to_make_list = ["doubling_times_heatmap",
+						 "cell_mass_heatmap",
+						 "cell_dry_mass_heatmap",
+						 "cell_volume_heatmap",
+						 "ppgpp_concentration_heatmap",
+						 "rnap_crowding_heatmap",
+						 "ribosome_crowding_heatmap",
+						 "cell_mRNA_mass_heatmap",
+						 "cell_protein_mass_heatmap",
+						 "rnap_counts_heatmap",
+						 "ribosome_counts_heatmap",
+						 "new_gene_mRNA_counts_heatmap",
+						 "new_gene_monomer_counts_heatmap",
+						 "new_gene_rnap_init_rate_heatmap",
+						 "new_gene_ribosome_init_rate_heatmap",
+						 "new_gene_mRNA_mass_fraction_heatmap",
+						 "new_gene_monomer_mass_fraction_heatmap",
+						 "new_gene_rnap_time_overcrowded_heatmap",
+						 "new_gene_ribosome_time_overcrowded_heatmap",
+						 "new_gene_mRNA_NTP_fraction_heatmap",
+						 ]
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def save_new_gene_heatmap_data(self, heatmap_data, h, i, trl_eff_index,
 							  exp_index, curr_heatmap_data, heatmap_details,
@@ -70,43 +99,40 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-
-		# Specify which subset of heatmaps should be made
-		# Completed_gens heatmap is always made, because it is used to
-		# create the other heatmaps, and should not be included here.
-		# The order listed here will be the order of the heatmaps in the
-		# dashboard plot.
-		heatmaps_to_make_list = ["doubling_times_heatmap",
-							"cell_mass_heatmap",
-							"cell_dry_mass_heatmap",
-							"cell_volume_heatmap",
-							"ppgpp_concentration_heatmap",
-							"rnap_crowding_heatmap",
-							"ribosome_crowding_heatmap",
-							"cell_mRNA_mass_heatmap",
-							"cell_protein_mass_heatmap",
-							"rnap_counts_heatmap",
-							"ribosome_counts_heatmap",
-							"new_gene_mRNA_counts_heatmap",
-							"new_gene_monomer_counts_heatmap",
-							"new_gene_rnap_init_rate_heatmap",
-							"new_gene_ribosome_init_rate_heatmap",
-							"new_gene_mRNA_mass_fraction_heatmap",
-							"new_gene_monomer_mass_fraction_heatmap",
-							"new_gene_rnap_time_overcrowded_heatmap",
-							"new_gene_ribosome_time_overcrowded_heatmap",
-							"new_gene_mRNA_NTP_fraction_heatmap",
-							]
 		heatmaps_to_make = set(heatmaps_to_make_list)
 
 		# Placeholders for lambda functions
+		with open(simDataFile, 'rb') as f:
+			sim_data = pickle.load(f)
 		ribosome_index = -1
-		rnap_id = ["APORNAP-CPLX[c]"]
+		rnap_id = [sim_data.molecule_ids.full_RNAP]
 		new_gene_mRNA_indexes = []
 		new_gene_monomer_indexes = []
 
 		"""
 		Details needed to create all possible heatmaps
+			key (string): Heatmap identifier, will also be used in file name if
+				plots are saved separately
+			is_new_gene_heatmap (bool): If True, one heatmap will be made 
+				for each new gene
+			is_nonstandard_data_retrieval (bool): False if only one column needs
+			 	to be read from one table to extract data for this heatmap. True
+			 	in all other cases.
+			data_table (string): Table to get data from.
+			data_column (string): Column in table to get data from.
+			default_value (int): Value to use in heatmap if no data is 
+				extracted for this parameter combination.
+			remove_first (bool): If True, removes the first column of data 
+				from each cell (which might be set to a default value in 
+				some cases)
+			function_to_apply (lambda): Function to apply to data in each generation
+				(eg. np.mean will return and array with the mean value for 
+				each generation instead of each time point)
+			num_digits_rounding (int): Specifies how to round the number 
+				displayed in each sequare of the heatmap
+			box_text_size (string): Specifies font size of number displayed 
+				in each square of the heatmap
+			plot_title (string): Title of heatmap to display
 		"""
 		# Defaults - unless otherwise specified, these values will be
 		# used for plotting
@@ -253,6 +279,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print("This plot is intended to be run on simulations where the"
 				  " new gene expression-translation efficiency variant was "
 				  "enabled, but no parameters for this variant were found.")
+			return
 
 		new_gene_expression_factors = metadata[
 			'new_gene_expression_factors']
@@ -295,8 +322,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		# Determine new gene ids
-		with open(simDataFile, 'rb') as f:
-			sim_data = pickle.load(f)
 		mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
 		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
 		new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
@@ -321,8 +346,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
 			# Determine NTP ids
-			with open(simDataFile, 'rb') as f:
-				sim_data = pickle.load(f)
 			ntp_ids = list(sim_data.ntp_code_to_id_ordered.values())
 
 			# Determine number of NTPs per new gene mRNA
@@ -377,13 +400,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_gene_monomer_masses = [1 for id in new_gene_monomer_ids]
 		for i in range(len(new_gene_monomer_ids)):
 			new_gene_monomer_masses[i] = float(
-				(sim_data.getter.get_mass(new_gene_monomer_ids[i]) / 1000
-				 * 0.0000016605402) / (1 * g / mol))  # convert from g/mol to fg
+				(sim_data.getter.get_mass(new_gene_monomer_ids[i]) / (1E-15 * g) *
+				 (1/sim_data.constants.n_avogadro))) # convert from g/mol to fg
 		new_gene_mRNA_masses = [1 for id in new_gene_mRNA_ids]
 		for i in range(len(new_gene_mRNA_ids)):
 			new_gene_mRNA_masses[i] = float(
-				(sim_data.getter.get_mass(new_gene_mRNA_ids[i]) / 1000
-				 * 0.0000016605402) / (1 * g / mol))  # convert from g/mol to fg
+				(sim_data.getter.get_mass(new_gene_mRNA_ids[i]) / (1E-15 * g) *
+				(1/sim_data.constants.n_avogadro))) # convert from g/mol to fg
 		all_mRNA_ntp_totals = {}  # {variant: {NTP id: values}}
 
 		variants = self.ap.get_variants()
