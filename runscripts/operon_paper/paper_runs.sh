@@ -13,65 +13,65 @@ SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set B - operons v1, glucose minimal media
+## Set B - no operons, rich media
+# Used for comparisons in Figures 1, 2, 3
+DESC="SET B 8 gens 128 seeds operons off with rich media" \
+OPERONS="off" \
+VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set C - operons v1, glucose minimal media
 # Used for comparisons in Figures 2
-DESC="SET B 8 gens 128 seeds operons v1 with glucose minimal media" \
+DESC="SET C 8 gens 128 seeds operons v1 with glucose minimal media" \
 OPERONS="v1" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set C - operons v2, glucose minimal media
+## Set D - operons v1, rich media
+# Used for comparisons in Figures 2
+DESC="SET D 8 gens 128 seeds operons v1 with rich media" \
+OPERONS="v1" \
+VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set E - operons v2, glucose minimal media
 # Used for comparisons in Figures 2, 3
-DESC="SET C 8 gens 128 seeds operons v2 with glucose minimal media" \
+DESC="SET E 8 gens 128 seeds operons v2 with glucose minimal media" \
 OPERONS="v2" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set D - operons v3, glucose minimal media
+## Set F - operons v2, rich media
+# Used for comparisons in Figures 2, 3
+DESC="SET F 8 gens 128 seeds operons v2 with rich media" \
+OPERONS="v2" \
+VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set G - operons v3, glucose minimal media
 # Used for comparisons in Figure 3
-DESC="SET D 8 gens 128 seeds operons v3 with glucose minimal media" \
+DESC="SET G 8 gens 128 seeds operons v3 with glucose minimal media" \
 OPERONS="v3" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set E - operons on (final version), glucose minimal media
+## Set H - operons on (final version), glucose minimal media
 # Used for comparisons in Figures 1, 4, 5
-DESC="SET E 8 gens 128 seeds operons on with glucose minimal media" \
+DESC="SET H 8 gens 128 seeds operons on with glucose minimal media" \
 OPERONS="on" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
-RUN_AGGREGATE_ANALYSIS=0 \
-python runscripts/fireworks/fw_queue.py
-
-## Set F - no operons, rich media
-# Used for comparisons in Figures 1, 2, 3, 4, 5
-DESC="SET F 8 gens 128 seeds operons off with rich media" \
-OPERONS="off" \
-VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
-RUN_AGGREGATE_ANALYSIS=0 \
-python runscripts/fireworks/fw_queue.py
-
-## Set G - operons v1, rich media
-# Used for comparisons in Figures 2
-DESC="SET G 8 gens 128 seeds operons v1 with rich media" \
-OPERONS="v1" \
-VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
-RUN_AGGREGATE_ANALYSIS=0 \
-python runscripts/fireworks/fw_queue.py
-
-## Set H - operons v2, rich media
-# Used for comparisons in Figures 2, 3
-DESC="SET H 8 gens 128 seeds operons v2 with rich media" \
-OPERONS="v2" \
-VARIANT="condition" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
 SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
