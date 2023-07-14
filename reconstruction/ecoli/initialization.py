@@ -325,10 +325,14 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, mecha
 	replichore_length = np.ceil(0.5*genome_length) * units.nt
 
 	# Calculate the maximum number of replisomes that could be formed with
-	# the existing counts of replisome subunits
-	n_max_replisomes = np.min(np.concatenate(
-		(bulkMolCntr.counts(sim_data.molecule_groups.replisome_trimer_subunits) // 3,
-		bulkMolCntr.counts(sim_data.molecule_groups.replisome_monomer_subunits))))
+	# the existing counts of replisome subunits. If mechanistic_replisome option
+	# is off, set to an arbitrary high number.
+	if mechanistic_replisome:
+		n_max_replisomes = np.min(np.concatenate(
+			(bulkMolCntr.counts(sim_data.molecule_groups.replisome_trimer_subunits) // 3,
+			bulkMolCntr.counts(sim_data.molecule_groups.replisome_monomer_subunits))))
+	else:
+		n_max_replisomes = 1000
 
 	# Generate arrays specifying appropriate initial replication conditions
 	oric_state, replisome_state, domain_state = determine_chromosome_state(
@@ -386,9 +390,10 @@ def initializeReplication(bulkMolCntr, uniqueMolCntr, sim_data, cell_mass, mecha
 			massDiff_protein=np.full(n_replisome, replisome_protein_mass),
 			)
 
-		# Remove replisome subunits from bulk molecules
-		bulkMolCntr.countsDec(3*n_replisome, sim_data.molecule_groups.replisome_trimer_subunits)
-		bulkMolCntr.countsDec(n_replisome, sim_data.molecule_groups.replisome_monomer_subunits)
+		if mechanistic_replisome:
+			# Remove replisome subunits from bulk molecules
+			bulkMolCntr.countsDec(3*n_replisome, sim_data.molecule_groups.replisome_trimer_subunits)
+			bulkMolCntr.countsDec(n_replisome, sim_data.molecule_groups.replisome_monomer_subunits)
 
 	# Get coordinates of all genes, promoters and DnaA boxes
 	all_gene_coordinates = sim_data.process.transcription.cistron_data[
