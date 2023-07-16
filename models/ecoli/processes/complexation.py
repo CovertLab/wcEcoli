@@ -9,7 +9,7 @@ TODO:
 """
 
 import numpy as np
-from arrow import StochasticSystem
+from stochastic_arrow import StochasticSystem
 
 import wholecell.processes.process
 

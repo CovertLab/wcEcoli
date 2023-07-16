@@ -10,7 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/user" />
       <excludeFolder url="file://$MODULE_DIR$/.vscode" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.8 (wcEcoli3)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.11 (wcEcoli3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">
