@@ -92,6 +92,92 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	# TODO: Add comments to these functions
 	# TODO: Decide whether to use self or to declare variables in another way
 
+	def save_heatmap_data(self, h, initial_index,
+		trl_eff_index, exp_index, curr_heatmap_data, cell_mask):
+
+		self.heatmap_data[h][initial_index, trl_eff_index, exp_index] = \
+			round(np.mean(curr_heatmap_data[cell_mask]),
+				self.heatmap_details[h]['num_digits_rounding'])
+
+	def extract_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index,
+			cell_mask):
+
+		if not self.heatmap_details[h]['is_new_gene_heatmap']:
+			if not self.heatmap_details[h]['is_nonstandard_data_retrieval']:
+				curr_heatmap_data = read_stacked_columns(
+					all_cells, self.heatmap_details[h]['data_table'],
+					self.heatmap_details[h]['data_column'],
+					remove_first = self.heatmap_details[h]['remove_first'],
+					fun=self.heatmap_details[h]['function_to_apply'])
+				self.save_heatmap_data(
+					h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
+			elif h == "rnap_counts_heatmap":
+				self.extract_rnap_counts_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "ribosome_counts_heatmap":
+				self.extract_ribosome_counts_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "rnap_crowding_heatmap":
+				self.extract_crowding_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'actual_rna_synth_prob', 'target_rna_synth_prob')
+			elif h == "ribosome_crowding_heatmap":
+				self.extract_crowding_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'actual_prob_translation_per_transcript',
+					'target_prob_translation_per_transcript')
+			else:
+				raise Exception(
+					"Heatmap " + h + " is neither a standard heatmap nor a"
+					" nonstandard heatmap that has specific instructions for"
+					" data extraction")
+
+		else:
+			if h == "new_gene_mRNA_counts_heatmap":
+				self.extract_new_gene_counts_heatmap_data(
+					all_cells, h, trl_eff_index,
+					exp_index, cell_mask, 'RNACounts', 'mRNA_counts',
+					self.new_gene_mRNA_indexes)
+			elif h == "new_gene_monomer_counts_heatmap":
+				self.extract_new_gene_counts_heatmap_data(
+					all_cells, h, trl_eff_index,
+					exp_index, cell_mask, 'MonomerCounts', 'monomerCounts',
+					self.new_gene_monomer_indexes)
+			elif h == "new_gene_mRNA_mass_fraction_heatmap":
+				self.extract_new_gene_mass_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RNACounts', 'mRNA_counts', 'Mass', 'mRnaMass',
+					self.new_gene_mRNA_indexes, self.new_gene_mRNA_ids)
+			elif h == "new_gene_monomer_mass_fraction_heatmap":
+				self.extract_new_gene_mass_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'MonomerCounts', 'monomerCounts', 'Mass', 'proteinMass',
+					self.new_gene_monomer_indexes, self.new_gene_monomer_ids)
+			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
+				self.extract_new_gene_mRNA_NTP_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_rnap_init_rate_heatmap":
+				self.extract_new_gene_rnap_init_rate_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_ribosome_init_rate_heatmap":
+				self.extract_new_gene_ribosome_init_rate_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_rnap_time_overcrowded_heatmap":
+				self.extract_new_gene_time_overcrowded_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RnaSynthProb', 'tu_is_overcrowded',
+					self.new_gene_mRNA_indexes)
+			elif h == "new_gene_ribosome_time_overcrowded_heatmap":
+				self.extract_new_gene_time_overcrowded_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RibosomeData', 'mRNA_is_overcrowded',
+					self.new_gene_monomer_indexes)
+			else:
+				raise Exception(
+					"Heatmap " + h + " has no instructions for"
+					" data extraction")
+
 	def extract_rnap_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
 		rnap_id = [self.sim_data.molecule_ids.full_RNAP]
@@ -137,73 +223,144 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			target_probs_column, fun=lambda x: np.mean(x, axis=0))
 		# Get indexes that on average were overcrowded in any generation for
 		# any seed
-		num_overcrowded_indexes = np.array([len(np.where(sum((avg_actual_prob <
-							avg_target_prob)[cell_mask, :]) > 0)[0])])
-		self.save_heatmap_data(h, 0,
-							   trl_eff_index, exp_index, num_overcrowded_indexes,
-							   np.array([True]))
+		num_overcrowded_indexes = np.array([len(np.where(sum(
+			(avg_actual_prob < avg_target_prob)[cell_mask, :]) > 0)[0])])
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, np.array([True]))
 
-	def save_heatmap_data(self, h, initial_index,
-		trl_eff_index, exp_index, curr_heatmap_data, cell_mask):
+	def get_avg_new_gene_counts(
+			self, all_cells, data_table, data_column, new_gene_indexes):
+		return (read_stacked_columns(
+				all_cells, data_table, data_column, fun=lambda
+				x: np.mean( x[:, new_gene_indexes], axis=0)))
 
-		self.heatmap_data[h][initial_index, trl_eff_index, exp_index] = \
-			round(np.mean(curr_heatmap_data[cell_mask]),
-				self.heatmap_details[h]['num_digits_rounding'])
+	def extract_new_gene_counts_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			data_table, data_column, new_gene_indexes):
 
-	def extract_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index,
-			cell_mask):
+		avg_new_gene_counts = self.get_avg_new_gene_counts(all_cells, data_table,
+			data_column, new_gene_indexes)
 
-		if not self.heatmap_details[h]['is_new_gene_heatmap']:
-			if not self.heatmap_details[h]['is_nonstandard_data_retrieval']:
-				curr_heatmap_data = read_stacked_columns(
-					all_cells, self.heatmap_details[h]['data_table'],
-					self.heatmap_details[h]['data_column'],
-					remove_first = self.heatmap_details[h]['remove_first'],
-					fun=self.heatmap_details[h]['function_to_apply'])
-				self.save_heatmap_data(
-					h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
-			elif h == "rnap_counts_heatmap":
-				self.extract_rnap_counts_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
-			elif h == "ribosome_counts_heatmap":
-				self.extract_ribosome_counts_data(all_cells, h, trl_eff_index, exp_index, cell_mask)
-			elif h == "rnap_crowding_heatmap":
-				self.extract_crowding_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'actual_rna_synth_prob', 'target_rna_synth_prob')
-			elif h == "ribosome_crowding_heatmap":
-				self.extract_crowding_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'actual_prob_translation_per_transcript',
-					'target_prob_translation_per_transcript')
-			else:
-				raise Exception(
-					"Heatmap " + h + " is neither a standard heatmap nor a"
-					" nonstandard heatmap that has specific instructions for"
-					" data extraction")
+		for i in range(len(new_gene_indexes)):
+			self.save_heatmap_data(h, i, trl_eff_index, exp_index,
+				np.log10(avg_new_gene_counts[:, i] + 1), cell_mask)
 
-		else:
-			# do new gene heatmap stuff
-			if not self.heatmap_details[h]['is_nonstandard_heatmap']:
-				print("0")
-			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
-				print("1")
-			else:
-				raise Exception(
-					"Heatmap " + h + " is neither a standard heatmap nor a"
-					" nonstandard heatmap that has specific instructions for"
-					" data extraction")
+	def extract_new_gene_mass_fraction_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			counts_data_table, counts_data_column, mass_data_table,
+			mass_data_column, new_gene_indexes, new_gene_ids):
+
+		# Get mass for each new gene
+		new_gene_masses = [1 for id in new_gene_ids]
+		for i in range(len(new_gene_ids)):
+			new_gene_masses[i] = float(
+				(self.sim_data.getter.get_mass(new_gene_ids[i]) / (1E-15 * g) *
+				 (1 / self.sim_data.constants.n_avogadro)))  # convert from g/mol to fg
+
+		# Get counts for each new gene
+		avg_new_gene_counts = self.get_avg_new_gene_counts(
+			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
+
+		# Get average mass for all genes
+		avg_mass = read_stacked_columns(
+					all_cells, mass_data_table, mass_data_column, fun=lambda x: np.mean(x))
+
+		# Determine mass fractions for each new gene
+		for i in range(len(self.new_gene_mRNA_ids)):
+			new_gene_mass_fraction = (avg_new_gene_counts[:, i] *
+				new_gene_masses[i]) / avg_mass[:, i]
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index, new_gene_mass_fraction,
+				cell_mask)
+
+	def extract_new_gene_mRNA_NTP_fraction_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+
+		# Determine NTP ids
+		ntp_ids = list(self.sim_data.ntp_code_to_id_ordered.values())
+
+		# Determine number of NTPs per new gene mRNA
+		new_gene_mRNA_ntp_counts = [{} for id in self.new_gene_mRNA_ids]
+		all_rna_counts_ACGU = self.sim_data.process.transcription.rna_data[
+			'counts_ACGU'].asNumber()
+		rna_ids = self.sim_data.process.transcription.rna_data['id']
+		rna_id_to_index_mapping = {rna[:-3]: i for i, rna in enumerate(rna_ids)}
+		for i in range(len(self.new_gene_mRNA_ids)):
+			new_gene_mRNA_index = rna_id_to_index_mapping[self.new_gene_mRNA_ids[i]]
+			for ntp_index in range(len(ntp_ids)):
+				new_gene_mRNA_ntp_counts[i][ntp_ids[ntp_index]] = (
+					all_rna_counts_ACGU[new_gene_mRNA_index, ntp_index])
+
+		all_mRNA_counts_ACGU = (
+			all_rna_counts_ACGU[self.sim_data.process.transcription.rna_data["is_mRNA"]])
+
+		# All mRNA counts
+		avg_mRNA_counts = read_stacked_columns(
+			all_cells, 'RNACounts', 'mRNA_counts', fun=lambda x: np.mean(x, axis=0))
+
+		# New gene mRNA counts
+		avg_new_gene_mRNA_counts = self.get_avg_new_gene_counts(
+			all_cells, 'RNACounts', 'mRNA_counts', self.new_gene_mRNA_indexes)
+
+		all_mRNA_ntp_totals = {}
+		for ntp_index in range(len(ntp_ids)):
+			ntp_id = ntp_ids[ntp_index]
+			all_mRNA_ntp_totals[ntp_id] = \
+				(avg_mRNA_counts @ all_mRNA_counts_ACGU[:, ntp_index])
+			for i in range(len(self.new_gene_mRNA_ids)):
+				self.heatmap_data[h][ntp_id][i, trl_eff_index, exp_index] = round(
+					np.mean((avg_new_gene_mRNA_counts[:, i][cell_mask] *
+					new_gene_mRNA_ntp_counts[i][ntp_id]) / all_mRNA_ntp_totals[
+					ntp_id][cell_mask]),
+					self.heatmap_details[h]['num_digits_rounding'])
+
+	def extract_new_gene_rnap_init_rate_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		avg_new_gene_copy_number = (read_stacked_columns(
+			all_cells, 'RnaSynthProb', 'gene_copy_number',
+			fun=lambda x: np.mean(x[:, self.new_gene_cistron_indexes], axis=0)))
+		avg_new_gene_rnap_init_rates = (read_stacked_columns(
+			all_cells, 'RnapData', 'rna_init_event_per_cistron',
+			fun=lambda x: np.mean(x[:, self.new_gene_cistron_indexes],
+			axis=0))) / avg_new_gene_copy_number
+		for i in range(len(self.new_gene_mRNA_ids)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				avg_new_gene_rnap_init_rates[:, i], cell_mask)
+
+	def extract_new_gene_ribosome_init_rate_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		avg_new_gene_mRNA_counts = self.get_avg_new_gene_counts(
+			all_cells, 'RNACounts', 'mRNA_counts', self.new_gene_mRNA_indexes)
+		avg_new_gene_ribosome_init_rates = (read_stacked_columns(
+			all_cells, 'RibosomeData', 'ribosome_init_event_per_monomer',
+			fun=lambda x: np.mean(x[:, self.new_gene_monomer_indexes],
+			axis=0))) / avg_new_gene_mRNA_counts
+		for i in range(len(self.new_gene_mRNA_ids)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				avg_new_gene_ribosome_init_rates[:, i], cell_mask)
+
+	def extract_new_gene_time_overcrowded_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			data_table, data_column, new_gene_indexes):
+		# Average fraction of time steps that overcrowding occurs for new genes
+		# per generation
+		new_gene_num_time_steps_overcrowded = (read_stacked_columns(
+			all_cells, data_table, data_column,
+			fun=lambda x: np.sum(x[:, new_gene_indexes], axis=0)/ (
+			x[:, new_gene_indexes].shape[0])))
+		for i in range(len(new_gene_indexes)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				new_gene_num_time_steps_overcrowded[:,i], cell_mask)
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		heatmaps_to_make = set(heatmaps_to_make_list)
 
-		# Placeholders for lambda functions
+		heatmaps_to_make = set(heatmaps_to_make_list)
 		with open(simDataFile, 'rb') as f:
 			self.sim_data = pickle.load(f)
-		new_gene_mRNA_indexes = []
-		new_gene_monomer_indexes = []
 
 		"""
 		Details needed to create all possible heatmaps
@@ -212,8 +369,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			is_new_gene_heatmap (bool): If True, one heatmap will be made 
 				for each new gene
 			is_nonstandard_data_retrieval (bool): False if only one column needs
-			 	to be read from one table to extract data for this heatmap. True
-			 	in all other cases.
+			 	to be read from one table to extract data for a non new gene
+			 	heatmap. True in all other cases.
+			is_nonstandard_plotting (bool): False if only one plot (or one plot
+				per new gene) needs to be made. True in all other cases.
 			data_table (string): Table to get data from.
 			data_column (string): Column in table to get data from.
 			default_value (int): Value to use in heatmap if no data is 
@@ -233,6 +392,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Defaults - unless otherwise specified, these values will be
 		# used for plotting
 		default_is_nonstandard_data_retrieval = False
+		default_is_nonstandard_plot = False
 		default_value = -1
 		default_remove_first = False
 		default_function_to_apply = lambda x: np.mean(x)
@@ -321,7 +481,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"new_gene_mRNA_mass_fraction_heatmap":
 				{'plot_title': 'New Gene mRNA Mass Fraction'},
 			"new_gene_mRNA_NTP_fraction_heatmap":
-				{'is_nonstandard_data_retrieval': True,
+				{'is_nonstandard_plot': True,
 				 'num_digits_rounding': 4,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'New Gene',
@@ -346,7 +506,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.heatmap_details[h]['is_new_gene_heatmap'] = h.startswith(
 				"new_gene_")
 			self.heatmap_details[h].setdefault('is_nonstandard_data_retrieval',
-						  default_is_nonstandard_data_retrieval)
+				default_is_nonstandard_data_retrieval)
+			self.heatmap_details[h].setdefault('is_nonstandard_plot',
+				default_is_nonstandard_plot)
 			self.heatmap_details[h].setdefault('default_value', default_value)
 			self.heatmap_details[h].setdefault('remove_first', default_remove_first)
 			self.heatmap_details[h].setdefault('function_to_apply', default_function_to_apply)
@@ -419,47 +581,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Determine new gene ids
 		mRNA_sim_data = self.sim_data.process.transcription.cistron_data.struct_array
 		monomer_sim_data = self.sim_data.process.translation.monomer_data.struct_array
-		new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
+		self.new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
 		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
 										monomer_sim_data['id']))
-		new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
-								for mRNA_id in new_gene_mRNA_ids]
-		if len(new_gene_mRNA_ids) == 0:
+		self.new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
+								for mRNA_id in self.new_gene_mRNA_ids]
+		if len(self.new_gene_mRNA_ids) == 0:
 			print("This plot is intended to be run on simulations where the"
 				  " new gene option was enabled, but no new gene mRNAs were "
 				  "found.")
 			return
-		if len(new_gene_monomer_ids) == 0:
+		if len(self.new_gene_monomer_ids) == 0:
 			print("This plot is intended to be run on simulations where the "
 				  "new gene option was enabled, but no new gene proteins "
 				  "were "
 				  "found.")
 			return
-		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids),\
+		assert len(self.new_gene_monomer_ids) == len(self.new_gene_mRNA_ids),\
 			'number of new gene monomers and mRNAs should be equal'
-
-
-		if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
-			# Determine NTP ids
-			ntp_ids = list(self.sim_data.ntp_code_to_id_ordered.values())
-
-			# Determine number of NTPs per new gene mRNA
-			new_gene_mRNA_ntp_counts = [{} for id in new_gene_mRNA_ids]
-			all_rna_counts_ACGU = self.sim_data.process.transcription.rna_data[
-				'counts_ACGU'].asNumber()
-			rna_ids = self.sim_data.process.transcription.rna_data['id']
-			rna_id_to_index_mapping = {rna[:-3]: i for i, rna in
-									   enumerate(rna_ids)}
-			for i in range(len(new_gene_mRNA_ids)):
-				new_gene_mRNA_index = rna_id_to_index_mapping[
-					new_gene_mRNA_ids[i]]
-				for ntp_index in range(len(ntp_ids)):
-					new_gene_mRNA_ntp_counts[i][ntp_ids[ntp_index]] = \
-						all_rna_counts_ACGU[new_gene_mRNA_index, ntp_index]
-
-			all_mRNA_counts_ACGU = \
-				all_rna_counts_ACGU[self.sim_data.process.transcription.rna_data[
-					"is_mRNA"]]
 
 
 		# Create data structures that to use for the heatmaps
@@ -473,36 +612,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'default_value']
 		for h in standard_new_gene_heatmaps:
 			self.heatmap_data[h] = np.zeros((
-				len(new_gene_mRNA_ids), len(new_gene_translation_efficiency_values),
+				len(self.new_gene_mRNA_ids), len(new_gene_translation_efficiency_values),
 				len(new_gene_expression_factors))) + self.heatmap_details[h][
 				'default_value']
 		if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
+			ntp_ids = list(self.sim_data.ntp_code_to_id_ordered.values())
 			self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"] = {}
 			for ntp_id in ntp_ids:
 					self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"][
-						ntp_id] = np.zeros((len(new_gene_mRNA_ids),
+						ntp_id] = np.zeros((len(self.new_gene_mRNA_ids),
 						len(new_gene_translation_efficiency_values),
 						len(new_gene_expression_factors))) + self.heatmap_details[
 						"new_gene_mRNA_NTP_fraction_heatmap"]['default_value']
-
 
 		# Data extraction
 		print("---Data Extraction---")
 		reached_count_gen = {}
 		generations = {}
-		new_gene_mRNA_counts = [{} for id in new_gene_mRNA_ids]
-		new_gene_monomer_counts = [{} for id in new_gene_monomer_ids]
-		new_gene_monomer_masses = [1 for id in new_gene_monomer_ids]
-		for i in range(len(new_gene_monomer_ids)):
-			new_gene_monomer_masses[i] = float(
-				(self.sim_data.getter.get_mass(new_gene_monomer_ids[i]) / (1E-15 * g) *
-				 (1/self.sim_data.constants.n_avogadro))) # convert from g/mol to fg
-		new_gene_mRNA_masses = [1 for id in new_gene_mRNA_ids]
-		for i in range(len(new_gene_mRNA_ids)):
-			new_gene_mRNA_masses[i] = float(
-				(self.sim_data.getter.get_mass(new_gene_mRNA_ids[i]) / (1E-15 * g) *
-				(1/self.sim_data.constants.n_avogadro))) # convert from g/mol to fg
-		all_mRNA_ntp_totals = {}  # {variant: {NTP id: values}}
 
 		variants = self.ap.get_variants()
 		min_variant = min(variants)
@@ -560,8 +686,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				cistron_idx_dict = {cis: i for i, cis in
 									enumerate(rnap_reader.readAttribute(
 										'cistron_ids'))}
-				new_gene_cistron_indexes = [cistron_idx_dict.get(mRNA_id)
-											for mRNA_id in new_gene_mRNA_ids]
+				self.new_gene_cistron_indexes = [cistron_idx_dict.get(mRNA_id)
+											for mRNA_id in self.new_gene_mRNA_ids]
 
 				# Extract RNA indexes for each new gene
 				rnap_reader = TableReader(os.path.join(simOutDir,
@@ -570,7 +696,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								enumerate(rnap_reader.readAttribute(
 									'rnaIds'))}
 				new_gene_RNA_indexes = [RNA_idx_dict.get(mRNA_id)
-										for mRNA_id in new_gene_mRNA_ids]
+										for mRNA_id in self.new_gene_mRNA_ids]
 
 				# Extract mRNA indexes for each new gene
 				mRNA_counts_reader = TableReader(os.path.join(simOutDir,
@@ -578,8 +704,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				mRNA_idx_dict = {rna[:-3]: i for i, rna in
 								 enumerate(mRNA_counts_reader.readAttribute(
 									 'mRNA_ids'))}
-				new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id)
-										 for mRNA_id in new_gene_mRNA_ids]
+				self.new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id)
+										 for mRNA_id in self.new_gene_mRNA_ids]
 
 				# Extract protein indexes for each new gene
 				monomer_counts_reader = TableReader(os.path.join(
@@ -588,142 +714,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 									enumerate(
 										monomer_counts_reader.readAttribute(
 											'monomerIds'))}
-				new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id)
+				self.new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id)
 											for monomer_id in
-											new_gene_monomer_ids]
+											self.new_gene_monomer_ids]
 
-			# These are used in multiple new gene heatmaps
-			avg_new_gene_mRNA_counts = (read_stacked_columns(
-				all_cells, 'RNACounts', 'mRNA_counts', fun=lambda
-					x: np.mean( x[:, new_gene_mRNA_indexes], axis=0)))
-			avg_new_gene_monomer_counts = (read_stacked_columns(
-				all_cells, 'MonomerCounts', 'monomerCounts', fun=lambda x:
-				np.mean( x[:,new_gene_monomer_indexes], axis=0)))
-
-			# New Gene mRNA Counts
-			if "new_gene_mRNA_counts_heatmap" in heatmaps_to_make:
-				for i in range(len(new_gene_mRNA_ids)):
-					new_gene_mRNA_counts[i][variant] = \
-						np.log10(avg_new_gene_mRNA_counts[:, i] + 1)
-					self.save_heatmap_data("new_gene_mRNA_counts_heatmap", i,
-						trl_eff_index, exp_index,
-						new_gene_mRNA_counts[i][variant], cell_mask)
-
-			# New Gene Protein Counts
-			if "new_gene_monomer_counts_heatmap" in heatmaps_to_make:
-				for i in range(len(new_gene_mRNA_ids)):
-					new_gene_monomer_counts[i][variant] = \
-						np.log10(avg_new_gene_monomer_counts[:, i] + 1)
-					self.save_heatmap_data("new_gene_monomer_counts_heatmap", i,
-						trl_eff_index, exp_index, new_gene_monomer_counts[i][variant],
-						cell_mask)
-
-			# New Gene mRNA Mass Fraction
-			if "new_gene_mRNA_mass_fraction_heatmap":
-				# Total mRNA mass
-				avg_mRNA_mass = read_stacked_columns(
-					all_cells, 'Mass', 'mRnaMass', fun=lambda x: np.mean(x))
-				avg_mRNA_mass = avg_mRNA_mass
-				for i in range(len(new_gene_mRNA_ids)):
-					new_gene_mRNA_mass_fraction = \
-						(avg_new_gene_mRNA_counts[:,i] *
-						new_gene_mRNA_masses[i]) / avg_mRNA_mass[:,i]
-					self.save_heatmap_data("new_gene_mRNA_mass_fraction_heatmap",
-						i, trl_eff_index, exp_index,
-						new_gene_mRNA_mass_fraction, cell_mask)
-
-			# New Gene mRNA NTP Fraction
-			if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
-				# Total NTPs in all mRNAs
-				avg_mRNA_counts = read_stacked_columns(
-					all_cells, 'RNACounts', 'mRNA_counts', fun=lambda
-						x: np.mean(x, axis=0))
-				all_mRNA_ntp_totals[variant] = {}
-
-				for ntp_index in range(len(ntp_ids)):
-					ntp_id = ntp_ids[ntp_index]
-					all_mRNA_ntp_totals[variant][ntp_id] = \
-						(avg_mRNA_counts @ all_mRNA_counts_ACGU[:, ntp_index])
-					for i in range(len(new_gene_mRNA_ids)):
-						if sum(cell_mask) != 0:
-							self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"][
-								ntp_id][i, trl_eff_index, exp_index] = \
-								round(np.mean(
-								(avg_new_gene_mRNA_counts[:,i][cell_mask] *
-								new_gene_mRNA_ntp_counts[i][ntp_id]) /
-								all_mRNA_ntp_totals[variant][ntp_id][cell_mask]),
-								self.heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
-								'num_digits_rounding'])
-
-			# New Gene Protein Mass Fraction
-			if "new_gene_monomer_mass_fraction_heatmap" in heatmaps_to_make:
-				avg_protein_mass = (read_stacked_columns(
-					all_cells, 'Mass', 'proteinMass',
-					fun=lambda x: np.mean(x)))
-				for i in range(len(new_gene_mRNA_ids)):
-					new_gene_monomer_mass_fraction = \
-						(avg_new_gene_monomer_counts[:,i] *
-						 new_gene_monomer_masses[i]) / avg_protein_mass[:,i]
-					self.save_heatmap_data("new_gene_monomer_mass_fraction_heatmap",
-						i, trl_eff_index, exp_index,
-						new_gene_monomer_mass_fraction, cell_mask)
-
-			# New Gene RNAP Initialization Rate
-			if "new_gene_rnap_init_rate_heatmap" in heatmaps_to_make:
-				avg_new_gene_copy_number = (read_stacked_columns(
-					all_cells, 'RnaSynthProb', 'gene_copy_number',
-					fun=lambda x: np.mean(x[:, new_gene_cistron_indexes],
-					axis=0)))
-				avg_new_gene_rnap_init_rates = (read_stacked_columns(
-					all_cells, 'RnapData', 'rna_init_event_per_cistron', fun=lambda
-						x: np.mean(x[:, new_gene_cistron_indexes],
-						axis=0))) / avg_new_gene_copy_number
-				for i in range(len(new_gene_mRNA_ids)):
-					self.save_heatmap_data("new_gene_rnap_init_rate_heatmap", i,
-						trl_eff_index, exp_index,
-						avg_new_gene_rnap_init_rates[:,i], cell_mask)
-
-			# New Gene Ribosome Initialization Rate
-			if "new_gene_ribosome_init_rate_heatmap" in heatmaps_to_make:
-				avg_new_gene_ribosome_init_rates = (read_stacked_columns(
-					all_cells, 'RibosomeData', 'ribosome_init_event_per_monomer',
-					fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],
-					axis=0))) / \
-					avg_new_gene_mRNA_counts
-				for i in range(len(new_gene_mRNA_ids)):
-					self.save_heatmap_data("new_gene_ribosome_init_rate_heatmap",
-						i, trl_eff_index, exp_index,
-						avg_new_gene_ribosome_init_rates[:,i], cell_mask)
-
-			# Fraction of Time RNAP Overcrowds New Gene
-			if "new_gene_rnap_time_overcrowded_heatmap" in heatmaps_to_make:
-				# Average fraction of time steps that RNA polymerase
-				# overcrowding occurs for new genes per generation
-				new_gene_num_time_steps_rnap_overcrowded = (
-					read_stacked_columns(all_cells, 'RnaSynthProb',
-					'tu_is_overcrowded',
-					fun=lambda x: np.sum(x[:, new_gene_RNA_indexes], axis=0)
-					/ (x[:, new_gene_RNA_indexes].shape[0])))
-				for i in range(len(new_gene_mRNA_ids)):
-					self.save_heatmap_data("new_gene_rnap_time_overcrowded_heatmap",
-						i, trl_eff_index, exp_index,
-						new_gene_num_time_steps_rnap_overcrowded[:,i], cell_mask)
-
-			# Fraction of Time Ribosome Overcrowds New Gene
-			if "new_gene_ribosome_time_overcrowded_heatmap" in \
-					heatmaps_to_make:
-				# Average fraction of time steps that ribosome
-				# overcrowding occurs for new genes per generation
-				new_gene_num_time_steps_ribosome_overcrowded = (
-					read_stacked_columns(all_cells, 'RibosomeData', 'mRNA_is_overcrowded',
-					fun=lambda x: np.sum(x[:, new_gene_monomer_indexes], axis=0) / (
-					x[:, new_gene_monomer_indexes].shape[0])))
-				for i in range(len(new_gene_mRNA_ids)):
-					self.save_heatmap_data(
-						"new_gene_ribosome_time_overcrowded_heatmap", i,
-						trl_eff_index, exp_index,
-						new_gene_num_time_steps_ribosome_overcrowded[:,i],
-						cell_mask)
+			for h in new_gene_heatmaps:
+				self.extract_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
 
 		# Plotting
 		print("---Plotting---")
@@ -780,7 +777,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							self.heatmap_details[h]['box_text_size'])
 				# New Gene mRNA NTP Fraction
 				elif h == "new_gene_mRNA_NTP_fraction_heatmap":
-					for i in range(len(new_gene_mRNA_ids)):
+					for i in range(len(self.new_gene_mRNA_ids)):
 						for ntp_id in ntp_ids:
 							heatmap(self, axs[row_ax, col_ax],
 								variant_mask,
@@ -795,7 +792,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								self.heatmap_details[
 									"new_gene_mRNA_NTP_fraction_heatmap"][
 									'plot_title'] + " " + ntp_id[:-3] +
-									" Fraction: " + new_gene_mRNA_ids[i][:-4],
+									" Fraction: " + self.new_gene_mRNA_ids[i][:-4],
 								self.heatmap_details[
 									"new_gene_mRNA_NTP_fraction_heatmap"][
 									'box_text_size'])
@@ -805,7 +802,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								row_ax += 1
 				# Standard New Gene Heatmaps
 				else:
-					for i in range(len(new_gene_mRNA_ids)):
+					for i in range(len(self.new_gene_mRNA_ids)):
 						heatmap(self, axs[row_ax, col_ax], variant_mask,
 							self.heatmap_data[h][i, :, :],
 							self.heatmap_data["completed_gens_heatmap"][0,:,:],
@@ -814,7 +811,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							new_gene_expression_factors,
 							new_gene_translation_efficiency_values,
 							self.heatmap_details[h]['plot_title'] + ": " +
-							new_gene_mRNA_ids[i][:-4],
+							self.new_gene_mRNA_ids[i][:-4],
 							self.heatmap_details[h]['box_text_size'])
 				col_ax += 1
 				if (col_ax == dashboard_ncols):
@@ -862,7 +859,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Plot standard new gene heatmaps
 			for h in standard_new_gene_heatmaps:
-				for i in range(len(new_gene_mRNA_ids)):
+				for i in range(len(self.new_gene_mRNA_ids)):
 					fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
 					heatmap(self, ax, variant_mask,
 							self.heatmap_data[h][i,:,:],
@@ -871,18 +868,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							heatmap_y_label,
 							new_gene_expression_factors,
 							new_gene_translation_efficiency_values,
-							self.heatmap_details[h]['plot_title'] + ": " + new_gene_mRNA_ids[i][:-4],
+							self.heatmap_details[h]['plot_title'] + ": " + self.new_gene_mRNA_ids[i][:-4],
 							self.heatmap_details[h]['box_text_size'])
 					fig.tight_layout()
 					plt.show()
 					exportFigure(plt, plotOutDir, h + "_" +
-						new_gene_mRNA_ids[i][:-4] + plot_suffix)
+						self.new_gene_mRNA_ids[i][:-4] + plot_suffix)
 
 				plt.close('all')
 
 			# New Gene mRNA NTP Fraction
 			if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
-				for i in range(len(new_gene_mRNA_ids)):
+				for i in range(len(self.new_gene_mRNA_ids)):
 					for ntp_id in ntp_ids:
 						fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
 						heatmap(self, ax, variant_mask,
@@ -895,14 +892,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							new_gene_translation_efficiency_values,
 							self.heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
 								'plot_title'] + " " + ntp_id[:-3] +
-								" Fraction: " + new_gene_mRNA_ids[i][:-4],
+								" Fraction: " + self.new_gene_mRNA_ids[i][:-4],
 							self.heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
 								'box_text_size'])
 						fig.tight_layout()
 						plt.show()
 						exportFigure(plt, plotOutDir,
 							'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap'
-							+ "_" + new_gene_mRNA_ids[i][:-4] + plot_suffix)
+							+ "_" + self.new_gene_mRNA_ids[i][:-4] + plot_suffix)
 
 			plt.close('all')
 
