@@ -14,7 +14,7 @@ import time
 import traceback
 from typing import Callable, List
 
-from arrow import StochasticSystem
+from stochastic_arrow import StochasticSystem
 from cvxpy import Variable, Problem, Minimize, norm
 import numpy as np
 import scipy.optimize
