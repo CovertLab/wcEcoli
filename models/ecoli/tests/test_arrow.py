@@ -2,7 +2,7 @@ import numpy as np
 from pprint import pprint
 import unittest
 
-from arrow import StochasticSystem
+from stochastic_arrow import StochasticSystem
 
 
 class TestArrow(unittest.TestCase):
