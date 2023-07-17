@@ -165,6 +165,7 @@ cpdef tuple mccFormComplexesWithPrebuiltMatrices(
 				break
 
 		# Perform the reaction
+		# TODO: reactionIndex is uninitialized if nReactions == 0. Raise an error?
 		for subunitIndex in range(maxMoleculeTypes):
 			moleculeIndex = moleculeIndexes[reactionIndex, subunitIndex]
 

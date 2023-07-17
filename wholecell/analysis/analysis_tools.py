@@ -5,7 +5,7 @@ Analysis script toolbox functions
 from __future__ import annotations
 
 import os
-from typing import Callable, Iterator, List, Sequence, Tuple, Union
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -248,7 +248,7 @@ def read_stacked_bulk_molecules(
 
 def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 		remove_first: bool = False, ignore_exception: bool = False,
-		fun: Callable = None) -> np.ndarray:
+		fun: Optional[Callable] = None) -> np.ndarray:
 	"""
 	Reads column data from multiple cells and assembles into a single array.
 
@@ -339,7 +339,7 @@ def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 def stacked_cell_threshold_mask(cell_paths: np.ndarray, table: str, column:
 str,
 		threshold_value: float, remove_first: bool = False,
-		ignore_exception: bool = False, fun: Callable = None) -> np.ndarray:
+		ignore_exception: bool = False, fun: Optional[Callable] = None) -> np.ndarray:
 	"""
 	Returns single boolean array to indicate whether each value in the column
 	data (from multiple cells) occurs before the first

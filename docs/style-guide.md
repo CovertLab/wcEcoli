@@ -340,8 +340,7 @@ To retrofit static typing tools to existing versions of Python 2, the designers 
 * [the "typing" module](https://docs.python.org/3/library/typing.html) on [PyPI](https://pypi.org)
   containing types like `List` and `Dict` with uppercase names so they don't have to patch the
   existing classes `list` and `dict`,
-* `.pyi` "stub files" to add type definitions onto existing Python libraries and native libraries
-  (see below for numpy type stubs),
+* `.pyi` "stub files" to add type definitions onto existing Python libraries and native libraries,
 * the [Typeshed](https://github.com/python/typeshed) repository for "stub" files
   (it's bundled with PyCharm, mypy, and pytype)
 
@@ -383,13 +382,8 @@ write them out as stub files or proposed type hints in the source code.
 
 ## Types for Numpy
 
-There are experimental type stubs in the numpy repo [numpy-stubs](https://github.com/numpy/numpy-stubs)
-that define types for `dtype` and `ndarray`. It's not fancy but it does catch some mistakes and it
-improves PyCharm autocompletion. Hopefully the numpy team will improve these stubs, but numpy is more
-flexible with types than the type system is unlikely to handle.
-
-With this stub file, you can write type hints like `np.ndarray`, `np.ndarray[int]`, and `np.ndarray[Any]`.
-It doesn't have a way to express array shape so the shape still goes into a docstring.
+With the type stubs now in numpy, it should work to write type hints like `np.ndarray`,
+`np.ndarray[int]`, and `np.ndarray[Any]`.
 
 ```python
 import numpy as np
@@ -398,14 +392,6 @@ def f(a):
     # type: (np.ndarray[float]) -> np.ndarray[int]
     return np.asarray(a, dtype=int)
 ```
-
-
-The wcEcoli project includes numpy-stubs.
-
-To install more stub files:
-1. Copy them into a `stubs/` directory in the project.
-2. Mark the `stubs/` directory as a source root in PyCharm by choosing **Mark Directory as | Sources Root**
-from the directory's context menu.
 
 
 ## Tips

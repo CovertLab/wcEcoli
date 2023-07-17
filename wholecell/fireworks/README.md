@@ -8,15 +8,17 @@ database holding the workflow information.
 ## Creating a MongoDB database
 
 The team has a MongoDB server in the Allen Center project on Google Cloud.
-It's useful for running FireWorks in Google Cloud and on our local computers.
+It's useful for running FireWorks in Google Cloud and on our local computers
+*but* we run that server only when needed.
 (See [How to run the Whole Cell Model on the Google Cloud
 Platform](../../docs/google-cloud.md) for details.)
 You can access the service securely via an ssh tunnel with your Google login.
 Creating a database there just takes the steps in the next section.
 
-That MongoDB service is not accessible to the open Intenet,
-so to run workflows on Sherlock you can create an account and database on
-[MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+That MongoDB server in Google Cloud is not accessible to the open Intenet or
+to Sherlock. To run workflows on Sherlock or elsewhere, you can create an
+account and database on
+[MongoDB Atlas](https://www.mongodb.com/atlas/database).
 See the instructions in the
 [MAT project forum](https://matsci.org/t/heres-how-to-connect-to-atlas-mongodb/4816)
 to set it up including using the `lpad init -u` command to create a
@@ -24,7 +26,7 @@ to set it up including using the `lpad init -u` command to create a
 
 **CAUTION:** Your Atlas database will be reachable to the entire Internet.
 So use a password vault to generate and save long, random passwords for the
-account and the DB user. As always, don't reuse them anywhere else.
+account. Never reuse passwords.
 
 
 ## Config YAML files for Fireworks

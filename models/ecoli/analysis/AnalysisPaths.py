@@ -199,9 +199,9 @@ class AnalysisPaths(object):
 		"""Return all the variant indexes."""
 		return sorted(np.unique(self._path_data["variant"]))
 
-	def get_seeds(self, variant: int = None) -> List[int]:
+	def get_seeds(self, variant: Optional[int] = None) -> List[int]:
 		"""Return all the seed values across all variants or for a single variant."""
-		mask = self._path_data['variant'] == variant if variant else slice(None)
+		mask = self._path_data['variant'] == variant if variant is not None else slice(None)
 		return sorted(np.unique(self._path_data["seed"][mask]))
 
 	def get_cell_variant(self, path: str) -> int:

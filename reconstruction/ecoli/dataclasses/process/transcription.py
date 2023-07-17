@@ -354,8 +354,8 @@ class Transcription(object):
 		# cistrons
 		n_cistrons = len(all_cistrons)
 
-		is_ribosomal_protein = np.zeros(n_cistrons, dtype=np.bool)
-		is_RNAP = np.zeros(n_cistrons, dtype=np.bool)
+		is_ribosomal_protein = np.zeros(n_cistrons, dtype=bool)
+		is_RNAP = np.zeros(n_cistrons, dtype=bool)
 		for i, cistron in enumerate(all_cistrons):
 			for monomer_id in cistron['monomer_ids']:
 				if monomer_id + '[c]' in sim_data.molecule_groups.ribosomal_proteins:
@@ -364,9 +364,9 @@ class Transcription(object):
 					is_RNAP[i] = True
 
 		# Construct boolean arrays and index arrays for each rRNA type
-		is_23S = np.zeros(n_cistrons, dtype=np.bool)
-		is_16S = np.zeros(n_cistrons, dtype=np.bool)
-		is_5S = np.zeros(n_cistrons, dtype=np.bool)
+		is_23S = np.zeros(n_cistrons, dtype=bool)
+		is_16S = np.zeros(n_cistrons, dtype=bool)
+		is_5S = np.zeros(n_cistrons, dtype=bool)
 		idx_23S = []
 		idx_16S = []
 		idx_5S = []
@@ -425,7 +425,7 @@ class Transcription(object):
 		cistron_data['is_5S_rRNA'] = is_5S
 		cistron_data['is_ribosomal_protein'] = is_ribosomal_protein
 		cistron_data['is_RNAP'] = is_RNAP
-		cistron_data['uses_corrected_seq_counts'] = np.zeros(n_cistrons, dtype=np.bool)
+		cistron_data['uses_corrected_seq_counts'] = np.zeros(n_cistrons, dtype=bool)
 		cistron_data['is_new_gene'] = [k.startswith('NG') for k in gene_id]
 
 		cistron_field_units = {

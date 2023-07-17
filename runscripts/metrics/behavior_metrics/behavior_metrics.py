@@ -213,7 +213,7 @@ class BehaviorMetrics(object):
 		self, metrics_conf_path, sim_out_dir, validation_path=None,
 		metrics_pickle_path=None
 	):
-		# type: (str, str, str, str) -> None
+		# type: (str, str, Optional[str], Optional[str]) -> None
 		"""Store provided paths.
 
 		Arguments:

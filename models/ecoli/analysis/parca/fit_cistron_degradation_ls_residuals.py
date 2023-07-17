@@ -77,7 +77,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		# Get mask for cistrons that have one or more encoding TUs with
 		# measured degradation rates
 		measured_deg_rate_mask = (sim_data.process.transcription.cistron_tu_mapping_matrix.dot(
-			sim_data.process.transcription.rna_data['deg_rate_is_measured'])).astype(np.bool)
+			sim_data.process.transcription.rna_data['deg_rate_is_measured'])).astype(bool)
 
 		# Plot expected vs actual deg rates
 		plt.figure(figsize=(8, 8))

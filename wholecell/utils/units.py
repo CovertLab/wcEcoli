@@ -1,8 +1,12 @@
 """
-Units
+Units: Extends the Unum units package.
 
-Defines/registers custom units for Pint
+TODO: Unum is a defunct project. Its source repo is no longer online. Either
+switch to a newer package like Pint or copy and improve the Unum source code
+from its Python package.
 """
+
+from typing import TypeGuard
 
 import scipy.constants
 import numpy as np
@@ -162,7 +166,7 @@ def getUnit(value):
 	value_units._value = 1
 	return value_units
 
-def hasUnit(value):
+def hasUnit(value) -> TypeGuard[Unum]:
 	return isinstance(value, Unum)
 
 def strip_empty_units(value):

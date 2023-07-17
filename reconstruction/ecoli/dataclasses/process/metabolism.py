@@ -1291,7 +1291,7 @@ class Metabolism(object):
 			it assumes only a reverse or degradation KM exists for simpler calculations
 		"""
 
-		# Convert to appropraite arrays
+		# Convert to appropriate arrays
 		if units.hasUnit(aa_conc):
 			aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
 

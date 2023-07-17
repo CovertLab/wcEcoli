@@ -26,6 +26,7 @@ class DependencyGraph(object):
 	"""
 
 	def __init__(self):
+		# type: () -> None
 		"""Initialize dependencies to empty dictionary"""
 		self.dependencies = {}  # type: Dict[str, List[str]]
 

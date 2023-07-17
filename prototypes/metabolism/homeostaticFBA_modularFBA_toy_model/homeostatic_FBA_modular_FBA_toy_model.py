@@ -16,7 +16,7 @@ FBAObjectives_file = "FBA_objectives.tsv"
 # Define file parsing
 def parseFile(filename):
 	out = []
-	F = open(filename, mode = "rU")
+	F = open(filename, mode = "r")
 	
 	for line in F:
 		line_list = line.split()
@@ -39,7 +39,7 @@ def parseFile(filename):
 
 def getValues(filename):
 	out = dict()
-	F = open(filename, mode = "rU")
+	F = open(filename, mode = "r")
 
 	for line in F:
 		line_list = line.split()

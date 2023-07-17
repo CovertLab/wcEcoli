@@ -8,7 +8,7 @@ import os
 import pickle
 import shutil
 import tempfile
-from typing import Iterable
+from typing import Any
 import unittest
 
 import numpy as np
@@ -312,6 +312,7 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 		self.assertEqual(1010 + e, container4.count('Einsteinium'))
 
 	def test_cannot_pickle(self):
+		# type: () -> None
 		"""Try to pickle a container whose dtype has fields or a subarray."""
 		container = BulkObjectsContainer(ELEMENTS, dtype=[('U', 'f4'), ('b', 'i4')])
 		with self.assertRaises(ValueError):
@@ -322,11 +323,11 @@ class Test_BulkObjectsContainer(unittest.TestCase):
 			pickle.dumps(container)
 
 		with self.assertRaises(TypeError):
-			# Suppress PyCharm's type check then test that the bad arg type
+			# Suppress static type checks, then test that the bad arg type
 			# gets caught at run time -- currently by BOC's dumps() method.
 			# Why doesn't mypy catch this bad type?
 			# noinspection PyTypeChecker
-			bad_names = [OBJECT_NAMES, OBJECT_NAMES]  # type: Iterable[str]
+			bad_names: Any = [OBJECT_NAMES, OBJECT_NAMES]
 			container = BulkObjectsContainer(bad_names, dtype='f8')
 			pickle.dumps(container)
 
