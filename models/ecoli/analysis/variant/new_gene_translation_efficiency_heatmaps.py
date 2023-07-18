@@ -65,7 +65,7 @@ create the other heatmaps, and should not be included here.
 The order listed here will be the order of the heatmaps in the
 dashboard plot.
 """
-heatmaps_to_make_list = ["doubling_times_heatmap",
+HEATMAPS_TO_MAKE_LIST = ["doubling_times_heatmap",
 						 "cell_mass_heatmap",
 						 "cell_dry_mass_heatmap",
 						 "cell_volume_heatmap",
@@ -109,9 +109,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def save_heatmap_data(
 			self, h, initial_index, trl_eff_index, exp_index, curr_heatmap_data,
 			cell_mask):
-		self.heatmap_data[h][initial_index, trl_eff_index, exp_index] = \
-			round(np.mean(curr_heatmap_data[cell_mask]),
-				self.heatmap_details[h]['num_digits_rounding'])
+		self.heatmap_data[h][initial_index, trl_eff_index, exp_index] = round(
+			np.mean(curr_heatmap_data[cell_mask]),
+			self.heatmap_details[h]['num_digits_rounding'])
 
 
 	# Functions for extracting heatmap data
@@ -234,8 +234,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		rnap_id = [self.sim_data.molecule_ids.full_RNAP]
 		(rnapCountsBulk,) = read_stacked_bulk_molecules(
 			all_cells, (rnap_id,))
-		cell_id_vector = stacked_cell_identification(all_cells, 'Main',
-													 'time')
+		cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
 		cell_ids, idx, cell_total_timesteps = np.unique(
 			cell_id_vector, return_inverse=True, return_counts=True)
 		sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
@@ -266,8 +265,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Determine ribosome index
 		sim_dir = all_cells[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
-		uniqueMoleculeCounts = TableReader(os.path.join(
-			simOutDir, "UniqueMoleculeCounts"))
+		uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
 		ribosome_index = uniqueMoleculeCounts.readAttribute(
 			"uniqueMoleculeIds").index('active_ribosome')
 
@@ -304,8 +302,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
 			actual_probs_column, target_probs_column):
 		avg_actual_prob = read_stacked_columns(
-					all_cells, self.heatmap_details[h]['data_table'],
-					actual_probs_column, fun=lambda x: np.mean(x, axis=0))
+			all_cells, self.heatmap_details[h]['data_table'],
+			actual_probs_column, fun=lambda x: np.mean(x, axis=0))
 		avg_target_prob = read_stacked_columns(
 			all_cells, self.heatmap_details[h]['data_table'],
 			target_probs_column, fun=lambda x: np.mean(x, axis=0))
@@ -620,7 +618,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	# Functions for plotting heatmaps
 	"""
-	Plots all heatmaps in order given by heatmaps_to_make_list.
+	Plots all heatmaps in order given by HEATMAPS_TO_MAKE_LIST.
 	
 	Args:
 		is_dashboard: Boolean flag for whether we are creating a dashboard of 
@@ -646,11 +644,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			figsize_x, figsize_y, plotOutDir, plot_suffix):
 		if is_dashboard:
 			# Determine dashboard layout
-			if len(heatmaps_to_make_list) > 3:
+			if len(HEATMAPS_TO_MAKE_LIST) > 3:
 				dashboard_ncols = 4
-				dashboard_nrows = math.ceil((len(heatmaps_to_make_list) + 1) / dashboard_ncols)
+				dashboard_nrows = math.ceil((len(HEATMAPS_TO_MAKE_LIST) + 1) / dashboard_ncols)
 			else:
-				dashboard_ncols = len(heatmaps_to_make_list) + 1
+				dashboard_ncols = len(HEATMAPS_TO_MAKE_LIST) + 1
 				dashboard_nrows = 1
 			fig, axs = plt.subplots(nrows=dashboard_nrows,
 				ncols=dashboard_ncols,
@@ -672,7 +670,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			row_ax = 0
 			col_ax = 1
 
-			for h in heatmaps_to_make_list:
+			for h in HEATMAPS_TO_MAKE_LIST:
 				if not self.heatmap_details[h]["is_nonstandard_plot"]:
 					stop_index = 1
 					title_addition = ""
@@ -736,7 +734,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.show()
 			exportFigure(plt, plotOutDir, 'completed_gens_heatmap')
 
-			for h in heatmaps_to_make_list:
+			for h in HEATMAPS_TO_MAKE_LIST:
 				if not self.heatmap_details[h]["is_nonstandard_plot"]:
 					stop_index = 1
 					title_addition = ""
@@ -803,15 +801,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 			initial_index, new_gene_expression_factors,
 			new_gene_translation_efficiency_values, title_addition):
-		heatmap(self, ax, variant_mask,
-				self.heatmap_data[h][initial_index, :, :],
-				self.heatmap_data["completed_gens_heatmap"][0, :, :],
-				heatmap_x_label,
-				heatmap_y_label,
-				new_gene_expression_factors,
-				new_gene_translation_efficiency_values,
-				self.heatmap_details[h]['plot_title'] + title_addition,
-				self.heatmap_details[h]['box_text_size'])
+		heatmap(
+			self, ax, variant_mask,
+			self.heatmap_data[h][initial_index, :, :],
+			self.heatmap_data["completed_gens_heatmap"][0, :, :],
+			heatmap_x_label, heatmap_y_label, new_gene_expression_factors,
+			new_gene_translation_efficiency_values,
+			self.heatmap_details[h]['plot_title'] + title_addition,
+			self.heatmap_details[h]['box_text_size'])
 
 	"""
 	Special function that creates a new gene mRNA NTP fraction heatmap for one
@@ -837,22 +834,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 			initial_index, new_gene_expression_factors,
 			new_gene_translation_efficiency_values, ntp_id):
-		heatmap(self, ax, variant_mask,
-				self.heatmap_data[h][ntp_id][initial_index, :, :],
-				self.heatmap_data["completed_gens_heatmap"][0, :, :],
-				heatmap_x_label,
-				heatmap_y_label,
-				new_gene_expression_factors,
-				new_gene_translation_efficiency_values,
-				self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
-					" Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4],
-				self.heatmap_details[h][
-					'box_text_size'])
+		heatmap(
+			self, ax, variant_mask,
+			self.heatmap_data[h][ntp_id][initial_index, :, :],
+			self.heatmap_data["completed_gens_heatmap"][0, :, :],
+			heatmap_x_label, heatmap_y_label, new_gene_expression_factors,
+			new_gene_translation_efficiency_values,
+			self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
+				" Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4],
+			self.heatmap_details[h]['box_text_size'])
 
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		heatmaps_to_make = set(heatmaps_to_make_list)
+		heatmaps_to_make = set(HEATMAPS_TO_MAKE_LIST)
 		with open(simDataFile, 'rb') as f:
 			self.sim_data = pickle.load(f)
 
@@ -995,17 +990,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Check validity of requested heatmaps and fill in default values where needed
 		for h in heatmaps_to_make:
 			assert h in self.heatmap_details, "Heatmap " + h + " is not an option"
-			self.heatmap_details[h]['is_new_gene_heatmap'] = h.startswith(
-				"new_gene_")
-			self.heatmap_details[h].setdefault('is_nonstandard_data_retrieval',
+			self.heatmap_details[h]['is_new_gene_heatmap'] = h.startswith("new_gene_")
+			self.heatmap_details[h].setdefault(
+				'is_nonstandard_data_retrieval',
 				default_is_nonstandard_data_retrieval)
-			self.heatmap_details[h].setdefault('is_nonstandard_plot',
-				default_is_nonstandard_plot)
-			self.heatmap_details[h].setdefault('default_value', default_value)
-			self.heatmap_details[h].setdefault('remove_first', default_remove_first)
-			self.heatmap_details[h].setdefault('function_to_apply', default_function_to_apply)
-			self.heatmap_details[h].setdefault('num_digits_rounding', default_num_digits_rounding)
-			self.heatmap_details[h].setdefault('box_text_size', default_box_text_size)
+			self.heatmap_details[h].setdefault(
+				'is_nonstandard_plot',default_is_nonstandard_plot)
+			self.heatmap_details[h].setdefault(
+				'default_value', default_value)
+			self.heatmap_details[h].setdefault(
+				'remove_first', default_remove_first)
+			self.heatmap_details[h].setdefault(
+				'function_to_apply', default_function_to_apply)
+			self.heatmap_details[h].setdefault(
+				'num_digits_rounding', default_num_digits_rounding)
+			self.heatmap_details[h].setdefault(
+				'box_text_size', default_box_text_size)
 
 		# Map variant indices to expression factors and translation efficiency
 		# values
@@ -1015,8 +1015,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				  " new gene expression-translation efficiency variant was "
 				  "enabled, but no parameters for this variant were found.")
 			return
-		new_gene_expression_factors = metadata[
-			'new_gene_expression_factors']
+		new_gene_expression_factors = metadata['new_gene_expression_factors']
 		new_gene_translation_efficiency_values = metadata[
 			'new_gene_translation_efficiency_values']
 		separator = len(new_gene_translation_efficiency_values)
@@ -1041,10 +1040,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				else:
 					expression_list_index = index // separator + 1
 
-				expression_variant_index = new_gene_expression_factors[
-											   expression_list_index]
-				trl_eff_value = new_gene_translation_efficiency_values[
-					trl_eff_list_index]
+				expression_variant_index = new_gene_expression_factors[expression_list_index]
+				trl_eff_value = new_gene_translation_efficiency_values[trl_eff_list_index]
 			variant_index_to_values[index] = np.array([
 				expression_variant_index, trl_eff_value])
 			variant_index_to_list_indices[index] = np.array([
@@ -1055,10 +1052,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mRNA_sim_data = self.sim_data.process.transcription.cistron_data.struct_array
 		monomer_sim_data = self.sim_data.process.translation.monomer_data.struct_array
 		self.new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
-		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
-										monomer_sim_data['id']))
-		self.new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
-								for mRNA_id in self.new_gene_mRNA_ids]
+		mRNA_monomer_id_dict = dict(
+			zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+		self.new_gene_monomer_ids = [
+			mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in self.new_gene_mRNA_ids]
 		if len(self.new_gene_mRNA_ids) == 0:
 			print("This plot is intended to be run on simulations where the"
 				  " new gene option was enabled, but no new gene mRNAs were "
@@ -1067,8 +1064,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if len(self.new_gene_monomer_ids) == 0:
 			print("This plot is intended to be run on simulations where the "
 				  "new gene option was enabled, but no new gene proteins "
-				  "were "
-				  "found.")
+				  "were found.")
 			return
 		assert len(self.new_gene_monomer_ids) == len(self.new_gene_mRNA_ids),\
 			'number of new gene monomers and mRNAs should be equal'
@@ -1082,7 +1078,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if not self.heatmap_details[h]['is_new_gene_heatmap']:
 				self.heatmap_data[h] = np.zeros((
 					1, len(new_gene_translation_efficiency_values),
-					len(new_gene_expression_factors))) + self.heatmap_details[h]['default_value']
+					len(new_gene_expression_factors))
+					) + self.heatmap_details[h]['default_value']
 			else:
 				if h == "new_gene_mRNA_NTP_fraction_heatmap":
 					self.ntp_ids = list(
@@ -1093,14 +1090,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"][
 							ntp_id] = np.zeros((len(self.new_gene_mRNA_ids),
 							len(new_gene_translation_efficiency_values),
-							len(new_gene_expression_factors))) + self.heatmap_details[
-							h]['default_value']
+							len(new_gene_expression_factors))
+							) + self.heatmap_details[h]['default_value']
 				else:
 					self.heatmap_data[h] = np.zeros((
 						len(self.new_gene_mRNA_ids),
 						len(new_gene_translation_efficiency_values),
-						len(new_gene_expression_factors))) + self.heatmap_details[
-						h]['default_value']
+						len(new_gene_expression_factors))
+						) + self.heatmap_details[h]['default_value']
 
 		# Data extraction
 		print("---Data Extraction---")
@@ -1122,8 +1119,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				int(os.path.basename(os.path.dirname(cell_path))[-6:])
 				for cell_path in all_cells])
 			generations[variant] = all_cells_gens
-			cell_mask = np.logical_and((generations[variant] >=
-				MIN_CELL_INDEX),(generations[variant] < MAX_CELL_INDEX))
+			cell_mask = np.logical_and(
+				(generations[variant] >=MIN_CELL_INDEX),
+				(generations[variant] < MAX_CELL_INDEX))
 			if len(cell_mask) == 1:
 				cell_mask = cell_mask.reshape(1)
 			if sum(cell_mask) < 1:
