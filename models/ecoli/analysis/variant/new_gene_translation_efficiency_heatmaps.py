@@ -131,7 +131,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				raise Exception(
 					"Heatmap " + h + " is neither a standard heatmap nor a"
 					" nonstandard heatmap that has specific instructions for"
-					" data extraction")
+					" data extraction.")
 
 		else:
 			if h == "new_gene_mRNA_counts_heatmap":
@@ -176,7 +176,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			else:
 				raise Exception(
 					"Heatmap " + h + " has no instructions for"
-					" data extraction")
+					" data extraction.")
 
 	def extract_rnap_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -355,6 +355,176 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				new_gene_num_time_steps_overcrowded[:,i], cell_mask)
 
+	def make_single_heatmap(
+			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
+			initial_index, new_gene_expression_factors,
+			new_gene_translation_efficiency_values, title_addition):
+		heatmap(self, ax, variant_mask,
+				self.heatmap_data[h][initial_index, :, :],
+				self.heatmap_data["completed_gens_heatmap"][0, :, :],
+				heatmap_x_label,
+				heatmap_y_label,
+				new_gene_expression_factors,
+				new_gene_translation_efficiency_values,
+				self.heatmap_details[h]['plot_title'] + title_addition,
+				self.heatmap_details[h]['box_text_size'])
+
+	def make_new_gene_mRNA_NTP_fraction_heatmap(
+			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
+			initial_index, new_gene_expression_factors,
+			new_gene_translation_efficiency_values, ntp_id):
+		heatmap(self, ax, variant_mask,
+				self.heatmap_data[h][ntp_id][initial_index, :, :],
+				self.heatmap_data["completed_gens_heatmap"][0, :, :],
+				heatmap_x_label,
+				heatmap_y_label,
+				new_gene_expression_factors,
+				new_gene_translation_efficiency_values,
+				self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
+					" Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4],
+				self.heatmap_details[h][
+					'box_text_size'])
+
+	def plot_heatmaps(
+			self, is_dashboard, variant_mask, heatmap_x_label, heatmap_y_label,
+			new_gene_expression_factors, new_gene_translation_efficiency_values,
+			figsize_x, figsize_y, plotOutDir, plot_suffix):
+
+		if is_dashboard:
+			# Determine dashboard layout
+			if len(heatmaps_to_make_list) > 3:
+				dashboard_ncols = 4
+				dashboard_nrows = math.ceil((len(heatmaps_to_make_list) + 1) / dashboard_ncols)
+			else:
+				dashboard_ncols = len(heatmaps_to_make_list) + 1
+				dashboard_nrows = 1
+			fig, axs = plt.subplots(nrows=dashboard_nrows,
+				ncols=dashboard_ncols,
+				figsize=(figsize_y * dashboard_ncols,figsize_x * dashboard_nrows),
+				layout='constrained'
+				)
+			if dashboard_nrows == 1:
+				axs = np.reshape(axs, (1, dashboard_ncols))
+
+			# Percent Completion Heatmap
+			heatmap(self, axs[0,0], variant_mask,
+				self.heatmap_data["completed_gens_heatmap"][0,:,:],
+				self.heatmap_data["completed_gens_heatmap"][0,:,:],
+				heatmap_x_label,
+				heatmap_y_label,
+				new_gene_expression_factors,
+				new_gene_translation_efficiency_values,
+				"Percentage of Sims That Reached Generation " + str(COUNT_INDEX + 1))
+			row_ax = 0
+			col_ax = 1
+
+			for h in heatmaps_to_make_list:
+				if not self.heatmap_details[h]["is_nonstandard_plot"]:
+					stop_index = 1
+					title_addition = ""
+					if self.heatmap_details[h]["is_new_gene_heatmap"]:
+						stop_index = len(self.new_gene_mRNA_ids)
+					for i in range(stop_index):
+						if self.heatmap_details[h]["is_new_gene_heatmap"]:
+							title_addition = ": " + self.new_gene_mRNA_ids[i][:-4]
+						self.make_single_heatmap(
+							h, axs[row_ax, col_ax], variant_mask,
+							heatmap_x_label, heatmap_y_label, i,
+							new_gene_expression_factors,
+							new_gene_translation_efficiency_values,
+							title_addition)
+						col_ax += 1
+						if (col_ax == dashboard_ncols):
+							col_ax = 0
+							row_ax += 1
+				elif h == "new_gene_mRNA_NTP_fraction_heatmap":
+					for i in range(len(self.new_gene_mRNA_ids)):
+						for ntp_id in self.ntp_ids:
+							self.make_new_gene_mRNA_NTP_fraction_heatmap(
+								h, axs[row_ax, col_ax], variant_mask,
+								heatmap_x_label, heatmap_y_label, i,
+								new_gene_expression_factors,
+								new_gene_translation_efficiency_values, ntp_id)
+							fig.tight_layout()
+							plt.show()
+							exportFigure(
+								plt, plotOutDir,
+								'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap'
+								+ "_" + self.new_gene_mRNA_ids[i][:-4] +
+								plot_suffix)
+							col_ax += 1
+							if (col_ax == dashboard_ncols):
+								col_ax = 0
+								row_ax += 1
+				else:
+					raise Exception(
+						"Heatmap " + h + " is neither a standard plot nor a"
+						" nonstandard plot that has specific instructions for"
+						" plotting.")
+			fig.tight_layout()
+			exportFigure(plt, plotOutDir,
+				"new_gene_exp_trl_eff_dashboard" + plot_suffix)
+			plt.close("all")
+
+		else: # individual plots
+			# Plot percent completion heatmap
+			fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
+			heatmap(self, ax, variant_mask,
+					self.heatmap_data["completed_gens_heatmap"][0, :, :],
+					self.heatmap_data["completed_gens_heatmap"][0, :, :],
+					heatmap_x_label,
+					heatmap_y_label,
+					new_gene_expression_factors,
+					new_gene_translation_efficiency_values,
+					"Percentage of Sims that Reached Generation " \
+					+ str(COUNT_INDEX + 1))
+			fig.tight_layout()
+			plt.show()
+			exportFigure(plt, plotOutDir, 'completed_gens_heatmap')
+
+			for h in heatmaps_to_make_list:
+				if not self.heatmap_details[h]["is_nonstandard_plot"]:
+					stop_index = 1
+					title_addition = ""
+					filename_addition = ""
+					if self.heatmap_details[h]["is_new_gene_heatmap"]:
+						stop_index = len(self.new_gene_mRNA_ids)
+					for i in range(stop_index):
+						if self.heatmap_details[h]["is_new_gene_heatmap"]:
+							title_addition = ": " + self.new_gene_mRNA_ids[i][:-4]
+							filename_addition = "_" + self.new_gene_mRNA_ids[i][:-4]
+						fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
+						self.make_single_heatmap(
+							h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
+							i, new_gene_expression_factors,
+							new_gene_translation_efficiency_values, title_addition)
+						fig.tight_layout()
+						plt.show()
+						exportFigure(plt, plotOutDir, h + filename_addition +
+							plot_suffix)
+						plt.close()
+				elif h == "new_gene_mRNA_NTP_fraction_heatmap":
+					for i in range(len(self.new_gene_mRNA_ids)):
+						for ntp_id in self.ntp_ids:
+							fig, ax = plt.subplots(1, 1, figsize=(figsize_x,
+								figsize_y))
+							self.make_new_gene_mRNA_NTP_fraction_heatmap(
+								h, ax, variant_mask, heatmap_x_label,
+								heatmap_y_label, i, new_gene_expression_factors,
+								new_gene_translation_efficiency_values, ntp_id)
+							fig.tight_layout()
+							plt.show()
+							exportFigure(
+								plt, plotOutDir,
+								'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap'
+								+ "_" + self.new_gene_mRNA_ids[i][:-4] +
+								plot_suffix)
+				else:
+					raise Exception(
+						"Heatmap " + h + " is neither a standard plot nor a"
+						" nonstandard plot that has specific instructions for"
+						" plotting.")
+
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 
@@ -515,18 +685,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.heatmap_details[h].setdefault('num_digits_rounding', default_num_digits_rounding)
 			self.heatmap_details[h].setdefault('box_text_size', default_box_text_size)
 
-		### TODO: Replace this now that flags are part of heatmap_details
-		new_gene_heatmaps = {h for h in heatmaps_to_make
-								 if h.startswith("new_gene_")}
-		special_new_gene_heatmaps = {"new_gene_mRNA_NTP_fraction_heatmap"}
-		standard_new_gene_heatmaps = new_gene_heatmaps - special_new_gene_heatmaps
-		non_new_gene_heatmaps = heatmaps_to_make - new_gene_heatmaps
-		special_non_new_gene_heatmaps = {"rnap_counts_heatmap",
-										 "rnap_crowding_heatmap",
-										 "ribosome_crowding_heatmap"}
-		standard_non_new_gene_heatmaps = non_new_gene_heatmaps - \
-										 special_non_new_gene_heatmaps
-
 		# Dictionary for storing the data (numpy arrays) for each heatmap
 		self.heatmap_data = {}
 
@@ -603,27 +761,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Create data structures that to use for the heatmaps
 		self.heatmap_data["completed_gens_heatmap"] = np.zeros((
+			1, len(new_gene_translation_efficiency_values),
+			len(new_gene_expression_factors)))
+		for h in heatmaps_to_make:
+			if not self.heatmap_details[h]['is_new_gene_heatmap']:
+				self.heatmap_data[h] = np.zeros((
 					1, len(new_gene_translation_efficiency_values),
-					len(new_gene_expression_factors)))
-		for h in non_new_gene_heatmaps:
-			self.heatmap_data[h] = np.zeros((
-				1, len(new_gene_translation_efficiency_values),
-				len(new_gene_expression_factors))) + self.heatmap_details[h][
-				'default_value']
-		for h in standard_new_gene_heatmaps:
-			self.heatmap_data[h] = np.zeros((
-				len(self.new_gene_mRNA_ids), len(new_gene_translation_efficiency_values),
-				len(new_gene_expression_factors))) + self.heatmap_details[h][
-				'default_value']
-		if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
-			ntp_ids = list(self.sim_data.ntp_code_to_id_ordered.values())
-			self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"] = {}
-			for ntp_id in ntp_ids:
-					self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"][
-						ntp_id] = np.zeros((len(self.new_gene_mRNA_ids),
+					len(new_gene_expression_factors))) + self.heatmap_details[h]['default_value']
+			else:
+				if h == "new_gene_mRNA_NTP_fraction_heatmap":
+					self.ntp_ids = list(
+						self.sim_data.ntp_code_to_id_ordered.values())
+					self.heatmap_data[
+						"new_gene_mRNA_NTP_fraction_heatmap"] = {}
+					for ntp_id in self.ntp_ids:
+						self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"][
+							ntp_id] = np.zeros((len(self.new_gene_mRNA_ids),
+							len(new_gene_translation_efficiency_values),
+							len(new_gene_expression_factors))) + self.heatmap_details[
+							h]['default_value']
+				else:
+					self.heatmap_data[h] = np.zeros((
+						len(self.new_gene_mRNA_ids),
 						len(new_gene_translation_efficiency_values),
 						len(new_gene_expression_factors))) + self.heatmap_details[
-						"new_gene_mRNA_NTP_fraction_heatmap"]['default_value']
+						h]['default_value']
 
 		# Data extraction
 		print("---Data Extraction---")
@@ -666,15 +828,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.heatmap_data["completed_gens_heatmap"][0, trl_eff_index,
 				exp_index]	= round(reached_count_gen[variant], 2)
 
-			# TODO: Combine new gene based heatmaps into this function as well
-			for h in non_new_gene_heatmaps:
-				self.extract_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
-
-			# New Gene Based Heatmaps
-			if not new_gene_heatmaps:
-				continue
-
+			# TODO: include in modularization?
 			# New Gene mRNA and Monomer Counts
 			if variant == min_variant:
 				sim_dir = all_cells[0]
@@ -718,7 +872,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 											for monomer_id in
 											self.new_gene_monomer_ids]
 
-			for h in new_gene_heatmaps:
+			for h in heatmaps_to_make:
 				self.extract_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
 
@@ -734,174 +888,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Dashboard Plots
 		if DASHBOARD_FLAG == 1 or DASHBOARD_FLAG == 2:
-			if len(heatmaps_to_make) > 3:
-				dashboard_ncols = 4
-				dashboard_nrows = math.ceil((len(heatmaps_to_make) + 1) / dashboard_ncols)
-			else:
-				dashboard_ncols = len(heatmaps_to_make) + 1
-				dashboard_nrows = 1
-
-			fig, axs = plt.subplots(nrows=dashboard_nrows,
-				ncols=dashboard_ncols,
-				figsize=(figsize_y * dashboard_ncols,figsize_x * dashboard_nrows),
-				layout='constrained'
-				)
-			if dashboard_nrows == 1:
-				axs = np.reshape(axs, (1, dashboard_ncols))
-
-			# Percent Completion Heatmap
-			heatmap(self, axs[0,0], variant_mask,
-				self.heatmap_data["completed_gens_heatmap"][0,:,:],
-				self.heatmap_data["completed_gens_heatmap"][0,:,:],
-				heatmap_x_label,
-				heatmap_y_label,
+			self.plot_heatmaps(
+				True, variant_mask, heatmap_x_label, heatmap_y_label,
 				new_gene_expression_factors,
 				new_gene_translation_efficiency_values,
-				"Percentage of Sims That Reached Generation " + str(
-					COUNT_INDEX + 1))
-
-			row_ax = 0
-			col_ax = 1
-
-			for h in heatmaps_to_make_list:
-				# Heatmaps that do not involve new genes
-				if not h.startswith("new_gene"):
-					heatmap(self, axs[row_ax, col_ax], variant_mask,
-							self.heatmap_data[h][0,:,:],
-							self.heatmap_data["completed_gens_heatmap"][0,:,:],
-							heatmap_x_label,
-							heatmap_y_label,
-							new_gene_expression_factors,
-							new_gene_translation_efficiency_values,
-							self.heatmap_details[h]['plot_title'],
-							self.heatmap_details[h]['box_text_size'])
-				# New Gene mRNA NTP Fraction
-				elif h == "new_gene_mRNA_NTP_fraction_heatmap":
-					for i in range(len(self.new_gene_mRNA_ids)):
-						for ntp_id in ntp_ids:
-							heatmap(self, axs[row_ax, col_ax],
-								variant_mask,
-								self.heatmap_data[
-									"new_gene_mRNA_NTP_fraction_heatmap"][
-									ntp_id][i, :, :],
-								self.heatmap_data["completed_gens_heatmap"][0,:,:],
-								heatmap_x_label,
-								heatmap_y_label,
-								new_gene_expression_factors,
-								new_gene_translation_efficiency_values,
-								self.heatmap_details[
-									"new_gene_mRNA_NTP_fraction_heatmap"][
-									'plot_title'] + " " + ntp_id[:-3] +
-									" Fraction: " + self.new_gene_mRNA_ids[i][:-4],
-								self.heatmap_details[
-									"new_gene_mRNA_NTP_fraction_heatmap"][
-									'box_text_size'])
-							col_ax += 1
-							if (col_ax == dashboard_ncols):
-								col_ax = 0
-								row_ax += 1
-				# Standard New Gene Heatmaps
-				else:
-					for i in range(len(self.new_gene_mRNA_ids)):
-						heatmap(self, axs[row_ax, col_ax], variant_mask,
-							self.heatmap_data[h][i, :, :],
-							self.heatmap_data["completed_gens_heatmap"][0,:,:],
-							heatmap_x_label,
-							heatmap_y_label,
-							new_gene_expression_factors,
-							new_gene_translation_efficiency_values,
-							self.heatmap_details[h]['plot_title'] + ": " +
-							self.new_gene_mRNA_ids[i][:-4],
-							self.heatmap_details[h]['box_text_size'])
-				col_ax += 1
-				if (col_ax == dashboard_ncols):
-					col_ax = 0
-					row_ax += 1
-			fig.tight_layout()
-			exportFigure(plt, plotOutDir,
-				"new_gene_exp_trl_eff_dashboard" + plot_suffix)
-			plt.close("all")
+				figsize_x, figsize_y, plotOutDir, plot_suffix)
 
 		# Separate Plots
 		if DASHBOARD_FLAG == 0 or DASHBOARD_FLAG == 2:
-			# Plot percent completion heatmap
-			fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
-			heatmap(self, ax, variant_mask,
-					self.heatmap_data["completed_gens_heatmap"][0,:,:],
-					self.heatmap_data["completed_gens_heatmap"][0,:,:],
-					heatmap_x_label,
-					heatmap_y_label,
-					new_gene_expression_factors,
-					new_gene_translation_efficiency_values,
-					"Percentage of Sims that Reached Generation " \
-					+ str(COUNT_INDEX + 1))
-			fig.tight_layout()
-			plt.show()
-			exportFigure(plt, plotOutDir, 'completed_gens_heatmap')
-
-			# Plot heatmaps that do not involve new genes
-			for h in non_new_gene_heatmaps:
-				fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
-				heatmap(self, ax, variant_mask,
-						self.heatmap_data[h][0,:,:],
-						self.heatmap_data["completed_gens_heatmap"][0,:,:],
-						heatmap_x_label,
-						heatmap_y_label,
-						new_gene_expression_factors,
-						new_gene_translation_efficiency_values,
-						self.heatmap_details[h]['plot_title'],
-						self.heatmap_details[h]['box_text_size'])
-				fig.tight_layout()
-				plt.show()
-				exportFigure(plt, plotOutDir, h + plot_suffix)
-
-				plt.close("all")
-
-			# Plot standard new gene heatmaps
-			for h in standard_new_gene_heatmaps:
-				for i in range(len(self.new_gene_mRNA_ids)):
-					fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
-					heatmap(self, ax, variant_mask,
-							self.heatmap_data[h][i,:,:],
-							self.heatmap_data["completed_gens_heatmap"][0,:,:],
-							heatmap_x_label,
-							heatmap_y_label,
-							new_gene_expression_factors,
-							new_gene_translation_efficiency_values,
-							self.heatmap_details[h]['plot_title'] + ": " + self.new_gene_mRNA_ids[i][:-4],
-							self.heatmap_details[h]['box_text_size'])
-					fig.tight_layout()
-					plt.show()
-					exportFigure(plt, plotOutDir, h + "_" +
-						self.new_gene_mRNA_ids[i][:-4] + plot_suffix)
-
-				plt.close('all')
-
-			# New Gene mRNA NTP Fraction
-			if "new_gene_mRNA_NTP_fraction_heatmap" in heatmaps_to_make:
-				for i in range(len(self.new_gene_mRNA_ids)):
-					for ntp_id in ntp_ids:
-						fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
-						heatmap(self, ax, variant_mask,
-							self.heatmap_data["new_gene_mRNA_NTP_fraction_heatmap"][
-								ntp_id][i, :, :],
-							self.heatmap_data["completed_gens_heatmap"][0,:,:],
-							heatmap_x_label,
-							heatmap_y_label,
-							new_gene_expression_factors,
-							new_gene_translation_efficiency_values,
-							self.heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
-								'plot_title'] + " " + ntp_id[:-3] +
-								" Fraction: " + self.new_gene_mRNA_ids[i][:-4],
-							self.heatmap_details["new_gene_mRNA_NTP_fraction_heatmap"][
-								'box_text_size'])
-						fig.tight_layout()
-						plt.show()
-						exportFigure(plt, plotOutDir,
-							'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap'
-							+ "_" + self.new_gene_mRNA_ids[i][:-4] + plot_suffix)
-
-			plt.close('all')
+			self.plot_heatmaps(
+				False, variant_mask, heatmap_x_label,heatmap_y_label,
+				new_gene_expression_factors, new_gene_translation_efficiency_values,
+				figsize_x, figsize_y, plotOutDir, plot_suffix)
 
 if __name__ == "__main__":
 	Plot().cli()
