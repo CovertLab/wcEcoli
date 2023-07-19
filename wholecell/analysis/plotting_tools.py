@@ -207,8 +207,8 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
 	ax.tick_params(labelsize=font_size)
 	ax.legend()
 
-def heatmap(obj, ax, mask, data, completion_data, xlabel="", ylabel="",
-			xticklabels=[], yticklabels=[], title="", box_text_size ="medium",
+def  heatmap(obj, ax, mask, data, completion_data, xticklabels, yticklabels,
+			xlabel="", ylabel="", title="", box_text_size ="medium",
 			ax_font_size=9, title_font_size=9, percent_completion_threshold = 0.88):
 	"""
 	Args:
@@ -220,10 +220,10 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel="", ylabel="",
 		completion_data: Percent of seeds that successfully completed all
 		generations that contributed to this value, must match dimensions of
 		data
-		xlabel: x-axis label for plot
-		ylabel: y-axis label for plot
 		xticklabels: tick values for x-axis
 		yticklabels: tick values for y-axis
+		xlabel: x-axis label for plot
+		ylabel: y-axis label for plot
 		title: plot title
 		box_text_size: size of text value to be printed in box
 		ax_font_size: font size for labeling axes

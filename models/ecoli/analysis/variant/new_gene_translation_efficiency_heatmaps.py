@@ -29,7 +29,7 @@ from wholecell.analysis.analysis_tools import exportFigure, \
 	read_stacked_columns, read_stacked_bulk_molecules, \
 	stacked_cell_identification
 from wholecell.analysis.plotting_tools import heatmap
-from unum.units import g
+from unum.units import fg
 
 import os.path
 import pickle
@@ -436,9 +436,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Get mass for each new gene
 		new_gene_masses = [1 for id in new_gene_ids]
 		for i in range(len(new_gene_ids)):
-			new_gene_masses[i] = float(
-				(self.sim_data.getter.get_mass(new_gene_ids[i]) / (1E-15 * g) *
-				 (1 / self.sim_data.constants.n_avogadro)))  # convert from g/mol to fg
+			new_gene_masses[i] = (
+				self.sim_data.getter.get_mass(
+				new_gene_ids[i])/self.sim_data.constants.n_avogadro).asNumber(fg)
 		# Get counts for each new gene
 		avg_new_gene_counts = self.get_avg_new_gene_counts(
 			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
@@ -641,13 +641,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				axs = np.reshape(axs, (1, dashboard_ncols))
 
 			# Percent Completion Heatmap
-			heatmap(self, axs[0,0], variant_mask,
+			heatmap(
+				self, axs[0,0], variant_mask,
 				self.heatmap_data["completed_gens_heatmap"][0,:,:],
 				self.heatmap_data["completed_gens_heatmap"][0,:,:],
-				heatmap_x_label,
-				heatmap_y_label,
 				new_gene_expression_factors,
 				new_gene_translation_efficiency_values,
+				heatmap_x_label,
+				heatmap_y_label,
 				"Percentage of Sims That Reached Generation " + str(COUNT_INDEX + 1))
 			row_ax = 0
 			col_ax = 1
@@ -703,14 +704,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		else: # individual plots
 			# Plot percent completion heatmap
 			fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
-			heatmap(self, ax, variant_mask,
-					self.heatmap_data["completed_gens_heatmap"][0, :, :],
-					self.heatmap_data["completed_gens_heatmap"][0, :, :],
-					heatmap_x_label,
-					heatmap_y_label,
-					new_gene_expression_factors,
-					new_gene_translation_efficiency_values,
-					"Percentage of Sims that Reached Generation " \
+			heatmap(
+				self, ax, variant_mask,
+				self.heatmap_data["completed_gens_heatmap"][0, :, :],
+				self.heatmap_data["completed_gens_heatmap"][0, :, :],
+				new_gene_expression_factors,
+				new_gene_translation_efficiency_values,
+				heatmap_x_label,
+				heatmap_y_label,
+				"Percentage of Sims that Reached Generation " \
 					+ str(COUNT_INDEX + 1))
 			fig.tight_layout()
 			plt.show()
@@ -788,8 +790,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self, ax, variant_mask,
 			self.heatmap_data[h][initial_index, :, :],
 			self.heatmap_data["completed_gens_heatmap"][0, :, :],
-			heatmap_x_label, heatmap_y_label, new_gene_expression_factors,
-			new_gene_translation_efficiency_values,
+			new_gene_expression_factors, new_gene_translation_efficiency_values,
+			heatmap_x_label, heatmap_y_label,
 			self.heatmap_details[h]['plot_title'] + title_addition,
 			self.heatmap_details[h]['box_text_size'])
 
@@ -822,8 +824,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self, ax, variant_mask,
 			self.heatmap_data[h][ntp_id][initial_index, :, :],
 			self.heatmap_data["completed_gens_heatmap"][0, :, :],
-			heatmap_x_label, heatmap_y_label, new_gene_expression_factors,
-			new_gene_translation_efficiency_values,
+			new_gene_expression_factors, new_gene_translation_efficiency_values,
+			heatmap_x_label, heatmap_y_label,
 			self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
 				" Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4],
 			self.heatmap_details[h]['box_text_size'])
