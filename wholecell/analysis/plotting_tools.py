@@ -207,9 +207,9 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
 	ax.tick_params(labelsize=font_size)
 	ax.legend()
 
-def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
-			ylabels, title, box_text_size = "medium", ax_font_size=9,
-			title_font_size=9, percent_completion_threshold = 0.88):
+def heatmap(obj, ax, mask, data, completion_data, xlabel="", ylabel="",
+			xticklabels=[], yticklabels=[], title="", box_text_size ="medium",
+			ax_font_size=9, title_font_size=9, percent_completion_threshold = 0.88):
 	"""
 	Args:
 		obj: specify the Plot object
@@ -222,8 +222,8 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 		data
 		xlabel: x-axis label for plot
 		ylabel: y-axis label for plot
-		xlabels: tick values for x-axis
-		ylabels: tick values for y-axis
+		xticklabels: tick values for x-axis
+		yticklabels: tick values for y-axis
 		title: plot title
 		box_text_size: size of text value to be printed in box
 		ax_font_size: font size for labeling axes
@@ -245,28 +245,26 @@ def heatmap(obj, ax, mask, data, completion_data, xlabel, ylabel, xlabels,
 	grid_colors = [(255 / 255, 255 / 255, 255 / 255),
 				   (22 / 255, 110 / 255, 164 / 255)]
 	cmap_name = 'blue_cmap'
-	blue_cmap = LinearSegmentedColormap.from_list(cmap_name, grid_colors,
-													N=100)
+	blue_cmap = LinearSegmentedColormap.from_list(cmap_name, grid_colors, N=100)
 
 	im = ax.imshow(data, cmap=blue_cmap)
-	ax.set_xticks(np.arange(len(xlabels)))
-	ax.set_xticklabels(xlabels)
-	ax.set_yticks(np.arange(len(
-		ylabels)))
-	ax.set_yticklabels(ylabels)
-	plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-			 rotation_mode="anchor")
-	for i in range(len(ylabels)):
-		for j in range(len(xlabels)):
+	ax.set_xticks(np.arange(len(xticklabels)))
+	ax.set_xticklabels(xticklabels)
+	ax.set_yticks(np.arange(len(yticklabels)))
+	ax.set_yticklabels(yticklabels)
+	plt.setp(
+		ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+	for i in range(len(yticklabels)):
+		for j in range(len(xticklabels)):
 			if mask[i,j]:
 				col = "k"
 				if completion_data[i,j] == 0 and data[i,j] == -1:
 					continue
 				if completion_data[i,j] < percent_completion_threshold:
 					col = "r"
-				text = ax.text(j, i, data[i, j],
-							   ha="center", va="center", color=col,
-							   fontsize=box_text_size)
+				text = ax.text(
+					j, i, data[i, j], ha="center", va="center", color=col,
+					fontsize=box_text_size)
 	ax.set_xlabel(xlabel, fontsize=ax_font_size)
 	ax.set_ylabel(ylabel, fontsize=ax_font_size)
 	ax.set_title(title, fontsize=title_font_size)

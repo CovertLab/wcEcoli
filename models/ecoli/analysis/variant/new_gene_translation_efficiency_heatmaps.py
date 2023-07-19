@@ -88,56 +88,50 @@ HEATMAPS_TO_MAKE_LIST = ["doubling_times_heatmap",
 						 ]
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
-
-	# TODO: Add comments to these functions
-	# TODO: Decide whether to use self or to declare variables in another way
-
-	"""
-	Applies cell_mask and saves average data value across seeds and generations
-	to the appropriate location in data structure for heatmap h.
-
-	Args:
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to
-			filter based on generations
-	"""
 	def save_heatmap_data(
 			self, h, initial_index, trl_eff_index, exp_index, curr_heatmap_data,
 			cell_mask):
+		"""
+		Applies cell_mask and saves average data value across seeds and generations
+		to the appropriate location in data structure for heatmap h.
+
+		Args:
+			h: heatmap identifier
+			initial_index: 0 for non new gene heatmaps, otherwise the relative
+				index of the new gene
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			curr_heatmap_data: Data to save
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+			 	to filter based on generations
+		"""
 		self.heatmap_data[h][initial_index, trl_eff_index, exp_index] = round(
 			np.mean(curr_heatmap_data[cell_mask]),
 			self.heatmap_details[h]['num_digits_rounding'])
 
 
 	# Functions for extracting heatmap data
-	"""
-	Extracts and saves data associated with heatmap h to heatmap_data for a
-	single variant/parameter combination. Extraction is done based on the 
-	information in heatmap_details (if a standard, non new gene heatmap) or
-	using functions designed to handle new genes and other special cases.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-	"""
 	def extract_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index,
 			cell_mask):
+		"""
+		Extracts and saves data associated with heatmap h to heatmap_data for a
+		single variant/parameter combination. Extraction is done based on the
+		information in heatmap_details (if a standard, non new gene heatmap) or
+		using functions designed to handle new genes and other special cases.
 
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+			 	to filter based on generations
+		"""
 		if not self.heatmap_details[h]['is_new_gene_heatmap']:
 			if not self.heatmap_details[h]['is_nonstandard_data_retrieval']:
 				curr_heatmap_data = read_stacked_columns(
@@ -168,7 +162,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					" nonstandard heatmap that has specific instructions for"
 					" data extraction.")
 
-		else:
+		else: # New gene heatmaps
 			if h == "new_gene_mRNA_counts_heatmap":
 				self.extract_new_gene_counts_heatmap_data(
 					all_cells, h, trl_eff_index,
@@ -213,24 +207,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					"Heatmap " + h + " has no instructions for"
 					" data extraction.")
 
-	"""
-	Special function to handle extraction and saving of RNAP counts heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-	"""
 	def extract_rnap_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of RNAP counts heatmap
+			data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
 		rnap_id = [self.sim_data.molecule_ids.full_RNAP]
 		(rnapCountsBulk,) = read_stacked_bulk_molecules(
 			all_cells, (rnap_id,))
@@ -243,25 +236,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_counts, cell_mask)
 
-	"""
-	Special function to handle extraction and saving of ribosome counts heatmap
-	data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-	"""
 	def extract_ribosome_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of ribosome counts
+		heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+			 	variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
 		# Determine ribosome index
 		sim_dir = all_cells[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
@@ -277,30 +268,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
 
-	"""
-	Special function to handle extraction and saving of RNAP and ribosome
-	crowding counts heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-		actual_probs_column: Data column which contains actual probabilities of
-			RNA synthesis or translation
-		target_probs_column: Data column which contains target probabilities of
-			RNA synthesis or translation
-	"""
 	def extract_crowding_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
 			actual_probs_column, target_probs_column):
+		"""
+		Special function to handle extraction and saving of RNAP and ribosome
+		crowding counts heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			actual_probs_column: Data column which contains actual
+				probabilities of RNA synthesis or translation
+			target_probs_column: Data column which contains target
+				probabilities of RNA synthesis or translation
+		"""
 		avg_actual_prob = read_stacked_columns(
 			all_cells, self.heatmap_details[h]['data_table'],
 			actual_probs_column, fun=lambda x: np.mean(x, axis=0))
@@ -314,20 +303,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, np.array([True]))
 
-	"""
-	Retrieve new gene indexes of a given type.
-	
-	Args:
-		all_cells: Paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		index_type: Type of indexes to extract, currently supported options are
-			'cistron', 'RNA', 'mRNA', and 'monomer'
-		
-	Returns:
-		List of requested indexes
-	"""
 	def get_new_gene_indexes(self, all_cells, index_type):
+		"""
+		Retrieve new gene indexes of a given type.
+
+		Args:
+			all_cells: Paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			index_type: Type of indexes to extract, currently supported options
+				are 'cistron', 'RNA', 'mRNA', and 'monomer'
+
+		Returns:
+			List of requested indexes
+		"""
 		sim_dir = all_cells[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 		if index_type == 'cistron':
@@ -365,50 +354,48 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		return new_gene_indexes
 
-	"""
-	Retreives average counts of new gene mRNAs or proteins, which are needed
-	for multiple heatmaps.
-	
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		data_table: Table to find data that needs to be retrieved
-		data_column: Column to find data that needs to be retreived
-		new_gene_indexes: Global indexes of the new genes within data_table
-	
-	Returns:
-		Average counts of new gene mRNAs or proteins.
-	"""
 	def get_avg_new_gene_counts(
 			self, all_cells, data_table, data_column, new_gene_indexes):
+		"""
+		Retreives average counts of new gene mRNAs or proteins, which are needed
+		for multiple heatmaps.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			new_gene_indexes: Global indexes of the new genes within data_table
+
+		Returns:
+			Average counts of new gene mRNAs or proteins.
+		"""
 		return (read_stacked_columns(
 				all_cells, data_table, data_column, fun=lambda
 				x: np.mean( x[:, new_gene_indexes], axis=0)))
 
-	"""
-	Special function to handle extraction and saving of new gene mRNA and 
-	protein counts heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-		data_table: Table to find data that needs to be retrieved
-		data_column: Column to find data that needs to be retreived
-		new_gene_index_type: Index type to use for the data table
-	"""
 	def extract_new_gene_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
 			data_table, data_column, new_gene_index_type):
+		"""
+		Special function to handle extraction and saving of new gene mRNA and
+		protein counts heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			new_gene_index_type: Index type to use for the data table
+		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
 		avg_new_gene_counts = self.get_avg_new_gene_counts(all_cells, data_table,
 			data_column, new_gene_indexes)
@@ -416,33 +403,35 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.save_heatmap_data(h, i, trl_eff_index, exp_index,
 				np.log10(avg_new_gene_counts[:, i] + 1), cell_mask)
 
-	"""
-	Special function to handle extraction and saving of new gene mRNA and 
-	protein mass fraction heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-		counts_data_table: Table to find the counts data that needs to be retrieved
-		counts_data_column: Column to find the counts data that needs to be retreived
-		mass_data_table: Table to find the mass data that needs to be retrieved
-		mass_data_column: Column to find the mass data that needs to be retreived
-		new_gene_index_type: Index type to use for the data table
-		new_gene_ids: Ids of new genes in sim_data
-	"""
 	def extract_new_gene_mass_fraction_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
 			counts_data_table, counts_data_column, mass_data_table,
 			mass_data_column, new_gene_index_type, new_gene_ids):
+		"""
+		Special function to handle extraction and saving of new gene mRNA and
+		protein mass fraction heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			counts_data_table: Table to find the counts data that needs to be
+				retrieved
+			counts_data_column: Column to find the counts data that needs to be
+				retreived
+			mass_data_table: Table to find the mass data that needs to be
+				retrieved
+			mass_data_column: Column to find the mass data that needs to be
+				retreived
+			new_gene_index_type: Index type to use for the data table
+			new_gene_ids: Ids of new genes in sim_data
+		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
 		# Get mass for each new gene
 		new_gene_masses = [1 for id in new_gene_ids]
@@ -464,25 +453,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index, new_gene_mass_fraction,
 				cell_mask)
 
-	"""
-	Special function to handle extraction and saving of new gene mRNA and 
-	NTP fraction heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-	"""
 	def extract_new_gene_mRNA_NTP_fraction_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of new gene mRNA and
+		NTP fraction heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
 		# Determine number of NTPs per new gene mRNA
 		new_gene_mRNA_ntp_counts = [{} for id in self.new_gene_mRNA_ids]
 		all_rna_counts_ACGU = self.sim_data.process.transcription.rna_data[
@@ -516,25 +503,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					ntp_id][cell_mask]),
 					self.heatmap_details[h]['num_digits_rounding'])
 
-	"""
-	Special function to handle extraction and saving of RNAP new gene
-	initialization rate heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-	"""
 	def extract_new_gene_rnap_init_rate_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of RNAP new gene
+		initialization rate heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
 		new_gene_cistron_indexes = self.get_new_gene_indexes(all_cells, 'cistron')
 		avg_new_gene_copy_number = (read_stacked_columns(
 			all_cells, 'RnaSynthProb', 'gene_copy_number',
@@ -548,25 +533,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				avg_new_gene_rnap_init_rates[:, i], cell_mask)
 
-	"""
-	Special function to handle extraction and saving of ribosome new gene
-	initialization rate heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-	"""
 	def extract_new_gene_ribosome_init_rate_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of ribosome new gene
+		initialization rate heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
 		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
 		avg_new_gene_mRNA_counts = self.get_avg_new_gene_counts(
@@ -580,29 +563,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				avg_new_gene_ribosome_init_rates[:, i], cell_mask)
 
-	"""
-	Special function to handle extraction and saving of RNAP and ribosome
-	new gene time overcrowded heatmap data.
-
-	Args:
-		all_cells: paths to all cells to read data from (directories should
-			contain a simOut/ subdirectory), typically the return from
-			AnalysisPaths.get_cells()
-		h: heatmap identifier
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		trl_eff_index: New gene translation efficiency value index for this variant
-		exp_index: New gene expression value index for this variant
-		curr_heatmap_data: Data to save
-		cell_mask: Should be same size as curr_heatmap_data, typically used to 
-			filter based on generations
-		data_table: Table to find data that needs to be retrieved
-		data_column: Column to find data that needs to be retreived
-		new_gene_index_type: Index type to use for the data table
-	"""
 	def extract_new_gene_time_overcrowded_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
 			data_table, data_column, new_gene_index_type):
+		"""
+		Special function to handle extraction and saving of RNAP and ribosome
+		new gene time overcrowded heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			new_gene_index_type: Index type to use for the data table
+		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
 		# Average fraction of time steps that overcrowding occurs for new genes
 		# per generation
@@ -617,31 +598,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 	# Functions for plotting heatmaps
-	"""
-	Plots all heatmaps in order given by HEATMAPS_TO_MAKE_LIST.
-	
-	Args:
-		is_dashboard: Boolean flag for whether we are creating a dashboard of 
-			heatmaps or a number of individual heatmaps
-		variant_mask: np.array of dimension (len(new_gene_translation_efficiency_values),
-			len(new_gene_expression_factors)) with entries set to True if variant
-			was run, False otherwise.
-		heatmap_x_label: Label for x axis of heatmap
-		heatmap_y_label: Label for y axis of heatmap
-		new_gene_expression_factors: New gene expression factors used in these
-			variants
-		new_gene_translation_efficiency_values: New gene translation efficiency
-			values used in these variants
-		figsize_x: Horizontal size of each heatmap
-		figsize_y: Vertical size of each heatmap
-		plotOutDir: Output directory for plots
-		plot_suffix: Suffix to add to plot file names, usually specifying which
-			generations were plotted
-	"""
 	def plot_heatmaps(
 			self, is_dashboard, variant_mask, heatmap_x_label, heatmap_y_label,
 			new_gene_expression_factors, new_gene_translation_efficiency_values,
 			figsize_x, figsize_y, plotOutDir, plot_suffix):
+		"""
+		Plots all heatmaps in order given by HEATMAPS_TO_MAKE_LIST.
+
+		Args:
+			is_dashboard: Boolean flag for whether we are creating a dashboard
+				of heatmaps or a number of individual heatmaps
+			variant_mask: np.array of dimension
+				(len(new_gene_translation_efficiency_values),
+				len(new_gene_expression_factors)) with entries set to True if
+				variant was run, False otherwise.
+			heatmap_x_label: Label for x axis of heatmap
+			heatmap_y_label: Label for y axis of heatmap
+			new_gene_expression_factors: New gene expression factors used in
+				these variants
+			new_gene_translation_efficiency_values: New gene translation
+				efficiency values used in these variants
+			figsize_x: Horizontal size of each heatmap
+			figsize_y: Vertical size of each heatmap
+			plotOutDir: Output directory for plots
+			plot_suffix: Suffix to add to plot file names, usually specifying
+				which generations were plotted
+		"""
 		if is_dashboard:
 			# Determine dashboard layout
 			if len(HEATMAPS_TO_MAKE_LIST) > 3:
@@ -777,30 +759,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						" nonstandard plot that has specific instructions for"
 						" plotting.")
 
-	"""
-	Creates a heatmap for h.
-	
-	Args:
-		h: Heatmap identifier
-		ax: Axes to plot on
-		variant_mask: np.array of dimension (len(new_gene_translation_efficiency_values),
-			len(new_gene_expression_factors)) with entries set to True if variant
-			was run, False otherwise.
-		heatmap_x_label: Label for x axis of heatmap
-		heatmap_y_label: Label for y axis of heatmap
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		new_gene_expression_factors: New gene expression factors used in these
-			variants
-		new_gene_translation_efficiency_values: New gene translation efficiency
-			values used in these variants
-		title_addition: Any string that needs to be added to the title of the
-			heatmap, e.g. a new gene id
-	"""
 	def make_single_heatmap(
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 			initial_index, new_gene_expression_factors,
 			new_gene_translation_efficiency_values, title_addition):
+		"""
+		Creates a heatmap for h.
+
+		Args:
+			h: Heatmap identifier
+			ax: Axes to plot on
+			variant_mask: np.array of dimension
+				(len(new_gene_translation_efficiency_values),
+				len(new_gene_expression_factors)) with entries set to True if
+				variant was run, False otherwise.
+			heatmap_x_label: Label for x axis of heatmap
+			heatmap_y_label: Label for y axis of heatmap
+			initial_index: 0 for non new gene heatmaps, otherwise the relative
+				index of the new gene
+			new_gene_expression_factors: New gene expression factors used in
+				these variants
+			new_gene_translation_efficiency_values: New gene translation
+				efficiency values used in these variants
+			title_addition: Any string that needs to be added to the title of
+				the heatmap, e.g. a new gene id
+		"""
 		heatmap(
 			self, ax, variant_mask,
 			self.heatmap_data[h][initial_index, :, :],
@@ -810,30 +793,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.heatmap_details[h]['plot_title'] + title_addition,
 			self.heatmap_details[h]['box_text_size'])
 
-	"""
-	Special function that creates a new gene mRNA NTP fraction heatmap for one
-	new gene and one NTP.
-
-	Args:
-		h: Heatmap identifier
-		ax: Axes to plot on
-		variant_mask: np.array of dimension (len(new_gene_translation_efficiency_values),
-			len(new_gene_expression_factors)) with entries set to True if variant
-			was run, False otherwise.
-		heatmap_x_label: Label for x axis of heatmap
-		heatmap_y_label: Label for y axis of heatmap
-		intial_index: 0 for non new gene heatmaps, otherwise the relative index
-			of the new gene
-		new_gene_expression_factors: New gene expression factors used in these
-			variants
-		new_gene_translation_efficiency_values: New gene translation efficiency
-			values used in these variants
-		ntp_id: Id of NTP to plot
-	"""
 	def make_new_gene_mRNA_NTP_fraction_heatmap(
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 			initial_index, new_gene_expression_factors,
 			new_gene_translation_efficiency_values, ntp_id):
+		"""
+		Special function that creates a new gene mRNA NTP fraction heatmap for
+		one new gene and one NTP.
+
+		Args:
+			h: Heatmap identifier
+			ax: Axes to plot on
+			variant_mask: np.array of dimension
+				(len(new_gene_translation_efficiency_values),
+				len(new_gene_expression_factors)) with entries set to True if
+				variant was run, False otherwise.
+			heatmap_x_label: Label for x axis of heatmap
+			heatmap_y_label: Label for y axis of heatmap
+			initial_index: 0 for non new gene heatmaps, otherwise the relative
+				index of the new gene
+			new_gene_expression_factors: New gene expression factors used in
+				these variants
+			new_gene_translation_efficiency_values: New gene translation
+				efficiency values used in these variants
+			ntp_id: Id of NTP to plot
+		"""
 		heatmap(
 			self, ax, variant_mask,
 			self.heatmap_data[h][ntp_id][initial_index, :, :],
