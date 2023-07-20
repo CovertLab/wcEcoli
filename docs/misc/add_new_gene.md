@@ -63,7 +63,7 @@ The following steps occur in incorporating the new genes into the chromosome:
 ---
 <b>Listeners</b><br>
 * Listeners `models/ecoli/listeners/mRNA_counts.py` and `models/ecoli/listeners/protein_counts.py` did not have to be modified
-* Listener `models/ecoli/listeners/ribisome_data.py` and process 
+* Listener `models/ecoli/listeners/ribosome_data.py` and process 
   `models/ecoli/processes/polypeptide_initiation.py` were modified to 
   include a physical limit to the number of ribosome initiation events on 
   an mRNA, based on ribosome footprint size.
@@ -82,6 +82,9 @@ The following steps occur in incorporating the new genes into the chromosome:
   * `models/ecoli/analysis/variant/rnap_counts_histogram.py` creates a histogram of the RNA polymerase counts, colored by variant index
   * `models/ecoli/analysis/variant/ppgpp_concentration_histogram.py` creates a histogram of the ppGpp concentration, colored by variant index
   * `models/ecoli/analysis/variant/new_gene_protein_mass_fraction_histogram.py` creates a histogram of the proportion of total protein mass that is accounted for by new gene proteins, colored by variant index
+
+Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+
 * New Gene Expression and Translation Efficiency
   * `models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py` plots a number of heatmaps, where each square in the heatmap 
     represents an average over all seeds and generations for that variant 
@@ -109,7 +112,12 @@ The following steps occur in incorporating the new genes into the chromosome:
     * Average number of RNA polymerases
     * Average ppGpp concentration
 
-Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+Note: for the variant scripts, the average value for each generation is 
+plotted. These variant scripts can be used to analyze the impact that 
+increasing new gene expression level or translation efficiency value has on 
+the cell. In addition, there is an option to specify the minimum and 
+maximum generation index to be plotted. It is recommended to reference the 
+late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
  ---
 
