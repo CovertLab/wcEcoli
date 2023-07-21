@@ -14,6 +14,7 @@ variants = [
 	'metabolism_kinetic_objective_weight',
 	'metabolism_secretion_penalty',
 	'new_gene_expression',
+	'new_gene_expression_and_translation_efficiency',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',

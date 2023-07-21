@@ -34,6 +34,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.cistron_start_end_pos_in_tu = sim_data.process.transcription.cistron_start_end_pos_in_tu
 		self.tu_ids = sim_data.process.transcription.rna_data['id']
 		self.n_TUs = len(self.tu_ids)
+		self.active_ribosome_footprint_size = \
+			sim_data.process.translation.active_ribosome_footprint_size
 
 		# Get mapping from cistrons to protein monomers and TUs
 		self.cistron_to_monomer_mapping = sim_data.relation.cistron_to_monomer_mapping
@@ -43,6 +45,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			for (i, monomer) in enumerate(sim_data.process.translation.monomer_data)
 			}
 		self.monomer_index_to_tu_indexes = sim_data.relation.monomer_index_to_tu_indexes
+		self.monomerIds = sim_data.process.translation.monomer_data[
+			'id']
 
 		# Create view on to active 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
@@ -123,9 +127,13 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Calculate initiation probabilities for ribosomes based on mRNA counts
 		# and associated mRNA translational efficiencies
-		proteinInitProb = normalize(
+		protein_init_prob = normalize(
 			cistron_counts[self.cistron_to_monomer_mapping] * self.translationEfficiencies
 		)
+		target_protein_init_prob = protein_init_prob.copy()
+		self.writeToListener(
+			"RibosomeData", "target_prob_translation_per_transcript",
+			target_protein_init_prob)
 
 		# Calculate actual number of ribosomes that should be activated based
 		# on probabilities
@@ -133,7 +141,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.fracActiveRibosome,
 			self.proteinLengths,
 			self.elongation_rates,
-			proteinInitProb,
+			target_protein_init_prob,
 			self.timeStepSec())
 
 		n_ribosomes_to_activate = np.int64(self.activationProb * inactiveRibosomeCount)
@@ -141,11 +149,39 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		if n_ribosomes_to_activate == 0:
 			return
 
+		# Cap the initiation probabilities at the maximum level physically
+		# allowed from the known ribosome footprint sizes based on the
+		# number of mRNAs
+		max_p = (self.ribosomeElongationRate / self.active_ribosome_footprint_size
+			* (units.s) * self.timeStepSec() / 
+			n_ribosomes_to_activate).asNumber()
+		max_p_per_protein = max_p*cistron_counts[self.cistron_to_monomer_mapping]
+		is_overcrowded = (protein_init_prob > max_p_per_protein)
+
+		while np.any(protein_init_prob > max_p_per_protein):
+			protein_init_prob[is_overcrowded] = max_p_per_protein[
+				is_overcrowded]
+			assert protein_init_prob[~is_overcrowded].sum() != 0
+			scale_the_rest_by = (
+				(1. - protein_init_prob[is_overcrowded].sum())
+				/ protein_init_prob[~is_overcrowded].sum()
+				)
+			protein_init_prob[~is_overcrowded] *= scale_the_rest_by
+			is_overcrowded |= (protein_init_prob > max_p_per_protein)
+
+		# Compute actual transcription probabilities of each transcript
+		actual_protein_init_prob = protein_init_prob.copy()
+		self.writeToListener(
+			"RibosomeData", "actual_prob_translation_per_transcript",
+			actual_protein_init_prob)
+		self.writeToListener(
+			"RibosomeData", "mRNA_is_overcrowded", is_overcrowded)
+
 		# Sample multinomial distribution to determine which mRNAs have full
 		# 70S ribosomes initialized on them
 		n_new_proteins = self.randomState.multinomial(
 			n_ribosomes_to_activate,
-			proteinInitProb
+			protein_init_prob
 		)
 
 		protein_indexes = np.empty(n_ribosomes_to_activate, np.int64)
@@ -207,11 +243,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
-		self.writeToListener("RibosomeData", "probTranslationPerTranscript", proteinInitProb)
+		self.writeToListener("RibosomeData", "ribosome_init_event_per_monomer",
+							 n_new_proteins)
 
 	def _calculateActivationProb(
 			self, fracActiveRibosome, proteinLengths, ribosomeElongationRates,
-			proteinInitProb, timeStepSec):
+			protein_init_prob, timeStepSec):
 		"""
 		Calculates the expected ribosome termination rate based on the ribosome
 		elongation rate
@@ -228,7 +265,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		"""
 		allTranslationTimes = 1. / ribosomeElongationRates * proteinLengths
 		allTranslationTimestepCounts = np.ceil(allTranslationTimes / timeStepSec)
-		averageTranslationTimestepCounts = np.dot(allTranslationTimestepCounts, proteinInitProb)
+		averageTranslationTimestepCounts = np.dot(allTranslationTimestepCounts, protein_init_prob)
 		expectedTerminationRate = 1.0 / averageTranslationTimestepCounts
 
 		# Modify given fraction of active ribosomes to take into account early
@@ -243,7 +280,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# 	ribosomes, considering that the "effective" fraction is lower than
 		# 	what the listener sees
 		allFractionTimeInactive = 1 - allTranslationTimes / timeStepSec / allTranslationTimestepCounts
-		averageFractionTimeInactive = np.dot(allFractionTimeInactive, proteinInitProb)
+		averageFractionTimeInactive = np.dot(allFractionTimeInactive, protein_init_prob)
 		effectiveFracActiveRibosome = fracActiveRibosome * 1 / (1 - averageFractionTimeInactive)
 
 		# Return activation probability that will balance out the expected

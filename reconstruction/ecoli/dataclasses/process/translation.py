@@ -208,6 +208,17 @@ class Translation(object):
 			).asNumber(units.fg)
 		self.translation_end_weight = (sim_data.getter.get_masses([sim_data.molecule_ids.water]) / sim_data.constants.n_avogadro).asNumber(units.fg)
 
+		# Load active ribosome footprint on RNA
+		molecule_id_to_footprint_sizes = {
+			row['molecule_id']: row['footprint_size']
+			for row in raw_data.footprint_sizes}
+		try:
+			self.active_ribosome_footprint_size = \
+				molecule_id_to_footprint_sizes['active_ribosome']
+		except KeyError:
+			raise ValueError(
+				'RNA footprint size for ribosomes not found.')
+
 	def _build_translation_efficiency(self, raw_data, sim_data):
 		monomer_ids = [
 			protein_id[:-3] for protein_id in self.monomer_data['id']]

@@ -1216,11 +1216,11 @@ class Transcription(object):
 			/ sim_data.constants.n_avogadro).asNumber(units.fg))
 
 		# Load active RNAP footprint on DNA
-		molecule_id_to_dna_footprint_sizes = {
+		molecule_id_to_footprint_sizes = {
 			row['molecule_id']: row['footprint_size']
-			for row in raw_data.dna_footprint_sizes}
+			for row in raw_data.footprint_sizes}
 		try:
-			self.active_rnap_footprint_size = molecule_id_to_dna_footprint_sizes[
+			self.active_rnap_footprint_size = molecule_id_to_footprint_sizes[
 				sim_data.molecule_ids.full_RNAP[:-3]]
 		except KeyError:
 			raise ValueError('DNA footprint size for RNA polymerses not found.')
