@@ -52,26 +52,33 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			monomer_ids[monomer_index])) for monomer_index in
 			overcrowded_monomer_indexes]
 
-		# Plot the target vs actual rna synthesis probabilites of these mRNAs
-		plt.figure(figsize=(6, 1.5*n_overcrowded_monomers))
+		n_overcrowded_monomers = len(overcrowded_monomer_indexes)
+		if n_overcrowded_monomers > 0:
+			# Plot the target vs actual rna synthesis probabilites of these mRNAs
+			plt.figure(figsize=(6, 1.5*n_overcrowded_monomers))
 
-		for i, monomer_index in enumerate(overcrowded_monomer_indexes):
-			ax = plt.subplot(n_overcrowded_monomers, 1, i + 1)
-			ax.plot(time_min, target_prob_translation_per_transcript[:,
-							  monomer_index], label='target')
-			ax.plot(time_min, actual_prob_translation_per_transcript[:,
-							  monomer_index], label='actual')
+			for i, monomer_index in enumerate(overcrowded_monomer_indexes):
+				ax = plt.subplot(n_overcrowded_monomers, 1, i + 1)
+				ax.plot(time_min, target_prob_translation_per_transcript[:,
+								  monomer_index], label='target')
+				ax.plot(time_min, actual_prob_translation_per_transcript[:,
+								  monomer_index], label='actual')
 
-			ax.set_ylabel(f'{overcrowded_gene_ids[i]}\ntranslation probs')
+				ax.set_ylabel(f'{overcrowded_gene_ids[i]}\ntranslation probs')
 
-			if i == 0:
-				ax.set_title(f'Total number of proteins '
-							 f'corresponding to overcrowded mRNAs: '
-							 f'{n_overcrowded_monomers}')
-				ax.legend(loc=1)
+				if i == 0:
+					ax.set_title(f'Total number of proteins '
+								 f'corresponding to overcrowded mRNAs: '
+								 f'{n_overcrowded_monomers}')
+					ax.legend(loc=1)
 
-			if i == n_overcrowded_monomers - 1:
-				ax.set_xlabel('Time [min]')
+				if i == n_overcrowded_monomers - 1:
+					ax.set_xlabel('Time [min]')
+		else:
+			# Generate empty plot if no overcrowding occurred
+			plt.figure(figsize=(6, 1.5))
+			ax = plt.subplot(1, 1, 1)
+			ax.set_title('No monomers were overcrowded.')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
