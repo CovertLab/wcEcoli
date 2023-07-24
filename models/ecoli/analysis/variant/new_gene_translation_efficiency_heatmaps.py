@@ -8,9 +8,11 @@ Possible Plots:
 - Average cell volume, mass, dry cell mass, mRNA mass, protein mass
 - Average new gene mRNA count
 - Average new gene mRNA mass fraction
+- Average new gene mRNA counts fraction
 - Average new gene NTP mass fraction
 - Average new gene protein count
 - Average new gene protein mass fraction
+- Average new gene protein counts fraction
 - Average new gene initialization rate for RNAP and Ribosomes
 - Average fraction of time new gene is overcrowded by RNAP and Ribosomes
 - Average number of overcrowded genes for RNAP and Ribosomes
@@ -65,27 +67,30 @@ create the other heatmaps, and should not be included here.
 The order listed here will be the order of the heatmaps in the
 dashboard plot.
 """
-HEATMAPS_TO_MAKE_LIST = ["doubling_times_heatmap",
-						 "cell_mass_heatmap",
-						 "cell_dry_mass_heatmap",
-						 "cell_volume_heatmap",
-						 "ppgpp_concentration_heatmap",
-						 "rnap_crowding_heatmap",
-						 "ribosome_crowding_heatmap",
-						 "cell_mRNA_mass_heatmap",
-						 "cell_protein_mass_heatmap",
-						 "rnap_counts_heatmap",
-						 "ribosome_counts_heatmap",
-						 "new_gene_mRNA_counts_heatmap",
-						 "new_gene_monomer_counts_heatmap",
-						 "new_gene_rnap_init_rate_heatmap",
-						 "new_gene_ribosome_init_rate_heatmap",
-						 "new_gene_mRNA_mass_fraction_heatmap",
-						 "new_gene_monomer_mass_fraction_heatmap",
-						 "new_gene_rnap_time_overcrowded_heatmap",
-						 "new_gene_ribosome_time_overcrowded_heatmap",
-						 "new_gene_mRNA_NTP_fraction_heatmap",
-						 ]
+HEATMAPS_TO_MAKE_LIST = [
+		"doubling_times_heatmap",
+		"cell_mass_heatmap",
+		"cell_dry_mass_heatmap",
+		"cell_volume_heatmap",
+		"ppgpp_concentration_heatmap",
+		"rnap_crowding_heatmap",
+		"ribosome_crowding_heatmap",
+		"cell_mRNA_mass_heatmap",
+		"cell_protein_mass_heatmap",
+		"rnap_counts_heatmap",
+		"ribosome_counts_heatmap",
+		"new_gene_mRNA_counts_heatmap",
+		"new_gene_monomer_counts_heatmap",
+		"new_gene_rnap_init_rate_heatmap",
+		"new_gene_ribosome_init_rate_heatmap",
+		"new_gene_mRNA_mass_fraction_heatmap",
+		"new_gene_monomer_mass_fraction_heatmap",
+		"new_gene_rnap_time_overcrowded_heatmap",
+		"new_gene_ribosome_time_overcrowded_heatmap",
+		"new_gene_mRNA_counts_fraction_heatmap",
+		"new_gene_monomer_counts_fraction_heatmap",
+		"new_gene_mRNA_NTP_fraction_heatmap",
+	]
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def save_heatmap_data(
@@ -182,6 +187,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.extract_new_gene_mass_fraction_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
 					'MonomerCounts', 'monomerCounts', 'Mass', 'proteinMass',
+					'monomer', self.new_gene_monomer_ids)
+			elif h == "new_gene_mRNA_counts_fraction_heatmap":
+				self.extract_new_gene_counts_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RNACounts', 'mRNA_counts',
+					'mRNA', self.new_gene_mRNA_ids)
+			elif h == "new_gene_monomer_counts_fraction_heatmap":
+				self.extract_new_gene_counts_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'MonomerCounts', 'monomerCounts',
 					'monomer', self.new_gene_monomer_ids)
 			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
 				self.extract_new_gene_mRNA_NTP_fraction_heatmap_data(
@@ -453,6 +468,47 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index, new_gene_mass_fraction,
 				cell_mask)
 
+	def extract_new_gene_counts_fraction_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			counts_data_table, counts_data_column, new_gene_index_type,
+			new_gene_ids):
+		"""
+		Special function to handle extraction and saving of new gene mRNA and
+		protein counts fraction heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			counts_data_table: Table to find the counts data that needs to be
+				retrieved
+			counts_data_column: Column to find the counts data that needs to be
+				retreived
+			new_gene_index_type: Index type to use for the data table
+			new_gene_ids: Ids of new genes in sim_data
+		"""
+		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		# Get counts for each new gene
+		avg_new_gene_counts = self.get_avg_new_gene_counts(
+			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
+		# Get total avg counts for all genes
+		total_counts = np.sum(read_stacked_columns(
+			all_cells, counts_data_table, counts_data_column,
+			fun=lambda x: np.mean(x, axis=0)), axis = 1)
+
+		# Determine count fractions for each new gene
+		for i in range(len(self.new_gene_mRNA_ids)):
+			new_gene_counts_fraction = avg_new_gene_counts[:, i] / total_counts
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index, new_gene_counts_fraction,
+				cell_mask)
+
 	def extract_new_gene_mRNA_NTP_fraction_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
 		"""
@@ -626,11 +682,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		if is_dashboard:
 			# Determine dashboard layout
-			if len(HEATMAPS_TO_MAKE_LIST) > 3:
+			if self.total_heatmaps_to_make > 3:
 				dashboard_ncols = 4
-				dashboard_nrows = math.ceil((len(HEATMAPS_TO_MAKE_LIST) + 1) / dashboard_ncols)
+				dashboard_nrows = math.ceil((self.total_heatmaps_to_make + 1) / dashboard_ncols)
 			else:
-				dashboard_ncols = len(HEATMAPS_TO_MAKE_LIST) + 1
+				dashboard_ncols = self.total_heatmaps_to_make + 1
 				dashboard_nrows = 1
 			fig, axs = plt.subplots(nrows=dashboard_nrows,
 				ncols=dashboard_ncols,
@@ -837,6 +893,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			self.sim_data = pickle.load(f)
 
+		# Determine new gene ids
+		mRNA_sim_data = self.sim_data.process.transcription.cistron_data.struct_array
+		monomer_sim_data = self.sim_data.process.translation.monomer_data.struct_array
+		self.new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
+		mRNA_monomer_id_dict = dict(
+			zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+		self.new_gene_monomer_ids = [
+			mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in self.new_gene_mRNA_ids]
+		if len(self.new_gene_mRNA_ids) == 0:
+			print("This plot is intended to be run on simulations where the"
+				  " new gene option was enabled, but no new gene mRNAs were "
+				  "found.")
+			return
+		if len(self.new_gene_monomer_ids) == 0:
+			print("This plot is intended to be run on simulations where the "
+				  "new gene option was enabled, but no new gene proteins "
+				  "were found.")
+			return
+		assert len(self.new_gene_monomer_ids) == len(self.new_gene_mRNA_ids),\
+			'number of new gene monomers and mRNAs should be equal'
+
 		"""
 		Details needed to create all possible heatmaps
 			key (string): Heatmap identifier, will also be used in file name if
@@ -954,6 +1031,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'plot_title': 'Log(New Gene Protein Counts+1)'},
 			"new_gene_mRNA_mass_fraction_heatmap":
 				{'plot_title': 'New Gene mRNA Mass Fraction'},
+			"new_gene_mRNA_counts_fraction_heatmap":
+				{'plot_title': 'New Gene mRNA Counts Fraction'},
 			"new_gene_mRNA_NTP_fraction_heatmap":
 				{'is_nonstandard_plot': True,
 				 'num_digits_rounding': 4,
@@ -962,6 +1041,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 },
 			"new_gene_monomer_mass_fraction_heatmap":
 				{'plot_title': 'New Gene Protein Mass Fraction'},
+			"new_gene_monomer_counts_fraction_heatmap":
+				{'plot_title': 'New Gene Protein Counts Fraction'},
 			"new_gene_rnap_init_rate_heatmap":
 				{'plot_title': 'New Gene RNAP Initialization Rate'},
 			"new_gene_ribosome_init_rate_heatmap":
@@ -974,6 +1055,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
 			"the completed_gens_heatmap is run by default, do not include in heatmaps_to_make"
 		# Check validity of requested heatmaps and fill in default values where needed
+		self.total_heatmaps_to_make = 0
 		for h in heatmaps_to_make:
 			assert h in self.heatmap_details, "Heatmap " + h + " is not an option"
 			self.heatmap_details[h]['is_new_gene_heatmap'] = h.startswith("new_gene_")
@@ -992,6 +1074,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'num_digits_rounding', default_num_digits_rounding)
 			self.heatmap_details[h].setdefault(
 				'box_text_size', default_box_text_size)
+
+			if not h.startswith("new_gene_"):
+				self.total_heatmaps_to_make += 1
+			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
+				self.ntp_ids = list(
+					self.sim_data.ntp_code_to_id_ordered.values())
+				self.total_heatmaps_to_make += len(self.ntp_ids)
+			else:
+				self.total_heatmaps_to_make += len(self.new_gene_mRNA_ids)
 
 		# Map variant indices to expression factors and translation efficiency
 		# values
@@ -1034,27 +1125,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				expression_list_index, trl_eff_list_index])
 			variant_mask[trl_eff_list_index, expression_list_index] = True
 
-		# Determine new gene ids
-		mRNA_sim_data = self.sim_data.process.transcription.cistron_data.struct_array
-		monomer_sim_data = self.sim_data.process.translation.monomer_data.struct_array
-		self.new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
-		mRNA_monomer_id_dict = dict(
-			zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
-		self.new_gene_monomer_ids = [
-			mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in self.new_gene_mRNA_ids]
-		if len(self.new_gene_mRNA_ids) == 0:
-			print("This plot is intended to be run on simulations where the"
-				  " new gene option was enabled, but no new gene mRNAs were "
-				  "found.")
-			return
-		if len(self.new_gene_monomer_ids) == 0:
-			print("This plot is intended to be run on simulations where the "
-				  "new gene option was enabled, but no new gene proteins "
-				  "were found.")
-			return
-		assert len(self.new_gene_monomer_ids) == len(self.new_gene_mRNA_ids),\
-			'number of new gene monomers and mRNAs should be equal'
-
 		# Create data structures that to use for the heatmaps
 		self.heatmap_data = {}
 		self.heatmap_data["completed_gens_heatmap"] = np.zeros((
@@ -1068,8 +1138,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					) + self.heatmap_details[h]['default_value']
 			else:
 				if h == "new_gene_mRNA_NTP_fraction_heatmap":
-					self.ntp_ids = list(
-						self.sim_data.ntp_code_to_id_ordered.values())
 					self.heatmap_data[
 						"new_gene_mRNA_NTP_fraction_heatmap"] = {}
 					for ntp_id in self.ntp_ids:
@@ -1133,7 +1201,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plot_suffix = "_gens_" + str(MIN_CELL_INDEX) + "_through_" + str(MAX_CELL_INDEX)
 		heatmap_x_label = "Expression Variant"
 		heatmap_y_label = "Translation Efficiency Value"
-		figsize_x =  2 + len(new_gene_expression_factors)/2
+		figsize_x =  2 + 2*len(new_gene_expression_factors)/3
 		figsize_y = 0.5 + len(new_gene_translation_efficiency_values)/2
 
 		# Create dashboard plot
