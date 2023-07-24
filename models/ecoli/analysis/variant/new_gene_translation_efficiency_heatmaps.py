@@ -6,6 +6,7 @@ Possible Plots:
 - Percent of sims that successfully reached a given generation number
 - Average doubling time
 - Average cell volume, mass, dry cell mass, mRNA mass, protein mass
+- Average translation efficiency, weighted by cistron count
 - Average new gene mRNA count
 - Average new gene mRNA mass fraction
 - Average new gene mRNA counts fraction
@@ -89,6 +90,7 @@ HEATMAPS_TO_MAKE_LIST = [
 		"new_gene_ribosome_time_overcrowded_heatmap",
 		"new_gene_mRNA_counts_fraction_heatmap",
 		"new_gene_monomer_counts_fraction_heatmap",
+		"weighted_avg_translation_efficiency_heatmap",
 		"new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
@@ -161,6 +163,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
 					'actual_prob_translation_per_transcript',
 					'target_prob_translation_per_transcript')
+			elif h == "weighted_avg_translation_efficiency_heatmap":
+				self.extract_trl_eff_weighted_avg_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			else:
 				raise Exception(
 					"Heatmap " + h + " is neither a standard heatmap nor a"
@@ -191,13 +196,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elif h == "new_gene_mRNA_counts_fraction_heatmap":
 				self.extract_new_gene_counts_fraction_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RNACounts', 'mRNA_counts',
-					'mRNA', self.new_gene_mRNA_ids)
+					'RNACounts', 'mRNA_counts', 'mRNA')
 			elif h == "new_gene_monomer_counts_fraction_heatmap":
 				self.extract_new_gene_counts_fraction_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'MonomerCounts', 'monomerCounts',
-					'monomer', self.new_gene_monomer_ids)
+					'MonomerCounts', 'monomerCounts', 'monomer')
 			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
 				self.extract_new_gene_mRNA_NTP_fraction_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
@@ -317,6 +320,35 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			(avg_actual_prob < avg_target_prob)[cell_mask, :]) > 0)[0])])
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, np.array([True]))
+
+	def extract_trl_eff_weighted_avg_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of average translation
+		efficiency, weighted by full cistron counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		# Get normalized translation efficiency for all mRNAs
+		trl_effs = self.sim_data.process.translation.translation_efficiencies_by_monomer
+		# Get avg counts for all mRNAs
+		total_counts = read_stacked_columns(
+			all_cells, 'RNACounts', 'full_mRNA_cistron_counts',
+			fun=lambda x: np.mean(x, axis=0))[cell_mask, :]
+		# Compute average translation efficiency, weighted by mRNA counts
+		weighted_avg_trl_eff = np.array([
+			np.mean(np.mean(total_counts, axis = 0) * trl_effs)])
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, np.array([True]))
 
 	def get_new_gene_indexes(self, all_cells, index_type):
 		"""
@@ -470,8 +502,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	def extract_new_gene_counts_fraction_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			counts_data_table, counts_data_column, new_gene_index_type,
-			new_gene_ids):
+			counts_data_table, counts_data_column, new_gene_index_type):
 		"""
 		Special function to handle extraction and saving of new gene mRNA and
 		protein counts fraction heatmap data.
@@ -491,7 +522,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			counts_data_column: Column to find the counts data that needs to be
 				retreived
 			new_gene_index_type: Index type to use for the data table
-			new_gene_ids: Ids of new genes in sim_data
 		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
 		# Get counts for each new gene
@@ -1025,6 +1055,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 0,
 				 'plot_title': 'Ribosome Crowding: # of Monomers',
 				 },
+			"weighted_avg_translation_efficiency_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Translation Efficiency (Weighted Average)',
+				},
 			"new_gene_mRNA_counts_heatmap":
 				{'plot_title': 'Log(New Gene mRNA Counts+1)'},
 			"new_gene_monomer_counts_heatmap":
