@@ -91,6 +91,8 @@ HEATMAPS_TO_MAKE_LIST = [
 		"new_gene_mRNA_counts_fraction_heatmap",
 		"new_gene_monomer_counts_fraction_heatmap",
 		"weighted_avg_translation_efficiency_heatmap",
+		"new_gene_target_protein_init_prob_heatmap",
+		"new_gene_actual_protein_init_prob_heatmap",
 		"new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
@@ -219,6 +221,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.extract_new_gene_time_overcrowded_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
 					'RibosomeData', 'mRNA_is_overcrowded',
+					'monomer')
+			elif h == "new_gene_target_protein_init_prob_heatmap":
+				self.extract_new_gene_init_prob_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RibosomeData', 'target_prob_translation_per_transcript',
+					'monomer')
+			elif h == "new_gene_actual_protein_init_prob_heatmap":
+				self.extract_new_gene_init_prob_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RibosomeData', 'actual_prob_translation_per_transcript',
 					'monomer')
 			else:
 				raise Exception(
@@ -682,6 +694,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				new_gene_num_time_steps_overcrowded[:,i], cell_mask)
 
+	def extract_new_gene_init_prob_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			data_table, data_column, new_gene_index_type):
+		"""
+		Special function to handle extraction and saving of target and actual
+		initiation probabilities for new genes.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			new_gene_index_type: Index type to use for the data table
+		"""
+		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		# Average init probability for each new gene
+		new_gene_init_probs = read_stacked_columns(
+			all_cells, data_table, data_column,
+			fun=lambda x: np.mean(x[:, new_gene_indexes], axis=0))
+		for i in range(len(new_gene_indexes)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				new_gene_init_probs[:,i], cell_mask)
 
 	# Functions for plotting heatmaps
 	def plot_heatmaps(
@@ -1085,6 +1127,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'plot_title': 'Fraction of Time RNAP Overcrowded New Gene'},
 			"new_gene_ribosome_time_overcrowded_heatmap":
 				{'plot_title': 'Fraction of Time Ribosome Overcrowded New Gene'},
+			"new_gene_actual_protein_init_prob_heatmap":
+				{'plot_title': 'New Gene Actual Protein Init Prob'},
+			"new_gene_target_protein_init_prob_heatmap":
+				{'plot_title': 'New Gene Target Protein Init Prob'},
 		}
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
 			"the completed_gens_heatmap is run by default, do not include in heatmaps_to_make"
