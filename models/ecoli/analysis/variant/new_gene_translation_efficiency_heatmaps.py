@@ -15,6 +15,8 @@ Possible Plots:
 - Average new gene protein mass fraction
 - Average new gene protein counts fraction
 - Average new gene initialization rate for RNAP and Ribosomes
+- Average number and proportion of RNAP on new genes at a given time step
+- Average number and proportion of ribosomes on new gene mRNAs at a given time step
 - Average fraction of time new gene is overcrowded by RNAP and Ribosomes
 - Average number of overcrowded genes for RNAP and Ribosomes
 - Average number of ribosomes
@@ -90,6 +92,10 @@ HEATMAPS_TO_MAKE_LIST = [
 		"new_gene_ribosome_time_overcrowded_heatmap",
 		"new_gene_mRNA_counts_fraction_heatmap",
 		"new_gene_monomer_counts_fraction_heatmap",
+		"new_gene_rnap_counts_heatmap",
+		"new_gene_rnap_portion_heatmap",
+		"new_gene_ribosome_counts_heatmap",
+		"new_gene_ribosome_portion_heatmap",
 		"weighted_avg_translation_efficiency_heatmap",
 		"new_gene_target_protein_init_prob_heatmap",
 		"new_gene_actual_protein_init_prob_heatmap",
@@ -232,10 +238,45 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
 					'RibosomeData', 'actual_prob_translation_per_transcript',
 					'monomer')
+			elif h == "new_gene_rnap_counts_heatmap":
+				self.extract_new_gene_rnap_counts_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_rnap_portion_heatmap":
+				self.extract_new_gene_rnap_portion_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_ribosome_counts_heatmap":
+				self.extract_new_gene_ribosome_counts_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_ribosome_portion_heatmap":
+				self.extract_new_gene_ribosome_portion_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			else:
 				raise Exception(
 					"Heatmap " + h + " has no instructions for"
 					" data extraction.")
+
+	def get_avg_rnap_counts(self, all_cells):
+		"""
+		Retrieve RNAP counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of RNAPs.
+		"""
+		rnap_id = [self.sim_data.molecule_ids.full_RNAP]
+		(rnapCountsBulk,) = read_stacked_bulk_molecules(
+			all_cells, (rnap_id,))
+		cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
+		cell_ids, idx, cell_total_timesteps = np.unique(
+			cell_id_vector, return_inverse=True, return_counts=True)
+		sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
+		avg_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
+
+		return avg_rnap_counts
 
 	def extract_rnap_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -254,17 +295,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		rnap_id = [self.sim_data.molecule_ids.full_RNAP]
-		(rnapCountsBulk,) = read_stacked_bulk_molecules(
-			all_cells, (rnap_id,))
-		cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
-		cell_ids, idx, cell_total_timesteps = np.unique(
-			cell_id_vector, return_inverse=True, return_counts=True)
-		sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
-		avg_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
-
+		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_counts, cell_mask)
+
+	def get_avg_ribosome_counts(self, all_cells):
+		"""
+		Retrieve ribosome counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of ribosomes.
+		"""
+		# Determine ribosome index
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+		uniqueMoleculeCounts = TableReader(
+			os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		ribosome_index = uniqueMoleculeCounts.readAttribute(
+			"uniqueMoleculeIds").index('active_ribosome')
+
+		avg_ribosome_counts = read_stacked_columns(
+			all_cells, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts',
+			fun=lambda x: np.mean(x[:, ribosome_index], axis=0))
+
+		return avg_ribosome_counts
 
 	def extract_ribosome_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -283,18 +343,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		# Determine ribosome index
-		sim_dir = all_cells[0]
-		simOutDir = os.path.join(sim_dir, 'simOut')
-		uniqueMoleculeCounts = TableReader(os.path.join(simOutDir, "UniqueMoleculeCounts"))
-		ribosome_index = uniqueMoleculeCounts.readAttribute(
-			"uniqueMoleculeIds").index('active_ribosome')
-
-		curr_heatmap_data = read_stacked_columns(
-			all_cells, self.heatmap_details[h]['data_table'],
-			self.heatmap_details[h]['data_column'],
-			remove_first=self.heatmap_details[h]['remove_first'],
-			fun=lambda x: np.mean(x[:, ribosome_index], axis=0))
+		curr_heatmap_data = self.get_avg_ribosome_counts(all_cells)
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
 
@@ -725,6 +774,118 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				new_gene_init_probs[:,i], cell_mask)
 
+	def extract_new_gene_rnap_counts_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average counts of RNAP
+		that are on new genes at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
+		avg_new_gene_rnap_counts = read_stacked_columns(
+			all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: np.mean(x[:, new_gene_mRNA_indexes], axis=0))
+
+		for i in range(len(self.new_gene_mRNA_ids)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				avg_new_gene_rnap_counts[:, i], cell_mask)
+
+	def extract_new_gene_rnap_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of RNAP
+		that are on new genes at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
+		avg_new_gene_rnap_counts = read_stacked_columns(
+			all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: np.mean(x[:, new_gene_mRNA_indexes], axis=0))
+		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_new_gene_rnap_portion = avg_new_gene_rnap_counts / avg_rnap_counts
+
+		for i in range(len(self.new_gene_mRNA_ids)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				avg_new_gene_rnap_portion[:, i], cell_mask)
+
+	def extract_new_gene_ribosome_counts_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average counts of
+		ribosomes that are on new genes at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
+		avg_new_gene_ribosome_counts = read_stacked_columns(
+			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
+			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes], axis=0))
+
+		for i in range(len(self.new_gene_monomer_ids)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				avg_new_gene_ribosome_counts[:, i], cell_mask)
+
+	def extract_new_gene_ribosome_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of
+		ribosomes that are on new genes at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
+		avg_new_gene_ribosome_counts = read_stacked_columns(
+			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
+			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes], axis=0))
+		avg_ribosome_counts = self.get_avg_ribosome_counts(all_cells)
+		avg_new_gene_ribosome_portion = avg_new_gene_ribosome_counts/avg_ribosome_counts
+
+		for i in range(len(self.new_gene_monomer_ids)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				avg_new_gene_ribosome_portion[:, i], cell_mask)
+
 	# Functions for plotting heatmaps
 	def plot_heatmaps(
 			self, is_dashboard, variant_mask, heatmap_x_label, heatmap_y_label,
@@ -1030,51 +1191,51 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'function_to_apply': lambda x: (x[-1] - x[0]) / 60.,
 				 'num_digits_rounding': 0,
 				 'plot_title': 'Doubling Time (minutes)',
-				 },
+				},
 			"cell_volume_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'cellVolume',
 				 'plot_title': 'Cell Volume (fL)',
-				 },
+				},
 			"cell_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'cellMass',
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Cell Mass (fg)',
-				 },
+				},
 			"cell_dry_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'dryMass',
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Dry Cell Mass (fg)',
-				 },
+				},
 			"cell_mRNA_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'mRnaMass',
 				 'plot_title': 'Total mRNA Mass (fg)',
-				 },
+				},
 			"cell_protein_mass_heatmap":
 				{'data_table': 'Mass',
 				 'data_column': 'proteinMass',
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Total Protein Mass (fg)',
-				 },
+				},
 			"ppgpp_concentration_heatmap":
 				{'data_table': 'GrowthLimits',
 				 'data_column': 'ppgpp_conc',
 				 'remove_first': True,
 				 'num_digits_rounding': 1,
 				 'plot_title': 'ppGpp Concentration (uM)',
-				 },
+				},
 			"rnap_counts_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'RNA Polymerase (RNAP) Counts',
-				 },
+				},
 			"ribosome_counts_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'data_table': 'UniqueMoleculeCounts',
@@ -1082,14 +1243,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 0,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Ribosome Counts',
-				 },
+				},
 			"rnap_crowding_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'data_table': 'RnaSynthProb',
 				 'function_to_apply': lambda x: np.mean(x, axis = 0),
 				 'num_digits_rounding': 0,
 				 'plot_title': 'RNAP Crowding: # of TUs',
-				 },
+				},
 			"ribosome_crowding_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'data_table': 'RibosomeData',
@@ -1114,7 +1275,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 4,
 				 'box_text_size': 'x-small',
 				 'plot_title': 'New Gene',
-				 },
+				},
 			"new_gene_monomer_mass_fraction_heatmap":
 				{'plot_title': 'New Gene Protein Mass Fraction'},
 			"new_gene_monomer_counts_fraction_heatmap":
@@ -1131,6 +1292,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'plot_title': 'New Gene Actual Protein Init Prob'},
 			"new_gene_target_protein_init_prob_heatmap":
 				{'plot_title': 'New Gene Target Protein Init Prob'},
+			"new_gene_rnap_counts_heatmap":
+				{'box_text_size': 'x-small',
+				 'num_digits_rounding': 0,
+				 'plot_title': 'New Gene RNAP Counts',
+				},
+			"new_gene_rnap_portion_heatmap":
+				{'plot_title': 'New Gene RNAP Portion',
+				 'num_digits_rounding': 3,
+				},
+			"new_gene_ribosome_counts_heatmap":
+				{'box_text_size': 'x-small',
+				 'num_digits_rounding': 0,
+				 'plot_title': 'New Gene Ribosome Counts',
+				},
+			"new_gene_ribosome_portion_heatmap":
+				{'plot_title': 'New Gene Ribosome Portion',
+				 'num_digits_rounding': 3,
+				},
 		}
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
 			"the completed_gens_heatmap is run by default, do not include in heatmaps_to_make"
