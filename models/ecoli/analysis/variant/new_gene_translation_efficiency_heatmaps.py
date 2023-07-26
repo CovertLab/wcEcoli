@@ -17,6 +17,7 @@ Possible Plots:
 - Average new gene initialization rate for RNAP and Ribosomes
 - Average number and proportion of RNAP on new genes at a given time step
 - Average number and proportion of ribosomes on new gene mRNAs at a given time step
+- Average number and proportion of RNAP making rRNAs at a given time step
 - Average fraction of time new gene is overcrowded by RNAP and Ribosomes
 - Average number of overcrowded genes for RNAP and Ribosomes
 - Average number of ribosomes
@@ -94,6 +95,8 @@ HEATMAPS_TO_MAKE_LIST = [
 		"new_gene_monomer_counts_fraction_heatmap",
 		"new_gene_rnap_counts_heatmap",
 		"new_gene_rnap_portion_heatmap",
+		"rrna_rnap_counts_heatmap",
+		"rrna_rnap_portion_heatmap",
 		"new_gene_ribosome_counts_heatmap",
 		"new_gene_ribosome_portion_heatmap",
 		"weighted_avg_translation_efficiency_heatmap",
@@ -173,6 +176,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					'target_prob_translation_per_transcript')
 			elif h == "weighted_avg_translation_efficiency_heatmap":
 				self.extract_trl_eff_weighted_avg_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "rrna_rnap_counts_heatmap":
+				self.extract_rrna_rnap_counts_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "rrna_rnap_portion_heatmap":
+				self.extract_rrna_rnap_portion_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			else:
 				raise Exception(
@@ -830,6 +839,56 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				avg_new_gene_rnap_portion[:, i], cell_mask)
 
+	def extract_rrna_rnap_counts_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average counts of RNAP
+		that are making rRNAs at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		avg_rrna_rnap_counts = np.sum(read_stacked_columns(
+			all_cells, "RNACounts", "partial_rRNA_counts",
+			fun=lambda x: np.mean(x, axis=0)), axis = 1)
+
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_counts, cell_mask)
+
+	def extract_rrna_rnap_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of RNAP
+		that are making rRNAs at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		avg_rrna_rnap_counts = np.sum(read_stacked_columns(
+			all_cells, "RNACounts", "partial_rRNA_counts",
+			fun=lambda x: np.mean(x, axis=0)), axis = 1)
+		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_rrna_rnap_portion = avg_rrna_rnap_counts / avg_rnap_counts
+
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_portion, cell_mask)
+
 	def extract_new_gene_ribosome_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
 		"""
@@ -1301,6 +1360,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'plot_title': 'New Gene RNAP Portion',
 				 'num_digits_rounding': 3,
 				},
+			"rrna_rnap_counts_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'rRNA RNAP Counts',
+				 'num_digits_rounding': 0,
+				},
+			"rrna_rnap_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'rRNA RNAP Portion',
+				 'num_digits_rounding': 3,
+				 },
 			"new_gene_ribosome_counts_heatmap":
 				{'box_text_size': 'x-small',
 				 'num_digits_rounding': 0,
