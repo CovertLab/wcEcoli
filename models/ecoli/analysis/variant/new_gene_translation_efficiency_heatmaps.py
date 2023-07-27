@@ -411,12 +411,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Get normalized translation efficiency for all mRNAs
 		trl_effs = self.sim_data.process.translation.translation_efficiencies_by_monomer
 		# Get avg counts for all mRNAs
-		total_counts = read_stacked_columns(
+		mRNA_cistron_counts = read_stacked_columns(
 			all_cells, 'RNACounts', 'full_mRNA_cistron_counts',
 			fun=lambda x: np.mean(x, axis=0))[cell_mask, :]
+		total_mRNA_cistron_count = np.expand_dims(np.sum(mRNA_cistron_counts, axis = 1), axis = 1)
 		# Compute average translation efficiency, weighted by mRNA counts
 		weighted_avg_trl_eff = np.array([
-			np.mean(np.mean(total_counts, axis = 0) * trl_effs)])
+			np.sum(np.mean(mRNA_cistron_counts / total_mRNA_cistron_count, axis = 0)  * trl_effs)])
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, np.array([True]))
 
