@@ -48,7 +48,7 @@ Dashboard Flag
 1: Dashboard Only (One file with all plots)
 2: Both Dashboard and Separate
 """
-DASHBOARD_FLAG = 0
+DASHBOARD_FLAG = 2
 
 """
 Count number of sims that reach this generation (remember index 7 
@@ -73,36 +73,36 @@ dashboard plot.
 """
 HEATMAPS_TO_MAKE_LIST = [
 		"doubling_times_heatmap",
-		# "cell_mass_heatmap",
-		# "cell_dry_mass_heatmap",
-		# "cell_volume_heatmap",
-		# "ppgpp_concentration_heatmap",
-		# "rnap_crowding_heatmap",
-		# "ribosome_crowding_heatmap",
-		# "cell_mRNA_mass_heatmap",
-		# "cell_protein_mass_heatmap",
+		"cell_mass_heatmap",
+		"cell_dry_mass_heatmap",
+		"cell_volume_heatmap",
+		"ppgpp_concentration_heatmap",
+		"rnap_crowding_heatmap",
+		"ribosome_crowding_heatmap",
+		"cell_mRNA_mass_heatmap",
+		"cell_protein_mass_heatmap",
 		"rnap_counts_heatmap",
 		"ribosome_counts_heatmap",
-		# "new_gene_mRNA_counts_heatmap",
-		# "new_gene_monomer_counts_heatmap",
-		# "new_gene_rnap_init_rate_heatmap",
-		# "new_gene_ribosome_init_rate_heatmap",
-		# "new_gene_mRNA_mass_fraction_heatmap",
-		# "new_gene_monomer_mass_fraction_heatmap",
-		# "new_gene_rnap_time_overcrowded_heatmap",
-		# "new_gene_ribosome_time_overcrowded_heatmap",
-		# "new_gene_mRNA_counts_fraction_heatmap",
-		# "new_gene_monomer_counts_fraction_heatmap",
-		# "new_gene_rnap_counts_heatmap",
-		# "new_gene_rnap_portion_heatmap",
-		# "rrna_rnap_counts_heatmap",
-		# "rrna_rnap_portion_heatmap",
-		# "new_gene_ribosome_counts_heatmap",
-		# "new_gene_ribosome_portion_heatmap",
-		# "weighted_avg_translation_efficiency_heatmap",
-		# "new_gene_target_protein_init_prob_heatmap",
-		# "new_gene_actual_protein_init_prob_heatmap",
-		# "new_gene_mRNA_NTP_fraction_heatmap",
+		"new_gene_mRNA_counts_heatmap",
+		"new_gene_monomer_counts_heatmap",
+		"new_gene_rnap_init_rate_heatmap",
+		"new_gene_ribosome_init_rate_heatmap",
+		"new_gene_mRNA_mass_fraction_heatmap",
+		"new_gene_monomer_mass_fraction_heatmap",
+		"new_gene_rnap_time_overcrowded_heatmap",
+		"new_gene_ribosome_time_overcrowded_heatmap",
+		"new_gene_mRNA_counts_fraction_heatmap",
+		"new_gene_monomer_counts_fraction_heatmap",
+		"new_gene_rnap_counts_heatmap",
+		"new_gene_rnap_portion_heatmap",
+		"rrna_rnap_counts_heatmap",
+		"rrna_rnap_portion_heatmap",
+		"new_gene_ribosome_counts_heatmap",
+		"new_gene_ribosome_portion_heatmap",
+		"weighted_avg_translation_efficiency_heatmap",
+		"new_gene_target_protein_init_prob_heatmap",
+		"new_gene_actual_protein_init_prob_heatmap",
+		"new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -419,10 +419,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mRNA_cistron_counts = read_stacked_columns(
 			all_cells, 'RNACounts', 'full_mRNA_cistron_counts',
 			fun=lambda x: np.mean(x, axis=0))[cell_mask, :]
-		total_mRNA_cistron_count = np.expand_dims(np.sum(mRNA_cistron_counts, axis = 1), axis = 1)
+		total_mRNA_cistron_count = np.expand_dims(
+			np.sum(mRNA_cistron_counts,axis = 1), axis = 1)
+
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+		mRNA_cistron_idx_dict = {
+			rna: i for i, rna in
+			enumerate(mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+		trl_eff_ids = self.sim_data.process.translation.monomer_data['cistron_id']
+		trl_eff_id_mapping = np.array([mRNA_cistron_idx_dict[id] for id in trl_eff_ids])
+
 		# Compute average translation efficiency, weighted by mRNA counts
 		weighted_avg_trl_eff = np.array([
-			np.sum(np.mean(mRNA_cistron_counts / total_mRNA_cistron_count, axis = 0)  * trl_effs)])
+			np.sum(np.mean(mRNA_cistron_counts / total_mRNA_cistron_count,
+			axis = 0)  * trl_effs[trl_eff_id_mapping])])
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, np.array([True]))
 
