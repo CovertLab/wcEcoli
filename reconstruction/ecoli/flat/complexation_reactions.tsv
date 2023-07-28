@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.5
-# Date and time generated: December 16, 2022, 14:49:03
+# Version: 27.1
+# Date and time generated: March 16, 2023, 13:52:33
 "id"	"stoichiometry"	"common_name"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"
@@ -178,6 +178,7 @@
 "CPLX-7524_RXN"	{"CPLX-7524": 1, "G6285-MONOMER": -2}	"allantoate amidohydrolase"
 "CPLX-7_RXN"	{"CPLX-7": 1, "ARSF-MONOMER": -2}	"arsenite/antimonite:H<sup>+</sup> antiporter"
 "CPLX-8331_RXN"	{"CPLX-8331": 1, "EG11666-MONOMER": -6}	"cyclic pyranopterin monophosphate synthase"
+"CPLX-8352_RXN"	{"CPLX-8352": 1, "BSU11670-MONOMER": -4}	"glycine oxidase"
 "CPLX-8401_RXN"	{"CPLX-8401": 1, "G7463-MONOMER": -2}	"5-dehydro-4-deoxy-<small>D</small>-glucuronate isomerase"
 "CPLX-9493_RXN"	{"CPLX-9493": 1, "CCMB-MONOMER": -1, "CCMA-MONOMER": -2}	"CcmAB"
 "CPLX-9494_RXN"	{"CPLX-9494": 1, "EG12052-MONOMER": -1, "EG12054-MONOMER": -1}	"holocytochrome <I>c</I> synthase complex"
@@ -247,8 +248,7 @@
 "CPLX0-238_RXN"	{"CPLX0-238": 1, "ARGSUCCINSYN-MONOMER": -4}	null
 "CPLX0-2401_RXN"	{"CPLX0-2401": 1, "TRYPSYN-BPROTEIN": -2}	"tryptophan synthase, &beta; subunit dimer"
 "CPLX0-240_RXN"	{"CPLX0-240": 1, "TAGAALDOL1-MONOMER": -4}	"tagatose-1,6-bisphosphate aldolase 1"
-"CPLX0-2423_RXN"	{"CPLX0-2423": 1, "EG10686-MONOMER": -2}	"dimer of DNA topoisomerase IV subunit A"
-"CPLX0-2424_RXN"	{"CPLX0-2424": 1, "EG10687-MONOMER": -2, "CPLX0-2423": -1}	"DNA topoisomerase IV"
+"CPLX0-2424_RXN"	{"CPLX0-2424": 1, "EG10687-MONOMER": -2, "EG10686-MONOMER": -2}	"DNA topoisomerase IV"
 "CPLX0-2425_RXN"	{"CPLX0-2425": 1, "EG10423-MONOMER": -2, "EG10424-MONOMER": -2}	"DNA gyrase"
 "CPLX0-242_RXN"	{"CPLX0-242": 1, "EG10395-MONOMER": -2}	"thiosulfate sulfurtransferase GlpE"
 "CPLX0-243_RXN"	{"CPLX0-243": 1, "INORGPYROPHOSPHAT-MONOMER": -6}	"inorganic pyrophosphatase"
@@ -820,6 +820,8 @@
 "CPLX0-901_RXN"	{"CPLX0-901": 1, "EG11372-MONOMER": -2}	"tRNA adenosine<sup>34</sup> deaminase"
 "CPLX0-902_RXN"	{"CPLX0-902": 1, "EG11761-MONOMER": -2}	"tautomerase PptA"
 "CPLX0-921_RXN"	{"CPLX0-921": 1, "G6104-MONOMER": -2}	"periplasmic chaperone, inhibitor of vertebrate C-type lysozyme"
+"CPLX0-9372_RXN"	{"CPLX0-9372": 1, "CPLX0-1923": null, "G6762-MONOMER": null}	"pyrroloquinoline quinone outer membrane transport complex"
+"CPLX0-9749_RXN"	{"CPLX0-9749": 1, "G6913-MONOMER": -4}	null
 "CPLX0-981_RXN"	{"CPLX0-981": 1, "EG12344-MONOMER": -6}	"DNA-binding transcriptional dual regulator PspF"
 "CPLXECOLI-7943_RXN"	{"CPLXECOLI-7943": 1, "G7409-MONOMER": -2}	null
 "CREC-CPLX_RXN"	{"CREC-CPLX": 1, "CREC-MONOMER": -2}	"sensor histidine kinase CreC"

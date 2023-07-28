@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 26.5
-# Date and time generated: December 16, 2022, 14:49:36
+# Version: 27.1
+# Date and time generated: March 16, 2023, 13:53:36
 "id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
 "EG10001_RNA"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	"mRNA"	[]	"EG10001"	["ALARACEBIOSYN-MONOMER"]	null	[]
 "EG10002_RNA"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	"mRNA"	[]	"EG10002"	["MODB-MONOMER"]	null	[]
@@ -2889,6 +2889,16 @@
 "RNA0-427"	"small RNA XylZ"	["XylZ"]	"miscRNA"	[]	"G0-17109"	[]	null	[]
 "RNA0-428"	"small RNA SokE"	["SokE"]	"miscRNA"	[]	"G0-17110"	[]	null	[]
 "RNA0-430"	"small regulatory RNA AzuR"	["AzuR"]	"miscRNA"	[]	"G0-17112"	[]	null	[]
+"G0-17114_RNA"	"spfP"	["spfP", "b4837", "ECK4694"]	"mRNA"	[]	"G0-17114"	["MONOMER0-4560"]	null	[]
+"RNA0-432"	"small regulatory RNA FimR2"	["FimR2", "sRNA_35"]	"miscRNA"	[]	"G0-17115"	[]	null	[]
+"RNA0-434"	"small regulatory RNA GlnZ"	["glnA 3<sup>A</sup> UTR", "GlnZ"]	"miscRNA"	[]	"G0-17117"	[]	null	[]
+"RNA0-435"	"small antisense RNA AsflhD"	["AsflhD"]	"miscRNA"	[]	"G0-17119"	[]	null	[]
+"RNA0-436"	"small antisense RNA StfZ"	["StfZ"]	"miscRNA"	[]	"G0-17120"	[]	null	[]
+"RNA0-437"	"small antisense RNA AsCRP"	[]	"miscRNA"	[]	"G0-17122"	[]	null	[]
+"G0-17123_RNA"	"asompR"	["asompR", "b4842", "ECK4699"]	"mRNA"	[]	"G0-17123"	[]	null	[]
+"RNA0-439"	"small antisense RNA AsphoP"	[]	"miscRNA"	[]	"G0-17124"	[]	null	[]
+"RNA0-440"	"small antisense RNA aMEF"	["aMEF"]	"miscRNA"	[]	"G0-17125"	[]	null	[]
+"G0-17126_RNA"	"xtpA"	["xtpA", "b4845", "ECK4702"]	"mRNA"	[]	"G0-17126"	["MONOMER0-4561"]	null	[]
 "G0-41_RNA"	"ecnA"	["ecnA", "b4410", "ECK4142"]	"mRNA"	[]	"G0-41"	["MONOMER0-1562"]	null	[]
 "G0-8601_RNA"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	"mRNA"	[]	"G0-8601"	["MONOMER0-561"]	null	[]
 "CSRB-RNA"	"small regulatory RNA CsrB"	["CsrB"]	"miscRNA"	[]	"G0-8785"	[]	null	[]
@@ -2931,7 +2941,6 @@
 "TKE8-RNA"	"small regulatory RNA MicC"	["Tke8", "IS063", "MicC"]	"miscRNA"	[]	"G0-8901"	[]	null	[]
 "G0-8902_RNA"	"C0362"	["C0362"]	"phantom"	[]	"G0-8902"	[]	null	[]
 "G0-8903_RNA"	"C0465"	["C0465"]	"phantom"	[]	"G0-8903"	[]	null	[]
-"G0-8904_RNA"	"isrB"	["isrB", "IS092", "azuCR", "b4434", "ECK1902"]	"phantom"	[]	"G0-8904"	[]	null	[]
 "IS102-RNA"	"CP4-44 prophage; small RNA IsrC"	["IS102", "IsrC"]	"miscRNA"	[]	"G0-8905"	[]	null	[]
 "G0-8906_RNA"	"tpke70"	["tpke70"]	"phantom"	[]	"G0-8906"	[]	null	[]
 "G0-8907_RNA"	"C0614"	["C0614"]	"phantom"	[]	"G0-8907"	[]	null	[]
@@ -3236,7 +3245,7 @@
 "G6329_RNA"	"ybdL"	["ybdL", "b0600", "ECK0594"]	"mRNA"	[]	"G6329"	["G6329-MONOMER"]	null	[]
 "G6330_RNA"	"ybdM"	["ybdM", "b0601", "ECK0595"]	"mRNA"	[]	"G6330"	["G6330-MONOMER"]	null	[]
 "G6331_RNA"	"ybdN"	["ybdN", "b0602", "ECK0596"]	"mRNA"	[]	"G6331"	["G6331-MONOMER"]	null	[]
-"G6332_RNA"	"ybdO"	["ybdO", "b0603", "ECK0597"]	"mRNA"	[]	"G6332"	["G6332-MONOMER"]	null	[]
+"G6332_RNA"	"citR"	["citR", "ybdO", "b0603", "ECK0597"]	"mRNA"	[]	"G6332"	["G6332-MONOMER"]	null	[]
 "G6333_RNA"	"dsbG"	["dsbG", "ybdP", "b0604", "ECK0598"]	"mRNA"	[]	"G6333"	["DSBG-MONOMER"]	null	[]
 "G6334_RNA"	"uspG"	["uspG", "UP12", "yzzU", "ybdQ", "b0607", "ECK0601"]	"mRNA"	[]	"G6334"	["G6334-MONOMER"]	null	[]
 "G6335_RNA"	"ybdR"	["ybdR", "b0608", "ECK0602"]	"mRNA"	[]	"G6335"	["G6335-MONOMER"]	null	[]
@@ -3644,7 +3653,7 @@
 "G6759_RNA"	"mnaT"	["mnaT", "yncA", "b1448", "ECK1442"]	"mRNA"	[]	"G6759"	["G6759-MONOMER"]	null	[]
 "G6760_RNA"	"curA"	["curA", "yncB", "b1449", "ECK1443"]	"mRNA"	[]	"G6760"	["G6760-MONOMER"]	null	[]
 "G6761_RNA"	"mcbR"	["mcbR", "yncC", "b1450", "ECK1444"]	"mRNA"	[]	"G6761"	["G6761-MONOMER"]	null	[]
-"G6762_RNA"	"yncD"	["yncD", "b1451", "ECK1445"]	"mRNA"	[]	"G6762"	["G6762-MONOMER"]	null	[]
+"G6762_RNA"	"pqqU"	["pqqU", "yncD", "b1451", "ECK1445"]	"mRNA"	[]	"G6762"	["G6762-MONOMER"]	null	[]
 "G6763_RNA"	"yncE"	["yncE", "b1452", "ECK1446"]	"mRNA"	[]	"G6763"	["G6763-MONOMER"]	null	[]
 "G6764_RNA"	"ansP"	["ansP", "yncF", "b1453", "ECK1447"]	"mRNA"	[]	"G6764"	["ANSP-MONOMER"]	null	[]
 "G6765_RNA"	"yncG"	["yncG", "b1454", "ECK1448"]	"mRNA"	[]	"G6765"	["G6765-MONOMER"]	null	[]
@@ -3692,7 +3701,7 @@
 "G6809_RNA"	"yneG"	["yneG", "b1523", "ECK1516"]	"mRNA"	[]	"G6809"	["G6809-MONOMER"]	null	[]
 "G6810_RNA"	"glsB"	["glsB", "yneH", "b1524", "ECK1517"]	"mRNA"	[]	"G6810"	["G6810-MONOMER"]	null	[]
 "G6811_RNA"	"sad"	["sad", "yneI", "b1525", "ECK1518"]	"mRNA"	[]	"G6811"	["G6811-MONOMER"]	null	[]
-"G6812_RNA"	"yneJ"	["yneJ", "b1526", "ECK1519"]	"mRNA"	[]	"G6812"	["G6812-MONOMER"]	null	[]
+"G6812_RNA"	"ptrR"	["ptrR", "yneJ", "b1526", "ECK1519"]	"mRNA"	[]	"G6812"	["G6812-MONOMER"]	null	[]
 "G6813_RNA"	"yneK"	["yneK", "b1527", "ECK1520"]	"mRNA"	[]	"G6813"	["G6813-MONOMER"]	null	[]
 "G6814_RNA"	"rspR"	["rspR", "ydfH", "b1540", "ECK1533"]	"mRNA"	[]	"G6814"	["G6814-MONOMER"]	null	[]
 "G6815_RNA"	"ydfZ"	["ydfZ", "b1541", "ECK1534"]	"mRNA"	[]	"G6815"	["G6815-MONOMER"]	null	[]
@@ -4502,7 +4511,7 @@
 "G7678_RNA"	"nanR"	["nanR", "yhcK", "b3226", "ECK3215"]	"mRNA"	[]	"G7678"	["G7678-MONOMER"]	null	[]
 "G7679_RNA"	"dcuD"	["dcuD", "yhcL", "b3227", "ECK3216"]	"mRNA"	[]	"G7679"	["YHCL-MONOMER"]	null	[]
 "G7680_RNA"	"zapE"	["zapE", "yhcM", "b3232", "ECK3221"]	"mRNA"	[]	"G7680"	["G7680-MONOMER"]	null	[]
-"G7681_RNA"	"zapG"	["zapG", "yhcB", "b3233", "ECK3222"]	"mRNA"	[]	"G7681"	["G7681-MONOMER"]	null	[]
+"G7681_RNA"	"zapG"	["zapG", "yhcB", "lapD", "b3233", "ECK3222"]	"mRNA"	[]	"G7681"	["G7681-MONOMER"]	null	[]
 "G7682_RNA"	"degQ"	["degQ", "hhoA", "b3234", "ECK3223"]	"mRNA"	[]	"G7682"	["G7682-MONOMER"]	null	[]
 "G7683_RNA"	"yhcN"	["yhcN", "b3238", "ECK3227"]	"mRNA"	[]	"G7683"	["G7683-MONOMER"]	null	[]
 "G7684_RNA"	"yhcO"	["yhcO", "b3239", "ECK3228"]	"mRNA"	[]	"G7684"	["G7684-MONOMER"]	null	[]
