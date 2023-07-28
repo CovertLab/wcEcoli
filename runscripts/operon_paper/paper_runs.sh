@@ -88,11 +88,35 @@ SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set H - operons on (final version), glucose minimal media
+## Set H - operons v3, rich media
+# Used for comparisons in Figure 3
+DESC="SET H 8 gens 128 seeds operons v3 with rich media" \
+OPERONS="v3" \
+VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
+TRNA_ATTENUATION=0 PPGPP_REGULATION=0 \
+MECHANISTIC_TRANSLATION_SUPPLY=0 MECHANISTIC_AA_TRANSPORT=0 \
+AA_SUPPLY_IN_CHARGING=0 D_PERIOD_DIVISION=0 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set I - operons on (final version), glucose minimal media
 # Used for comparisons in Figures 1, 4, 5
-DESC="SET H 8 gens 128 seeds operons on with glucose minimal media" \
+DESC="SET I 8 gens 128 seeds operons on with glucose minimal media" \
 OPERONS="on" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+TRNA_ATTENUATION=0 PPGPP_REGULATION=0 \
+MECHANISTIC_TRANSLATION_SUPPLY=0 MECHANISTIC_AA_TRANSPORT=0 \
+AA_SUPPLY_IN_CHARGING=0 D_PERIOD_DIVISION=0 \
+SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set J - operons on (final version), rich media
+# Used for comparisons in Figure 4
+DESC="SET J 8 gens 128 seeds operons on with rich media" \
+OPERONS="on" \
+VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
 TRNA_ATTENUATION=0 PPGPP_REGULATION=0 \
 MECHANISTIC_TRANSLATION_SUPPLY=0 MECHANISTIC_AA_TRANSPORT=0 \
 AA_SUPPLY_IN_CHARGING=0 D_PERIOD_DIVISION=0 \

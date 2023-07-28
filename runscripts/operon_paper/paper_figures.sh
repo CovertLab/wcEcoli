@@ -90,6 +90,10 @@ out/20220822.165041__SET_E_8_gens_128_seeds_operons_on_with_glucose_minimal_medi
 out/20230613.164830__SET_A_8_gens_128_seeds_operons_off_with_glucose_minimal_media
 
 
+## Figure S1
+# Panel B
+
+
 ## Figure S2
 # Panel A
 python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
