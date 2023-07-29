@@ -83,13 +83,13 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax.scatter(
 			np.log10(m1[mRNA_is_ribosomal_protein] + 1),
 			np.log10(m2[mRNA_is_ribosomal_protein] + 1),
-			c='turquoise', edgecolor='none', s=12, alpha=0.7,
+			c='#aaaaaa', edgecolor='none', s=12, alpha=0.7,
 			label=f'ribosomal subunits',
 			clip_on=False)
 		ax.scatter(
 			np.log10(m1[mRNA_is_rnap] + 1),
 			np.log10(m2[mRNA_is_rnap] + 1),
-			c='darkslategray', edgecolor='none', s=12, alpha=0.7,
+			c='#222222', edgecolor='none', s=12, alpha=0.7,
 			label='RNAP subunits',
 			clip_on=False)
 
