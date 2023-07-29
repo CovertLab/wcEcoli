@@ -22,10 +22,14 @@ from wholecell.io.tablereader import TableReader
 
 FIGSIZE = (4, 3.9)
 BOUNDS = [0.5, 2.5]
+BOUNDS_ALT = [1.5, 3.5]
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
+		if metadata['variant'] == 'condition':
+			BOUNDS = BOUNDS_ALT
+
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
