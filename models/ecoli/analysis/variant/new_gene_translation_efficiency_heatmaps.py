@@ -434,7 +434,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Compute average translation efficiency, weighted by mRNA counts
 		weighted_avg_trl_eff = np.array([
 			np.sum(np.mean(mRNA_cistron_counts / total_mRNA_cistron_count,
-			axis = 0)  * trl_effs[trl_eff_id_mapping])])
+			axis = 0)  * trl_effs[np.argsort(trl_eff_id_mapping)])])
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, np.array([True]))
 
@@ -1345,6 +1345,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 },
 			"weighted_avg_translation_efficiency_heatmap":
 				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 3,
 				 'plot_title': 'Translation Efficiency (Weighted Average)',
 				},
 			"new_gene_mRNA_counts_heatmap":
