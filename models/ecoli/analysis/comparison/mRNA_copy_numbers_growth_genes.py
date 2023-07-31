@@ -22,7 +22,7 @@ from wholecell.io.tablereader import TableReader
 
 FIGSIZE = (4, 3.9)
 BOUNDS = [0.5, 2.5]
-BOUNDS_ALT = [1.5, 3.5]
+BOUNDS_ALT = [1.5, 3.0]
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
