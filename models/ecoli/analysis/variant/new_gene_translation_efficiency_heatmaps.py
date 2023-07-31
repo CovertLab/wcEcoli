@@ -433,10 +433,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Compute average translation efficiency, weighted by mRNA counts
 		weighted_avg_trl_eff = np.array([
-			np.sum(np.mean(mRNA_cistron_counts / total_mRNA_cistron_count,
-			axis = 0)  * trl_effs[np.argsort(trl_eff_id_mapping)])])
+			np.sum(mRNA_cistron_counts / total_mRNA_cistron_count
+			* trl_effs[np.argsort(trl_eff_id_mapping)], axis = 1)])
+
+		all_true_mask = np.ones_like(weighted_avg_trl_eff, dtype=bool)
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, np.array([True]))
+			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, all_true_mask)
+
 
 	def get_new_gene_indexes(self, all_cells, index_type):
 		"""
@@ -1375,9 +1378,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"new_gene_ribosome_time_overcrowded_heatmap":
 				{'plot_title': 'Fraction of Time Ribosome Overcrowded New Gene'},
 			"new_gene_actual_protein_init_prob_heatmap":
-				{'plot_title': 'New Gene Actual Protein Init Prob'},
+				{'plot_title': 'New Gene Actual Protein Init Prob',
+				 'num_digits_rounding': 4},
 			"new_gene_target_protein_init_prob_heatmap":
-				{'plot_title': 'New Gene Target Protein Init Prob'},
+				{'plot_title': 'New Gene Target Protein Init Prob',
+				 'num_digits_rounding': 4},
 			"new_gene_rnap_counts_heatmap":
 				{'box_text_size': 'x-small',
 				 'num_digits_rounding': 0,
