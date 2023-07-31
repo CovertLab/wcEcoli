@@ -28,7 +28,9 @@ BOUNDS_ALT = [1.5, 3.5]
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
 		if metadata['variant'] == 'condition':
-			BOUNDS = BOUNDS_ALT
+			bounds = BOUNDS_ALT
+		else:
+			bounds = BOUNDS
 
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
@@ -79,7 +81,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)
-		ax.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
+		ax.plot(bounds, bounds, ls='--', lw=2, c='k', alpha=0.05)
 		ax.scatter(
 			np.log10(m1[mRNA_is_ribosomal_protein] + 1),
 			np.log10(m2[mRNA_is_ribosomal_protein] + 1),
@@ -95,14 +97,14 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax.set_xlabel('$\log_{10}$(mRNA copies + 1), old sims')
 		ax.set_ylabel('$\log_{10}$(mRNA copies + 1), new sims')
-		ax.set_xticks(np.arange(BOUNDS[0], BOUNDS[1] + 0.5, 0.5))
-		ax.set_yticks(np.arange(BOUNDS[0], BOUNDS[1] + 0.5, 0.5))
+		ax.set_xticks(np.arange(bounds[0], bounds[1] + 0.5, 0.5))
+		ax.set_yticks(np.arange(bounds[0], bounds[1] + 0.5, 0.5))
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		ax.spines["bottom"].set_position(("outward", 15))
 		ax.spines["left"].set_position(("outward", 15))
-		ax.set_xlim(BOUNDS)
-		ax.set_ylim(BOUNDS)
+		ax.set_xlim(bounds)
+		ax.set_ylim(bounds)
 		ax.legend(loc=2, prop={'size': 8})
 
 		plt.tight_layout()
