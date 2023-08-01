@@ -16,9 +16,13 @@ Possible Plots:
 - Average new gene protein counts fraction
 - Average new gene initialization rate for RNAP and Ribosomes
 - Average number and proportion of RNAP on new genes at a given time step
-- Average number and proportion of ribosomes on new gene mRNAs at a given time step
+- Average number and proportion of ribosomes on new gene mRNAs at a given time
+	step
 - Average number and proportion of RNAP making rRNAs at a given time step
-- Average proportion of RNAP and ribosomes making RNAP subunits at a given time step
+- Average proportion of RNAP and ribosomes making RNAP subunits at a given time
+	step
+- Average proportion of RNAP and ribosomes making ribosomal proteins at a given
+ 	time step
 - Average fraction of time new gene is overcrowded by RNAP and Ribosomes
 - Average number of overcrowded genes for RNAP and Ribosomes
 - Average number of ribosomes
@@ -100,6 +104,8 @@ HEATMAPS_TO_MAKE_LIST = [
 		"rrna_rnap_portion_heatmap",
 		"rnap_subunit_rnap_portion_heatmap",
 		"rnap_subunit_ribosome_portion_heatmap",
+		"ribosomal_protein_rnap_portion_heatmap",
+		"ribosomal_protein_ribosome_portion_heatmap",
 		"new_gene_ribosome_counts_heatmap",
 		"new_gene_ribosome_portion_heatmap",
 		"weighted_avg_translation_efficiency_heatmap",
@@ -196,6 +202,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			elif h == "rnap_subunit_ribosome_portion_heatmap":
 				self.extract_rnap_subunits_ribosome_portion_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "ribosomal_protein_rnap_portion_heatmap":
+				self.extract_ribosomal_protein_rnap_portion_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "ribosomal_protein_ribosome_portion_heatmap":
+				self.extract_ribosomal_protein_ribosome_portion_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			else:
 				raise Exception(
@@ -991,7 +1003,39 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_portion, cell_mask)
 
-	def get_mRNA_subunit_indexes(self, all_cells, index_type):
+	def get_mRNA_ids_from_monomer_ids(self, target_monomer_ids):
+		"""
+		Map monomer ids back to the mRNA ids that they were translated from.
+
+		Args:
+			target_monomer_ids: ids of the monomers to map to mRNA ids
+
+		Returns: list of mRNA ids
+		"""
+		# Map protein ids to cistron ids
+		monomer_ids = self.sim_data.process.translation.monomer_data['id']
+		cistron_ids = self.sim_data.process.translation.monomer_data[
+			'cistron_id']
+		monomer_to_cistron_id_dict = {
+			monomer_id: cistron_ids[i] for i, monomer_id in
+			enumerate(monomer_ids)}
+		target_cistron_ids = [
+			monomer_to_cistron_id_dict.get(RNAP_monomer_id) for
+			RNAP_monomer_id in target_monomer_ids]
+		# Map cistron ids to RNA indexes
+		target_RNA_indexes = [
+			self.sim_data.process.transcription.cistron_id_to_rna_indexes(
+				RNAP_cistron_id) for RNAP_cistron_id in
+			target_cistron_ids]
+		# Map RNA indexes to RNA ids
+		RNA_ids = self.sim_data.process.transcription.rna_data['id']
+		target_RNA_ids = set()
+		for i in range(len(target_RNA_indexes)):
+			for index in target_RNA_indexes[i]:
+				target_RNA_ids.add(RNA_ids[index])
+		return target_RNA_ids
+
+	def get_mRNA_indexes_from_monomer_ids(self, all_cells, target_monomer_ids, index_type):
 		"""
 		Retrieve new gene indexes of a given type.
 
@@ -999,6 +1043,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells: Paths to all cells to read data from (directories should
 				contain a simOut/ subdirectory), typically the return from
 				AnalysisPaths.get_cells()
+			target_monomer_ids: ids of the monomers to map to mRNA indexes
 			index_type: Type of indexes to extract, currently supported options
 				are 'mRNA' and 'monomer'
 
@@ -1007,35 +1052,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		sim_dir = all_cells[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
-		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
 
 		if index_type == 'mRNA':
-			# Map protein ids to cistron ids
-			monomer_ids = self.sim_data.process.translation.monomer_data['id']
-			cistron_ids = self.sim_data.process.translation.monomer_data['cistron_id']
-			monomer_to_cistron_id_dict = {
-				monomer_id: cistron_ids[i] for i, monomer_id in
-				enumerate(monomer_ids)}
-			RNAP_subunit_cistron_ids = [
-				monomer_to_cistron_id_dict.get(RNAP_monomer_id) for
-				RNAP_monomer_id in RNAP_subunit_monomer_ids]
-			# Map cistron ids to RNA indexes
-			RNAP_subunit_RNA_indexes = [
-				self.sim_data.process.transcription.cistron_id_to_rna_indexes(
-				RNAP_cistron_id) for RNAP_cistron_id in RNAP_subunit_cistron_ids]
-			# Map RNA indexes to RNA ids
-			RNA_ids = self.sim_data.process.transcription.rna_data['id']
-			RNAP_subunit_RNA_ids = set()
-			for i in range(len(RNAP_subunit_RNA_indexes)):
-				for index in RNAP_subunit_RNA_indexes[i]:
-					RNAP_subunit_RNA_ids.add(RNA_ids[index])
+			# Map protein ids to RNA ids
+			target_RNA_ids = self.get_mRNA_ids_from_monomer_ids(target_monomer_ids)
 			# Get index of those RNA ids in the output
 			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 			mRNA_idx_dict = {
 				rna: i for i, rna in
 				enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
 			output_indexes = [
-				mRNA_idx_dict.get(mRNA_id) for mRNA_id in RNAP_subunit_RNA_ids]
+				mRNA_idx_dict.get(mRNA_id) for mRNA_id in target_RNA_ids]
 
 		elif index_type == 'monomer':
 			# Get index of those monomer ids in the output
@@ -1046,7 +1073,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					monomer_counts_reader.readAttribute('monomerIds'))}
 			output_indexes = [
 				monomer_idx_dict.get(monomer_id) for monomer_id in
-				RNAP_subunit_monomer_ids]
+				target_monomer_ids]
 
 		else:
 			raise Exception(
@@ -1072,14 +1099,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		rnap_subunit_mRNA_indexes = self.get_mRNA_subunit_indexes(all_cells, "mRNA")
+		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
+		rnap_subunit_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			all_cells, RNAP_subunit_monomer_ids, "mRNA")
 		avg_rnap_subunit_rnap_counts = np.sum(
 			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
 			fun=lambda x: np.mean(x[:, rnap_subunit_mRNA_indexes], axis=0)),
 			axis = 1)
 		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
 		avg_rnap_subunit_rnap_portion = avg_rnap_subunit_rnap_counts / avg_rnap_counts
-
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_rnap_portion,
 			cell_mask)
@@ -1101,16 +1129,77 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		rnap_subunit_monomer_indexes = self.get_mRNA_subunit_indexes(all_cells, "monomer")
+		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
+		rnap_subunit_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			all_cells, RNAP_subunit_monomer_ids, "monomer")
 		avg_rnap_subunit_ribosome_counts = np.sum(read_stacked_columns(
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
 			fun=lambda x: np.mean(x[:, rnap_subunit_monomer_indexes], axis=0)),
 			axis = 1)
 		avg_ribosome_counts = self.get_avg_ribosome_counts(all_cells)
 		avg_rnap_subunit_ribosome_portion = avg_rnap_subunit_ribosome_counts/avg_ribosome_counts
-
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_ribosome_portion,
+			cell_mask)
+
+	def extract_ribosomal_protein_rnap_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of RNAP
+		that are making ribosomal proteins at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		ribosomal_monomer_ids = self.sim_data.molecule_groups.ribosomal_proteins
+		ribosomal_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			all_cells, ribosomal_monomer_ids, "mRNA")
+		avg_ribosomal_rnap_counts = np.sum(
+			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: np.mean(x[:, ribosomal_mRNA_indexes], axis=0)),
+			axis=1)
+		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_ribosomal_rnap_portion = avg_ribosomal_rnap_counts / avg_rnap_counts
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_ribosomal_rnap_portion,
+			cell_mask)
+
+	def extract_ribosomal_protein_ribosome_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of ribosomes
+		that are making ribosomal proteins at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		ribosomal_monomer_ids = self.sim_data.molecule_groups.ribosomal_proteins
+		ribosomal_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			all_cells, ribosomal_monomer_ids, "monomer")
+		avg_ribosomal_ribosome_counts = np.sum(read_stacked_columns(
+			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
+			fun=lambda x: np.mean(x[:, ribosomal_monomer_indexes], axis=0)),
+			axis=1)
+		avg_ribosome_counts = self.get_avg_ribosome_counts(all_cells)
+		avg_ribosomal_ribosome_portion = avg_ribosomal_ribosome_counts / avg_ribosome_counts
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_ribosomal_ribosome_portion,
 			cell_mask)
 
 	# Functions for plotting heatmaps
@@ -1549,6 +1638,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"rnap_subunit_ribosome_portion_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'plot_title': 'RNAP Subunit Ribosome Portion',
+				 'num_digits_rounding': 3,
+				 },
+			"ribosomal_protein_rnap_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Ribosomal Protein RNAP Portion',
+				 'num_digits_rounding': 3,
+				 },
+			"ribosomal_protein_ribosome_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Ribosomal Protein Ribosome Portion',
 				 'num_digits_rounding': 3,
 				 },
 			"new_gene_ribosome_counts_heatmap":
