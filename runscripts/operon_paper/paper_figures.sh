@@ -40,8 +40,8 @@ out/20230717.142940__SET_B_8_gens_128_seeds_operons_off_with_rich_media
 ## Figure 3
 # Panel A
 python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
-out/20230613.165059__SET_E_8_gens_128_seeds_operons_v2_with_glucose_minimal_media \
-out/20230613.164830__SET_A_8_gens_128_seeds_operons_off_with_glucose_minimal_media
+out/20230722.192107__SET_F_8_gens_128_seeds_operons_v2_with_rich_media \
+out/20230717.142940__SET_B_8_gens_128_seeds_operons_off_with_rich_media
 
 # Panel E
 python models/ecoli/analysis/parca/corrected_rnaseq_read_counts.py \

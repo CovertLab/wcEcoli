@@ -312,6 +312,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		corrected_cistron_indexes = np.where(
 			sim_data2.process.transcription.cistron_data['uses_corrected_seq_counts']
 			)[0]
+		rtrna_cistron_indexes = np.where(np.logical_or(
+			sim_data2.process.transcription.cistron_data['is_rRNA'],
+			sim_data2.process.transcription.cistron_data['is_tRNA'],
+			))
 		operon_index_to_evidence_codes = {}
 
 		for (i, operon) in enumerate(all_operons):
@@ -321,6 +325,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			# Skip operons that contain cistrons whose expression was corrected
 			if np.any(np.isin(operon[0], corrected_cistron_indexes)):
+				continue
+
+			# Skip rtRNA operons
+			if np.any(np.isin(operon[0], rtrna_cistron_indexes)):
 				continue
 
 			evidence_codes = []
