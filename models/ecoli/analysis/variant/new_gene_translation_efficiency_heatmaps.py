@@ -290,9 +290,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					"Heatmap " + h + " has no instructions for"
 					" data extraction.")
 
-	def get_avg_rnap_counts(self, all_cells):
+	def get_avg_inactive_rnap_counts(self, all_cells):
 		"""
-		Retrieve RNAP counts.
+		Retrieve inactive RNAP counts.
 
 		Args:
 			all_cells: paths to all cells to read data from (directories should
@@ -309,9 +309,48 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		cell_ids, idx, cell_total_timesteps = np.unique(
 			cell_id_vector, return_inverse=True, return_counts=True)
 		sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
-		avg_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
+		avg_inactive_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
+		return avg_inactive_rnap_counts
 
-		return avg_rnap_counts
+	def get_avg_active_rnap_counts(self, all_cells):
+		"""
+		Retrieve active RNAP counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of RNAPs.
+		"""
+		# Determine active RNAP index
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+		uniqueMoleculeCounts = TableReader(
+			os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		active_rnap_index = uniqueMoleculeCounts.readAttribute(
+			"uniqueMoleculeIds").index('active_RNAP')
+		avg_active_rnap_counts = read_stacked_columns(
+			all_cells, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts',
+			fun=lambda x: np.mean(x[:, active_rnap_index], axis=0))
+		return avg_active_rnap_counts
+
+	def get_avg_total_rnap_counts(self, all_cells):
+		"""
+		Retrieve total (active + inactive) RNAP counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of RNAPs.
+		"""
+		return (self.get_avg_inactive_rnap_counts(all_cells) +
+			self.get_avg_active_rnap_counts(all_cells))
 
 	def extract_rnap_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -330,13 +369,43 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_rnap_counts = self.get_avg_total_rnap_counts(all_cells)
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_counts, cell_mask)
 
-	def get_avg_ribosome_counts(self, all_cells):
+	def get_avg_inactive_ribosome_counts(self, all_cells):
 		"""
-		Retrieve ribosome counts.
+		Retrieve inactive ribosome counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of ribosomes.
+		"""
+		complex_id_30s = [self.sim_data.molecule_ids.s30_full_complex]
+		complex_id_50s = [self.sim_data.molecule_ids.s50_full_complex]
+
+		(complex_counts_30s, complex_counts_50s) = read_stacked_bulk_molecules(
+			all_cells, (complex_id_30s, complex_id_50s))
+		cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
+		cell_ids, idx, cell_total_timesteps = np.unique(
+			cell_id_vector, return_inverse=True, return_counts=True)
+
+		inactive_ribosome_counts = np.minimum(
+			complex_counts_30s, complex_counts_50s)
+
+		sum_inactive_ribosome_counts = np.bincount(
+			idx, weights=inactive_ribosome_counts)
+		avg_inactive_ribosome_counts = (sum_inactive_ribosome_counts / cell_total_timesteps)
+
+		return avg_inactive_ribosome_counts
+
+	def get_avg_active_ribosome_counts(self, all_cells):
+		"""
+		Retrieve active ribosome counts.
 
 		Args:
 			all_cells: paths to all cells to read data from (directories should
@@ -361,6 +430,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		return avg_ribosome_counts
 
+	def get_avg_total_ribosome_counts(self, all_cells):
+		"""
+		Retrieve ribosome counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of ribosomes.
+		"""
+
+		return (self.get_avg_inactive_ribosome_counts(all_cells) +
+			self.get_avg_active_ribosome_counts(all_cells))
+
 	def extract_ribosome_counts_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
 		"""
@@ -378,7 +463,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		curr_heatmap_data = self.get_avg_ribosome_counts(all_cells)
+		curr_heatmap_data = self.get_avg_total_ribosome_counts(all_cells)
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
 
@@ -889,7 +974,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_new_gene_rnap_counts = read_stacked_columns(
 			all_cells, "RNACounts", "partial_mRNA_counts",
 			fun=lambda x: np.mean(x[:, new_gene_mRNA_indexes], axis=0))
-		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
 		avg_new_gene_rnap_portion = avg_new_gene_rnap_counts / avg_rnap_counts
 
 		for i in range(len(self.new_gene_mRNA_ids)):
@@ -945,7 +1030,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_new_gene_ribosome_counts = read_stacked_columns(
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
 			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes], axis=0))
-		avg_ribosome_counts = self.get_avg_ribosome_counts(all_cells)
+		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		avg_new_gene_ribosome_portion = avg_new_gene_ribosome_counts/avg_ribosome_counts
 
 		for i in range(len(self.new_gene_monomer_ids)):
@@ -997,7 +1082,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_rrna_rnap_counts = np.sum(read_stacked_columns(
 			all_cells, "RNACounts", "partial_rRNA_counts",
 			fun=lambda x: np.mean(x, axis=0)), axis = 1)
-		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
 		avg_rrna_rnap_portion = avg_rrna_rnap_counts / avg_rnap_counts
 
 		self.save_heatmap_data(
@@ -1106,7 +1191,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
 			fun=lambda x: np.mean(x[:, rnap_subunit_mRNA_indexes], axis=0)),
 			axis = 1)
-		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
 		avg_rnap_subunit_rnap_portion = avg_rnap_subunit_rnap_counts / avg_rnap_counts
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_rnap_portion,
@@ -1136,7 +1221,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
 			fun=lambda x: np.mean(x[:, rnap_subunit_monomer_indexes], axis=0)),
 			axis = 1)
-		avg_ribosome_counts = self.get_avg_ribosome_counts(all_cells)
+		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		avg_rnap_subunit_ribosome_portion = avg_rnap_subunit_ribosome_counts/avg_ribosome_counts
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_ribosome_portion,
@@ -1166,7 +1251,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
 			fun=lambda x: np.mean(x[:, ribosomal_mRNA_indexes], axis=0)),
 			axis=1)
-		avg_rnap_counts = self.get_avg_rnap_counts(all_cells)
+		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
 		avg_ribosomal_rnap_portion = avg_ribosomal_rnap_counts / avg_rnap_counts
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_ribosomal_rnap_portion,
@@ -1196,7 +1281,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
 			fun=lambda x: np.mean(x[:, ribosomal_monomer_indexes], axis=0)),
 			axis=1)
-		avg_ribosome_counts = self.get_avg_ribosome_counts(all_cells)
+		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		avg_ribosomal_ribosome_portion = avg_ribosomal_ribosome_counts / avg_ribosome_counts
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_ribosomal_ribosome_portion,
