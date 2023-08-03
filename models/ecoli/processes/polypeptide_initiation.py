@@ -10,7 +10,6 @@ import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 
-
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
 

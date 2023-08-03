@@ -74,3 +74,13 @@ class DnaSupercoiling(wholecell.listeners.listener.Listener):
 			segment_domain_indexes = self.segment_domain_indexes,
 			segment_superhelical_densities = self.segment_superhelical_densities,
 			)
+
+	def get_dict(self):
+		return {
+			'dna_supercoiling': {
+				'segment_left_boundary_coordinates': self.segment_left_boundary_coordinates,
+				'segment_right_boundary_coordinates': self.segment_right_boundary_coordinates,
+				'segment_domain_indexes': self.segment_domain_indexes,
+				'segment_superhelical_densities': self.segment_superhelical_densities,
+			}
+		}

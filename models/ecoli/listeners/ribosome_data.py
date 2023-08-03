@@ -93,6 +93,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			unique_index_RNA[np.logical_not(is_full_transcript_RNA)])
 
 		# Get counts of ribosomes for each type
+		# TODO: Get these listeners in vivarium-ecoli
 		self.n_ribosomes_per_transcript = np.bincount(
 			protein_index_ribosomes, minlength=self.nMonomers)
 		self.n_ribosomes_on_partial_mRNA_per_transcript = np.bincount(
@@ -186,3 +187,45 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			mRNA_TU_index = self.mRNA_TU_index,
 			protein_mass_on_polysomes = self.protein_mass_on_polysomes,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'ribosome_data': {
+				'aa_count_in_sequence': self.aaCountInSequence,
+				'aa_counts': self.aaCounts,
+				'actual_elongations': self.actualElongations,
+				'actual_elongation_hist': self.actualElongationHist,
+				'elongations_non_terminating_hist': self.
+					elongationsNonTerminatingHist,
+				'did_terminate': self.didTerminate,
+				'did_initialize': self.didInitialize,
+				'termination_loss': self.terminationLoss,
+				'effective_elongation_rate': self.effectiveElongationRate,
+				'total_rRNA_initiated': self.total_rRNA_initiated,
+				'total_rRNA_init_prob': self.total_rRNA_init_prob,
+				'rRNA16S_initiated': self.rRNA16S_initiated,
+				'rRNA23S_initiated': self.rRNA23S_initiated,
+				'rRNA5S_initiated': self.rRNA5S_initiated,
+				'rRNA16S_init_prob': self.rRNA16S_init_prob,
+				'rRNA23S_init_prob': self.rRNA23S_init_prob,
+				'rRNA5S_init_prob': self.rRNA5S_init_prob,
+				'total_rna_init': self.total_rna_init,
+				'process_elongation_rate': self.processElongationRate,
+				'translation_supply': self.translationSupply,
+				'num_trpA_terminated': self.numTrpATerminated,
+				'target_prob_translation_per_transcript': self
+					.target_prob_translation_per_transcript, 
+				'actual_prob_translation_per_transcript': self
+					.actual_prob_translation_per_transcript,
+				'mRNA_is_overcrowded': self.mRNA_is_overcrowded,
+				'ribosome_init_event_per_monomer': self.
+					ribosome_init_event_per_monomer,
+				'n_ribosomes_per_transcript': self.n_ribosomes_per_transcript,
+				'n_ribosomes_on_partial_mRNA_per_transcript': self.
+					n_ribosomes_on_partial_mRNA_per_transcript,
+				'n_ribosomes_on_each_mRNA': self.n_ribosomes_on_each_mRNA,
+				'mRNA_TU_index': self.mRNA_TU_index,
+				'protein_mass_on_polysomes': self.protein_mass_on_polysomes,
+			}
+		}

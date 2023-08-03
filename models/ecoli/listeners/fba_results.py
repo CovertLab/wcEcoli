@@ -155,3 +155,28 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			constrained_molecules=self.constrained_molecules,
 			uptake_constraints=self.uptake_constraints,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'fba_results': {
+				'reaction_fluxes': self.reactionFluxes,
+				'base_reaction_fluxes': self.base_reaction_fluxes,
+				'external_exchange_fluxes': self.externalExchangeFluxes,
+				'shadow_prices': self.shadowPrices,
+				'reduced_costs': self.reducedCosts,
+				'objective_value': self.objectiveValue,
+				'homeostatic_objective_values': self.homeostaticObjectiveValues,
+				'kinetic_objective_values': self.kineticObjectiveValues,
+				'delta_metabolites': self.deltaMetabolites,
+				'target_concentrations': self.targetConcentrations,
+				'media_id': self.media_id,
+				'conc_updates': self.conc_updates,
+				'catalyst_counts': self.catalyst_counts,
+				'translation_gtp': self.translation_gtp,
+				'coefficient': self.coefficient,
+				'unconstrained_molecules': self.unconstrained_molecules,
+				'constrained_molecules': self.constrained_molecules,
+				'uptake_constraints': self.uptake_constraints,
+			}
+		}

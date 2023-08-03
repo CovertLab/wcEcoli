@@ -10,6 +10,7 @@ import shutil
 from time import monotonic as monotonic_seconds
 from typing import Callable, Sequence, Tuple
 import uuid
+import json
 
 import numpy as np
 
@@ -18,6 +19,27 @@ from wholecell.utils import filepath
 
 import wholecell.loggers.shell
 import wholecell.loggers.disk
+
+# Used to save states for vivarium-ecoli
+from unum import Unum
+INFINITY = float('inf')
+class NpEncoder(json.JSONEncoder):
+	def default(self, obj):
+		if isinstance(obj, np.integer):
+			return int(obj)
+		elif isinstance(obj, np.ndarray):
+			return obj.tolist()
+		elif obj == INFINITY:
+			return '__INFINITY__'
+		elif isinstance(obj, np.floating):
+			return float(obj)
+		elif isinstance(obj, np.bool_):
+			return bool(obj)
+		elif isinstance(obj, Unum):
+			return obj.asNumber()
+		else:
+			return super(NpEncoder, self).default(obj)
+
 
 MAX_TIME_STEP = 1.
 DEFAULT_SIMULATION_KWARGS = dict(
@@ -158,6 +180,13 @@ class Simulation():
 		# Initialize simulation from fit KB
 		self._initialize(sim_data)
 
+		# vivarium-ecoli save times
+		self.save_times = [0, 2104]
+		# self.save_times = list(range(2050, 2150, 2)) + list(range(0, 32, 2))
+		shutil.rmtree('out/migration', ignore_errors=True)
+		# Add location tags to environment exchange for migration tests
+		self.viv_exchange_map = {v: k for k, v
+			in sim_data.external_state.exchange_to_env_map.items()}
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -280,14 +309,125 @@ class Simulation():
 				self.finalize()
 				break
 
+			time = int(self.time())
+			if time in self.save_times:
+				os.makedirs('out/migration', exist_ok=True)
+				self.write_states(f'out/migration/wcecoli_t{time}.json')
+
 			self._simulationStep += 1
 
 			self._timeTotal += self._timeStepSec
 
 			self._pre_evolve_state()
-			for processes in self._processClasses:
+			for layer, processes in enumerate(self._processClasses):
+				# Save after each "layer" of processes so Metabolism and
+				# ChromosomeStructure get accurate state
+				if time in self.save_times:
+					self.write_states(f'out/migration/wcecoli_t{time}_before_layer_{layer}.json')
 				self._evolveState(processes)
+			# Get most up-to-date simulation state for listener migration tests
+			if time in self.save_times:
+				self.write_states(f'out/migration/wcecoli_t{time}_before_post.json')
 			self._post_evolve_state()
+			# Get most up-to-date listener values
+			if time in self.save_times:
+				listener_data = {}
+				for listener in self.listeners.values():
+					listener_data = {**listener_data, **listener.get_dict()}
+				with open(f'out/migration/wcecoli_listeners_t{time}.json', 'w') as outfile:
+					json.dump(listener_data, outfile, cls=NpEncoder)
+
+	def write_states(self, path):
+		states = self.get_states_numpy()
+		with open(path, 'w') as outfile:
+			json.dump(states, outfile, cls=NpEncoder)
+
+	def get_states_numpy(self):
+		bulk_molecules = self.internal_states['BulkMolecules']
+		bulk_counts = bulk_molecules.container.counts()
+		bulk_names = np.array(bulk_molecules.container.objectNames())
+		bulk_masses = bulk_molecules._moleculeMass
+		bulk_mass_names = bulk_molecules._submass_name_to_index
+
+		bulk_dtype = [('id', bulk_names.dtype), ('count', bulk_counts.dtype)]
+		for submass in bulk_mass_names.keys():
+			bulk_dtype.append((submass + '_submass', bulk_masses.dtype))
+		bulk_array = np.empty(len(bulk_counts), dtype=bulk_dtype)
+		bulk_array['id'] = bulk_names
+		bulk_array['count'] = bulk_counts
+		for submass, col in bulk_mass_names.items():
+			bulk_array[submass + '_submass'] = bulk_masses[:, col]
+
+		unique_molecules = self.internal_states['UniqueMolecules'].container
+		unique_collections = unique_molecules._collections
+		unique_keys = unique_molecules._nameToIndexMapping
+		
+		unique_arrays = {}
+		unique_dtypes = {}
+		for key, idx in unique_keys.items():
+			unique_arrays[key] = unique_collections[idx].tolist()
+			unique_dtypes[key] = str(unique_collections[idx].dtype)
+
+		environment = self.external_states['Environment'].container
+		environment_names = environment.objectNames()
+		environment_counts = environment.counts()
+		environment_concentrations = {
+			environment_names[index]: environment_counts[index]
+			for index in np.arange(len(environment_names))}
+		environment_exchange = self.external_states[
+			'Environment'].get_environment_change()
+		environment_concentrations['exchange'] = {
+			self.viv_exchange_map[k]: v for k, v
+			in environment_exchange.items()
+		}
+
+		mass_listener = self.listeners['Mass']
+		ribosome_listener = self.listeners['RibosomeData']
+		listeners = {
+			'mass': {
+				'cell_mass': mass_listener.cellMass,
+				'dry_mass': mass_listener.dryMass,
+    			'water_mass': mass_listener.waterMass,
+				'dry_mass': mass_listener.dryMass,
+				'rna_mass': mass_listener.rnaMass,
+				'rRna_mass': mass_listener.rRnaMass,
+				'tRna_mass': mass_listener.tRnaMass,
+				'mRna_mass': mass_listener.mRnaMass,
+				'dna_mass': mass_listener.dnaMass,
+				'protein_mass': mass_listener.proteinMass,
+				'smallMolecule_mass': mass_listener.smallMoleculeMass,
+				'projection_mass': mass_listener.projection_mass,
+				'cytosol_mass': mass_listener.cytosol_mass,
+				'extracellular_mass': mass_listener.extracellular_mass,
+				'flagellum_mass': mass_listener.flagellum_mass,
+				'membrane_mass': mass_listener.membrane_mass,
+				'outer_membrane_mass': mass_listener.outer_membrane_mass,
+				'periplasm_mass': mass_listener.periplasm_mass,
+				'pilus_mass': mass_listener.pilus_mass,
+				'inner_membrane_mass': mass_listener.inner_membrane_mass,
+				'instantaneous_growth_rate': mass_listener.instantaniousGrowthRate,
+				'volume': mass_listener.volume,
+				'protein_mass_fraction': mass_listener.proteinMassFraction,
+				'rna_mass_fraction': mass_listener.rnaMassFraction,
+				'dry_mass_fold_change': mass_listener.dryMassFoldChange,
+				'protein_mass_fold_change': mass_listener.proteinMassFoldChange,
+				'rna_mass_fold_change': mass_listener.rnaMassFoldChange,
+				'small_molecule_fold_change': mass_listener.smallMoleculeFoldChange,
+				'expected_mass_fold_change': mass_listener.expectedMassFoldChange,
+				},
+			'ribosome_data': {
+				# Necessary for polypeptide initiation
+				'effective_elongation_rate': \
+					ribosome_listener.effectiveElongationRate
+			}}
+
+		return {
+			'bulk': bulk_array.tolist(),
+			'unique': unique_arrays,
+			'environment': environment_concentrations,
+			'listeners': listeners,
+			'bulk_dtypes': str(bulk_array.dtype),
+			'unique_dtypes': unique_dtypes}
 
 	def run_for(self, run_for):
 		self.run_incremental(self.time() + run_for)
@@ -331,6 +471,9 @@ class Simulation():
 
 	# Calculate temporal evolution
 	def _evolveState(self, processes):
+		# Keep track of time to determine whether to save state
+		time = int(self.time()) - 2
+
 		# Update queries
 		# TODO: context manager/function calls for this logic?
 		for i, state in enumerate(self.internal_states.values()):
@@ -341,6 +484,21 @@ class Simulation():
 		# Calculate requests
 		for i, process in enumerate(self.processes.values()):
 			if process.__class__ in processes:
+				if time in self.save_times:
+					# When saving states for migration tests,
+					# have to reseed for one-to-one comparison
+					if process.name() == 'Complexation':
+						from stochastic_arrow import StochasticSystem
+						process.system = StochasticSystem(
+							process.stoichMatrix.T, random_seed=0)
+					elif process.name() == 'Metabolism':
+						from models.ecoli.processes.metabolism import FluxBalanceAnalysisModel
+						process.model = FluxBalanceAnalysisModel(
+							sim_data=self.get_sim_data(),
+							timeline=self.external_states['Environment'].current_timeline,
+							include_ppgpp=not self._ppgpp_regulation or not self._trna_charging
+						)
+					process.randomState = np.random.RandomState(seed=0)
 				t = monotonic_seconds()
 				process.calculateRequest()
 				self._eval_time.calculate_request_times[i] += monotonic_seconds() - t
@@ -348,7 +506,32 @@ class Simulation():
 		# Partition states among processes
 		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
+			# Reset random state so partitioning can be directly compared
+			if time in self.save_times and state.name() == 'BulkMolecules':
+				state.randomState = np.random.RandomState(seed=0)
 			state.partition(processes)
+			# Save requested and allocated counts for migration tests
+			if time in self.save_times and state.name() == 'BulkMolecules':
+				bulk_allocated = state._countsAllocatedInitial
+				bulk_requested = state._countsRequested
+				try:
+					bulk_allocated_dict = json.load(open(
+						f'out/migration/bulk_partitioned_t{time}.json', 'r'))
+					bulk_requested_dict = json.load(open(
+						f'out/migration/bulk_requested_t{time}.json', 'r'))
+				except FileNotFoundError:
+					bulk_allocated_dict = {}
+					bulk_requested_dict = {}
+				for process in processes:
+					process_idx = state._processID_to_index[process.name()]
+					bulk_allocated_dict[process.name()] = bulk_allocated[
+						:, process_idx]
+					bulk_requested_dict[process.name()] = bulk_requested[
+						:, process_idx]
+				with open(f'out/migration/bulk_partitioned_t{time}.json', 'w') as f:
+					json.dump(bulk_allocated_dict, f, cls=NpEncoder)
+				with open(f'out/migration/bulk_requested_t{time}.json', 'w') as f:
+					json.dump(bulk_requested_dict, f, cls=NpEncoder)
 			self._eval_time.partition_times[i] += monotonic_seconds() - t
 
 		# Simulate submodels
@@ -364,14 +547,100 @@ class Simulation():
 				raise Exception("The timestep (%.3f) was too long at step %i, failed on process %s" % (self._timeStepSec, self.simulationStep(), str(process.name())))
 
 		# Merge state
+		if time in self.save_times:
+			try:
+				updates = json.load(open(
+					f'out/migration/process_updates_t{time}.json', 'r'))
+			except FileNotFoundError:
+				updates = {process.name(): {} for process in processes}
 		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
+			if time in self.save_times:
+				# Save final bulk counts calculated by each process
+				if state.name() == 'BulkMolecules':
+					bulk_final = state._countsAllocatedFinal
+					for process in processes:
+						process_idx = state._processID_to_index[process.name()]
+						updates.setdefault(process.name(), {'bulk': {}})
+						updates[process.name()]['bulk'] = bulk_final[
+							:, process_idx]
+						# Save this for metabolism
+						if process.name() == 'PolypeptideElongation':
+							updates['PolypeptideElongation']['process_state'
+								] = {'gtp_to_hydrolyze': self.processes[
+									'PolypeptideElongation'].gtp_to_hydrolyze}
+				elif state.name() == 'UniqueMolecules':
+					container = state.container
+					unique_updates = container._requests
+					# Map collection index to molecule type (RNA: 1, etc.)
+					coll_idx_to_name = {v: k for k, v in
+						container._nameToIndexMapping.items()}
+					process_names = list(self.processes.keys())
+					for update in unique_updates:
+						# Each update has associated process index that can
+						# be mapped back to a process name
+						process_name = process_names[update['process_index']]
+						curr_update = updates[process_name].setdefault(
+							'unique', {})
+						# Edit, delete, and submass updates have a globalIndexes
+						# key that is equivalent to the unique_index attribute
+						# in vivarium-ecoli
+						globalIndexes = update.get('globalIndexes', None)
+						if globalIndexes is not None:
+							if len(globalIndexes) == 0:
+								continue
+							coll_idx = container._globalReference[
+								'_collectionIndex'][globalIndexes[0]]
+							coll_name = coll_idx_to_name[coll_idx]
+							curr_update = updates[process_name]['unique'
+								].setdefault(coll_name, {})
+							update_type = update['type']
+							if update_type == 'edit':
+								curr_update['set'] = update['attributes']
+							elif update_type == 'delete':
+								unique_arr = container._collections[coll_idx]
+								active_unique = unique_arr[
+									unique_arr['_entryState'].view(np.bool_)]
+								sorter = np.argsort(
+									active_unique['_globalIndex'])
+								active_idx = sorter[np.searchsorted(
+									active_unique['_globalIndex'],
+									globalIndexes, sorter=sorter)]
+								curr_update['delete'] = active_idx
+							elif update_type == 'submass':
+								added_masses = update['added_masses']
+								for mass_type, masses in added_masses.items():
+									coll = container.objectsInCollection(
+										coll_name)
+									curr_mass = coll.attr(mass_type)
+									curr_update['set'][mass_type] = \
+										curr_mass + masses
+						# Updates that add new molecules have a collectionName
+						# key that specify the type of molecule being added
+						else:
+							coll_name = update['collectionName']
+							curr_update = updates[process_name]['unique'
+								].setdefault(coll_name, {})
+							curr_update['add'] = update['attributes']
+
 			state.merge(processes)
 			self._eval_time.merge_times[i] += monotonic_seconds() - t
 
 		# update environment state
 		for state in self.external_states.values():
 			state.update()
+			if time in self.save_times and state.name() == 'Environment':
+				process_names = [process.name() for process in processes]
+				if 'Metabolism' in process_names:
+					environment_exchange = state.get_environment_change()
+					updates['Metabolism']['environment'] = {
+						'exchange': {self.viv_exchange_map[k]: v for k, v
+						in environment_exchange.items()}
+					}
+		
+		if time in self.save_times:
+			with open(f'out/migration/process_updates_t{time}.json', 'w')	as f:
+				json.dump(updates, f, cls=NpEncoder)
 
 	def _post_evolve_state(self):
 		# Calculate mass of all molecules after evolution

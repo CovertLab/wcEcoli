@@ -91,6 +91,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Data structures for charging
 		self.aa_from_trna = transcription.aa_from_trna
 
+        # TODO: Save update for trna_charging for TranslationSupplyElongationModel and SteadStateElongationModel
 		# Set modeling method
 		if trna_charging:
 			self.elongation_model = SteadyStateElongationModel(sim_data, self)
@@ -173,6 +174,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
+		# TODO: check commented out code in vivarium
 
 		# Get number of active ribosomes
 		n_active_ribosomes = self.active_ribosomes.total_count()

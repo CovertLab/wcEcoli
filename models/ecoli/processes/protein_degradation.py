@@ -80,7 +80,6 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
 
-
 	def evolveState(self):
 
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
@@ -88,7 +87,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.metabolites.countsInc(np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
-			))
+		))
 		self.proteins.countsIs(0)
 
 	def _proteinDegRates(self):

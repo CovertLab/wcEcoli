@@ -31,3 +31,10 @@ class ATPhydrolyzedUsageListener(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			atpsHydrolyzed = self.atpsHydrolyzed,
 			)
+
+	def get_dict(self):
+		return {
+			'atp_hydrolyzed': {
+				'atps_hydrolyzed': self.atpsHydrolyzed
+			}
+		}

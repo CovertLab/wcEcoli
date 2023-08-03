@@ -9,7 +9,6 @@ from wholecell.utils.polymerize import (buildSequences, polymerize,
 	computeMassIncrease)
 from wholecell.utils import units
 
-
 class ChromosomeReplication(wholecell.processes.process.Process):
 	"""
 	Performs initiation, elongation, and termination of active partial chromosomes
@@ -74,6 +73,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 
 		# Sim options
 		self.mechanistic_replisome = sim._mechanistic_replisome
+
 
 	def calculateRequest(self):
 		# Get total count of existing oriC's
@@ -307,7 +307,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.dntps.countsDec(dNtpsUsed)
 		self.ppi.countInc(dNtpsUsed.sum())
 
-
 		## Module 3: replication termination
 		# Determine if any forks have reached the end of their sequences. If
 		# so, delete the replisomes and domains that were terminated.
@@ -388,6 +387,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 			if self.mechanistic_replisome:
 				self.replisome_trimers.countsInc(3*replisomes_to_delete.sum())
 				self.replisome_monomers.countsInc(replisomes_to_delete.sum())
+
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		return inputTimeStep <= self.max_time_step

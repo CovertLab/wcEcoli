@@ -118,3 +118,17 @@ class RNACounts(wholecell.listeners.listener.Listener):
 			partial_rRNA_counts = self.partial_rRNA_counts,
 			partial_rRNA_cistron_counts = self.partial_rRNA_cistron_counts,
 			)
+		
+	def get_dict(self):
+		return {
+			'rna_counts': {
+				'mRNA_counts': self.mRNA_counts,
+				'full_mRNA_counts': self.full_mRNA_counts,
+				'partial_mRNA_counts': self.partial_mRNA_counts,
+				'mRNA_cistron_counts': self.mRNA_cistron_counts,
+				'full_mRNA_cistron_counts': self.full_mRNA_cistron_counts,
+				'partial_mRNA_cistron_counts': self.partial_mRNA_cistron_counts,
+				'partial_rRNA_counts': self.partial_rRNA_counts,
+				'partial_rRNA_cistron_counts': self.partial_rRNA_cistron_counts,
+			}
+		}

@@ -165,7 +165,6 @@ class Mass(wholecell.listeners.listener.Listener):
 		self.pilus_mass = compartment_submasses[self.pilus_index, :].sum()
 		self.inner_membrane_mass = compartment_submasses[self.inner_membrane_index, :].sum()
 
-
 		# TODO (Eran) use this volume everywhere in the codebase that is currently calculating volume
 		self.volume = self.cellMass / self.cellDensity
 
@@ -193,7 +192,6 @@ class Mass(wholecell.listeners.listener.Listener):
 			self.proteinMassInitial = self.proteinMass
 			self.rnaMassInitial = self.rnaMass
 			self.smallMoleculeMassInitial = self.smallMoleculeMass
-
 
 		self.dryMassFoldChange = self.dryMass / self.dryMassInitial
 		self.proteinMassFoldChange = self.proteinMass / self.proteinMassInitial
@@ -247,3 +245,41 @@ class Mass(wholecell.listeners.listener.Listener):
 			instantaneous_growth_rate = self.instantaneous_growth_rate,
 			cellVolume = self.volume
 			)
+	
+
+	def get_dict(self):
+		return {
+			'mass': {
+				'cell_mass': self.cellMass,
+				'growth': self.growth,
+				'dry_mass': self.dryMass,
+				'rna_mass': self.rnaMass,
+				'rRna_mass': self.rRnaMass,
+				'tRna_mass': self.tRnaMass,
+				'mRna_mass': self.mRnaMass,
+				'dna_mass': self.dnaMass,
+				'protein_mass': self.proteinMass,
+				'water_mass': self.waterMass,
+				'projection_mass': self.projection_mass,
+				'cytosol_mass': self.cytosol_mass,
+				'extracellular_mass': self.extracellular_mass,
+				'flagellum_mass': self.flagellum_mass,
+				'membrane_mass': self.membrane_mass,
+				'outer_membrane_mass': self.outer_membrane_mass,
+				'periplasm_mass': self.periplasm_mass,
+				'pilus_mass': self.pilus_mass,
+				'inner_membrane_mass': self.inner_membrane_mass,
+				# Process mass differences not fully functional yet in vivarium-ecoli
+				#'processMassDifferences': self.processMassDifferences.astype(np.float64),
+				'smallMolecule_mass': self.smallMoleculeMass,
+				'instantaneous_growth_rate': self.instantaniousGrowthRate,
+				'volume': self.volume,
+				'protein_mass_fraction': self.proteinMassFraction,
+				'rna_mass_fraction': self.rnaMassFraction,
+				'dry_mass_fold_change': self.dryMassFoldChange,
+				'protein_mass_fold_change': self.proteinMassFoldChange,
+				'rna_mass_fold_change': self.rnaMassFoldChange,
+				'small_molecule_fold_change': self.smallMoleculeFoldChange,
+				'expected_mass_fold_change': self.expectedMassFoldChange,
+			}
+		}

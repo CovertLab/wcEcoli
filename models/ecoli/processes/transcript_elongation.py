@@ -17,7 +17,6 @@ from wholecell.utils.random import stochasticRound
 from wholecell.utils.polymerize import buildSequences, polymerize, computeMassIncrease
 from wholecell.utils import units
 
-
 class TranscriptElongation(wholecell.processes.process.Process):
 	""" TranscriptElongation """
 

@@ -74,3 +74,16 @@ class RnaDegradationListener(wholecell.listeners.listener.Listener):
 			FractEndoRRnaCounts = self.FractEndoRRnaCounts,
 			fragmentBasesDigested = self.fragmentBasesDigested,
 			)
+	
+	def get_dict(self):
+		return {
+			'rna_degradation_listener': {
+				'count_rna_degraded': self.count_RNA_degraded,
+				'count_RNA_degraded_per_cistron': self.count_RNA_degraded_per_cistron,
+				'nucleotides_from_degradation': self.nucleotidesFromDegradation,
+				'fraction_active_endornases': self.FractionActiveEndoRNases,
+				'diff_relative_first_order_decay': self.DiffRelativeFirstOrderDecay,
+				'fract_endo_rrna_counts': self.FractEndoRRnaCounts,
+				'fragment_bases_digested': self.fragmentBasesDigested,
+			}
+		}

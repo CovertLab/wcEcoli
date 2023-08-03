@@ -162,3 +162,11 @@ reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 
 # VSCode:
 .vscode/
+# Pipenv files #
+################
+Pipfile
+Pipfile.lock
+
+# VS Code Files #
+#################
+.env

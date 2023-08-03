@@ -8,7 +8,6 @@ import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.constants import REQUEST_PRIORITY_TWO_COMPONENT_SYSTEM
 
-
 class TwoComponentSystem(wholecell.processes.process.Process):
 	""" Two component system """
 

@@ -66,6 +66,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 
 
 	def update(self):
+		# TODO: Get these listeners in vivarium-ecoli
 		promoters = self.uniqueMolecules.container.objectsInCollection('promoter')
 		TU_indexes, all_coordinates, all_domains, bound_TFs = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF"
@@ -158,3 +159,27 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			bound_TF_coordinates = self.bound_TF_coordinates,
 			bound_TF_domains = self.bound_TF_domains,
 			)
+	
+
+	def get_dict(self):
+		return {
+			'rna_synth_prob': {
+				'target_rna_synth_prob': self.target_rna_synth_prob,
+				'actual_rna_synth_prob':	self.actual_rna_synth_prob,
+				'tu_is_overcrowded': self.tu_is_overcrowded,
+				'actual_rna_synth_prob_per_cistron': self.actual_rna_synth_prob_per_cistron,
+				'target_rna_synth_prob_per_cistron': self.target_rna_synth_prob_per_cistron,
+				'expected_rna_init_per_cistron': self.expected_rna_init_per_cistron,
+				'promoter_copy_number': self.promoter_copy_number,
+				'gene_copy_number': self.gene_copy_number,
+				'p_promoter_bound': self.pPromoterBound,
+				'n_promoter_bound': self.nPromoterBound,
+				'n_actual_bound': self.nActualBound,
+				'n_available_promoters': self.n_available_promoters,
+				'n_bound_TF_per_TU': self.n_bound_TF_per_TU,
+				'n_bound_TF_per_cistron': self.n_bound_TF_per_cistron,
+				'bound_TF_indexes': self.bound_TF_indexes,
+				'bound_TF_coordinates': self.bound_TF_coordinates,
+				'bound_TF_domains': self.bound_TF_domains,
+			}
+		}

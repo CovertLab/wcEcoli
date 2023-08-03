@@ -54,3 +54,13 @@ class TranscriptElongationListener(wholecell.listeners.listener.Listener):
 			attenuation_probability = self.attenuation_probability,
 			counts_attenuated = self.counts_attenuated,
 			)
+	
+	def get_dict(self):
+		return {
+			'transcript_elongation_listener': {
+				'count_rna_synthesized': self.countRnaSynthesized,
+				'count_NTPs_used': self.countNTPsUSed,
+				'attenuation_probability': self.attenuation_probability,
+				'counts_attenuated': self.counts_attenuated,
+			}
+		}

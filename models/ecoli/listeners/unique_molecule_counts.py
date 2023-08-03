@@ -57,3 +57,12 @@ class UniqueMoleculeCounts(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			uniqueMoleculeCounts = self.uniqueMoleculeCounts,
 			)
+
+	
+	def get_dict(self):
+		# TODO: Get this listener in vivarium-ecoli
+		return {
+			'unique_molecule_counts': {
+				'unique_molecule_counts': self.uniqueMoleculeCounts
+			}
+		}

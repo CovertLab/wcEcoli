@@ -317,7 +317,6 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				linking_number=all_new_linking_numbers,
 				)
 
-
 		# Get mask for RNAs that are transcribed from removed RNAPs
 		removed_RNAs_mask = np.isin(
 			RNA_RNAP_indexes, RNAP_unique_indexes[removed_RNAPs_mask])
@@ -425,7 +424,6 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		# Write to listener
 		self.writeToListener(
 			'RnapData', 'n_removed_ribosomes', n_removed_ribosomes)
-
 
 		def get_replicated_motif_attributes(old_coordinates, old_domain_indexes):
 			"""
