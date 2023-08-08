@@ -24,7 +24,7 @@ from wholecell.io.tablereader import TableReader
 
 GENERATE_OPERON_TABLE = False
 FIGSIZE = (8, 4.1)
-BOUNDS = [[0, 2], [0, 2.5]]
+BOUNDS = [[0, 3.0], [0, 3.0]]
 SELECTION_RATIO = 0.1
 NUMERICAL_ZERO = 1e-30
 OPERON_COUNT_CUTOFF = 10
@@ -427,9 +427,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			i = i + len(keys) + 1
 
-		ax.set_xlim([0, 2])
+		ax.set_xlim([0, 2.5])
 		ax.set_ylim([-1, i - 1])
-		ax.set_xticks([0, 0.5, 1, 1.5, 2])
+		ax.set_xticks([0, 0.5, 1, 1.5, 2, 2.5])
 		ax.xaxis.tick_top()
 		ax.xaxis.set_label_position('top')
 		ax.set_xlabel('log10(max t-score + 1)')
