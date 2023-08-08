@@ -11,6 +11,7 @@ ACTIVE = [
 	"massFractionComparison.py",
 	"mRNA_copy_numbers.py",
 	"mRNA_copy_numbers_growth_genes.py",
+	"mRNA_copy_numbers_short_genes.py",
 	"mRNA_counts_histogram.py",
 	"mRNA_length_histogram.py",
 	"mRNA_mass_histogram.py",

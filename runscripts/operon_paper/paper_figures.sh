@@ -49,8 +49,8 @@ out/20220822.165018__SET_D_8_gens_128_seeds_operons_v3_with_glucose_minimal_medi
 
 # Panel F (+ Figure S2A)
 python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
-out/20220822.165018__SET_D_8_gens_128_seeds_operons_v3_with_glucose_minimal_media \
-out/20230613.164830__SET_A_8_gens_128_seeds_operons_off_with_glucose_minimal_media
+out/20230726.175322__SET_H_8_gens_128_seeds_operons_v3_with_rich_media \
+out/20230717.142940__SET_B_8_gens_128_seeds_operons_off_with_rich_media
 
 # Panels H, I
 # See Rend-seq repository
