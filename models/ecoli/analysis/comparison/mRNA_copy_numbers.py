@@ -44,6 +44,58 @@ EVIDENCE_CODE_TO_DESCRIPTIONS = {
 	2: 'Multiple evidences',
 	}
 
+# Dictionary with the names of operons with differential mRNA degradation as
+# keys. If value is True, a transcription unit covering the stable portions of
+# the operon already exists.
+DIFFERENTIAL_DEGRADATION_OPERONS = {
+	'artM-artQ-artI-artP': False,
+	'atpC-atpD-atpG-atpA-atpH-atpF-atpE-atpB-atpI': True,
+	'bepA-yfgD': False,
+	'cobC-nadD-holA-lptE-leuS': False,
+	'cpxA-cpxR': False,
+	'envZ-ompR': False,
+	'eutR-eutK-eutL-eutC-eutB': False,
+	'fbaA-pgk-epd': True,
+	'folX-yfcH': False,
+	'gcvP-gcvH-gcvT': False,
+	'glf-rfc': False,
+	'glgP-glgA-glgC-glgX-glgB': True,
+	'gntU-gntK-gntR': True,
+	'gpmM-envC-yibQ': False,
+	'hisP-hisM-hisQ-hisJ-argT': False,
+	'hsrA-yieP': False,
+	'malG-malF-malE': True,
+	'marR-marA-marB': False,
+	'mcrC-mcrB': False,
+	'menF-menD-yfbB-menB-menC-menE': False,
+	'metQ-metI-metN': False,
+	'mglC-mglA-mglB': False,
+	'mraZ-mraW-ftsL-ftsI-murE-murF-mraY-murD-ftsW-murG-murC-ddlB-ftsQ-ftsA-ftsZ-lpxC': True,
+	'mtgA-elbB': False,
+	'murQ-murP-yfeW': False,
+	'nrdG-nrdD': False,
+	'phoQ-phoP': False,
+	'potD-potC-potB-potA': False,
+	'pspA-pspB-pspC-pspD-pspE': False,
+	'ptsH-ptsI-crr': False,
+	'rbsD-rbsA-rbsC-rbsB-rbsK-rbsR': False,
+	'rfaD-rfaF-rfaC-rfaL': False,
+	'rpoZ-spoT-trmH-recG': False,
+	'tatA-tatB-tatC': False,
+	'tehA-tehB': False,
+	'topB-selD-ydjA': False,
+	'uhpC-uhpB-uhpA-ilvN-ilvB-ivbL': False,
+	'yajC-secD-secF': True,
+	'ychQ-ychA-kdsA': True,
+	'ydhI-ydhJ-ydhK': False,
+	'yebY-yebZ-yobA': False,
+	'yecD-yecE': False,
+	'yggL-trmI': False,
+	'yheV-kefB-kefG': False,
+	'yihX-yihY-dtd-yiiD': False,
+	'yjeF-yjeE-amiB-mutL-miaA-hfq-hflX-hflK-hflC': False,
+	'yqcA-truC-yqcC': False,
+	}
 
 SEED = 0
 
