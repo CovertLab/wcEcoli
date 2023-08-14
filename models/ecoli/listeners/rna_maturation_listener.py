@@ -64,3 +64,14 @@ class RnaMaturationListener(wholecell.listeners.listener.Listener):
 			mature_rnas_generated = self.mature_rnas_generated,
 			maturation_enzyme_counts = self.maturation_enzyme_counts,
 			)
+		
+	def get_dict(self):
+		return {
+			'rna_maturation_listener': {
+				'total_maturation_events': self.total_maturation_events,
+				'total_degraded_ntps': self.total_degraded_ntps,
+				'unprocessed_rnas_consumed': self.unprocessed_rnas_consumed,
+				'mature_rnas_generated': self.mature_rnas_generated,
+				'maturation_enzyme_counts': self.maturation_enzyme_counts,
+			}
+		}

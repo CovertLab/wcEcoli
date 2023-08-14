@@ -272,7 +272,7 @@ class Mass(wholecell.listeners.listener.Listener):
 				# Process mass differences not fully functional yet in vivarium-ecoli
 				#'processMassDifferences': self.processMassDifferences.astype(np.float64),
 				'smallMolecule_mass': self.smallMoleculeMass,
-				'instantaneous_growth_rate': self.instantaniousGrowthRate,
+				'instantaneous_growth_rate': self.instantaneous_growth_rate,
 				'volume': self.volume,
 				'protein_mass_fraction': self.proteinMassFraction,
 				'rna_mass_fraction': self.rnaMassFraction,

@@ -48,7 +48,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	seed = 0,
 	lengthSec = 3*60*60, # 3 hours max
 	initialTime = 0.,
-	jit = True,
+	jit = False,
 	massDistribution = True,
 	dPeriodDivision = True,
 	growthRateNoise = False,
@@ -181,12 +181,20 @@ class Simulation():
 		self._initialize(sim_data)
 
 		# vivarium-ecoli save times
-		self.save_times = [0, 2104]
-		# self.save_times = list(range(2050, 2150, 2)) + list(range(0, 32, 2))
+		# self.save_times = [0, 1870]
+		self.save_times = list(range(0, 31, 2))
+		# Set to true only save data for composite mass test
+		# self.composite_mass = True
+		self.composite_mass = True
 		shutil.rmtree('out/migration', ignore_errors=True)
+		os.makedirs('out/migration', exist_ok=True)
 		# Add location tags to environment exchange for migration tests
 		self.viv_exchange_map = {v: k for k, v
 			in sim_data.external_state.exchange_to_env_map.items()}
+		# Map collection index to molecule type (1: RNA, etc.)
+		self.coll_idx_to_name = {idx: name for name, idx in
+			self.internal_states['UniqueMolecules'
+			].container._nameToIndexMapping.items()}
 
 	# Link states and processes
 	def _initialize(self, sim_data):
@@ -310,8 +318,7 @@ class Simulation():
 				break
 
 			time = int(self.time())
-			if time in self.save_times:
-				os.makedirs('out/migration', exist_ok=True)
+			if time in self.save_times and not self.composite_mass:
 				self.write_states(f'out/migration/wcecoli_t{time}.json')
 
 			self._simulationStep += 1
@@ -322,20 +329,35 @@ class Simulation():
 			for layer, processes in enumerate(self._processClasses):
 				# Save after each "layer" of processes so Metabolism and
 				# ChromosomeStructure get accurate state
-				if time in self.save_times:
-					self.write_states(f'out/migration/wcecoli_t{time}_before_layer_{layer}.json')
+				if time in self.save_times and not self.composite_mass:
+					self.write_states(f'out/migration/wcecoli_t{time}'
+		       			f'_before_layer_{layer}.json')
 				self._evolveState(processes)
 			# Get most up-to-date simulation state for listener migration tests
-			if time in self.save_times:
-				self.write_states(f'out/migration/wcecoli_t{time}_before_post.json')
+			if time in self.save_times and not self.composite_mass:
+				self.write_states(f'out/migration/wcecoli_t{time}'
+		      		'_before_post.json')
 			self._post_evolve_state()
 			# Get most up-to-date listener values
 			if time in self.save_times:
-				listener_data = {}
-				for listener in self.listeners.values():
-					listener_data = {**listener_data, **listener.get_dict()}
-				with open(f'out/migration/wcecoli_listeners_t{time}.json', 'w') as outfile:
-					json.dump(listener_data, outfile, cls=NpEncoder)
+				# Save mass listener alone if composite mass flag is set
+				if self.composite_mass:
+					try:
+						mass_data = json.load(open(
+							'out/migration/mass_data.json', 'r'))
+					except FileNotFoundError:
+						mass_data = {}
+					mass_data[time] = self.listeners['Mass'].get_dict()
+					with open('out/migration/mass_data.json', 'w') as outfile:
+						json.dump(mass_data, outfile, cls=NpEncoder)
+				else:
+					listener_data = {}
+					for listener in self.listeners.values():
+						listener_data = {
+							**listener_data, **listener.get_dict()}
+					with open(f'out/migration/wcecoli_listeners_t{time}.json',
+	       				'w') as outfile:
+						json.dump(listener_data, outfile, cls=NpEncoder)
 
 	def write_states(self, path):
 		states = self.get_states_numpy()
@@ -369,17 +391,10 @@ class Simulation():
 			unique_dtypes[key] = str(unique_collections[idx].dtype)
 
 		environment = self.external_states['Environment'].container
-		environment_names = environment.objectNames()
-		environment_counts = environment.counts()
-		environment_concentrations = {
-			environment_names[index]: environment_counts[index]
-			for index in np.arange(len(environment_names))}
+		environment_concentrations = {name: count for name, count in zip(
+			environment.objectNames(), environment.counts())}
 		environment_exchange = self.external_states[
 			'Environment'].get_environment_change()
-		environment_concentrations['exchange'] = {
-			self.viv_exchange_map[k]: v for k, v
-			in environment_exchange.items()
-		}
 
 		mass_listener = self.listeners['Mass']
 		ribosome_listener = self.listeners['RibosomeData']
@@ -405,7 +420,7 @@ class Simulation():
 				'periplasm_mass': mass_listener.periplasm_mass,
 				'pilus_mass': mass_listener.pilus_mass,
 				'inner_membrane_mass': mass_listener.inner_membrane_mass,
-				'instantaneous_growth_rate': mass_listener.instantaniousGrowthRate,
+				'instantaneous_growth_rate': mass_listener.instantaneous_growth_rate,
 				'volume': mass_listener.volume,
 				'protein_mass_fraction': mass_listener.proteinMassFraction,
 				'rna_mass_fraction': mass_listener.rnaMassFraction,
@@ -424,7 +439,15 @@ class Simulation():
 		return {
 			'bulk': bulk_array.tolist(),
 			'unique': unique_arrays,
-			'environment': environment_concentrations,
+			'environment': {
+				'exchange': {
+					self.viv_exchange_map[k]: v for k, v
+					in environment_exchange.items()
+				}
+			},
+			'boundary': {
+				'external': environment_concentrations
+			},
 			'listeners': listeners,
 			'bulk_dtypes': str(bulk_array.dtype),
 			'unique_dtypes': unique_dtypes}
@@ -472,7 +495,7 @@ class Simulation():
 	# Calculate temporal evolution
 	def _evolveState(self, processes):
 		# Keep track of time to determine whether to save state
-		time = int(self.time()) - 2
+		time = int(self.time()) - 1
 
 		# Update queries
 		# TODO: context manager/function calls for this logic?
@@ -484,7 +507,7 @@ class Simulation():
 		# Calculate requests
 		for i, process in enumerate(self.processes.values()):
 			if process.__class__ in processes:
-				if time in self.save_times:
+				if time in self.save_times and not self.composite_mass:
 					# When saving states for migration tests,
 					# have to reseed for one-to-one comparison
 					if process.name() == 'Complexation':
@@ -498,6 +521,8 @@ class Simulation():
 							timeline=self.external_states['Environment'].current_timeline,
 							include_ppgpp=not self._ppgpp_regulation or not self._trna_charging
 						)
+						# Get copy of aa_targets before it is updated
+						aa_targets = process.aa_targets.copy()
 					process.randomState = np.random.RandomState(seed=0)
 				t = monotonic_seconds()
 				process.calculateRequest()
@@ -507,11 +532,13 @@ class Simulation():
 		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
 			# Reset random state so partitioning can be directly compared
-			if time in self.save_times and state.name() == 'BulkMolecules':
+			if time in self.save_times and state.name() == 'BulkMolecules' \
+				and not self.composite_mass:
 				state.randomState = np.random.RandomState(seed=0)
 			state.partition(processes)
 			# Save requested and allocated counts for migration tests
-			if time in self.save_times and state.name() == 'BulkMolecules':
+			if time in self.save_times and state.name() == 'BulkMolecules'\
+				and not self.composite_mass:
 				bulk_allocated = state._countsAllocatedInitial
 				bulk_requested = state._countsRequested
 				try:
@@ -547,7 +574,7 @@ class Simulation():
 				raise Exception("The timestep (%.3f) was too long at step %i, failed on process %s" % (self._timeStepSec, self.simulationStep(), str(process.name())))
 
 		# Merge state
-		if time in self.save_times:
+		if time in self.save_times and not self.composite_mass:
 			try:
 				updates = json.load(open(
 					f'out/migration/process_updates_t{time}.json', 'r'))
@@ -555,7 +582,13 @@ class Simulation():
 				updates = {process.name(): {} for process in processes}
 		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
-			if time in self.save_times:
+			if state.name() == 'BulkMolecules':
+				bulk_final = state._countsAllocatedFinal
+				for process in processes:
+					process_idx = state._processID_to_index[process.name()]
+					if bulk_final[15421, process_idx] != 0:
+						print(process.name())
+			if time in self.save_times and not self.composite_mass:
 				# Save final bulk counts calculated by each process
 				if state.name() == 'BulkMolecules':
 					bulk_final = state._countsAllocatedFinal
@@ -564,17 +597,23 @@ class Simulation():
 						updates.setdefault(process.name(), {'bulk': {}})
 						updates[process.name()]['bulk'] = bulk_final[
 							:, process_idx]
-						# Save this for metabolism
+						# Save these for metabolism
 						if process.name() == 'PolypeptideElongation':
 							updates['PolypeptideElongation']['process_state'
 								] = {'gtp_to_hydrolyze': self.processes[
-									'PolypeptideElongation'].gtp_to_hydrolyze}
+										'PolypeptideElongation'
+											].gtp_to_hydrolyze,
+									'aa_exchange_rates': self.processes[
+										'PolypeptideElongation'
+											].aa_exchange_rates.asNumber(),
+									'aa_count_diff': self.processes[
+										'PolypeptideElongation'].aa_count_diff}
+						if process.name() == 'Metabolism':
+							updates['Metabolism']['process_state'] = {
+								'aa_targets': aa_targets}
 				elif state.name() == 'UniqueMolecules':
 					container = state.container
 					unique_updates = container._requests
-					# Map collection index to molecule type (RNA: 1, etc.)
-					coll_idx_to_name = {v: k for k, v in
-						container._nameToIndexMapping.items()}
 					process_names = list(self.processes.keys())
 					for update in unique_updates:
 						# Each update has associated process index that can
@@ -591,12 +630,14 @@ class Simulation():
 								continue
 							coll_idx = container._globalReference[
 								'_collectionIndex'][globalIndexes[0]]
-							coll_name = coll_idx_to_name[coll_idx]
+							coll_name = self.coll_idx_to_name[coll_idx]
 							curr_update = updates[process_name]['unique'
 								].setdefault(coll_name, {})
 							update_type = update['type']
 							if update_type == 'edit':
-								curr_update['set'] = update['attributes']
+								curr_update['set'] = {
+									**curr_update.get('set', {}),
+									**update['attributes']}
 							elif update_type == 'delete':
 								unique_arr = container._collections[coll_idx]
 								active_unique = unique_arr[
@@ -606,7 +647,11 @@ class Simulation():
 								active_idx = sorter[np.searchsorted(
 									active_unique['_globalIndex'],
 									globalIndexes, sorter=sorter)]
-								curr_update['delete'] = active_idx
+								if 'delete' in curr_update:
+									curr_update['delete'] = np.unique(np.append(
+										curr_update['delete'], active_idx))
+								else:
+									curr_update['delete'] = active_idx
 							elif update_type == 'submass':
 								added_masses = update['added_masses']
 								for mass_type, masses in added_masses.items():
@@ -629,7 +674,8 @@ class Simulation():
 		# update environment state
 		for state in self.external_states.values():
 			state.update()
-			if time in self.save_times and state.name() == 'Environment':
+			if time in self.save_times and state.name() == 'Environment'\
+				and not self.composite_mass:
 				process_names = [process.name() for process in processes]
 				if 'Metabolism' in process_names:
 					environment_exchange = state.get_environment_change()
@@ -638,7 +684,7 @@ class Simulation():
 						in environment_exchange.items()}
 					}
 		
-		if time in self.save_times:
+		if time in self.save_times and not self.composite_mass:
 			with open(f'out/migration/process_updates_t{time}.json', 'w')	as f:
 				json.dump(updates, f, cls=NpEncoder)
 
