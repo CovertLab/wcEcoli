@@ -43,12 +43,12 @@ python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
 out/20230722.192107__SET_F_8_gens_128_seeds_operons_v2_with_rich_media \
 out/20230717.142940__SET_B_8_gens_128_seeds_operons_off_with_rich_media
 
-# Panel E
+# Panel F
 python models/ecoli/analysis/comparison/mRNA_copy_numbers_short_genes.py \
 out/20230726.175251__SET_G_8_gens_128_seeds_operons_v3_with_glucose_minimal_media \
 out/20230716.121449__SET_A_8_gens_128_seeds_operons_off_with_glucose_minimal_media
 
-# Panel F (+ Figure S2A)
+# Panel H (+ Figure S2A)
 python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
 out/20230726.175322__SET_H_8_gens_128_seeds_operons_v3_with_rich_media \
 out/20230717.142940__SET_B_8_gens_128_seeds_operons_off_with_rich_media

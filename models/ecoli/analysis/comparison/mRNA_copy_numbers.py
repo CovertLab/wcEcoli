@@ -25,7 +25,7 @@ from wholecell.io.tablereader import TableReader
 GENERATE_OPERON_TABLE = False
 FIGSIZE = (8, 4.1)
 BOUNDS = [[0, 3.0], [0, 3.0]]
-SELECTION_RATIO = 0.1
+SELECTION_RATIO = 0.05
 NUMERICAL_ZERO = 1e-30
 OPERON_COUNT_CUTOFF = 10
 
@@ -44,57 +44,60 @@ EVIDENCE_CODE_TO_DESCRIPTIONS = {
 	2: 'Multiple evidences',
 	}
 
-# Dictionary with the names of operons with differential mRNA degradation as
-# keys. If value is True, a transcription unit covering the stable portions of
-# the operon already exists.
-DIFFERENTIAL_DEGRADATION_OPERONS = {
-	'artM-artQ-artI-artP': False,
-	'atpC-atpD-atpG-atpA-atpH-atpF-atpE-atpB-atpI': True,
-	'bepA-yfgD': False,
-	'cobC-nadD-holA-lptE-leuS': False,
-	'cpxA-cpxR': False,
-	'envZ-ompR': False,
-	'eutR-eutK-eutL-eutC-eutB': False,
-	'fbaA-pgk-epd': True,
-	'folX-yfcH': False,
-	'gcvP-gcvH-gcvT': False,
-	'glf-rfc': False,
-	'glgP-glgA-glgC-glgX-glgB': True,
-	'gntU-gntK-gntR': True,
-	'gpmM-envC-yibQ': False,
-	'hisP-hisM-hisQ-hisJ-argT': False,
-	'hsrA-yieP': False,
-	'malG-malF-malE': True,
-	'marR-marA-marB': False,
-	'mcrC-mcrB': False,
-	'menF-menD-yfbB-menB-menC-menE': False,
-	'metQ-metI-metN': False,
-	'mglC-mglA-mglB': False,
-	'mraZ-mraW-ftsL-ftsI-murE-murF-mraY-murD-ftsW-murG-murC-ddlB-ftsQ-ftsA-ftsZ-lpxC': True,
-	'mtgA-elbB': False,
-	'murQ-murP-yfeW': False,
-	'nrdG-nrdD': False,
-	'phoQ-phoP': False,
-	'potD-potC-potB-potA': False,
-	'pspA-pspB-pspC-pspD-pspE': False,
-	'ptsH-ptsI-crr': False,
-	'rbsD-rbsA-rbsC-rbsB-rbsK-rbsR': False,
-	'rfaD-rfaF-rfaC-rfaL': False,
-	'rpoZ-spoT-trmH-recG': False,
-	'tatA-tatB-tatC': False,
-	'tehA-tehB': False,
-	'topB-selD-ydjA': False,
-	'uhpC-uhpB-uhpA-ilvN-ilvB-ivbL': False,
-	'yajC-secD-secF': True,
-	'ychQ-ychA-kdsA': True,
-	'ydhI-ydhJ-ydhK': False,
-	'yebY-yebZ-yobA': False,
-	'yecD-yecE': False,
-	'yggL-trmI': False,
-	'yheV-kefB-kefG': False,
-	'yihX-yihY-dtd-yiiD': False,
-	'yjeF-yjeE-amiB-mutL-miaA-hfq-hflX-hflK-hflC': False,
-	'yqcA-truC-yqcC': False,
+# Dictionary with the names of genes that are on the boundary of the
+# stable-unstable border of an operon with differential mRNA degradation as
+# keys. First gene is stable, second gene is unstable. If value is True, a
+# transcription unit covering the stable portion of the operon already exists.
+DIFFERENTIAL_DEGRADATION_GENES = {
+	('artI', 'artQ'): False,
+	('artI', 'artP'): False,
+	('atpB', 'atpI'): True,
+	('yfgD', 'bepA'): False,
+	('lptE', 'holA'): False,
+	('cpxR', 'cpxA'): False,
+	('ompR', 'envZ'): False,
+	('eutK', 'eutR'): False,
+	('pgk', 'epd'): True,
+	('folX', 'yfcH'): False,
+	('gcvH', 'gcvP'): False,
+	('glf', 'wbbH'): False,
+	('glgC', 'glgX'): True,
+	('gntK', 'gntU'): True,
+	('gpmM', 'envC'): False,
+	('hisJ', 'hisQ'): False,
+	('yieP', 'hsrA'): False,
+	('malE', 'malF'): True,
+	('marA', 'marR'): False,
+	('mcrB', 'mcrC'): False,
+	('menC', 'menE'): False,
+	('metQ', 'metI'): False,
+	('mglB', 'mglA'): False,
+	('ftsZ', 'ftsA'): True,
+	('elbB', 'mtgA'): False,
+	('murP', 'yfeW'): True,
+	('murQ', 'murP'): False,
+	('nrdD', 'nrdG'): False,
+	('phoP', 'phoQ'): False,
+	('potD', 'potC'): False,
+	('pspA', 'pspB'): False,
+	('ptsH', 'ptsI'): False,
+	('rbsD', 'rbsA'): False,
+	('rfaD', 'waaF'): False,
+	('rpoZ', 'spoT'): False,
+	('tatA', 'tatB'): False,
+	('tehB', 'tehA'): False,
+	('selD', 'topB'): False,
+	('uhpA', 'uhpB'): False,
+	('yajC', 'secD'): False,
+	('kdsA', 'ychA'): True,
+	('ydhJ', 'ydhK'): False,
+	('yebY', 'yebZ'): False,
+	('yecD', 'yecE'): False,
+	('yggL', 'trmB'): False,
+	('yheV', 'kefB'): False,
+	('yihX', 'yihY'): False,
+	('hfq', 'hflX'): False,
+	('yqcA', 'truC'): False,
 	}
 
 SEED = 0
@@ -212,7 +215,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			ax.scatter(
 				np.log10(m1[mask] + 1),
 				np.log10(m2[mask] + 1),
-				c='#555555', edgecolor='none', s=10, alpha=0.4,
+				c='#555555', edgecolor='none', s=20, alpha=0.4,
 				label=f'|t| < {t_score_cutoff:.1f} (n = {mask.sum():d})',
 				clip_on=False)
 			# Highlight genes with high t-scores
@@ -220,7 +223,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			ax.scatter(
 				np.log10(m1[mask] + 1),
 				np.log10(m2[mask] + 1),
-				c='C3', edgecolor='none', s=10, alpha=0.4,
+				c='C3', edgecolor='none', s=20, alpha=0.4,
 				label=f'|t| ≥ {t_score_cutoff:.1f} (n = {mask.sum():d})',
 				clip_on=False)
 
@@ -404,18 +407,18 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			operon_cistron_mRNA_indexes = np.array([
 				cistron_id_to_mRNA_index[cistron_id]
 				for cistron_id in operon_cistron_ids])
-			max_log_t = np.log10(
+			mean_log_t = np.log10(
 				abs_t_scores[operon_cistron_mRNA_indexes].max() + 1)
 
 			for evidence_code in evidence_codes:
 				evidence_code_to_log_t_scores.setdefault(
-					evidence_code, []).append(max_log_t)
+					evidence_code, []).append(mean_log_t)
 
 			# Evidence multiplicity is maxed out at two
 			evidence_multiplicity_to_log_t_scores.setdefault(
-				min(len(evidence_codes), 2), []).append(max_log_t)
+				min(len(evidence_codes), 2), []).append(mean_log_t)
 
-			all_operons_log_t_scores.append(max_log_t)
+			all_operons_log_t_scores.append(mean_log_t)
 
 		def sort_t_score_dict(t_score_dict):
 			sorted_t_score_dict = {}
@@ -494,6 +497,80 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName + '_evidence_codes', metadata)
 		plt.close('all')
 
+		# Get log t values from all operons that have differential degradation
+		gene_name_to_cistron_id = {
+			gene['symbol']: gene['cistron_id']
+			for gene in sim_data2.process.replication.gene_data}
+
+		log_t_genes_with_diff_deg_with_tu = []
+		log_t_genes_with_diff_deg_without_tu = []
+
+		for gene_names, tu_exists in DIFFERENTIAL_DEGRADATION_GENES.items():
+			cistron_ids = [gene_name_to_cistron_id[name] for name in gene_names]
+			cistron_mRNA_indexes = np.array([
+				cistron_id_to_mRNA_index[cistron_id]
+				for cistron_id in cistron_ids])
+			log_t = np.log10(abs_t_scores[cistron_mRNA_indexes].max() + 1)
+
+			if tu_exists:
+				log_t_genes_with_diff_deg_with_tu.append(log_t)
+			else:
+				log_t_genes_with_diff_deg_without_tu.append(log_t)
+
+		log_t_genes_with_diff_deg_without_tu = np.array(
+			log_t_genes_with_diff_deg_without_tu)
+		log_t_genes_with_diff_deg_with_tu = np.array(
+			log_t_genes_with_diff_deg_with_tu)
+		normal_x1 = np.random.normal(
+			loc=0.0, scale=0.05, size=len(log_t_genes_with_diff_deg_with_tu))
+		normal_x2 = np.random.normal(
+			loc=1.0, scale=0.05, size=len(log_t_genes_with_diff_deg_without_tu))
+		high_t_mask1 = log_t_genes_with_diff_deg_with_tu >= np.log10(t_score_cutoff)
+		high_t_mask2 = log_t_genes_with_diff_deg_without_tu >= np.log10(t_score_cutoff)
+
+		# Get swarm plots for two conditions
+		fig = plt.figure(figsize=(3, 5.25))
+		ax = fig.add_subplot(111)
+
+		ax.scatter(
+			normal_x1[~high_t_mask1],
+			log_t_genes_with_diff_deg_with_tu[~high_t_mask1],
+			c='#555555', edgecolor='none', s=50, alpha=0.4,
+			label=f'|t| < {t_score_cutoff:.1f}',
+			clip_on=False)
+		ax.scatter(
+			normal_x1[high_t_mask1],
+			log_t_genes_with_diff_deg_with_tu[high_t_mask1],
+			c='C3', edgecolor='none', s=50, alpha=0.4,
+			label=f'|t| ≥ {t_score_cutoff:.1f}',
+			clip_on=False)
+		ax.scatter(
+			normal_x2[~high_t_mask2],
+			log_t_genes_with_diff_deg_without_tu[~high_t_mask2],
+			c='#555555', edgecolor='none', s=50, alpha=0.4,
+			clip_on=False)
+		ax.scatter(
+			normal_x2[high_t_mask2],
+			log_t_genes_with_diff_deg_without_tu[high_t_mask2],
+			c='C3', edgecolor='none', s=50, alpha=0.4,
+			clip_on=False)
+
+		ax.set_xlim([0, 1])
+		ax.set_ylim([0, 2])
+		ax.set_xticks([0, 1])
+		ax.set_xticklabels(['Yes', 'No'])
+		ax.set_xlabel('TU for stable gene exists?')
+		ax.set_yticks([0, 1, 2])
+		ax.set_ylabel('log10(t-score + 1)')
+		ax.spines["top"].set_visible(False)
+		ax.spines["right"].set_visible(False)
+		ax.spines["bottom"].set_position(("outward", 15))
+		ax.spines["left"].set_position(("outward", 45))
+		ax.legend(loc='upper left', prop={'size': 8}, bbox_to_anchor=(1.04, 1))
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_diff_deg_operons', metadata)
+		plt.close('all')
 
 	def setup(self, inputDir: str) -> Tuple[
 			AnalysisPaths, SimulationDataEcoli, ValidationDataEcoli]:

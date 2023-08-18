@@ -20,7 +20,7 @@ from wholecell.io.tablereader import TableReader
 
 
 FIGSIZE = (4, 3.9)
-BOUNDS = [0.5, 2.5]
+BOUNDS = [0, 2]
 
 SHORT_GENE_IDS_TO_ACTUAL_READ_COUNTS = {
 	'EG11269': 13.016887039317732,
@@ -42,8 +42,6 @@ SHORT_GENE_IDS_TO_ACTUAL_READ_COUNTS = {
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
-		bounds = BOUNDS
-
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
@@ -68,6 +66,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			gene_id_to_index[gene_id] for gene_id in SHORT_GENE_IDS_TO_ACTUAL_READ_COUNTS])
 		actual_read_counts = np.array([
 			v for v in SHORT_GENE_IDS_TO_ACTUAL_READ_COUNTS.values()])
+		actual_read_count_sum = actual_read_counts.sum()
 
 		def read_data(ap):
 			# Ignore data from first two gens
@@ -91,35 +90,41 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		m2 = c2.mean(axis=0)
 
 		# Normalize counts from two conditions
-		ratio = m1[all_plotted_mRNA_mask].sum()/m2[all_plotted_mRNA_mask].sum()
-		m2 = ratio * m2.astype(float)
+		if m1[short_gene_indexes].sum() > 0:
+			r1 = actual_read_count_sum/m1[short_gene_indexes].sum()
+			m1 = r1 * m1.astype(float)
+		if m2[short_gene_indexes].sum() > 0:
+			r2 = actual_read_count_sum/m2[short_gene_indexes].sum()
+			m2 = r2 * m2.astype(float)
 
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)
-		ax.plot(bounds, bounds, ls='--', lw=2, c='k', alpha=0.05)
 		ax.scatter(
-			np.log10(actual_read_counts + 1),
 			np.log10(m1[short_gene_indexes] + 1),
-			c='#aaaaaa', edgecolor='none', s=12, alpha=0.7,
-			label=f'ribosomal subunits',
+			np.log10(actual_read_counts + 1),
+			c='C0', edgecolor='none', s=25, alpha=0.7,
+			label=f'before',
 			clip_on=False)
 		ax.scatter(
-			np.log10(actual_read_counts + 1),
 			np.log10(m2[short_gene_indexes] + 1),
-			c='#222222', edgecolor='none', s=12, alpha=0.7,
-			label='RNAP subunits',
+			np.log10(actual_read_counts + 1),
+			c='C1', edgecolor='none', s=25, alpha=0.7,
+			label='after',
 			clip_on=False)
 
-		ax.set_xlabel('$\log_{10}$(normalized mRNA copies + 1), from manual alignment')
-		ax.set_ylabel('$\log_{10}$(normalized mRNA copies + 1), from simulated cells')
-		ax.set_xticks(np.arange(bounds[0], bounds[1] + 0.5, 0.5))
-		ax.set_yticks(np.arange(bounds[0], bounds[1] + 0.5, 0.5))
+		ax.set_xlabel('$\log_{10}$(normalized mRNA copies + 1),\nfrom simulated cells')
+		ax.set_ylabel('$\log_{10}$(normalized mRNA copies + 1),\nfrom manual alignment')
+		ax.set_xticks([0, 1, 2])
+		ax.set_yticks([0, 1, 2])
+		ax.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
+		ax.plot(BOUNDS, np.array(BOUNDS) + 1, ls='-', lw=2, c='k', alpha=0.05)
+		ax.plot(BOUNDS, np.array(BOUNDS) - 1, ls='-', lw=2, c='k', alpha=0.05)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		ax.spines["bottom"].set_position(("outward", 15))
 		ax.spines["left"].set_position(("outward", 15))
-		ax.set_xlim(bounds)
-		ax.set_ylim(bounds)
+		ax.set_xlim(BOUNDS[0], BOUNDS[1])
+		ax.set_ylim(BOUNDS[0], BOUNDS[1])
 		ax.legend(loc=2, prop={'size': 8})
 
 		plt.tight_layout()
