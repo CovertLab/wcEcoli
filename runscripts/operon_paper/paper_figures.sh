@@ -53,7 +53,7 @@ python models/ecoli/analysis/comparison/mRNA_copy_numbers.py \
 out/20230726.175322__SET_H_8_gens_128_seeds_operons_v3_with_rich_media \
 out/20230717.142940__SET_B_8_gens_128_seeds_operons_off_with_rich_media
 
-# Panels H, I
+# Panels I, J
 # See Rend-seq repository
 
 
