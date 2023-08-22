@@ -510,6 +510,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cistron_mRNA_indexes = np.array([
 				cistron_id_to_mRNA_index[cistron_id]
 				for cistron_id in cistron_ids])
+			if not np.all(plot_mask[cistron_mRNA_indexes]):
+				continue
 			log_t = np.log10(abs_t_scores[cistron_mRNA_indexes].max() + 1)
 
 			if tu_exists:
