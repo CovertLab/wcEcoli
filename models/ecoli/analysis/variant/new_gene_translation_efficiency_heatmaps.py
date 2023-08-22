@@ -116,11 +116,11 @@ HEATMAPS_TO_MAKE_LIST = [
 		"new_gene_actual_protein_init_prob_heatmap",
 		"new_gene_target_rna_synth_prob_heatmap",
 		"new_gene_actual_rna_synth_prob_heatmap",
-		"new_gene_mRNA_NTP_fraction_heatmap",
 		"capacity_gene_mRNA_counts_heatmap",
 		"capacity_gene_monomer_counts_heatmap",
 		"capacity_gene_rnap_portion_heatmap",
 		"capacity_gene_ribosome_portion_heatmap",
+		"new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
 ### TODO map id to common name, don't hardcode, add error checking?
