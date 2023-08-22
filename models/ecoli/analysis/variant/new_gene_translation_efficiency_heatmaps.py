@@ -7,6 +7,8 @@ Possible Plots:
 - Average doubling time
 - Average cell volume, mass, dry cell mass, mRNA mass, protein mass
 - Average translation efficiency, weighted by cistron count
+- Average mRNA count, monomer count, RNAP portion, and ribosome portion for
+	a capacity gene to measure burden on overall host expression
 - Average new gene mRNA count
 - Average new gene mRNA mass fraction
 - Average new gene mRNA counts fraction
@@ -53,7 +55,7 @@ Dashboard Flag
 1: Dashboard Only (One file with all plots)
 2: Both Dashboard and Separate
 """
-DASHBOARD_FLAG = 2
+DASHBOARD_FLAG = 0
 
 """
 Count number of sims that reach this generation (remember index 7 
@@ -112,7 +114,17 @@ HEATMAPS_TO_MAKE_LIST = [
 		"new_gene_target_protein_init_prob_heatmap",
 		"new_gene_actual_protein_init_prob_heatmap",
 		"new_gene_mRNA_NTP_fraction_heatmap",
+		"capacity_gene_mRNA_counts_heatmap",
+		"capacity_gene_monomer_counts_heatmap",
+		"capacity_gene_rnap_portion_heatmap",
+		"capacity_gene_ribosome_portion_heatmap",
 	]
+
+### TODO map id to common name, don't hardcode, add error checking?
+# capacity_gene_id = "EG10544-MONOMER[m]"
+# capacity_gene_common_name = "lpp"
+capacity_gene_monomer_id = "EG11036-MONOMER[c]"
+capacity_gene_common_name = "tufA"
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def save_heatmap_data(
@@ -208,6 +220,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			elif h == "ribosomal_protein_ribosome_portion_heatmap":
 				self.extract_ribosomal_protein_ribosome_portion_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "capacity_gene_mRNA_counts_heatmap":
+				self.extract_capacity_gene_counts_heatmap_data(
+					all_cells, h, trl_eff_index,
+					exp_index, cell_mask, 'RNACounts', 'mRNA_counts',
+					'mRNA')
+			elif h == "capacity_gene_monomer_counts_heatmap":
+				self.extract_capacity_gene_counts_heatmap_data(
+					all_cells, h, trl_eff_index,
+					exp_index, cell_mask, 'MonomerCounts', 'monomerCounts',
+					'monomer')
+			elif h == "capacity_gene_rnap_portion_heatmap":
+				self.extract_capacity_gene_rnap_portion_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "capacity_gene_ribosome_portion_heatmap":
+				self.extract_capacity_gene_ribosome_portion_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			else:
 				raise Exception(
@@ -1287,6 +1315,181 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			h, 0, trl_eff_index, exp_index, avg_ribosomal_ribosome_portion,
 			cell_mask)
 
+	def get_capacity_gene_indexes(
+			self, all_cells, index_type, capacity_gene_monomer_ids):
+		"""
+		Retrieve capacity gene indexes of a given type.
+
+		Args:
+			all_cells: Paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			index_type: Type of indexes to extract, currently supported options
+				are 'cistron', 'RNA', 'mRNA', and 'monomer'
+			capacity_gene_monomer_ids: monomer ids of capacity gene we need
+				indexes for
+
+		Returns:
+			List of requested indexes
+		"""
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+
+		if index_type != "monomer":
+			capacity_gene_mRNA_ids = self.get_mRNA_ids_from_monomer_ids(
+				capacity_gene_monomer_ids)
+
+		if index_type == 'cistron':
+			# Extract cistron indexes for each new gene
+			rnap_reader = TableReader(os.path.join(simOutDir, 'RnapData'))
+			cistron_idx_dict = {
+				cis: i for i, cis in
+				enumerate(rnap_reader.readAttribute('cistron_ids'))}
+			capacity_gene_indexes = [
+				cistron_idx_dict.get(mRNA_id) for mRNA_id in
+				capacity_gene_mRNA_ids]
+		elif index_type == 'RNA':
+			# Extract RNA indexes for each new gene
+			rnap_reader = TableReader(os.path.join(simOutDir, 'RnaSynthProb'))
+			RNA_idx_dict = {
+				rna[:-3]: i for i, rna in
+				enumerate(rnap_reader.readAttribute('rnaIds'))}
+			capacity_gene_indexes = [
+				RNA_idx_dict.get(mRNA_id) for mRNA_id in capacity_gene_mRNA_ids]
+		elif index_type == 'mRNA':
+			# Extract mRNA indexes for each new gene
+			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+			mRNA_idx_dict = {
+				rna[:-3]: i for i, rna in
+				enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
+			capacity_gene_indexes = [
+				mRNA_idx_dict.get(mRNA_id[:-3]) for mRNA_id in capacity_gene_mRNA_ids]
+		elif index_type == 'monomer':
+			# Extract protein indexes for each new gene
+			monomer_counts_reader = TableReader(
+				os.path.join(simOutDir, "MonomerCounts"))
+			monomer_idx_dict = {
+				monomer: i for i, monomer in enumerate(
+				monomer_counts_reader.readAttribute('monomerIds'))}
+			capacity_gene_indexes = [
+				monomer_idx_dict.get(monomer_id) for monomer_id in
+				capacity_gene_monomer_ids]
+		else:
+			raise Exception(
+				"Index type " + index_type +
+				" has no instructions for data extraction.")
+
+		return capacity_gene_indexes
+
+	def get_avg_capacity_gene_counts(
+			self, all_cells, data_table, data_column, capacity_gene_indexes):
+		"""
+		Retreives average counts of new gene mRNAs or proteins, which are needed
+		for multiple heatmaps.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			capacity_gene_indexes: Global indexes of the new genes within data_table
+
+		Returns:
+			Average counts of new gene mRNAs or proteins.
+		"""
+		return (read_stacked_columns(
+				all_cells, data_table, data_column, fun=lambda
+				x: np.mean( x[:, capacity_gene_indexes], axis=0)))
+
+	def extract_capacity_gene_counts_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			data_table, data_column, capacity_gene_index_type):
+		"""
+		Special function to handle extraction and saving of capacity gene mRNA
+		and protein counts heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			capacity_gene_index_type: Index type to use for the data table
+		"""
+		capacity_gene_indexes = self.get_capacity_gene_indexes(
+			all_cells, capacity_gene_index_type, [capacity_gene_monomer_id])
+
+		avg_capacity_gene_counts = self.get_avg_capacity_gene_counts(
+			all_cells, data_table, data_column, capacity_gene_indexes)
+
+		self.save_heatmap_data(h, 0, trl_eff_index, exp_index,
+			np.log10(np.sum(avg_capacity_gene_counts, axis = 1) + 1), cell_mask)
+
+	def extract_capacity_gene_rnap_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of RNAP
+		that are making capacity gene mRNAs at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		gene_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			all_cells, [capacity_gene_monomer_id], "mRNA")
+		avg_gene_rnap_counts = np.sum(
+			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: np.mean(x[:, gene_mRNA_indexes], axis=0)),
+			axis = 1)
+		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+		avg_gene_rnap_portion = avg_gene_rnap_counts / avg_rnap_counts
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_gene_rnap_portion,
+			cell_mask)
+
+	def extract_capacity_gene_ribosome_portion_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving average portion of ribosomes
+		that are making capacity gene proteins at a time heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		gene_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			all_cells, [capacity_gene_monomer_id], "monomer")
+		avg_gene_ribosome_counts = np.sum(read_stacked_columns(
+			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
+			fun=lambda x: np.mean(x[:, gene_monomer_indexes], axis=0)),
+			axis = 1)
+		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
+		avg_gene_ribosome_portion = avg_gene_ribosome_counts/avg_ribosome_counts
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_gene_ribosome_portion,
+			cell_mask)
+
 	# Functions for plotting heatmaps
 	def plot_heatmaps(
 			self, is_dashboard, variant_mask, heatmap_x_label, heatmap_y_label,
@@ -1664,6 +1867,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 3,
 				 'plot_title': 'Translation Efficiency (Weighted Average)',
 				},
+			"capacity_gene_mRNA_counts_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Log(Capacity Gene mRNA Counts+1): '
+					+ capacity_gene_common_name},
+			"capacity_gene_monomer_counts_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Log(Capacity Gene Protein Counts+1): '
+					+ capacity_gene_common_name},
 			"new_gene_mRNA_counts_heatmap":
 				{'plot_title': 'Log(New Gene mRNA Counts+1)'},
 			"new_gene_monomer_counts_heatmap":
@@ -1744,6 +1955,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'plot_title': 'New Gene Ribosome Portion',
 				 'num_digits_rounding': 3,
 				},
+			"capacity_gene_rnap_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title':
+				 'Capacity Gene RNAP Portion: ' + capacity_gene_common_name,
+				 'num_digits_rounding': 3,
+				 },
+			"capacity_gene_ribosome_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title':
+				 'Capacity Gene Ribosome Portion: ' + capacity_gene_common_name,
+				 'num_digits_rounding': 3,
+				 },
 		}
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
 			"the completed_gens_heatmap is run by default, do not include in heatmaps_to_make"
