@@ -8,11 +8,11 @@ if [ $(find "$1" -name 'wcm*' | wc -l) -gt 0 ]; then
   cp -p $(find "$1" -name 'wcm*') out/temp
 fi
 
-for file in ./temp/*; do
+for file in out/temp/*; do
   filename=$(basename "$file" | sed 's/\(.*\)\..*/\1/')
   MEDIA="${filename##*_}"
   file_basename=$(basename "${file//_$MEDIA/}")
-  mkdir -p ./temp/"$MEDIA"/ && \
+  mkdir -p out/temp/"$MEDIA"/ && \
   mv "$file" "$_$file_basename"
 done
 
