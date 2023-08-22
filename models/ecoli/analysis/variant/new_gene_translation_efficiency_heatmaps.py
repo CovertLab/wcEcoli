@@ -17,6 +17,7 @@ Possible Plots:
 - Average new gene protein mass fraction
 - Average new gene protein counts fraction
 - Average new gene initialization rate for RNAP and Ribosomes
+- Average new gene initialization probabilities for RNAP and Ribosomes
 - Average number and proportion of RNAP on new genes at a given time step
 - Average number and proportion of ribosomes on new gene mRNAs at a given time
 	step
@@ -113,6 +114,8 @@ HEATMAPS_TO_MAKE_LIST = [
 		"weighted_avg_translation_efficiency_heatmap",
 		"new_gene_target_protein_init_prob_heatmap",
 		"new_gene_actual_protein_init_prob_heatmap",
+		"new_gene_target_rna_synth_prob_heatmap",
+		"new_gene_actual_rna_synth_prob_heatmap",
 		"new_gene_mRNA_NTP_fraction_heatmap",
 		"capacity_gene_mRNA_counts_heatmap",
 		"capacity_gene_monomer_counts_heatmap",
@@ -301,6 +304,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
 					'RibosomeData', 'actual_prob_translation_per_transcript',
 					'monomer')
+			elif h == "new_gene_target_rna_synth_prob_heatmap":
+				self.extract_new_gene_rna_synth_prob_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RnaSynthProb', 'target_rna_synth_prob',
+					'RNA')
+			elif h == "new_gene_actual_rna_synth_prob_heatmap":
+				self.extract_new_gene_rna_synth_prob_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RnaSynthProb', 'actual_rna_synth_prob',
+					'RNA')
 			elif h == "new_gene_rnap_counts_heatmap":
 				self.extract_new_gene_rnap_counts_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
@@ -953,6 +966,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
 				new_gene_init_probs[:,i], cell_mask)
+
+	def extract_new_gene_rna_synth_prob_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			data_table, data_column, new_gene_index_type):
+		"""
+		Special function to handle extraction and saving of target and actual
+		RNA synthesis probabilities for new genes.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			data_table: Table to find data that needs to be retrieved
+			data_column: Column to find data that needs to be retreived
+			new_gene_index_type: Index type to use for the data table
+		"""
+		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		# Average init probability for each new gene
+		new_gene_rna_synth_probs = read_stacked_columns(
+			all_cells, data_table, data_column,
+			fun=lambda x: np.mean(x[:, new_gene_indexes], axis=0))
+		for i in range(len(new_gene_indexes)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index,
+				new_gene_rna_synth_probs[:,i], cell_mask)
 
 	def extract_new_gene_rnap_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -1906,6 +1950,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 4},
 			"new_gene_target_protein_init_prob_heatmap":
 				{'plot_title': 'New Gene Target Protein Init Prob',
+				 'num_digits_rounding': 4},
+			"new_gene_actual_rna_synth_prob_heatmap":
+				{'plot_title': 'New Gene Actual RNA Synth Prob',
+				 'num_digits_rounding': 4},
+			"new_gene_target_rna_synth_prob_heatmap":
+				{'plot_title': 'New Gene Target RNA Synth Prob',
 				 'num_digits_rounding': 4},
 			"new_gene_rnap_counts_heatmap":
 				{'box_text_size': 'x-small',
