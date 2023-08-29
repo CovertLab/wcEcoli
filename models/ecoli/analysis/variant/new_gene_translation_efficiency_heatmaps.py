@@ -59,6 +59,14 @@ Dashboard Flag
 DASHBOARD_FLAG = 2
 
 """
+Standard Deviations Flag
+True: Plot an additional copy of all plots with standard deviation displayed
+	insted of the average
+False: Plot no additional plots
+"""
+STD_DEV_FLAG = True
+
+"""
 Count number of sims that reach this generation (remember index 7 
 corresponds to generation 8)
 """
@@ -1568,7 +1576,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def plot_heatmaps(
 			self, is_dashboard, variant_mask, heatmap_x_label, heatmap_y_label,
 			new_gene_expression_factors, new_gene_translation_efficiency_values,
-			figsize_x, figsize_y, plotOutDir, plot_suffix):
+			summary_statistic, figsize_x, figsize_y, plotOutDir, plot_suffix):
 		"""
 		Plots all heatmaps in order given by HEATMAPS_TO_MAKE_LIST.
 
@@ -1585,12 +1593,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				these variants
 			new_gene_translation_efficiency_values: New gene translation
 				efficiency values used in these variants
+			summary_statistic: Specifies whether average ('mean') or
+				standard deviation ('std_dev') should be displayed on the
+				heatmaps
 			figsize_x: Horizontal size of each heatmap
 			figsize_y: Vertical size of each heatmap
 			plotOutDir: Output directory for plots
 			plot_suffix: Suffix to add to plot file names, usually specifying
 				which generations were plotted
 		"""
+		if summary_statistic == 'std_dev':
+			plot_suffix = plot_suffix + "_std_dev"
+		elif summary_statistic != 'mean':
+			raise Exception(
+				"'mean' and 'std_dev' are the only currently supported"
+				" summary statistics")
+
 		if is_dashboard:
 			# Determine dashboard layout
 			if self.total_heatmaps_to_make > 3:
@@ -1634,7 +1652,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							heatmap_x_label, heatmap_y_label, i,
 							new_gene_expression_factors,
 							new_gene_translation_efficiency_values,
-							title_addition)
+							summary_statistic, title_addition)
 						col_ax += 1
 						if (col_ax == dashboard_ncols):
 							col_ax = 0
@@ -1646,7 +1664,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								h, axs[row_ax, col_ax], variant_mask,
 								heatmap_x_label, heatmap_y_label, i,
 								new_gene_expression_factors,
-								new_gene_translation_efficiency_values, ntp_id)
+								new_gene_translation_efficiency_values,
+								summary_statistic,
+								ntp_id)
 							fig.tight_layout()
 							plt.show()
 							exportFigure(
@@ -1665,7 +1685,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						" plotting.")
 			fig.tight_layout()
 			exportFigure(plt, plotOutDir,
-				"new_gene_exp_trl_eff_dashboard" + plot_suffix)
+				"00_new_gene_exp_trl_eff_dashboard" + plot_suffix)
 			plt.close("all")
 
 		else: # individual plots
@@ -1700,7 +1720,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						self.make_single_heatmap(
 							h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 							i, new_gene_expression_factors,
-							new_gene_translation_efficiency_values, title_addition)
+							new_gene_translation_efficiency_values,
+							summary_statistic, title_addition)
 						fig.tight_layout()
 						plt.show()
 						exportFigure(plt, plotOutDir, h + filename_addition +
@@ -1714,7 +1735,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							self.make_new_gene_mRNA_NTP_fraction_heatmap(
 								h, ax, variant_mask, heatmap_x_label,
 								heatmap_y_label, i, new_gene_expression_factors,
-								new_gene_translation_efficiency_values, ntp_id)
+								new_gene_translation_efficiency_values,
+								summary_statistic, ntp_id)
 							fig.tight_layout()
 							plt.show()
 							exportFigure(
@@ -1731,7 +1753,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def make_single_heatmap(
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 			initial_index, new_gene_expression_factors,
-			new_gene_translation_efficiency_values, title_addition):
+			new_gene_translation_efficiency_values,
+			summary_statistic, title_addition):
 		"""
 		Creates a heatmap for h.
 
@@ -1750,22 +1773,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				these variants
 			new_gene_translation_efficiency_values: New gene translation
 				efficiency values used in these variants
+			summary_statistic: Specifies whether average ('mean') or
+				standard deviation ('std_dev') should be displayed on the
+				heatmaps
 			title_addition: Any string that needs to be added to the title of
 				the heatmap, e.g. a new gene id
 		"""
+		title = self.heatmap_details[h]['plot_title'] + title_addition
+		if summary_statistic == "std_dev":
+			title = "Std Dev: " + title
+
 		heatmap(
 			self, ax, variant_mask,
-			self.heatmap_data[h]["mean"][initial_index, :, :],
+			self.heatmap_data[h][summary_statistic][initial_index, :, :],
 			self.heatmap_data["completed_gens_heatmap"][0, :, :],
 			new_gene_expression_factors, new_gene_translation_efficiency_values,
 			heatmap_x_label, heatmap_y_label,
-			self.heatmap_details[h]['plot_title'] + title_addition,
+			title,
 			self.heatmap_details[h]['box_text_size'])
 
 	def make_new_gene_mRNA_NTP_fraction_heatmap(
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
 			initial_index, new_gene_expression_factors,
-			new_gene_translation_efficiency_values, ntp_id):
+			new_gene_translation_efficiency_values, summary_statistic, ntp_id):
 		"""
 		Special function that creates a new gene mRNA NTP fraction heatmap for
 		one new gene and one NTP.
@@ -1785,16 +1815,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				these variants
 			new_gene_translation_efficiency_values: New gene translation
 				efficiency values used in these variants
+			summary_statistic: Specifies whether average ('mean') or
+				standard deviation ('std_dev') should be displayed on the
+				heatmaps
 			ntp_id: Id of NTP to plot
 		"""
+		title = (self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
+				 " Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4])
+		if summary_statistic == 'std_dev':
+			title = "Std Dev: " + title
+
 		heatmap(
 			self, ax, variant_mask,
-			self.heatmap_data[h]["mean"][ntp_id][initial_index, :, :],
+			self.heatmap_data[h][summary_statistic][ntp_id][initial_index, :, :],
 			self.heatmap_data["completed_gens_heatmap"][0, :, :],
 			new_gene_expression_factors, new_gene_translation_efficiency_values,
 			heatmap_x_label, heatmap_y_label,
-			self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
-				" Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4],
+			title,
 			self.heatmap_details[h]['box_text_size'])
 
 	"""
@@ -2230,15 +2267,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.plot_heatmaps(
 				True, variant_mask, heatmap_x_label, heatmap_y_label,
 				new_gene_expression_factors,
-				new_gene_translation_efficiency_values,
-				figsize_x, figsize_y, plotOutDir, plot_suffix)
+				new_gene_translation_efficiency_values, 'mean', figsize_x,
+				figsize_y, plotOutDir, plot_suffix)
+
+			if STD_DEV_FLAG:
+				self.plot_heatmaps(
+					True, variant_mask, heatmap_x_label, heatmap_y_label,
+					new_gene_expression_factors,
+					new_gene_translation_efficiency_values, 'std_dev',
+					figsize_x, figsize_y, plotOutDir, plot_suffix)
 
 		# Create separate plots
 		if DASHBOARD_FLAG == 0 or DASHBOARD_FLAG == 2:
 			self.plot_heatmaps(
 				False, variant_mask, heatmap_x_label,heatmap_y_label,
-				new_gene_expression_factors, new_gene_translation_efficiency_values,
-				figsize_x, figsize_y, plotOutDir, plot_suffix)
+				new_gene_expression_factors,
+				new_gene_translation_efficiency_values, 'mean', figsize_x,
+				figsize_y, plotOutDir, plot_suffix)
+
+			if STD_DEV_FLAG:
+				self.plot_heatmaps(
+					False, variant_mask, heatmap_x_label, heatmap_y_label,
+					new_gene_expression_factors,
+					new_gene_translation_efficiency_values, 'std_dev',
+					figsize_x, figsize_y, plotOutDir, plot_suffix)
 
 if __name__ == "__main__":
 	Plot().cli()
