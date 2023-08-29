@@ -497,12 +497,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_target_prob = read_stacked_columns(
 			all_cells, self.heatmap_details[h]['data_table'],
 			target_probs_column, fun=lambda x: np.mean(x, axis=0))
-		# Get indexes that on average were overcrowded in any generation for
-		# any seed
-		num_overcrowded_indexes = np.array([len(np.where(sum(
-			(avg_actual_prob < avg_target_prob)[cell_mask, :]) > 0)[0])])
+		# Get counts of overcrowded genes for each simulation
+		num_overcrowded_indexes = np.sum((avg_actual_prob < avg_target_prob), axis = 1)
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, np.array([True]))
+			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, cell_mask)
 
 	def extract_new_gene_time_overcrowded_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
