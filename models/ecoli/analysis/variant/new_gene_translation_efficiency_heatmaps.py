@@ -28,8 +28,8 @@ Possible Plots:
  	time step
 - Average fraction of time new gene is overcrowded by RNAP and Ribosomes
 - Average number of overcrowded genes for RNAP and Ribosomes
-- Average number of ribosomes
-- Average number of RNA polymerases
+- Average number of total and free ribosomes
+- Average number of total and free RNA polymerases
 - Average ppGpp concentration
 """
 
@@ -128,6 +128,9 @@ HEATMAPS_TO_MAKE_LIST = [
 		"capacity_gene_monomer_counts_heatmap",
 		"capacity_gene_rnap_portion_heatmap",
 		"capacity_gene_ribosome_portion_heatmap",
+		"free_rnap_counts_heatmap",
+		"free_ribosome_counts_heatmap",
+		"rnap_ribosome_counts_ratio_heatmap",
 		"new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
@@ -203,6 +206,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elif h == "ribosome_counts_heatmap":
 				self.extract_ribosome_counts_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "rnap_ribosome_counts_ratio_heatmap":
+				self.extract_rnap_ribosome_counts_ratio_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "free_rnap_counts_heatmap":
+				self.extract_rnap_counts_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'inactive')
+			elif h == "free_ribosome_counts_heatmap":
+				self.extract_ribosome_counts_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'inactive')
 			elif h == "rnap_crowding_heatmap":
 				self.extract_crowding_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
@@ -535,6 +549,42 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				new_gene_num_time_steps_overcrowded[:,i], cell_mask)
 
+	def extract_rnap_ribosome_counts_ratio_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			category='total'):
+		"""
+		Special function to handle extraction and saving of ribosome counts
+		heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+			 	variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			category: 'active', 'inactive', or 'total'
+		"""
+		if category == 'inactive':
+			avg_rnap_counts = self.get_avg_inactive_rnap_counts(all_cells)
+			avg_ribosome_counts = self.get_avg_inactive_ribosome_counts(all_cells)
+		elif category == 'active':
+			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+			avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
+		elif category == 'total':
+			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+			avg_ribosome_counts = self.get_avg_total_ribosome_counts(all_cells)
+		else:
+			raise Exception("The only supported categories are 'active',"
+							" 'inactive', and 'total.'")
+		avg_counts_ratio = avg_rnap_counts / avg_ribosome_counts
+
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_counts_ratio, cell_mask)
+
 
 	"""
 	RNA Polymerase Functions
@@ -603,7 +653,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.get_avg_active_rnap_counts(all_cells))
 
 	def extract_rnap_counts_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			rnap_category='total'):
 		"""
 		Special function to handle extraction and saving of RNAP counts heatmap
 			data.
@@ -618,8 +669,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			exp_index: New gene expression value index for this variant
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
+			rnap_category: 'active', 'inactive', or 'total'
 		"""
-		avg_rnap_counts = self.get_avg_total_rnap_counts(all_cells)
+		if rnap_category == 'inactive':
+			avg_rnap_counts = self.get_avg_inactive_rnap_counts(all_cells)
+		elif rnap_category == 'active':
+			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+		elif rnap_category == 'total':
+			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+		else:
+			raise Exception("The only supported RNAP categories are 'active',"
+							" 'inactive', and 'total.'")
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_counts, cell_mask)
 
@@ -929,7 +989,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.get_avg_active_ribosome_counts(all_cells))
 
 	def extract_ribosome_counts_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			ribosome_category='total'):
 		"""
 		Special function to handle extraction and saving of ribosome counts
 		heatmap data.
@@ -944,10 +1005,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			exp_index: New gene expression value index for this variant
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
+			ribosome_category: 'active', 'inactive', or 'total'
 		"""
-		curr_heatmap_data = self.get_avg_total_ribosome_counts(all_cells)
+		if ribosome_category == 'inactive':
+			avg_ribosome_counts = self.get_avg_inactive_ribosome_counts(all_cells)
+		elif ribosome_category == 'active':
+			avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
+		elif ribosome_category == 'total':
+			avg_ribosome_counts = self.get_avg_total_ribosome_counts(all_cells)
+		else:
+			raise Exception("The only supported ribosome categories are 'active',"
+							" 'inactive', and 'total.'")
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_ribosome_counts, cell_mask)
 
 	def extract_new_gene_ribosome_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -1959,6 +2029,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'box_text_size': 'x-small',
 				 'plot_title': 'Ribosome Counts',
 				},
+			"free_rnap_counts_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 0,
+				 'box_text_size': 'x-small',
+				 'plot_title': 'Free RNA Polymerase (RNAP) Counts',
+				 },
+			"free_ribosome_counts_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'data_table': 'UniqueMoleculeCounts',
+				 'data_column': 'uniqueMoleculeCounts',
+				 'num_digits_rounding': 0,
+				 'box_text_size': 'x-small',
+				 'plot_title': 'Free Ribosome Counts',
+				 },
+			"rnap_ribosome_counts_ratio_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 4,
+				 'box_text_size': 'x-small',
+				 'plot_title': 'RNAP Counts / Ribosome Counts',
+				 },
 			"rnap_crowding_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'data_table': 'RnaSynthProb',
