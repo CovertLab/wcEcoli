@@ -7,8 +7,9 @@ Possible Plots:
 - Average doubling time
 - Average cell volume, mass, dry cell mass, mRNA mass, protein mass
 - Average translation efficiency, weighted by cistron count
-- Average mRNA count, monomer count, RNAP portion, and ribosome portion for
-	a capacity gene to measure burden on overall host expression
+- Average mRNA count, monomer count, mRNA mass fraction, protein mass fraction,
+	RNAP portion, and ribosome portion for a capacity gene to measure burden on
+	overall host expression
 - Average new gene mRNA count
 - Average new gene mRNA mass fraction
 - Average new gene mRNA counts fraction
@@ -128,6 +129,10 @@ HEATMAPS_TO_MAKE_LIST = [
 		"capacity_gene_monomer_counts_heatmap",
 		"capacity_gene_rnap_portion_heatmap",
 		"capacity_gene_ribosome_portion_heatmap",
+		"capacity_gene_mRNA_mass_fraction_heatmap",
+		"capacity_gene_monomer_mass_fraction_heatmap",
+		"capacity_gene_mRNA_counts_fraction_heatmap",
+		"capacity_gene_monomer_counts_fraction_heatmap",
 		"free_rnap_counts_heatmap",
 		"free_ribosome_counts_heatmap",
 		"rnap_ribosome_counts_ratio_heatmap",
@@ -135,10 +140,10 @@ HEATMAPS_TO_MAKE_LIST = [
 	]
 
 ### TODO map id to common name, don't hardcode, add error checking?
-# capacity_gene_id = "EG10544-MONOMER[m]"
-# capacity_gene_common_name = "lpp"
-capacity_gene_monomer_id = "EG11036-MONOMER[c]"
-capacity_gene_common_name = "tufA"
+capacity_gene_monomer_id = "EG10544-MONOMER[m]"
+capacity_gene_common_name = "lpp"
+# capacity_gene_monomer_id = "EG11036-MONOMER[c]"
+# capacity_gene_common_name = "tufA"
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	"""
@@ -263,6 +268,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elif h == "capacity_gene_ribosome_portion_heatmap":
 				self.extract_capacity_gene_ribosome_portion_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "capacity_gene_mRNA_mass_fraction_heatmap":
+				self.extract_capacity_gene_mass_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RNACounts', 'mRNA_counts', 'Mass', 'mRnaMass',
+					'mRNA')
+			elif h == "capacity_gene_monomer_mass_fraction_heatmap":
+				self.extract_capacity_gene_mass_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'MonomerCounts', 'monomerCounts', 'Mass', 'proteinMass',
+					'monomer')
+			elif h == "capacity_gene_mRNA_counts_fraction_heatmap":
+				self.extract_capacity_gene_counts_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'RNACounts', 'mRNA_counts', 'mRNA')
+			elif h == "capacity_gene_monomer_counts_fraction_heatmap":
+				self.extract_capacity_gene_counts_fraction_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					'MonomerCounts', 'monomerCounts', 'monomer')
 			else:
 				raise Exception(
 					"Heatmap " + h + " is neither a standard heatmap nor a"
@@ -361,7 +384,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		Args:
 			target_monomer_ids: ids of the monomers to map to mRNA ids
 
-		Returns: list of mRNA ids
+		Returns: set of mRNA ids
 		"""
 		# Map protein ids to cistron ids
 		monomer_ids = self.sim_data.process.translation.monomer_data['id']
@@ -1352,7 +1375,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Determine mass fractions for each new gene
 		for i in range(len(self.new_gene_mRNA_ids)):
 			new_gene_mass_fraction = (avg_new_gene_counts[:, i] *
-				new_gene_masses[i]) / avg_mass[:, i]
+				new_gene_masses[i]) / avg_mass
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index, new_gene_mass_fraction,
 				cell_mask)
@@ -1637,6 +1660,119 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.save_heatmap_data(h, 0, trl_eff_index, exp_index,
 			np.log10(np.sum(avg_capacity_gene_counts, axis = 1) + 1), cell_mask)
 
+	def extract_capacity_gene_mass_fraction_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			counts_data_table, counts_data_column, mass_data_table,
+			mass_data_column, capacity_gene_index_type):
+		"""
+		Special function to handle extraction and saving of capacity gene mRNA and
+		protein mass fraction heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			counts_data_table: Table to find the counts data that needs to be
+				retrieved
+			counts_data_column: Column to find the counts data that needs to be
+				retreived
+			mass_data_table: Table to find the mass data that needs to be
+				retrieved
+			mass_data_column: Column to find the mass data that needs to be
+				retreived
+			capacity_gene_index_type: Index type to use for the data table
+		"""
+		capacity_gene_indexes = self.get_capacity_gene_indexes(
+			all_cells, capacity_gene_index_type, [capacity_gene_monomer_id])
+
+		if capacity_gene_index_type == 'monomer':
+			capacity_gene_ids = [capacity_gene_monomer_id]
+		else:
+			capacity_gene_ids = list(
+				self.get_mRNA_ids_from_monomer_ids([capacity_gene_monomer_id]))
+
+		# Get mass for capacity gene (mRNAs or monomer)
+		capacity_gene_masses = [1 for id in capacity_gene_ids]
+		for i in range(len(capacity_gene_ids)):
+			capacity_gene_masses[i] = (
+				self.sim_data.getter.get_mass(
+				capacity_gene_ids[i])/self.sim_data.constants.n_avogadro).asNumber(fg)
+
+		# Get counts for each capacity gene (mRNAs or monomer)
+		avg_capacity_gene_counts = self.get_avg_capacity_gene_counts(
+			all_cells, counts_data_table, counts_data_column, capacity_gene_indexes)
+
+		# Get average mass for all genes
+		avg_mass = read_stacked_columns(
+			all_cells, mass_data_table, mass_data_column,
+			fun=lambda x: np.mean(x)).squeeze()
+
+		# Determine mass fractions for each capacity gene (mRNAs or monomer)
+		capacity_gene_mass_fractions = np.zeros_like((avg_capacity_gene_counts))
+		for i in range(len(capacity_gene_ids)):
+			capacity_gene_mass_fractions[:, i] = (avg_capacity_gene_counts[:, i] *
+				capacity_gene_masses[i]) / avg_mass
+		if len(capacity_gene_ids) > 1:
+			capacity_gene_mass_fractions = np.sum(
+				capacity_gene_mass_fractions, axis = 1)
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, capacity_gene_mass_fractions,
+			cell_mask)
+
+	def extract_capacity_gene_counts_fraction_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			counts_data_table, counts_data_column, capacity_gene_index_type):
+		"""
+		Special function to handle extraction and saving of capacity gene mRNA and
+		protein counts fraction heatmap data.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			counts_data_table: Table to find the counts data that needs to be
+				retrieved
+			counts_data_column: Column to find the counts data that needs to be
+				retreived
+			capacity_gene_index_type: Index type to use for the data table
+		"""
+		capacity_gene_indexes = self.get_capacity_gene_indexes(
+			all_cells, capacity_gene_index_type, [capacity_gene_monomer_id])
+
+		if capacity_gene_index_type == 'monomer':
+			capacity_gene_ids = [capacity_gene_monomer_id]
+		else:
+			capacity_gene_ids = list(
+				self.get_mRNA_ids_from_monomer_ids([capacity_gene_monomer_id]))
+
+		# Get counts for each new gene
+		avg_capacity_gene_counts = self.get_avg_capacity_gene_counts(
+			all_cells, counts_data_table, counts_data_column, capacity_gene_indexes)
+		if len(capacity_gene_ids) > 1:
+			avg_capacity_gene_counts = np.sum(
+				avg_capacity_gene_counts, axis = 1)
+
+		# Get total avg counts for all genes
+		total_counts = np.sum(read_stacked_columns(
+			all_cells, counts_data_table, counts_data_column,
+			fun=lambda x: np.mean(x, axis=0)), axis=1)
+
+		capacity_gene_counts_fraction = avg_capacity_gene_counts / total_counts
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, capacity_gene_counts_fraction,
+			cell_mask)
 
 	"""
 	Plotting Functions
@@ -2076,6 +2212,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'is_nonstandard_data_retrieval': True,
 				 'plot_title': 'Log(Capacity Gene Protein Counts+1): '
 					+ capacity_gene_common_name},
+			"capacity_gene_mRNA_mass_fraction_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Capacity Gene mRNA Mass Fraction: '
+					+ capacity_gene_common_name},
+			"capacity_gene_monomer_mass_fraction_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Capacity Gene Protein Mass Fraction: '
+					+ capacity_gene_common_name},
+			"capacity_gene_mRNA_counts_fraction_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Capacity Gene mRNA Counts Fraction: '
+							   + capacity_gene_common_name},
+			"capacity_gene_monomer_counts_fraction_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Capacity Gene Protein Counts Fraction: '
+							   + capacity_gene_common_name},
 			"new_gene_mRNA_counts_heatmap":
 				{'plot_title': 'Log(New Gene mRNA Counts+1)'},
 			"new_gene_monomer_counts_heatmap":
