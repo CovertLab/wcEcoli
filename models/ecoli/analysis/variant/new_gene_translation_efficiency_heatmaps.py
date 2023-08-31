@@ -2214,18 +2214,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					+ capacity_gene_common_name},
 			"capacity_gene_mRNA_mass_fraction_heatmap":
 				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 3,
 				 'plot_title': 'Capacity Gene mRNA Mass Fraction: '
 					+ capacity_gene_common_name},
 			"capacity_gene_monomer_mass_fraction_heatmap":
 				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 3,
 				 'plot_title': 'Capacity Gene Protein Mass Fraction: '
 					+ capacity_gene_common_name},
 			"capacity_gene_mRNA_counts_fraction_heatmap":
 				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 3,
 				 'plot_title': 'Capacity Gene mRNA Counts Fraction: '
 							   + capacity_gene_common_name},
 			"capacity_gene_monomer_counts_fraction_heatmap":
 				{'is_nonstandard_data_retrieval': True,
+				 'num_digits_rounding': 3,
 				 'plot_title': 'Capacity Gene Protein Counts Fraction: '
 							   + capacity_gene_common_name},
 			"new_gene_mRNA_counts_heatmap":
@@ -2318,13 +2322,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				{'is_nonstandard_data_retrieval': True,
 				 'plot_title':
 				 'Capacity Gene RNAP Portion: ' + capacity_gene_common_name,
-				 'num_digits_rounding': 3,
+				 'num_digits_rounding': 4,
 				 },
 			"capacity_gene_ribosome_portion_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'plot_title':
 				 'Capacity Gene Ribosome Portion: ' + capacity_gene_common_name,
-				 'num_digits_rounding': 3,
+				 'num_digits_rounding': 4,
 				 },
 		}
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
