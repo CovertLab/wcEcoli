@@ -48,7 +48,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	seed = 0,
 	lengthSec = 3*60*60, # 3 hours max
 	initialTime = 0.,
-	jit = False,
+	jit = True,
 	massDistribution = True,
 	dPeriodDivision = True,
 	growthRateNoise = False,
@@ -181,11 +181,11 @@ class Simulation():
 		self._initialize(sim_data)
 
 		# vivarium-ecoli save times
-		# self.save_times = [0, 1870]
-		self.save_times = list(range(0, 31, 2))
+		self.save_times = [0, 1870]
+		# self.save_times = list(range(0, 31, 1))
 		# Set to true only save data for composite mass test
 		# self.composite_mass = True
-		self.composite_mass = True
+		self.composite_mass = False
 		shutil.rmtree('out/migration', ignore_errors=True)
 		os.makedirs('out/migration', exist_ok=True)
 		# Add location tags to environment exchange for migration tests
@@ -440,13 +440,13 @@ class Simulation():
 			'bulk': bulk_array.tolist(),
 			'unique': unique_arrays,
 			'environment': {
-				'exchange': {
-					self.viv_exchange_map[k]: v for k, v
-					in environment_exchange.items()
-				}
+				'exchange': environment_exchange
 			},
 			'boundary': {
-				'external': environment_concentrations
+				'external': {
+					k: f"!units[{v} millimolar]" for k, v
+					in environment_concentrations.items()
+				}
 			},
 			'listeners': listeners,
 			'bulk_dtypes': str(bulk_array.dtype),
@@ -582,12 +582,6 @@ class Simulation():
 				updates = {process.name(): {} for process in processes}
 		for i, state in enumerate(self.internal_states.values()):
 			t = monotonic_seconds()
-			if state.name() == 'BulkMolecules':
-				bulk_final = state._countsAllocatedFinal
-				for process in processes:
-					process_idx = state._processID_to_index[process.name()]
-					if bulk_final[15421, process_idx] != 0:
-						print(process.name())
 			if time in self.save_times and not self.composite_mass:
 				# Save final bulk counts calculated by each process
 				if state.name() == 'BulkMolecules':

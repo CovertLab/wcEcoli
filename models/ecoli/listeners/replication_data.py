@@ -44,7 +44,6 @@ class ReplicationData(wholecell.listeners.listener.Listener):
 		active_replisomes = self.uniqueMolecules.container.objectsInCollection('active_replisome')
 		oriCs = self.uniqueMolecules.container.objectsInCollection('oriC')
 
-		# TODO: Get these listeners in vivarium-ecoli
 		self.numberOfOric = len(oriCs)
 
 		self.fork_coordinates, self.fork_domains, self.fork_unique_index = active_replisomes.attrs(

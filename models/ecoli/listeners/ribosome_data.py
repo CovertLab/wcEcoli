@@ -227,5 +227,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 				'n_ribosomes_on_each_mRNA': self.n_ribosomes_on_each_mRNA,
 				'mRNA_TU_index': self.mRNA_TU_index,
 				'protein_mass_on_polysomes': self.protein_mass_on_polysomes,
+				'rRNA_initiated_TU': self.rRNA_initiated_TU,
+				'rRNA_init_prob_TU': self.rRNA_init_prob_TU,
 			}
 		}
