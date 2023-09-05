@@ -699,7 +699,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		elif rnap_category == 'active':
 			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
 		elif rnap_category == 'total':
-			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+			avg_rnap_counts = self.get_avg_total_rnap_counts(all_cells)
 		else:
 			raise Exception("The only supported RNAP categories are 'active',"
 							" 'inactive', and 'total.'")
