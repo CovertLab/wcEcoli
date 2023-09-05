@@ -598,7 +598,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
 			avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		elif category == 'total':
-			avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
+			avg_rnap_counts = self.get_avg_total_rnap_counts(all_cells)
 			avg_ribosome_counts = self.get_avg_total_ribosome_counts(all_cells)
 		else:
 			raise Exception("The only supported categories are 'active',"
