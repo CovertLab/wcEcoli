@@ -26,6 +26,8 @@ GENERATE_OPERON_TABLE = False
 FIGSIZE = (8, 4.1)
 BOUNDS = [[0, 3.0], [0, 3.0]]
 SELECTION_RATIO = 0.05
+USE_SPECIFIC_T_SCORE_CUTOFF = False
+SPECIFIC_T_SCORE_CUTOFF = 31.936762742466414
 NUMERICAL_ZERO = 1e-30
 OPERON_COUNT_CUTOFF = 10
 
@@ -498,6 +500,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		plt.close('all')
 
 		# Get log t values from all operons that have differential degradation
+		if USE_SPECIFIC_T_SCORE_CUTOFF:
+			t_score_cutoff = SPECIFIC_T_SCORE_CUTOFF
+
 		gene_name_to_cistron_id = {
 			gene['symbol']: gene['cistron_id']
 			for gene in sim_data2.process.replication.gene_data}
