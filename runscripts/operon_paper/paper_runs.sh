@@ -124,6 +124,30 @@ SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=128 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
+## Set K - operons off, glucose minimal media, longer sims
+# Used for comparisons in Figures 5
+DESC="SET K 32 gens 8 seeds operons off with glucose minimal media" \
+OPERONS="off" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+TRNA_ATTENUATION=0 PPGPP_REGULATION=0 \
+MECHANISTIC_TRANSLATION_SUPPLY=0 MECHANISTIC_AA_TRANSPORT=0 \
+AA_SUPPLY_IN_CHARGING=0 D_PERIOD_DIVISION=0 \
+SINGLE_DAUGHTERS=1 N_GENS=32 N_INIT_SIMS=8 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+## Set L - operons on, glucose minimal media, longer sims
+# Used for comparisons in Figure 5
+DESC="SET L 32 gens 8 seeds operons on with glucose minimal media" \
+OPERONS="on" \
+VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
+TRNA_ATTENUATION=0 PPGPP_REGULATION=0 \
+MECHANISTIC_TRANSLATION_SUPPLY=0 MECHANISTIC_AA_TRANSPORT=0 \
+AA_SUPPLY_IN_CHARGING=0 D_PERIOD_DIVISION=0 \
+SINGLE_DAUGHTERS=1 N_GENS=32 N_INIT_SIMS=8 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
 
 ## Launch the fireworks created with fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
