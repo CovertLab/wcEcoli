@@ -42,7 +42,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Extract mRNA indexes for each new gene
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-													  'mRNACounts'))
+													  'RNACounts'))
 		mRNA_idx_dict = {rna[:-3]: i for i, rna in enumerate(
 			mRNA_counts_reader.readAttribute('mRNA_ids'))}
 		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in

@@ -3,6 +3,7 @@ Reusable plotting functions and tools
 """
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 from scipy import stats
 import numpy as np
 
@@ -205,3 +206,65 @@ def labeled_indexable_scatter(obj, ax, xdata, ydata, gen_data, gen_start,
 	ax.set_ylabel(ylabel, fontsize=font_size)
 	ax.tick_params(labelsize=font_size)
 	ax.legend()
+
+def  heatmap(obj, ax, mask, data, completion_data, xticklabels, yticklabels,
+			xlabel="", ylabel="", title="", box_text_size ="medium",
+			ax_font_size=9, title_font_size=9, percent_completion_threshold = 0.88):
+	"""
+	Args:
+		obj: specify the Plot object
+		ax: Axes object
+		mask: Only plot values where mask is true, must match dimensions of
+		data
+		data: 2-dimensional numpy array of data to plot
+		completion_data: Percent of seeds that successfully completed all
+		generations that contributed to this value, must match dimensions of
+		data
+		xticklabels: tick values for x-axis
+		yticklabels: tick values for y-axis
+		xlabel: x-axis label for plot
+		ylabel: y-axis label for plot
+		title: plot title
+		box_text_size: size of text value to be printed in box
+		ax_font_size: font size for labeling axes
+		title_font_size: font size for title
+		percent_completion_threshold: If the percent completion for this
+		parameter combination is lower than the threshold, the number in the
+		box will be colored red. If the threshold is 0, no numbers will be
+		colored red.
+
+	Returns:
+		heatmap of data, where squares are colored by value and numbers
+		are colored by the percent of simulations that successfuly completed,
+		for data corresponding to different parameter values in 2 dimensions
+
+	"""
+
+	assert(mask.shape == completion_data.shape == data.shape)
+
+	grid_colors = [(255 / 255, 255 / 255, 255 / 255),
+				   (22 / 255, 110 / 255, 164 / 255)]
+	cmap_name = 'blue_cmap'
+	blue_cmap = LinearSegmentedColormap.from_list(cmap_name, grid_colors, N=100)
+
+	im = ax.imshow(data, cmap=blue_cmap)
+	ax.set_xticks(np.arange(len(xticklabels)))
+	ax.set_xticklabels(xticklabels)
+	ax.set_yticks(np.arange(len(yticklabels)))
+	ax.set_yticklabels(yticklabels)
+	plt.setp(
+		ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+	for i in range(len(yticklabels)):
+		for j in range(len(xticklabels)):
+			if mask[i,j]:
+				col = "k"
+				if completion_data[i,j] == 0 and data[i,j] == -1:
+					continue
+				if completion_data[i,j] < percent_completion_threshold:
+					col = "r"
+				text = ax.text(
+					j, i, data[i, j], ha="center", va="center", color=col,
+					fontsize=box_text_size)
+	ax.set_xlabel(xlabel, fontsize=ax_font_size)
+	ax.set_ylabel(ylabel, fontsize=ax_font_size)
+	ax.set_title(title, fontsize=title_font_size)

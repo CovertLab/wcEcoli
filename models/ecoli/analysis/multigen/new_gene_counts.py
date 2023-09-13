@@ -53,7 +53,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Extract mRNA indexes for each new gene
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-													  'mRNACounts'))
+													  'RNACounts'))
 		mRNA_idx_dict = {rna[:-3]: i for i, rna in enumerate(
 			mRNA_counts_reader.readAttribute('mRNA_ids'))}
 		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
@@ -73,7 +73,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		(new_gene_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, new_gene_monomer_ids)
 		all_mRNA_stacked_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_counts')
+			cell_paths, 'RNACounts', 'mRNA_counts')
 		new_gene_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]
 
 		# Plotting

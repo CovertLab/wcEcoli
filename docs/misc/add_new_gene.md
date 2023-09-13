@@ -29,24 +29,54 @@ The following steps occur in incorporating the new genes into the chromosome:
 * Insert the sequence into the reference genome at the insertion location. Update the new gene relative coordinates to global coordinates and add to the orginal genes attribute. Update the coordinates of original genes and transcription units to reflect the state of the genome after the insertion.
 
 ---
-
-* Variants
+<b>Variants </b><br>
+* New Gene Expression
   * `models/ecoli/variants/new_gene_expression.py` - index specifies the factor to multiply the expression level of all new genes by
     * 0: no new gene expression
     * 1: factor = 10^0 = 1
     * x > 1: factor = 10^(x-1)
-  * TODO: translational efficiency
+* New Gene Expression and Translation Effieciency
+  * `models/ecoli/variants/new_gene_expression_and_translation_efficiency.py` - index specifies both the 
+    factor to multiply the expression level of all new genes by and the 
+    value to use for translation efficiency for all new genes. Provide a 
+    list of the new gene 
+    expression factors and the translation efficiency values, and all pairs 
+    from those lists will be run. The mapping between variant indices and 
+    the values for the new gene expression and translation are saved to the 
+    simulation metadata so that they may be used in analysis.
+    * Expected variant indices (int, positive):
+      * 0: control (knockout new gene expression)
+      * z > 0: converted to an index for a list of
+          new gene expression variant factor and an index for a list of new gene
+          translation efficiency values 
+        * separator = number of translation efficiency values to try 
+        * expression index = index div separator + 1 
+        * translation efficiency index = index mod separator
+    * Example: 
+      * `NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8]`
+      * `NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [2.5, 1, 0.5]`
+      * `SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) = 3`
+      * Variant Index: (New Gene Expression Factor, Translation Efficiency)
+        * 0: (0, 0), 1: (7, 1), 2: (7, 0.5), 3: (7, 2.5), 4: (8, 1), 5: (8, 
+          0.5), 6: (8, 2.5)
 
 ---
-
-* Listeners (`models/ecoli/listeners/mRNA_counts.py` and `models/ecoli/listeners/protein_counts.py`) did not have to be modified
+<b>Listeners</b><br>
+* Listeners `models/ecoli/listeners/mRNA_counts.py` and `models/ecoli/listeners/protein_counts.py` did not have to be modified
+* Listener `models/ecoli/listeners/ribosome_data.py` and process 
+  `models/ecoli/processes/polypeptide_initiation.py` were modified to 
+  include a physical limit to the number of ribosome initiation events on 
+  an mRNA, based on ribosome footprint size.
 
 ---
-
-* Analysis scripts
-  * `models/ecoli/analysis/single/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation
-  * `models/ecoli/analysis/multigen/newGeneCounts.py` creates two plots - one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation (extention for multiple generations)
-  * `models/ecoli/analysis/variant/newGeneCounts.py` creates histograms and scatterplots for each new gene - one with the mRNA counts for that new gene, and one with the protein counts for that new gene, both are colored by variant index
+<b>Analysis scripts</b><br>
+* New Gene Expression
+  * `models/ecoli/analysis/single/new_gene_counts.py` creates two plots - one 
+    with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation
+  * `models/ecoli/analysis/multigen/new_gene_counts.py` creates two plots - 
+    one with the mRNA counts for each new gene in the simulation, and one with the protein counts for each new gene in the simulation (extention for multiple generations)
+  * `models/ecoli/analysis/variant/new_gene_counts.py` creates histograms and 
+    scatterplots for each new gene - one with the mRNA counts for that new gene, and one with the protein counts for that new gene, both are colored by variant index
   * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with the proportion of seeds that successfully reached the maximum generation in the simulation, both colored by variant index
   * `models/ecoli/analysis/variant/ribosome_counts_histogram.py` creates a histogram of the ribosome counts, colored by variant index
   * `models/ecoli/analysis/variant/rnap_counts_histogram.py` creates a histogram of the RNA polymerase counts, colored by variant index
@@ -55,9 +85,43 @@ The following steps occur in incorporating the new genes into the chromosome:
 
 Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
+* New Gene Expression and Translation Efficiency
+  * `models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py` plots a number of heatmaps, where each square in the heatmap 
+    represents an average over all seeds and generations for that variant 
+    index (i.e. combination of translation efficiency value and new gene 
+    expression factor). The heatmaps are colored by the magnitude of the 
+    values. The text number displayed on each square can optionally be 
+    colored based on whether some percentage of seeds reached the full 
+    number of generations for that variant. Each heatmap displays different 
+    data pertaining to new genes or cell stress markers, the options (so far) 
+    are:
+    * Percent of simulation seeds that successfully reached a given generation 
+      number
+    * Average doubling time
+    * Average cell volume, mass, dry cell mass, mRNA mass, and protein mass
+    * Average new gene mRNA count
+    * Average new gene mRNA mass fraction
+    * Average new gene NTP mass fraction
+    * Average new gene protein count
+    * Average new gene protein mass fraction
+    * Average new gene initialization rate for RNA polymerase (RNAP) and 
+      ribosomes
+    * Average fraction of time new gene is overcrowded by RNAP and ribosomes
+    * Average number of overcrowded genes for RNAP and ribosomes
+    * Average number of ribosomes
+    * Average number of RNA polymerases
+    * Average ppGpp concentration
+
+Note: for the variant scripts, the average value for each generation is 
+plotted. These variant scripts can be used to analyze the impact that 
+increasing new gene expression level or translation efficiency value has on 
+the cell. In addition, there is an option to specify the minimum and 
+maximum generation index to be plotted. It is recommended to reference the 
+late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+
  ---
 
-Sample Commands
+<b>Sample Commands</b><br>
 
 `python runscripts/manual/runParca.py --new-genes gfp`
 
@@ -70,3 +134,5 @@ Note: The numbers after new_gene_expression must be integers. A different simula
 `python models/ecoli/analysis/variant/newGeneCounts.py`
 
 `python models/ecoli/analysis/variant/doubling_time_histogram.py`
+
+`python models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py`
