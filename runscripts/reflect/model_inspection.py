@@ -51,7 +51,7 @@ def load_raw_data(path):
 	else:
 		print('Loading raw_data from flat files...')
 		raw_data = KnowledgeBaseEcoli(
-			operons_option="off",
+			operons_on=False,
 			remove_rrna_operons=False,
 			remove_rrff=False)
 

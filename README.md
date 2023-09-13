@@ -4,11 +4,6 @@ This repository contains work to date on the [Covert Lab's](https://www.covert.s
 
 You can reach us at [WholeCellTeam](mailto:wholecellteam@lists.stanford.edu).
 
-For detailed information on the publication tentatively titled "Cross-evaluation
-of *E. coli*’s operon structures via a whole-cell model suggests alternative
-cellular benefits for low- versus high-expressing operons" (Sun et al., 2023),
-including instructions on how to reproduce the simulations and analyses, refer
-to the [Operons](#Operons) section.
 
 ## Setup
 
@@ -292,52 +287,3 @@ Another runscript will allow you to search for parameters or optimize parameters
 ```
 runscripts/manual/parameter_search.py output-dir --solver spsa --method quick_example -c 4
 ```
-
-## Operons
-
-This section contains details regarding the updates to the model featured in
-the publication "Cross-evaluation of *E. coli*’s operon structures via a 
-whole-cell model suggests alternative cellular benefits for low- versus 
-high-expressing operons" (Sun et al., 2023).
-
-![operon_fig1a](docs/operons_figure_1a.png "Operons Figure 1A")
-
-In this work, we incorporated additional data into the whole-cell model to allow
-for the transcription of polycistronic transcripts. Namely, we used the
-transcription unit structures curated by RegulonDB/EcoCyc 
-(`reconstruction/ecoli/flat/transcription_units.tsv`), and the degradation
-half-lives of transcription units measured by Chen et al., 2014 
-(`reconstruction/ecoli/scripts/rna_half_lives/data/msb145794-sup-0009-supp_table_s4.csv`)
-to calculate parameters that are specific to the transcription and degradation
-of polycistronic transcription units. Using these new parameters, the
-transcription process was reconfigured to use a list of polycistronic
-transcription units, instead of the list of monocistronic RNAs used by the
-previous version of the model. By identifying discrepancies in some of the
-simulated outputs and using validation datasets, we were able to make iterative 
-corrections to the original transcription unit structures provided by
-RegulonDB/EcoCyc (`reconstruction/ecoli/flat/transcription_units_added.tsv`).
-
-To run the finalized version of the model that uses polycistronic transcripts,
-the parameter calculator (ParCa) should be run with the `--operon` option set to
-`"on"`.
-
-```
-python runscripts/manual/runParca.py --operons "on" [sim_outdir]
-```
-
-To run the old version of the model without polycistronic transcripts, the same
-option needs to be set to `"off"`.
-
-```
-python runscripts/manual/runParca.py --operons "off" [sim_outdir]
-```
-
-Intermediate versions of the model used for some of the figures in the
-publication can be run by setting the same option to `"v1"`, `"v2"`, or `"v3"`.
-`runscripts/operon_paper/paper_runs.sh` lists the full simulation options that
-can be used to replicate the simulations used in the publication.
-
-`runscripts/operon_paper/paper_figures.sh` lists the analysis scripts that can
-be used to replicate all figures used in the publication. Note that the paths to
-the simulation outputs include timestamps that can be different for each
-simulation run.

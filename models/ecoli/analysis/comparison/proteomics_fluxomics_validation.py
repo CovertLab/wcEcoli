@@ -67,7 +67,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		sim_rxn_ids = fba_reader.readAttribute('base_reaction_ids')
 		sim_rxn_id_to_index = {
 			rxn_id: i for (i, rxn_id) in enumerate(sim_rxn_ids)
-			}
+		}
 
 		def read_sim_protein_counts(ap):
 			# Ignore data from first two gens

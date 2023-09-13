@@ -27,7 +27,7 @@ class InitRawDataTask(FiretaskBase):
 		print(f"{time.ctime()}: Instantiating raw_data with new_genes={new_gene_option}")
 
 		raw_data = KnowledgeBaseEcoli(
-			operon_option=operon_option,
+			operons_on=(operon_option == 'on'),
 			new_genes_option=new_gene_option,
 			remove_rrna_operons=self.get('remove_rrna_operons', False),
 			remove_rrff=self.get('remove_rrff', False),

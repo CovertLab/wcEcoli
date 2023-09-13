@@ -27,8 +27,6 @@ RNA_SEQ_ANALYSIS = "rsem_tpm"
 PPGPP_CONC_UNITS = units.umol / units.L
 PRINT_VALUES = False  # print values for supplemental table if True
 
-RNASEQ_CORRECTION_OPERON_VERSIONS = ['v3', 'on']
-
 
 class TranscriptionDirectionError(Exception):
 	pass
@@ -616,7 +614,7 @@ class Transcription(object):
 			in zip(rna_ids, compartments)]
 
 		# Apply RNAseq corrections to shorter genes if required by operon version
-		if sim_data.operon_option in RNASEQ_CORRECTION_OPERON_VERSIONS:
+		if sim_data.operons_on:
 			self._apply_rnaseq_correction()
 
 		expression, _ = self.fit_rna_expression(self.cistron_expression['basal'])

@@ -7,7 +7,7 @@ import pickle
 import os
 
 from matplotlib import pyplot as plt
-# noinspection PyUnresolvedReferencesg
+# noinspection PyUnresolvedReferences
 import numpy as np
 
 from models.ecoli.analysis import parcaAnalysisPlot

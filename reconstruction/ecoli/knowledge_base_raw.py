@@ -121,7 +121,6 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
-	os.path.join('transcription_unit_prototypes', 'transcription_units_added_v2.tsv'),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = (
@@ -157,13 +156,6 @@ ADDED_DATA = {
 	'trna_charging_reactions': 'trna_charging_reactions_added',
 	}
 
-# Dictionary mapping operon option names to the name of the added operons file
-# corresponding to the option.
-OPERON_OPTION_TO_ADDED_DATA = {
-	'v2': 'transcription_unit_prototypes.transcription_units_added_v2',
-	'v3': 'transcription_unit_prototypes.transcription_units_added_v2',
-	'on': 'transcription_units_added'
-	}
 
 class DataStore(object):
 	def __init__(self):
@@ -172,11 +164,11 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operon_option: str, remove_rrna_operons: bool, remove_rrff: bool, new_genes_option: str="off"):
-		self.operon_option = operon_option
+	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, new_genes_option: str="off"):
+		self.operons_on = operons_on
 		self.new_genes_option = new_genes_option
 
-		if self.operon_option == 'off' and remove_rrna_operons:
+		if not operons_on and remove_rrna_operons:
 			warnings.warn("Setting the 'remove_rrna_operons' option to 'True'"
 			              " has no effect on the simulations when the 'operon'"
 			              " option is set to 'off'.")
@@ -192,7 +184,7 @@ class KnowledgeBaseEcoli(object):
 		self.added_data: Dict[str, str] = ADDED_DATA.copy()
 		self.new_gene_added_data: Dict[str,str] = {}
 
-		if self.operon_option != 'off':
+		if self.operons_on:
 			self.list_of_dict_filenames.append('transcription_units.tsv')
 			if remove_rrna_operons:
 				# Use alternative file with all rRNA transcription units if
@@ -204,17 +196,16 @@ class KnowledgeBaseEcoli(object):
 				self.removed_data.update({
 					'transcription_units': 'transcription_units_removed',
 				})
-			if self.operon_option in OPERON_OPTION_TO_ADDED_DATA:
-				self.added_data.update({
-					'transcription_units': OPERON_OPTION_TO_ADDED_DATA[self.operon_option],
-					})
+			self.added_data.update({
+				'transcription_units': 'transcription_units_added',
+				})
 
 		if remove_rrff:
 			self.removed_data.update({
 				'genes': 'rrna_options.remove_rrff.genes_removed',
 				'rnas': 'rrna_options.remove_rrff.rnas_removed',
 				})
-			if self.operon_option != "off":
+			if self.operons_on:
 				self.modified_data.update({
 					'transcription_units': 'rrna_options.remove_rrff.transcription_units_modified',
 					})

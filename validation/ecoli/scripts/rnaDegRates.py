@@ -41,7 +41,7 @@ with io.open(DEG_RATES, "rb") as csvfile:
 			rateDict[row["Name"]] = -1
 
 raw_data = KnowledgeBaseEcoli(
-	operon_option="off",
+	operons_on=False,
 	remove_rrna_operons=False,
 	remove_rrff=False,
 	)  # type: Any
