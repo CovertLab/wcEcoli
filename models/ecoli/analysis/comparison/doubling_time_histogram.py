@@ -19,8 +19,8 @@ from wholecell.io.tablereader import TableReader, TableReaderError
 
 
 FIGSIZE = (4, 4)
-DOUBLING_TIME_BOUNDS_MINUTES = [20, 180]
-N_BINS = 32
+DOUBLING_TIME_BOUNDS_MINUTES = [0, 180]
+N_BINS = 36
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
@@ -55,11 +55,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		dt1 = dt1[dt1 < 180]
 		dt2 = dt2[dt2 < 180]
 
-		if np.any(dt2 > 100):
-			xlim = [20, 180]
-		else:
-			xlim = [20, 100]
-
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)
 
@@ -77,7 +72,14 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			label=f'input (n={len(dt2)}, {np.mean(dt2):.1f} $\pm$ {np.std(dt2):.1f})')
 		ax.legend(prop={'size': 8})
 
-		ax.set_xlim(*xlim)
+		ax.set_xlim(*DOUBLING_TIME_BOUNDS_MINUTES)
+		ax.set_xticks(
+			np.linspace(
+				DOUBLING_TIME_BOUNDS_MINUTES[0],
+				DOUBLING_TIME_BOUNDS_MINUTES[1],
+				10
+				)
+			)
 
 		ax.set_xlabel('Doubling time (min)')
 		ax.spines["top"].set_visible(False)

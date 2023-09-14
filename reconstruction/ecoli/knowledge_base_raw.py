@@ -120,7 +120,7 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_expression_adjustments.tsv"),
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
-	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv")
+	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = (
@@ -182,7 +182,6 @@ class KnowledgeBaseEcoli(object):
 		self.removed_data: Dict[str, str] = REMOVED_DATA.copy()
 		self.modified_data: Dict[str, str] = MODIFIED_DATA.copy()
 		self.added_data: Dict[str, str] = ADDED_DATA.copy()
-
 		self.new_gene_added_data: Dict[str,str] = {}
 
 		if self.operons_on:
