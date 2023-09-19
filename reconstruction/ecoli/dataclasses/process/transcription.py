@@ -333,18 +333,27 @@ class Transcription(object):
 				if cistron_id in mRNA_cistron_ids:
 					reported_mRNA_cistron_half_lives.append(gene['half_life'])
 
-		# Half-lives of stable cistrons (rRNAs and tRNAs) are set separately
-		stable_cistron_ids = np.array(all_cistron_ids)[np.logical_or(is_rRNA, is_tRNA)]
-		for cistron_id in stable_cistron_ids:
-			cistron_id_to_half_life[cistron_id] = sim_data.constants.stable_RNA_half_life
-
 		# Calculate averaged reported half life of mRNAs
-		average_mRNA_cistron_half_life = np.mean(reported_mRNA_cistron_half_lives)
+		self.average_mRNA_cistron_half_life = np.mean(
+			reported_mRNA_cistron_half_lives)
+
+		# Half-lives of rRNAs are set to be equal to the average reported half
+		# life of mRNAs
+		# Note: rRNAs complexed into ribosomal subunits will not degrade, so
+		# this will only significantly affect excess rRNAs
+		rRNA_cistron_ids = np.array(all_cistron_ids)[is_rRNA]
+		for cistron_id in rRNA_cistron_ids:
+			cistron_id_to_half_life[cistron_id] = self.average_mRNA_cistron_half_life
+
+		# Half-life of tRNAs are set to the value defined in sim_data.constants
+		tRNA_cistron_ids = np.array(all_cistron_ids)[is_tRNA]
+		for cistron_id in tRNA_cistron_ids:
+			cistron_id_to_half_life[cistron_id] = sim_data.constants.tRNA_half_life
 
 		# Get half life of each RNA cistron - if the half life is not given, use
 		# the averaged reported half life of mRNAs
 		cistron_half_lives = np.array([
-			cistron_id_to_half_life.get(cistron_id, average_mRNA_cistron_half_life).asNumber(units.s)
+			cistron_id_to_half_life.get(cistron_id, self.average_mRNA_cistron_half_life).asNumber(units.s)
 			for cistron_id in all_cistron_ids])
 
 		# Calculate expected first-order degradation rates of each cistron
@@ -724,8 +733,14 @@ class Transcription(object):
 		max_mRNA_deg_rate = mRNA_cistron_deg_rates.max()
 		rna_deg_rates[np.logical_and(is_mRNA, rna_deg_rates > max_mRNA_deg_rate)] = max_mRNA_deg_rate
 
-		# Set degradation rates of rRNAs and tRNAs to that of stable RNAs
-		rna_deg_rates[is_rtRNA] = np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s)
+		# Set degradation rates of transcription units including tRNAs to the
+		# value defined in sim_data.constants
+		rna_deg_rates[includes_tRNA] = np.log(2) / sim_data.constants.tRNA_half_life.asNumber(units.s)
+
+		# Set degradation rates of transcription units including rRNAs but no
+		# tRNAs to be the average degradation rate of mRNAs
+		rna_deg_rates[np.logical_and(is_rRNA, ~includes_tRNA)] = (
+			np.log(2) / self.average_mRNA_cistron_half_life.asNumber(units.s))
 
 		# Calculate synthesis probabilities from expression and normalize
 		synth_prob = expression*(
@@ -1117,20 +1132,26 @@ class Transcription(object):
 		assert np.all(degraded_nt_counts >= 0)
 		self.rna_maturation_degraded_nt_counts = degraded_nt_counts
 
-		# Set degradation rates to that of stable RNAs
-		rna_deg_rates = np.full(
-			n_mature_rnas,
-			np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s))
-
-		# Get MWs of mature RNA molecules
-		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
-
 		# Get identities of each stable RNA
 		is_rRNA = self.cistron_data['is_rRNA'][mature_rna_cistron_indexes]
 		is_tRNA = self.cistron_data['is_tRNA'][mature_rna_cistron_indexes]
 		is_23S_rRNA = self.cistron_data['is_23S_rRNA'][mature_rna_cistron_indexes]
 		is_16S_rRNA = self.cistron_data['is_16S_rRNA'][mature_rna_cistron_indexes]
 		is_5S_rRNA = self.cistron_data['is_5S_rRNA'][mature_rna_cistron_indexes]
+
+		# Set degradation rates of rRNAs to the average reported degradation
+		# rates of mRNAs
+		# Note: rRNAs complexed into ribosomal subunits will not degrade, so
+		# this will only significantly affect excess rRNAs
+		rna_deg_rates = np.zeros(n_mature_rnas)
+		rna_deg_rates[is_rRNA] = np.log(2) / self.average_mRNA_cistron_half_life.asNumber(units.s)
+
+		# Set degradation rates of tRNAs to the values calculated from the
+		# half-life in sim_data.constants
+		rna_deg_rates[is_tRNA] = np.log(2) / sim_data.constants.tRNA_half_life.asNumber(units.s)
+
+		# Get MWs of mature RNA molecules
+		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
 
 		if n_mature_rnas > 0:
 			max_rna_id_length = max(
