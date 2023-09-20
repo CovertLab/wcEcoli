@@ -130,13 +130,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 		self.fragment_metabolites = self.bulkMoleculesView(end_cleavage_metabolite_ids)
 		self.fragment_bases = self.bulkMoleculesView(polymerized_ntp_ids)
 
-		self.ribosome_30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
-		self.ribosome_50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
-		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
-		self.rrfa_idx = rna_id_to_index["RRFA-RRNA[c]"]
-		self.rrla_idx = rna_id_to_index["RRLA-RRNA[c]"]
-		self.rrsa_idx = rna_id_to_index["RRSA-RRNA[c]"]
-
 		self.endoRNases = self.bulkMoleculesView(endoRNase_ids)
 		self.exoRNases = self.bulkMoleculesView(exoRNase_ids)
 		self.charged_trnas = self.bulkMoleculesView(charged_trna_names)
@@ -157,12 +150,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 		cell_volume = cell_mass / self.cell_density
 		counts_to_molar = 1 / (self.n_avogadro * cell_volume)
 
-		# Get total counts of RNAs including rRNAs, charged tRNAs, and active
-		# (translatable) unique mRNAs
+		# Get total counts of free rRNAs, uncharged and charged tRNAs, and
+		# active (translatable) unique mRNAs
 		bulk_RNA_counts = self.bulk_RNAs.total_counts().copy()
-		bulk_RNA_counts[self.rrsa_idx] += self.ribosome_30S.total_count()
-		bulk_RNA_counts[[self.rrla_idx, self.rrfa_idx]] += self.ribosome_50S.total_count()
-		bulk_RNA_counts[[self.rrla_idx, self.rrfa_idx, self.rrsa_idx]] += self.active_ribosomes.total_count()
 		bulk_RNA_counts[self.uncharged_trna_indexes] += self.charged_trnas.total_counts()
 
 		TU_index, can_translate, is_full_transcript = self.unique_RNAs.attrs(
