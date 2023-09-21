@@ -5,18 +5,18 @@ make clean compile
 
 ## Set A - WT, glucose minimal media
 # No changes to rRNA operons
-DESC="SET A 8 gens 1 seed WT with glucose minimal media" \
+DESC="SET A 16 gens 64 seed WT with glucose minimal media" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
 ## Set B - no rRNA operons, glucose minimal media
 # All rRNA genes are transcribed as single-gene transcription units
-DESC="SET B 8 gens 1 seed single gene rRNA tus with glucose minimal media" \
+DESC="SET B 16 gens 64 seed single gene rRNA tus with glucose minimal media" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 REMOVE_RRNA_OPERONS=1 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
