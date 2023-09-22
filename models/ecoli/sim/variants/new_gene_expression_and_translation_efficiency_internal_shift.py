@@ -45,7 +45,7 @@ assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 	"The first new gene expression factor should always be the control sim"
 
 # Generation to induce new gene expression
-NEW_GENE_INDUCTION_GEN = 8
+NEW_GENE_INDUCTION_GEN = 1
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
@@ -136,10 +136,10 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 		sim_data, index)
 
 	# Initialize internal shift dictionary
-	sim_data.internal_shifts.internal_shift_dict = {}
+	setattr(sim_data, 'internal_shift_dict', {})
 
 	# Add the new gene induction to the internal_shift instructions
-	sim_data.internal_shifts.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
+	sim_data.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
 		(induce_new_genes, index)]
 
 	# Variant descriptions to save to metadata
