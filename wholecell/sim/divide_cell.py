@@ -30,6 +30,10 @@ def divide_cell(sim):
 	of a dividing cell randomly into two daughter cells, saving the data for
 	the daughter cells' `_initialConditionsFunction()` method to read.
 	"""
+
+	### TODO Save a daughter generation number via save_inherited_state() kwarg
+	#### TODO QUESTION how to handle this for gen 0?
+
 	# Assign data from simulation required
 	randomState = sim.randomState
 
