@@ -39,6 +39,7 @@ def divide_cell(sim):
 
 	bulkMolecules = sim.internal_states['BulkMolecules']
 	uniqueMolecules = sim.internal_states['UniqueMolecules']
+	daughter_generation_number = sim._generationNumber + 1
 
 	sim_data = sim.get_sim_data()
 
@@ -89,6 +90,7 @@ def divide_cell(sim):
 		elng_rate_factor=daughter_elng_rates["d1_elng_rate_factor"],
 		bulk_molecules=d1_bulkMolCntr,
 		unique_molecules=d1_uniqueMolCntr,
+		generation_number=daughter_generation_number,
 		)
 	save_inherited_state(
 		d2_path,
@@ -97,6 +99,7 @@ def divide_cell(sim):
 		elng_rate_factor=daughter_elng_rates["d2_elng_rate_factor"],
 		bulk_molecules=d2_bulkMolCntr,
 		unique_molecules=d2_uniqueMolCntr,
+		generation_number=daughter_generation_number,
 		)
 
 	return [d1_path, d2_path]

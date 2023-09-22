@@ -2363,6 +2363,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			else:
 				self.total_heatmaps_to_make += len(self.new_gene_mRNA_ids)
 
+		# TODO REPLACE MAPPING WITH FUNCTION FROM VARIANT?
 		# Map variant indices to expression factors and translation efficiency
 		# values
 		if 'new_gene_expression_factors' not in metadata or \
