@@ -1,7 +1,9 @@
 """
 Compare the impacts of increasing expression level and
 increasing or decreasing the translational efficiency of new genes, when
-induced after a particular generation.
+induced after a particular generation. This variant assumes that new genes are
+very minimally expressed in the wildtype simulation (i.e. does not explicitly
+knockout new genes).
 
 Modifies (after shift):
 	sim_data.process.transcription.rna_synth_prob
@@ -46,6 +48,7 @@ assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 
 # Generation to induce new gene expression
 NEW_GENE_INDUCTION_GEN = 1
+NEW_GENE_KNOCKOUT_GEN = 17
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
@@ -76,10 +79,6 @@ def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 
 	return expression_factor, trl_eff_value
 
-
-# just pass index to this instead and then map within this function
-# or make this a function that can both turn on and off? maybe keep as 2 separate functions
-# turn off function wouldn't need the index value
 def induce_new_genes(sim_data, index):
 	"""
 	'Induces' new genes by setting their expression levels and translation
@@ -139,8 +138,8 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	setattr(sim_data, 'internal_shift_dict', {})
 
 	# Add the new gene induction to the internal_shift instructions
-	sim_data.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
-		(induce_new_genes, index)]
+	for gen in range(NEW_GENE_INDUCTION_GEN, NEW_GENE_KNOCKOUT_GEN):
+		sim_data.internal_shift_dict[gen] = [(induce_new_genes, index)]
 
 	# Variant descriptions to save to metadata
 	if index == 0:
