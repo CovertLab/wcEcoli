@@ -1,5 +1,7 @@
 """
-Plot mRNA and protein counts for new genes across multiple generations
+Plot mRNA and protein counts for new genes across multiple generations, as well
+as plots to analyze the impact of new gene expression, including growth rate,
+RNAP and ribosome counts, and ppGpp concentration.
 """
 
 import pickle
@@ -79,22 +81,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Plotting
 		plt.figure(figsize = (8.5, 11))
 
-		# Protein Counts
-		plt.subplot(2, 1, 1)
-		if len(new_gene_monomer_ids) == 1:
-			plt.plot(time / 60., new_gene_monomer_counts,
-					 label=new_gene_monomer_ids[0])
-		else:
-			for m in range(len(new_gene_monomer_ids)):
-				plt.plot(time / 60., new_gene_monomer_counts[:,m],
-						 label = new_gene_monomer_ids[m])
+		# TODO: Maybe use a different proxy for growth?
+		# Growth Rate
+		plt.subplot(6, 1, 1)
+		growth_rate = read_stacked_columns(cell_paths, "Mass", "instantaneous_growth_rate")
+		plt.plot(time / 60., growth_rate)
 		plt.xlabel("Time (min)")
-		plt.ylabel("Protein Counts")
-		plt.title("New Gene Protein Counts")
-		plt.legend()
+		plt.ylabel("Growth Rate")
+		plt.title("Growth Rate")
 
 		# mRNA Counts
-		plt.subplot(2, 1, 2)
+		plt.subplot(6, 1, 2)
 		if len(new_gene_mRNA_ids) == 1:
 			plt.plot(time / 60., new_gene_mRNA_counts,
 					 label=new_gene_mRNA_ids[0])
@@ -107,11 +104,79 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.title("New Gene mRNA Counts")
 		plt.legend()
 
-		plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
+		# Protein Counts
+		plt.subplot(6, 1, 3)
+		if len(new_gene_monomer_ids) == 1:
+			plt.plot(time / 60., new_gene_monomer_counts,
+					 label=new_gene_monomer_ids[0])
+		else:
+			for m in range(len(new_gene_monomer_ids)):
+				plt.plot(time / 60., new_gene_monomer_counts[:,m],
+						 label = new_gene_monomer_ids[m])
+		plt.xlabel("Time (min)")
+		plt.ylabel("Protein Counts")
+		plt.title("New Gene Protein Counts")
+		plt.legend()
+
+		# ppGpp
+		plt.subplot(6, 1, 4)
+		ppGpp_concentration = read_stacked_columns(
+			cell_paths, "GrowthLimits", "ppgpp_conc")
+		plt.plot(time / 60., ppGpp_concentration)
+		plt.xlabel("Time (min)")
+		plt.ylabel("ppGpp Concentration (uM)")
+		plt.title("ppGpp Concentration")
+
+		# Total RNAP Counts
+		plt.subplot(6, 1, 5)
+		# Inactive
+		rnap_id = [sim_data.molecule_ids.full_RNAP]
+		(inactive_rnap_counts,) = read_stacked_bulk_molecules(
+			cell_paths, (rnap_id,))
+		# Active
+		uniqueMoleculeCounts = TableReader(
+			os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		active_rnap_index = uniqueMoleculeCounts.readAttribute(
+			"uniqueMoleculeIds").index('active_RNAP')
+		active_rnap_counts = read_stacked_columns(
+			cell_paths, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts')[:, active_rnap_index]
+		# Total
+		total_rnap_counts = inactive_rnap_counts + active_rnap_counts
+		plt.plot(time / 60., total_rnap_counts)
+		plt.xlabel("Time (min)")
+		plt.ylabel("Total RNAP Counts")
+		plt.title("Total RNAP Counts")
+
+		# Total Ribosome Counts
+		plt.subplot(6, 1, 6)
+		# Inactive
+		complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
+		complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
+		(complex_counts_30s, complex_counts_50s) = read_stacked_bulk_molecules(
+			cell_paths, (complex_id_30s, complex_id_50s))
+		inactive_ribosome_counts = np.minimum(
+			complex_counts_30s, complex_counts_50s)
+		# Active
+		unique_molecule_counts_table = TableReader(
+			os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		ribosome_index = unique_molecule_counts_table.readAttribute(
+			"uniqueMoleculeIds").index('active_ribosome')
+		active_ribosome_counts = read_stacked_columns(
+			cell_paths, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts')[:, ribosome_index]
+		# Total
+		total_ribosome_counts = active_ribosome_counts + inactive_ribosome_counts
+		plt.plot(time / 60., total_ribosome_counts)
+		plt.xlabel("Time (min)")
+		plt.ylabel("Total Ribosome Counts")
+		plt.title("Total Ribosome Counts")
+
+		plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 
-
+		# TODO: Set x and y lim for each to make it easier to compare across sims?
 
 if __name__ == '__main__':
 	Plot().cli()

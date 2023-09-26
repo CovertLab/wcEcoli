@@ -47,8 +47,8 @@ assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 	"The first new gene expression factor should always be the control sim"
 
 # Generation to induce new gene expression
-NEW_GENE_INDUCTION_GEN = 1
-NEW_GENE_KNOCKOUT_GEN = 17
+NEW_GENE_INDUCTION_GEN = 8
+NEW_GENE_KNOCKOUT_GEN = 33
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
