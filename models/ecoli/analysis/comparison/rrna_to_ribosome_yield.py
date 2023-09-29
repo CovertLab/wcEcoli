@@ -7,19 +7,17 @@ simulations.
 import os
 from typing import Tuple
 
-import csv
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 # noinspection PyUnresolvedReferences
 import numpy as np
-from scipy import stats
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import (exportFigure,
-    read_stacked_columns, read_stacked_bulk_molecules)
+    read_stacked_columns)
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
 
