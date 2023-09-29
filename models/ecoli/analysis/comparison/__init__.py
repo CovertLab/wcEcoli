@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 # Active analysis modules to run, in this order.
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
@@ -23,6 +21,7 @@ ACTIVE = [
 	"protein_stoichiometry.py",
 	"proteomics_fluxomics_comparison.py",
 	"proteomics_fluxomics_validation.py",
+	"rrna_to_ribosome_yield.py",
 	"tRNA_cistron_expression.py",
 ]
 
