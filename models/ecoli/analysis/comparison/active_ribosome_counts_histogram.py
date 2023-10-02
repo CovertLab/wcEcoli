@@ -44,6 +44,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				'uniqueMoleculeIds')
 			active_ribosome_idx = unique_molecule_ids.index('active_ribosome')
 
+			# Get counts of active ribosome at first timestep from every cell
 			active_ribosome_counts = read_stacked_columns(
 				cell_paths, 'UniqueMoleculeCounts','uniqueMoleculeCounts',
 				ignore_exception=True, fun=lambda x: x[0, active_ribosome_idx])

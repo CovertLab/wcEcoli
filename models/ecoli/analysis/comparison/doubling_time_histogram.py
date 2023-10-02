@@ -31,12 +31,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ap2, _, _ = self.setup(input_sim_dir)
 
 		def read_sims(ap):
-			sim_dirs = ap.get_cells()
+			sim_dirs = ap.get_cells(only_successful=True)
 			doubling_times_minutes = []
 
 			for sim_dir in sim_dirs:
 				try:
-					sim_out_dir = os.path.join(sim_dir, "simOut")
+					sim_out_dir = os.path.join(sim_dir, 'simOut')
 
 					# Assume simulated time == doubling time
 					time = TableReader(os.path.join(sim_out_dir, 'Main')).readColumn('time')
