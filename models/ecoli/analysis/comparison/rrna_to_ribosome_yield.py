@@ -31,6 +31,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		def read_sims(ap, sim_data):
 			# Get IDs of rRNA cistrons
 			cistron_data = sim_data.process.transcription.cistron_data
+			rRNA_ids = cistron_data['id'][cistron_data['is_rRNA']]
 			rRNA_23s_ids = cistron_data['id'][cistron_data['is_23S_rRNA']]
 			rRNA_16s_ids = cistron_data['id'][cistron_data['is_16S_rRNA']]
 			rRNA_5s_ids = cistron_data['id'][cistron_data['is_5S_rRNA']]
@@ -42,14 +43,20 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cistron_id_to_index = {
 				cistron_id: i for (i, cistron_id) in enumerate(cistron_ids)}
 
+			rRNA_indexes = np.array([
+				cistron_id_to_index[rRNA_id] for rRNA_id in rRNA_ids
+				])
+			rRNA_id_to_rRNA_index = {
+				cistron_id: i for (i, cistron_id) in enumerate(rRNA_ids)}
+
 			rRNA_23s_indexes = np.array([
-				cistron_id_to_index[rRNA_id] for rRNA_id in rRNA_23s_ids
+				rRNA_id_to_rRNA_index[rRNA_id] for rRNA_id in rRNA_23s_ids
 				])
 			rRNA_16s_indexes = np.array([
-				cistron_id_to_index[rRNA_id] for rRNA_id in rRNA_16s_ids
+				rRNA_id_to_rRNA_index[rRNA_id] for rRNA_id in rRNA_16s_ids
 				])
 			rRNA_5s_indexes = np.array([
-				cistron_id_to_index[rRNA_id] for rRNA_id in rRNA_5s_ids
+				rRNA_id_to_rRNA_index[rRNA_id] for rRNA_id in rRNA_5s_ids
 				])
 
 			# Get ids of complexation reactions for ribosomal subunits
@@ -70,15 +77,15 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			rxn_id_to_index = {
 				rxn_id: i for (i, rxn_id) in enumerate(complexation_rxn_ids)}
 
-			s50_rxn_index = rxn_id_to_index[s50_rxn_id]
-			s30_rxn_index = rxn_id_to_index[s30_rxn_id]
+			subunit_rxn_indexes = np.array([
+				rxn_id_to_index[s50_rxn_id], rxn_id_to_index[s30_rxn_id]])
 
 			# Get total counts of rRNA molecules degraded throughout all sims
 			cell_paths = ap.get_cells()
 			counts_rna_degraded = read_stacked_columns(
 				cell_paths, 'RnaDegradationListener',
 				'count_RNA_degraded_per_cistron',
-				ignore_exception=True)
+				ignore_exception=True, fun=lambda x: x[:, rRNA_indexes])
 			total_23s_rRNA_degraded = counts_rna_degraded[:, rRNA_23s_indexes].sum()
 			total_16s_rRNA_degraded = counts_rna_degraded[:, rRNA_16s_indexes].sum()
 			total_5s_rRNA_degraded = counts_rna_degraded[:, rRNA_5s_indexes].sum()
@@ -87,9 +94,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			complexation_events = read_stacked_columns(
 				cell_paths, 'ComplexationListener',
 				'complexationEvents',
-				ignore_exception=True)
-			total_50s_complexed = complexation_events[:, s50_rxn_index].sum()
-			total_30s_complexed = complexation_events[:, s30_rxn_index].sum()
+				ignore_exception=True, fun=lambda x: x[:, subunit_rxn_indexes])
+			total_50s_complexed = complexation_events[:, 0].sum()
+			total_30s_complexed = complexation_events[:, 1].sum()
 
 			return {
 				'total_23s_rRNA_degraded': total_23s_rRNA_degraded,
@@ -114,7 +121,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax0.bar(1, data2['total_30s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
 		ax0.bar(1, data2['total_16s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data1['total_30s_complexed'])
+			   color='C3', bottom=data2['total_30s_complexed'])
 
 		ax0.bar(2.5, data1['total_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
@@ -123,7 +130,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax0.bar(3.5, data2['total_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
 		ax0.bar(3.5, data2['total_23s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data1['total_50s_complexed'])
+			   color='C3', bottom=data2['total_50s_complexed'])
 
 		ax0.bar(5, data1['total_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
@@ -132,7 +139,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax0.bar(6, data2['total_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
 		ax0.bar(6, data2['total_5s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data1['total_50s_complexed'])
+			   color='C3', bottom=data2['total_50s_complexed'])
 
 		ax0.set_xticks([0, 1, 2.5, 3.5, 5, 6])
 		ax0.set_xticklabels([
