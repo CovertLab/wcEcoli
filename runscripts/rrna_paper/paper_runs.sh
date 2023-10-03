@@ -73,9 +73,9 @@ python runscripts/fireworks/fw_queue.py
 
 ## Set E - flipped orientations of rRNA operons, glucose minimal media
 # Change the orientation of rRNA operons
-DESC="SET E 8 gens 1 seed flipped rRNA orientations with glucose minimal media" \
+DESC="SET E 16 gens 64 seed flipped rRNA orientations with glucose minimal media" \
 VARIANT="rrna_orientation" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
