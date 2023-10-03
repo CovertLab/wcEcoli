@@ -53,6 +53,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
 			'number of new gene monomers and mRNAs should be equal'
 
+		# TODO: make a option for this plot that you could run without new genes
+
 		# Extract mRNA indexes for each new gene
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
 													  'RNACounts'))

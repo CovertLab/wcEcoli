@@ -48,7 +48,7 @@ assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 
 # Generation to induce new gene expression
 NEW_GENE_INDUCTION_GEN = 8
-NEW_GENE_KNOCKOUT_GEN = 33
+NEW_GENE_KNOCKOUT_GEN = 128
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
