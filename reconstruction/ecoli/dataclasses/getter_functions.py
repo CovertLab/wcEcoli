@@ -34,6 +34,7 @@ IGNORED_DNA_SITE_TYPES = {
 	'dna-binding-site',
 	'phage-attachment-site',
 	'rep-element',
+	'repeat-region',
 	}
 
 class TranscriptionDirectionError(Exception):

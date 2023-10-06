@@ -454,6 +454,7 @@ class KnowledgeBaseEcoli(object):
 
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
+		dna_sites_data = getattr(self, 'dna_sites')
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -467,10 +468,17 @@ class KnowledgeBaseEcoli(object):
 
 		if not tu_data:
 			# Check if specified insertion location is in another gene
-			data_to_check = genes_data
+			data_to_check = genes_data.copy()
 		else:
 			# Check if specified insertion location is in a transcription unit
-			data_to_check = tu_data
+			data_to_check = tu_data.copy()
+
+		# Add important DNA sites to the list of locations to check
+		# TODO: Check for other DNA sites if we include any in the future
+		sites_data_to_check = [
+			site for site in dna_sites_data if site['common_name'] == 'oriC' or
+			site['common_name'] == 'TerC']
+		data_to_check += sites_data_to_check
 
 		conflicts = [row for row in data_to_check if
 					 ((row['left_end_pos'] is not None) and
@@ -496,6 +504,7 @@ class KnowledgeBaseEcoli(object):
 
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
+		dna_sites_data = getattr(self, 'dna_sites')
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -516,10 +525,9 @@ class KnowledgeBaseEcoli(object):
 		for row in genes_data:
 			left = row['left_end_pos']
 			right = row['right_end_pos']
-			if (left is not None) and (right is not None) and left >= \
-					insert_pos:
-					row.update({'left_end_pos': left+insert_len})
-					row.update({'right_end_pos': right+insert_len})
+			if (left is not None) and (right is not None) and left >= insert_pos:
+				row.update({'left_end_pos': left + insert_len})
+				row.update({'right_end_pos': right + insert_len})
 
 		# Update global positions of transcription units
 		if tu_data:
@@ -536,6 +544,15 @@ class KnowledgeBaseEcoli(object):
 			right = row['right_end_pos']
 			row.update({'left_end_pos': left + insert_pos})
 			row.update({'right_end_pos': right + insert_pos})
+
+		# Update DNA site positions
+		# (including the origin and terminus of replication)
+		for row in dna_sites_data:
+			left = row['left_end_pos']
+			right = row['right_end_pos']
+			if (left is not None) and (right is not None) and left >= insert_pos:
+				row.update({'left_end_pos': left + insert_len})
+				row.update({'right_end_pos': right + insert_len})
 
 		return insert_end
 
