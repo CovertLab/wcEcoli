@@ -213,12 +213,12 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Boolean variable that tracks existence of each RNA
 		rna_exists = (total_RNA_counts > 0).astype(np.int64)
 
-		# Compute degradation probabilities of each RNA: for mRNAs, this
-		# is based on the specificity of each mRNA. For tRNAs and rRNAs,
-		# this is distributed evenly.
+		# Compute degradation probabilities of each RNA: for mRNAs and rRNAs,
+		# this is based on the specificity of each RNA. For tRNAs, this is
+		# distributed evenly.
 		mrna_deg_probs = 1. / np.dot(rna_specificity, self.is_mRNA * rna_exists) * rna_specificity * self.is_mRNA * rna_exists
+		rrna_deg_probs = 1. / np.dot(rna_specificity, self.is_rRNA * rna_exists) * rna_specificity * self.is_rRNA * rna_exists
 		trna_deg_probs = 1. / np.dot(self.is_tRNA, rna_exists) * self.is_tRNA * rna_exists
-		rrna_deg_probs = 1. / np.dot(self.is_rRNA, rna_exists) * self.is_rRNA * rna_exists
 
 		# Mask RNA counts into each class of RNAs
 		mrna_counts = total_RNA_counts * self.is_mRNA
