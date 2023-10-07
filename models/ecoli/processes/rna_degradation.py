@@ -241,9 +241,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# mRNA becomes a full transcript to simplify the transcript elongation
 		# process.
 		n_bulk_RNAs_to_degrade = n_RNAs_to_degrade.copy()
-		n_bulk_RNAs_to_degrade[self.is_mRNA] = 0
+		n_bulk_RNAs_to_degrade[self.is_mRNA.astype(bool)] = 0
 		self.n_unique_RNAs_to_deactivate = n_RNAs_to_degrade.copy()
-		self.n_unique_RNAs_to_deactivate[np.logical_not(self.is_mRNA)] = 0
+		self.n_unique_RNAs_to_deactivate[np.logical_not(self.is_mRNA.astype(bool))] = 0
 
 		self.bulk_RNAs.requestIs(n_bulk_RNAs_to_degrade)
 		self.unique_RNAs.request_access(self.EDIT_DELETE_ACCESS)
