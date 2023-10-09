@@ -454,6 +454,7 @@ class KnowledgeBaseEcoli(object):
 
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
+		dna_sites_data = getattr(self, 'dna_sites')
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -467,10 +468,17 @@ class KnowledgeBaseEcoli(object):
 
 		if not tu_data:
 			# Check if specified insertion location is in another gene
-			data_to_check = genes_data
+			data_to_check = genes_data.copy()
 		else:
 			# Check if specified insertion location is in a transcription unit
-			data_to_check = tu_data
+			data_to_check = tu_data.copy()
+
+		# Add important DNA sites to the list of locations to check
+		# TODO: Check for other DNA sites if we include any in the future
+		sites_data_to_check = [
+			site for site in dna_sites_data if site['common_name'] == 'oriC' or
+			site['common_name'] == 'TerC']
+		data_to_check += sites_data_to_check
 
 		conflicts = [row for row in data_to_check if
 					 ((row['left_end_pos'] is not None) and
@@ -487,6 +495,25 @@ class KnowledgeBaseEcoli(object):
 
 		return insert_pos
 
+	def _update_global_coordinates(self, data, insert_pos, insert_len):
+		"""
+		Updates the left and right end positions for all elements in data if
+		their positions will be impacted by the new gene insertion.
+
+		Args:
+			data: Data attribute to update
+			insert_pos: Location of new gene insertion
+			insert_len: Length of new gene insertion
+
+		"""
+
+		for row in data:
+			left = row['left_end_pos']
+			right = row['right_end_pos']
+			if (left is not None and left != '') and (
+					right is not None and right != '') and left >= insert_pos:
+				row.update({'left_end_pos': left + insert_len})
+				row.update({'right_end_pos': right + insert_len})
 
 	def _update_gene_locations(self, nested_attr, insert_pos):
 		"""
@@ -496,6 +523,7 @@ class KnowledgeBaseEcoli(object):
 
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
+		dna_sites_data = getattr(self, 'dna_sites')
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -510,25 +538,18 @@ class KnowledgeBaseEcoli(object):
 				"gaps in new gene insertions are not supported at this time"
 
 		insert_end = new_genes_data[-1]['right_end_pos'] + insert_pos
+		insert_len = insert_end - insert_pos + 1
 
 		# Update global positions of original genes
-		insert_len = insert_end - insert_pos + 1
-		for row in genes_data:
-			left = row['left_end_pos']
-			right = row['right_end_pos']
-			if (left is not None) and (right is not None) and left >= \
-					insert_pos:
-					row.update({'left_end_pos': left+insert_len})
-					row.update({'right_end_pos': right+insert_len})
+		self._update_global_coordinates(genes_data, insert_pos, insert_len)
 
 		# Update global positions of transcription units
 		if tu_data:
-			for row in tu_data:
-				left = row['left_end_pos']
-				right = row['right_end_pos']
-				if (left != '') and (right != '') and left >= insert_pos:
-					row.update({'left_end_pos': left + insert_len})
-					row.update({'right_end_pos': right + insert_len})
+			self._update_global_coordinates(tu_data, insert_pos, insert_len)
+
+		# Update DNA site positions
+		# (including the origin and terminus of replication)
+		self._update_global_coordinates(dna_sites_data, insert_pos, insert_len)
 
 		# Change relative insertion positions to global in reference genome
 		for row in new_genes_data:
