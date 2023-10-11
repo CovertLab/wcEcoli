@@ -21,6 +21,7 @@ from wholecell.io.tablereader import TableReader, TableReaderError
 FIGSIZE = (4, 4)
 DOUBLING_TIME_BOUNDS_MINUTES = [0, 180]
 N_BINS = 36
+IGNORE_FIRST_N_GENS = 0
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
@@ -31,7 +32,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ap2, _, _ = self.setup(input_sim_dir)
 
 		def read_sims(ap):
-			sim_dirs = ap.get_cells(only_successful=True)
+			sim_dirs = ap.get_cells(
+				generation=np.arange(IGNORE_FIRST_N_GENS, ap.n_generation),
+				only_successful=True)
 			doubling_times_minutes = []
 
 			for sim_dir in sim_dirs:
