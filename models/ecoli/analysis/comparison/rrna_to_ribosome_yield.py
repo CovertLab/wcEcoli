@@ -80,8 +80,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			subunit_rxn_indexes = np.array([
 				rxn_id_to_index[s50_rxn_id], rxn_id_to_index[s30_rxn_id]])
 
-			# Get total counts of rRNA molecules degraded throughout all sims
-			cell_paths = ap.get_cells()
+			# Get total counts of rRNA molecules degraded throughout all
+			# successful sims
+			cell_paths = ap.get_cells(only_successful=True)
+			n_cells = len(cell_paths)
 			counts_rna_degraded = read_stacked_columns(
 				cell_paths, 'RnaDegradationListener',
 				'count_RNA_degraded_per_cistron',
@@ -98,12 +100,13 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			total_50s_complexed = complexation_events[:, 0].sum()
 			total_30s_complexed = complexation_events[:, 1].sum()
 
+			# Divide by number of cells
 			return {
-				'total_23s_rRNA_degraded': total_23s_rRNA_degraded,
-				'total_16s_rRNA_degraded': total_16s_rRNA_degraded,
-				'total_5s_rRNA_degraded': total_5s_rRNA_degraded,
-				'total_50s_complexed': total_50s_complexed,
-				'total_30s_complexed': total_30s_complexed,
+				'avg_23s_rRNA_degraded': total_23s_rRNA_degraded / n_cells,
+				'avg_16s_rRNA_degraded': total_16s_rRNA_degraded / n_cells,
+				'avg_5s_rRNA_degraded': total_5s_rRNA_degraded / n_cells,
+				'avg_50s_complexed': total_50s_complexed / n_cells,
+				'avg_30s_complexed': total_30s_complexed / n_cells,
 			}
 
 		data1 = read_sims(ap1, sim_data1)
@@ -114,32 +117,32 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		# Plot bar plots for each rRNA
 		ax0 = fig.add_subplot(gs[0, 0])
-		ax0.bar(0, data1['total_30s_complexed'], width=0.7, alpha=0.5,
+		ax0.bar(0, data1['avg_30s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555', label='complexed')
-		ax0.bar(0, data1['total_16s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data1['total_30s_complexed'], label='degraded')
-		ax0.bar(1, data2['total_30s_complexed'], width=0.7, alpha=0.5,
+		ax0.bar(0, data1['avg_16s_rRNA_degraded'], width=0.7, alpha=0.5,
+			   color='C3', bottom=data1['avg_30s_complexed'], label='degraded')
+		ax0.bar(1, data2['avg_30s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
-		ax0.bar(1, data2['total_16s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data2['total_30s_complexed'])
+		ax0.bar(1, data2['avg_16s_rRNA_degraded'], width=0.7, alpha=0.5,
+			   color='C3', bottom=data2['avg_30s_complexed'])
 
-		ax0.bar(2.5, data1['total_50s_complexed'], width=0.7, alpha=0.5,
+		ax0.bar(2.5, data1['avg_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
-		ax0.bar(2.5, data1['total_23s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data1['total_50s_complexed'])
-		ax0.bar(3.5, data2['total_50s_complexed'], width=0.7, alpha=0.5,
+		ax0.bar(2.5, data1['avg_23s_rRNA_degraded'], width=0.7, alpha=0.5,
+			   color='C3', bottom=data1['avg_50s_complexed'])
+		ax0.bar(3.5, data2['avg_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
-		ax0.bar(3.5, data2['total_23s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data2['total_50s_complexed'])
+		ax0.bar(3.5, data2['avg_23s_rRNA_degraded'], width=0.7, alpha=0.5,
+			   color='C3', bottom=data2['avg_50s_complexed'])
 
-		ax0.bar(5, data1['total_50s_complexed'], width=0.7, alpha=0.5,
+		ax0.bar(5, data1['avg_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
-		ax0.bar(5, data1['total_5s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data1['total_50s_complexed'])
-		ax0.bar(6, data2['total_50s_complexed'], width=0.7, alpha=0.5,
+		ax0.bar(5, data1['avg_5s_rRNA_degraded'], width=0.7, alpha=0.5,
+			   color='C3', bottom=data1['avg_50s_complexed'])
+		ax0.bar(6, data2['avg_50s_complexed'], width=0.7, alpha=0.5,
 			   color='#555555')
-		ax0.bar(6, data2['total_5s_rRNA_degraded'], width=0.7, alpha=0.5,
-			   color='C3', bottom=data2['total_50s_complexed'])
+		ax0.bar(6, data2['avg_5s_rRNA_degraded'], width=0.7, alpha=0.5,
+			   color='C3', bottom=data2['avg_50s_complexed'])
 
 		ax0.set_xticks([0, 1, 2.5, 3.5, 5, 6])
 		ax0.set_xticklabels([
@@ -153,25 +156,25 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		# Plot bar plots for total number of rRNAs
 		ax1 = fig.add_subplot(gs[0, 1])
-		total_complexed_counts1 = data1['total_30s_complexed'] + 2*data1['total_50s_complexed']
-		total_complexed_counts2 = data2['total_30s_complexed'] + 2*data2['total_50s_complexed']
-		total_degraded_counts1 = (
-			data1['total_16s_rRNA_degraded']
-			+ data1['total_23s_rRNA_degraded']
-			+ data1['total_5s_rRNA_degraded'])
-		total_degraded_counts2 = (
-			data2['total_16s_rRNA_degraded']
-			+ data2['total_23s_rRNA_degraded']
-			+ data2['total_5s_rRNA_degraded'])
+		avg_complexed_counts1 = data1['avg_30s_complexed'] + 2*data1['avg_50s_complexed']
+		avg_complexed_counts2 = data2['avg_30s_complexed'] + 2*data2['avg_50s_complexed']
+		avg_degraded_counts1 = (
+			data1['avg_16s_rRNA_degraded']
+			+ data1['avg_23s_rRNA_degraded']
+			+ data1['avg_5s_rRNA_degraded'])
+		avg_degraded_counts2 = (
+			data2['avg_16s_rRNA_degraded']
+			+ data2['avg_23s_rRNA_degraded']
+			+ data2['avg_5s_rRNA_degraded'])
 
-		ax1.bar(0, total_complexed_counts1, width=0.7, alpha=0.5,
+		ax1.bar(0, avg_complexed_counts1, width=0.7, alpha=0.5,
 				color='#555555', label='complexed')
-		ax1.bar(0, total_degraded_counts1, width=0.7, alpha=0.5,
-				color='C3', bottom=total_complexed_counts1, label='degraded')
-		ax1.bar(1, total_complexed_counts2, width=0.7, alpha=0.5,
+		ax1.bar(0, avg_degraded_counts1, width=0.7, alpha=0.5,
+				color='C3', bottom=avg_complexed_counts1, label='degraded')
+		ax1.bar(1, avg_complexed_counts2, width=0.7, alpha=0.5,
 				color='#555555')
-		ax1.bar(1, total_degraded_counts2, width=0.7, alpha=0.5,
-				color='C3', bottom=total_complexed_counts2)
+		ax1.bar(1, avg_degraded_counts2, width=0.7, alpha=0.5,
+				color='C3', bottom=avg_complexed_counts2)
 
 		ax1.set_xticks([0, 1])
 		ax1.set_xticklabels([
