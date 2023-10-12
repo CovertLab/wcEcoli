@@ -36,7 +36,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			# Get timetraces of ppGpp concentrations from each seed
 			for seed in np.arange(ap.n_seed):
-				cell_paths = ap.get_cells(seed=[seed])
+				cell_paths = ap.get_cells(seed=[seed], only_successful=True)
+
+				# Only get data for sims that completed all generations
+				if len(cell_paths) < ap.n_generation:
+					continue
+
 				time = read_stacked_columns(
 					cell_paths, 'Main', 'time',
 					remove_first=True).squeeze()
@@ -63,7 +68,15 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 				for (t, conc) in all_ppgpp_timetraces:
 					mask = np.logical_and(t_window_min <= t, t < t_window_max)
+
+					# Skip seed if no data exists for this window
+					if not np.any(mask):
+						continue
 					conc_this_window.append(conc[mask].mean())
+
+				# Skip window if no data exists for any seed
+				if len(conc_this_window) == 0:
+					continue
 
 				swa_time.append((t_window_min + t_window_max) / 2)
 				swa_conc.append(np.mean(conc_this_window))
@@ -80,9 +93,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Plot timetraces of ppGpp concentrations from two sims on same plot
 		ax1 = plt.subplot(1, 1, 1)
 		for (t, conc) in all_tt1:
-			ax1.plot(t / 60, conc, clip_on=False, c='C0', alpha=0.1)
+			ax1.plot(t / 60, conc, clip_on=False, c='C0', lw=0.5, alpha=0.1)
 		for (t, conc) in all_tt2:
-			ax1.plot(t / 60, conc, clip_on=False, c='C1', alpha=0.1)
+			ax1.plot(t / 60, conc, clip_on=False, c='C1', lw=0.5, alpha=0.1)
 
 		# Plot sliding window time averages with thicker lines
 		ax1.plot(
@@ -98,7 +111,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax1.spines["bottom"].set_position(("outward", 10))
 		ax1.spines["left"].set_position(("outward", 10))
 		ax1.set_xlim([0, max(t_max1, t_max2) / 60])
-		ax1.set_ylim([0, 100])
+		ax1.set_ylim([0, 500])
 		ax1.legend(loc=1)
 
 		plt.tight_layout()
