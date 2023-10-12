@@ -59,6 +59,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			# Calculate sliding window averages of concentrations across
 			# multiple seeds
+			n_timetraces = len(all_ppgpp_timetraces)
 			swa_time = []
 			swa_conc = []
 
@@ -74,8 +75,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 						continue
 					conc_this_window.append(conc[mask].mean())
 
-				# Skip window if no data exists for any seed
-				if len(conc_this_window) == 0:
+				# Skip window if no data exists for more than half of the
+				# successful seeds
+				if len(conc_this_window) < n_timetraces/2:
 					continue
 
 				swa_time.append((t_window_min + t_window_max) / 2)
@@ -111,7 +113,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax1.spines["bottom"].set_position(("outward", 10))
 		ax1.spines["left"].set_position(("outward", 10))
 		ax1.set_xlim([0, max(t_max1, t_max2) / 60])
-		ax1.set_ylim([0, 500])
+		ax1.set_ylim([0, 400])
 		ax1.legend(loc=1)
 
 		plt.tight_layout()
