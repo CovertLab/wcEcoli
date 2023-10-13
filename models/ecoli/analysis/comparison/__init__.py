@@ -16,6 +16,7 @@ ACTIVE = [
 	"mRNA_mass_histogram.py",
 	"polycistronic_transcription.py",
 	"polycistronic_transcription_extended.py",
+	"ppgpp_concentrations.py",
 	"ppgpp_expression_growth_genes.py",
 	"protein_mass_histogram.py",
 	"protein_stoichiometry.py",
