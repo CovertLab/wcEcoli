@@ -38,8 +38,8 @@ CONTROL_OUTPUT = dict(
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
-NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10, 11, 12]
-NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [25, 10, 5, 2.5, 1, 0.5, 0.1, 0.05, 0.01, 0]
+NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10, 11, 12, 13]
+NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 
