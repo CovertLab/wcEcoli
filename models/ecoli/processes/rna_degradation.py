@@ -130,13 +130,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 		self.fragment_metabolites = self.bulkMoleculesView(end_cleavage_metabolite_ids)
 		self.fragment_bases = self.bulkMoleculesView(polymerized_ntp_ids)
 
-		self.ribosome_30S = self.bulkMoleculeView(sim_data.molecule_ids.s30_full_complex)
-		self.ribosome_50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
-		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
-		self.rrfa_idx = rna_id_to_index["RRFA-RRNA[c]"]
-		self.rrla_idx = rna_id_to_index["RRLA-RRNA[c]"]
-		self.rrsa_idx = rna_id_to_index["RRSA-RRNA[c]"]
-
 		self.endoRNases = self.bulkMoleculesView(endoRNase_ids)
 		self.exoRNases = self.bulkMoleculesView(exoRNase_ids)
 		self.charged_trnas = self.bulkMoleculesView(charged_trna_names)
@@ -157,12 +150,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 		cell_volume = cell_mass / self.cell_density
 		counts_to_molar = 1 / (self.n_avogadro * cell_volume)
 
-		# Get total counts of RNAs including rRNAs, charged tRNAs, and active
-		# (translatable) unique mRNAs
+		# Get total counts of free rRNAs, uncharged and charged tRNAs, and
+		# active (translatable) unique mRNAs
 		bulk_RNA_counts = self.bulk_RNAs.total_counts().copy()
-		bulk_RNA_counts[self.rrsa_idx] += self.ribosome_30S.total_count()
-		bulk_RNA_counts[[self.rrla_idx, self.rrfa_idx]] += self.ribosome_50S.total_count()
-		bulk_RNA_counts[[self.rrla_idx, self.rrfa_idx, self.rrsa_idx]] += self.active_ribosomes.total_count()
 		bulk_RNA_counts[self.uncharged_trna_indexes] += self.charged_trnas.total_counts()
 
 		TU_index, can_translate, is_full_transcript = self.unique_RNAs.attrs(
@@ -223,12 +213,12 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Boolean variable that tracks existence of each RNA
 		rna_exists = (total_RNA_counts > 0).astype(np.int64)
 
-		# Compute degradation probabilities of each RNA: for mRNAs, this
-		# is based on the specificity of each mRNA. For tRNAs and rRNAs,
-		# this is distributed evenly.
+		# Compute degradation probabilities of each RNA: for mRNAs and rRNAs,
+		# this is based on the specificity of each RNA. For tRNAs, this is
+		# distributed evenly.
 		mrna_deg_probs = 1. / np.dot(rna_specificity, self.is_mRNA * rna_exists) * rna_specificity * self.is_mRNA * rna_exists
+		rrna_deg_probs = 1. / np.dot(rna_specificity, self.is_rRNA * rna_exists) * rna_specificity * self.is_rRNA * rna_exists
 		trna_deg_probs = 1. / np.dot(self.is_tRNA, rna_exists) * self.is_tRNA * rna_exists
-		rrna_deg_probs = 1. / np.dot(self.is_rRNA, rna_exists) * self.is_rRNA * rna_exists
 
 		# Mask RNA counts into each class of RNAs
 		mrna_counts = total_RNA_counts * self.is_mRNA
@@ -251,9 +241,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# mRNA becomes a full transcript to simplify the transcript elongation
 		# process.
 		n_bulk_RNAs_to_degrade = n_RNAs_to_degrade.copy()
-		n_bulk_RNAs_to_degrade[self.is_mRNA] = 0
+		n_bulk_RNAs_to_degrade[self.is_mRNA.astype(bool)] = 0
 		self.n_unique_RNAs_to_deactivate = n_RNAs_to_degrade.copy()
-		self.n_unique_RNAs_to_deactivate[np.logical_not(self.is_mRNA)] = 0
+		self.n_unique_RNAs_to_deactivate[np.logical_not(self.is_mRNA.astype(bool))] = 0
 
 		self.bulk_RNAs.requestIs(n_bulk_RNAs_to_degrade)
 		self.unique_RNAs.request_access(self.EDIT_DELETE_ACCESS)

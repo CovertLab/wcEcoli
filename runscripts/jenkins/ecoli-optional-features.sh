@@ -20,6 +20,13 @@ DESC="Causality Network" BUILD_CAUSALITY_NETWORK=1 N_GENS=2 SEED=$RANDOM \
   PARALLEL_PARCA=1 SINGLE_DAUGHTERS=1 COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 \
   WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
+DESC="New Gene Existence" N_GENS=4 NEW_GENES="gfp" PLOTS=ACTIVE \
+  COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
+  python runscripts/fireworks/fw_queue.py
+DESC="New Gene Expression" VARIANT="new_gene_expression" \
+  FIRST_VARIANT_INDEX=4 LAST_VARIANT_INDEX=4 N_GENS=4 NEW_GENES="gfp" \
+  PLOTS=ACTIVE COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
+  python runscripts/fireworks/fw_queue.py
 
 bash runscripts/jenkins/run-fireworks.sh
 

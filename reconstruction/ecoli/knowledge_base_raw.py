@@ -120,14 +120,14 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_expression_adjustments.tsv"),
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
-	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv")
+	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
-LIST_OF_PARAMETER_FILENAMES = (
+LIST_OF_PARAMETER_FILENAMES = [
 	"dna_supercoiling.tsv",
 	"parameters.tsv",
 	"mass_parameters.tsv",
-	)
+	]
 
 REMOVED_DATA = {
 	'amino_acid_export_kms': 'amino_acid_export_kms_removed',
@@ -179,11 +179,15 @@ class KnowledgeBaseEcoli(object):
 		# Make copies to prevent issues with sticky global variables when
 		# running multiple operon workflows through Fireworks
 		self.list_of_dict_filenames: List[str] = LIST_OF_DICT_FILENAMES.copy()
+		self.list_of_parameter_filenames: List[str] = LIST_OF_PARAMETER_FILENAMES.copy()
 		self.removed_data: Dict[str, str] = REMOVED_DATA.copy()
 		self.modified_data: Dict[str, str] = MODIFIED_DATA.copy()
 		self.added_data: Dict[str, str] = ADDED_DATA.copy()
-
 		self.new_gene_added_data: Dict[str,str] = {}
+		self.parameter_file_attribute_names: List[str] = [
+			os.path.splitext(os.path.basename(filename))[0]
+			for filename in self.list_of_parameter_filenames
+			]
 
 		if self.operons_on:
 			self.list_of_dict_filenames.append('transcription_units.tsv')
@@ -202,9 +206,14 @@ class KnowledgeBaseEcoli(object):
 				})
 
 		if remove_rrff:
+			self.list_of_parameter_filenames.append(
+				os.path.join("rrna_options", "remove_rrff", "mass_parameters_modified.tsv"))
 			self.removed_data.update({
 				'genes': 'rrna_options.remove_rrff.genes_removed',
 				'rnas': 'rrna_options.remove_rrff.rnas_removed',
+				})
+			self.modified_data.update({
+				'mass_parameters': 'rrna_options.remove_rrff.mass_parameters_modified',
 				})
 			if self.operons_on:
 				self.modified_data.update({
@@ -247,8 +256,8 @@ class KnowledgeBaseEcoli(object):
 		for filename in self.list_of_dict_filenames:
 			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
 
-		for filename in LIST_OF_PARAMETER_FILENAMES:
-			self._load_parameters(os.path.join(FLAT_DIR, filename))
+		for filename in self.list_of_parameter_filenames:
+			self._load_parameters(FLAT_DIR, os.path.join(FLAT_DIR, filename))
 
 		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
 
@@ -296,13 +305,17 @@ class KnowledgeBaseEcoli(object):
 			for record in SeqIO.parse(handle, "fasta"):
 				return record.seq
 
-	def _load_parameters(self, file_path):
-		attr_name = file_path.split(os.path.sep)[-1].split(".")[0]
+	def _load_parameters(self, dir_name, file_name):
+		path = self
+		for sub_path in file_name[len(dir_name) + 1:].split(os.path.sep)[:-1]:
+			if not hasattr(path, sub_path):
+				setattr(path, sub_path, DataStore())
+			path = getattr(path, sub_path)
+		attr_name = file_name.split(os.path.sep)[-1].split(".")[0]
 		param_dict = {}
 
-		with io.open(file_path, "rb") as csvfile:
+		with io.open(file_name, "rb") as csvfile:
 			reader = tsv.dict_reader(csvfile)
-
 			for row in reader:
 				value = json.loads(row['value'])
 				if row['units'] != '':
@@ -314,7 +327,7 @@ class KnowledgeBaseEcoli(object):
 					value = value * unit
 				param_dict[row['name']] = value
 
-		setattr(self, attr_name, param_dict)
+		setattr(path, attr_name, param_dict)
 
 	def _prune_data(self):
 		"""
@@ -391,38 +404,51 @@ class KnowledgeBaseEcoli(object):
 			data_to_modify = getattr(self, modify_attr.split('.')[0])
 			for attr in modify_attr.split('.')[1:]:
 				data_to_modify = getattr(data_to_modify, attr)
-			id_col_name = list(data_to_modify[0].keys())[0]
 
-			id_to_modified_cols = {}
-			for row in data_to_modify:
-				id_to_modified_cols[row[id_col_name]] = row
-
-			# Modify any matching rows with identical IDs
 			data = getattr(self, data_attr)
 
-			if list(data[0].keys())[0] != id_col_name:
-				raise ValueError(f'Could not modify data {data_attr} with '
-					f'{modify_attr} because the names of the first columns '
-					f'do not match.')
+			# If modifying a parameter file, replace values in dictionary
+			if data_attr in self.parameter_file_attribute_names:
+				for key, value in data_to_modify.items():
+					if key not in data:
+						raise ValueError(f'Could not modify data {data_attr}'
+							f'with {modify_attr} because the name {key} does '
+							f'not exist in {data_attr}.')
 
-			modified_entry_ids = set()
-			for i, row in enumerate(data):
-				if row[id_col_name] in id_to_modified_cols:
-					modified_cols = id_to_modified_cols[row[id_col_name]]
-					for col_name in data[i]:
-						if col_name in modified_cols:
-							data[i][col_name] = modified_cols[col_name]
-					modified_entry_ids.add(row[id_col_name])
+					data[key] = value
 
-			# Check for entries in modification data that do not exist in
-			# original data
-			id_diff = set(id_to_modified_cols.keys()).symmetric_difference(
-				modified_entry_ids)
-			if id_diff:
-				raise ValueError(f'Could not modify data {data_attr} with '
-					f'{modify_attr} because of one or more entries in '
-					f'{modify_attr} that do not exist in {data_attr} '
-					f'(nonexistent entries: {id_diff}).')
+			# If modifying a table file, replace rows
+			else:
+				id_col_name = list(data_to_modify[0].keys())[0]
+
+				id_to_modified_cols = {}
+				for row in data_to_modify:
+					id_to_modified_cols[row[id_col_name]] = row
+
+				# Modify any matching rows with identical IDs
+				if list(data[0].keys())[0] != id_col_name:
+					raise ValueError(f'Could not modify data {data_attr} with '
+						f'{modify_attr} because the names of the first columns '
+						f'do not match.')
+
+				modified_entry_ids = set()
+				for i, row in enumerate(data):
+					if row[id_col_name] in id_to_modified_cols:
+						modified_cols = id_to_modified_cols[row[id_col_name]]
+						for col_name in data[i]:
+							if col_name in modified_cols:
+								data[i][col_name] = modified_cols[col_name]
+						modified_entry_ids.add(row[id_col_name])
+
+				# Check for entries in modification data that do not exist in
+				# original data
+				id_diff = set(id_to_modified_cols.keys()).symmetric_difference(
+					modified_entry_ids)
+				if id_diff:
+					raise ValueError(f'Could not modify data {data_attr} with '
+						f'{modify_attr} because of one or more entries in '
+						f'{modify_attr} that do not exist in {data_attr} '
+						f'(nonexistent entries: {id_diff}).')
 
 	def _check_new_gene_ids(self, nested_attr):
 		"""
@@ -455,6 +481,7 @@ class KnowledgeBaseEcoli(object):
 
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
+		dna_sites_data = getattr(self, 'dna_sites')
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -468,10 +495,17 @@ class KnowledgeBaseEcoli(object):
 
 		if not tu_data:
 			# Check if specified insertion location is in another gene
-			data_to_check = genes_data
+			data_to_check = genes_data.copy()
 		else:
 			# Check if specified insertion location is in a transcription unit
-			data_to_check = tu_data
+			data_to_check = tu_data.copy()
+
+		# Add important DNA sites to the list of locations to check
+		# TODO: Check for other DNA sites if we include any in the future
+		sites_data_to_check = [
+			site for site in dna_sites_data if site['common_name'] == 'oriC' or
+			site['common_name'] == 'TerC']
+		data_to_check += sites_data_to_check
 
 		conflicts = [row for row in data_to_check if
 					 ((row['left_end_pos'] is not None) and
@@ -488,6 +522,25 @@ class KnowledgeBaseEcoli(object):
 
 		return insert_pos
 
+	def _update_global_coordinates(self, data, insert_pos, insert_len):
+		"""
+		Updates the left and right end positions for all elements in data if
+		their positions will be impacted by the new gene insertion.
+
+		Args:
+			data: Data attribute to update
+			insert_pos: Location of new gene insertion
+			insert_len: Length of new gene insertion
+
+		"""
+
+		for row in data:
+			left = row['left_end_pos']
+			right = row['right_end_pos']
+			if (left is not None and left != '') and (
+					right is not None and right != '') and left >= insert_pos:
+				row.update({'left_end_pos': left + insert_len})
+				row.update({'right_end_pos': right + insert_len})
 
 	def _update_gene_locations(self, nested_attr, insert_pos):
 		"""
@@ -497,6 +550,7 @@ class KnowledgeBaseEcoli(object):
 
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
+		dna_sites_data = getattr(self, 'dna_sites')
 
 		nested_data = getattr(self, nested_attr[:-1].split('.')[0])
 		for attr in nested_attr[:-1].split('.')[1:]:
@@ -511,25 +565,18 @@ class KnowledgeBaseEcoli(object):
 				"gaps in new gene insertions are not supported at this time"
 
 		insert_end = new_genes_data[-1]['right_end_pos'] + insert_pos
+		insert_len = insert_end - insert_pos + 1
 
 		# Update global positions of original genes
-		insert_len = insert_end - insert_pos + 1
-		for row in genes_data:
-			left = row['left_end_pos']
-			right = row['right_end_pos']
-			if (left is not None) and (right is not None) and left >= \
-					insert_pos:
-					row.update({'left_end_pos': left+insert_len})
-					row.update({'right_end_pos': right+insert_len})
+		self._update_global_coordinates(genes_data, insert_pos, insert_len)
 
 		# Update global positions of transcription units
 		if tu_data:
-			for row in tu_data:
-				left = row['left_end_pos']
-				right = row['right_end_pos']
-				if (left != '') and (right != '') and left >= insert_pos:
-					row.update({'left_end_pos': left + insert_len})
-					row.update({'right_end_pos': right + insert_len})
+			self._update_global_coordinates(tu_data, insert_pos, insert_len)
+
+		# Update DNA site positions
+		# (including the origin and terminus of replication)
+		self._update_global_coordinates(dna_sites_data, insert_pos, insert_len)
 
 		# Change relative insertion positions to global in reference genome
 		for row in new_genes_data:

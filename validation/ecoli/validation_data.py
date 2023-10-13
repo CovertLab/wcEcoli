@@ -84,6 +84,7 @@ class Protein(object):
 	""" Protein """
 
 	def __init__(self, validation_data_raw, knowledge_base_raw):
+
 		compartment_ids_to_abbreviations = {
 			comp['id']: comp['abbrev'] for comp in knowledge_base_raw.compartments
 			}
