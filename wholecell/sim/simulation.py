@@ -187,17 +187,11 @@ class Simulation():
 		for external_state in self.external_states.values():
 			external_state.initialize(self, sim_data, self._timeline)
 
-		for listener in self.listeners.values():
-			listener.initialize(self, sim_data)
-
 		for hook in self.hooks.values():
 			hook.initialize(self, sim_data)
 
 		for internal_state in self.internal_states.values():
 			internal_state.allocate()
-
-		for listener in self.listeners.values():
-			listener.allocate()
 
 		self._initialConditionsFunction(sim_data)
 
@@ -207,6 +201,12 @@ class Simulation():
 			process.randomState = np.random.RandomState(seed=process.seed)
 
 			process.initialize(self, sim_data)
+
+		for listener in self.listeners.values():
+			listener.initialize(self, sim_data)
+
+		for listener in self.listeners.values():
+			listener.allocate()
 
 		self._timeTotal = self.initialTime()
 
