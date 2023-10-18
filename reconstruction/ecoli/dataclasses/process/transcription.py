@@ -1135,12 +1135,17 @@ class Transcription(object):
 		is_16S_rRNA = self.cistron_data['is_16S_rRNA'][mature_rna_cistron_indexes]
 		is_5S_rRNA = self.cistron_data['is_5S_rRNA'][mature_rna_cistron_indexes]
 
-		# Set degradation rates of rRNAs to the average reported degradation
-		# rates of mRNAs
-		# Note: rRNAs complexed into ribosomal subunits will not degrade, so
-		# this will only significantly affect excess rRNAs
 		rna_deg_rates = np.zeros(n_mature_rnas)
-		rna_deg_rates[is_rRNA] = np.log(2) / self.average_mRNA_cistron_half_life.asNumber(units.s)
+		if sim_data.stable_rrna:
+			# If stable rRNA option is on, set degradation rates of mature rRNAs
+			# to the values calculated from the half-life in sim_data.constants
+			rna_deg_rates[is_rRNA] = np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s)
+		else:
+			# Default: Set degradation rates of mature rRNAs to the average
+			# reported degradation rates of mRNAs
+			# Note: rRNAs complexed into ribosomal subunits will not degrade, so
+			# this will only significantly affect excess rRNAs
+			rna_deg_rates[is_rRNA] = np.log(2) / self.average_mRNA_cistron_half_life.asNumber(units.s)
 
 		# Set degradation rates of tRNAs to the values calculated from the
 		# half-life in sim_data.constants

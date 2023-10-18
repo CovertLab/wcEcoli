@@ -58,6 +58,7 @@ PARCA_KEYS = (
 	'variable_elongation_translation',
 	'remove_rrna_operons',
 	'remove_rrff',
+	'stable_rrna',
 	)
 
 SIM_KEYS = (
@@ -410,6 +411,8 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		self.define_parameter_bool(parser, 'remove_rrff', False,
 		    help="Remove the rrfF gene. If operon option is set to 'on',"
 		         " removes the rrfF gene from the rrnD operon.")
+		self.define_parameter_bool(parser, 'stable_rrna', False,
+			help="Make the mature rRNA molecules stable.")
 
 		self.define_parameter_bool(parser, 'debug_parca', False,
 			help='Make Parca calculate only one arbitrarily-chosen transcription'

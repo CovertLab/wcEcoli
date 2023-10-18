@@ -74,6 +74,7 @@ class RunParca(scriptBase.ScriptBase):
 			'new_genes': args.new_genes,
 			'remove_rrna_operons': args.remove_rrna_operons,
 			'remove_rrff': args.remove_rrff,
+			'stable_rrna': args.stable_rrna,
 			'time': args.time,
 			'python': sys.version.splitlines()[0],
 		}

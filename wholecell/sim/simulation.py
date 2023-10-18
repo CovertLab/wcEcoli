@@ -53,6 +53,7 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	inheritedStatePath = None,
 	remove_rrna_operons = False,
 	remove_rrff = False,
+	stable_rrna = False,
 	variable_elongation_transcription=True,
 	variable_elongation_translation = False,
 	raise_on_time_limit = False,
