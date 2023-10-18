@@ -187,13 +187,6 @@ class Simulation():
 		for external_state in self.external_states.values():
 			external_state.initialize(self, sim_data, self._timeline)
 
-		for process_name, process in self.processes.items():
-			# initialize random streams
-			process.seed = self._seedFromName(process_name)
-			process.randomState = np.random.RandomState(seed=process.seed)
-
-			process.initialize(self, sim_data)
-
 		for listener in self.listeners.values():
 			listener.initialize(self, sim_data)
 
@@ -207,6 +200,13 @@ class Simulation():
 			listener.allocate()
 
 		self._initialConditionsFunction(sim_data)
+
+		for process_name, process in self.processes.items():
+			# initialize random streams
+			process.seed = self._seedFromName(process_name)
+			process.randomState = np.random.RandomState(seed=process.seed)
+
+			process.initialize(self, sim_data)
 
 		self._timeTotal = self.initialTime()
 
