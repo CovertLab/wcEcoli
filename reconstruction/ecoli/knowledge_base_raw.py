@@ -165,8 +165,9 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, new_genes_option: str="off"):
+	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off"):
 		self.operons_on = operons_on
+		self.stable_rrna = stable_rrna
 		self.new_genes_option = new_genes_option
 
 		if not operons_on and remove_rrna_operons:
