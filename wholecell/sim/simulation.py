@@ -209,6 +209,10 @@ class Simulation():
 
 		self._initialConditionsFunction(sim_data)
 
+		# TODO: If processes are initialized before initial conditions, then the internal shift sim_data
+		# changes to initial conditions do not make their way into processes that store
+		# a copy of those values
+
 		self._timeTotal = self.initialTime()
 
 		for hook in self.hooks.values():
