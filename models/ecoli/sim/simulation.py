@@ -76,12 +76,12 @@ class EcoliSimulation(Simulation):
 			ChromosomeReplication,
 			ProteinDegradation,
 			RnaDegradation,
-			RnaMaturation,
 			Complexation,
 		),
 		(
 			TranscriptElongation,
 			PolypeptideElongation,
+			RnaMaturation,
 		),
 		(
 			ChromosomeStructure,
