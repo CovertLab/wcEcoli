@@ -76,6 +76,7 @@ class EcoliSimulation(Simulation):
 			ChromosomeReplication,
 			ProteinDegradation,
 			RnaDegradation,
+			Complexation,
 		),
 		(
 			TranscriptElongation,
@@ -84,7 +85,6 @@ class EcoliSimulation(Simulation):
 		),
 		(
 			ChromosomeStructure,
-			Complexation,
 		),
 		(
 			Metabolism,

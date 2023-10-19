@@ -96,6 +96,8 @@ Modeling options:
 	REMOVE_RRFF (int, "0"): if nonzero, remove the rrfF gene the simulation.
 		If OPERONS is set to "on", this also removes the rrfF gene from the
 		rrnD rRNA operon.
+	STABLE_RRNA (int, "0"): if nonzero, the mature rRNA molecules are set to be
+		stable (half-life of 48 hours)
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
@@ -299,6 +301,7 @@ assert OPERONS in constants.EXTENDED_OPERON_OPTIONS, f'{OPERONS=} needs to be in
 NEW_GENES = get_environment("NEW_GENES", constants.DEFAULT_NEW_GENES_OPTION)
 REMOVE_RRNA_OPERONS = bool(int(get_environment("REMOVE_RRNA_OPERONS", DEFAULT_SIMULATION_KWARGS["remove_rrna_operons"])))
 REMOVE_RRFF = bool(int(get_environment("REMOVE_RRFF", DEFAULT_SIMULATION_KWARGS["remove_rrff"])))
+STABLE_RRNA = bool(int(get_environment("STABLE_RRNA", DEFAULT_SIMULATION_KWARGS["stable_rrna"])))
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
@@ -459,6 +462,7 @@ class WorkflowBuilder:
 			"new_genes": NEW_GENES,
 			"remove_rrna_operons": REMOVE_RRNA_OPERONS,
 			"remove_rrff": REMOVE_RRFF,
+			"stable_rrna": STABLE_RRNA,
 			"time": SUBMISSION_TIME,
 			"python": sys.version.splitlines()[0],
 			"total_gens": N_GENS,
@@ -525,6 +529,7 @@ class WorkflowBuilder:
 				new_genes=NEW_GENES,
 				remove_rrna_operons=REMOVE_RRNA_OPERONS,
 				remove_rrff=REMOVE_RRFF,
+				stable_rrna=STABLE_RRNA,
 				output=os.path.join(KB_DIRECTORY, constants.SERIALIZED_RAW_DATA)),
 			"InitRawData",
 			priority=12)

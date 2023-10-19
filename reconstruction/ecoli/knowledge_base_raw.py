@@ -99,6 +99,7 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("rrna_options", "remove_rrff", "genes_removed.tsv"),
 	os.path.join("rrna_options", "remove_rrff", "rnas_removed.tsv"),
 	os.path.join("rrna_options", "remove_rrff", "transcription_units_modified.tsv"),
+	os.path.join("rrna_options", "remove_rrna_operons", "transcription_units_added.tsv"),
 	os.path.join("rrna_options", "remove_rrna_operons", "transcription_units_removed.tsv"),
 	os.path.join("condition", "tf_condition.tsv"),
 	os.path.join("condition", "condition_defs.tsv"),
@@ -164,8 +165,9 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, new_genes_option: str="off"):
+	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off"):
 		self.operons_on = operons_on
+		self.stable_rrna = stable_rrna
 		self.new_genes_option = new_genes_option
 
 		if not operons_on and remove_rrna_operons:
@@ -197,13 +199,16 @@ class KnowledgeBaseEcoli(object):
 				self.removed_data.update({
 					'transcription_units': 'rrna_options.remove_rrna_operons.transcription_units_removed',
 					})
+				self.added_data.update({
+					'transcription_units': 'rrna_options.remove_rrna_operons.transcription_units_added',
+					})
 			else:
 				self.removed_data.update({
 					'transcription_units': 'transcription_units_removed',
 				})
-			self.added_data.update({
-				'transcription_units': 'transcription_units_added',
-				})
+				self.added_data.update({
+					'transcription_units': 'transcription_units_added',
+					})
 
 		if remove_rrff:
 			self.list_of_parameter_filenames.append(
