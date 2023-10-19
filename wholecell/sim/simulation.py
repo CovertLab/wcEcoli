@@ -29,7 +29,6 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	jit = True,
 	massDistribution = True,
 	dPeriodDivision = True,
-	growthRateNoise = False,
 	translationSupply = True,
 	trna_charging = True,
 	aa_supply_in_charging = True,
@@ -76,7 +75,6 @@ ALTERNATE_KWARG_NAMES = {
 	"log_to_shell": "logToShell",
 	"log_to_disk_every": "logToDiskEvery",
 	"mass_distribution": "massDistribution",
-	"growth_rate_noise": "growthRateNoise",
 	"d_period_division": "dPeriodDivision",
 	"translation_supply": "translationSupply",
 	}
@@ -188,6 +186,14 @@ class Simulation():
 		for external_state in self.external_states.values():
 			external_state.initialize(self, sim_data, self._timeline)
 
+		for hook in self.hooks.values():
+			hook.initialize(self, sim_data)
+
+		for internal_state in self.internal_states.values():
+			internal_state.allocate()
+
+		self._initialConditionsFunction(sim_data)
+
 		for process_name, process in self.processes.items():
 			# initialize random streams
 			process.seed = self._seedFromName(process_name)
@@ -198,16 +204,8 @@ class Simulation():
 		for listener in self.listeners.values():
 			listener.initialize(self, sim_data)
 
-		for hook in self.hooks.values():
-			hook.initialize(self, sim_data)
-
-		for internal_state in self.internal_states.values():
-			internal_state.allocate()
-
 		for listener in self.listeners.values():
 			listener.allocate()
-
-		self._initialConditionsFunction(sim_data)
 
 		self._timeTotal = self.initialTime()
 

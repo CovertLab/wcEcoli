@@ -81,8 +81,6 @@ Simulation parameters:
 Modeling options:
 	MASS_DISTRIBUTION (int, "1"): if nonzero, a mass coefficient is drawn from
 		a normal distribution centered on 1; otherwise it is set equal to 1
-	GROWTH_RATE_NOISE (int, "0"): if nonzero, a growth rate coefficient is drawn
-		from a normal distribution centered on 1; otherwise it is set equal to 1
 	D_PERIOD_DIVISION (int, "1"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
@@ -294,7 +292,6 @@ ADJUST_TIMESTEP_FOR_CHARGING = int(get_environment("ADJUST_TIMESTEP_FOR_CHARGING
 LOG_TO_DISK_EVERY = int(get_environment("LOG_TO_DISK_EVERY", DEFAULT_SIMULATION_KWARGS["logToDiskEvery"]))
 JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
-GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 OPERONS = get_environment("OPERONS", constants.DEFAULT_OPERON_OPTION)
 assert OPERONS in constants.EXTENDED_OPERON_OPTIONS, f'{OPERONS=} needs to be in {constants.EXTENDED_OPERON_OPTIONS}'
@@ -471,7 +468,6 @@ class WorkflowBuilder:
 			"variant": VARIANT,
 			"total_variants": str(len(VARIANTS_TO_RUN)),
 			"mass_distribution": MASS_DISTRIBUTION,
-			"growth_rate_noise": GROWTH_RATE_NOISE,
 			"d_period_division": D_PERIOD_DIVISION,
 			"variable_elongation_transcription": VARIABLE_ELONGATION_TRANSCRIPTION,
 			"variable_elongation_translation": VARIABLE_ELONGATION_TRANSLATION,
@@ -794,7 +790,6 @@ class WorkflowBuilder:
 							log_to_disk_every=LOG_TO_DISK_EVERY,
 							jit=JIT,
 							mass_distribution=MASS_DISTRIBUTION,
-							growth_rate_noise=GROWTH_RATE_NOISE,
 							d_period_division=D_PERIOD_DIVISION,
 							variable_elongation_transcription=VARIABLE_ELONGATION_TRANSCRIPTION,
 							variable_elongation_translation=VARIABLE_ELONGATION_TRANSLATION,

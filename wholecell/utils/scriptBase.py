@@ -30,7 +30,6 @@ METADATA_KEYS = (
 	'seed',
 	'init_sims',
 	'mass_distribution',
-	'growth_rate_noise',
 	'd_period_division',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -71,7 +70,6 @@ SIM_KEYS = (
 	'log_to_disk_every',
 	'jit',
 	'mass_distribution',
-	'growth_rate_noise',
 	'd_period_division',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -504,9 +502,6 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		add_bool_option('mass_distribution', 'massDistribution',
 			help='If true, a mass coefficient is drawn from a normal distribution'
 				 ' centered on 1; otherwise it is set equal to 1')
-		add_bool_option('growth_rate_noise', 'growthRateNoise',
-			help='If true, a growth rate coefficient is drawn from a normal'
-				 ' distribution centered on 1; otherwise it is set equal to 1')
 		add_bool_option('d_period_division', 'dPeriodDivision',
 			help='If true, ends simulation once D period has occurred after'
 				 ' chromosome termination; otherwise simulation terminates once'
