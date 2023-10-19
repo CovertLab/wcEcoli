@@ -17,13 +17,6 @@ class UniqueMoleculeDivisionError(Exception):
 	pass
 
 
-def zero_elongation_rate():
-	return {
-		"d1_elng_rate_factor": 0.,
-		"d2_elng_rate_factor": 0.,
-		}
-
-
 def divide_cell(sim):
 	"""
 	Divide simulated states (chromosome, bulkMolecules, and uniqueMolecules)
@@ -60,7 +53,6 @@ def divide_cell(sim):
 		d2_bulkMolCntr = bulkMolecules.container.emptyLike()
 		d1_uniqueMolCntr = uniqueMolecules.container.emptyLike()
 		d2_uniqueMolCntr = uniqueMolecules.container.emptyLike()
-		daughter_elng_rates = zero_elongation_rate()
 	else:
 		# Divide full chromosomes into two daughter cells
 		# The output is used when dividing both bulk molecules and unique
@@ -72,7 +64,7 @@ def divide_cell(sim):
 		# Create divided containers
 		d1_bulkMolCntr, d2_bulkMolCntr = divideBulkMolecules(
 			bulkMolecules, randomState)
-		d1_uniqueMolCntr, d2_uniqueMolCntr, daughter_elng_rates = divideUniqueMolecules(
+		d1_uniqueMolCntr, d2_uniqueMolCntr = divideUniqueMolecules(
 			uniqueMolecules, randomState, chromosome_division_results, sim)
 
 	# Save the daughter initialization state.
@@ -82,7 +74,6 @@ def divide_cell(sim):
 		d1_path,
 		is_dead=isDead,
 		initial_time=initial_time,
-		elng_rate_factor=daughter_elng_rates["d1_elng_rate_factor"],
 		bulk_molecules=d1_bulkMolCntr,
 		unique_molecules=d1_uniqueMolCntr,
 		)
@@ -90,7 +81,6 @@ def divide_cell(sim):
 		d2_path,
 		is_dead=isDead,
 		initial_time=initial_time,
-		elng_rate_factor=daughter_elng_rates["d2_elng_rate_factor"],
 		bulk_molecules=d2_bulkMolCntr,
 		unique_molecules=d2_uniqueMolCntr,
 		)
@@ -203,9 +193,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 	# Get indexes of chromosome domains assigned to each daughter
 	d1_all_domain_indexes = chromosome_division_results['d1_all_domain_indexes']
 	d2_all_domain_indexes = chromosome_division_results['d2_all_domain_indexes']
-
-	# Initialize daughter cell ribosome elongation rates
-	daughter_elng_rates = zero_elongation_rate()
 
 	# Initialize arrays for unique indexes of chromosome-bound molecules. The
 	# number -1 is used to indicate terC and is always retained.
@@ -422,17 +409,6 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 		# Divide ribosomes following the mRNA molecule that each ribosome
 		# is bound to.
 		if n_molecules > 0:
-			# If growth rate noise is set to True, multiply noise parameter
-			# to translation capacity
-			noiseMultiplier = 1.
-			if sim._growthRateNoise:
-				noiseMultiplier = randomState.normal(1, 0.25)
-
-			daughter_elng_rates = {
-				"d1_elng_rate_factor": noiseMultiplier,
-				"d2_elng_rate_factor": noiseMultiplier,
-				}
-
 			# Divide ribosomes based on their mRNA index
 			mRNA_index = molecule_set.attr("mRNA_index")
 			d1_bool = np.isin(mRNA_index, d1_RNA_unique_indexes)
@@ -492,7 +468,7 @@ def divideUniqueMolecules(uniqueMolecules, randomState,
 			molecule_name, n_d2,
 			**d2_divided_attributes_dict)
 
-	return d1_unique_molecules_container, d2_unique_molecules_container, daughter_elng_rates
+	return d1_unique_molecules_container, d2_unique_molecules_container
 
 
 def save_inherited_state(daughter_path, **inherited_state):

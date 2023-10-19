@@ -29,7 +29,6 @@ DEFAULT_SIMULATION_KWARGS = dict(
 	jit = True,
 	massDistribution = True,
 	dPeriodDivision = True,
-	growthRateNoise = False,
 	translationSupply = True,
 	trna_charging = True,
 	aa_supply_in_charging = True,
@@ -76,7 +75,6 @@ ALTERNATE_KWARG_NAMES = {
 	"log_to_shell": "logToShell",
 	"log_to_disk_every": "logToDiskEvery",
 	"mass_distribution": "massDistribution",
-	"growth_rate_noise": "growthRateNoise",
 	"d_period_division": "dPeriodDivision",
 	"translation_supply": "translationSupply",
 	}
