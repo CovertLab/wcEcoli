@@ -65,6 +65,7 @@ class EcoliSimulation(Simulation):
 		(
 			Equilibrium,
 			TwoComponentSystem,
+			RnaMaturation,
 		),
 		# Must run before TranscriptInitiation
 		(
@@ -81,8 +82,8 @@ class EcoliSimulation(Simulation):
 		(
 			TranscriptElongation,
 			PolypeptideElongation,
-			RnaMaturation,
 		),
+		# Must run after TranscriptElongation and PolypeptideElongation
 		(
 			ChromosomeStructure,
 		),
