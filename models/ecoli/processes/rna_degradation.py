@@ -247,8 +247,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		self.bulk_RNAs.requestIs(n_bulk_RNAs_to_degrade)
 		self.unique_RNAs.request_access(self.EDIT_DELETE_ACCESS)
-		self.endoRNases.requestAll()
-		self.exoRNases.requestAll()
 		self.fragment_bases.requestAll()
 
 		# Calculate the amount of water required for total RNA hydrolysis by

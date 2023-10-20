@@ -30,7 +30,6 @@ METADATA_KEYS = (
 	'seed',
 	'init_sims',
 	'mass_distribution',
-	'growth_rate_noise',
 	'd_period_division',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -58,6 +57,7 @@ PARCA_KEYS = (
 	'variable_elongation_translation',
 	'remove_rrna_operons',
 	'remove_rrff',
+	'stable_rrna',
 	)
 
 SIM_KEYS = (
@@ -70,7 +70,6 @@ SIM_KEYS = (
 	'log_to_disk_every',
 	'jit',
 	'mass_distribution',
-	'growth_rate_noise',
 	'd_period_division',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -410,6 +409,8 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		self.define_parameter_bool(parser, 'remove_rrff', False,
 		    help="Remove the rrfF gene. If operon option is set to 'on',"
 		         " removes the rrfF gene from the rrnD operon.")
+		self.define_parameter_bool(parser, 'stable_rrna', False,
+			help="Make the mature rRNA molecules stable.")
 
 		self.define_parameter_bool(parser, 'debug_parca', False,
 			help='Make Parca calculate only one arbitrarily-chosen transcription'
@@ -501,9 +502,6 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		add_bool_option('mass_distribution', 'massDistribution',
 			help='If true, a mass coefficient is drawn from a normal distribution'
 				 ' centered on 1; otherwise it is set equal to 1')
-		add_bool_option('growth_rate_noise', 'growthRateNoise',
-			help='If true, a growth rate coefficient is drawn from a normal'
-				 ' distribution centered on 1; otherwise it is set equal to 1')
 		add_bool_option('d_period_division', 'dPeriodDivision',
 			help='If true, ends simulation once D period has occurred after'
 				 ' chromosome termination; otherwise simulation terminates once'

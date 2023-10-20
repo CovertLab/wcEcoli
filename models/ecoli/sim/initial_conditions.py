@@ -111,12 +111,6 @@ def setDaughterInitialConditions(sim, sim_data):
 
 	sim._isDead = inherited_state['is_dead']
 
-	# TODO: if the initialization of processes is moved to after initial conditions,
-	# these lines of code won't work
-	elng_rate_factor = inherited_state['elng_rate_factor']
-	if sim._growthRateNoise:
-		sim.processes["PolypeptideElongation"].elngRateFactor = elng_rate_factor
-
 	sim.internal_states["BulkMolecules"].loadSnapshot(inherited_state['bulk_molecules'])
 	sim.internal_states["UniqueMolecules"].loadSnapshot(inherited_state['unique_molecules'])
 

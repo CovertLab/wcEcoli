@@ -31,4 +31,4 @@
 "pH"	7.2			
 "d_period"	20	"units.min"		
 "replisome_elongation_rate"	967	"units.nt / units.s"
-"tRNA_half_life"	2880	"units.min"
+"stable_RNA_half_life"	2880	"units.min"

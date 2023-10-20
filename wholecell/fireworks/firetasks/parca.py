@@ -35,6 +35,7 @@ class ParcaTask(FiretaskBase):
 		'variable_elongation_translation',
 		'remove_rrna_operons',
 		'remove_rrff',
+		'stable_rrna',
 		]
 
 	def _get_default(self, key):
@@ -59,6 +60,7 @@ class ParcaTask(FiretaskBase):
 				new_genes=self.get('new_genes'),
 				remove_rrna_operons=self.get('remove_rrna_operons', False),
 				remove_rrff=self.get('remove_rrff', False),
+				stable_rrna=self.get('stable_rrna', False),
 				output=raw_data_file),
 
 			FitSimDataTask(
