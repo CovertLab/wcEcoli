@@ -47,8 +47,51 @@ assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 	"The first new gene expression factor should always be the control sim"
 
 # Generation to induce new gene expression
-NEW_GENE_INDUCTION_GEN = 8
-NEW_GENE_KNOCKOUT_GEN = 128
+NEW_GENE_INDUCTION_GEN = 1
+NEW_GENE_KNOCKOUT_GEN = 3
+FINAL_SIM_GEN = 128
+
+def determine_new_gene_ids_and_indices(sim_data):
+	"""
+	Determines the ids and indices of new gene mRNAs and proteins using the new
+	gene flag in sim_data.
+
+	Returns:
+		new_gene_mRNA_ids: ids corresponding to new gene mRNAs
+		new_gene_mRNA_indices: indexes in rna_data table corresponding to new
+			gene mRNAs
+		new_gene_monomer_ids: ids corresponding to new gene monomers
+		new_gene_monomer_indices: indexes in monomer_data table corresponding to
+			new gene monomers
+	"""
+	mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
+	monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+	new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
+	mRNA_monomer_id_dict = dict(
+		zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+	new_gene_monomer_ids = [
+		mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
+	if len(new_gene_mRNA_ids) == 0:
+		raise Exception("This variant  is intended to be run on simulations "
+			"where the new gene option was enabled, but no new gene mRNAs were "
+			"found.")
+	if len(new_gene_monomer_ids) == 0:
+		raise Exception("This variant is intended to be run on simulations where"
+			" the new gene option was enabled, but no new gene proteins "
+			"were found.")
+	assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
+		'number of new gene monomers and mRNAs should be equal'
+	rna_data = sim_data.process.transcription.rna_data
+	mRNA_idx_dict = {rna[:-3]: i for i, rna in enumerate(rna_data['id'])}
+	new_gene_indices = [
+		mRNA_idx_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
+	monomer_idx_dict = {
+		monomer: i for i, monomer in enumerate(monomer_sim_data['id'])}
+	new_gene_monomer_indices = [
+		monomer_idx_dict.get(monomer_id) for monomer_id in new_gene_monomer_ids]
+
+	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
+
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
@@ -89,31 +132,9 @@ def induce_new_genes(sim_data, index):
 		sim_data, index)
 
 	# Determine ids and indices of new genes
-	mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
-	monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
-	new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
-	mRNA_monomer_id_dict = dict(
-		zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
-	new_gene_monomer_ids = [
-		mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
-	if len(new_gene_mRNA_ids) == 0:
-		raise Exception("This variant  is intended to be run on simulations "
-			"where the new gene option was enabled, but no new gene mRNAs were "
-			"found.")
-	if len(new_gene_monomer_ids) == 0:
-		raise Exception("This variant is intended to be run on simulations where"
-			" the new gene option was enabled, but no new gene proteins "
-			"were found.")
-	assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
-		'number of new gene monomers and mRNAs should be equal'
-	rna_data = sim_data.process.transcription.rna_data
-	mRNA_idx_dict = {rna[:-3]: i for i, rna in enumerate(rna_data['id'])}
-	new_gene_indices = [
-		mRNA_idx_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
-	monomer_idx_dict = {
-		monomer: i for i, monomer in enumerate(monomer_sim_data['id'])}
-	new_gene_monomer_indices = [
-		monomer_idx_dict.get(monomer_id) for monomer_id in new_gene_monomer_ids]
+	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
+		new_gene_monomer_indices = determine_new_gene_ids_and_indices(
+		sim_data)
 
 	# Modify expression and translation efficiency for new genes
 	for i in range(len(new_gene_indices)):
@@ -121,6 +142,32 @@ def induce_new_genes(sim_data, index):
 		monomer_index = new_gene_monomer_indices[i]
 
 		sim_data.adjust_final_expression([gene_index], [expression_factor])
+		sim_data.process.translation.translation_efficiencies_by_monomer[
+			monomer_index] = trl_eff_value
+
+def knockout_induced_new_gene_expression(sim_data, index):
+	"""
+	Intended to be used after induce_new_gene_expression has been used on
+	previous generations. Knocks out new genes by setting their expression
+	levels to 0. Maintains translation effiencies at the values specified using
+	the variant index so that way any pre-existing new gene mRNAs have the same
+	translation efficiency as when they were created.
+	"""
+	# Map variant index to expression factor and tranlsation efficiency value
+	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
+		sim_data, index)
+
+	# Determine ids and indices of new genes
+	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
+		new_gene_monomer_indices = determine_new_gene_ids_and_indices(
+		sim_data)
+
+	# Knockout expression and maintain translation efficiency for new genes
+	for i in range(len(new_gene_indices)):
+		gene_index = new_gene_indices[i]
+		monomer_index = new_gene_monomer_indices[i]
+
+		sim_data.adjust_final_expression([gene_index], [0])
 		sim_data.process.translation.translation_efficiencies_by_monomer[
 			monomer_index] = trl_eff_value
 
@@ -140,6 +187,9 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	# Add the new gene induction to the internal_shift instructions
 	for gen in range(NEW_GENE_INDUCTION_GEN, NEW_GENE_KNOCKOUT_GEN):
 		sim_data.internal_shift_dict[gen] = [(induce_new_genes, index)]
+	for gen in range(NEW_GENE_KNOCKOUT_GEN, FINAL_SIM_GEN):
+		sim_data.internal_shift_dict[gen] = [
+			(knockout_induced_new_gene_expression, index)]
 
 	# Variant descriptions to save to metadata
 	if index == 0:
