@@ -92,6 +92,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2500)
+		total_plots = 8
 
 		for i in range(len(plot_suffixes)):
 
@@ -99,10 +100,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# Plotting
 			plt.figure(figsize = (8.5, 22))
+			plot_num = 1
 
 			# TODO: Maybe use a different proxy for growth?
 			# Growth Rate
-			plt.subplot(7, 1, 1)
+			plt.subplot(total_plots, 1, plot_num)
 			growth_rate = read_stacked_columns(cell_paths, "Mass", "instantaneous_growth_rate")
 			plt.plot(time / 60., growth_rate)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
@@ -112,9 +114,23 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Growth Rate")
 			plt.title("Growth Rate")
+			plot_num += 1
+
+			# Mass
+			plt.subplot(total_plots, 1, plot_num)
+			mass = read_stacked_columns(cell_paths, "Mass", "cellMass")
+			plt.plot(time / 60., mass)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim(0,4000)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Mass (fg)")
+			plt.title("Cell Mass")
+			plot_num += 1
 
 			# Gene copy number
-			plt.subplot(7, 1, 2)
+			plt.subplot(total_plots, 1, plot_num)
 			if len(new_gene_mRNA_ids) == 1:
 				plt.plot(time / 60., new_gene_copy_numbers,
 						 label=new_gene_mRNA_ids[0])
@@ -130,9 +146,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel("Gene Copy Number")
 			plt.title("New Gene Copy Number")
 			plt.legend()
+			plot_num += 1
 
 			# mRNA Counts
-			plt.subplot(7, 1, 3)
+			plt.subplot(total_plots, 1, plot_num)
 			if plot_suffix == "":
 				if len(new_gene_mRNA_ids) == 1:
 					plt.plot(time / 60., new_gene_mRNA_counts,
@@ -157,9 +174,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel("mRNA Counts")
 			plt.title("New Gene mRNA Counts")
 			plt.legend()
+			plot_num += 1
 
 			# Protein Counts
-			plt.subplot(7, 1, 4)
+			plt.subplot(total_plots, 1, plot_num)
 			if plot_suffix == "":
 				if len(new_gene_monomer_ids) == 1:
 					plt.plot(time / 60., new_gene_monomer_counts,
@@ -184,9 +202,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel("Protein Counts")
 			plt.title("New Gene Protein Counts")
 			plt.legend()
+			plot_num += 1
 
 			# ppGpp
-			plt.subplot(7, 1, 5)
+			plt.subplot(total_plots, 1, plot_num)
 			ppGpp_concentration = read_stacked_columns(
 				cell_paths, "GrowthLimits", "ppgpp_conc")
 			plt.plot(time / 60., ppGpp_concentration)
@@ -197,9 +216,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("ppGpp Concentration (uM)")
 			plt.title("ppGpp Concentration")
+			plot_num += 1
 
 			# Total RNAP Counts
-			plt.subplot(7, 1, 6)
+			plt.subplot(total_plots, 1, plot_num)
 			# Inactive
 			rnap_id = [sim_data.molecule_ids.full_RNAP]
 			(inactive_rnap_counts,) = read_stacked_bulk_molecules(
@@ -222,9 +242,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Total RNAP Counts")
 			plt.title("Total RNAP Counts")
+			plot_num += 1
 
 			# Total Ribosome Counts
-			plt.subplot(7, 1, 7)
+			plt.subplot(total_plots, 1, plot_num)
 			# Inactive
 			complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
 			complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
@@ -250,6 +271,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Total Ribosome Counts")
 			plt.title("Total Ribosome Counts")
+			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
