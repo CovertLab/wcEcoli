@@ -51,6 +51,8 @@ NEW_GENE_INDUCTION_GEN = 1
 NEW_GENE_KNOCKOUT_GEN = 3
 FINAL_SIM_GEN = 128
 
+### TODO: make sure this is all written to metadata?
+
 def determine_new_gene_ids_and_indices(sim_data):
 	"""
 	Determines the ids and indices of new gene mRNAs and proteins using the new

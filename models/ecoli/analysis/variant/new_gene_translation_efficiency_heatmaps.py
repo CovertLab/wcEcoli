@@ -78,8 +78,10 @@ Plot data from generations [MIN_CELL_INDEX, MAX_CELL_INDEX)
 Note that early generations may not be representative of dynamics 
 due to how they are initialized
 """
-MIN_CELL_INDEX = 4
-MAX_CELL_INDEX = 16
+# MIN_CELL_INDEX = 4
+# MAX_CELL_INDEX = 16
+MIN_CELL_INDEX = 1
+MAX_CELL_INDEX = 3
 
 """
 Specify which subset of heatmaps should be made
@@ -94,49 +96,49 @@ HEATMAPS_TO_MAKE_LIST = [
 		"cell_dry_mass_heatmap",
 		"cell_volume_heatmap",
 		"ppgpp_concentration_heatmap",
-		"rnap_crowding_heatmap",
-		"ribosome_crowding_heatmap",
+		# "rnap_crowding_heatmap",
+		# "ribosome_crowding_heatmap",
 		"cell_mRNA_mass_heatmap",
 		"cell_protein_mass_heatmap",
 		"rnap_counts_heatmap",
 		"ribosome_counts_heatmap",
-		"new_gene_mRNA_counts_heatmap",
-		"new_gene_monomer_counts_heatmap",
-		"new_gene_rnap_init_rate_heatmap",
-		"new_gene_ribosome_init_rate_heatmap",
-		"new_gene_mRNA_mass_fraction_heatmap",
-		"new_gene_monomer_mass_fraction_heatmap",
-		"new_gene_rnap_time_overcrowded_heatmap",
-		"new_gene_ribosome_time_overcrowded_heatmap",
-		"new_gene_mRNA_counts_fraction_heatmap",
-		"new_gene_monomer_counts_fraction_heatmap",
-		"new_gene_rnap_counts_heatmap",
-		"new_gene_rnap_portion_heatmap",
-		"rrna_rnap_counts_heatmap",
-		"rrna_rnap_portion_heatmap",
-		"rnap_subunit_rnap_portion_heatmap",
-		"rnap_subunit_ribosome_portion_heatmap",
-		"ribosomal_protein_rnap_portion_heatmap",
-		"ribosomal_protein_ribosome_portion_heatmap",
-		"new_gene_ribosome_counts_heatmap",
-		"new_gene_ribosome_portion_heatmap",
-		"weighted_avg_translation_efficiency_heatmap",
-		"new_gene_target_protein_init_prob_heatmap",
-		"new_gene_actual_protein_init_prob_heatmap",
-		"new_gene_target_rna_synth_prob_heatmap",
-		"new_gene_actual_rna_synth_prob_heatmap",
-		"capacity_gene_mRNA_counts_heatmap",
-		"capacity_gene_monomer_counts_heatmap",
-		"capacity_gene_rnap_portion_heatmap",
-		"capacity_gene_ribosome_portion_heatmap",
-		"capacity_gene_mRNA_mass_fraction_heatmap",
-		"capacity_gene_monomer_mass_fraction_heatmap",
-		"capacity_gene_mRNA_counts_fraction_heatmap",
-		"capacity_gene_monomer_counts_fraction_heatmap",
-		"free_rnap_counts_heatmap",
-		"free_ribosome_counts_heatmap",
-		"rnap_ribosome_counts_ratio_heatmap",
-		"new_gene_mRNA_NTP_fraction_heatmap",
+		# "new_gene_mRNA_counts_heatmap",
+		# "new_gene_monomer_counts_heatmap",
+		# "new_gene_rnap_init_rate_heatmap",
+		# "new_gene_ribosome_init_rate_heatmap",
+		# "new_gene_mRNA_mass_fraction_heatmap",
+		# "new_gene_monomer_mass_fraction_heatmap",
+		# "new_gene_rnap_time_overcrowded_heatmap",
+		# "new_gene_ribosome_time_overcrowded_heatmap",
+		# "new_gene_mRNA_counts_fraction_heatmap",
+		# "new_gene_monomer_counts_fraction_heatmap",
+		# "new_gene_rnap_counts_heatmap",
+		# "new_gene_rnap_portion_heatmap",
+		# "rrna_rnap_counts_heatmap",
+		# "rrna_rnap_portion_heatmap",
+		# "rnap_subunit_rnap_portion_heatmap",
+		# "rnap_subunit_ribosome_portion_heatmap",
+		# "ribosomal_protein_rnap_portion_heatmap",
+		# "ribosomal_protein_ribosome_portion_heatmap",
+		# "new_gene_ribosome_counts_heatmap",
+		# "new_gene_ribosome_portion_heatmap",
+		# # "weighted_avg_translation_efficiency_heatmap",
+		# "new_gene_target_protein_init_prob_heatmap",
+		# "new_gene_actual_protein_init_prob_heatmap",
+		# "new_gene_target_rna_synth_prob_heatmap",
+		# "new_gene_actual_rna_synth_prob_heatmap",
+		# "capacity_gene_mRNA_counts_heatmap",
+		# "capacity_gene_monomer_counts_heatmap",
+		# "capacity_gene_rnap_portion_heatmap",
+		# "capacity_gene_ribosome_portion_heatmap",
+		# "capacity_gene_mRNA_mass_fraction_heatmap",
+		# "capacity_gene_monomer_mass_fraction_heatmap",
+		# "capacity_gene_mRNA_counts_fraction_heatmap",
+		# "capacity_gene_monomer_counts_fraction_heatmap",
+		# "free_rnap_counts_heatmap",
+		# "free_ribosome_counts_heatmap",
+		# "rnap_ribosome_counts_ratio_heatmap",
+		# "new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
 ### TODO map id to common name, don't hardcode, add error checking?
@@ -2366,15 +2368,34 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# TODO REPLACE MAPPING WITH FUNCTION FROM VARIANT?
 		# Map variant indices to expression factors and translation efficiency
 		# values
+
+
 		if 'new_gene_expression_factors' not in metadata or \
 				'new_gene_translation_efficiency_values' not in metadata:
-			print("This plot is intended to be run on simulations where the"
-				  " new gene expression-translation efficiency variant was "
-				  "enabled, but no parameters for this variant were found.")
-			return
-		new_gene_expression_factors = metadata['new_gene_expression_factors']
-		new_gene_translation_efficiency_values = metadata[
-			'new_gene_translation_efficiency_values']
+
+			############
+			### TODO DELETE AFTER SHIFT VARIANT WRITING TO METADATA IS FIXED
+			# Currently needed for backwards compatibility with a Sherlock batch
+			if metadata["variant"] != "new_gene_expression_and_translation_efficiency_internal_shift":
+			############
+				print("This plot is intended to be run on simulations where the"
+					  " new gene expression-translation efficiency variant was "
+					  "enabled, but no parameters for this variant were found.")
+				return
+
+		############
+		### TODO DELETE AFTER SHIFT VARIANT WRITING TO METADATA IS FIXED
+		# Currently needed for backwards compatibility with a Sherlock batch
+		if metadata["variant"] == "new_gene_expression_and_translation_efficiency_internal_shift":
+			new_gene_expression_factors= [0, 7, 8, 9, 10, 11, 12, 13]
+			new_gene_translation_efficiency_values = [10, 5, 1, 0.1, 0]
+			new_gene_translation_efficiency_values = [10, 5, 1, 0.1, 0]
+		else:
+		############
+			new_gene_expression_factors = metadata['new_gene_expression_factors']
+			new_gene_translation_efficiency_values = metadata[
+				'new_gene_translation_efficiency_values']
+
 		separator = len(new_gene_translation_efficiency_values)
 		variants = self.ap.get_variants()
 		variant_index_to_values = {}
@@ -2505,7 +2526,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		heatmap_x_label = "Expression Variant"
 		heatmap_y_label = "Translation Efficiency Value"
 		figsize_x =  2 + 2*len(new_gene_expression_factors)/3
-		figsize_y = 0.5 + len(new_gene_translation_efficiency_values)/2
+		figsize_y = 2*len(new_gene_translation_efficiency_values)/2
 
 		# Create dashboard plot
 		if DASHBOARD_FLAG == 1 or DASHBOARD_FLAG == 2:
