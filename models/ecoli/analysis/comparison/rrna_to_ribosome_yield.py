@@ -17,7 +17,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import (exportFigure,
-    read_stacked_columns)
+	read_stacked_columns)
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
 
@@ -100,6 +100,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			total_50s_complexed = complexation_events[:, 0].sum()
 			total_30s_complexed = complexation_events[:, 1].sum()
 
+			# Calculate the mean squared deviation between the two counts
+			msd_excess_subunits_complexed = np.sqrt((
+				(complexation_events[:, 0] - complexation_events[:, 1])**2).mean())
+
 			# Divide by number of cells
 			return {
 				'avg_23s_rRNA_degraded': total_23s_rRNA_degraded / n_cells,
@@ -107,13 +111,14 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				'avg_5s_rRNA_degraded': total_5s_rRNA_degraded / n_cells,
 				'avg_50s_complexed': total_50s_complexed / n_cells,
 				'avg_30s_complexed': total_30s_complexed / n_cells,
+				'msd_excess_subunits_complexed': msd_excess_subunits_complexed,
 			}
 
 		data1 = read_sims(ap1, sim_data1)
 		data2 = read_sims(ap2, sim_data2)
 
-		fig = plt.figure(figsize=(9, 3))
-		gs = fig.add_gridspec(1, 2, width_ratios=(3, 1))
+		fig = plt.figure(figsize=(12, 3))
+		gs = fig.add_gridspec(1, 3, width_ratios=(3, 1, 1))
 
 		# Plot bar plots for each rRNA
 		ax0 = fig.add_subplot(gs[0, 0])
@@ -184,6 +189,20 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax1.spines['right'].set_visible(False)
 
 		ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 8})
+
+		ax2 = fig.add_subplot(gs[0, 2])
+
+		ax2.bar(0, data1['msd_excess_subunits_complexed'], width=0.7, alpha=0.5,
+				color='#555555')
+		ax2.bar(1, data2['msd_excess_subunits_complexed'], width=0.7, alpha=0.5,
+				color='#555555')
+
+		ax2.set_xticks([0, 1])
+		ax2.set_xticklabels(['reference', 'input'])
+		ax2.set_xlim([-0.8, 1.8])
+		ax2.set_ylabel('MSD, excess subunits produced')
+		ax2.spines['top'].set_visible(False)
+		ax2.spines['right'].set_visible(False)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
