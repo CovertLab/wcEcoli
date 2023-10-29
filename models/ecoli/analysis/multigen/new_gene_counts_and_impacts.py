@@ -11,7 +11,9 @@ import os
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
+from numpy import inf
 
+from wholecell.utils import units
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
@@ -63,6 +65,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			mRNA_counts_reader.readAttribute('mRNA_ids'))}
 		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
 								 new_gene_mRNA_ids]
+		mRNA_counts_reader.close()
 
 		# Extract protein indexes for each new gene
 		monomer_counts_reader = TableReader(
@@ -72,6 +75,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 								'monomerIds'))}
 		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
 									monomer_id in new_gene_monomer_ids]
+		monomer_counts_reader.close()
 
 		# Extract RNA indexes for each new gene
 		rnap_reader = TableReader(os.path.join(simOutDir, 'RnaSynthProb'))
@@ -80,6 +84,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			enumerate(rnap_reader.readAttribute('rnaIds'))}
 		new_gene_RNA_indexes = [
 			RNA_idx_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
+		rnap_reader.close()
 
 		# Load data
 		time = read_stacked_columns(
@@ -97,7 +102,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2000)
-		total_plots = 10 # TODO Modularize and get rid of this magic number
+		total_plots = 11 # TODO Modularize and get rid of this magic number
 
 		for i in range(len(plot_suffixes)):
 
@@ -112,17 +117,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			growth_rate = np.ravel(read_stacked_columns(
 				cell_paths, "Mass", "instantaneous_growth_rate",
 				ignore_exception=True))
-			moving_window = min(300, len(growth_rate))
+			moving_window = min(500, len(growth_rate))
 			convolution_array = (np.ones(moving_window) / moving_window)
 			growth_rate_convolved = np.convolve(
 				convolution_array, growth_rate, mode='same')
 			plt.plot(time.flatten() / 60., growth_rate_convolved)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim(-.0001,.0005)
+				plt.ylim(0,.0004)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Growth Rate")
+			plt.ylabel("Growth Rate", fontsize="small")
 			plt.title("Growth Rate")
 			plot_num += 1
 
@@ -136,25 +141,24 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Mass (fg)")
+			plt.ylabel("Mass (fg)", fontsize="small")
 			plt.title("Cell Mass")
 			plot_num += 1
 
 			# Gene Copy Number
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if len(new_gene_mRNA_ids) == 1:
-				plt.plot(time / 60., new_gene_copy_numbers,
-						 label=new_gene_mRNA_ids[0])
+				plt.plot(time / 60., new_gene_copy_numbers)
 			else:
 				for r in range(len(new_gene_mRNA_ids)):
 					plt.plot(time / 60., new_gene_copy_numbers[:,r],
 							 label = new_gene_mRNA_ids[r])
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((-1,10))
+				plt.ylim((0,6))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Gene Copy Number")
+			plt.ylabel("Gene Copy Number", fontsize="small")
 			plt.title("New Gene Copy Number")
 			plt.legend()
 			plot_num += 1
@@ -163,8 +167,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if plot_suffix == "":
 				if len(new_gene_mRNA_ids) == 1:
-					plt.plot(time / 60., new_gene_mRNA_counts,
-							 label=new_gene_mRNA_ids[0])
+					plt.plot(time / 60., new_gene_mRNA_counts)
 				else:
 					for r in range(len(new_gene_mRNA_ids)):
 						plt.plot(time / 60., new_gene_mRNA_counts[:,r],
@@ -182,7 +185,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Log(mRNA Counts + 1)")
+			plt.ylabel("Log(mRNA Counts + 1)", fontsize="small")
 			plt.title("New Gene mRNA Counts")
 			plt.legend()
 			plot_num += 1
@@ -191,8 +194,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if plot_suffix == "":
 				if len(new_gene_monomer_ids) == 1:
-					plt.plot(time / 60., new_gene_monomer_counts,
-							 label=new_gene_monomer_ids[0])
+					plt.plot(time / 60., new_gene_monomer_counts)
 				else:
 					for m in range(len(new_gene_monomer_ids)):
 						plt.plot(time / 60., new_gene_monomer_counts[:,m],
@@ -210,7 +212,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Log(Protein Counts + 1)")
+			plt.ylabel("Log(Protein Counts + 1)", fontsize="small")
 			plt.title("New Gene Protein Counts")
 			plt.legend()
 			plot_num += 1
@@ -226,7 +228,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("ppGpp Concentration (uM)")
+			plt.ylabel("ppGpp Concentration (uM)", fontsize="small")
 			plt.title("ppGpp Concentration")
 			plot_num += 1
 
@@ -253,7 +255,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.plot(time / 60., total_rnap_counts)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Total RNAP Counts")
+			plt.ylabel("Total RNAP Counts", fontsize="small")
 			plt.title("Total RNAP Counts")
 			plot_num += 1
 
@@ -282,11 +284,46 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Total Ribosome Counts")
+			plt.ylabel("Total Ribosome Counts", fontsize="small")
 			plt.title("Total Ribosome Counts")
 			plot_num += 1
 
-			# TODO: Yield
+			# Glucose Comsumption Rate
+			# TODO: extend to other carbon sources
+			GLUCOSE_ID = "GLC[p]"
+			FLUX_UNITS = units.mmol / units.g / units.h
+			MASS_UNITS = units.fg
+			GROWTH_UNITS = units.fg / units.s
+			fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
+			external_molecule_ids = np.array(
+				fba_results.readAttribute("externalMoleculeIDs"))
+			fba_results.close()
+			if GLUCOSE_ID not in external_molecule_ids:
+				print("This plot only runs when glucose is the carbon source.")
+				return
+			glucose_idx = np.where(external_molecule_ids == GLUCOSE_ID)[0][0]
+			glucose_flux = FLUX_UNITS * read_stacked_columns(
+				cell_paths, "FBAResults", "externalExchangeFluxes",
+				ignore_exception=True, remove_first=True)[:, glucose_idx]
+			glucose_mw = sim_data.getter.get_mass(GLUCOSE_ID)
+			cell_dry_mass = MASS_UNITS * read_stacked_columns(
+				cell_paths, "Mass", "dryMass", ignore_exception=True,
+				remove_first=True).flatten()
+			glucose_mass_flux = glucose_flux * glucose_mw * cell_dry_mass
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			moving_window = min(300, len(glucose_mass_flux.asNumber()))
+			convolution_array = (np.ones(moving_window) / moving_window)
+			glucose_mass_flux_convolved = np.convolve(
+				convolution_array, glucose_mass_flux.asNumber(), mode='same')
+			plt.plot(time_no_first / 60., -glucose_mass_flux_convolved)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((0,1800))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Glucose Comsumption Rate (fg/h)", fontsize='x-small')
+			plt.title("Glucose Consumption Rate")
+			plot_num += 1
 
 			# New Gene RNA Synthesis Probability
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
@@ -299,9 +336,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			if len(new_gene_mRNA_ids) == 1:
 				plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
-						 label=new_gene_mRNA_ids[0] + ": Target")
+						 label="Target")
 				plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
-						 label=new_gene_mRNA_ids[0] + ": Actual")
+						 label="Actual")
 			else:
 				for r in range(len(new_gene_mRNA_ids)):
 					plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob[:,r],
@@ -313,7 +350,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("RNA Synthesis Probability")
+			plt.ylabel("RNA Synthesis Probability", fontsize='x-small')
 			plt.title("New Gene RNA Synthesis Probability")
 			plt.legend()
 			plot_num += 1
@@ -329,9 +366,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			if len(new_gene_monomer_ids) == 1:
 				plt.plot(time_no_first / 60., new_gene_target_protein_init_prob,
-						 label=new_gene_monomer_ids[0] + ": Target")
+						 label="Target")
 				plt.plot(time_no_first / 60., new_gene_actual_protein_init_prob,
-						 label=new_gene_monomer_ids[0] + ": Actual")
+						 label="Actual")
 			else:
 				for r in range(len(new_gene_monomer_ids)):
 					plt.plot(time_no_first / 60., new_gene_target_protein_init_prob[:,r],
@@ -343,7 +380,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Probability Translation Per Transcript")
+			plt.ylabel("Probability Translation Per Transcript", fontsize='x-small')
 			plt.title("New Gene Protein Initialization Probability")
 			plt.legend()
 			plot_num += 1
