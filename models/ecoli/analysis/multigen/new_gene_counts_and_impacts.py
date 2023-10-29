@@ -153,6 +153,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				for r in range(len(new_gene_mRNA_ids)):
 					plt.plot(time / 60., new_gene_copy_numbers[:,r],
 							 label = new_gene_mRNA_ids[r])
+				plt.legend()
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((0,6))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
@@ -160,7 +161,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Gene Copy Number", fontsize="small")
 			plt.title("New Gene Copy Number")
-			plt.legend()
 			plot_num += 1
 
 			# mRNA Counts
@@ -172,22 +172,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					for r in range(len(new_gene_mRNA_ids)):
 						plt.plot(time / 60., new_gene_mRNA_counts[:,r],
 								 label = new_gene_mRNA_ids[r])
+					plt.legend()
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				# plot on log scale instead
 				if len(new_gene_mRNA_ids) == 1:
-					plt.plot(time / 60., np.log10(new_gene_mRNA_counts + 1),
-							 label=new_gene_mRNA_ids[0])
+					plt.plot(time / 60., np.log10(new_gene_mRNA_counts + 1))
 				else:
 					for r in range(len(new_gene_mRNA_ids)):
 						plt.plot(time / 60., np.log10(new_gene_mRNA_counts[:,r] + 1),
 								 label = new_gene_mRNA_ids[r])
+					plt.legend()
 				plt.ylim((-1,4.5))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Log(mRNA Counts + 1)", fontsize="small")
 			plt.title("New Gene mRNA Counts")
-			plt.legend()
 			plot_num += 1
 
 			# Protein Counts
@@ -199,22 +199,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					for m in range(len(new_gene_monomer_ids)):
 						plt.plot(time / 60., new_gene_monomer_counts[:,m],
 								 label = new_gene_monomer_ids[m])
+					plt.legend()
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				# plot on log scale instead
 				if len(new_gene_monomer_ids) == 1:
-					plt.plot(time / 60., np.log10(new_gene_monomer_counts + 1),
-							 label=new_gene_monomer_ids[0])
+					plt.plot(time / 60., np.log10(new_gene_monomer_counts + 1))
 				else:
 					for m in range(len(new_gene_monomer_ids)):
 						plt.plot(time / 60., np.log10(new_gene_monomer_counts[:,m] + 1),
 								 label = new_gene_monomer_ids[m])
+					plt.legend()
 				plt.ylim((-1,7.5))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Log(Protein Counts + 1)", fontsize="small")
 			plt.title("New Gene Protein Counts")
-			plt.legend()
 			plot_num += 1
 
 			# ppGpp
