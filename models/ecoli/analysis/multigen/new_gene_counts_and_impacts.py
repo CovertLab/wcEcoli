@@ -94,7 +94,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2000)
-		total_plots = 8
+		total_plots = 9 # TODO Modularize and get rid of this magic number
 
 		for i in range(len(plot_suffixes)):
 
@@ -281,9 +281,35 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# TODO Yield
 
-			# TODO Target RNA Synthesis Probability
+			# New Gene RNA Synthesis Probability
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			new_gene_target_rna_synth_prob = read_stacked_columns(
+				cell_paths, 'RnaSynthProb', 'target_rna_synth_prob',
+				ignore_exception=True)[:, new_gene_RNA_indexes]
+			new_gene_actual_rna_synth_prob = read_stacked_columns(
+				cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
+				ignore_exception=True)[:, new_gene_RNA_indexes]
 
-			# TODO Actual RNA Synthesis Probability
+			if len(new_gene_mRNA_ids) == 1:
+				plt.plot(time / 60., new_gene_target_rna_synth_prob,
+						 label=new_gene_mRNA_ids[0] + ": Target")
+				plt.plot(time / 60., new_gene_actual_rna_synth_prob,
+						 label=new_gene_mRNA_ids[0] + ": Actual")
+			else:
+				for r in range(len(new_gene_mRNA_ids)):
+					plt.plot(time / 60., new_gene_target_rna_synth_prob[:,r],
+							 label = new_gene_mRNA_ids[r] + ": Target")
+					plt.plot(time / 60., new_gene_actual_rna_synth_prob[:, r],
+							 label=new_gene_mRNA_ids[r] + ": Actual")
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((-0.1,1.1))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("RNA Synthesis Probability")
+			plt.title("New Gene RNA Synthesis Probability")
+			plt.legend()
+			plot_num += 1
 
 			# TODO Target Protein Init Prob
 
