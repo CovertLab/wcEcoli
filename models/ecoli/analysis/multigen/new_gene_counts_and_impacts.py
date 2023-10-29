@@ -82,7 +82,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			RNA_idx_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
 
 		# Load data
-		time = read_stacked_columns(cell_paths, 'Main', 'time', ignore_exception=True)
+		time = read_stacked_columns(
+			cell_paths, 'Main', 'time', ignore_exception=True)
+		time_no_first = read_stacked_columns(
+			cell_paths, 'Main', 'time', remove_first=True, ignore_exception=True)
 		(new_gene_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, new_gene_monomer_ids, ignore_exception=True)
 		all_mRNA_stacked_counts = read_stacked_columns(
@@ -104,15 +107,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.figure(figsize = (8.5, 22))
 			plot_num = 1
 
-			# TODO: Maybe use a different proxy or time average for growth?
 			# Growth Rate
 			ax1 = plt.subplot(total_plots, 1, plot_num)
-			growth_rate = read_stacked_columns(
+			growth_rate = np.ravel(read_stacked_columns(
 				cell_paths, "Mass", "instantaneous_growth_rate",
-				ignore_exception=True)
-			plt.plot(time / 60., growth_rate)
+				ignore_exception=True))
+			moving_window = min(300, len(growth_rate))
+			convolution_array = (np.ones(moving_window) / moving_window)
+			growth_rate_convolved = np.convolve(
+				convolution_array, growth_rate, mode='same')
+			plt.plot(time.flatten() / 60., growth_rate_convolved)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim(-.1,.1)
+				plt.ylim(-.0001,.0005)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
@@ -134,7 +140,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.title("Cell Mass")
 			plot_num += 1
 
-			# Gene copy number
+			# Gene Copy Number
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if len(new_gene_mRNA_ids) == 1:
 				plt.plot(time / 60., new_gene_copy_numbers,
@@ -212,8 +218,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# ppGpp
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			ppGpp_concentration = read_stacked_columns(
-				cell_paths, "GrowthLimits", "ppgpp_conc", ignore_exception=True)
-			plt.plot(time / 60., ppGpp_concentration)
+				cell_paths, "GrowthLimits", "ppgpp_conc", remove_first=True,
+				ignore_exception=True)
+			plt.plot(time_no_first / 60., ppGpp_concentration)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((0,150))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
@@ -302,7 +309,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.plot(time / 60., new_gene_actual_rna_synth_prob[:, r],
 							 label=new_gene_mRNA_ids[r] + ": Actual")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((-0.1,1.1))
+				plt.ylim((-0.1,0.5))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
