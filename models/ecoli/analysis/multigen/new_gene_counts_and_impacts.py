@@ -97,7 +97,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2000)
-		total_plots = 9 # TODO Modularize and get rid of this magic number
+		total_plots = 10 # TODO Modularize and get rid of this magic number
 
 		for i in range(len(plot_suffixes)):
 
@@ -182,7 +182,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("mRNA Counts")
+			plt.ylabel("Log(mRNA Counts + 1)")
 			plt.title("New Gene mRNA Counts")
 			plt.legend()
 			plot_num += 1
@@ -210,7 +210,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Protein Counts")
+			plt.ylabel("Log(Protein Counts + 1)")
 			plt.title("New Gene Protein Counts")
 			plt.legend()
 			plot_num += 1
@@ -286,27 +286,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.title("Total Ribosome Counts")
 			plot_num += 1
 
-			# TODO Yield
+			# TODO: Yield
 
 			# New Gene RNA Synthesis Probability
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			new_gene_target_rna_synth_prob = read_stacked_columns(
 				cell_paths, 'RnaSynthProb', 'target_rna_synth_prob',
-				ignore_exception=True)[:, new_gene_RNA_indexes]
+				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
 			new_gene_actual_rna_synth_prob = read_stacked_columns(
 				cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
-				ignore_exception=True)[:, new_gene_RNA_indexes]
+				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
 
 			if len(new_gene_mRNA_ids) == 1:
-				plt.plot(time / 60., new_gene_target_rna_synth_prob,
+				plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
 						 label=new_gene_mRNA_ids[0] + ": Target")
-				plt.plot(time / 60., new_gene_actual_rna_synth_prob,
+				plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
 						 label=new_gene_mRNA_ids[0] + ": Actual")
 			else:
 				for r in range(len(new_gene_mRNA_ids)):
-					plt.plot(time / 60., new_gene_target_rna_synth_prob[:,r],
+					plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob[:,r],
 							 label = new_gene_mRNA_ids[r] + ": Target")
-					plt.plot(time / 60., new_gene_actual_rna_synth_prob[:, r],
+					plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob[:, r],
 							 label=new_gene_mRNA_ids[r] + ": Actual")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((-0.1,0.5))
@@ -318,9 +318,43 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.legend()
 			plot_num += 1
 
-			# TODO Target Protein Init Prob
+			# New Gene Protein Initialization Probability
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			new_gene_target_protein_init_prob = read_stacked_columns(
+				cell_paths, 'RibosomeData', 'target_prob_translation_per_transcript',
+				ignore_exception=True, remove_first=True)[:, new_gene_monomer_indexes]
+			new_gene_actual_protein_init_prob = read_stacked_columns(
+				cell_paths, 'RibosomeData', 'actual_prob_translation_per_transcript',
+				ignore_exception=True, remove_first=True)[:, new_gene_monomer_indexes]
 
-			# TODO Actual Protein Init Prob
+			if len(new_gene_monomer_ids) == 1:
+				plt.plot(time_no_first / 60., new_gene_target_protein_init_prob,
+						 label=new_gene_monomer_ids[0] + ": Target")
+				plt.plot(time_no_first / 60., new_gene_actual_protein_init_prob,
+						 label=new_gene_monomer_ids[0] + ": Actual")
+			else:
+				for r in range(len(new_gene_monomer_ids)):
+					plt.plot(time_no_first / 60., new_gene_target_protein_init_prob[:,r],
+							 label = new_gene_monomer_ids[r] + ": Target")
+					plt.plot(time_no_first/ 60., new_gene_actual_protein_init_prob[:, r],
+							 label=new_gene_monomer_ids[r] + ": Actual")
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((-0.1, 1.1))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Probability Translation Per Transcript")
+			plt.title("New Gene Protein Initialization Probability")
+			plt.legend()
+			plot_num += 1
+
+			# TODO: New Gene mRNA mass fraction
+
+			# TODO: New Gene Protein Mass Fraction
+
+			# TODO: RNAP Portion
+
+			# TODO: Ribosome Portion
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
