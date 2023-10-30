@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 27.5
-# Date and time generated: August 14, 2023, 10:11:11
+# Version: 28.0
+# Date and time generated: October 30, 2023, 10:07:19
 "id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
 "EG10001_RNA"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	"mRNA"	[]	"EG10001"	["ALARACEBIOSYN-MONOMER"]	null	[]
 "EG10002_RNA"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	"mRNA"	[]	"EG10002"	["MODB-MONOMER"]	null	[]
@@ -2610,7 +2610,7 @@
 "G0-10468_RNA"	"yibT"	["yibT", "b4554", "ECK3591"]	"mRNA"	[]	"G0-10468"	["MONOMER0-2690"]	null	[]
 "G0-10469_RNA"	"yicS"	["yicS", "b4555", "ECK3652"]	"mRNA"	[]	"G0-10469"	["MONOMER0-2691"]	null	[]
 "G0-10470_RNA"	"yidD"	["yidD", "b4557", "ECK3697"]	"mRNA"	[]	"G0-10470"	["MONOMER0-2692"]	null	[]
-"G0-10471_RNA"	"yifL"	["yifL", "b4558", "ECK3803"]	"mRNA"	[]	"G0-10471"	["MONOMER0-2693"]	null	[]
+"G0-10471_RNA"	"lptM"	["lptM", "yifL", "b4558", "ECK3803"]	"mRNA"	[]	"G0-10471"	["MONOMER0-2693"]	null	[]
 "G0-10472_RNA"	"ghoT"	["ghoT", "yjdO", "b4559", "ECK4122"]	"mRNA"	[]	"G0-10472"	["MONOMER0-2694"]	null	[]
 "G0-10473_RNA"	"topAI"	["topAI", "yjhX", "b4566", "ECK4298"]	"mRNA"	[]	"G0-10473"	["MONOMER0-2695"]	null	[]
 "G0-10474_RNA"	"yjjZ"	["yjjZ", "b4567", "ECK4358"]	"mRNA"	[]	"G0-10474"	["MONOMER0-2696"]	null	[]
@@ -2899,6 +2899,7 @@
 "RNA0-440"	"small antisense RNA aMEF"	["aMEF"]	"miscRNA"	[]	"G0-17125"	[]	null	[]
 "G0-17126_RNA"	"xtpA"	["xtpA", "b4845", "ECK4702"]	"mRNA"	[]	"G0-17126"	["MONOMER0-4561"]	null	[]
 "RNA0-441"	"<i>arfA</i>-derived small regulatory RNA"	[]	"miscRNA"	[]	"G0-17130"	[]	null	[]
+"G0-17132_RNA"	null	[]	"pseudo"	[]	"G0-17132"	[]	null	[]
 "G0-41_RNA"	"ecnA"	["ecnA", "b4410", "ECK4142"]	"mRNA"	[]	"G0-41"	["MONOMER0-1562"]	null	[]
 "G0-8601_RNA"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	"mRNA"	[]	"G0-8601"	["MONOMER0-561"]	null	[]
 "CSRB-RNA"	"small regulatory RNA CsrB"	["CsrB"]	"miscRNA"	[]	"G0-8785"	[]	null	[]
