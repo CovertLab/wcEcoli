@@ -32,6 +32,8 @@ Possible Plots:
 - Average number of total and free ribosomes
 - Average number of total and free RNA polymerases
 - Average ppGpp concentration
+- Average rate of glucose consumption
+- Average new gene monomer yields - per hour and per fg of glucose
 """
 
 import numpy as np
@@ -44,6 +46,7 @@ from wholecell.analysis.analysis_tools import exportFigure, \
 	read_stacked_columns, read_stacked_bulk_molecules, \
 	stacked_cell_identification
 from wholecell.analysis.plotting_tools import heatmap
+from wholecell.utils import units
 from unum.units import fg
 
 import os.path
@@ -71,17 +74,15 @@ STD_DEV_FLAG = True
 Count number of sims that reach this generation (remember index 7 
 corresponds to generation 8)
 """
-COUNT_INDEX = 15
+COUNT_INDEX = 23
 
 """
 Plot data from generations [MIN_CELL_INDEX, MAX_CELL_INDEX)
 Note that early generations may not be representative of dynamics 
 due to how they are initialized
 """
-# MIN_CELL_INDEX = 4
-# MAX_CELL_INDEX = 16
-MIN_CELL_INDEX = 1
-MAX_CELL_INDEX = 3
+MIN_CELL_INDEX = 16
+MAX_CELL_INDEX = 24
 
 """
 Specify which subset of heatmaps should be made
@@ -96,49 +97,52 @@ HEATMAPS_TO_MAKE_LIST = [
 		"cell_dry_mass_heatmap",
 		"cell_volume_heatmap",
 		"ppgpp_concentration_heatmap",
-		# "rnap_crowding_heatmap",
-		# "ribosome_crowding_heatmap",
+		# # "rnap_crowding_heatmap",
+		# # "ribosome_crowding_heatmap",
 		"cell_mRNA_mass_heatmap",
 		"cell_protein_mass_heatmap",
 		"rnap_counts_heatmap",
 		"ribosome_counts_heatmap",
-		# "new_gene_mRNA_counts_heatmap",
-		# "new_gene_monomer_counts_heatmap",
-		# "new_gene_rnap_init_rate_heatmap",
-		# "new_gene_ribosome_init_rate_heatmap",
-		# "new_gene_mRNA_mass_fraction_heatmap",
-		# "new_gene_monomer_mass_fraction_heatmap",
-		# "new_gene_rnap_time_overcrowded_heatmap",
-		# "new_gene_ribosome_time_overcrowded_heatmap",
-		# "new_gene_mRNA_counts_fraction_heatmap",
-		# "new_gene_monomer_counts_fraction_heatmap",
-		# "new_gene_rnap_counts_heatmap",
-		# "new_gene_rnap_portion_heatmap",
-		# "rrna_rnap_counts_heatmap",
-		# "rrna_rnap_portion_heatmap",
-		# "rnap_subunit_rnap_portion_heatmap",
-		# "rnap_subunit_ribosome_portion_heatmap",
-		# "ribosomal_protein_rnap_portion_heatmap",
-		# "ribosomal_protein_ribosome_portion_heatmap",
-		# "new_gene_ribosome_counts_heatmap",
-		# "new_gene_ribosome_portion_heatmap",
+		"new_gene_mRNA_counts_heatmap",
+		"new_gene_monomer_counts_heatmap",
+		"new_gene_rnap_init_rate_heatmap",
+		"new_gene_ribosome_init_rate_heatmap",
+		"new_gene_mRNA_mass_fraction_heatmap",
+		"new_gene_monomer_mass_fraction_heatmap",
+		"new_gene_rnap_time_overcrowded_heatmap",
+		"new_gene_ribosome_time_overcrowded_heatmap",
+		"new_gene_mRNA_counts_fraction_heatmap",
+		"new_gene_monomer_counts_fraction_heatmap",
+		"new_gene_rnap_counts_heatmap",
+		"new_gene_rnap_portion_heatmap",
+		"rrna_rnap_counts_heatmap",
+		"rrna_rnap_portion_heatmap",
+		"rnap_subunit_rnap_portion_heatmap",
+		"rnap_subunit_ribosome_portion_heatmap",
+		"ribosomal_protein_rnap_portion_heatmap",
+		"ribosomal_protein_ribosome_portion_heatmap",
+		"new_gene_ribosome_counts_heatmap",
+		"new_gene_ribosome_portion_heatmap",
 		# # "weighted_avg_translation_efficiency_heatmap",
-		# "new_gene_target_protein_init_prob_heatmap",
-		# "new_gene_actual_protein_init_prob_heatmap",
-		# "new_gene_target_rna_synth_prob_heatmap",
-		# "new_gene_actual_rna_synth_prob_heatmap",
-		# "capacity_gene_mRNA_counts_heatmap",
-		# "capacity_gene_monomer_counts_heatmap",
-		# "capacity_gene_rnap_portion_heatmap",
-		# "capacity_gene_ribosome_portion_heatmap",
-		# "capacity_gene_mRNA_mass_fraction_heatmap",
-		# "capacity_gene_monomer_mass_fraction_heatmap",
-		# "capacity_gene_mRNA_counts_fraction_heatmap",
-		# "capacity_gene_monomer_counts_fraction_heatmap",
-		# "free_rnap_counts_heatmap",
-		# "free_ribosome_counts_heatmap",
-		# "rnap_ribosome_counts_ratio_heatmap",
-		# "new_gene_mRNA_NTP_fraction_heatmap",
+		"new_gene_target_protein_init_prob_heatmap",
+		"new_gene_actual_protein_init_prob_heatmap",
+		"new_gene_target_rna_synth_prob_heatmap",
+		"new_gene_actual_rna_synth_prob_heatmap",
+		"capacity_gene_mRNA_counts_heatmap",
+		"capacity_gene_monomer_counts_heatmap",
+		"capacity_gene_rnap_portion_heatmap",
+		"capacity_gene_ribosome_portion_heatmap",
+		"capacity_gene_mRNA_mass_fraction_heatmap",
+		"capacity_gene_monomer_mass_fraction_heatmap",
+		"capacity_gene_mRNA_counts_fraction_heatmap",
+		"capacity_gene_monomer_counts_fraction_heatmap",
+		"free_rnap_counts_heatmap",
+		"free_ribosome_counts_heatmap",
+		"rnap_ribosome_counts_ratio_heatmap",
+		"new_gene_yield_per_glucose",
+		"new_gene_yield_per_hour",
+		"glucose_consumption_rate",
+		"new_gene_mRNA_NTP_fraction_heatmap",
 	]
 
 ### TODO map id to common name, don't hardcode, add error checking?
@@ -288,6 +292,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.extract_capacity_gene_counts_fraction_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask,
 					'MonomerCounts', 'monomerCounts', 'monomer')
+			elif h == "glucose_consumption_rate":
+				self.extract_glucose_consumption_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask)
 			else:
 				raise Exception(
 					"Heatmap " + h + " is neither a standard heatmap nor a"
@@ -374,6 +381,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elif h == "new_gene_ribosome_portion_heatmap":
 				self.extract_new_gene_ribosome_portion_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index, cell_mask)
+			elif h == "new_gene_yield_per_glucose":
+				self.extract_new_gene_yield_per_glucose_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					self.new_gene_monomer_ids)
+			elif h == "new_gene_yield_per_hour":
+				self.extract_new_gene_yield_per_hour_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					self.new_gene_monomer_ids)
 			else:
 				raise Exception(
 					"Heatmap " + h + " has no instructions for"
@@ -1541,6 +1556,196 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				h, i, trl_eff_index, exp_index,
 				new_gene_rna_synth_probs[:,i], cell_mask)
 
+	def get_gen_new_gene_monomer_counts_diff(self, all_cells, new_gene_indexes):
+		"""
+		Retrieves the difference between the number of proteins at the start
+		and end of each generation.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			new_gene_indexes: Global indexes of the new gene proteins
+
+		Returns:
+			Number of new gene proteins at final time step - number of new gene
+				proteins at initial time step for each cell in all_cells
+		"""
+		return (read_stacked_columns(
+				all_cells, "MonomerCounts", "monomerCounts", fun=lambda
+				x: (x[-1, new_gene_indexes] - x[0, new_gene_indexes])))
+
+	def get_avg_glucose_consumption_rate(self, all_cells):
+		"""
+		Computes average glucose consumption rate (fg/h) for each cell.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average glucose consumption rate (fg/h) for each cell
+		"""
+		GLUCOSE_ID = "GLC[p]"
+		FLUX_UNITS = units.mmol / units.g / units.h
+		MASS_UNITS = units.fg
+
+		# Determine glucose index in exchange fluxes
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+		fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
+		external_molecule_ids = np.array(
+			fba_results.readAttribute("externalMoleculeIDs"))
+		fba_results.close()
+		if GLUCOSE_ID not in external_molecule_ids:
+			print("This plot only runs when glucose is the carbon source.")
+			return
+		glucose_idx = np.where(external_molecule_ids == GLUCOSE_ID)[0][0]
+
+		glucose_flux = FLUX_UNITS * read_stacked_columns(
+			all_cells, "FBAResults", "externalExchangeFluxes",
+			ignore_exception=True, remove_first=True,
+			fun=lambda x: np.mean(x[:, glucose_idx]))
+		glucose_mw = self.sim_data.getter.get_mass(GLUCOSE_ID)
+		cell_dry_mass = MASS_UNITS * read_stacked_columns(
+			all_cells, "Mass", "dryMass", ignore_exception=True,
+			remove_first=True, fun=lambda x: np.mean(x))
+
+		glucose_mass_flux = glucose_flux * glucose_mw * cell_dry_mass
+
+		return -(glucose_mass_flux.asNumber())
+
+	# TODO: make this more flexible for other carbon sources
+	def extract_new_gene_yield_per_glucose_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			new_gene_ids):
+		"""
+		Special function to handle extraction and saving of fg new gene
+		monomer produced per fg of glucose uptake.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			new_gene_ids: Ids of new gene monomers in sim_data
+		"""
+		new_gene_indexes = self.get_new_gene_indexes(all_cells, "monomer")
+
+		# Get mass for each new gene
+		new_gene_masses = [1 for id in new_gene_ids]
+		for i in range(len(new_gene_ids)):
+			new_gene_masses[i] = (
+				self.sim_data.getter.get_mass(
+				new_gene_ids[i])/self.sim_data.constants.n_avogadro).asNumber(fg)
+
+		# Determine how much new gene mass was acquired each gen
+		new_gene_monomer_diffs = self.get_gen_new_gene_monomer_counts_diff(
+			all_cells, new_gene_indexes)
+		new_gene_monomer_mass_diffs = new_gene_monomer_diffs * new_gene_masses
+
+		# Doubling time of each gen
+		dt_h = "doubling_times_heatmap"
+		dt = read_stacked_columns(
+			all_cells, self.heatmap_details[dt_h]["data_table"],
+			self.heatmap_details[dt_h]["data_column"],
+			fun=self.heatmap_details[dt_h]["function_to_apply"])
+
+		# Average glucose consumption rate fg/h
+		avg_glucose_consumption_rate = self.get_avg_glucose_consumption_rate(all_cells)
+
+		# Avg new gene monomer mass yield
+		# Numerator: fg new gene monomer mass gained this gen
+		# Denominator: (fg/hr glucose * dt in hours) approximates amount of
+		# glucose consumed this gen
+		avg_new_gene_yield = (
+				new_gene_monomer_mass_diffs / (avg_glucose_consumption_rate * dt/60.))
+
+		for i in range(len(new_gene_indexes)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index, avg_new_gene_yield[:, i],
+				cell_mask)
+
+	def extract_glucose_consumption_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+		"""
+		Special function to handle extraction and saving of fg/hr of glucose uptake.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+		"""
+		# Average glucose consumption rate fg/h
+		avg_glucose_consumption_rate = self.get_avg_glucose_consumption_rate(all_cells)
+
+		self.save_heatmap_data(
+			h, 0, trl_eff_index, exp_index, avg_glucose_consumption_rate,
+			cell_mask)
+
+	def extract_new_gene_yield_per_hour_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			new_gene_ids):
+		"""
+		Special function to handle extraction and saving of fg new gene
+		monomer produced per hour.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			cell_mask: Should be same size as curr_heatmap_data, typically used
+				to filter based on generations
+			new_gene_ids: Ids of new gene monomers in sim_data
+		"""
+		new_gene_indexes = self.get_new_gene_indexes(all_cells, "monomer")
+
+		# Get mass for each new gene
+		new_gene_masses = [1 for id in new_gene_ids]
+		for i in range(len(new_gene_ids)):
+			new_gene_masses[i] = (
+				self.sim_data.getter.get_mass(
+				new_gene_ids[i])/self.sim_data.constants.n_avogadro).asNumber(fg)
+
+		# Determine how much new gene mass was acquired each gen
+		new_gene_monomer_diffs = self.get_gen_new_gene_monomer_counts_diff(
+			all_cells, new_gene_indexes)
+		new_gene_monomer_mass_diffs = new_gene_monomer_diffs * new_gene_masses
+
+		# Doubling time of each gen
+		dt_h = "doubling_times_heatmap"
+		dt = read_stacked_columns(
+			all_cells, self.heatmap_details[dt_h]["data_table"],
+			self.heatmap_details[dt_h]["data_column"],
+			fun=self.heatmap_details[dt_h]["function_to_apply"])
+
+		# Avg new gene monomer yield rate (fg new gene monomer mass / hr)
+		# Numerator: (fg) new gene monomer mass gained this gen
+		# Denominator: (dt in hours) length of gen
+		avg_new_gene_yield_rate = (
+				new_gene_monomer_mass_diffs / (dt/60.))
+
+		for i in range(len(new_gene_indexes)):
+			self.save_heatmap_data(
+				h, i, trl_eff_index, exp_index, avg_new_gene_yield_rate[:, i],
+				cell_mask)
+
 
 	"""
 	Capacity Gene Functions
@@ -2331,6 +2536,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'plot_title':
 				 'Capacity Gene Ribosome Portion: ' + capacity_gene_common_name,
 				 'num_digits_rounding': 4,
+				 },
+			"new_gene_yield_per_glucose":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene fg Protein Yield per fg Glucose',
+				 'num_digits_rounding': 3,
+				 },
+			"new_gene_yield_per_hour":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene fg Protein Yield per Hour',
+				 'num_digits_rounding': 2,
+				 },
+			"glucose_consumption_rate":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'Average Glucose Consumption Rate (fg/hr)',
+				 'num_digits_rounding': 1,
 				 },
 		}
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
