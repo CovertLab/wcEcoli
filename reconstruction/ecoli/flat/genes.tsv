@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 27.5
-# Date and time generated: August 14, 2023, 10:10:17
+# Version: 28.0
+# Date and time generated: October 30, 2023, 10:06:18
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "EG10001"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
 "EG10002"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	795862	796551	"+"	["EG10002_RNA"]
@@ -2610,7 +2610,7 @@
 "G0-10468"	"yibT"	["yibT", "b4554", "ECK3591"]	3776171	3776380	"-"	["G0-10468_RNA"]
 "G0-10469"	"yicS"	["yicS", "b4555", "ECK3652"]	3840215	3840508	"+"	["G0-10469_RNA"]
 "G0-10470"	"yidD"	["yidD", "b4557", "ECK3697"]	3884816	3885073	"+"	["G0-10470_RNA"]
-"G0-10471"	"yifL"	["yifL", "b4558", "ECK3803"]	3994522	3994725	"+"	["G0-10471_RNA"]
+"G0-10471"	"lptM"	["lptM", "yifL", "b4558", "ECK3803"]	3994522	3994725	"+"	["G0-10471_RNA"]
 "G0-10472"	"ghoT"	["ghoT", "yjdO", "b4559", "ECK4122"]	4352908	4353081	"+"	["G0-10472_RNA"]
 "G0-10473"	"topAI"	["topAI", "yjhX", "b4566", "ECK4298"]	4533796	4534053	"-"	["G0-10473_RNA"]
 "G0-10474"	"yjjZ"	["yjjZ", "b4567", "ECK4358"]	4605804	4606040	"+"	["G0-10474_RNA"]
@@ -2899,6 +2899,7 @@
 "G0-17125"	"ameF"	["ameF", "b4844", "ECK4701"]	2911051	2911450	"+"	["RNA0-440"]
 "G0-17126"	"xtpA"	["xtpA", "b4845", "ECK4702"]	345252	345434	"+"	["G0-17126_RNA"]
 "G0-17130"	"yrdG"	["yrdG", "asarfA", "b4846", "ECK4703"]	3438431	3438484	"-"	["RNA0-441"]
+"G0-17132"	null	[]	null	null	null	["G0-17132_RNA"]
 "G0-41"	"ecnA"	["ecnA", "b4410", "ECK4142"]	4376317	4376442	"+"	["G0-41_RNA"]
 "G0-8601"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	3124236	3125459	"-"	["G0-8601_RNA"]
 "G0-8785"	"csrB"	["csrB", "b4408", "ECK2787"]	2924156	2924524	"-"	["CSRB-RNA"]
