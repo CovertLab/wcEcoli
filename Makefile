@@ -16,7 +16,7 @@ clean:
 	find . -name "*.o" -exec rm -fr {} +
 	find . -name "*.so" -exec rm -fr {} +
 	rm -fr build
-	rm -fr launcher_20* block_20*
+	rm -fr launcher_20* block_20* wholecell/utils/*.c
 	if [ "`aesara-cache | xargs du -sm | cut -f1`" -gt 30 ]; then \
 		echo "Clearing the aesara-cache since it's larger than threshold."; \
 		aesara-cache clear; \

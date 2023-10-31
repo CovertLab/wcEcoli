@@ -43,3 +43,17 @@ setup(
 	include_dirs = [np.get_include()],
 	# zip_safe = False  # see Cython docs, but it seems to need setuptools
 	)
+
+
+testcase_npy_intp_module = cythonize(
+	os.path.join("wholecell", "utils", "testcase_npy_intp.pyx"),
+	#compiler_directives = {'linetrace': True},
+	# annotate=True, # emit an html file with annotated C code
+	)
+
+setup(
+	name = "testcase_npy_intp",
+	ext_modules = testcase_npy_intp_module,
+	include_dirs = [np.get_include()],
+	# zip_safe = False  # see Cython docs, but it seems to need setuptools
+	)
