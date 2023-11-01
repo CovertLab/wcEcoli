@@ -1,3 +1,5 @@
+# Note from Cython docs: When using setuptools, import it before Cython.
+
 #from setuptools import setup
 from distutils.core import setup
 

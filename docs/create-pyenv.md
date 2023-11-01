@@ -194,7 +194,7 @@ virtualenv.
    OpenBLAS library to help with consistency or bug fixes.
 
    On macOS 13.3+, Apple's Accelerate library has suitable APIs to replace
-   OpenBLAS and it should run faster **but** numpy 1.24.3 is not quite ready to
+   OpenBLAS and it should run faster **but** numpy 1.26.1 is not quite ready to
    use it. An upcoming numpy release should work correctly on Accelerate when
    installed with `--no-binary` on macOS 1.13.3+ or installed from binary wheels
    on macOS 14+.
@@ -247,14 +247,14 @@ virtualenv.
    installation errors.
 
    ```shell script
-   pip install numpy==1.24.3  # see requirements.txt for the right version
+   pip install numpy==1.26.1  # see requirements.txt for the right version
    ```
 
    **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
    instead so pip will compile numpy from source code using `~/.numpy-site.cfg`:
 
    ```shell script
-   pip install numpy==1.24.3 --no-binary numpy  # see requirements.txt for the right version
+   pip install numpy==1.26.1 --no-binary numpy  # see requirements.txt for the right version
    ```
 
 1. Install the packages listed in `requirements.txt`.

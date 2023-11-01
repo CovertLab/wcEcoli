@@ -18,12 +18,12 @@
 #
 ## Install the required version of Python via pyenv, and remember to enable it as
 ## a shared library:
-#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.11.3
+#   PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.11.6
 #
 ## Create the "wcEcoli3" python virtual environment based on that Python version,
 ## and select it for your project directory:
 #   cd ~/dev/wcEcoli
-#   pyenv virtualenv 3.11.3 wcEcoli3 && pyenv local wcEcoli3
+#   pyenv virtualenv 3.11.6 wcEcoli3 && pyenv local wcEcoli3
 #
 ## Upgrade this virtual environment's installers:
 #   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
@@ -32,7 +32,7 @@
 ## docs/create-pyenv.md about whether to create a `~/.numpy-site.cfg` file and add
 ## `--no-binary numpy` to these `pip install` steps):
 ## [When updating the numpy version here also update it below, in Dockerfile, and in docs/*.]
-#   pip install numpy==1.24.3  # or add: --no-binary numpy
+#   pip install numpy==1.26.1  # or add: --no-binary numpy
 #   pip install -r requirements.txt && pyenv rehash
 #
 ## Build the Cython code:
@@ -57,18 +57,18 @@ wheel>=0.40.0
 # dnspython enables pymongo to access server clusters (mongodb+srv:// URIs).
 # pymongo[ocsp] adds dependencies for Sherlock to access Atlas server clusters.
 # pytest-cov is for `pytest --cov`.
-numpy==1.24.3
+numpy==1.26.1
 scipy==1.10.1
 
-numba==0.57.0
-llvmlite==0.40.0
+numba==0.58.1
+llvmlite==0.41.1
 
-aesara==2.9.0
+aesara==2.9.3
 biopython==1.81
 bokeh==3.1.1
 borealis-fireworks==0.12.0
 cvxpy==1.3.1
-Cython==3.0.4
+Cython==3.0.5
 dash==2.9.3
 dnspython==2.3.0
 Equation==1.2.1
