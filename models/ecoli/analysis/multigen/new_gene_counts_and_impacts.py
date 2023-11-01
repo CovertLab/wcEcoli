@@ -544,8 +544,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# Plot
 			plt.plot(time / 60., rnap_subunit_rnap_portion, label="RNAP Subunit")
 			plt.plot(time / 60., ribosomal_rnap_portion, label="Ribo. Prot.")
-			plt.plot(time / 60., rrna_rnap_portion, label="rRNA")
 			plt.plot(time / 60., new_gene_rnap_portion, label = "New Gene")
+			plt.plot(time / 60., rrna_rnap_portion, label="rRNA")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((-0.1, 1.1))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
