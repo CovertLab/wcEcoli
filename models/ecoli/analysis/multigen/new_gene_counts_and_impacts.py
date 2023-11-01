@@ -102,7 +102,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2000)
-		total_plots = 11 # TODO Modularize and get rid of this magic number
+		total_plots = 13 # TODO Modularize and get rid of this magic number
 
 		for i in range(len(plot_suffixes)):
 
@@ -383,6 +383,40 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel("Probability Translation Per Transcript", fontsize='x-small')
 			plt.title("New Gene Protein Initialization Probability")
 			plt.legend()
+			plot_num += 1
+
+			# mRNA Counts, Gene Copy Number, and RNA Synth Prob
+			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax3 = ax2.twinx()
+			# plot on log scale instead
+			ax2.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
+					 label="Target")
+			ax2.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
+					 label="Actual")
+			ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
+			ax3.plot(time / 60., 2 * new_gene_copy_numbers, label="Copy Number", color = "red")
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				ax2.set_ylim(((-0.1, 0.5)))
+				ax3.set_ylim((-1,4.5))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				ax2.set_xlim(standard_xlim)
+			ax2.set_xlabel("Time (min)")
+			plt.title("New Gene mRNA Counts, Copy Number, and RNA Synth Prob")
+			plot_num += 1
+
+			# mRNA Counts and RNAP Counts
+			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax3 = ax2.twinx()
+			# plot on log scale instead
+			ax2.plot(time / 60., total_rnap_counts)
+			ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				ax2.set_ylim((0,10000))
+				ax3.set_ylim((-1,4.5))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				ax2.set_xlim(standard_xlim)
+			ax2.set_xlabel("Time (min)")
+			plt.title("New Gene mRNA Counts and RNAP Counts")
 			plot_num += 1
 
 			# TODO: New Gene mRNA mass fraction
