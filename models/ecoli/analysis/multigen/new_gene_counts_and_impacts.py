@@ -176,8 +176,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		all_mRNA_stacked_counts = read_stacked_columns(
 			cell_paths, 'RNACounts', 'mRNA_counts', ignore_exception=True)
 		new_gene_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]
-		new_gene_copy_numbers = read_stacked_columns(
-			cell_paths, 'RnaSynthProb', 'gene_copy_number',
+		new_gene_promoter_copy_numbers = read_stacked_columns(
+			cell_paths, 'RnaSynthProb', 'promoter_copy_number',
 			ignore_exception=True)[:,new_gene_RNA_indexes]
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
@@ -225,13 +225,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.title("Cell Mass")
 			plot_num += 1
 
-			# Gene Copy Number
+			# Gene Promoter Copy Number
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if len(new_gene_mRNA_ids) == 1:
-				plt.plot(time / 60., new_gene_copy_numbers)
+				plt.plot(time / 60., new_gene_promoter_copy_numbers)
 			else:
 				for r in range(len(new_gene_mRNA_ids)):
-					plt.plot(time / 60., new_gene_copy_numbers[:,r],
+					plt.plot(time / 60., new_gene_promoter_copy_numbers[:,r],
 							 label = new_gene_mRNA_ids[r])
 				plt.legend()
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
@@ -239,8 +239,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Gene Copy Number", fontsize="small")
-			plt.title("New Gene Copy Number")
+			plt.ylabel("Gene Promoter Copy Number", fontsize="small")
+			plt.title("New Gene Promoter Copy Number")
 			plot_num += 1
 
 			# mRNA Counts
@@ -465,7 +465,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.legend()
 			plot_num += 1
 
-			# mRNA Counts, Gene Copy Number, and RNA Synth Prob
+			# mRNA Counts, Gene Promoter Copy Number, and RNA Synth Prob
 			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			ax3 = ax2.twinx()
 			# plot on log scale instead
@@ -474,7 +474,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax2.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
 					 label="Actual")
 			ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
-			ax3.plot(time / 60., 2 * new_gene_copy_numbers, label="Copy Number", color = "red")
+			ax3.plot(time / 60., 2 * new_gene_promoter_copy_numbers, label="Copy Number", color = "red")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				ax2.set_ylim(((-0.1, 0.5)))
 				ax3.set_ylim((-1,4.5))
