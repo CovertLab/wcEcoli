@@ -32,6 +32,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		s50_5s_rRNA_ids = sim_data.molecule_groups.s50_5s_rRNA
 		s50_full_complex_id = [sim_data.molecule_ids.s50_full_complex]
 
+		# Get complexation stoichiometries of ribosomal proteins
+		complexation = sim_data.process.complexation
+		s30_monomers = complexation.get_monomers(s30_full_complex_id[0])
+		s50_monomers = complexation.get_monomers(s50_full_complex_id[0])
+		s30_subunit_id_to_stoich = {
+			subunit_id: stoich for (subunit_id, stoich)
+			in zip(s30_monomers['subunitIds'], s30_monomers['subunitStoich'])
+			}
+		s50_subunit_id_to_stoich = {
+			subunit_id: stoich for (subunit_id, stoich)
+			in zip(s50_monomers['subunitIds'], s50_monomers['subunitStoich'])
+			}
+		s30_protein_stoich = np.array([
+			s30_subunit_id_to_stoich[subunit_id]
+			for subunit_id in s30_protein_ids
+			])
+		s50_protein_stoich = np.array([
+			s50_subunit_id_to_stoich[subunit_id]
+			for subunit_id in s50_protein_ids
+			])
+
 		# Read free counts of rRNAs
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(s30_16s_rRNA_counts, s50_23s_rRNA_counts, s50_5s_rRNA_counts
@@ -73,8 +94,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		monomer_counts = read_stacked_columns(
 			cell_paths, 'MonomerCounts', 'monomerCounts',
 			)
-		s30_protein_counts = monomer_counts[:, s30_protein_indexes]
-		s50_protein_counts = monomer_counts[:, s50_protein_indexes]
+		# Divide by complexation stoichiometric constant
+		s30_protein_counts = monomer_counts[:, s30_protein_indexes] / s30_protein_stoich
+		s50_protein_counts = monomer_counts[:, s50_protein_indexes] / s50_protein_stoich
 
 		# Calculate total counts of all components
 		s30_limiting_protein_counts = s30_protein_counts.min(axis=1)
