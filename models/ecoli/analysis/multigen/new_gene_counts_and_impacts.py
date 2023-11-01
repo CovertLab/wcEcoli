@@ -189,7 +189,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_suffix = plot_suffixes[i]
 
 			# Plotting
-			plt.figure(figsize = (8.5, 22))
+			plt.figure(figsize = (8.5, 33))
 			plot_num = 1
 
 			# Growth Rate
@@ -553,7 +553,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Portion of Active RNAPs", fontsize='x-small')
 			plt.title("Allocation of Active RNAPs")
-			plt.legend()
+			plt.legend(fontsize="x-small")
 			plot_num += 1
 
 			# Active Ribosome Portion Allocation
@@ -598,7 +598,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Portion of Active Ribosomes", fontsize='x-small')
 			plt.title("Allocation of Active Ribosomes")
-			plt.legend()
+			plt.legend(fontsize="x-small")
 			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
