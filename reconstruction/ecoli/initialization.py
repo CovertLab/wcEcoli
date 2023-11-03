@@ -132,12 +132,12 @@ def initializeProteinMonomers(bulkMolCntr, sim_data, randomState, massCoeff, ppg
 		(np.log(2) / sim_data.condition_to_doubling_time[sim_data.condition].asNumber(units.s) + sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s))
 		)
 
-	nMonomers = countsFromMassAndExpression(
+	nMonomers = int(countsFromMassAndExpression(
 		monomerMass.asNumber(units.g),
 		sim_data.process.translation.monomer_data["mw"].asNumber(units.g / units.mol),
 		monomerExpression,
 		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
-		)
+		))
 
 	monomersView.countsIs(
 		randomState.multinomial(nMonomers, monomerExpression)
@@ -171,12 +171,12 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 		rnaExpression[transcription.attenuated_rna_indices] *= readthrough / basal_adjustment
 		rnaExpression /= rnaExpression.sum()
 
-	nRnas = countsFromMassAndExpression(
+	nRnas = int(countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
 		transcription.rna_data["mw"].asNumber(units.g / units.mol),
 		rnaExpression,
 		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
-		)
+		))
 
 	# Calculate initial counts of each RNA from multinomial distribution
 	rnaView.countsIs(
