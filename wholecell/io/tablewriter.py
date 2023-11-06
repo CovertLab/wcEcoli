@@ -238,12 +238,13 @@ class _Column(object):
 		-----
 		Trying to append after closing will raise an error.
 		"""
-		if not self._data.closed:
-			try:
-				self._write_block()
-				self._data.truncate()
-			finally:
-				self._data.close()
+		if hasattr(self, '_data'):
+			if not self._data.closed:
+				try:
+					self._write_block()
+					self._data.truncate()
+				finally:
+					self._data.close()
 
 
 	def __del__(self):
