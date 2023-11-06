@@ -1295,7 +1295,7 @@ class Metabolism(object):
 		if units.hasUnit(aa_conc):
 			aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
 
-		km_saturation = np.product(1 / (1 + self.aa_upstream_kms / aa_conc), axis=1)
+		km_saturation = np.prod(1 / (1 + self.aa_upstream_kms / aa_conc), axis=1)
 
 		# Determine saturation fraction for reactions
 		forward_fraction = 1 / (1 + aa_conc / self.aa_kis) * km_saturation
