@@ -497,7 +497,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			help='if true, adjusts the timestep if charging creates a large'
 				 ' update to improve stability of sims')
 		add_bool_option('jit', 'jit',
-			help='If true, jit compiled functions are used for certain'
+			help='If true, jit-compiled functions are used for certain'
 				 ' processes, otherwise only uses lambda functions')
 		add_bool_option('mass_distribution', 'massDistribution',
 			help='If true, a mass coefficient is drawn from a normal distribution'

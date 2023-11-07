@@ -862,7 +862,7 @@ def ppgpp_metabolite_changes(uncharged_trna_conc, charged_trna_conc,
 
 	# Calculate active fraction of RelA
 	competitive_inhibition = 1 + ribosomes_bound_to_uncharged / ppgpp_params['KD_RelA']
-	inhibition_product = np.product(competitive_inhibition)
+	inhibition_product = np.prod(competitive_inhibition)
 	with np.errstate(divide='ignore'):
 		frac_rela = 1 / (ppgpp_params['KD_RelA'] / ribosomes_bound_to_uncharged * inhibition_product / competitive_inhibition + 1)
 
