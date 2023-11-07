@@ -186,7 +186,15 @@ class _Column(object):
 			raise ValueError('Unknown compression type {}'.format(compression_type))
 
 		self._path = path
-		self._data = open(path, "wb")
+		try:
+			self._data = open(path, "wb")
+		except OSError as err:
+			if len(err.args) > 1 and 'Too many open files' in err.args[1]:
+				raise OSError(err.errno,
+							  err.strerror
+							  + ' --> Tip: If `ulimit -n` is small like 256,'
+								' try running `ulimit -n 4096`. Maybe put it in'
+								' your shell profile.') from err
 		self._dtype: Optional[np.dtype[Any]] = None
 		self._compression_type = compression_type
 		self._current_data_block = []  # type: List[bytes]
