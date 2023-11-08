@@ -50,7 +50,6 @@ ACTIVE = [
 	"proteinCountsValidation.py",
 	"replication.py",
 	"replisome_counts.py",
-	"replisome_rnap_collision_by_gene.py",
 	"replisome_rnap_collision_locations.py",
 	"replisome_rnap_collision_counts.py",
 	"ribosome_crowding.py",
