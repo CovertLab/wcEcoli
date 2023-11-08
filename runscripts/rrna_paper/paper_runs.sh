@@ -67,7 +67,7 @@ python runscripts/fireworks/fw_queue.py
 # Change the chromosomal location of rRNA operons
 DESC="SET D 8 gens 1 seed flipped rRNA locations with glucose minimal media" \
 VARIANT="rrna_location" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
