@@ -57,10 +57,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				])
 
 			# Get copy numbers of 16S genes
-			all_gene_copy_numbers = read_stacked_columns(
+			rrna_gene_copy_numbers = read_stacked_columns(
 				cell_paths, 'RnaSynthProb', 'gene_copy_number',
-				ignore_exception=True)
-			rrna_gene_copy_numbers = all_gene_copy_numbers[:, rrna_gene_indexes]
+				ignore_exception=True, fun=lambda x: x[:, rrna_gene_indexes])
 			avg_rrna_gene_copy_numbers = rrna_gene_copy_numbers.mean(axis=0)
 
 			return avg_rrna_gene_copy_numbers
