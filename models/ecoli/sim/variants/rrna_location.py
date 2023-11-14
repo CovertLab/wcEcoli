@@ -37,6 +37,8 @@ def rrna_location(sim_data, index):
 		replichore_lengths = sim_data.process.replication.replichore_lengths
 
 		def flip_coordinates(orig_coordinates, length):
+			# Note: this assumes the transcription direction of all rRNA genes
+			# and transcripts are facing away from the origin
 			if orig_coordinates >= 0:
 				return replichore_lengths[0] - orig_coordinates - length
 			else:
