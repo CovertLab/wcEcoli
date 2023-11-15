@@ -47,9 +47,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			# Get gene_ids attribute from reference cell path
 			reference_cell_path = cell_paths[0]
 			sim_out_dir = os.path.join(reference_cell_path, 'simOut')
-			rnap_data_reader = TableReader(
+			rna_synth_prob_reader = TableReader(
 				os.path.join(sim_out_dir, 'RnaSynthProb'))
-			gene_ids = rnap_data_reader.readAttribute('gene_ids')
+			gene_ids = rna_synth_prob_reader.readAttribute('gene_ids')
 
 			# Get indexes of 16S genes (first gene in each operon)
 			rrna_gene_indexes = np.array([
