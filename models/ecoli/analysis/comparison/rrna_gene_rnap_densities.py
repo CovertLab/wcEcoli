@@ -28,7 +28,7 @@ TU_ID_TO_RRNA_OPERON_ID = {
 	'TU0-1191[c]': 'rrnD',
 	'TU0-1186[c]': 'rrnE',
 	'TU0-1187[c]': 'rrnG',
-    'TU0-1189[c]': 'rrnH',
+	'TU0-1189[c]': 'rrnH',
 	}
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
