@@ -24,6 +24,7 @@ ACTIVE = [
 	"proteomics_fluxomics_validation.py",
 	"replisome_rnap_collision_counts.py",
 	"rrna_gene_copy_numbers.py",
+	"rrna_gene_rnap_densities.py",
 	"rrna_to_ribosome_yield.py",
 	"tRNA_cistron_expression.py",
 ]
