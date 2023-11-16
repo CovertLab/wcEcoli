@@ -28,3 +28,4 @@
 "000025_cut_aa"	"0 minimal_plus_amino_acids, 1200 minimal"
 "000026_add_and_cut_aa"	"0 minimal, 3600 minimal_plus_amino_acids, 14400 minimal"
 "000027_cut_and_add_aa"	"0 minimal_plus_amino_acids, 18000 minimal, 36000 minimal_plus_amino_acids"
+"000028_add_aa_long"	"0 minimal, 24000 minimal_plus_amino_acids"
