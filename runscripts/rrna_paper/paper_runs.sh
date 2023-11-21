@@ -25,92 +25,101 @@ SINGLE_DAUGHTERS=1 N_GENS=24 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
+
 ## Set B - All rRNA genes are transcribed as monocistronic transcription units
 # Set B1 - glucose minimal media
-DESC="SET B1 16 gens 32 seed monocistronic rRNA TUs with glucose minimal media" \
+DESC="SET B1 16 gens 32 seeds monocistronic rRNA TUs with glucose minimal media" \
 VARIANT="wildtype" FIRST_VARIANT_INDEX=0 LAST_VARIANT_INDEX=0 \
 REMOVE_RRNA_OPERONS=1 \
-SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
 # Set B2 - rich media
-DESC="SET B2 16 gens 32 seed monocistronic rRNA TUs with glucose minimal media" \
+DESC="SET B2 16 gens 32 seeds monocistronic rRNA TUs with rich media" \
 VARIANT="condition" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
 REMOVE_RRNA_OPERONS=1 \
-SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
 # Set B3 - shift from minimal to rich media
-DESC="SET B3 24 gens 32 seed monocistronic rRNA TUs with glucose minimal media" \
+DESC="SET B3 24 gens 32 seeds monocistronic rRNA TUs with shift from minimal to rich media" \
 VARIANT="timelines" FIRST_VARIANT_INDEX=28 LAST_VARIANT_INDEX=28 \
 REMOVE_RRNA_OPERONS=1 \
-SINGLE_DAUGHTERS=1 N_GENS=24 N_INIT_SIMS=64 \
+SINGLE_DAUGHTERS=1 N_GENS=24 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set C - rRNA operon knockouts, glucose minimal media
-# Remove one rRNA operon
-# TODO: simplify variant to include one per # of operons and include nutrients
-DESC="SET C 8 gens 1 seed 6 rRNA operons with glucose minimal media" \
-VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+
+## Set C - rRNA operon knockouts
+# Set C1 - glucose minimal media
+DESC="SET C1 16 gens 32 seeds rRNA operon knockouts with glucose minimal media" \
+VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=6 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-# Remove two rRNA operons
-DESC="SET C 8 gens 1 seed 5 rRNA operons with glucose minimal media" \
-VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=8 LAST_VARIANT_INDEX=8 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+# Set C2 - rich media
+DESC="SET C2 16 gens 32 seeds rRNA operon knockouts with rich media" \
+VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=7 LAST_VARIANT_INDEX=12 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-# Remove three rRNA operons
-DESC="SET C 8 gens 1 seed 4 rRNA operons with glucose minimal media" \
-VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=29 LAST_VARIANT_INDEX=29 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
+# Set C3 - shift from minimal to rich media
+DESC="SET C3 24 gens 32 seeds rRNA operon knockouts with shift from minimal to rich media" \
+VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=13 LAST_VARIANT_INDEX=18 \
+SINGLE_DAUGHTERS=1 N_GENS=24 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-# Remove four rRNA operons
-DESC="SET C 8 gens 1 seed 3 rRNA operons with glucose minimal media" \
-VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=64 LAST_VARIANT_INDEX=64 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
-RUN_AGGREGATE_ANALYSIS=0 \
-python runscripts/fireworks/fw_queue.py
 
-# Remove five rRNA operons
-DESC="SET C 8 gens 1 seed 2 rRNA operons with glucose minimal media" \
-VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=99 LAST_VARIANT_INDEX=99 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
-RUN_AGGREGATE_ANALYSIS=0 \
-python runscripts/fireworks/fw_queue.py
-
-# Remove six rRNA operons
-DESC="SET C 8 gens 1 seed 1 rRNA operon with glucose minimal media" \
-VARIANT="rrna_operon_knockout" FIRST_VARIANT_INDEX=120 LAST_VARIANT_INDEX=120 \
-SINGLE_DAUGHTERS=1 N_GENS=8 N_INIT_SIMS=1 \
-RUN_AGGREGATE_ANALYSIS=0 \
-python runscripts/fireworks/fw_queue.py
-
-## Set D - flipped locations of rRNA operons, glucose minimal media
-# Change the chromosomal location of rRNA operons
-# TODO: reconfigure variant to include different nutrient conditions
-DESC="SET D 8 gens 1 seed flipped rRNA locations with glucose minimal media" \
+## Set D - Flip chromosomal locations of rRNA operons
+# Set D1 - glucose minimal media
+DESC="SET D1 16 gens 32 seeds flipped rRNA locations with glucose minimal media" \
 VARIANT="rrna_location" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
-SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
 
-## Set E - flipped orientations of rRNA operons, glucose minimal media
-# Change the orientation of rRNA operons
-# TODO: reconfigure variant to include different nutrient conditions
-DESC="SET E 16 gens 64 seed flipped rRNA orientations with glucose minimal media" \
-VARIANT="rrna_orientation" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
-SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=64 \
+# Set D2 - rich media
+DESC="SET D2 16 gens 32 seeds flipped rRNA locations with rich media" \
+VARIANT="rrna_location" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
 RUN_AGGREGATE_ANALYSIS=0 \
 python runscripts/fireworks/fw_queue.py
+
+# Set D3 - shift from minimal to rich media
+DESC="SET D3 24 gens 32 seeds flipped rRNA locations with shift from minimal to rich media" \
+VARIANT="rrna_location" FIRST_VARIANT_INDEX=3 LAST_VARIANT_INDEX=3 \
+SINGLE_DAUGHTERS=1 N_GENS=24 N_INIT_SIMS=32 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+
+## Set E - Flip the orientation of rRNA operons
+# Set E1 - glucose minimal media
+DESC="SET E1 16 gens 32 seeds flipped rRNA orientations with glucose minimal media" \
+VARIANT="rrna_orientation" FIRST_VARIANT_INDEX=1 LAST_VARIANT_INDEX=1 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+# Set E2 - rich media
+DESC="SET E2 16 gens 32 seeds flipped rRNA orientations with rich media" \
+VARIANT="rrna_orientation" FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 \
+SINGLE_DAUGHTERS=1 N_GENS=16 N_INIT_SIMS=32 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
+# Set E3 - shift from minimal to rich media
+DESC="SET E3 24 gens 32 seeds flipped rRNA orientations with shift from minimal to rich media" \
+VARIANT="rrna_orientation" FIRST_VARIANT_INDEX=3 LAST_VARIANT_INDEX=3 \
+SINGLE_DAUGHTERS=1 N_GENS=24 N_INIT_SIMS=32 \
+RUN_AGGREGATE_ANALYSIS=0 \
+python runscripts/fireworks/fw_queue.py
+
 
 ## Set F - Remove the extra 5S gene (rrfF)
 # Set F1 - glucose minimal media
