@@ -3,44 +3,39 @@ Utilities to compile functions, esp. from Sympy-constructed Matrix math.
 """
 
 import numpy as np
-from numba import njit
 from sympy import Matrix
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple
 
 
 def build_functions(arguments, expression):
 	# type: (str, str) -> Tuple[Callable, Callable]
-	"""Build a function from its arguments and source code expression and set 
-	up Numba to JIT-compile it on demand. There will be overhead to compile 
-	the first time the jit version is called so two functions are returned and 
-	can be selected for optimal performance.
+	"""Build a function from its arguments and source code expression.
+	(This USED TO set up Numba to JIT-compile it on demand, but the compiled
+	functions don't pay off their compilation time in Python 3.9+.)
 
-	Numba will optimize expressions like 1.0*y[2]**1.0 while compiling it
-	to machine code.
+	Still return two functions so the JIT compiler could be reenabled someday.
 
 	Args:
 		arguments (str): comma-separated lambda argument names
 		expression (str): expression to compile
 
 	Returns:
-		a lambda function(arguments)
-		a Numba Dispatcher function(arguments)
+		a function(arguments),
+		the same function(arguments)
 	"""
-	local_dict = {}
+	local_dict: dict[str, Any] = {}
 	expression = f'def f({arguments}):\n' + expression
 	exec(expression, globals(), local_dict)
 	f = local_dict['f']
 
-	# Too bad cache=True doesn't work with string source code.
-	f_jit = njit(f, error_model='numpy')
-
-	return f, f_jit
+	return f, f
 
 
 def _matrix_to_array(matrix):
 	# type: (Matrix) -> str
 	"""Convert a sympy Matrix expression to a function literal."""
 	rows, cols = matrix.shape
+	_ = np  # So the tools won't warn about unused np import.
 
 	function_str = f'	arr = np.zeros(({rows}, {cols}))\n'
 	for i in range(rows):
