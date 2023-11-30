@@ -5,7 +5,7 @@ Utilities to compile functions, esp. from Sympy-constructed Matrix math.
 import numpy as np
 from numba import njit
 from sympy import Matrix
-from typing import Callable, Tuple
+from typing import Any, Callable, Tuple
 
 
 def build_functions(arguments, expression):
@@ -26,7 +26,7 @@ def build_functions(arguments, expression):
 		a lambda function(arguments)
 		a Numba Dispatcher function(arguments)
 	"""
-	local_dict = {}
+	local_dict: dict[str, Any] = {}
 	expression = f'def f({arguments}):\n' + expression
 	exec(expression, globals(), local_dict)
 	f = local_dict['f']
