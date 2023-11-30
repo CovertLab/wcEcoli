@@ -10,10 +10,10 @@ from typing import Callable, Tuple
 
 def build_functions(arguments, expression):
 	# type: (str, str) -> Tuple[Callable, Callable]
-	"""Build a function from its arguments and source code expression, give it
-	access to `Numpy as np`, and set up Numba to JIT-compile it on demand.
-	There will be overhead to compile the first time the jit version is called
-	so two functions are returned and can be selected for optimal performance.
+	"""Build a function from its arguments and source code expression and set 
+	up Numba to JIT-compile it on demand. There will be overhead to compile 
+	the first time the jit version is called so two functions are returned and 
+	can be selected for optimal performance.
 
 	Numba will optimize expressions like 1.0*y[2]**1.0 while compiling it
 	to machine code.
@@ -26,7 +26,10 @@ def build_functions(arguments, expression):
 		a lambda function(arguments)
 		a Numba Dispatcher function(arguments)
 	"""
-	f = eval('lambda {}: {}'.format(arguments, expression), {'np': np}, {})
+	local_dict = {}
+	expression = f'def f({arguments}):\n' + expression
+	exec(expression, globals(), local_dict)
+	f = local_dict['f']
 
 	# Too bad cache=True doesn't work with string source code.
 	f_jit = njit(f, error_model='numpy')
@@ -34,14 +37,19 @@ def build_functions(arguments, expression):
 	return f, f_jit
 
 
-# TODO(jerry): Surely we can extract the argument array of "Matrix([...])" via
-#  sympy calls more reliably than str(expr)[7:-1].
 def _matrix_to_array(matrix):
 	# type: (Matrix) -> str
-	"""Convert a sympy Matrix expression to an 'np.array([...])' literal."""
-	matrix_string = str(matrix)
-	assert matrix_string.startswith('Matrix([')
-	return 'np.array({})'.format(matrix_string[7:-1])
+	"""Convert a sympy Matrix expression to a function literal."""
+	rows, cols = matrix.shape
+
+	function_str = f'	arr = np.zeros(({rows}, {cols}))\n'
+	for i in range(rows):
+		for j in range(cols):
+			if matrix[i, j] != 0:
+				function_str += f'	arr[{i}, {j}] = {matrix[i, j]}\n'
+
+	function_str += '	return arr'
+	return function_str
 
 
 def derivatives(matrix):
