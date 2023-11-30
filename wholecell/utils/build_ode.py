@@ -10,10 +10,12 @@ from typing import Any, Callable, Tuple
 def build_functions(arguments, expression):
 	# type: (str, str) -> Tuple[Callable, Callable]
 	"""Build a function from its arguments and source code expression.
-	(This USED TO set up Numba to JIT-compile it on demand, but the compiled
-	functions don't pay off their compilation time in Python 3.9+.)
+	(This USED TO return a second function that had Numba set up to JIT-compile
+	the code on demand, but the compiled code time savings don't pay back the
+	compilation time in Python 3.9+.)
 
-	Still return two functions so the JIT compiler could be reenabled someday.
+	This still returns two functions so the JIT compiler could be restored
+	someday.
 
 	Args:
 		arguments (str): comma-separated lambda argument names
@@ -21,7 +23,7 @@ def build_functions(arguments, expression):
 
 	Returns:
 		a function(arguments),
-		the same function(arguments)
+		the same function(arguments) [was a JIT-enabled version]
 	"""
 	local_dict: dict[str, Any] = {}
 	expression = f'def f({arguments}):\n' + expression
@@ -33,17 +35,17 @@ def build_functions(arguments, expression):
 
 def _matrix_to_array(matrix):
 	# type: (Matrix) -> str
-	"""Convert a sympy Matrix expression to a function literal."""
+	"""Convert a sympy Matrix expression to a function body."""
 	rows, cols = matrix.shape
 	_ = np  # So the tools won't warn about unused np import.
 
-	function_str = f'	arr = np.zeros(({rows}, {cols}))\n'
+	function_str = f'\tarr = np.zeros(({rows}, {cols}))\n'
 	for i in range(rows):
 		for j in range(cols):
 			if matrix[i, j] != 0:
-				function_str += f'	arr[{i}, {j}] = {matrix[i, j]}\n'
+				function_str += f'\tarr[{i}, {j}] = {matrix[i, j]}\n'
 
-	function_str += '	return arr'
+	function_str += '\treturn arr'
 	return function_str
 
 
