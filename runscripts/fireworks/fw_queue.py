@@ -75,8 +75,8 @@ Simulation parameters:
 		if charging creates a large update to improve stability of sims
 	LOG_TO_DISK_EVERY (int, "1"): frequency at which simulation outputs are
 		logged to disk
-	JIT (int, "1"): if nonzero, jit compiled functions are used for certain
-		processes, otherwise only uses lambda functions
+	JIT (int, "0"): NO-OP (This used to select jit-compiled functions in certain
+		processes)
 
 Modeling options:
 	MASS_DISTRIBUTION (int, "1"): if nonzero, a mass coefficient is drawn from
