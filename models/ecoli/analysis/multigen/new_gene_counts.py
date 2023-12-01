@@ -81,7 +81,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Protein Counts
 		plt.subplot(2, 1, 1)
-		if len(new_gene_monomer_ids) == 1:
+		if len(new_gene_monomer_ids):
 			plt.plot(time / 60., new_gene_monomer_counts,
 					 label=new_gene_monomer_ids[0])
 		else:
