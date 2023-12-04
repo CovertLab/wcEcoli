@@ -59,6 +59,9 @@ The following steps occur in incorporating the new genes into the chromosome:
       * Variant Index: (New Gene Expression Factor, Translation Efficiency)
         * 0: (0, 0), 1: (7, 1), 2: (7, 0.5), 3: (7, 2.5), 4: (8, 1), 5: (8, 
           0.5), 6: (8, 2.5)
+* New Gene Expression and Translation Efficiency Internal Shift
+  * TODO: fill in
+  * 
 
 ---
 <b>Listeners</b><br>
@@ -118,6 +121,9 @@ increasing new gene expression level or translation efficiency value has on
 the cell. In addition, there is an option to specify the minimum and 
 maximum generation index to be plotted. It is recommended to reference the 
 late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+
+* New Gene Expression and Translation Efficiency Internal Shift
+  * (In progress for a future PR)
 
  ---
 
