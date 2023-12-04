@@ -496,11 +496,15 @@ class WorkflowBuilder:
 			# Record the values used in this variant for analysis scripts
 			from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency_internal_shift \
 				import NEW_GENE_EXPRESSION_FACTORS, \
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN, \
+				NEW_GENE_KNOCKOUT_GEN, FINAL_SHIFT_GEN
 			self.metadata.update({
 				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
 				"new_gene_translation_efficiency_values":
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES})
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+				"new_gene_induction_gen": NEW_GENE_INDUCTION_GEN,
+				"new_gene_knockout_gen": NEW_GENE_KNOCKOUT_GEN,
+				"final_sim_gen": FINAL_SHIFT_GEN,})
 
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)

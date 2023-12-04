@@ -49,9 +49,7 @@ assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 # Generation to induce new gene expression
 NEW_GENE_INDUCTION_GEN = 1
 NEW_GENE_KNOCKOUT_GEN = 3
-FINAL_SIM_GEN = 128
-
-### TODO: make sure this is all written to metadata?
+FINAL_SHIFT_GEN = 128
 
 def determine_new_gene_ids_and_indices(sim_data):
 	"""
@@ -189,7 +187,7 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	# Add the new gene induction to the internal_shift instructions
 	for gen in range(NEW_GENE_INDUCTION_GEN, NEW_GENE_KNOCKOUT_GEN):
 		sim_data.internal_shift_dict[gen] = [(induce_new_genes, index)]
-	for gen in range(NEW_GENE_KNOCKOUT_GEN, FINAL_SIM_GEN):
+	for gen in range(NEW_GENE_KNOCKOUT_GEN, FINAL_SHIFT_GEN):
 		sim_data.internal_shift_dict[gen] = [
 			(knockout_induced_new_gene_expression, index)]
 
