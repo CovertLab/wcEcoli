@@ -1,9 +1,18 @@
 """
 Compare the impacts of increasing expression level and
 increasing or decreasing the translational efficiency of new genes, when
-induced after a particular generation. This variant assumes that new genes are
-very minimally expressed in the wildtype simulation (i.e. does not explicitly
-knockout new genes).
+induced or knocked out after a particular generation. This variant assumes that
+new genes are very minimally expressed in the wildtype simulation.
+
+- From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will be
+	transcribed and translated based upon the default parameters in wildtype
+	simulation (i.e. from the flat files).
+- From generations [`NEW_GENE_INDUCTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`),
+	the new genes will be transcribed and translated using the expression
+	factor and translation efficiency value from the variant index.
+- From generations [`NEW_GENE_KNOCKOUT_GEN`, `FINAL_SHIFT_GEN`), new
+	gene expression probabilities will be set to 0 corresponding to new
+	gene knockout.
 
 Modifies (after shift):
 	sim_data.process.transcription.rna_synth_prob
@@ -39,20 +48,18 @@ CONTROL_OUTPUT = dict(
 # NOTE: The version of these global variables on the master branch will
 # be used for Jenkins testing
 
+NEW_GENE_INDUCTION_GEN = 1 # Generation to induce new gene expression
+NEW_GENE_KNOCKOUT_GEN = 2 # Generation to knock out new gene expression
+FINAL_SHIFT_GEN = 128 # Generation to stop knocking out new gene expression
+
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
 NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
-
 assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 	"The first new gene expression factor should always be the control sim"
-
-# Generation to induce new gene expression
-NEW_GENE_INDUCTION_GEN = 1
-NEW_GENE_KNOCKOUT_GEN = 2
-FINAL_SHIFT_GEN = 128
 
 def determine_new_gene_ids_and_indices(sim_data):
 	"""
@@ -125,6 +132,7 @@ def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 
 	return expression_factor, trl_eff_value
 
+
 def induce_new_genes(sim_data, index):
 	"""
 	'Induces' new genes by setting their expression levels and translation
@@ -147,6 +155,7 @@ def induce_new_genes(sim_data, index):
 		sim_data.adjust_final_expression([gene_index], [expression_factor])
 		sim_data.process.translation.translation_efficiencies_by_monomer[
 			monomer_index] = trl_eff_value
+
 
 def knockout_induced_new_gene_expression(sim_data, index):
 	"""
@@ -174,11 +183,17 @@ def knockout_induced_new_gene_expression(sim_data, index):
 		sim_data.process.translation.translation_efficiencies_by_monomer[
 			monomer_index] = trl_eff_value
 
+
 def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, index):
 	"""
-	Apply variant. Specifies that at the beginning of NEW_GENE_INDUCTION_GEN,
-	the new gene expression and translation efficiency values will be set to
-	a specific parameter combination determined by the variant index.
+	Apply variant. Specifies that from NEW_GENE_INDUCTION_GEN to
+	NEW_GENE_KNOCKOUT_GEN, the new gene expression and translation efficiency
+	values will be set to a specific parameter combination determined by the
+	variant index. Then, from NEW_GENE_KNOCKOUT_GEN to FINAL_SHIFT_GEN, the new
+	gene expression values will be set to 0, while translation efficiency will
+	maintain the values from the variant index, so that already created new gene
+	mRNAs have the same translation efficiency as they did when they were
+	transcribed.
 	"""
 	# Map variant index to expression factor and tranlsation efficiency value
 	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
@@ -188,6 +203,8 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	setattr(sim_data, 'internal_shift_dict', {})
 
 	# Add the new gene induction to the internal_shift instructions
+	# Note: Must add an entry for each non wildtype gen because sim_data is
+	# reloaded from the file between generations
 	for gen in range(NEW_GENE_INDUCTION_GEN, NEW_GENE_KNOCKOUT_GEN):
 		sim_data.internal_shift_dict[gen] = [(induce_new_genes, index)]
 	for gen in range(NEW_GENE_KNOCKOUT_GEN, FINAL_SHIFT_GEN):
