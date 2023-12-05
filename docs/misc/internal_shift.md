@@ -3,7 +3,7 @@ Internal Shift Variants
 Developed by @rjuenemann in collaboration with @ggsun and @1fish2 .
 
 <b>Motivation</b><br>
-* As described in issue #1376, we previously added an option to the ParCa 
+* As described in Issue #1376, we previously added an option to the ParCa 
   to add new genes to the E. coli chromosome. We ran large 
   batches of simulations on Sherlock to investigate the impact of promoter 
   and ribosome binding site strength of new genes on product production and 
@@ -75,4 +75,6 @@ Developed by @rjuenemann in collaboration with @ggsun and @1fish2 .
     generation, 
     especially since there is some time delay between shift introduction and 
     visible changes in model output.
+* Note: The simulation initialization order needed to be changed in order 
+  for this to work as desired. See Pull Request #1395 for details.
 
