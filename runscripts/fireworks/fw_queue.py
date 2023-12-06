@@ -504,7 +504,7 @@ class WorkflowBuilder:
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
 				"new_gene_induction_gen": NEW_GENE_INDUCTION_GEN,
 				"new_gene_knockout_gen": NEW_GENE_KNOCKOUT_GEN,
-				"final_sim_gen": FINAL_SHIFT_GEN,})
+				"final_shift_gen": FINAL_SHIFT_GEN,})
 
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
