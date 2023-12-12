@@ -47,7 +47,8 @@ def analyze_variant(args):
 	n_sims = 0
 
 	# Load sim_data attributes for the given variant
-	sim_data = self.read_pickle_file(ap.get_variant_kb(variant))
+	with open(ap.get_variant_kb(variant), 'rb') as f:
+		sim_data = pickle.load(f)
 	cell_density = sim_data.constants.cell_density
 	n_avogadro = sim_data.constants.n_avogadro
 	lambdas = sim_data.process.metabolism.kinetic_objective_weight
