@@ -19,7 +19,7 @@ COLORS = ['C0', 'C1', 'C2', 'royalblue']
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-        sim_data = pickle.load(open(simDataFile, "rb"))
+        sim_data = self.read_pickle_file(simDataFile)
         transcription = sim_data.process.transcription
         is_rRNA_cistron = transcription.cistron_data['is_rRNA']
         cistron_rRNA_ids = transcription.cistron_data['id'][is_rRNA_cistron]

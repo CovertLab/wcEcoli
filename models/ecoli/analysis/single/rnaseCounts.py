@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import read_bulk_molecule_counts
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		endoRnaseIds = sim_data.process.rna_decay.endoRNase_ids
 		exoRnaseIds = sim_data.molecule_groups.exoRNases

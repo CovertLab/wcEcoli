@@ -29,7 +29,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		# Get constants from wildtype variant
-		sim_data = pickle.load(open(self.ap.get_variant_kb(4), "rb")) # 4 is the wildtype variant
+		sim_data = self.read_pickle_file(self.ap.get_variant_kb(4))  # 4 is the wildtype variant
 		cellDensity = sim_data.constants.cell_density
 		nAvogadro = sim_data.constants.n_avogadro
 

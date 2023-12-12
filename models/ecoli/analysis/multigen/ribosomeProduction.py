@@ -22,7 +22,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for gen_idx in range(self.ap.n_generation):
 			firstCellLineage.append(self.ap.get_cells(generation = [gen_idx])[0])
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		## Get expected doubling time ##
 		expected_doubling_time = sim_data.doubling_time

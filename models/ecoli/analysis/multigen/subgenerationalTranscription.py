@@ -38,8 +38,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print("Skipping -- figure5B only runs for multigen")
 			return
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
-		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
+		validation_data = self.read_pickle_file(validationDataFile)
 
 		# Get mRNA cistrons data
 		cistron_ids = sim_data.process.transcription.cistron_data["id"]
@@ -94,7 +94,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_cistron_ids_ordered = mRNA_cistron_ids[indexingOrder]
 
 		## Commented code is used when PLOT_GENES_OF_INTEREST is True
-		# raw_data = pickle.load(open("out/SET_A_000000/rawData.cPickle", "rb"))
+		# raw_data = self.read_pickle_file("out/SET_A_000000/rawData.cPickle")
 		# geneIdToGeneSymbol = {x["id"]: x["symbol"] for x in raw_data.genes}
 		# geneSymbolsOrdered = [geneIdToGeneSymbol[x] for x in geneIdsOrdered]
 		# pickle.dump({"geneId": geneIdsOrdered, "geneSymbol": geneSymbolsOrdered}, open(os.path.join(plotOutDir, "figure5B_genes.pickle"), "wb"))

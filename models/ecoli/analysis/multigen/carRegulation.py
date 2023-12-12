@@ -20,7 +20,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDirs = self.ap.get_cells()
 
 		# Load data from KB
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		nAvogadro = sim_data.constants.n_avogadro
 		cellDensity = sim_data.constants.cell_density
 

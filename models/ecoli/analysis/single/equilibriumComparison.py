@@ -21,7 +21,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
 		ratesFwd = sim_data.process.equilibrium.rates_fwd

@@ -15,7 +15,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		genomeLength = len(sim_data.process.replication.genome_sequence)
 
 

@@ -43,8 +43,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			Fluxes and standard deviations are numpy arrays with units
 			FLUX_UNITS.
 		"""
-		validation_data = pickle.load(open(validation_data_file, "rb"))
-		sim_data = pickle.load(open(sim_data_file, "rb"))
+		validation_data = self.read_pickle_file(validation_data_file)
+		sim_data = self.read_pickle_file(sim_data_file)
 		cell_density = sim_data.constants.cell_density
 
 		mass_listener = TableReader(os.path.join(sim_out_dir, "Mass"))

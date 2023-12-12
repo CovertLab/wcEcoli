@@ -37,7 +37,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_dirs_grouped_by_gen.append(self.ap.get_cells(generation = [gen_idx]))
 
 		# Load simDataFile and get constants
-		sim_data = pickle.load(open(simDataFile, 'rb'))
+		sim_data = self.read_pickle_file(simDataFile)
 		cell_density = sim_data.constants.cell_density
 		ids_translation = sim_data.process.translation.monomer_data["id"]
 		n_proteins = len(ids_translation)

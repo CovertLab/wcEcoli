@@ -47,7 +47,7 @@ def analyze_variant(args):
 	n_sims = 0
 
 	# Load sim_data attributes for the given variant
-	sim_data = pickle.load(open(ap.get_variant_kb(variant), 'rb'))
+	sim_data = self.read_pickle_file(ap.get_variant_kb(variant))
 	cell_density = sim_data.constants.cell_density
 	n_avogadro = sim_data.constants.n_avogadro
 	lambdas = sim_data.process.metabolism.kinetic_objective_weight
@@ -189,7 +189,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		# Load validation data
-		validation_data = pickle.load(open(validationDataFile, 'rb'))
+		validation_data = self.read_pickle_file(validationDataFile)
 		toya_reactions = validation_data.reactionFlux.toya2010fluxes['reactionID']
 		toya_fluxes = np.array([x.asNumber(DCW_FLUX_UNITS) for x in validation_data.reactionFlux.toya2010fluxes['reactionFlux']])
 		outlier_filter = [False if rxn in OUTLIER_REACTIONS else True for rxn in toya_reactions]

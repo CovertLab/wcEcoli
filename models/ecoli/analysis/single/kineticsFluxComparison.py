@@ -32,7 +32,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = pickle.load(open(simDataFile, 'rb'))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		mainListener = TableReader(os.path.join(simOutDir, "Main"))
 		initialTime = mainListener.readAttribute("initialTime")

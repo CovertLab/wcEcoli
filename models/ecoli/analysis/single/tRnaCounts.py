@@ -16,7 +16,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get the names of rnas from the KB
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		transcription = sim_data.process.transcription
 		uncharged_trna_ids = transcription.uncharged_trna_names
 		charged_trna_ids = transcription.charged_trna_names
