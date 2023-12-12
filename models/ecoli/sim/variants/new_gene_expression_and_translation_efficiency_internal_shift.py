@@ -138,7 +138,7 @@ def induce_new_genes(sim_data, index):
 	'Induces' new genes by setting their expression levels and translation
 	effiencies to the values specified using the variant index.
 	"""
-	# Map variant index to expression factor and tranlsation efficiency value
+	# Map variant index to expression factor and translation efficiency value
 	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
 		sim_data, index)
 

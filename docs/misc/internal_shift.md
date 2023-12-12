@@ -28,7 +28,7 @@ Developed by @rjuenemann in collaboration with @ggsun and @1fish2 .
 
 ---
 <b>How to Create an Internal Shift Variant </b><br>
-* Template: `models/ecoli/sim/vairants/template_internal_shift.py` 
+* Template: `models/ecoli/sim/variants/template_internal_shift.py` 
   (duplicate, rename, and then modify)
 * <b> Please ensure `_internal_shift` is included at the end of the variant name.</b>
 * Internal shift variants work by defining a dictionary (which is saved 
