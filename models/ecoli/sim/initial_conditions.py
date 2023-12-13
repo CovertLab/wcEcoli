@@ -115,13 +115,13 @@ def setDaughterInitialConditions(sim, sim_data):
 	sim.internal_states["UniqueMolecules"].loadSnapshot(inherited_state['unique_molecules'])
 
 	sim._initialTime = inherited_state['initial_time']
-	sim._generationNumber = inherited_state['generation_number']
+	sim._generation_index = inherited_state['generation_number']
 
 	# Check if an internal_shift_variant was called for this simulation
 	if hasattr(sim_data, "internal_shift_dict"):
 		# Check if an internal shift needs to occur at the start of this generation
-		if sim._generationNumber in sim_data.internal_shift_dict:
-			shifts = sim_data.internal_shift_dict[sim._generationNumber]
+		if sim._generation_index in sim_data.internal_shift_dict:
+			shifts = sim_data.internal_shift_dict[sim._generation_index]
 			# Apply the shift functions in order
 			for shift_tuple in shifts:
 				function = shift_tuple[0]
