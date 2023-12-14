@@ -32,7 +32,32 @@
 ## docs/create-pyenv.md about whether to create a `~/.numpy-site.cfg` file and add
 ## `--no-binary numpy` to these `pip install` steps):
 ## [When updating the numpy version here also update it below, in Dockerfile, and in docs/*.]
-#   pip install numpy==1.24.3  # or add: --no-binary numpy
+#   pip install numpy==1.26.2  # or add: --no-binary numpy
+#
+#
+#
+## Experimentally install numpy & scipy on macOS Accelerate instead of OpenBlas:
+## (--no-binary is needed to build rather than install a precompiled binary that'd
+## would ignore the -C args.
+## --no-cache-dir if needed to build freshly rather than using a cached build.
+## --force-reinstall if needed to install over the same version number.
+## -Dallow-noblas=true so it won't fall back to its built-in, slower openblas.
+## -Dblas=accelerate & -Dlapack=accelerate might be the default results on
+##  macOS 13.3+.)
+#   pip install --no-cache-dir --force-reinstall numpy==1.26.2 -Csetup-args=-Dblas=accelerate -Csetup-args=-Dlapack=accelerate -Csetup-args=-Duse-ilp64=true -Csetup-args=-Dallow-noblas=true --no-binary=numpy
+#   pip install --no-cache-dir --force-reinstall scipy==1.11.4 -Csetup-args=-Dblas=accelerate -Csetup-args=-Dlapack=accelerate --no-binary=scipy
+## or maybe it needs to be both at once:
+#   pip install --no-cache-dir --force-reinstall numpy==1.26.2 -Csetup-args=-Duse-ilp64=true -Csetup-args=-Dallow-noblas=true scipy==1.11.4 --no-binary=numpy,scipy
+#
+## Or use ...-Dblas=openblas ...-Dlapack=openblas to link to an external OpenBlas
+## library such as from `brew install openblas`, but it's not working with scipy.
+#
+## Quick check:
+#   python -c "import numpy as np; np.show_config()"
+#   python -c "import scipy; scipy.__config__.show()"
+#
+#
+#
 #   pip install -r requirements.txt && pyenv rehash
 #
 ## Build the Cython code:
@@ -57,8 +82,8 @@ wheel>=0.40.0
 # dnspython enables pymongo to access server clusters (mongodb+srv:// URIs).
 # pymongo[ocsp] adds dependencies for Sherlock to access Atlas server clusters.
 # pytest-cov is for `pytest --cov`.
-numpy==1.24.3
-scipy==1.10.1
+numpy==1.26.2
+scipy==1.11.4
 
 llvmlite==0.40.0
 
@@ -85,7 +110,7 @@ plotly==5.14.1
 pymongo[ocsp]==4.3.3
 pytest==7.3.1
 pytest-cov==4.1.0
-PyYAML==6.0
+PyYAML==6.0.1  # not compatible with Cython 3 until they replace distutils use
 requests==2.29.0  # update to 2.30 when docker is ready for urllib3 2.0
 ruamel.yaml==0.17.26
 stochastic-arrow==1.0.0
