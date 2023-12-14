@@ -118,7 +118,7 @@ def setDaughterInitialConditions(sim, sim_data):
 	sim._generation_index = inherited_state['generation_number']
 
 	# Check if an internal_shift_variant was called for this simulation
-	if hasattr(sim_data, "internal_shift_dict"):
+	if hasattr(sim_data, "internal_shift_dict") and sim_data.internal_shift_dict:
 		shift_range_start_gen_indices = sim_data.internal_shift_dict.keys()
 		if sim._generation_index == 1:
 			assert all(index >= 1 for index in shift_range_start_gen_indices), \
