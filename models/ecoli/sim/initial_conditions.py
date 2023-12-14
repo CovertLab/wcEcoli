@@ -119,9 +119,18 @@ def setDaughterInitialConditions(sim, sim_data):
 
 	# Check if an internal_shift_variant was called for this simulation
 	if hasattr(sim_data, "internal_shift_dict"):
+		shift_range_start_gen_indices = sim_data.internal_shift_dict.keys()
+		if sim._generation_index == 1:
+			assert all(index >= 1 for index in shift_range_start_gen_indices), \
+				"internal shift variants are only intended to be used on daughter cells"
 		# Check if an internal shift needs to occur at the start of this generation
-		if sim._generation_index in sim_data.internal_shift_dict:
-			shifts = sim_data.internal_shift_dict[sim._generation_index]
+		if sim._generation_index >= min(shift_range_start_gen_indices):
+			# Determine which generation index key defines the shift functions
+			# to use for this range of generation indices
+			shift_range_start_gen_index = min(
+				shift_range_start_gen_indices,
+				key=lambda x: abs(x - sim._generation_index))
+			shifts = sim_data.internal_shift_dict[shift_range_start_gen_index]
 			# Apply the shift functions in order
 			for shift_tuple in shifts:
 				function = shift_tuple[0]

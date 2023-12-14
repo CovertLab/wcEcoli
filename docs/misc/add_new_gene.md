@@ -72,20 +72,23 @@ The following steps occur in incorporating the new genes into the chromosome:
     and Translation Efficiency variant above.
   * The key difference for this variant is that you can make the changes to 
     the new genes at the beginning of a specified generation. You can 
-    specify a `NEW_GENE_INDUTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`, and 
-    `FINAL_SHIFT_GEN` in `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
+    specify a `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` in 
+    `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
     * From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will be 
       transcribed and translated based upon the default parameters in wildtype 
       simulation (i.e. from the flat files).
     * From generations [`NEW_GENE_INDUCTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`), 
       the new genes will be transcribed and translated using the expression 
       factor and translation efficiency value from the variant index.
-    * From generations [`NEW_GENE_KNOCKOUT_GEN`, `FINAL_SHIFT_GEN`), new 
+    * From generations `NEW_GENE_KNOCKOUT_GEN` and onwards, new 
       gene expression probabilities will be set to 0 corresponding to new 
       gene knockout.
-    * If the values you choose for `NEW_GENE_INDUTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`, and 
-    `FINAL_SHIFT_GEN` are greater than the number of generations you run, 
-      then you won't see their corresponding effects.
+    * If you don't intend to do new gene induction and/or knockout, you can 
+      set `NEW_GENE_INDUTION_GEN = -1` and/or `NEW_GENE_KNOCKOUT_GEN = -1`, 
+      respectively.
+    * Note: if the values you choose for `NEW_GENE_INDUTION_GEN` 
+      and `NEW_GENE_KNOCKOUT_GEN` are greater than the number of 
+      generations you run, then you won't see their corresponding effects.
   * This variant assumes that new genes are very minimally expressed in 
     the wildtype simulation (i.e. does not explicitly knockout new genes). 
   * If you'd like different behavior (e.g. knock in, knock out, then 

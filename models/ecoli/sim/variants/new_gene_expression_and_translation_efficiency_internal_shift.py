@@ -48,9 +48,11 @@ CONTROL_OUTPUT = dict(
 # NOTE: The version of these global variables on the master branch will
 # be used for Jenkins testing
 
-NEW_GENE_INDUCTION_GEN = 1 # Generation to induce new gene expression
-NEW_GENE_KNOCKOUT_GEN = 2 # Generation to knock out new gene expression
-FINAL_SHIFT_GEN = 128 # Generation to stop knocking out new gene expression
+# NOTE: If these values are greater than the number of generations you are
+# running, you will not see their effects.
+# OPTION: Set = -1 to skip induction or knockout shifts.
+NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
+NEW_GENE_KNOCKOUT_GEN = 2 # Generation index to knock out new gene expression
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
@@ -60,6 +62,7 @@ NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 	"The first new gene expression factor should always be the control sim"
+
 
 def determine_new_gene_ids_and_indices(sim_data):
 	"""
@@ -205,10 +208,11 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	# Add the new gene induction to the internal_shift instructions
 	# Note: Must add an entry for each non wildtype gen because sim_data is
 	# reloaded from the file between generations
-	for gen in range(NEW_GENE_INDUCTION_GEN, NEW_GENE_KNOCKOUT_GEN):
-		sim_data.internal_shift_dict[gen] = [(induce_new_genes, index)]
-	for gen in range(NEW_GENE_KNOCKOUT_GEN, FINAL_SHIFT_GEN):
-		sim_data.internal_shift_dict[gen] = [
+	if NEW_GENE_INDUCTION_GEN != -1:
+		sim_data.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
+			(induce_new_genes, index)]
+	if NEW_GENE_KNOCKOUT_GEN != -1:
+		sim_data.internal_shift_dict[NEW_GENE_KNOCKOUT_GEN] = [
 			(knockout_induced_new_gene_expression, index)]
 
 	# Variant descriptions to save to metadata
