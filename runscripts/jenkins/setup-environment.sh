@@ -10,7 +10,7 @@ if [ -d "${PYENV_ROOT}" ]; then
 fi
 
 ### Edit this line to make this branch use another pyenv like wcEcoli3-staging
-pyenv local wcEcoli3-staging
+pyenv local wcEcoli3
 pyenv activate
 
 make clean compile
