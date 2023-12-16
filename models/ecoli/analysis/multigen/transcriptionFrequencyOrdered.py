@@ -21,11 +21,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		validation_data = pickle.load(open(validationDataFile, "rb"))
+		validation_data = self.read_pickle_file(validationDataFile)
 		essential_cistrons = validation_data.essential_genes.essential_cistrons
 
 		# Get mRNA cistron data
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		cistron_ids = sim_data.process.transcription.cistron_data["id"]
 		is_mRNA = sim_data.process.transcription.cistron_data['is_mRNA']
 		mRNA_cistron_indexes = np.where(is_mRNA)[0]

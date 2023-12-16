@@ -21,7 +21,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# Get mRNA data
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		mRnaIndexes = np.where(isMRna)[0]
 

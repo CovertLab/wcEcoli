@@ -15,7 +15,7 @@ from __future__ import annotations
 import abc
 import os
 import pickle
-from typing import Tuple
+from typing import Any, Tuple
 
 import matplotlib as mp
 from matplotlib import pyplot as plt
@@ -48,6 +48,12 @@ class AnalysisPlot(metaclass=abc.ABCMeta):
 		self.cpus = parallelization.cpus(cpus)
 		self._axeses = {}
 		self.ap = None
+
+	@staticmethod
+	def read_pickle_file(path: str) -> Any:
+		"""Read a pickle file from its file path."""
+		with open(path, 'rb') as f:
+			return pickle.load(f)
 
 	@staticmethod
 	def read_sim_data_file(sim_path: str) -> SimulationDataEcoli:

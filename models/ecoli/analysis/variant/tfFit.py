@@ -44,7 +44,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		targetToTfType = {}
 
 		for variant, simDir in zip(variants, all_cells):
-			sim_data = pickle.load(open(self.ap.get_variant_kb(variant), "rb"))
+			sim_data = self.read_pickle_file(self.ap.get_variant_kb(variant))
 
 			delta_prob = sim_data.process.transcription_regulation.delta_prob
 

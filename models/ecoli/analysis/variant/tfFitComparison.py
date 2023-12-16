@@ -34,7 +34,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for variant, simDir in zip(variants, all_cells):
 
-			sim_data = pickle.load(open(self.ap.get_variant_kb(variant), "rb"))
+			sim_data = self.read_pickle_file(self.ap.get_variant_kb(variant))
 			tfList = ["basal (no TF)"] + sorted(sim_data.tf_to_active_inactive_conditions)
 			simOutDir = os.path.join(simDir, "simOut")
 			tf = tfList[(variant + 1) // 2]

@@ -210,6 +210,10 @@ class Shell(wholecell.loggers.logger.Logger):
 
 		self.write("\n")
 
+		if self.log_file:
+			self.log_file.close()
+			self.log_file = None
+
 	def write(self, text):
 		sys.stdout.write(text)
 		if self.log_file:

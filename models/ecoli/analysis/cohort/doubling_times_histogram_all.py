@@ -56,7 +56,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation = list(range(FIRST_GENERATION, n_gens))
 			)
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		doubling_times_minutes = []
 

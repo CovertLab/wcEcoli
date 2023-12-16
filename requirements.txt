@@ -80,11 +80,11 @@ matplotlib==3.7.1
 mock==5.0.2
 mypy==1.3.0
 pandas==2.0.1
-Pillow==9.5.0
+Pillow==10.1.0
 plotly==5.14.1
 pymongo[ocsp]==4.3.3
 pytest==7.3.1
-pytest-cov==4.0.0
+pytest-cov==4.1.0
 PyYAML==6.0
 requests==2.29.0  # update to 2.30 when docker is ready for urllib3 2.0
 ruamel.yaml==0.17.26
@@ -118,7 +118,7 @@ charset-normalizer==3.1.0
 click==8.1.3
 cons==0.4.5
 contourpy==1.0.7
-coverage==7.2.5
+coverage==7.3.2
 cycler==0.11.0
 dash-core-components==2.0.0
 dash-html-components==2.0.0

@@ -26,7 +26,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			firstCellLineage.append(self.ap.get_cells(generation = [gen_idx])[0])
 
 		# Get sim data from cPickle file
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		# Create new figure and set size
 		fig = plt.figure()
