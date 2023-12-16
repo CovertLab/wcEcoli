@@ -23,11 +23,13 @@ def divide_cell(sim):
 	of a dividing cell randomly into two daughter cells, saving the data for
 	the daughter cells' `_initialConditionsFunction()` method to read.
 	"""
+
 	# Assign data from simulation required
 	randomState = sim.randomState
 
 	bulkMolecules = sim.internal_states['BulkMolecules']
 	uniqueMolecules = sim.internal_states['UniqueMolecules']
+	daughter_generation_number = sim._generation_index + 1
 
 	sim_data = sim.get_sim_data()
 
@@ -76,6 +78,7 @@ def divide_cell(sim):
 		initial_time=initial_time,
 		bulk_molecules=d1_bulkMolCntr,
 		unique_molecules=d1_uniqueMolCntr,
+		generation_number=daughter_generation_number,
 		)
 	save_inherited_state(
 		d2_path,
@@ -83,6 +86,7 @@ def divide_cell(sim):
 		initial_time=initial_time,
 		bulk_molecules=d2_bulkMolCntr,
 		unique_molecules=d2_uniqueMolCntr,
+		generation_number=daughter_generation_number,
 		)
 
 	return [d1_path, d2_path]
