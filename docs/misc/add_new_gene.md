@@ -35,6 +35,9 @@ The following steps occur in incorporating the new genes into the chromosome:
     * 0: no new gene expression
     * 1: factor = 10^0 = 1
     * x > 1: factor = 10^(x-1)
+
+
+
 * New Gene Expression and Translation Effieciency
   * `models/ecoli/variants/new_gene_expression_and_translation_efficiency.py` - index specifies both the 
     factor to multiply the expression level of all new genes by and the 
@@ -59,6 +62,39 @@ The following steps occur in incorporating the new genes into the chromosome:
       * Variant Index: (New Gene Expression Factor, Translation Efficiency)
         * 0: (0, 0), 1: (7, 1), 2: (7, 0.5), 3: (7, 2.5), 4: (8, 1), 5: (8, 
           0.5), 6: (8, 2.5)
+
+
+
+* New Gene Expression and Translation Efficiency Internal Shift
+  * `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
+  * The indices, new gene expression factors, and the translation efficiency 
+    values for this variant work the same as the New Gene Expression 
+    and Translation Efficiency variant above.
+  * The key difference for this variant is that you can make the changes to 
+    the new genes at the beginning of a specified generation. You can 
+    specify a `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` in 
+    `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
+    * From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will be 
+      transcribed and translated based upon the default parameters in wildtype 
+      simulation (i.e. from the flat files).
+    * From generations [`NEW_GENE_INDUCTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`), 
+      the new genes will be transcribed and translated using the expression 
+      factor and translation efficiency value from the variant index.
+    * From generations `NEW_GENE_KNOCKOUT_GEN` and onwards, new 
+      gene expression probabilities will be set to 0 corresponding to new 
+      gene knockout.
+    * If you don't intend to do new gene induction and/or knockout, you can 
+      set `NEW_GENE_INDUTION_GEN = -1` and/or `NEW_GENE_KNOCKOUT_GEN = -1`, 
+      respectively.
+    * Note: if the values you choose for `NEW_GENE_INDUTION_GEN` 
+      and `NEW_GENE_KNOCKOUT_GEN` are greater than the number of 
+      generations you run, then you won't see their corresponding effects.
+  * This variant assumes that new genes are very minimally expressed in 
+    the wildtype simulation (i.e. does not explicitly knockout new genes). 
+  * If you'd like different behavior (e.g. knock in, knock out, then 
+    knock in again) you can define your own variant using the 
+    internal shift variant framework described in 
+    `docs/misc/internal_shift.md`.
 
 ---
 <b>Listeners</b><br>
@@ -118,6 +154,9 @@ increasing new gene expression level or translation efficiency value has on
 the cell. In addition, there is an option to specify the minimum and 
 maximum generation index to be plotted. It is recommended to reference the 
 late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+
+* New Gene Expression and Translation Efficiency Internal Shift
+  * (In progress for a future PR)
 
  ---
 
