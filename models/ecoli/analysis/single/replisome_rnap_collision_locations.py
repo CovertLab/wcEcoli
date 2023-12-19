@@ -81,7 +81,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# Plot locations of rRNA transcripts
 		for (s, e) in zip(rRNA_start_thetas, rRNA_end_thetas):
 			ax.plot(
-				np.linspace(s, e, 100), np.repeat(0.9, 100), color='k', lw=3)
+				np.linspace(s, e, 10), np.repeat(0.9, 10), color='k')
 
 		# Add labels
 		ax.text(0, 1.08, "oriC", ha="center", va="center")

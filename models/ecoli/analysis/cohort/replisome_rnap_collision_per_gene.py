@@ -69,6 +69,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		gene_coordinates = sim_data.process.transcription.cistron_data['replication_coordinate']
 		gene_directions = sim_data.process.transcription.cistron_data['is_forward']
 		gene_lengths = sim_data.process.transcription.cistron_data["length"].asNumber(units.nt)
+		is_rRNA = sim_data.process.transcription.cistron_data['is_rRNA']
 
 		# Load replichore lengths
 		replichore_lengths = sim_data.process.replication.replichore_lengths
@@ -115,6 +116,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for gene in gene_ids[codirectional_rank]]
 		headon_top_genes = [sim_data.common_names.get_common_name(gene)
 			for gene in gene_ids[headon_rank]]
+		codirectional_rRNA_indexes = np.where(is_rRNA[codirectional_rank])[0]
+		headon_rRNA_indexes = np.where(is_rRNA[headon_rank])[0]
 
 		# Plot
 		plt.figure(figsize=(13, 3.5))
@@ -124,6 +127,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			   color="darkblue")
 		ax.set_xticks(range(PLOT_TOP_N_GENES))
 		ax.set_xticklabels(codirectional_top_genes, rotation=90)
+		for i in codirectional_rRNA_indexes:
+			ax.get_xticklabels()[i].set_color('red')
 		ax.set_title("Co-directional (Average per cell = %.1f)" % (n_codirectional_per_cell,))
 		ax.set_ylabel("Number of collisions")
 		ax.spines['top'].set_visible(False)
@@ -134,6 +139,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			   color="crimson")
 		ax.set_xticks(range(PLOT_TOP_N_GENES))
 		ax.set_xticklabels(headon_top_genes, rotation=90)
+		for i in headon_rRNA_indexes:
+			ax.get_xticklabels()[i].set_color('red')
 		ax.set_title("Head-on (Average per cell = %.1f)" % (n_headon_per_cell,))
 		ax.spines['top'].set_visible(False)
 		ax.spines['right'].set_visible(False)

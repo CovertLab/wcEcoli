@@ -5,6 +5,8 @@ multiple media conditions.
 Modifies:
 	sim_data.process.transcription.rna_data["is_forward"]
 	sim_data.process.transcription.rna_data["replication_coordinate"]
+	sim_data.process.transcription.cistron_data["is_forward"]
+	sim_data.process.transcription.cistron_data["replication_coordinate"]
 
 Expected variant indices:
 	0: control
@@ -25,16 +27,34 @@ CONTROL_OUTPUT = dict(
 
 def rrna_orientation(sim_data, index):
 	if index > 0:
-		is_rrna = sim_data.process.transcription.rna_data['is_rRNA']
-		is_forward = sim_data.process.transcription.rna_data['is_forward']
-		coordinate = sim_data.process.transcription.rna_data[
+		transcription = sim_data.process.transcription
+		is_rrna = transcription.rna_data['is_rRNA']
+		rna_ids = transcription.rna_data['id']
+		rna_is_forward = transcription.rna_data['is_forward']
+		rna_coordinates = transcription.rna_data[
 			"replication_coordinate"]
-		length = sim_data.process.transcription.rna_data["length"].asNumber(units.nt)
+		rna_length = transcription.rna_data["length"].asNumber(units.nt)
+		cistron_is_forward = transcription.cistron_data['is_forward']
+		cistron_coordinates = transcription.cistron_data[
+			'replication_coordinate']
 
-		# Reverse orientations of all rRNA genes
-		coordinate[is_rrna] = coordinate[is_rrna] + np.multiply(
-			length[is_rrna], is_forward[is_rrna])
-		is_forward[is_rrna] = ~is_forward[is_rrna]
+		# Reverse the ordering and orientations of genes within all rRNA operons
+		for i in np.where(is_rrna)[0]:
+			cistron_indexes = transcription.rna_id_to_cistron_indexes(rna_ids[i])
+			cistron_pos_within_operon = np.abs(
+				cistron_coordinates[cistron_indexes] - rna_coordinates[i])
+
+			cistron_coordinates[cistron_indexes] = (
+				rna_coordinates[i]
+				+ 2*(rna_is_forward[i] - 0.5)*(rna_length[i] - cistron_pos_within_operon)
+				)
+			cistron_is_forward[cistron_indexes] = ~cistron_is_forward[cistron_indexes]
+
+		# Reverse orientations of all rRNA transcription units
+		rna_coordinates[is_rrna] = rna_coordinates[is_rrna] + np.multiply(
+			rna_length[is_rrna], 2*(rna_is_forward[is_rrna] - 0.5))
+		rna_is_forward[is_rrna] = ~rna_is_forward[is_rrna]
+
 
 		# Change media conditions for indexes 2 and 3
 		condition_id = sim_data.condition
