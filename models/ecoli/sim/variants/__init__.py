@@ -16,6 +16,7 @@ variants = [
 	'new_gene_expression',
 	'new_gene_expression_and_translation_efficiency',
 	'new_gene_expression_and_translation_efficiency_internal_shift',
+'new_gene_expression_and_translation_efficiency_media_internal_shift',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',
