@@ -7,6 +7,7 @@ ACTIVE = [
 	"excess_protein_monomers.py",
 	"gene_position_vs_expression_change.py",
 	"growth_histograms.py",
+	"instantaneous_doubling_times.py",
 	"massFractionComparison.py",
 	"mRNA_copy_numbers.py",
 	"mRNA_copy_numbers_growth_genes.py",
@@ -26,6 +27,7 @@ ACTIVE = [
 	"rrna_gene_copy_numbers.py",
 	"rrna_gene_rnap_densities.py",
 	"rrna_to_ribosome_yield.py",
+	"rrna_transcription_completion_rate.py",
 	"tRNA_cistron_expression.py",
 ]
 
