@@ -33,31 +33,6 @@
 ## `--no-binary numpy` to these `pip install` steps):
 ## [When updating the numpy version here also update it below, in Dockerfile, and in docs/*.]
 #   pip install numpy==1.26.2  # or add: --no-binary numpy
-#
-#
-#
-## Experimentally install numpy & scipy on macOS Accelerate instead of OpenBlas:
-## (--no-binary is needed to build rather than install a precompiled binary that'd
-## would ignore the -C args.
-## --no-cache-dir if needed to build freshly rather than using a cached build.
-## --force-reinstall if needed to install over the same version number.
-## -Dallow-noblas=true so it won't fall back to its built-in, slower openblas.
-## -Dblas=accelerate & -Dlapack=accelerate might be the default results on
-##  macOS 13.3+.)
-#   pip install --no-cache-dir --force-reinstall numpy==1.26.2 -Csetup-args=-Dblas=accelerate -Csetup-args=-Dlapack=accelerate -Csetup-args=-Duse-ilp64=true -Csetup-args=-Dallow-noblas=true --no-binary=numpy
-#   pip install --no-cache-dir --force-reinstall scipy==1.11.4 -Csetup-args=-Dblas=accelerate -Csetup-args=-Dlapack=accelerate --no-binary=scipy
-## or maybe it needs to be both at once:
-#   pip install --no-cache-dir --force-reinstall numpy==1.26.2 -Csetup-args=-Duse-ilp64=true -Csetup-args=-Dallow-noblas=true scipy==1.11.4 --no-binary=numpy,scipy
-#
-## Or use ...-Dblas=openblas ...-Dlapack=openblas to link to an external OpenBlas
-## library such as from `brew install openblas`, but it's not working with scipy.
-#
-## Quick check:
-#   python -c "import numpy as np; np.show_config()"
-#   python -c "import scipy; scipy.__config__.show()"
-#
-#
-#
 #   pip install -r requirements.txt && pyenv rehash
 #
 ## Build the Cython code:
@@ -85,8 +60,6 @@ wheel>=0.40.0
 numpy==1.26.2
 scipy==1.11.4
 
-llvmlite==0.40.0
-
 aesara==2.9.3
 biopython==1.81
 bokeh==3.1.1
@@ -101,6 +74,7 @@ future==0.18.3
 ipdb==0.13.13
 ipython==8.13.2
 line-profiler==4.0.3
+numba==0.58.1
 matplotlib==3.7.1
 mock==5.0.2
 mypy==1.3.0
@@ -178,6 +152,7 @@ itsdangerous==2.1.2
 jedi==0.18.2
 Jinja2==3.1.2
 kiwisolver==1.4.4
+llvmlite==0.41.1
 logical-unification==0.4.6
 MarkupSafe==2.1.2
 matplotlib-inline==0.1.6
