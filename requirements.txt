@@ -84,7 +84,7 @@ plotly==5.14.1
 pymongo[ocsp]==4.3.3
 pytest==7.3.1
 pytest-cov==4.1.0
-PyYAML==6.0
+PyYAML==6.0.1  # not compatible with Cython 3 until they replace distutils use
 requests==2.29.0  # update to 2.30 when docker is ready for urllib3 2.0
 ruamel.yaml==0.17.26
 stochastic-arrow==1.0.0
