@@ -32,7 +32,7 @@
 ## docs/create-pyenv.md about whether to create a `~/.numpy-site.cfg` file and add
 ## `--no-binary numpy` to these `pip install` steps):
 ## [When updating the numpy version here also update it below, in Dockerfile, and in docs/*.]
-#   pip install numpy==1.24.3  # or add: --no-binary numpy
+#   pip install numpy==1.26.2  # or add: --no-binary numpy
 #   pip install -r requirements.txt && pyenv rehash
 #
 ## Build the Cython code:
@@ -59,8 +59,6 @@ wheel>=0.40.0
 # pytest-cov is for `pytest --cov`.
 numpy==1.26.2
 scipy==1.11.4
-
-llvmlite==0.40.0
 
 aesara==2.9.3
 biopython==1.81
