@@ -214,13 +214,13 @@ virtualenv.
    installation errors.
 
    ```shell script
-   pip install numpy==1.26.2  # see requirements.txt for the right version
+   pip install numpy==1.26.3  # see requirements.txt for the right version
    ```
 
    Or:
 
    ```shell script
-   pip install numpy==1.26.2 --no-binary numpy  # see requirements.txt for the right version
+   pip install numpy==1.26.3 --no-binary numpy  # see requirements.txt for the right version
    ```
 
 1. Install the packages listed in `requirements.txt`.
