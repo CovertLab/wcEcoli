@@ -29,10 +29,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
 
-		if metadata['variant'] != 'timelines' or ap1.get_variants()[0] != 28 or ap2.get_variants()[0] != 28:
-			print('Skipping analysis -- this analysis only runs on timeline'
-				  'variants with amino acid upshifts')
-
 		def read_sims(ap):
 			all_doubling_times = []
 			t_max = 0
@@ -95,9 +91,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Plot timetraces of doubling times from two sims on same plot
 		ax1 = plt.subplot(1, 1, 1)
 		for (t, conc) in all_dt1:
-			ax1.plot(t / 60, conc, c='C0', lw=0.5, alpha=0.1)
+			ax1.plot(t / 60, conc, c='C0', lw=0.5, alpha=0.02)
 		for (t, conc) in all_dt2:
-			ax1.plot(t / 60, conc, c='C1', lw=0.5, alpha=0.1)
+			ax1.plot(t / 60, conc, c='C1', lw=0.5, alpha=0.02)
 
 		# Plot sliding window time averages with thicker lines
 		ax1.plot(
