@@ -403,15 +403,19 @@ class NetworkFlowGLPK(NetworkFlowProblemBase):
 		n_flows = len(self._flows)
 
 		self._add_rows(n_coeffs)
-		A = np.zeros((n_coeffs, n_flows))
 		# avoid creating duplicate constraints
 		self._materialIdxLookup = {}
+		A_row = []
+		A_col = []
+		A_data = []
 		for materialIdx, (material, pairs) in enumerate(sorted(self._materialCoeffs.items())):
 			self._materialIdxLookup[material] = materialIdx
 			for pair in pairs:
-				A[materialIdx, pair[1]] = pair[0]
+				A_row.append(materialIdx)
+				A_col.append(pair[1])
+				A_data.append(pair[0])
 
-		A_coo = coo_matrix(A)
+		A_coo = coo_matrix((A_data, (A_row, A_col)), shape=(n_coeffs, n_flows))
 		rowIdxs = _toIndexArray(A_coo.row)
 		colIdxs = _toIndexArray(A_coo.col)
 		data = _toDoubleArray(A_coo.data)

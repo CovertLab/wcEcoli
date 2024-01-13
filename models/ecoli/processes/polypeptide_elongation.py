@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional, Set, Tuple
 
+from numba import njit
 import numpy as np
 from scipy.integrate import solve_ivp
 
@@ -1028,34 +1029,16 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 			ndarray[float]: dc/dt for tRNA concentrations
 				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
 		'''
-
-		uncharged_trna_conc = c[:n_aas_masked]
-		charged_trna_conc = c[n_aas_masked:2*n_aas_masked]
-		aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
-		masked_aa_conc = aa_conc[mask]
-
-		v_charging = (params['kS'] * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (params['KMaa'][mask] * params['KMtf'][mask])
-			/ (1 + uncharged_trna_conc/params['KMtf'][mask] + masked_aa_conc/params['KMaa'][mask] + uncharged_trna_conc*masked_aa_conc/params['KMtf'][mask]/params['KMaa'][mask]))
-		with np.errstate(divide='ignore'):
-			numerator_ribosome = 1 + np.sum(f * (params['krta'] / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * params['krta'] / params['krtf']))
-		v_rib = params['max_elong_rate'] * ribosome_conc / numerator_ribosome
-
-		# Handle case when f is 0 and charged_trna_conc is 0
-		if not np.isfinite(v_rib):
-			v_rib = 0
-
-		# Limit v_rib and v_charging to the amount of available amino acids
-		if limit_v_rib:
-			v_charging = np.fmin(v_charging, aa_rate_limit)
-			v_rib = min(v_rib, v_rib_max)
-
-		dtrna = v_charging - v_rib*f
-		daa = np.zeros(n_aas)
+		v_charging, dtrna, daa = dcdt_jit(t, c, n_aas_masked, n_aas, mask, 
+			params['kS'], synthetase_conc, params['KMaa'], params['KMtf'],
+			f, params['krta'], params['krtf'], params['max_elong_rate'],
+			ribosome_conc, limit_v_rib, aa_rate_limit, v_rib_max)
 		if supply is None:
 			v_synthesis = np.zeros(n_aas)
 			v_import = np.zeros(n_aas)
 			v_export = np.zeros(n_aas)
 		else:
+			aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
 			v_synthesis, v_import, v_export = supply(unit_conversion * aa_conc)
 			v_supply = v_synthesis + v_import - v_export
 			daa[mask] = v_supply[mask] - v_charging
@@ -1119,6 +1102,36 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	new_fraction_charged[~mask] = fraction_charged.mean()
 
 	return new_fraction_charged, v_rib, total_synthesis, total_import, total_export
+
+@njit(error_model='numpy')
+def dcdt_jit(t, c, n_aas_masked, n_aas, mask, 
+	kS, synthetase_conc, KMaa, KMtf,
+	f, krta, krtf, max_elong_rate,
+	ribosome_conc, limit_v_rib, aa_rate_limit, v_rib_max
+):
+	uncharged_trna_conc = c[:n_aas_masked]
+	charged_trna_conc = c[n_aas_masked:2*n_aas_masked]
+	aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
+	masked_aa_conc = aa_conc[mask]
+
+	v_charging = (kS * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (KMaa[mask] * KMtf[mask])
+		/ (1 + uncharged_trna_conc/KMtf[mask] + masked_aa_conc/KMaa[mask] + uncharged_trna_conc*masked_aa_conc/KMtf[mask]/KMaa[mask]))
+	numerator_ribosome = 1 + np.sum(f * (krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * krta / krtf))
+	v_rib = max_elong_rate * ribosome_conc / numerator_ribosome
+
+	# Handle case when f is 0 and charged_trna_conc is 0
+	if not np.isfinite(v_rib):
+		v_rib = 0
+
+	# Limit v_rib and v_charging to the amount of available amino acids
+	if limit_v_rib:
+		v_charging = np.fmin(v_charging, aa_rate_limit)
+		v_rib = min(v_rib, v_rib_max)
+
+	dtrna = v_charging - v_rib*f
+	daa = np.zeros(n_aas)
+	
+	return v_charging, dtrna, daa
 
 def get_charging_supply_function(
 		supply_in_charging: bool,
