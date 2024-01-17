@@ -443,41 +443,130 @@ repeat them but if you do, they must match.
 * A _type_ is for type checking, variable annotations, and function annotations.
   A _class_ is a runtime thing. Every _class_ acts like a _type_, and there are additional types like
   `str | int` which you can't instantiate like a class.
-* Type A is a _subtype_ of B if it has a subset of the values (classification) **and** a superset of the
+* Type `A` is a _subtype_ of `B` if it has a subset of the values (classification) **and** a superset of the
 methods. A value of a subtype can act like a value from its supertypes.
 * The type `From` _is consistent with_ (assignable to a variable of) type `To` if
   * `From` is a subtype of `To`, _or_
   * `From` or `To` is `Any`.
-* _Type hints_ just enable tools: docs, type checkers, IDE code completion, etc.
-* The type checker is a tool that warns about inconsistent types. It does nothing at runtime.
-* Type _annotations_ do the same job as type hint comments.
-* _Gradual typing_ means adding type hints to existing code, freely mixing code
-  with and without have type hints.
+* _Type hints_ and _annotations_ just enable tools: docs, type checkers, IDE code completion, etc.
+* Python's type checker is a tool that warns about inconsistent types. It has no impact at runtime.
+* _Gradual typing_ means adding type hints to existing code, mixing code
+  with and without type hints.
 * The type checker can _infer the types_ of local variables, `@property` methods, and more.
 * _Nominal typing_ is based on class **names**. Python types are mostly "nominal".
 * _Structural typing_ is based on structure such as the duck-type protocol `Typing.Sized`
-  which means "an object that has a `.__len__()` method".
+  which means "any object that has a `.__len__()` method".
 * Type information on values is _erased_ at runtime.
+* _Covariant types_, _contravariant types_, and _invariant types_: _Variance_ is
+  how subtyping between values of a generic type (like `tuple[T, U]`) relates to
+  subtyping between its parameter type(s) (`T` and `U`). _Covariant types_ vary
+  in the same subtype/supertype direction as their parameters, while
+  _contravariant types_ vary in the opposite direction, and _invariant types_
+  don't let their parameter types vary at all.
 
 
 ### Covariant and Contravariant types
 
-This is where types get complicated.
-It goes beyond the 80/20 rule but you might need to know about it. See
-[The Ultimate Guide to Python Type Checking](https://realpython.com/python-type-checking/) for a
-good tutorial that includes this.
+When variance comes into play, it's puzzling unless you know about it.
 
-Some generic types (_sources_ like Tuple[t1, t2] and FrozenSet[t]) are _covariant_, some are _contravariant_
-(_sinks_ like Callable[[t1], …]), and some are _invariant_ (like List[t]).
+See the _covariant/contravariant/invariant type_ definitions, above.
+The point is that the rules for generic types need to ensure that assigning a
+value to a variable won't violate the variable's declared type.
 
-   * `bool` is a subtype (and a subclass) of `int`.
-   * `Tuple[bool]` is a subtype of `Tuple[int]`. It's _covariant_ with the element type.
-   * `Callable[[bool], None]` is a supertype of `Callable[[int], None]`. It's _contravariant_.
-   * `List[bool]` is _invariant_ with `List[int]`. It might look like a subtype but `mylist.append(10)`
-   would make it not a `List[bool]`.
-   * `T = TypeVar('T', covariant=True)` declares covariance for a generic via its type variables.
-   * `T = TypeVar('T', contravariant=True)` types are invariant by default.
+Let's explain it via examples:
 
+   * ```python
+     class Shape: pass
+     class Circle(Shape): pass
+     s: Shape = Circle()
+     c: Circle = Shape()  # mypy type error
+     ```
+
+     `Circle` is a subclass of `Shape` and thus a subtype of `Shape`, meaning a
+     `Circle` can be substituted for a `Shape`. So you can assign a `Circle` value
+     to a `Shape` variable but not vice versa, as far as static type analysis is
+     concerned. Similarly, `bool` is a subclass of `int`.
+
+   * ```python
+     ts: tuple[Shape] = (c,)
+     tc: tuple[Circle] = (s,)  # mypy type error
+     ```
+
+     You can assign a `tuple[Circle]` value to an `tuple[Shape]` variable without
+     a static type error, but not vice versa.
+
+   * ```python
+     s1: Shape = ts[0]
+     c1: Circle = ts[0]  # mypy type error
+     ```
+
+     Getting an element from a `tuple[Shape]` gets a value that's statically typed
+     `Shape`, so it's a static type error to assign this value to a `Circle`
+     variable even if it's actually a `Circle` instance.
+
+   * `tuple[T]` is _covariant_ with its element type `T`, i.e. its subtyping
+     varies in the same direction as its element type. This works for immutable
+     generic types like `tuple` and `frozenset` since their elements
+     can only be _sources_; type-compatibile assignment _to_ them doesn't come up.
+
+   * ```python
+     def fs(x: Shape) -> str:
+        return str(x)
+     def fc(x: Circle) -> str:
+        return str(x)
+
+     def ffc(f: Callable[[Circle], str]) -> str:
+        return f(Circle())
+
+     ffc(fs)  # OK, can pass Circles to fs()
+
+     def ffs(f: Callable[[Shape], str]) -> str:
+        return f(Circle())
+
+     ffs(fc)  # mypy type error, static types allow it to pass any Shape to fc
+     ```
+
+     `Callable[[Shape], str]` is a subtype of `Callable[[Circle], str]`, meaning
+     a function(Shape) is substitutable for a function(Circle), i.e. it's
+     OK to assign a function(Shape) value to a function(Circle) variable. Static
+     types allow passing Circles to that function -- it's fine receiving
+     `Circle` arguments.
+
+   * `Callable[[P1, P2], R]` is _contravariant_ with its parameter types `P1`
+     and `P2`, i.e. the subtyping goes the other direction since its parameters
+     are _sinks_ of the argument values passed in.
+
+   * ```python
+     lc: list[Circle] = [Circle()]
+     ls: list[Shape] = lc  # mypy type error
+     ls[0] = Shape()
+     c2: Circle = lc[0]
+     ```
+
+     You might expect a `list[T]` to be _covariant_ with `T`, but there's a problem.
+     Such a static type would let us assign a Circle list `lc` to a Shape
+     list variable `ls`, then store (or append) any `Shape` into the Shape list
+     `ls`. That breaks `lc` -- now the `Circle` list contains a `Shape`, and
+     assiging one of those Shapes to a `Circle` variable violates the variable's
+     type. To avoid this, it's a type error to assign a `Circle` list to `ls`.
+
+   * Assigning to a `list[T]` variable is _invariant_ with its element type `T`;
+     the assigned value must be another list of `T`, no subtypes or supertypes
+     of `T`. This rule fits since lists are mutable: they allow getting and
+     setting elements.
+
+   * See [Invariance vs
+     covariance](https://mypy.readthedocs.io/en/stable/common_issues.html#variance)
+     for more info on dealing with type inference (where the type checker infers
+     types that weren't declared) and mutable generic collections.
+
+   * `T = TypeVar('T', covariant=True)` declares covariance for a generic type
+     w.r.t. its type variable `T`.
+
+   * `T = TypeVar('T', contravariant=True)` declares contravariance.
+
+Also see the short tutorial at [The Ultimate Guide to Python Type
+Checking](https://realpython.com/python-type-checking/#covariant-contravariant-and-invariant).
 
 ### References
 
