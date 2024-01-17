@@ -5,6 +5,7 @@ TODO: add mapping of tRNA to charged tRNA if allowing more than one modified for
 TODO: handle ppGpp and DksA-ppGpp regulation separately
 """
 
+from functools import cache
 from typing import cast
 
 import numpy as np
@@ -921,6 +922,7 @@ class Transcription(object):
 		return self.cistron_tu_mapping_matrix.getrow(
 			self._cistron_id_to_index[cistron_id]).nonzero()[1]
 
+	@cache
 	def rna_id_to_cistron_indexes(self, rna_id):
 		"""
 		Returns the indexes of cistrons that constitute the given transcription
