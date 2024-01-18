@@ -155,6 +155,8 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		self._progress = np.zeros(self._nSequences, np.int64)
 		self._activeSequencesIndexes = self._activeSequencesIndexes[
 			self._sequenceReactions[:, self._currentStep]]
+		self.elongation_rates = self.elongation_rates[
+			self._sequenceReactions[:, self._currentStep]]
 
 		self._update_elongation_resource_demands()
 		self._monomerHistory = np.empty((self._maxElongation, self._nMonomers), np.int64)
@@ -221,8 +223,8 @@ class polymerize(object): # Class name is lowercase because interface is functio
 				step = self._currentStep + projectionIndex
 				level = self.elongation_rates * (step + 1)
 				last_unit = (level - np.floor(level))
-				elongating = np.where(self.elongation_rates > last_unit)[0]
-				active = np.intersect1d(self._activeSequencesIndexes, elongating)
+				active = self._activeSequencesIndexes[
+					self.elongation_rates > last_unit]
 			else:
 				active = self._activeSequencesIndexes
 
@@ -345,6 +347,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 		# Cull sequences
 		self._activeSequencesIndexes = self._activeSequencesIndexes[~sequencesToCull]
+		self.elongation_rates = self.elongation_rates[~sequencesToCull]
 
 	def _update_elongation_resource_demands(self):
 		'''
