@@ -1,6 +1,6 @@
 """
-Generates a .json file containing the dynamic locations of molecules bound to
-the chromosome.
+Generates a gif of chromosome snapshots of molecules bound to the chromosome for
+each time step.
 """
 
 import json
@@ -13,6 +13,8 @@ from models.ecoli.analysis import singleAnalysisPlot
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
+# Flag to designate saving an image snapshot at each time step
+SAVE_IMAGES = True
 
 # Flags to indicate replisome status
 NOT_INITIATED = 0
@@ -186,9 +188,16 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				},
 			}
 
-		# Output dictionary to json file
-		with open(os.path.join(plotOutDir, plotOutFileName + ".json"), 'w') as f:
-			f.write(json.dumps(chromosome_data))
+
+		# TODO: loop over time steps
+
+		# TODO: create one snapshot for a single time step
+
+
+		# TODO: link together snapshots as a gif
+
+
+		# TODO: visualize superhelical densities
 
 
 if __name__ == '__main__':
