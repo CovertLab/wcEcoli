@@ -338,7 +338,7 @@ def log_info(message):
 		print(message)
 
 
-OUT_DIRECTORY = filepath.makedirs(filepath.ROOT_PATH, "out")
+OUT_DIRECTORY = filepath.makedirs('/user/work/ig13470/out/')
 CACHED_SIM_DATA_DIRECTORY = os.path.join(filepath.ROOT_PATH, "cached")
 SUBMISSION_TIME = filepath.timestamp()
 

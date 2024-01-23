@@ -45,6 +45,7 @@ from models.ecoli.listeners.rna_maturation_listener import RnaMaturationListener
 from models.ecoli.sim.initial_conditions import calcInitialConditions
 from wholecell.sim.divide_cell import divide_cell
 from models.ecoli.sim.initial_conditions import setDaughterInitialConditions
+from models.ecoli.processes.external_pathway import MetabolismExternalPathway
 
 
 class EcoliSimulation(Simulation):
@@ -86,6 +87,9 @@ class EcoliSimulation(Simulation):
 		# Must run after TranscriptElongation and PolypeptideElongation
 		(
 			ChromosomeStructure,
+		),
+		(
+			MetabolismExternalPathway,
 		),
 		(
 			Metabolism,

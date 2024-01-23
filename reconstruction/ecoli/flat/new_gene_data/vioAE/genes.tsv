@@ -1,0 +1,6 @@
+"id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
+"NG001"	"vioA"	["vioA"]	0	1256	"+"	["NG001_RNA"]
+"NG002"	"vioB"	["vioB"]	1257	4253	"+"	["NG002_RNA"]
+"NG003"	"vioC"	["vioC"]	4254	5543	"+"	["NG003_RNA"]
+"NG004"	"vioD"	["vioD"]	5544	6665	"+"	["NG004_RNA"]
+"NG005"	"vioE"	["vioE"]	6666	7241	"+"	["NG005_RNA"]

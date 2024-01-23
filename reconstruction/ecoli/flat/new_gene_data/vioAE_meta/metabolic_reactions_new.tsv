@@ -1,0 +1,7 @@
+"id"	"stoichiometry"	"direction"	"catalyzed_by"	"substrate"	"kcat"	"km"
+"rxnvio1"	{"TRP[c]": -1, "OXYGEN-MOLECULE[c]": -1, "CPD-11890[c]": 1, "HYDROGEN-PEROXIDE[c]": 1, "PROTON[c]": 1}	"L2R"	["NG-VioA-MONOMER[c]"]	["TRP[c]"]	3.38	31
+"rxnvio2"	{"CPD-11890[c]": -2, "HYDROGEN-PEROXIDE[c]": -1, "CPD-19471[c]": 1, "WATER[c]": 2}	"L2R"	["NG-VioB-MONOMER[c]"]	["CPD-11890[c]"]	0.21	20
+"rxnvio3"	{"CPD-19471[c]": -1, "PROTON[c]": -2, "CPD-14320[c]": 1, "AMMONIUM[c]": 1, "CARBON-DIOXIDE[c]": 1}	"L2R"	["NG-VioE-MONOMER[c]"]	["CPD-19471[c]"]	0.116	7
+"rxnvio4"	{"CPD-14320[c]": -1, "NADH[c]": -1, "PROTON[c]": -1, "OXYGEN-MOLECULE[c]": -1, "CPD-14319[c]": 1, "NAD[c]": 1, "WATER[c]": 1}	"L2R"	["NG-VioD-MONOMER[c]"]	["CPD-14320[c]"]	0.035	5
+"rxnvio5"	{"CPD-14319[c]": -1, "NADH[c]": -1, "OXYGEN-MOLECULE[c]": -1, "PROTON[c]": -1, "CPD-14324[c]": 1, "NAD[c]": 1, "WATER[c]": 1}	"L2R"	["NG-VioC-MONOMER[c]"]	["CPD-14319[c]"]	0.013	5
+"rxnvio6"	{"CPD-14324[c]": -1, "OXYGEN-MOLECULE[c]": -1, "PROTON[c]": -1, "VIOLACEIN[c]": 1, "CARBON-DIOXIDE[c]": 1, "WATER[c]": 1}	"L2R"	[]	["CPD-14324[c]"]	1	1
