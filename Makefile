@@ -20,6 +20,8 @@ clean:
 	find . -name "*.so" -exec rm -fr {} +
 	rm -fr build
 	rm -fr launcher_20* block_20*
+	echo make-clean pyenv: "$(pyenv version)"
+	pip list | grep 'numpy\|scipy'
 	if [ "`aesara-cache | xargs du -sm | cut -f1`" -gt 30 ]; then \
 		echo "Clearing the aesara-cache since it's larger than threshold."; \
 		aesara-cache clear; \

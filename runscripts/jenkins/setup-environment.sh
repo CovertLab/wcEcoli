@@ -27,6 +27,12 @@ pip list | grep 'numpy\|scipy'
 runscripts/debug/numpy_benchmark.py
 
 echo se8
-# `make compile` gets some BLAS warnings.
-make clean compile
+PYTHONWARNINGS=default python -c 'from distutils.core import setup'
+
 echo se9
+# `make` gets some BLAS warnings.
+make clean
+
+echo se10
+make compile
+echo se11
