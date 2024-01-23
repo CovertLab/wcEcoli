@@ -29,7 +29,7 @@ def divide_cell(sim):
 
 	bulkMolecules = sim.internal_states['BulkMolecules']
 	uniqueMolecules = sim.internal_states['UniqueMolecules']
-	daughter_generation_number = sim._generationNumber + 1
+	daughter_generation_number = sim._generation_index + 1
 
 	sim_data = sim.get_sim_data()
 

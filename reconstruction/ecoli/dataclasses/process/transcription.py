@@ -5,6 +5,7 @@ TODO: add mapping of tRNA to charged tRNA if allowing more than one modified for
 TODO: handle ppGpp and DksA-ppGpp regulation separately
 """
 
+from functools import cache
 from typing import cast
 
 import numpy as np
@@ -844,6 +845,7 @@ class Transcription(object):
 				('tRNA_mw', 'f8'),
 				('Km_endoRNase', 'f8'),
 				('replication_coordinate', 'int64'),
+				('wt_replication_coordinate', 'int64'),
 				('is_forward', 'bool'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
@@ -866,6 +868,7 @@ class Transcription(object):
 		rna_data['tRNA_mw'] = tRNA_mws
 		rna_data['Km_endoRNase'] = np.zeros(len(rna_ids_with_compartments))  # Set later in ParCa
 		rna_data['replication_coordinate'] = replication_coordinate
+		rna_data['wt_replication_coordinate'] = replication_coordinate
 		rna_data['is_forward'] = is_forward
 		rna_data['is_mRNA'] = is_mRNA
 		rna_data['is_miscRNA'] = is_miscRNA
@@ -887,6 +890,7 @@ class Transcription(object):
 			'tRNA_mw': units.g / units.mol,
 			'Km_endoRNase': units.mol / units.L,
 			'replication_coordinate': None,
+			'wt_replication_coordinate': None,
 			'is_forward': None,
 			'is_mRNA': None,
 			'is_miscRNA': None,
@@ -918,6 +922,7 @@ class Transcription(object):
 		return self.cistron_tu_mapping_matrix.getrow(
 			self._cistron_id_to_index[cistron_id]).nonzero()[1]
 
+	@cache
 	def rna_id_to_cistron_indexes(self, rna_id):
 		"""
 		Returns the indexes of cistrons that constitute the given transcription
@@ -1924,7 +1929,11 @@ class Transcription(object):
 		growth = max(cast(float, y), 0.0)
 		tau = np.log(2) / growth / 60
 		loss = growth + self.rna_data['deg_rate'].asNumber(1 / units.s)
-		n_avg_copy = copy_number(tau, self.rna_data['replication_coordinate'])
+		# Use the wildtype replication coordinates that were used to calculate
+		# exp_free and exp_ppgpp, instead of coordinates that can be adjusted
+		# via variants
+		n_avg_copy = copy_number(
+			tau, self.rna_data['wt_replication_coordinate'])
 
 		# Return values
 		factor = loss / n_avg_copy

@@ -19,7 +19,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		enzymeComplexId = "CPLX0-8098[c]"
 		enzymeMonomerId = "UGD-MONOMER[c]"
 		enzyme_rna_cistron_id = "G7091_RNA"

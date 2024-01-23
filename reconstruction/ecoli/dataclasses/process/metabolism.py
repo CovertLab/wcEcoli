@@ -13,6 +13,7 @@ import itertools
 import re
 from typing import Any, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
+from numba import njit
 import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
@@ -1294,23 +1295,10 @@ class Metabolism(object):
 		# Convert to appropriate arrays
 		if units.hasUnit(aa_conc):
 			aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
-
-		km_saturation = np.product(1 / (1 + self.aa_upstream_kms / aa_conc), axis=1)
-
-		# Determine saturation fraction for reactions
-		forward_fraction = 1 / (1 + aa_conc / self.aa_kis) * km_saturation
-		reverse_fraction = 1 / (1 + self.aa_reverse_kms / aa_conc)
-		deg_fraction = 1 / (1 + self.aa_degradation_kms / aa_conc)
-		loss_fraction = reverse_fraction + deg_fraction
-
-		# Calculate synthesis rate
-		synthesis = (
-			self.aa_forward_stoich @ (self.aa_kcats_fwd * counts_per_aa_fwd * forward_fraction)
-			- self.aa_reverse_stoich @ (self.aa_kcats_rev * counts_per_aa_rev * reverse_fraction)
-			- self.aa_kcats_rev * counts_per_aa_rev * deg_fraction
-		)
-
-		return synthesis, forward_fraction, loss_fraction
+		return amino_acid_synthesis_jit(counts_per_aa_fwd, counts_per_aa_rev, aa_conc, 
+			self.aa_upstream_kms, self.aa_kis, self.aa_reverse_kms, 
+			self.aa_degradation_kms, self.aa_forward_stoich, self.aa_kcats_fwd,
+			self.aa_reverse_stoich, self.aa_kcats_rev)
 
 	def amino_acid_export(self, aa_transporters_counts: np.ndarray,
 			aa_conc: Union[units.Unum, np.ndarray], mechanistic_uptake: bool):
@@ -1326,20 +1314,11 @@ class Metabolism(object):
 			rate of export for each amino acid. array is unitless but
 				represents counts of amino acid per second
 		"""
-
-		if mechanistic_uptake:
-			# Export based on mechanistic model
-			if units.hasUnit(aa_conc):
-				aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
-			trans_counts_per_aa = self.aa_to_exporters_matrix @ aa_transporters_counts
-			export_rates = self.export_kcats_per_aa * trans_counts_per_aa / (1 + self.aa_export_kms / aa_conc)
-		else:
-			# Export is lumped with specific uptake rates in amino_acid_import
-			# and not dependent on internal amino acid concentrations or
-			# explicitly considered here
-			export_rates = np.zeros(len(aa_conc))
-
-		return export_rates
+		if units.hasUnit(aa_conc):
+			aa_conc = aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
+		return amino_acid_export_jit(aa_transporters_counts, aa_conc, 
+			mechanistic_uptake, self.aa_to_exporters_matrix, 
+			self.export_kcats_per_aa, self.aa_export_kms)
 
 	def amino_acid_import(self, aa_in_media: np.ndarray, dry_mass: units.Unum,
 			internal_aa_conc: Union[units.Unum, np.ndarray], aa_transporters_counts: np.ndarray,
@@ -1361,16 +1340,11 @@ class Metabolism(object):
 
 		if units.hasUnit(internal_aa_conc):
 			internal_aa_conc = internal_aa_conc.asNumber(METABOLITE_CONCENTRATION_UNITS)
-
-		saturation = 1 / (1 + internal_aa_conc / self.aa_import_kis)
-		if mechanisitic_uptake:
-			# Uptake based on mechanistic model
-			counts_per_aa = self.aa_to_importers_matrix @ aa_transporters_counts
-			import_rates = self.import_kcats_per_aa * counts_per_aa
-		else:
-			import_rates = self.max_specific_import_rates * dry_mass.asNumber(DRY_MASS_UNITS)
-
-		return import_rates * saturation * aa_in_media
+		dry_mass = dry_mass.asNumber(DRY_MASS_UNITS)
+		return amino_acid_import_jit(aa_in_media, dry_mass, internal_aa_conc, 
+			aa_transporters_counts, mechanisitic_uptake, self.aa_import_kis, 
+			self.aa_to_importers_matrix, self.import_kcats_per_aa, 
+			self.max_specific_import_rates)
 
 	def get_amino_acid_conc_conversion(self, conc_units):
 		return units.strip_empty_units(conc_units / METABOLITE_CONCENTRATION_UNITS)
@@ -2199,6 +2173,81 @@ class Metabolism(object):
 				break
 
 		return is_transport_rxn
+	
+
+@njit
+def np_apply_along_axis(func1d, axis, arr):
+  assert arr.ndim == 2
+  assert axis in [0, 1]
+  if axis == 0:
+    result = np.empty(arr.shape[1])
+    for i in range(len(result)):
+      result[i] = func1d(arr[:, i])
+  else:
+    result = np.empty(arr.shape[0])
+    for i in range(len(result)):
+      result[i] = func1d(arr[i, :])
+  return result
+
+
+@njit
+def np_prod(array, axis):
+  return np_apply_along_axis(np.prod, axis, array)
+	
+
+@njit
+def amino_acid_synthesis_jit(counts_per_aa_fwd, counts_per_aa_rev, aa_conc, 
+	aa_upstream_kms, aa_kis, aa_reverse_kms, 
+	aa_degradation_kms, aa_forward_stoich, aa_kcats_fwd,
+	aa_reverse_stoich, aa_kcats_rev):
+	km_saturation = np_prod(1 / (1 + aa_upstream_kms / aa_conc), axis=1)
+
+	# Determine saturation fraction for reactions
+	forward_fraction = 1 / (1 + aa_conc / aa_kis) * km_saturation
+	reverse_fraction = 1 / (1 + aa_reverse_kms / aa_conc)
+	deg_fraction = 1 / (1 + aa_degradation_kms / aa_conc)
+	loss_fraction = reverse_fraction + deg_fraction
+
+	# Calculate synthesis rate
+	synthesis = (
+		aa_forward_stoich.astype(np.float64) @ (aa_kcats_fwd * counts_per_aa_fwd * forward_fraction).astype(np.float64)
+		- aa_reverse_stoich.astype(np.float64) @ (aa_kcats_rev * counts_per_aa_rev * reverse_fraction).astype(np.float64)
+		- aa_kcats_rev * counts_per_aa_rev * deg_fraction
+	)
+
+	return synthesis, forward_fraction, loss_fraction
+
+
+@njit
+def amino_acid_export_jit(aa_transporters_counts, aa_conc, 
+	mechanistic_uptake, aa_to_exporters_matrix, 
+	export_kcats_per_aa, aa_export_kms):
+	if mechanistic_uptake:
+		# Export based on mechanistic model
+		trans_counts_per_aa = aa_to_exporters_matrix.astype(np.float64) @ aa_transporters_counts.astype(np.float64)
+		export_rates = export_kcats_per_aa * trans_counts_per_aa / (1 + aa_export_kms / aa_conc)
+	else:
+		# Export is lumped with specific uptake rates in amino_acid_import
+		# and not dependent on internal amino acid concentrations or
+		# explicitly considered here
+		export_rates = np.zeros(len(aa_conc))
+	return export_rates
+
+
+@njit
+def amino_acid_import_jit(aa_in_media, dry_mass, internal_aa_conc, 
+	aa_transporters_counts, mechanisitic_uptake, aa_import_kis, 
+	aa_to_importers_matrix, import_kcats_per_aa, 
+	max_specific_import_rates):
+	saturation = 1 / (1 + internal_aa_conc / aa_import_kis)
+	if mechanisitic_uptake:
+		# Uptake based on mechanistic model
+		counts_per_aa = aa_to_importers_matrix.astype(np.float64) @ aa_transporters_counts.astype(np.float64)
+		import_rates = import_kcats_per_aa * counts_per_aa
+	else:
+		import_rates = max_specific_import_rates * dry_mass
+
+	return import_rates * saturation * aa_in_media
 
 
 # Class used to update metabolite concentrations based on the current nutrient conditions

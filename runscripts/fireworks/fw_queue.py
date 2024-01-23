@@ -75,8 +75,8 @@ Simulation parameters:
 		if charging creates a large update to improve stability of sims
 	LOG_TO_DISK_EVERY (int, "1"): frequency at which simulation outputs are
 		logged to disk
-	JIT (int, "1"): if nonzero, jit compiled functions are used for certain
-		processes, otherwise only uses lambda functions
+	JIT (int, "0"): NO-OP (This used to select jit-compiled functions in certain
+		processes)
 
 Modeling options:
 	MASS_DISTRIBUTION (int, "1"): if nonzero, a mass coefficient is drawn from
@@ -242,8 +242,6 @@ from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
 from wholecell.utils import filepath
-from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
-	import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
 
 def get_environment(variable, default):
 	'''
@@ -487,10 +485,25 @@ class WorkflowBuilder:
 
 		if VARIANT == 'new_gene_expression_and_translation_efficiency':
 			# Record the values used in this variant for analysis scripts
+			from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
+				import NEW_GENE_EXPRESSION_FACTORS, \
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
 			self.metadata.update({
 				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
 				"new_gene_translation_efficiency_values":
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES})
+		elif VARIANT == 'new_gene_expression_and_translation_efficiency_internal_shift':
+			# Record the values used in this variant for analysis scripts
+			from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency_internal_shift \
+				import NEW_GENE_EXPRESSION_FACTORS, \
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN, \
+				NEW_GENE_KNOCKOUT_GEN
+			self.metadata.update({
+				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
+				"new_gene_translation_efficiency_values":
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+				"new_gene_induction_gen": NEW_GENE_INDUCTION_GEN,
+				"new_gene_knockout_gen": NEW_GENE_KNOCKOUT_GEN,})
 
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)

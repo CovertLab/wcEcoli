@@ -45,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		allDir = self.ap.get_cells(seed = [0])
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		cellDensity = sim_data.constants.cell_density
 
 		cistron_ids = sim_data.process.transcription.cistron_data["id"]

@@ -1,4 +1,7 @@
 # Adjustments to have the translational efficiencies of proteins that constitute
 # the same operon have the same values
 "proteins"	"_comments"
-["EG10910-MONOMER", "EG10903-MONOMER", "EG10912-MONOMER"]	"Adjusted to prevent severe underexpression of 30S ribosomal proteins"
+["EG10910-MONOMER", "EG10903-MONOMER", "EG10912-MONOMER", "EG10878-MONOMER"]	"Adjusted to prevent severe underexpression of 30S ribosomal proteins"
+["EG10916-MONOMER", "EG10887-MONOMER", "EG10877-MONOMER", "EG10902-MONOMER", "EG10882-MONOMER", "EG10918-MONOMER", "EG10865-MONOMER", "EG10883-MONOMER", "EG10867-MONOMER", "EG10866-MONOMER", "EG10909-MONOMER"]	"Adjusted to minimize underexpression of ribosomal proteins"
+["EG11232-MONOMER", "EG10876-MONOMER", "EG10888-MONOMER", "EG10904-MONOMER", "EG10879-MONOMER", "EG10869-MONOMER", "EG10907-MONOMER", "EG10913-MONOMER", "EG10868-MONOMER", "EG10884-MONOMER", "EG10875-MONOMER"]	"Adjusted to minimize underexpression of ribosomal proteins"
+["EG10908-MONOMER", "EG10874-MONOMER"]	"Adjusted to minimize underexpression of ribosomal proteins"

@@ -22,7 +22,7 @@ __pycache__
 
 # Coverage file #
 #################
-.coverage
+.coverage*
 coverage.xml
 
 # Nosetests and Pytest #

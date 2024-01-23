@@ -31,7 +31,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Check if cache from rnaVsProteinPerCell.py exists
 		if os.path.exists(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle")):
-			rnaVsProteinPerCell = pickle.load(open(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"), "rb"))
+			rnaVsProteinPerCell = self.read_pickle_file(os.path.join(plotOutDir, "rnaVsProteinPerCell_alltimesteps.cPickle"))
 			avgProteinCounts_forAllCells = rnaVsProteinPerCell["protein"]
 			monomersInManyComplexes_avgProteins_dict = rnaVsProteinPerCell["monomersInManyComplexes"]
 
@@ -47,7 +47,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Check if cache from figure5B_E_F_G.py exist
 		if os.path.exists(os.path.join(plotOutDir, "figure5B.pickle")):
-			figure5B_data = pickle.load(open(os.path.join(plotOutDir, "figure5B.pickle"), "rb"))
+			figure5B_data = self.read_pickle_file(os.path.join(plotOutDir, "figure5B.pickle"))
 			colors = figure5B_data["colors"]
 			mrnaIds = figure5B_data["id"].tolist()
 		else:
@@ -58,7 +58,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# Load sim data
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		rnaIds = sim_data.process.transcription.rna_data["id"][sim_data.relation.cistron_to_monomer_mapping] # orders rna IDs to match monomer IDs
 
 		# Make views for monomers

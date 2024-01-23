@@ -44,6 +44,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 		self.didInitialize = 0
 		self.terminationLoss = 0
 		self.rnaInitEvent = np.zeros(self.nRnaSpecies, np.int64)
+		self.incomplete_transcription_event = np.zeros(self.nRnaSpecies, np.int64)
 		self.rna_init_event_per_cistron = np.zeros(self.n_cistrons, np.int64)
 		self.didStall = 0
 
@@ -104,6 +105,7 @@ class RnapData(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'rnaInitEvent': 'rnaIds',
 			'rna_init_event_per_cistron': 'cistron_ids',
+			'incomplete_transcription_event': 'rnaIds',
 			}
 
 		tableWriter.writeAttributes(
@@ -132,16 +134,17 @@ class RnapData(wholecell.listeners.listener.Listener):
 			active_rnap_on_stable_RNA_indexes=self.partial_stable_RNA_RNAP_indexes,
 			active_rnap_n_bound_ribosomes=self.active_rnap_n_bound_ribosomes,
 			actualElongations = self.actualElongations,
+			codirectional_collision_coordinates=self.codirectional_collision_coordinates,
 			didTerminate = self.didTerminate,
 			didInitialize = self.didInitialize,
 			didStall = self.didStall,
-			terminationLoss = self.terminationLoss,
-			rnaInitEvent = self.rnaInitEvent,
-			rna_init_event_per_cistron = self.rna_init_event_per_cistron,
+			headon_collision_coordinates=self.headon_collision_coordinates,
+			incomplete_transcription_event = self.incomplete_transcription_event,
 			n_total_collisions=self.n_total_collisions,
 			n_headon_collisions=self.n_headon_collisions,
 			n_codirectional_collisions=self.n_codirectional_collisions,
 			n_removed_ribosomes=self.n_removed_ribosomes,
-			headon_collision_coordinates=self.headon_collision_coordinates,
-			codirectional_collision_coordinates=self.codirectional_collision_coordinates,
+			terminationLoss = self.terminationLoss,
+			rnaInitEvent = self.rnaInitEvent,
+			rna_init_event_per_cistron = self.rna_init_event_per_cistron,
 			)

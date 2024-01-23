@@ -19,8 +19,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
-		sim_data = pickle.load(open(simDataFile, "rb"))
-		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
+		validation_data = self.read_pickle_file(validationDataFile)
 
 		sim_monomer_ids = sim_data.process.translation.monomer_data["id"]
 		wisniewski_ids = validation_data.protein.wisniewski2014Data["monomerId"]

@@ -18,6 +18,7 @@ ACTIVE = [
 	"mass_fraction_instantaneous_growth_rates.py",
 	"promoter_probabilities.py",
 	"proteinCopyNumberDistribution.py",
+	"replisome_rnap_collision_per_gene.py",
 	"rnaCopyNumberDistribution.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",

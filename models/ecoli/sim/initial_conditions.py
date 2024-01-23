@@ -85,7 +85,7 @@ def initialize_trna_charging(sim_data, states, variable_elongation):
 	# Estimate initial charging state
 	charging_params = get_charging_params(sim_data, variable_elongation=variable_elongation)
 	fraction_charged, *_ = calculate_trna_charging(synthetase_conc, uncharged_trna_conc,
-		charged_trna_conc, aa_conc, ribosome_conc, f, charging_params)
+		charged_trna_conc, aa_conc, ribosome_conc[0], f, charging_params)
 
 	# Update counts of tRNA to match charging
 	total_trna_counts = uncharged_trna.counts() + charged_trna.counts()
@@ -115,13 +115,22 @@ def setDaughterInitialConditions(sim, sim_data):
 	sim.internal_states["UniqueMolecules"].loadSnapshot(inherited_state['unique_molecules'])
 
 	sim._initialTime = inherited_state['initial_time']
-	sim._generationNumber = inherited_state['generation_number']
+	sim._generation_index = inherited_state['generation_number']
 
 	# Check if an internal_shift_variant was called for this simulation
-	if hasattr(sim_data, "internal_shift_dict"):
+	if hasattr(sim_data, "internal_shift_dict") and sim_data.internal_shift_dict:
+		shift_range_start_gen_indices = sim_data.internal_shift_dict.keys()
+		if sim._generation_index == 1:
+			assert all(index >= 1 for index in shift_range_start_gen_indices), \
+				"internal shift variants are only intended to be used on daughter cells"
 		# Check if an internal shift needs to occur at the start of this generation
-		if sim._generationNumber in sim_data.internal_shift_dict:
-			shifts = sim_data.internal_shift_dict[sim._generationNumber]
+		if sim._generation_index >= min(shift_range_start_gen_indices):
+			# Determine which generation index key defines the shift functions
+			# to use for this range of generation indices
+			shift_range_start_gen_index = min(
+				shift_range_start_gen_indices,
+				key=lambda x: abs(x - sim._generation_index))
+			shifts = sim_data.internal_shift_dict[shift_range_start_gen_index]
 			# Apply the shift functions in order
 			for shift_tuple in shifts:
 				function = shift_tuple[0]

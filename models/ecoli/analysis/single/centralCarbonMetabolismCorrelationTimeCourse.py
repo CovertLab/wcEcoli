@@ -18,8 +18,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		validation_data = pickle.load(open(validationDataFile, "rb"))
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		validation_data = self.read_pickle_file(validationDataFile)
+		sim_data = self.read_pickle_file(simDataFile)
 
 		cellDensity = sim_data.constants.cell_density
 

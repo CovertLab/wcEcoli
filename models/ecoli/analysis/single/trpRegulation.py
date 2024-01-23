@@ -17,7 +17,7 @@ from models.ecoli.analysis import singleAnalysisPlot
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		nAvogadro = sim_data.constants.n_avogadro
 		cellDensity = sim_data.constants.cell_density
 
