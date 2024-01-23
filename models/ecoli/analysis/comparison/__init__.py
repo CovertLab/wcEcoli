@@ -15,6 +15,7 @@ ACTIVE = [
 	"mRNA_counts_histogram.py",
 	"mRNA_length_histogram.py",
 	"mRNA_mass_histogram.py",
+	"operon_protein_counts.py",
 	"polycistronic_transcription.py",
 	"polycistronic_transcription_extended.py",
 	"ppgpp_expression_growth_genes.py",
