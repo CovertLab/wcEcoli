@@ -9,8 +9,13 @@ echo eprt1
 source runscripts/jenkins/setup-environment.sh
 
 echo eprt2
-echo pyenv version: $(pyenv version)
+echo eprt2 pyenv: "$(pyenv version)"
+pip list | grep 'numpy\|scipy'
+runscripts/debug/numpy_benchmark.py
 
 echo eprt3
 pytest --cov=wholecell --cov-report xml --junitxml=unittests.xml
+
 echo eprt4
+echo eprt4 pyenv: "$(pyenv version)"
+runscripts/debug/numpy_benchmark.py

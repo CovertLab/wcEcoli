@@ -22,6 +22,10 @@ pyenv local wcEcoli3
 echo se7
 pyenv activate
 
+echo se7 pyenv: "$(pyenv version)"
+pip list | grep 'numpy\|scipy'
+runscripts/debug/numpy_benchmark.py
+
 echo se8
 # `make compile` gets some BLAS warnings.
 make clean compile

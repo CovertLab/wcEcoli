@@ -1,6 +1,9 @@
 .PHONY: compile, clean, recompile
 
 compile:
+	echo make-compile pyenv: "$(pyenv version)"
+	pip list | grep 'numpy\|scipy'
+	runscripts/debug/numpy_benchmark.py
 	python setup.py build_ext --inplace
 	rm -fr build
 

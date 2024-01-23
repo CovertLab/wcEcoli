@@ -13,15 +13,25 @@ sh runscripts/jenkins/fireworks-config.sh "pr$EXECUTOR_NUMBER"
 echo epr3
 echo y | lpad reset
 
+echo epr3 pyenv: "$(pyenv version)"
+pip list | grep 'numpy\|scipy'
+runscripts/debug/numpy_benchmark.py
+
 echo epr4
 # `fw_queue.py` gets some BLAS warnings.
 DESC="2 generations completion test." OPERONS=on WC_ANALYZE_FAST=1 SINGLE_DAUGHTERS=1 N_GENS=2 MASS_DISTRIBUTION=0 \
 	PARALLEL_PARCA=1 COMPRESS_OUTPUT=0 PLOTS=ACTIVE BUILD_CAUSALITY_NETWORK=1 RAISE_ON_TIME_LIMIT=1 \
 	PYTHONWARNINGS=default python runscripts/fireworks/fw_queue.py
 
+echo epr4 pyenv: "$(pyenv version)"
+runscripts/debug/numpy_benchmark.py
+
 echo epr5
 # `run-fireworks.sh` gets some BLAS warnings.
 bash runscripts/jenkins/run-fireworks.sh
+
+echo epr5 pyenv: "$(pyenv version)"
+runscripts/debug/numpy_benchmark.py
 
 echo epr6
 runscripts/jenkins/runscript-checks.sh
