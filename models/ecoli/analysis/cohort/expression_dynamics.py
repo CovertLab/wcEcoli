@@ -30,7 +30,7 @@ def align_yaxis(ax1, v1, ax2, v2):
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Check if basal sim
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		if sim_data.condition != "basal":
 			print("Skipping - plot only runs for basal sim.")
 			return

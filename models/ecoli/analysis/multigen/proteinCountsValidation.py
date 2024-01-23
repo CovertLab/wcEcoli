@@ -17,8 +17,8 @@ from models.ecoli.analysis import multigenAnalysisPlot
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		sim_data = pickle.load(open(simDataFile, "rb"))
-		validation_data = pickle.load(open(validationDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
+		validation_data = self.read_pickle_file(validationDataFile)
 
 		monomer_ids = sim_data.process.translation.monomer_data["id"]
 		schmidt_ids = validation_data.protein.schmidt2015Data["monomerId"]

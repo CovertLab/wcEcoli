@@ -28,7 +28,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("Skipping -- transcriptFrequency only runs for multiple seeds")
 			return
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		# Get mRNA data
 		rnaIds = sim_data.process.transcription.rna_data["id"]

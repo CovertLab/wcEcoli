@@ -30,7 +30,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		doublingPerHourDict = {}
 
 		variantSimDataFile = self.ap.get_variant_kb(self.ap.get_variants()[0])
-		sim_data = pickle.load(open(variantSimDataFile, "rb"))
+		sim_data = self.read_pickle_file(variantSimDataFile)
 		nAvogadro = sim_data.constants.n_avogadro.asNumber()
 		chromMass = (sim_data.getter.get_mass(sim_data.molecule_ids.full_chromosome) / sim_data.constants.n_avogadro).asNumber()
 

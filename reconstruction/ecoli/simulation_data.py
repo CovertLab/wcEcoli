@@ -39,6 +39,7 @@ class SimulationDataEcoli(object):
 
 	def initialize(self, raw_data, basal_expression_condition="M9 Glucose minus AAs"):
 		self.operons_on = raw_data.operons_on
+		self.stable_rrna = raw_data.stable_rrna
 
 		self._add_condition_data(raw_data)
 		self.condition = "basal"

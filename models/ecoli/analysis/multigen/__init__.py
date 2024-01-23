@@ -36,6 +36,7 @@ ACTIVE = [
 	"proteinFoldChangeVsTranscriptionEvents.py",
 	"proteinFoldChangeVsTranslationEff.py",
 	"replication.py",
+	"ribosome_components.py",
 	"ribosome_crowding.py",
 	"ribosomeProduction.py",
 	"ribosomeUsage.py",

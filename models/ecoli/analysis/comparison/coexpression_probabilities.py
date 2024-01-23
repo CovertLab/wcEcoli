@@ -22,7 +22,7 @@ from wholecell.io.tablereader import TableReader, TableReaderError
 
 
 FIGSIZE = (14.85, 4)
-LOW_EXP_THRESHOLD = 50
+LOW_EXP_THRESHOLD = 100
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):

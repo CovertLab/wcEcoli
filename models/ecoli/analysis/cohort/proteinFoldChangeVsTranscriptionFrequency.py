@@ -22,7 +22,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return
 
 		# Get all ids reqiured
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		ids_complexation = sim_data.process.complexation.molecule_names # Complexe of proteins, and protein monomers
 		ids_complexation_complexes = sim_data.process.complexation.ids_complexes # Only complexes
 		ids_equilibrium = sim_data.process.equilibrium.molecule_names # Complexes of proteins + small molecules, small molecules, protein monomers

@@ -1,0 +1,83 @@
+# List of transcription units to add when the 'remove_rrna_operons' option is used for building raw_data. All genes that are originally transcribed within rRNA operons are added as single-gene transcription units.
+"id"	"common_name"	"genes"	"left_end_pos"	"right_end_pos"	"direction"	"evidence"	"_comments"
+"rplKAJL"	"rplKAJL"	["EG10873", "EG10871", "EG10864", "EG10872"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of rplL in R-end sequencing data (Lalanne et al., 2018)"
+"rplJL"	"rplJL"	["EG10871", "EG10873"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of rplL in R-end sequencing data (Lalanne et al., 2018)"
+"yfgD"	"yfgD"	["G7312"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the higher mRNA stability of yfgD compared to bepA (Dar and Sorek, 2018)"
+"argT-hisJ"	"argT-hisJ"	["EG10072", "EG12124"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the higher mRNA stability of hisJ compared to hisQ (Dar and Sorek, 2018)"
+"metQ"	"metQ"	["EG11504"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the higher mRNA stability of metQ compared to metI (Dar and Sorek, 2018)"
+"potD"	"potD"	["EG10752"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the higher stability of potD compared to potC (Dar and Sorek, 2018)"
+"rfaD"	"rfaD"	["EG10838"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the higher stability of rfaD compared to rfaF (Dar and Sorek, 2018)"
+"rpoZ"	"rpoZ"	["EG10899"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the higher stability of rpoZ compared to spoT (Dar and Sorek, 2018)"
+"tatA"	"tatA"	["G7806"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the higher stability of tatA compared to tatB (Dar and Sorek, 2018)"
+"yjeFE-amiB-mutL-miaA-hfq"	"yjeFE-amiB-mutL-miaA-hfq"	["EG10438", "EG10595", "EG11281", "EG11363", "EG11757", "EG11758"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the higher stability of hfq compared to hflX (Dar and Sorek, 2018)"
+"rplNXE-rpsNH-rplFR-rpsE-rpmD-rplO"	"rplNXE-rpsNH-rplFR-rpsE-rpmD-rplO"	["EG10875", "EG10884", "EG10868", "EG10913", "EG10907", "EG10869", "EG10879", "EG10904", "EG10888", "EG10876"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of rplO in R-end sequencing data (Lalanne et al., 2018)"
+"rpmJ"	"rpmJ"	["EG11232"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of rpmJ in R-end sequencing data (Lalanne et al., 2018)"
+"rpmH"	"rpmH"	["EG10892"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of rpmH in R-end sequencing data (Lalanne et al., 2018)"
+"rpsA"	"rpsA"	["EG10900"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end and 3'-end peaks upstream of and downstream of rpsA in R-end sequencing data (Lalanne et al., 2018)"
+"ahpC"	"ahpC"	["EG11384"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of ahpC in R-end sequencing data (Lalanne et al., 2018)"
+"gatYZABC"	"gatYZABC"	["EG12419", "G7128", "EG12414", "EG12415", "EG12416"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of gatC in R-end sequencing data (Lalanne et al., 2018)"
+"gatZABC"	"gatZABC"	["G7128", "EG12414", "EG12415", "EG12416"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of gatZ and 3'-end peak downstream of gatC in R-end sequencing data (Lalanne et al., 2018)"
+"rpmF"	"rpmF"	["EG10890"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end and 3'-end peaks upstream of and downstream of rpmF in R-end sequencing data (Lalanne et al., 2018)"
+"aceBA"	"aceBA"	["EG10023", "EG10022"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of aceA in R-end sequencing data (Lalanne et al., 2018)"
+"pal"	"pal"	["EG10684"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end and 3'-end peaks upstream of and downstream of pal in R-end sequencing data (Lalanne et al., 2018)"
+"oppA"	"oppA"	["EG10674"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of oppA in R-end sequencing data (Lalanne et al., 2018)"
+"ppiB"	"ppiB"	["EG10758"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of ppiB in R-end sequencing data (Lalanne et al., 2018)"
+"folE"	"folE"	["EG11375"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of folE in R-end sequencing data (Lalanne et al., 2018)"
+"gltBD"	"gltBD"	["EG10403", "EG10404"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of gltD in R-end sequencing data (Lalanne et al., 2018)"
+"dnaK"	"dnaK"	["EG10241"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of dnaK in R-end sequencing data (Lalanne et al., 2018)"
+"yajC"	"yajC"	["EG11096"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end and 3'-end peaks upstream of and downstream of yajC in R-end sequencing data (Lalanne et al., 2018)"
+"hha"	"hha"	["EG10439"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of hha in R-end sequencing data (Lalanne et al., 2018)"
+"clpX"	"clpX"	["EG10159"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of clpX in R-end sequencing data (Lalanne et al., 2018)"
+"fimA"	"fimA"	["EG10308"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of fimA in R-end sequencing data (Lalanne et al., 2018)"
+"map"	"map"	["EG10570"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of map in R-end sequencing data (Lalanne et al., 2018)"
+"dksA"	"dksA"	["EG10230"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end and 3'-end peaks upstream of and downstream of dksA in R-end sequencing data (Lalanne et al., 2018)"
+"tsuB"	"tsuB"	["EG11894"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of tsuB in R-end sequencing data (Lalanne et al., 2018)"
+"ftsH"	"ftsH"	["EG11506"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of ftsH in R-end sequencing data (Lalanne et al., 2018)"
+"yejL"	"yejL"	["EG12043"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of yejL in R-end sequencing data (Lalanne et al., 2018)"
+"aroKB-damX"	"aroKB-damX"	["EG10081", "EG10074", "EG11183"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of damX in R-end sequencing data (Lalanne et al., 2018)"
+"damX"	"damX"	["EG11183"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of damX in R-end sequencing data (Lalanne et al., 2018)"
+"upp"	"upp"	["EG11332"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of upp in R-end sequencing data (Lalanne et al., 2018)"
+"ribE-nusB"	"ribE-nusB"	["EG11322", "EG10666"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of nusB in R-end sequencing data (Lalanne et al., 2018)"
+"nusB"	"nusB"	["EG10666"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of nusB in R-end sequencing data (Lalanne et al., 2018)"
+"cvpA-purF"	"cvpA-purF"	["EG10169", "EG10794"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of purF in R-end sequencing data (Lalanne et al., 2018)"
+"leuS-lptE"	"leuS-lptE"	["EG10532", "EG10855"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of lptE in R-end sequencing data (Lalanne et al., 2018)"
+"secMA"	"secMA"	["EG11087", "EG10936"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of secA in R-end sequencing data (Lalanne et al., 2018)"
+"ytfP"	"ytfP"	["G7876"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of ytfP in R-end sequencing data (Lalanne et al., 2018)"
+"galM"	"galM"	["EG11698"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 5'-end peak upstream of galM in R-end sequencing data (Lalanne et al., 2018)"
+"fhuA"	"fhuA"	["EG10302"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of fhuA in R-end sequencing data (Lalanne et al., 2018)"
+"pepQ"	"pepQ"	["EG10698"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of pepQ in R-end sequencing data (Lalanne et al., 2018)"
+"mprA"	"mprA"	["EG10603"]			"+"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of mprA in R-end sequencing data (Lalanne et al., 2018)"
+"mtn"	"mtn"	["EG11090"]			"-"	["EV-DEEP-CURATION"]	"Suggested by the existence of 3'-end peak downstream of mtn in R-end sequencing data (Lalanne et al., 2018)"
+"TU-RRSA-RRNA"	"rrsA"	["EG30084"]	4035106	4037106	"+"	[]
+"TU-ileT-tRNA"	"ileT"	["EG30043"]	4037107	4037238	"+"	[]
+"TU-alaT-tRNA"	"alaT"	["EG30008"]	4037239	4037427	"+"	[]
+"TU-RRLA-RRNA"	"rrlA"	["EG30077"]	4037428	4040470	"+"	[]
+"TU-RRFA-RRNA"	"rrfA"	["EG30070"]	4040471	4040636	"+"	[]
+"TU-RRSB-RRNA"	"rrsB"	["EG30085"]	4166224	4168286	"+"	[]
+"TU-gltT-tRNA"	"gltT"	["EG30032"]	4168287	4168544	"+"	[]
+"TU-RRLB-RRNA"	"rrlB"	["EG30078"]	4168545	4171590	"+"	[]
+"TU-RRFB-RRNA"	"rrfB"	["EG30071"]	4171591	4171962	"+"	[]
+"TU-RRSC-RRNA"	"rrsC"	["EG30086"]	3941395	3943392	"+"	[]
+"TU-gltU-tRNA"	"gltU"	["EG30033"]	3943393	3943607	"+"	[]
+"TU-RRLC-RRNA"	"rrlC"	["EG30079"]	3943608	3946653	"+"	[]
+"TU-RRFC-RRNA"	"rrfC"	["EG30072"]	3946654	3947067	"+"	[]
+"TU-RRSE-RRNA"	"rrsE"	["EG30088"]	4207693	4209731	"+"	[]
+"TU-gltV-tRNA"	"gltV"	["EG30034"]	4209732	4209946	"+"	[]
+"TU-RRLE-RRNA"	"rrlE"	["EG30081"]	4209947	4212993	"+"	[]
+"TU-RRFE-RRNA"	"rrfE"	["EG30074"]	4212994	4213209	"+"	[]
+"TU-RRFG-RRNA"	"rrfG"	["EG30075"]	2726069	2726234	"-"	[]
+"TU-RRLG-RRNA"	"rrlG"	["EG30082"]	2726235	2729276	"-"	[]
+"TU-gltW-tRNA"	"gltW"	["EG30035"]	2729277	2729530	"-"	[]
+"TU-RRSG-RRNA"	"rrsG"	["EG30089"]	2729531	2731448	"-"	[]
+"TU-RRSH-RRNA"	"rrsH"	["EG30090"]	223304	225346	"+"	[]
+"TU-ileV-tRNA"	"ileV"	["EG30045"]	225347	225478	"+"	[]
+"TU-alaV-tRNA"	"alaV"	["EG30010"]	225479	225667	"+"	[]
+"TU-RRLH-RRNA"	"rrlH"	["EG30083"]	225668	228709	"+"	[]
+"TU-RRFH-RRNA"	"rrfH"	["EG30076"]	228710	228875	"+"	[]
+"TU-RRFF-RRNA"	"rrfF"	["EG30091"]	3423371	3423561	"-"	[]
+"TU-thrV-tRNA"	"thrV"	["EG30103"]	3423562	3423661	"-"	[]
+"TU-RRFD-RRNA"	"rrfD"	["EG30073"]	3423662	3423833	"-"	[]
+"TU-RRLD-RRNA"	"rrlD"	["EG30080"]	3423834	3426870	"-"	[]
+"TU-alaU-tRNA"	"alaU"	["EG30009"]	3426871	3427054	"-"	[]
+"TU-ileU-tRNA"	"ileU"	["EG30044"]	3427055	3427186	"-"	[]
+"TU-RRSD-RRNA"	"rrsD"	["EG30087"]	3427187	3429047	"-"	[]

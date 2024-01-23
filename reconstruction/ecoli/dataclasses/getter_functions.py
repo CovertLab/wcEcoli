@@ -27,12 +27,14 @@ UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS = {
 	'CCO-CE-BAC': 'm',
 	'CCO-BAC-NUCLEOID': 'c',
 	'CCO-RIBOSOME': 'c',
+	'CCO-PEROXISOME': 'c',
 }
 
 IGNORED_DNA_SITE_TYPES = {
 	'dna-binding-site',
 	'phage-attachment-site',
 	'rep-element',
+	'repeat-region',
 	}
 
 class TranscriptionDirectionError(Exception):

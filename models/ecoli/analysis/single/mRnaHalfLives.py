@@ -20,7 +20,7 @@ MEAN_RNA_COUNT_THRESHOLD = 3
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get the expected degradation rates from KB
-		sim_data = pickle.load(open(simDataFile, 'rb'))
+		sim_data = self.read_pickle_file(simDataFile)
 		is_mRNA = sim_data.process.transcription.rna_data['is_mRNA']
 		expected_degradation_rate_constants = np.array(
 			sim_data.process.transcription.rna_data['deg_rate'][is_mRNA].asNumber()

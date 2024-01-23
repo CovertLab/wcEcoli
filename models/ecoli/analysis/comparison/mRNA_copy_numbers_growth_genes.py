@@ -3,7 +3,6 @@ Generates a comparison scatter plot of mRNA copy numbers for growth genes (genes
 encoding for RNA polymerase or ribosomal subunits) from two sets of simulations,
 one without operons and one with operons.
 """
-
 import os
 from typing import Tuple
 
@@ -23,10 +22,16 @@ from wholecell.io.tablereader import TableReader
 
 FIGSIZE = (4, 3.9)
 BOUNDS = [0.5, 2.5]
+BOUNDS_ALT = [1.5, 3.0]
 
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
+		if metadata['variant'] == 'condition':
+			bounds = BOUNDS_ALT
+		else:
+			bounds = BOUNDS
+
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
@@ -76,30 +81,30 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		fig = plt.figure(figsize=FIGSIZE)
 		ax = fig.add_subplot(1, 1, 1)
-		ax.plot(BOUNDS, BOUNDS, ls='--', lw=2, c='k', alpha=0.05)
+		ax.plot(bounds, bounds, ls='--', lw=2, c='k', alpha=0.05)
 		ax.scatter(
 			np.log10(m1[mRNA_is_ribosomal_protein] + 1),
 			np.log10(m2[mRNA_is_ribosomal_protein] + 1),
-			c='turquoise', edgecolor='none', s=12, alpha=0.7,
+			c='#aaaaaa', edgecolor='none', s=12, alpha=0.7,
 			label=f'ribosomal subunits',
 			clip_on=False)
 		ax.scatter(
 			np.log10(m1[mRNA_is_rnap] + 1),
 			np.log10(m2[mRNA_is_rnap] + 1),
-			c='darkslategray', edgecolor='none', s=12, alpha=0.7,
+			c='#222222', edgecolor='none', s=12, alpha=0.7,
 			label='RNAP subunits',
 			clip_on=False)
 
 		ax.set_xlabel('$\log_{10}$(mRNA copies + 1), old sims')
 		ax.set_ylabel('$\log_{10}$(mRNA copies + 1), new sims')
-		ax.set_xticks(np.arange(BOUNDS[0], BOUNDS[1] + 0.5, 0.5))
-		ax.set_yticks(np.arange(BOUNDS[0], BOUNDS[1] + 0.5, 0.5))
+		ax.set_xticks(np.arange(bounds[0], bounds[1] + 0.5, 0.5))
+		ax.set_yticks(np.arange(bounds[0], bounds[1] + 0.5, 0.5))
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		ax.spines["bottom"].set_position(("outward", 15))
 		ax.spines["left"].set_position(("outward", 15))
-		ax.set_xlim(BOUNDS)
-		ax.set_ylim(BOUNDS)
+		ax.set_xlim(bounds)
+		ax.set_ylim(bounds)
 		ax.legend(loc=2, prop={'size': 8})
 
 		plt.tight_layout()

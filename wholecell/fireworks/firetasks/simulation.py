@@ -25,7 +25,6 @@ class SimulationTask(FiretaskBase):
 		"log_to_disk_every",
 		"jit",
 		"mass_distribution",
-		"growth_rate_noise",
 		"d_period_division",
 		'variable_elongation_transcription',
 		'variable_elongation_translation',
@@ -70,7 +69,6 @@ class SimulationTask(FiretaskBase):
 		options["logToDiskEvery"] = self._get_default("log_to_disk_every", "logToDiskEvery")
 		options["jit"] = self._get_default("jit")
 		options["massDistribution"] = self._get_default("mass_distribution", "massDistribution")
-		options["growthRateNoise"] = self._get_default("growth_rate_noise", "growthRateNoise")
 		options["dPeriodDivision"] = self._get_default("d_period_division", "dPeriodDivision")
 		options["translationSupply"] = self._get_default("translation_supply", "translationSupply")
 		options["variable_elongation_transcription"] = self._get_default("variable_elongation_transcription")

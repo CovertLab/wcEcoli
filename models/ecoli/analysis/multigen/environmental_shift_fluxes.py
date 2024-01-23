@@ -28,7 +28,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		rxnStoich = sim_data.process.metabolism.reaction_stoich
 
 		reactants = [

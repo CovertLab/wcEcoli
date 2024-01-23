@@ -20,7 +20,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDirs = self.ap.get_cells()
 
 		# Load data from KB
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		trpIdx = sim_data.molecule_groups.amino_acids.index("TRP[c]")
 
 		plt.figure(figsize = (8.5, 11))

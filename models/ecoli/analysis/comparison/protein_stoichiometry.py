@@ -45,6 +45,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			in sim_data2.process.translation.monomer_data
 			}
 		operons = sim_data2.process.transcription.operons
+		rtrna_cistron_indexes = np.where(np.logical_or(
+			sim_data2.process.transcription.cistron_data['is_rRNA'],
+			sim_data2.process.transcription.cistron_data['is_tRNA'],
+			))
 
 		# Load monomer ID attribute
 		monomer_counts_reader = TableReader(
@@ -61,6 +65,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			cistron_indexes = operon[0]
 			if len(cistron_indexes) < 2:
 				continue
+
+			# Skip rtRNA operons
+			if np.any(np.isin(cistron_indexes, rtrna_cistron_indexes)):
+				continue
+
 			operon_monomer_indexes.append(
 				np.array([monomer_id_to_index[cistron_id_to_monomer_id[operon_cistron_ids[i]]] for i in cistron_indexes])
 				)
@@ -76,9 +85,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			# Take averages across all sims and timepoints
 			all_monomer_counts_mean = all_monomer_counts.mean(axis=0)
 
-			# Initialize array of maximum coefficients of variation
+			# Initialize array of average coefficients of variation
 			is_constitutive = np.zeros(len(operon_monomer_indexes), dtype=bool)
-			max_cv = np.zeros(len(operon_monomer_indexes))
+			mean_cv = np.zeros(len(operon_monomer_indexes))
 
 			# Loop through each operon
 			for i, monomer_indexes in enumerate(operon_monomer_indexes):
@@ -96,12 +105,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				cv = rescaled_monomer_counts.std(axis=1)/rescaled_monomer_counts.mean(axis=1)
 
 				is_constitutive[i] = True
-				max_cv[i] = cv.max()
+				mean_cv[i] = cv.mean()
 
-			return max_cv, is_constitutive
+			return mean_cv, is_constitutive
 
-		max_cv1, is_constitutive1 = read_cv(ap1)
-		max_cv2, is_constitutive2 = read_cv(ap2)
+		mean_cv1, is_constitutive1 = read_cv(ap1)
+		mean_cv2, is_constitutive2 = read_cv(ap2)
 
 		# Plot comparison of coefficient distributions
 		fig = plt.figure(figsize=(4.5, 4.4))
@@ -115,10 +124,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				p1, p2,
 				alpha=0.4, s=10, c='#555555', clip_on=False, edgecolors='none')
 
-			scatter_ax.set_xlim([0, 1.5])
-			scatter_ax.set_ylim([0, 1.5])
-			scatter_ax.set_xticks([0, 1.5])
-			scatter_ax.set_yticks([0, 1.5])
+			scatter_ax.set_xlim([0, 0.5])
+			scatter_ax.set_ylim([0, 0.5])
+			scatter_ax.set_xticks([0, 0.5])
+			scatter_ax.set_yticks([0, 0.5])
 			scatter_ax.set_xlabel('Reference')
 			scatter_ax.set_ylabel('Input')
 
@@ -127,14 +136,14 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			scatter_ax.spines["bottom"].set_position(("outward", 20))
 			scatter_ax.spines["left"].set_position(("outward", 20))
 
-			x = np.linspace(0, 1.5, 1000)
+			x = np.linspace(0, 0.5, 1000)
 			kde1 = stats.gaussian_kde(p1)
 			kde2 = stats.gaussian_kde(p2)
 
 			hist1_ax = fig.add_subplot(gs[grid_i - 1, grid_j], sharex=scatter_ax)
 			hist1_ax.fill_between(x, kde1(x), alpha=0.5)
 			hist1_ax.axvline(p1.mean(), lw=2, ls='--', c='#555555')
-			hist1_ax.set_xlim([0, 1.5])
+			hist1_ax.set_xlim([0, 0.5])
 			hist1_ax.set_ylim([0, y_max])
 			hist1_ax.set_yticks([])
 			hist1_ax.spines["top"].set_visible(False)
@@ -146,7 +155,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			hist2_ax = fig.add_subplot(gs[grid_i, grid_j + 1], sharey=scatter_ax)
 			hist2_ax.fill_betweenx(x, kde2(x), fc='C1', alpha=0.5)
 			hist2_ax.axhline(p2.mean(), lw=2, ls='--', c='#555555')
-			hist2_ax.set_ylim([0, 1.5])
+			hist2_ax.set_ylim([0, 0.5])
 			hist2_ax.set_xlim([0, y_max])
 			hist2_ax.set_xticks([])
 			hist2_ax.spines["top"].set_visible(False)
@@ -157,8 +166,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		plotted_operons = np.logical_and(is_constitutive1, is_constitutive2)
 		draw_scatter_plot(
-			max_cv1[plotted_operons], max_cv2[plotted_operons],
-			1, 0, 3)
+			mean_cv1[plotted_operons], mean_cv2[plotted_operons],
+			1, 0, 15)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
@@ -240,7 +249,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			ax2.set_yscale('log')
 			ax2.set_ylim([1, 100])
 			ax2.set_yticks([1, 10, 100])
-			ax2.set_xticks(list(gst / 60) + [t[-1] / 60])
+			ax2.set_xticks(np.array(list(gst / 60) + [t[-1] / 60]).flatten())
 			ax2.set_xticklabels(np.arange(len(gst) + 1))
 			ax2.set_xlabel('Generations')
 
@@ -273,7 +282,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				])
 
 			for plotted, gene_names, c1, c2 in zip(
-					plotted_operons, constituent_gene_names, max_cv1, max_cv2
+					plotted_operons, constituent_gene_names, mean_cv1, mean_cv2
 					):
 				if plotted:
 					writer.writerow([

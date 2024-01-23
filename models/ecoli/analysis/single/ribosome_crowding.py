@@ -30,13 +30,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			'target_prob_translation_per_transcript')
 		actual_prob_translation_per_transcript = ribosome_reader.readColumn(
 			'actual_prob_translation_per_transcript')
-		mRNA_is_overcrowded = ribosome_reader.readColumn(
-			'mRNA_is_overcrowded')
 
 		# Get indexes of proteins corresponding to mRNAs that were overcrowded
 		# at some point in the sim
-		overcrowded_monomer_indexes = np.where(mRNA_is_overcrowded.sum(
-			axis=0))[0]
+		overcrowded_monomer_indexes = np.where(
+			(target_prob_translation_per_transcript
+			 - actual_prob_translation_per_transcript).max(axis=0) > 0)[0]
 		n_overcrowded_monomers = len(overcrowded_monomer_indexes)
 
 		# Determine the gene ids corresponding to these proteins
@@ -52,26 +51,34 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			monomer_ids[monomer_index])) for monomer_index in
 			overcrowded_monomer_indexes]
 
-		# Plot the target vs actual rna synthesis probabilites of these mRNAs
-		plt.figure(figsize=(6, 1.5*n_overcrowded_monomers))
+		if n_overcrowded_monomers > 0:
+			# Plot the target vs actual rna synthesis probabilites of these mRNAs
+			plt.figure(figsize=(6, 1.5*n_overcrowded_monomers))
 
-		for i, monomer_index in enumerate(overcrowded_monomer_indexes):
-			ax = plt.subplot(n_overcrowded_monomers, 1, i + 1)
-			ax.plot(time_min, target_prob_translation_per_transcript[:,
-							  monomer_index], label='target')
-			ax.plot(time_min, actual_prob_translation_per_transcript[:,
-							  monomer_index], label='actual')
+			for i, monomer_index in enumerate(overcrowded_monomer_indexes):
+				target_prob_this_monomer = target_prob_translation_per_transcript[
+				:, monomer_index]
+				actual_prob_this_monomer = actual_prob_translation_per_transcript[
+				:, monomer_index]
 
-			ax.set_ylabel(f'{overcrowded_gene_ids[i]}\ntranslation probs')
+				ax = plt.subplot(n_overcrowded_monomers, 1, i + 1)
+				ax.plot(time_min, target_prob_this_monomer, label='target')
+				ax.plot(time_min, actual_prob_this_monomer, label='actual')
+				ax.set_ylabel(f'{overcrowded_gene_ids[i]}\ntranslation probs')
 
-			if i == 0:
-				ax.set_title(f'Total number of proteins '
-							 f'corresponding to overcrowded mRNAs: '
-							 f'{n_overcrowded_monomers}')
-				ax.legend(loc=1)
+				if i == 0:
+					ax.set_title(f'Total number of proteins '
+								 f'corresponding to overcrowded mRNAs: '
+								 f'{n_overcrowded_monomers}')
+					ax.legend(loc=1)
 
-			if i == n_overcrowded_monomers - 1:
-				ax.set_xlabel('Time [min]')
+				if i == n_overcrowded_monomers - 1:
+					ax.set_xlabel('Time [min]')
+		else:
+			# Generate empty plot if no overcrowding occurred
+			plt.figure(figsize=(6, 1.5))
+			ax = plt.subplot(1, 1, 1)
+			ax.set_title('No monomers were overcrowded.')
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
