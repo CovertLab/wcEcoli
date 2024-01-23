@@ -5,6 +5,12 @@
 # directory names.
 
 
+## Graphical abstract
+python models/ecoli/analysis/comparison/operon_protein_counts.py \
+out/20230830.144259__SET_L_32_gens_8_seeds_operons_on_with_glucose_minimal_media \
+out/20230830.144235__SET_K_32_gens_8_seeds_operons_off_with_glucose_minimal_media
+
+
 ## Figure 1
 # Panel B
 python models/ecoli/analysis/comparison/polycistronic_transcription.py \
