@@ -25,6 +25,7 @@ HAS_TERMINATED = 2
 LAST_TIMESTEP = -1
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
+
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -187,6 +188,41 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				"bound": TF_bound.tolist(),
 				},
 			}
+
+
+		right_replichore_len = int(replichore_lengths[0])
+		left_replichore_len = int(replichore_lengths[1])
+
+
+		# Rescale domain indexes with minimum value
+		min_domain_index = np.min(fork_domain_indexes_parsed)
+		replisome_domains = fork_domain_indexes_parsed - min_domain_index
+		rnap_domains = rnap_domain_indexes - min_domain_index
+		TF_domains = TF_domain_indexes - min_domain_index
+
+		# Compute which round of replication each replisome is associated with
+		# and the number of total domains (including domains without associated
+		# replisomes). E.g. domain 0 is from round 0, domains 1 and 2 are from
+		# round 1, etc.
+		replisome_rounds = np.floor(np.log2(replisome_domains + 1))
+		n_total_domains = 2**(np.max(replisome_rounds) + 2) - 1
+
+		### TODO: Rewrite this more efficiently with numpy or a dict?
+		# Get indexes of each domain's replisomes and parent replisomes
+		domain_replisome_indexes = []
+		parent_domain_replisome_indexes = []
+		for i in range(int(n_total_domains)):
+			if i == 0:
+				parent_domain_replisome_indexes.append(None)
+			else:
+				parent_domain_replisome_indexes.append(
+					np.where(replisome_domains == np.floor((i-1)/2))[0].tolist())
+			domain_replisome_indexes.append(np.where(replisome_domains == i)[0].tolist())
+
+
+		import ipdb
+		ipdb.set_trace()
+
 
 
 		# TODO: loop over time steps
