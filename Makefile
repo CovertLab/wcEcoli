@@ -1,7 +1,7 @@
 .PHONY: compile, clean, recompile
 
 compile:
-	echo make-compile pyenv: "$(pyenv version)"
+	pyenv version
 	pip list | grep 'numpy\|scipy'
 	runscripts/debug/numpy_benchmark.py
 	python setup.py build_ext --inplace
@@ -20,12 +20,10 @@ clean:
 	find . -name "*.so" -exec rm -fr {} +
 	rm -fr build
 	rm -fr launcher_20* block_20*
-	echo make-clean pyenv: "$(pyenv version)"
+	pyenv version
 	pip list | grep 'numpy\|scipy'
-	if [ "`aesara-cache | xargs du -sm | cut -f1`" -gt 30 ]; then \
-		echo "Clearing the aesara-cache since it's larger than threshold."; \
-		aesara-cache clear; \
-	fi
+	aesara-cache purge
+	aesara-cache
 
 # Delete just the *.so libraries then (re)compile them.
 # This is useful when switching to a different Python virtualenv.
