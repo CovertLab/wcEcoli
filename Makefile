@@ -22,7 +22,7 @@ clean:
 	rm -fr launcher_20* block_20*
 	pyenv version
 	pip list | grep 'numpy\|scipy'
-	aesara-cache purge
+	aesara-cache clear
 	aesara-cache
 
 # Delete just the *.so libraries then (re)compile them.
