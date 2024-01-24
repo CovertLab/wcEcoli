@@ -171,19 +171,13 @@ class MetabolismExternalPathway(object):
     def _make_y_dy(self):
         '''This is building the right hand side of the ODE system using MM kinetics.'''
 
-        S = self.stoich_matrix()
-
-        yStrings = ["y[%d]" % x for x in range(S.shape[0])]
-
+        substrates = self.substrates
+        yStrings = ["y[%d]" % x for x in range(len(substrates))]
         y = sp.symbols(yStrings)
         rates = []
-        for colIdx in range(S.shape[1]):
-            #if colIdx==0:
+        for colIdx in range(len(substrates)):
             flux = self.kcats[colIdx] * y[colIdx]/ (self.kms[colIdx] + y[colIdx])
-            #else:
-            #    flux = rates[-1]
             rates.append(flux)
-
         return y, rates
 
     def _make_derivative(self):
@@ -229,41 +223,36 @@ class MetabolismExternalPathway(object):
             subNames.append(sub[0])
 
         for reaction in self.rxn_ids:
-            try:
+            # if the reaction has an enzyme
+            if self.enzymes[reaction]:
                 enzymeCounts.append(enzymeDict[self.enzymes[reaction][0]])
                 enzymeNames.append(self.enzymes[reaction][0])
-            except:
+            #this might need to be modelled differently
+            else:
                 enzymeCounts.append(1)
-                enzymeNames.append(1)
-            #else:
-            #    enzymeCounts.append(enzymeDict[self.enzymes[reaction][0]])
-            #    enzymeNames.append(self.enzymes[reaction][0])
+                enzymeNames.append('None')
+
 
         enzymeConc = np.array(enzymeCounts) / (cellVolume * nAvogadro)
-        s_init = np.array(subCounts) / (cellVolume * nAvogadro)
+        sub_init = np.array(subCounts) / (cellVolume * nAvogadro)
 
-        moleculeNames = list(moleculeDict.keys())
         moleculeCounts = list(moleculeDict.values())
         y_init = np.array(moleculeCounts) / (cellVolume * nAvogadro)
         derivatives = self.derivatives
 
         sol = scipy.integrate.solve_ivp(
-            lambda t, y: derivatives([0, timeStepSec], s_init, enzymeConc), [0, timeStepSec], y_init,
+            lambda t, y: derivatives([0, timeStepSec], sub_init, enzymeConc), [0, timeStepSec], y_init,
             method=method, t_eval=[0, timeStepSec], atol=1e-8)
         y = sol.y.T
         y[y < 0] = 0
         yMolecules = (y * (cellVolume * nAvogadro)) #.asNumber(COUNTS_UNITS/VOLUME_UNITS)
 
-        #print(yMolecules)
         # Calculate changes in molecule counts for all molecules
         allMoleculesChanges = yMolecules[-1, :] - yMolecules[0, :]
 
         # Molecules needed are the change but only for the molecules corresponding to the negative terms in the stoich matrix
         moleculesNeeded = np.negative(allMoleculesChanges).clip(min=0)
 
-        #print('moleculesNeeded', moleculesNeeded)
-        #print('allMoleculesChanges', allMoleculesChanges)
-        #print('flux', self.flux)
         return moleculesNeeded, allMoleculesChanges, self.flux
 
     def derivatives(self, t, y, enzymeC):
@@ -271,8 +260,5 @@ class MetabolismExternalPathway(object):
         Calculate derivatives from stoichiometry and rates with argument order
         for solve_ivp.
         """
-        self.flux =  np.multiply(enzymeC, self._rates[0](y, t)) #MODEL_FLUX_UNITS *
-        first_element = self.flux[0]
-        for i in range(len(self.flux)):
-            self.flux[i] = first_element
+        self.flux =  np.multiply(enzymeC, self._rates[0](y, t))
         return self._stoich_matrix.dot(np.transpose(self.flux))

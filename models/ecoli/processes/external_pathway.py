@@ -32,8 +32,8 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
         self.cell_density = sim_data.constants.cell_density.asNumber(units.g / units.L)
 
         # check if there is a new metabolic pathway to be added
-        print(dir(sim_data.process.metabolism_external_pathway.has_external_pathway))
         if sim_data.process.metabolism_external_pathway.has_external_pathway==True:
+            print('There is an external metabolic pathway to be added')
             self.external_pathway_exists = True
             # Create method
             self.molecules_to_next_time_step = sim_data.process.metabolism_external_pathway.molecules_to_next_time_step
@@ -44,7 +44,6 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
 
             self.enzyme_names = [item for sublist in sim_data.process.metabolism_external_pathway.enzymes.values() for
                                  item in sublist]
-            print('Enz names ', self.enzyme_names)
             self.clean_enzyme = sorted([*set(list(filter(lambda item: item is not None, self.enzyme_names)))])
             self.enzymes = self.bulkMoleculesView(self.clean_enzyme)
 
@@ -66,7 +65,6 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
             cell_mass = (self.readFromListener("Mass", "cellMass") * units.fg).asNumber(units.g)
             self.cell_volume = cell_mass / self.cell_density
             self.dcw_to_volume = self.cell_density * (dry_mass / cell_mass)
-            print('Molecules dict ', self.molecule_dict)
 
             self.molecules_required, self.all_molecule_changes, self.flux = self.molecules_to_next_time_step(
                 self.molecule_dict, self.enzymes_dict,
@@ -80,4 +78,3 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
         if self.external_pathway_exists:
             # Increment changes in molecule counts
             self.molecules.countsInc(self.all_molecule_changes)
-            print('Updated molecule count')

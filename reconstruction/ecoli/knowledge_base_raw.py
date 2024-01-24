@@ -394,15 +394,13 @@ class KnowledgeBaseEcoli(object):
 				added_data = getattr(added_data, attr)
 
 			# Check columns are the same for each dataset
-			if added_data:
-				col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
-				if col_diff:
-					raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
-						f'because columns do not match (different columns: {col_diff}).')
-
-				# Join datasets
-				for row in added_data:
-					data.append(row)
+			col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
+			if col_diff:
+				raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
+					f'because columns do not match (different columns: {col_diff}).')
+			# Join datasets
+			for row in added_data:
+				data.append(row)
 
 	def _modify_data(self):
 		"""
