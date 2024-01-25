@@ -7,9 +7,11 @@ import json
 import os
 import pickle
 
+from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import singleAnalysisPlot
+from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
@@ -23,6 +25,30 @@ HAS_TERMINATED = 2
 
 # Flag to indicate RNAP is terminated at this timestep
 LAST_TIMESTEP = -1
+
+### TODO: Delete whatever ones we don't need
+# General plotting paramenters
+PRIMARY_RADIUS = 40000;
+RADIUS_RANGE = 1500;
+MARGINS = 15000;
+DEFAULT_SPEED = 1;
+MIN_SPEED = 1;
+MAX_SPEED = 64;
+DNA_STROKE = 2;
+DEFAULT_MOLECULE_SIZE = 512;
+MAX_MOLECULE_SIZE = 1024;
+MIN_MOLECULE_SIZE = 16;
+TEXT_SIZE = 2000;
+MAIN_IMAGE_NAME = "chromosome";
+ZOOMED_IMAGE_NAME = "zoom";
+MINIMAP_NAME = "minimap";
+ZOOM_SCALE = 0.6;
+MIN_VIEWBOX_SIZE = 200;
+MINIMAP_GUIDE_STROKE_WIDTH = 1000;
+
+
+
+
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
@@ -190,8 +216,14 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			}
 
 
-		right_replichore_len = int(replichore_lengths[0])
-		left_replichore_len = int(replichore_lengths[1])
+		############## CONSTRUCTOR
+		rl = int(replichore_lengths[0])  # Right replichore length
+		ll = int(replichore_lengths[1])  # Left replichore length
+		replisome_flags = {
+			"not_initiated": NOT_INITIATED,
+			"elongating": ELONGATING,
+			"has_terminated": HAS_TERMINATED
+			}
 
 
 		# Rescale domain indexes with minimum value
@@ -205,20 +237,148 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# replisomes). E.g. domain 0 is from round 0, domains 1 and 2 are from
 		# round 1, etc.
 		replisome_rounds = np.floor(np.log2(replisome_domains + 1))
-		n_total_domains = 2**(np.max(replisome_rounds) + 2) - 1
+		n_total_domains = int(2**(np.max(replisome_rounds) + 2) - 1)
 
 		### TODO: Rewrite this more efficiently with numpy or a dict?
 		# Get indexes of each domain's replisomes and parent replisomes
 		domain_replisome_indexes = []
 		parent_domain_replisome_indexes = []
-		for i in range(int(n_total_domains)):
+		for i in range(n_total_domains):
 			if i == 0:
 				parent_domain_replisome_indexes.append(None)
 			else:
 				parent_domain_replisome_indexes.append(
 					np.where(replisome_domains == np.floor((i-1)/2))[0].tolist())
 			domain_replisome_indexes.append(np.where(replisome_domains == i)[0].tolist())
+		##############
 
+
+
+		############## Initiate
+		# Draw initial outline of the chromosome, initialize molecules
+
+		### TODO: set figure size
+
+		# Initialize plot
+		plt.subplots(subplot_kw={'projection': 'polar'})
+		ax = plt.subplot(1, 1, 1)
+		# Remove grid and labels
+		ax.set_theta_offset(np.pi / 2)  # Put 0 deg at the top instead of the right side
+		ax.grid(False)
+		ax.set_yticklabels([])
+		ax.axis("off")
+
+		# Calculate basal radii of each domain
+		domain_radii = []
+		for i in range(n_total_domains):
+			domain_round = np.floor(np.log2(i + 1))
+			domain_radius = PRIMARY_RADIUS - RADIUS_RANGE/2 + (
+                2*(i - (2**domain_round - 1)) + 1)*RADIUS_RANGE/(2**(domain_round + 1))
+			domain_radii.append(domain_radius)
+
+		# Get initial boundaries of each domain
+		def get_domain_boundaries(status, coords):
+			### TODO: Finish and format
+			"""
+			Computes the boundaries of each domain given the current status and
+			coordinates of replisomes. Arguments status and coords are both
+			arrays with lengths equal to the number of total replisomes. Return
+			value boundaries is an array of arrays, where each element array
+			holds the angular positions of the four boundaries respect to the
+			origin of replication for each domain.
+
+			Args:
+				status:
+				coords:
+
+			Returns:
+
+			"""
+			boundaries = []
+			parent_rep_indexes = parent_domain_replisome_indexes
+			rep_indexes = domain_replisome_indexes
+			flags = replisome_flags
+
+			for i in range(len(rep_indexes)):
+				# Default values for each of the four boundaries
+				rfs = 0
+				lfs = 0
+				rfe = np.pi
+				lfe = np.pi
+
+				# If the domain has parent domains, it may have a boundary on
+				# the terminus side of the chromosome.
+				if parent_rep_indexes[i]:
+					# Check status of parent replisomes and update boundaries
+					if status[parent_rep_indexes[i][0]] == flags["elongating"]:
+						rfe = coords[parent_rep_indexes[i][0]] / rl * np.pi
+					elif status[parent_rep_indexes[i][0]] == flags["not_initiated"]:
+						rfe = 0
+
+					if status[parent_rep_indexes[i][1]] == flags["elongating"]:
+						lfe = -coords[parent_rep_indexes[i][1]] / ll * np.pi
+					elif status[parent_rep_indexes[i][1]] == flags["not_initiated"]:
+						lfe = 0
+
+				# If the domain has replisomes, it may have a boundary on the
+				# origin side of the chromosome.
+				if rep_indexes[i]:
+					# Check status of this domain's replisomes and update boundaries
+					if status[rep_indexes[i][0]] == flags["elongating"]:
+						rfs = coords[rep_indexes[i][0]] / rl * np.pi
+					elif status[rep_indexes[i][0]] == flags["has_terminated"]:
+						rfs = np.pi
+
+					if status[rep_indexes[i][1]] == flags["elongating"]:
+						lfs = -coords[rep_indexes[i][1]] / ll * np.pi
+					elif status[rep_indexes[i][1]] == flags["has_terminated"]:
+						lfs = np.pi
+
+				boundaries.append([rfs, lfs, rfe, lfe])
+
+			return boundaries
+
+		boundaries = get_domain_boundaries(fork_status[0], fork_coordinates_parsed[0])
+
+		# Draw domains
+		for i in range(n_total_domains):
+			# Get domain radius, parent domain radius, and current boundaries
+			r = domain_radii[i]
+			[rfs, lfs, rfe, lfe] = boundaries[i]
+
+			# If both replichores have been fully replicated, the radius should
+			# remain constant
+
+			# Right
+			ax.plot(np.linspace(-rfs, -rfe, 1000), np.repeat(r, 1000), color='k')
+
+			# Left
+			ax.plot(np.linspace(lfs, lfe, 1000), np.repeat(r, 1000), color='k')
+
+
+
+
+
+
+
+
+
+
+
+		# Chromosome labels
+		ax.vlines(0, PRIMARY_RADIUS - RADIUS_RANGE/2,
+				  PRIMARY_RADIUS + RADIUS_RANGE/2, color='k')
+		ax.vlines(np.pi, PRIMARY_RADIUS - RADIUS_RANGE/2,
+				  PRIMARY_RADIUS + RADIUS_RANGE/2, color='k')
+		ax.text(0, PRIMARY_RADIUS + 2*RADIUS_RANGE, "oriC", ha="center", va="center")
+		ax.text(np.pi, PRIMARY_RADIUS + 2*RADIUS_RANGE, "terC", ha="center", va="center")
+
+		# Export plot
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
+
+		##############
 
 		import ipdb
 		ipdb.set_trace()
