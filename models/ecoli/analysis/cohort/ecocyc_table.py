@@ -76,6 +76,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		# Load tables and attributes for mRNAs
+		RNA_synth_prob_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'RnaSynthProb'))
 		RNA_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'RNACounts'))
 		mass_reader = TableReader(
@@ -84,6 +86,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mRNA_ids = RNA_reader.readAttribute('mRNA_cistron_ids')
 		mass_unit =	mass_reader.readAttribute('cellDry_units')
 		assert mass_unit == 'fg'
+		gene_ids_rna_synth_prob = RNA_synth_prob_reader.readAttribute("gene_ids")
 
 		# Load tables and attributes for tRNAs and rRNAs
 		unique_molecule_counts_reader = TableReader(
@@ -104,6 +107,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Read columns
 		# remove_first=True because countsToMolar is 0 at first time step
+		gene_copy_numbers = read_stacked_columns(
+			cell_paths, 'RnaSynthProb', 'gene_copy_number',
+			remove_first=True, ignore_exception=True)
 		mRNA_counts = read_stacked_columns(
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 			remove_first=True, ignore_exception=True)
@@ -156,6 +162,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			return normalized_values
 
+		gene_copy_numbers_avg = gene_copy_numbers.mean(axis=0)
+		gene_copy_numbers_std = gene_copy_numbers.std(axis=0)
 		rna_counts_avg = rna_counts.mean(axis=0)
 		rna_counts_std = rna_counts.std(axis=0)
 		rna_conc = rna_counts * counts_to_molar
@@ -177,8 +185,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			}
 		gene_ids = [cistron_id_to_gene_id[x] for x in rna_ids]
 
+		gene_id_to_index = {
+			gene_id: i for i,gene_id in enumerate(gene_ids_rna_synth_prob)
+			}
+		reordering_indexes = np.array([
+			gene_id_to_index[gene_id] for gene_id in gene_ids])
+		assert np.all(
+			np.array(gene_ids_rna_synth_prob)[reordering_indexes] == gene_ids)
+		gene_copy_numbers_avg = gene_copy_numbers_avg[reordering_indexes]
+		gene_copy_numbers_std = gene_copy_numbers_std[reordering_indexes]
+
 		columns = {
 			'id': 'Object ID, according to EcoCyc',
+			'gene-copy-number-avg': 'A floating point number',
+			'gene-copy-number-std': 'A floating point number',
 			'rna-count-avg': 'A floating point number',
 			'rna-count-std': 'A floating point number',
 			'rna-concentration-avg': 'A floating point number in mM units',
@@ -190,7 +210,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'relative-rna-mass-to-total-cell-dry-mass': 'A floating point number',
 			}
 		values = [
-			gene_ids, rna_counts_avg, rna_counts_std, rna_conc_avg,
+			gene_ids, gene_copy_numbers_avg, gene_copy_numbers_std,
+			rna_counts_avg, rna_counts_std, rna_conc_avg,
 			rna_conc_std, rna_counts_relative_to_total_rna_counts,
 			rna_counts_relative_to_total_rna_type_counts,
 			rna_masses_relative_to_total_rna_mass,
