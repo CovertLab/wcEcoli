@@ -69,7 +69,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Ignore first N generations
 		cell_paths = ap.get_cells(
-			generation=np.arange(IGNORE_FIRST_N_GENS, ap.n_generation))
+			generation=np.arange(IGNORE_FIRST_N_GENS, ap.n_generation),
+			only_successful=True)
 
 		if len(cell_paths) == 0:
 			print('Skipping analysis -- not enough simulations run.')
