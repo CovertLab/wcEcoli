@@ -101,8 +101,8 @@ and whether to:
   avoid certain kinds of problems. The wcEcoli project doesn't follow this recommendation
   but it might be sensible to move in that direction.
   It's conventional and convenient to import names from `typing`
-  (`from typing import Any, cast`) and some other modules, and a case could be made to treat
-  classes as scopes like modules in this sense.
+  (`from typing import Any, cast`), `collections.abc`, and some other modules,
+  and a case could be made to treat classes as scopes like modules in this sense.
 
 * Mostly use **absolute imports**. Occasionally it's worth using an explicit relative import,
   esp. when an absolute import is unnecessarily verbose:
@@ -198,7 +198,7 @@ and whether to:
   # Put no space in function application or object indexing.
   spam(1) < spam(2)
   dct['key'] += lst[index]
-  
+
   # Don't line up the `=` on multiple lines of assignment statements.
   # Maintaining it costs work and merge conflicts.
   x = 1
@@ -213,6 +213,8 @@ and whether to:
   # Use spaces or parentheses to help convey precedence.
   # Put zero or one space on each side of a binary operator (except indentation).
   hypot2 = x*x + y*y
+
+  x: int = 333
   ```
 
 * Avoid compound statements on one line.
@@ -237,7 +239,7 @@ and whether to:
    camelCase  # it's OK to match the existing style but it's good to change it to snake case
 
    _internal_name
-   __mangled_class_attribute_name
+   __mangled_class_attribute_name  # https://peps.python.org/pep-0008/#designing-for-inheritance
    
    module_name
    package  # underscores are discouraged
@@ -284,6 +286,10 @@ See https://google.github.io/styleguide/pyguide.html
 * A function must have a docstring, unless it's: not externally visible, short, and obvious.
   Explain what you need to know to call it.
 * Classes should have docstrings.
+* `TODO: Investigate optimizations`. Searchable "TODO" comment. Mention an Issue number if any.
+  (The older style was `TODO(username):`, naming who to ask for more information.)
+* Use `assert` in unit tests and to check internal correctness. For a mistake at the API level,
+  raise an exception. Raise built-in exception classes like `ValueError` when it makes sense.
 
 
 ## Pythonic Style
@@ -323,14 +329,14 @@ def f(x=None):
   correctly.
 
 ### Exceptions
-* Use the bare `except:` clause only when just printing/logging the traceback and in
-  debugging tools.
+* Use the bare `except:` clause only when just printing/logging the traceback and
+  re-raising the exception, or in a debugging tool.
 * Limit a `try` clause to a narrow range of code so it only doesn't bury totally
   unexpected exceptions.
 * Use a `with` statement or `try`/`finally` to ensure cleanup gets done, like closing a file.
 * Any kind of failure should raise an explicit exception.
 * Derive exceptions from `Exception` rather than `BaseException` unless catching this
-  exception is almost always the wrong thing to do, like `KeyboardInterrupt`.
+  exception is almost always the wrong thing to do, like `KeyboardInterrupt` and `SystemExit`.
 * When raising exceptions, aim to answer "What went wrong?" rather than just
   indicating "A problem occurred."
 
@@ -349,7 +355,7 @@ type hints on functions and occasionally on variables when the type checker can'
 E.g. mypy can't infer the element type when you create an empty collection. In a difficult case,
 you can punt by using type `Any` which can assign to or from anything.
 
-([These Google Slides](https://docs.google.com/presentation/d/1xwVHjpQsRTGLdaIpPDNjKPQFtp7mBNfn7oTWK4Kct30/edit?usp=drivesdk)
+([These Slides](https://docs.google.com/presentation/d/1xwVHjpQsRTGLdaIpPDNjKPQFtp7mBNfn7oTWK4Kct30/edit?usp=drivesdk)
 review our past plan for adding type hints to aid the migration to Python 3.)
 
 You can type a list of strings as `list[str]` or `List[str]`, and similar for other
