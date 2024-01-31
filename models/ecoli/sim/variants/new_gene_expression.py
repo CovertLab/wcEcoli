@@ -33,7 +33,7 @@ def new_gene_expression(sim_data, index):
 	new_gene_indices = [i for i in range(len(rna_ids)) if rna_ids[i].startswith('NG')]
 
 	for geneIndex in new_gene_indices:
-		sim_data.adjust_final_expression([geneIndex], [factor])
+		sim_data.adjust_new_gene_final_expression([geneIndex], [factor])
 		geneID = rna_data["id"][geneIndex]
 
 	if index == 0:
