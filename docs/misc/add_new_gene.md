@@ -12,7 +12,7 @@ Addition of new genes to the chromosome<br>(in progress)
     * `gene_sequences.tsv` - Sequences of genes to be inserted
     * `rnas.tsv` - RNAs corresponding to those genes
     * `proteins.tsv` - Proteins corresponding to those genes
-    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to .01 (so that the Parca does not try to correct for the new genes) and modify basal expression levels later via variant (more details below)
+    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to 0 (so that the Parca does not try to correct for the new genes) and modify basal expression levels later via variant (more details below)
   * Currently supported optional data files:
     * `rna_half_lives.tsv` - Can specify if desired, otherwise will default to average of the other RNAs
     * `protein_half_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
