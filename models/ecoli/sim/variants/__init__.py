@@ -13,6 +13,7 @@ variants = [
 	'mene_params',
 	'metabolism_kinetic_objective_weight',
 	'metabolism_secretion_penalty',
+	'new_gene',
 	'new_gene_expression',
 	'new_gene_expression_old', # TODO: remove after verifying new method works
 	'new_gene_expression_and_translation_efficiency',

@@ -33,12 +33,16 @@ Modifies (after shift):
 
 Expected variant indices (int, positive):
 	0: control (knockout new gene expression)
-	z > 0: converted to an index for a list of
-		new gene expression variant factor and an index for a list of new gene
+	z > 0: converted to an index for a media condition, an index for a list of
+		new gene expression variant factors, and an index for a list of new gene
 		translation efficiency values
+
+		media condition index = index div 1000
+		index remainder = index - media condition index
+
 		separator = number of translation efficiency values to try
-		expression index = index div separator + 1
-		translation efficiency index = index mod separator
+		expression index = remainder index div separator + 1
+		translation efficiency index = remainder index mod separator
 
 New gene expression factor:
 	x > 0: multiply new gene expression by a factor of 10^(x-1)
@@ -69,11 +73,6 @@ NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
 	"The first new gene expression factor should always be the control sim"
-
-# TODO: set this through the variant index instead
-# e.g. variants 0 - 999 condition index 0,
-# variants 1000 - 1999 condition index 1, etc
-CONDITION_INDEX = 1
 
 def condition(sim_data, condition_index):
 	"""
@@ -234,11 +233,13 @@ def new_gene_expression_and_translation_efficiency_media_internal_shift(sim_data
 	transcribed.
 	"""
 	# Set media condition
-	condition(sim_data, CONDITION_INDEX)
+	condition_index = index // 1000
+	condition(sim_data, condition_index)
 
 	# Map variant index to expression factor and tranlsation efficiency value
+	index_remainder = index - condition_index * 1000
 	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
-		sim_data, index)
+		sim_data, index_remainder)
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
@@ -259,12 +260,13 @@ def new_gene_expression_and_translation_efficiency_media_internal_shift(sim_data
 
 	return dict(
 		shortName = "{}_NGEXP_TRLEFF_INTERNAL_SHIFT."
-			+ "{}_env".format(sim_data.ordered_conditions[CONDITION_INDEX]),
+			+ "{}_env".format(sim_data.ordered_conditions[condition_index]),
 		desc = "Changed expression of new genes by variant index {}.".format(
 			expression_factor) + ". Set translation efficiency of new genes "
 			"to {}".format(trl_eff_value)
-			+ "Simulation of condition {}.".format(sim_data.ordered_conditions[CONDITION_INDEX])
+			+ "Simulation of condition {}.".format(sim_data.ordered_conditions[condition_index])
 		), sim_data
 
 ### TODO: write metadata for this variant
 ### TODO: merge all other new gene variants into this single one
+### TODO: Delete all other new gene variants
