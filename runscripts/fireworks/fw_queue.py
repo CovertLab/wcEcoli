@@ -225,6 +225,9 @@ from typing import Any, Dict, List, Optional, Union
 
 from fireworks import FiretaskBase, Firework, LaunchPad, Workflow, ScriptTask
 
+from models.ecoli.sim.variants.new_gene import (NEW_GENE_EXPRESSION_FACTORS,
+	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
+	NEW_GENE_KNOCKOUT_GEN)
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
@@ -483,21 +486,8 @@ class WorkflowBuilder:
 			"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 			}
 
-		if VARIANT == 'new_gene_expression_and_translation_efficiency':
+		if VARIANT == 'new_gene':
 			# Record the values used in this variant for analysis scripts
-			from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
-				import NEW_GENE_EXPRESSION_FACTORS, \
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
-			self.metadata.update({
-				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
-				"new_gene_translation_efficiency_values":
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES})
-		elif VARIANT == 'new_gene_expression_and_translation_efficiency_internal_shift':
-			# Record the values used in this variant for analysis scripts
-			from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency_internal_shift \
-				import NEW_GENE_EXPRESSION_FACTORS, \
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN, \
-				NEW_GENE_KNOCKOUT_GEN
 			self.metadata.update({
 				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
 				"new_gene_translation_efficiency_values":
