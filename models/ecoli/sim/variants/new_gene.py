@@ -1,5 +1,3 @@
-### TODO: UPDATE EXPECTED VARIANT INDICES
-
 """
 Compare the impacts of increasing expression level and
 increasing or decreasing the translational efficiency of new genes, with the
