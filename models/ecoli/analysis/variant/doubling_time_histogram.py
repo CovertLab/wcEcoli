@@ -61,8 +61,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 			doubling_times[variant_index] = dt[exclude_timeout_cell_mask]
 
-			# Count the number of simulations that reach gen COUNT_INDEX + 1
-			num_count_gen = len(
+			# Count the number of simulations that reach the last generation
+			num_last_gen = len(
 				self.ap.get_cells(
 					variant=[variant_index], generation=[n_total_gens - 1],
 					only_successful=True)
@@ -76,7 +76,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				)
 
 			# Calculate completion rate
-			completion_rates[variant_index] = num_count_gen / num_zero_gen
+			completion_rates[variant_index] = num_last_gen / num_zero_gen
 
 		n_variants = len(doubling_times)
 
@@ -87,7 +87,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			N_BINS + 1
 			)
 
-		# First subplot shows all histograms for each variant
+		# First subplot overlays the histograms of all variants
 		ax0 = fig.add_subplot(n_variants + 1, 1, 1)
 		subplots = []
 
@@ -100,7 +100,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Add vertical line at mean doubling time
 			ax0.axvline(np.mean(dt), color=color, ls='--', lw=3, alpha=0.5)
 
-			# Later subplots show histograms for each variant separately
+			# Later subplots show the histograms for each variant separately
 			ax = fig.add_subplot(n_variants + 1, 1, i + 2, sharex=ax0)
 			ax.hist(
 				dt, bins=bins, color=color, alpha=0.5,
