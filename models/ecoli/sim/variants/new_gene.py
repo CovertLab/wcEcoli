@@ -60,7 +60,7 @@ CONTROL_OUTPUT = dict(
 # NOTE: If these values are greater than the number of generations you are
 # running, you will not see their effects.
 # OPTION: Set = -1 to skip induction or knockout shifts.
-NEW_GENE_INDUCTION_GEN = 8 # Generation index to induce new gene expression
+NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
 NEW_GENE_KNOCKOUT_GEN = -1 # Generation index to knock out new gene expression
 
 # The variant index will be split into an index for each of these lists
@@ -219,7 +219,7 @@ def knockout_induced_new_gene_expression(sim_data, index):
 			monomer_index] = trl_eff_value
 
 
-def new_gene_expression_and_translation_efficiency_media_internal_shift(sim_data, index):
+def new_gene(sim_data, index):
 	"""
 	Apply variant. Specifies that from NEW_GENE_INDUCTION_GEN to
 	NEW_GENE_KNOCKOUT_GEN, the new gene expression and translation efficiency
@@ -247,10 +247,10 @@ def new_gene_expression_and_translation_efficiency_media_internal_shift(sim_data
 	# reloaded from the file between generations
 	if NEW_GENE_INDUCTION_GEN != -1:
 		sim_data.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
-			(induce_new_genes, index)]
+			(induce_new_genes, index_remainder)]
 	if NEW_GENE_KNOCKOUT_GEN != -1:
 		sim_data.internal_shift_dict[NEW_GENE_KNOCKOUT_GEN] = [
-			(knockout_induced_new_gene_expression, index)]
+			(knockout_induced_new_gene_expression, index_remainder)]
 
 	# Variant descriptions to save to metadata
 	if index == 0:
