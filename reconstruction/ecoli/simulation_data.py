@@ -336,15 +336,31 @@ class SimulationDataEcoli(object):
 		transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
 
 	def adjust_new_gene_final_expression(self, gene_indices, factors):
-		# TODO: Move these somewhere else after testing (AVOID MAGIC NUMBERS!)
-		new_gene_rna_synth_prob_baseline = 1.696972873200787e-09
-		new_gene_rna_expression_baseline = 3.461732338318451e-10
-		new_gene_exp_free_baseline = 2.855602911429768e-10
-		new_gene_exp_ppgpp_baseline = 3.610996561760185e-10
-		new_gene_reg_basal_prob_baseline = 8.92401929277839e-10
+		"""
+		Adjusting the final expression values of new genes must be handled
+		separately because the baseline new gene expression values need to be
+		set to small non-zero values using data loaded from
+		flat/new_gene_data/new_gene_baseline_expression.tsv, as new genes are
+		knocked out by default.
+
+		Args:
+			gene_indices: Indices of new genes to adjust
+			factors: Multiplicative factor to adjust by
+		"""
 
 		transcription = self.process.transcription
 		transcription_regulation = self.process.transcription_regulation
+
+		new_gene_rna_synth_prob_baseline = (
+			transcription.new_gene_rna_expression_baseline["new_gene_rna_synth_prob_baseline"])
+		new_gene_rna_expression_baseline = (
+			transcription.new_gene_rna_expression_baseline["new_gene_rna_expression_baseline "])
+		new_gene_exp_free_baseline = (
+			transcription.new_gene_rna_expression_baseline["new_gene_exp_free_baseline"])
+		new_gene_exp_ppgpp_baseline = (
+			transcription.new_gene_rna_expression_baseline["new_gene_exp_ppgpp_baseline"])
+		new_gene_reg_basal_prob_baseline = (
+			transcription.new_gene_rna_expression_baseline["new_gene_reg_basal_prob_baseline"])
 
 		for gene_index, factor in zip(gene_indices, factors):
 			recruitment_mask = np.array([i == gene_index

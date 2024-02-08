@@ -51,6 +51,7 @@ class Transcription(object):
 		self._build_charged_trna(raw_data, sim_data)
 		self._build_attenuation(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
+		self._build_new_gene_data(raw_data, sim_data)
 
 	def __getstate__(self):
 		"""Return the state to pickle with transcriptionSequences removed and
@@ -1944,3 +1945,11 @@ class Transcription(object):
 	def get_rnap_active_fraction_from_ppGpp(self, ppgpp):
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return self.fraction_active_rnap_bound * f_ppgpp + self.fraction_active_rnap_free * (1 - f_ppgpp)
+
+	def _build_new_gene_data(self, raw_data, sim_data):
+		"""
+		Load baseline values for new gene expression in all simulations.
+		"""
+
+		self.new_gene_expression_baselines = raw_data.new_gene_data.new_gene_baseline_expression[0]
+
