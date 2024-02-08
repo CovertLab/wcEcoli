@@ -14,11 +14,6 @@ variants = [
 	'metabolism_kinetic_objective_weight',
 	'metabolism_secretion_penalty',
 	'new_gene',
-	'new_gene_expression',
-	'new_gene_expression_old', # TODO: remove after verifying new method works
-	'new_gene_expression_and_translation_efficiency',
-	'new_gene_expression_and_translation_efficiency_internal_shift',
-	'new_gene_expression_and_translation_efficiency_media_internal_shift',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',

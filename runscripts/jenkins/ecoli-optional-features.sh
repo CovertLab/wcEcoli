@@ -23,17 +23,12 @@ DESC="Causality Network" BUILD_CAUSALITY_NETWORK=1 N_GENS=2 SEED=$RANDOM \
 DESC="New Gene Existence" N_GENS=4 NEW_GENES="gfp" PLOTS=ACTIVE \
   COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
-DESC="New Gene Expression" VARIANT="new_gene_expression" \
-  FIRST_VARIANT_INDEX=4 LAST_VARIANT_INDEX=4 N_GENS=4 NEW_GENES="gfp" \
-  PLOTS=ACTIVE COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
-  python runscripts/fireworks/fw_queue.py
-# NOTE: The version of global variables from
-# new_gene_expression_and_translation_efficiency_internal_shift.py on the
+# NOTE: The version of global variables from new_gene.py on the
 # master branch will be used for this Jenkins test.
 # Variant 2 is intended to correspond to expression factor 7, translation
 # efficiency value 1.
 DESC="New Gene Expression and Translation Efficiency Internal Shift" \
-  VARIANT="new_gene_expression_and_translation_efficiency_internal_shift" \
+  VARIANT="new_gene" \
   FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 N_GENS=4 NEW_GENES="gfp" \
   PLOTS=ACTIVE COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
