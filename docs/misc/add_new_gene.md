@@ -32,11 +32,10 @@ The following steps occur in incorporating the new genes into the chromosome:
 ---
 <b>Variants </b><br>
 
-# TODO: add media condition info
 * New Gene (Expression, Translation Efficiency, and Induction/Knockout)
   * `models/ecoli/variants/new_gene.py`
-  * Variant index specifies both the 
-    factor to multiply the expression level of all new genes by and the 
+  * Variant index specifies media condition,
+    factor to multiply the expression level of all new genes by, and the 
     value to use for translation efficiency for all new genes. User must provide a 
     list of the new gene 
     expression factors and the translation efficiency values, and all pairs 
@@ -44,13 +43,26 @@ The following steps occur in incorporating the new genes into the chromosome:
     the values for the new gene expression and translation are saved to the 
     simulation metadata so that they may be used in analysis.
     * Expected variant indices (int, positive):
-      * 0: control (knockout new gene expression)
-      * z > 0: converted to an index for a list of
-          new gene expression variant factor and an index for a list of new gene
+      * z > 0: converted to an index for media condition, index for a list of
+          new gene expression variant factors, and an index for a list of new gene
           translation efficiency values 
-        * separator = number of translation efficiency values to try 
-        * expression_index = index div separator + 1
-        * translation_efficiency_index = index mod separator
+        * condition_index = z div 1000 
+        * new_gene_index = z - condition_index * 1000
+      * Expected condition_index values
+        * (dependent on sim_data.ordered_conditions and should be the same order as rows in `reconstruction/flat/condition/condition_defs.tsv`)
+        * 0: control (minimal media)
+        * 1: with amino acids 
+        * 2: acetate 
+        * 3: succinate 
+        * 4: minimal media (anaerobic)
+      * Expected new_gene_index values
+        * 0: control (knockout new gene expression)
+        * 1000 > y > 0: converted to an index for a list of
+            new gene expression variant factor and an index for a list of new gene
+            translation efficiency values 
+          * separator = number of translation efficiency values to try 
+          * expression_index = y div separator + 1
+          * translation_efficiency_index = y mod separator
     * Example: 
       * `NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8]`
         * `NEW_GENE_EXPRESSION_FACTORS[expression_index]` specifies the factor to multiply the expression level of all new genes by
@@ -60,9 +72,11 @@ The following steps occur in incorporating the new genes into the chromosome:
       * `NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [2.5, 1, 0.5]`
         * `NEW_GENE_TRANSLATION_EFFICIENCY_VALUES[translation_efficiency_index]` will be used as the translation efficiencies of all new genes
       * `SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) = 3`
-      * Variant Index: (New Gene Expression Factor, Translation Efficiency)
-        * 0: (0, 0), 1: (7, 1), 2: (7, 0.5), 3: (7, 2.5), 4: (8, 1), 5: (8, 
-          0.5), 6: (8, 2.5)
+      * Variant Index: (Media Condition, New Gene Expression Factor, Translation Efficiency)
+        * 0: (minimal media, 0, 0), 1: (minimal media, 7, 1), 2: (minimal media, 7, 0.5), 3: (minimal media, 7, 2.5), 4: (minimal media, 8, 1), 5: (minimal media, 8, 
+          0.5), 6: (minimal media, 8, 2.5)
+        * 1000: (with amino acids, 0, 0), 1001: (with amino acids, 7, 1), 1002: (with amino acids, 7, 0.5), 1003: (with amino acids, 7, 2.5), 1004: (with amino acids, 8, 1), 1005: (with amino acids, 8, 
+          0.5), 1006: (with amino acids, 8, 2.5)
   * You can make the changes to 
     the new genes at the beginning of a specified generation. You can 
     specify a `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` in 
