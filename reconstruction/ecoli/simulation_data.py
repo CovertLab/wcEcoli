@@ -352,15 +352,15 @@ class SimulationDataEcoli(object):
 		transcription_regulation = self.process.transcription_regulation
 
 		new_gene_rna_synth_prob_baseline = (
-			transcription.new_gene_expression_baseline["new_gene_rna_synth_prob_baseline"])
+			transcription.new_gene_expression_baselines["new_gene_rna_synth_prob_baseline"])
 		new_gene_rna_expression_baseline = (
-			transcription.new_gene_expression_baseline["new_gene_rna_expression_baseline "])
+			transcription.new_gene_expression_baselines["new_gene_rna_expression_baseline"])
 		new_gene_exp_free_baseline = (
-			transcription.new_gene_expression_baseline["new_gene_exp_free_baseline"])
+			transcription.new_gene_expression_baselines["new_gene_exp_free_baseline"])
 		new_gene_exp_ppgpp_baseline = (
-			transcription.new_gene_expression_baseline["new_gene_exp_ppgpp_baseline"])
+			transcription.new_gene_expression_baselines["new_gene_exp_ppgpp_baseline"])
 		new_gene_reg_basal_prob_baseline = (
-			transcription.new_gene_expression_baseline["new_gene_reg_basal_prob_baseline"])
+			transcription.new_gene_expression_baselines["new_gene_reg_basal_prob_baseline"])
 
 		for gene_index, factor in zip(gene_indices, factors):
 			recruitment_mask = np.array([i == gene_index
