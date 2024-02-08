@@ -252,12 +252,6 @@ class KnowledgeBaseEcoli(object):
 					self.list_of_dict_filenames.append(file_path)
 					self.new_gene_added_data.update({f: nested_attr + f})
 
-			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_rsem_tpm_mean.tsv')
-			if os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)):
-				self.list_of_dict_filenames.append(rnaseq_path)
-				self.new_gene_added_data.update({'rna_seq_data.rnaseq_rsem_tpm_mean':
-													 nested_attr + 'rnaseq_rsem_tpm_mean'})
-
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
 			self._load_tsv(FLAT_DIR, os.path.join(FLAT_DIR, filename))
