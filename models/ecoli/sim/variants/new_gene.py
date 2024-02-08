@@ -264,7 +264,3 @@ def new_gene(sim_data, index):
 			"to {}".format(trl_eff_value)
 			+ "Simulation of condition {}.".format(sim_data.ordered_conditions[condition_index])
 		), sim_data
-
-### TODO: write metadata for this variant
-### TODO: merge all other new gene variants into this single one
-### TODO: Delete all other new gene variants
