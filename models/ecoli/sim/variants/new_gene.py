@@ -62,6 +62,13 @@ CONTROL_OUTPUT = dict(
 # OPTION: Set = -1 to skip induction or knockout shifts.
 NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
 NEW_GENE_KNOCKOUT_GEN = -1 # Generation index to knock out new gene expression
+assert NEW_GENE_INDUCTION_GEN != 0, (
+	"New genes must be induced after the first generation to establish an"
+	"accurate shift.")
+if NEW_GENE_KNOCKOUT_GEN != -1:
+	assert NEW_GENE_KNOCKOUT_GEN > NEW_GENE_INDUCTION_GEN, (
+		"New genes are knocked out by default, so induction should happen"
+		" before knockout.")
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts

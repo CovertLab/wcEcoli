@@ -12,13 +12,14 @@ Addition of new genes to the chromosome<br>(in progress)
     * `gene_sequences.tsv` - Sequences of genes to be inserted
     * `rnas.tsv` - RNAs corresponding to those genes
     * `proteins.tsv` - Proteins corresponding to those genes
-    *  `rnaseq_rsem_tpm_mean.tsv` - Best practices: set these each to 0 (so that the Parca does not try to correct for the new genes) and modify basal expression levels later via variant (more details below)
   * Currently supported optional data files:
     * `rna_half_lives.tsv` - Can specify if desired, otherwise will default to average of the other RNAs
     * `protein_half_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
 
 With `new_genes_option != 'off'`, `KnowledgeBaseEcoli` uses the information in the new gene subdirectory, which is specified in the command line via `new_genes_option`, to make the addition of the gene to the Ecoli chromosome.
-For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the Parca.
+For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the Parca. 
+Note that even though the gene is added, it will have no expression (i.e. is knocked-out) unless a new
+expression level and translation efficiency are set using `models/ecoli/sim/variants/new_gene.py`.
 
 The following steps occur in incorporating the new genes into the chromosome:
 * Read in all data tables from the specified `<new_genes_option>` (e.g. 'gfp'), and join rows with information about the new genes to the corresponding tables with information about the original genes.
@@ -30,18 +31,13 @@ The following steps occur in incorporating the new genes into the chromosome:
 
 ---
 <b>Variants </b><br>
-* New Gene Expression
-  * `models/ecoli/variants/new_gene_expression.py` - index specifies the factor to multiply the expression level of all new genes by
-    * 0: no new gene expression
-    * 1: factor = 10^0 = 1
-    * x > 1: factor = 10^(x-1)
 
-
-
-* New Gene Expression and Translation Effieciency
-  * `models/ecoli/variants/new_gene_expression_and_translation_efficiency.py` - index specifies both the 
+# TODO: add media condition info
+* New Gene (Expression, Translation Efficiency, and Induction/Knockout)
+  * `models/ecoli/variants/new_gene.py`
+  * Variant index specifies both the 
     factor to multiply the expression level of all new genes by and the 
-    value to use for translation efficiency for all new genes. Provide a 
+    value to use for translation efficiency for all new genes. User must provide a 
     list of the new gene 
     expression factors and the translation efficiency values, and all pairs 
     from those lists will be run. The mapping between variant indices and 
@@ -53,30 +49,27 @@ The following steps occur in incorporating the new genes into the chromosome:
           new gene expression variant factor and an index for a list of new gene
           translation efficiency values 
         * separator = number of translation efficiency values to try 
-        * expression index = index div separator + 1 
-        * translation efficiency index = index mod separator
+        * expression_index = index div separator + 1
+        * translation_efficiency_index = index mod separator
     * Example: 
       * `NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8]`
+        * `NEW_GENE_EXPRESSION_FACTORS[expression_index]` specifies the factor to multiply the expression level of all new genes by
+            * 0: no new gene expression
+            * 1: factor = 10^0 = 1
+            * x > 1: factor = 10^(x-1)
       * `NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [2.5, 1, 0.5]`
+        * `NEW_GENE_TRANSLATION_EFFICIENCY_VALUES[translation_efficiency_index]` will be used as the translation efficiencies of all new genes
       * `SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES) = 3`
       * Variant Index: (New Gene Expression Factor, Translation Efficiency)
         * 0: (0, 0), 1: (7, 1), 2: (7, 0.5), 3: (7, 2.5), 4: (8, 1), 5: (8, 
           0.5), 6: (8, 2.5)
-
-
-
-* New Gene Expression and Translation Efficiency Internal Shift
-  * `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
-  * The indices, new gene expression factors, and the translation efficiency 
-    values for this variant work the same as the New Gene Expression 
-    and Translation Efficiency variant above.
-  * The key difference for this variant is that you can make the changes to 
+  * You can make the changes to 
     the new genes at the beginning of a specified generation. You can 
     specify a `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` in 
     `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
-    * From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will be 
-      transcribed and translated based upon the default parameters in wildtype 
-      simulation (i.e. from the flat files).
+    * From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will not be 
+      transcribed or translated because new genes are knocked out by default in wildtype 
+      simulation.
     * From generations [`NEW_GENE_INDUCTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`), 
       the new genes will be transcribed and translated using the expression 
       factor and translation efficiency value from the variant index.
@@ -86,11 +79,12 @@ The following steps occur in incorporating the new genes into the chromosome:
     * If you don't intend to do new gene induction and/or knockout, you can 
       set `NEW_GENE_INDUTION_GEN = -1` and/or `NEW_GENE_KNOCKOUT_GEN = -1`, 
       respectively.
+    * Note: `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` cannot be set to 0.
+      * New genes must be induced after the first generation to establish an acurate shift.
+      * New genes are knocked out by default, so induction should happen before knockout.
     * Note: if the values you choose for `NEW_GENE_INDUTION_GEN` 
       and `NEW_GENE_KNOCKOUT_GEN` are greater than the number of 
       generations you run, then you won't see their corresponding effects.
-  * This variant assumes that new genes are very minimally expressed in 
-    the wildtype simulation (i.e. does not explicitly knockout new genes). 
   * If you'd like different behavior (e.g. knock in, knock out, then 
     knock in again) you can define your own variant using the 
     internal shift variant framework described in 
@@ -164,13 +158,13 @@ late generation plots in your analysis, as the early generations may be impacted
 
 `python runscripts/manual/runParca.py --new-genes gfp`
 
-`python runscripts/manual/runSim.py --variant new_gene_expression 0 10 --generations 8`   
-Note: The numbers after new_gene_expression must be integers. A different simulation will run for each value between the first and second specified numbers (inclusive). Note that for higher numbers, you may see `RuntimeError: GLP_EFAIL: Solver failure`. This is a representation of cell death, as this failure usually arises due to strain from insufficient cellular resources.
+`python runscripts/manual/runSim.py --variant new_gene 0 10 --generations 8`   
+Note: The numbers after new_gene must be integers. A different simulation will run for each value between the first and second specified numbers (inclusive). Note that for higher numbers, you may see `RuntimeError: GLP_EFAIL: Solver failure`. This is a representation of cell death, as this failure usually arises due to strain from insufficient cellular resources.
 
 
-`python models/ecoli/analysis/multigen/newGeneCounts.py` 
+`python models/ecoli/analysis/multigen/new_gene_counts.py` 
 
-`python models/ecoli/analysis/variant/newGeneCounts.py`
+`python models/ecoli/analysis/variant/new_gene_counts.py`
 
 `python models/ecoli/analysis/variant/doubling_time_histogram.py`
 
