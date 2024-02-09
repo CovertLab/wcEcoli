@@ -122,13 +122,13 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
-	os.path.join("new_gene_data", "new_gene_baseline_expression.tsv"),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = [
 	"dna_supercoiling.tsv",
 	"parameters.tsv",
 	"mass_parameters.tsv",
+	os.path.join("new_gene_data", "new_gene_baseline_expression_parameters.tsv"),
 	]
 
 REMOVED_DATA = {
