@@ -486,7 +486,7 @@ class WorkflowBuilder:
 			"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 			}
 
-		if VARIANT == 'new_gene':
+		if VARIANT == 'new_gene_internal_shift':
 			# Record the values used in this variant for analysis scripts
 			self.metadata.update({
 				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,

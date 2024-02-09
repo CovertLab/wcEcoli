@@ -104,7 +104,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			total_init_sims=args.total_init_sims or args.init_sims,
 			)
 
-		if variant_type == 'new_gene':
+		if variant_type == 'new_gene_internal_shift':
 			# Record the values used in this variant for analysis scripts
 			metadata.update(
 				new_gene_expression_factors=NEW_GENE_EXPRESSION_FACTORS,
