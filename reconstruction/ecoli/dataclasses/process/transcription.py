@@ -1951,5 +1951,5 @@ class Transcription(object):
 		Load baseline values for new gene expression in all simulations.
 		"""
 
-		self.new_gene_expression_baselines = raw_data.new_gene_data.new_gene_baseline_expression[0]
-
+		self.new_gene_expression_baselines = (
+			raw_data.new_gene_data.new_gene_baseline_expression_parameters)
