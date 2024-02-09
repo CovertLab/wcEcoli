@@ -63,11 +63,15 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax.hist(
 			active_RNAP_counts1, bins=bins, alpha=0.5,
-			label=f'reference ({np.mean(active_RNAP_counts1):.2f} $\pm$ {np.std(active_RNAP_counts1):.2f}, n={len(active_RNAP_counts1)})')
+			label=f'reference ({np.mean(active_RNAP_counts1):.2f} $\pm$'
+				  f' {np.std(active_RNAP_counts1):.2f},'
+				  f' n={len(active_RNAP_counts1)})')
 		ax.axvline(np.mean(active_RNAP_counts1), ls='--', lw=2, c='C0')
 		ax.hist(
 			active_RNAP_counts2, bins=bins, alpha=0.5,
-			label=f'input ({np.mean(active_RNAP_counts2):.2f} $\pm$ {np.std(active_RNAP_counts2):.2f}, n={len(active_RNAP_counts2)})')
+			label=f'input ({np.mean(active_RNAP_counts2):.2f} $\pm$'
+				  f' {np.std(active_RNAP_counts2):.2f},'
+				  f' n={len(active_RNAP_counts2)})')
 		ax.axvline(np.mean(active_RNAP_counts2), ls='--', lw=2, c='C1')
 
 		ax.legend(prop={'size': 6})

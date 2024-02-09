@@ -13,7 +13,7 @@ variants = [
 	'mene_params',
 	'metabolism_kinetic_objective_weight',
 	'metabolism_secretion_penalty',
-	'new_gene',
+	'new_gene_internal_shift',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',

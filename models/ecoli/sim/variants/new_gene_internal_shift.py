@@ -63,8 +63,7 @@ CONTROL_OUTPUT = dict(
 NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
 NEW_GENE_KNOCKOUT_GEN = -1 # Generation index to knock out new gene expression
 assert NEW_GENE_INDUCTION_GEN != 0, (
-	"New genes must be induced after the first generation to establish an"
-	"accurate shift.")
+	"New genes must be induced after the first generation.")
 if NEW_GENE_KNOCKOUT_GEN != -1:
 	assert NEW_GENE_KNOCKOUT_GEN > NEW_GENE_INDUCTION_GEN, (
 		"New genes are knocked out by default, so induction should happen"
@@ -76,8 +75,9 @@ NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
-assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
-	"The first new gene expression factor should always be the control sim"
+assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, (
+	"The first new gene expression factor should always be the control sim")
+
 
 def condition(sim_data, condition_index):
 	"""
@@ -99,9 +99,9 @@ def condition(sim_data, condition_index):
 	condition_label = condition_labels[condition_index]
 	sim_data.condition = condition_label
 	sim_data.external_state.current_timeline_id = condition_label
-	sim_data.external_state.saved_timelines[condition_label] = [
-		(0, sim_data.conditions[condition_label]["nutrients"])
-	]
+	sim_data.external_state.saved_timelines[condition_label] = [(
+		0, sim_data.conditions[condition_label]["nutrients"])]
+
 
 def determine_new_gene_ids_and_indices(sim_data):
 	"""
@@ -226,7 +226,7 @@ def knockout_induced_new_gene_expression(sim_data, index):
 			monomer_index] = trl_eff_value
 
 
-def new_gene(sim_data, index):
+def new_gene_internal_shift(sim_data, index):
 	"""
 	Apply variant. Specifies that from NEW_GENE_INDUCTION_GEN to
 	NEW_GENE_KNOCKOUT_GEN, the new gene expression and translation efficiency

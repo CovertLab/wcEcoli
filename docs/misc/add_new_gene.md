@@ -17,7 +17,7 @@ Addition of new genes to the chromosome<br>(in progress)
     * `protein_half_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
 
 With `new_genes_option != 'off'`, `KnowledgeBaseEcoli` uses the information in the new gene subdirectory, which is specified in the command line via `new_genes_option`, to make the addition of the gene to the Ecoli chromosome.
-For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the Parca. 
+For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the ParCa. 
 Note that even though the gene is added, it will have no expression (i.e. is knocked-out) unless a new
 expression level and translation efficiency are set using `models/ecoli/sim/variants/new_gene.py`.
 
@@ -33,7 +33,7 @@ The following steps occur in incorporating the new genes into the chromosome:
 <b>Variants </b><br>
 
 * New Gene (Expression, Translation Efficiency, and Induction/Knockout)
-  * `models/ecoli/variants/new_gene.py`
+  * `models/ecoli/variants/new_gene_internal_shift.py`
   * Variant index specifies media condition,
     factor to multiply the expression level of all new genes by, and the 
     value to use for translation efficiency for all new genes. User must provide a 
@@ -78,7 +78,7 @@ The following steps occur in incorporating the new genes into the chromosome:
         * 1000: (with amino acids, 0, 0), 1001: (with amino acids, 7, 1), 1002: (with amino acids, 7, 0.5), 1003: (with amino acids, 7, 2.5), 1004: (with amino acids, 8, 1), 1005: (with amino acids, 8, 
           0.5), 1006: (with amino acids, 8, 2.5)
   * You can make the changes to 
-    the new genes at the beginning of a specified generation. You can 
+    the new genes at the beginning of a specified daughter generation. You can 
     specify a `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` in 
     `models/ecoli/variants/new_gene_expression_and_translation_efficiency_internal_shift.py`
     * From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will not be 
@@ -122,12 +122,12 @@ The following steps occur in incorporating the new genes into the chromosome:
   * `models/ecoli/analysis/variant/new_gene_counts.py` creates histograms and 
     scatterplots for each new gene - one with the mRNA counts for that new gene, and one with the protein counts for that new gene, both are colored by variant index
   * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with the proportion of seeds that successfully reached the maximum generation in the simulation, both colored by variant index
-  * `models/ecoli/analysis/variant/ribosome_counts_histogram.py` creates a histogram of the ribosome counts, colored by variant index
+  * `models/ecoli/analysis/variant/active_ribosome_counts_histogram.py` creates a histogram of the active ribosome counts, colored by variant index
   * `models/ecoli/analysis/variant/rnap_counts_histogram.py` creates a histogram of the RNA polymerase counts, colored by variant index
   * `models/ecoli/analysis/variant/ppgpp_concentration_histogram.py` creates a histogram of the ppGpp concentration, colored by variant index
   * `models/ecoli/analysis/variant/new_gene_protein_mass_fraction_histogram.py` creates a histogram of the proportion of total protein mass that is accounted for by new gene proteins, colored by variant index
 
-Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In some of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
 * New Gene Expression and Translation Efficiency
   * `models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py` plots a number of heatmaps, where each square in the heatmap 
@@ -172,7 +172,7 @@ late generation plots in your analysis, as the early generations may be impacted
 
 `python runscripts/manual/runParca.py --new-genes gfp`
 
-`python runscripts/manual/runSim.py --variant new_gene 0 10 --generations 8`   
+`python runscripts/manual/runSim.py --variant new_gene_internal_shift 0 10 --generations 8`   
 Note: The numbers after new_gene must be integers. A different simulation will run for each value between the first and second specified numbers (inclusive). Note that for higher numbers, you may see `RuntimeError: GLP_EFAIL: Solver failure`. This is a representation of cell death, as this failure usually arises due to strain from insufficient cellular resources.
 
 

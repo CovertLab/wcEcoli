@@ -22,7 +22,7 @@ import os
 import sys
 from typing import Tuple
 
-from models.ecoli.sim.variants.new_gene import (NEW_GENE_EXPRESSION_FACTORS,
+from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSION_FACTORS,
 	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN)
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask

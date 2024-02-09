@@ -340,8 +340,8 @@ class SimulationDataEcoli(object):
 		Adjusting the final expression values of new genes must be handled
 		separately because the baseline new gene expression values need to be
 		set to small non-zero values using data loaded from
-		flat/new_gene_data/new_gene_baseline_expression_parameters.tsv, as new genes are
-		knocked out by default.
+		flat/new_gene_data/new_gene_baseline_expression_parameters.tsv,
+		as new genes are knocked out by default.
 
 		Args:
 			gene_indices: Indices of new genes to adjust
