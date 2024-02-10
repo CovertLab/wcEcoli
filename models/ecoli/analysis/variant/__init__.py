@@ -25,6 +25,7 @@ ACTIVE = [
 	"param_sensitivity.py",
 	"ppgpp_conc.py",
 	"ppgpp_concentration_histogram.py",
+	"ppgpp_concentration_timetraces.py",
 	"remove_aa_inhibition.py",
 	"ribosome_crowding.py",
 	"rnap_counts_histogram.py",
