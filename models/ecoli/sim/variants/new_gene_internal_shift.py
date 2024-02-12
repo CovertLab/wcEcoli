@@ -1,8 +1,9 @@
 """
 Compare the impacts of increasing expression level and
-increasing or decreasing the translational efficiency of new genes, when
-induced or knocked out after a particular generation. This variant assumes that
-new genes are very minimally expressed in the wildtype simulation.
+increasing or decreasing the translational efficiency of new genes, with the
+option to induce and/or knock out new gene expression after a particular
+generation. This variant assumes that new genes are present but not expressed in
+the wildtype simulation (new genes are knocked out by default).
 
 - From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will be
 	transcribed and translated based upon the default parameters in wildtype
@@ -13,6 +14,10 @@ new genes are very minimally expressed in the wildtype simulation.
 - From generations [`NEW_GENE_KNOCKOUT_GEN`, `FINAL_SHIFT_GEN`), new
 	gene expression probabilities will be set to 0 corresponding to new
 	gene knockout.
+
+Modifies:
+	sim_data.condition
+	sim_data.external_state.current_timeline_id
 
 Modifies (after shift):
 	sim_data.process.transcription.rna_synth_prob
@@ -26,12 +31,16 @@ Modifies (after shift):
 
 Expected variant indices (int, positive):
 	0: control (knockout new gene expression)
-	z > 0: converted to an index for a list of
-		new gene expression variant factor and an index for a list of new gene
+	z > 0: converted to an index for a media condition, an index for a list of
+		new gene expression variant factors, and an index for a list of new gene
 		translation efficiency values
+
+		media condition index = index div 1000
+		index remainder = index - media condition index
+
 		separator = number of translation efficiency values to try
-		expression index = index div separator + 1
-		translation efficiency index = index mod separator
+		expression index = remainder index div separator + 1
+		translation efficiency index = remainder index mod separator
 
 New gene expression factor:
 	x > 0: multiply new gene expression by a factor of 10^(x-1)
@@ -52,7 +61,13 @@ CONTROL_OUTPUT = dict(
 # running, you will not see their effects.
 # OPTION: Set = -1 to skip induction or knockout shifts.
 NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
-NEW_GENE_KNOCKOUT_GEN = 2 # Generation index to knock out new gene expression
+NEW_GENE_KNOCKOUT_GEN = -1 # Generation index to knock out new gene expression
+assert NEW_GENE_INDUCTION_GEN != 0, (
+	"New genes must be induced after the first generation.")
+if NEW_GENE_KNOCKOUT_GEN != -1:
+	assert NEW_GENE_KNOCKOUT_GEN > NEW_GENE_INDUCTION_GEN, (
+		"New genes are knocked out by default, so induction should happen"
+		" before knockout.")
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
@@ -60,8 +75,32 @@ NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
-assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, \
-	"The first new gene expression factor should always be the control sim"
+assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, (
+	"The first new gene expression factor should always be the control sim")
+
+
+def condition(sim_data, condition_index):
+	"""
+	Condition variant for simulations in different environmental conditions
+
+	Modifies:
+		sim_data.condition
+		sim_data.external_state.current_timeline_id
+
+	Expected variant indices (dependent on sim_data.ordered_conditions and should
+	be the same order as rows in condition_defs.tsv):
+		0: control (minimal media)
+		1: with amino acids
+		2: acetate
+		3: succinate
+		4: minimal media (anaerobic)
+	"""
+	condition_labels = sim_data.ordered_conditions
+	condition_label = condition_labels[condition_index]
+	sim_data.condition = condition_label
+	sim_data.external_state.current_timeline_id = condition_label
+	sim_data.external_state.saved_timelines[condition_label] = [(
+		0, sim_data.conditions[condition_label]["nutrients"])]
 
 
 def determine_new_gene_ids_and_indices(sim_data):
@@ -155,7 +194,7 @@ def induce_new_genes(sim_data, index):
 		gene_index = new_gene_indices[i]
 		monomer_index = new_gene_monomer_indices[i]
 
-		sim_data.adjust_final_expression([gene_index], [expression_factor])
+		sim_data.adjust_new_gene_final_expression([gene_index], [expression_factor])
 		sim_data.process.translation.translation_efficiencies_by_monomer[
 			monomer_index] = trl_eff_value
 
@@ -187,7 +226,7 @@ def knockout_induced_new_gene_expression(sim_data, index):
 			monomer_index] = trl_eff_value
 
 
-def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, index):
+def new_gene_internal_shift(sim_data, index):
 	"""
 	Apply variant. Specifies that from NEW_GENE_INDUCTION_GEN to
 	NEW_GENE_KNOCKOUT_GEN, the new gene expression and translation efficiency
@@ -198,9 +237,14 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	mRNAs have the same translation efficiency as they did when they were
 	transcribed.
 	"""
+	# Set media condition
+	condition_index = index // 1000
+	condition(sim_data, condition_index)
+
 	# Map variant index to expression factor and tranlsation efficiency value
+	index_remainder = index - condition_index * 1000
 	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
-		sim_data, index)
+		sim_data, index_remainder)
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
@@ -210,18 +254,20 @@ def new_gene_expression_and_translation_efficiency_internal_shift(sim_data, inde
 	# reloaded from the file between generations
 	if NEW_GENE_INDUCTION_GEN != -1:
 		sim_data.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
-			(induce_new_genes, index)]
+			(induce_new_genes, index_remainder)]
 	if NEW_GENE_KNOCKOUT_GEN != -1:
 		sim_data.internal_shift_dict[NEW_GENE_KNOCKOUT_GEN] = [
-			(knockout_induced_new_gene_expression, index)]
+			(knockout_induced_new_gene_expression, index_remainder)]
 
 	# Variant descriptions to save to metadata
 	if index == 0:
 		return CONTROL_OUTPUT, sim_data
 
 	return dict(
-		shortName = "{}_NGEXP_TRLEFF_INTERNAL_SHIFT",
+		shortName = "{}_NGEXP_TRLEFF_INTERNAL_SHIFT."
+			+ "{}_env".format(sim_data.ordered_conditions[condition_index]),
 		desc = "Changed expression of new genes by variant index {}.".format(
 			expression_factor) + ". Set translation efficiency of new genes "
-								 "to {}".format(trl_eff_value)
+			"to {}".format(trl_eff_value)
+			+ "Simulation of condition {}.".format(sim_data.ordered_conditions[condition_index])
 		), sim_data
