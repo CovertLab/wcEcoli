@@ -226,36 +226,45 @@ class KnowledgeBaseEcoli(object):
 					})
 
 		if self.new_genes_option != 'off':
-
 			new_gene_subdir = new_genes_option
-			new_gene_path = os.path.join('new_gene_data',new_gene_subdir)
-			assert os.path.isdir(os.path.join(FLAT_DIR,new_gene_path)), \
-				"This new_genes_data subdirectory is invalid."
+			new_gene_path = os.path.join('new_gene_data', new_gene_subdir)
+			assert os.path.isdir(os.path.join(FLAT_DIR, new_gene_path)), (
+				"This new_genes_data subdirectory is invalid.")
 			nested_attr = 'new_gene_data.' + new_gene_subdir + "."
 
 			# These files do not need to be joined to existing files
-			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'insertion_location.tsv'))
-			self.list_of_dict_filenames.append(os.path.join(new_gene_path, 'gene_sequences.tsv'))
+			self.list_of_dict_filenames.append(
+				os.path.join(new_gene_path, 'insertion_location.tsv'))
+			self.list_of_dict_filenames.append(
+				os.path.join(new_gene_path, 'gene_sequences.tsv'))
 
 			# These files need to be joined to existing files
-			new_gene_shared_files = ['genes', 'rnas', 'proteins',
-									 'rna_half_lives',
-									 'protein_half_lives_measured']
+			new_gene_shared_files = [
+				'genes',
+				'rnas',
+				'proteins',
+				'rna_half_lives',
+				'protein_half_lives_measured',
+				]
 			for f in new_gene_shared_files:
 				file_path = os.path.join(new_gene_path, f + '.tsv')
-				"""
-				if these files dont exist, fill in with default values at a
-				later point
-				"""
-				if os.path.isfile(os.path.join(FLAT_DIR, file_path)):
-					self.list_of_dict_filenames.append(file_path)
-					self.new_gene_added_data.update({f: nested_attr + f})
+				# If these files are empty, fill in with default values at a
+				# later point
+				assert os.path.isfile(os.path.join(FLAT_DIR, file_path)), (
+					f"File {f}.tsv must be present in the new_genes_data"
+					f" subdirectory {new_gene_subdir}.")
+				self.list_of_dict_filenames.append(file_path)
+				self.new_gene_added_data.update({f: nested_attr + f})
 
+			# RNA sequence data aso needs to be joined to an existing file,
+			# nested under the rna_seq_data
 			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_rsem_tpm_mean.tsv')
-			if os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)):
-				self.list_of_dict_filenames.append(rnaseq_path)
-				self.new_gene_added_data.update({'rna_seq_data.rnaseq_rsem_tpm_mean':
-													 nested_attr + 'rnaseq_rsem_tpm_mean'})
+			assert os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)), (
+				f"File rnaseq_rsem_tpm_mean.tsv must be present in the"
+				f" new_genes_data subdirectory {new_gene_subdir}.")
+			self.list_of_dict_filenames.append(rnaseq_path)
+			self.new_gene_added_data.update({
+				'rna_seq_data.rnaseq_rsem_tpm_mean': nested_attr + 'rnaseq_rsem_tpm_mean'})
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
@@ -264,7 +273,8 @@ class KnowledgeBaseEcoli(object):
 		for filename in self.list_of_parameter_filenames:
 			self._load_parameters(FLAT_DIR, os.path.join(FLAT_DIR, filename))
 
-		self.genome_sequence = self._load_sequence(os.path.join(FLAT_DIR, SEQUENCE_FILE))
+		self.genome_sequence = self._load_sequence(
+			os.path.join(FLAT_DIR, SEQUENCE_FILE))
 
 		self._prune_data()
 
@@ -279,14 +289,11 @@ class KnowledgeBaseEcoli(object):
 			insertion_sequence = self._get_new_gene_sequence(nested_attr)
 
 			insert_end = self._update_gene_locations(nested_attr, insert_pos)
-			self.new_gene_added_data.update({'genes':
-													  nested_attr+'genes'})
+			self.new_gene_added_data.update({'genes': nested_attr+'genes'})
 
-			self.genome_sequence = self.genome_sequence[:insert_pos] + \
-								   insertion_sequence + \
-								   self.genome_sequence[insert_pos:]
-			assert self.genome_sequence[insert_pos:(insert_end + 1)] == \
-				   insertion_sequence
+			self.genome_sequence = (self.genome_sequence[:insert_pos]
+				+ insertion_sequence + self.genome_sequence[insert_pos:])
+			assert self.genome_sequence[insert_pos:(insert_end + 1)] == insertion_sequence
 
 			self.added_data = self.new_gene_added_data
 			self._join_data()
@@ -340,7 +347,6 @@ class KnowledgeBaseEcoli(object):
 		if all data in a row in the file specifying rows to be removed matches
 		the same columns in the raw data file.
 		"""
-
 		# Check each pair of files to be removed
 		for data_attr, attr_to_remove in self.removed_data.items():
 			# Build the set of data to identify rows to be removed
@@ -376,7 +382,6 @@ class KnowledgeBaseEcoli(object):
 		Add rows that are specified in additional files. Data will only be added
 		if all the loaded columns from both datasets match.
 		"""
-
 		# Join data for each file with data to be added
 		for data_attr, attr_to_add in self.added_data.items():
 			# Get datasets to join
@@ -388,11 +393,12 @@ class KnowledgeBaseEcoli(object):
 			for attr in attr_to_add.split('.')[1:]:
 				added_data = getattr(added_data, attr)
 
-			# Check columns are the same for each dataset
-			col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
-			if col_diff:
-				raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
-					f'because columns do not match (different columns: {col_diff}).')
+			if added_data:  # Some new gene additional files may be empty
+				# Check columns are the same for each dataset
+				col_diff = set(data[0].keys()).symmetric_difference(added_data[0].keys())
+				if col_diff:
+					raise ValueError(f'Could not join datasets {data_attr} and {attr_to_add} '
+						f'because columns do not match (different columns: {col_diff}).')
 
 			# Join datasets
 			for row in added_data:
@@ -468,22 +474,20 @@ class KnowledgeBaseEcoli(object):
 		new_protein_data = getattr(nested_data,'proteins')
 
 		for row in new_genes_data:
-			assert row['id'].startswith("NG"), "ids of new genes must start " \
-											   "with NG"
+			assert row['id'].startswith("NG"), (
+				"ids of new genes must start with NG")
 		for row in new_RNA_data:
-			assert row['id'].startswith("NG"), "ids of new gene rnas must " \
-											   "start with NG"
+			assert row['id'].startswith("NG"), (
+				"ids of new gene RNAs must start with NG")
 		for row in new_protein_data:
-			assert row['id'].startswith("NG"), "ids of new gene proteins " \
-											   "must start with NG"
+			assert row['id'].startswith("NG"), (
+				"ids of new gene proteins must start with NG")
 		return
-
 
 	def _update_gene_insertion_location(self, nested_attr):
 		"""
 		Update insertion location of new genes to prevent conflicts.
 		"""
-
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
 		dna_sites_data = getattr(self, 'dna_sites')
@@ -494,8 +498,8 @@ class KnowledgeBaseEcoli(object):
 
 		insert_loc_data = getattr(nested_data, 'insertion_location')
 
-		assert len(insert_loc_data) == 1, 'each noncontiguous insertion should' \
-										  ' be in its own directory'
+		assert len(insert_loc_data) == 1, (
+			'each noncontiguous insertion should be in its own directory')
 		insert_pos = insert_loc_data[0]['insertion_pos']
 
 		if not tu_data:
@@ -512,17 +516,15 @@ class KnowledgeBaseEcoli(object):
 			site['common_name'] == 'TerC']
 		data_to_check += sites_data_to_check
 
-		conflicts = [row for row in data_to_check if
-					 ((row['left_end_pos'] is not None) and
-					  (row['left_end_pos'] != '')) and
-					 ((row['right_end_pos'] is not None) and
-					 (row['left_end_pos'] != '')) and
-					 (row['left_end_pos'] < insert_pos) and
-					 (row['right_end_pos'] >= insert_pos)]
+		conflicts = [
+			row for row in data_to_check
+			if ((row['left_end_pos'] is not None) and (row['left_end_pos'] != ''))
+			and ((row['right_end_pos'] is not None) and (row['left_end_pos'] != ''))
+			and (row['left_end_pos'] < insert_pos)
+			and (row['right_end_pos'] >= insert_pos)]
 		# Change insertion location to after conflicts
 		if conflicts:
-			shift = max([ sub['right_end_pos'] for sub in conflicts ]) - \
-					insert_pos + 1
+			shift = max([sub['right_end_pos'] for sub in conflicts]) - insert_pos + 1
 			insert_pos = insert_pos + shift
 
 		return insert_pos
@@ -538,12 +540,12 @@ class KnowledgeBaseEcoli(object):
 			insert_len: Length of new gene insertion
 
 		"""
-
 		for row in data:
 			left = row['left_end_pos']
 			right = row['right_end_pos']
-			if (left is not None and left != '') and (
-					right is not None and right != '') and left >= insert_pos:
+			if ((left is not None and left != '')
+					and (right is not None and right != '')
+					and left >= insert_pos):
 				row.update({'left_end_pos': left + insert_len})
 				row.update({'right_end_pos': right + insert_len})
 
@@ -552,7 +554,6 @@ class KnowledgeBaseEcoli(object):
 		Modify positions of original genes based upon the insertion location
 		of new genes. Returns end position of the gene insertion.
 		"""
-
 		genes_data = getattr(self, 'genes')
 		tu_data = getattr(self, 'transcription_units')
 		dna_sites_data = getattr(self, 'dna_sites')
@@ -565,9 +566,9 @@ class KnowledgeBaseEcoli(object):
 		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
 
 		for i in range(len(new_genes_data) - 1):
-			assert new_genes_data[i+1]['left_end_pos'] == new_genes_data[i][
-				'right_end_pos'] + 1, \
-				"gaps in new gene insertions are not supported at this time"
+			assert (new_genes_data[i+1]['left_end_pos']
+				== new_genes_data[i]['right_end_pos'] + 1), (
+				"gaps in new gene insertions are not supported at this time")
 
 		insert_end = new_genes_data[-1]['right_end_pos'] + insert_pos
 		insert_len = insert_end - insert_pos + 1
@@ -608,26 +609,26 @@ class KnowledgeBaseEcoli(object):
 
 		insertion_seq = Seq.Seq('')
 		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
-		assert new_genes_data[0]['left_end_pos'] == 0, \
-			'first gene in new sequence must start at relative coordinate 0'
+		assert new_genes_data[0]['left_end_pos'] == 0, (
+			'first gene in new sequence must start at relative coordinate 0')
 
 		for gene in new_genes_data:
 			if gene['direction'] == "+":
-				seq_row = next((row for row in seq_data
-								if row['id'] == gene['id']), None)
+				seq_row = next((
+					row for row in seq_data if row['id'] == gene['id']), None)
 				seq_string = seq_row['gene_seq']
 				seq_addition = Seq.Seq(seq_string)
 				insertion_seq += seq_addition
 			else:
-				seq_row = next((row for row in seq_data
-								if row['id'] == gene['id']), None)
+				seq_row = next((
+					row for row in seq_data if row['id'] == gene['id']), None)
 				seq_string = seq_row['gene_seq']
 				seq_addition = Seq.Seq(seq_string)
 				insertion_seq += seq_addition.reverse_complement()
 
-			assert len(seq_addition) == (gene['right_end_pos'] -
-				   gene['left_end_pos'] + 1),\
-				"left and right end positions must agree with actual " \
-				"sequence length for " + gene['id']
+			assert (len(seq_addition) == (
+				gene['right_end_pos'] - gene['left_end_pos'] + 1)), (
+				f"left and right end positions must agree with actual "
+				f"sequence length for {gene['id']}")
 
 		return insertion_seq
