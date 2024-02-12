@@ -13,7 +13,7 @@ from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_bulk_molecules, read_stacked_columns)
+	read_stacked_columns)
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
 
@@ -27,8 +27,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, validation_data2 = self.setup(input_sim_dir)
-
-		ppgpp_id = sim_data1.molecule_ids.ppGpp
 
 		def read_sims(ap):
 			all_ppgpp_timetraces = []
@@ -45,13 +43,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				time = read_stacked_columns(
 					cell_paths, 'Main', 'time',
 					remove_first=True).squeeze()
-				counts_to_molar = read_stacked_columns(
-					cell_paths, 'EnzymeKinetics', 'countsToMolar',
-					remove_first=True).squeeze()
-				ppgpp_count, = read_stacked_bulk_molecules(
-					cell_paths, [ppgpp_id],
-					remove_first=True)
-				ppgpp_conc = ppgpp_count * counts_to_molar * 1000  # uM
+				ppgpp_conc = read_stacked_columns(
+					cell_paths, 'GrowthLimits', 'ppgpp_conc',
+					remove_first=True).squeeze()  #uM
 
 				all_ppgpp_timetraces.append((time[1:], ppgpp_conc[1:]))
 				if time[-1] > t_max:
