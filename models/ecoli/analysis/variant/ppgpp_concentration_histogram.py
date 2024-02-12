@@ -1,100 +1,114 @@
 """
-Plot concentration of ppgpp for all generations, early generations,
-and/or late (i.e. not early) generations
+Plot histograms of ppGpp concentrations and compares the distributions across
+different variants.
 """
 
 import numpy as np
 from matplotlib import pyplot as plt
-import os.path
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, \
-	read_stacked_columns, stacked_cell_threshold_mask
-from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS\
-	as COLORS, labeled_indexable_hist
+from wholecell.analysis.analysis_tools import (
+	exportFigure, read_stacked_columns, stacked_cell_threshold_mask)
+from wholecell.analysis.plotting_tools import (
+	DEFAULT_MATPLOTLIB_COLORS as COLORS)
 
-# 1 to exclude cells that took full MAX_CELL_LENGTH, 0 otherwise
-exclude_timeout_cells = 1
+FONT_SIZE = 9
+CONCENTRATION_BOUNDS = [0, 200]  # (uM)
+N_BINS = 40
 
-"""
-1 to plot early (before MIN_LATE_CELL_INDEX), and late generations in
-addition to all generations
-"""
-exclude_early_gens = 1
+# Set True to exclude cells that hit time limit
+EXCLUDE_TIMEOUT_CELLS = True
 
-FONT_SIZE=9
-MAX_VARIANT = 10 # do not include any variant >= this index
-MAX_CELL_INDEX = 8 # do not include any generation >= this index
-
-"""
-generations before this may not be representative of dynamics 
-due to how they are initialized
-"""
-MIN_LATE_CELL_INDEX = 4
-
-MAX_CELL_LENGTH = 180
-if (exclude_timeout_cells==0):
-	MAX_CELL_LENGTH += 1000000
+# Remove first N gens from plot
+IGNORE_FIRST_N_GENS = 4
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		# print("Running analysis script with exclude_timeout_cells=",
-		# 	  exclude_timeout_cells,
-		# 	  " and exclude_early_gens=", exclude_early_gens)
+		max_cell_length = 180  # mins
+		if not EXCLUDE_TIMEOUT_CELLS:
+			max_cell_length += 1000000  # Arbitrary large number
 
-		ppgpp_counts = {}
-		generations = {}
+		# Data extraction
+		ppgpp_concentrations = {}
+		n_total_gens = self.ap.n_generation
+		variant_indexes = self.ap.get_variants()
 
-		variants = self.ap.get_variants()
-		for variant in variants:
-			if variant >= MAX_VARIANT:
-				continue
+		# Loop through all variant indexes
+		for variant_index in variant_indexes:
+			# Get all cells (within the generation range) of this variant index
+			all_cells = self.ap.get_cells(
+				variant=[variant_index],
+				generation=np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
+				only_successful=True)
 
-			all_cells = self.ap.get_cells(variant=[variant],
-										  only_successful=True)
 			if len(all_cells) == 0:
 				continue
 
+			# Get mask to exclude cells that timed out
 			exclude_timeout_cell_mask = stacked_cell_threshold_mask(
-				all_cells, 'Main', 'time', MAX_CELL_LENGTH,
+				all_cells, 'Main', 'time', max_cell_length,
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			all_cells_gens = np.array([int(os.path.basename(os.path.dirname(
-				cell_path))[-6:]) for cell_path in all_cells])[
-				exclude_timeout_cell_mask]
-			generations[variant] = all_cells_gens
 
-			# ppGpp counts
-			avg_ppgpp_counts = read_stacked_columns(
+			# Get average ppGpp concentrations from each cell
+			avg_ppgpp_concentrations = read_stacked_columns(
 				all_cells, 'GrowthLimits', 'ppgpp_conc',
-				remove_first=True,fun=lambda x: np.mean(x)).squeeze()
-			ppgpp_counts[variant] = avg_ppgpp_counts[exclude_timeout_cell_mask]
+				remove_first=True, fun=lambda x: np.mean(x)).squeeze()
+			ppgpp_concentrations[variant_index] = avg_ppgpp_concentrations[
+				exclude_timeout_cell_mask]
 
-		std_bin_width = 2.5
-		std_sf = 0
-		std_xlim = [10,130]
-		std_xlab = 'ppGpp conc (uM)'
+		n_variants = len(ppgpp_concentrations)
 
-		data_start = [0]
-		data_end = [MAX_CELL_INDEX]
-		plot_label = ['_all_gens']
-		if exclude_early_gens:
-			data_start += [0,MIN_LATE_CELL_INDEX]
-			data_end += [MIN_LATE_CELL_INDEX,MAX_CELL_INDEX]
-			plot_label += ['_early_gens', '_late_gens']
+		fig = plt.figure(figsize=(8, 2 * (n_variants + 1)))
+		bins = np.linspace(
+			CONCENTRATION_BOUNDS[0],
+			CONCENTRATION_BOUNDS[1],
+			N_BINS + 1
+			)
 
-		for j in range(len(data_start)):
-			_, axes = plt.subplots(1, 1, figsize=(10, 5))
-			labeled_indexable_hist(self, axes, ppgpp_counts, generations,
-								   data_start[j], data_end[j], COLORS,
-								   std_xlab, bin_width=std_bin_width, sf=std_sf)
-			plt.tight_layout()
-			exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j],
-						 metadata)
+		# First subplot overlays the histograms of all variants
+		ax0 = fig.add_subplot(n_variants + 1, 1, 1)
+		subplots = []
 
-			axes.set_xlim(std_xlim)
-			exportFigure(plt, plotOutDir, plotOutFileName + plot_label[j] +
-						 '_trimmed', metadata)
+		for i, (variant_index, rc) in enumerate(ppgpp_concentrations.items()):
+			color = COLORS[i % len(COLORS)]
+			ax0.hist(
+				rc, bins=bins, color=color, alpha=0.5,
+				label=f'Var {variant_index} (n={len(rc)}, {np.mean(rc):.1f} $\pm$ {np.std(rc):.1f})')
+
+			# Add vertical line at mean ppGpp concentrations
+			ax0.axvline(np.mean(rc), color=color, ls='--', lw=3, alpha=0.5)
+
+			# Later subplots show the histograms for each variant separately
+			ax = fig.add_subplot(n_variants + 1, 1, i + 2, sharex=ax0)
+			ax.hist(
+				rc, bins=bins, color=color, alpha=0.5,
+				)
+			ax.tick_params(labelsize=FONT_SIZE)
+			ax.spines["top"].set_visible(False)
+			ax.spines["right"].set_visible(False)
+			subplots.append(ax)
+
+		# Set ylims of all subplots to be equal to the first subplot
+		ax0_ylim = ax0.get_ylim()
+		for ax in subplots:
+			ax.set_ylim(ax0_ylim)
+
+		ax0.legend()
+
+		ax0.set_xlim(*CONCENTRATION_BOUNDS)
+		ax0.set_xticks(
+			np.linspace(CONCENTRATION_BOUNDS[0], CONCENTRATION_BOUNDS[1], 11)
+			)
+		ax0.tick_params(labelsize=FONT_SIZE)
+
+		ax0.set_xlabel('ppGpp concentrations (uM)', fontsize=FONT_SIZE)
+		ax0.spines["top"].set_visible(False)
+		ax0.spines["right"].set_visible(False)
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
 
 if __name__ == "__main__":
 	Plot().cli()
