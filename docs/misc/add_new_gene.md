@@ -115,12 +115,12 @@ The following steps occur in incorporating the new genes into the chromosome:
   * `models/ecoli/analysis/variant/new_gene_counts.py` creates histograms and 
     scatterplots for each new gene - one with the mRNA counts for that new gene, and one with the protein counts for that new gene, both are colored by variant index
   * `models/ecoli/analysis/variant/doubling_time_histogram.py` creates two plots - one with a histogram of the doubling time, and one with the proportion of seeds that successfully reached the maximum generation in the simulation, both colored by variant index
-  * `models/ecoli/analysis/variant/ribosome_counts_histogram.py` creates a histogram of the ribosome counts, colored by variant index
+  * `models/ecoli/analysis/variant/active_ribosome_counts_histogram.py` creates a histogram of the ribosome counts, colored by variant index
   * `models/ecoli/analysis/variant/rnap_counts_histogram.py` creates a histogram of the RNA polymerase counts, colored by variant index
   * `models/ecoli/analysis/variant/ppgpp_concentration_histogram.py` creates a histogram of the ppGpp concentration, colored by variant index
   * `models/ecoli/analysis/variant/new_gene_protein_mass_fraction_histogram.py` creates a histogram of the proportion of total protein mass that is accounted for by new gene proteins, colored by variant index
 
-Note: for the variant scripts, the average value for each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
+Note: for the variant scripts, the average value for each generation is plotted, except for the plot for active ribosomes, where the initial count from each generation is plotted. These variant scripts can be used to analyze the impact that increasing new gene expression level has on the cell. In each of these scripts, you can decide whether to exlcude generations that reached the maximum simulation time. In addition, there is an option for three separate figures to be created to encompass all generations, early generations (0-3), and late generations (4 and onwards). It is recommended to reference the late generation plots in your analysis, as the early generations may be impacted by the initialization process and may not be the most representative.
 
 * New Gene Expression and Translation Efficiency
   * `models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py` plots a number of heatmaps, where each square in the heatmap 
