@@ -40,6 +40,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import math
 
+from models.ecoli.sim.variants.new_gene_internal_shift import (
+	get_new_gene_expression_factor_and_translation_efficiency,
+	determine_new_gene_ids_and_indices)
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
@@ -2250,30 +2253,46 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	"""
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		heatmaps_to_make = set(HEATMAPS_TO_MAKE_LIST)
+
 		with open(simDataFile, 'rb') as f:
 			self.sim_data = pickle.load(f)
 
-		# Determine new gene ids
-		mRNA_sim_data = self.sim_data.process.transcription.cistron_data.struct_array
-		monomer_sim_data = self.sim_data.process.translation.monomer_data.struct_array
-		self.new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
-		mRNA_monomer_id_dict = dict(
-			zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
-		self.new_gene_monomer_ids = [
-			mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in self.new_gene_mRNA_ids]
-		if len(self.new_gene_mRNA_ids) == 0:
-			print("This plot is intended to be run on simulations where the"
-				  " new gene option was enabled, but no new gene mRNAs were "
-				  "found.")
-			return
-		if len(self.new_gene_monomer_ids) == 0:
-			print("This plot is intended to be run on simulations where the "
-				  "new gene option was enabled, but no new gene proteins "
-				  "were found.")
-			return
-		assert len(self.new_gene_monomer_ids) == len(self.new_gene_mRNA_ids),\
-			'number of new gene monomers and mRNAs should be equal'
+		# Determine new gene mRNA and monomer ids
+		(self.new_gene_mRNA_ids, self.new_gene_indices, self.new_gene_monomer_ids,
+			self.new_gene_monomer_indices) = determine_new_gene_ids_and_indices(self.sim_data)
+
+		# Map variant indexes to parameters used for new genes
+		assert ('new_gene_expression_factors' in metadata and
+				'new_gene_translation_efficiency_values' in metadata), (
+			"This plot is intended to be run on simulations where the"
+			" new gene expression-translation efficiency variant was "
+			"enabled, but no parameters for this variant were found.")
+		new_gene_expression_factors = metadata['new_gene_expression_factors']
+		new_gene_translation_efficiency_values = metadata[
+			'new_gene_translation_efficiency_values']
+
+		variants = self.ap.get_variants()
+		variant_index_to_values = {}
+		variant_index_to_list_indices = {}
+		variant_mask = np.zeros((  # Track whether we ran this sim
+			len(new_gene_translation_efficiency_values),
+			len(new_gene_expression_factors)), dtype=bool)
+		for index in variants:
+			condition_index = index // 1000
+			index_remainder = index - condition_index * 1000
+
+			(expression_list_index, trl_eff_list_index, expression_variant_index,
+			trl_eff_value) = get_new_gene_expression_factor_and_translation_efficiency(
+				self.sim_data, index_remainder)
+
+			expression_variant_index = new_gene_expression_factors[expression_list_index]
+			trl_eff_value = new_gene_translation_efficiency_values[trl_eff_list_index]
+
+			variant_index_to_values[index] = np.array([
+				expression_variant_index, trl_eff_value])
+			variant_index_to_list_indices[index] = np.array([
+				expression_list_index, trl_eff_list_index])
+			variant_mask[trl_eff_list_index, expression_list_index] = True
 
 		"""
 		Details needed to create all possible heatmaps
@@ -2553,9 +2572,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 1,
 				 },
 		}
+
+		# Check validity of requested heatmaps and fill in default values where needed
+		heatmaps_to_make = set(HEATMAPS_TO_MAKE_LIST)
 		assert "completed_gens_heatmap" not in heatmaps_to_make, \
 			"the completed_gens_heatmap is run by default, do not include in heatmaps_to_make"
-		# Check validity of requested heatmaps and fill in default values where needed
 		self.total_heatmaps_to_make = 0
 		for h in heatmaps_to_make:
 			assert h in self.heatmap_details, "Heatmap " + h + " is not an option"
@@ -2575,7 +2596,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'num_digits_rounding', default_num_digits_rounding)
 			self.heatmap_details[h].setdefault(
 				'box_text_size', default_box_text_size)
-
 			if not h.startswith("new_gene_"):
 				self.total_heatmaps_to_make += 1
 			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
@@ -2585,68 +2605,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			else:
 				self.total_heatmaps_to_make += len(self.new_gene_mRNA_ids)
 
-		# TODO REPLACE MAPPING WITH FUNCTION FROM VARIANT?
-		# Map variant indices to expression factors and translation efficiency
-		# values
-
-
-		if 'new_gene_expression_factors' not in metadata or \
-				'new_gene_translation_efficiency_values' not in metadata:
-
-			############
-			### TODO DELETE AFTER SHIFT VARIANT WRITING TO METADATA IS FIXED
-			# Currently needed for backwards compatibility with a Sherlock batch
-			if metadata["variant"] != "new_gene_expression_and_translation_efficiency_internal_shift":
-			############
-				print("This plot is intended to be run on simulations where the"
-					  " new gene expression-translation efficiency variant was "
-					  "enabled, but no parameters for this variant were found.")
-				return
-
-		############
-		### TODO DELETE AFTER SHIFT VARIANT WRITING TO METADATA IS FIXED
-		# Currently needed for backwards compatibility with a Sherlock batch
-		if metadata["variant"] == "new_gene_expression_and_translation_efficiency_internal_shift":
-			new_gene_expression_factors= [0, 7, 8, 9, 10, 11, 12, 13]
-			new_gene_translation_efficiency_values = [10, 5, 1, 0.1, 0]
-			new_gene_translation_efficiency_values = [10, 5, 1, 0.1, 0]
-		else:
-		############
-			new_gene_expression_factors = metadata['new_gene_expression_factors']
-			new_gene_translation_efficiency_values = metadata[
-				'new_gene_translation_efficiency_values']
-
-		separator = len(new_gene_translation_efficiency_values)
-		variants = self.ap.get_variants()
-		variant_index_to_values = {}
-		variant_index_to_list_indices = {}
-		variant_mask = np.zeros(( # Track whether we ran this sim
-			len(new_gene_translation_efficiency_values),
-			len(new_gene_expression_factors)), dtype=bool)
-		for index in variants:
-			if index == 0:
-				expression_list_index = 0
-				trl_eff_list_index = len(
-					new_gene_translation_efficiency_values) - 1
-				expression_variant_index = 0
-				# Note: this value should not matter since gene is knocked out
-				trl_eff_value = 0
-			else:
-				trl_eff_list_index = index % separator
-				if trl_eff_list_index == 0:
-					expression_list_index = index // separator
-				else:
-					expression_list_index = index // separator + 1
-
-				expression_variant_index = new_gene_expression_factors[expression_list_index]
-				trl_eff_value = new_gene_translation_efficiency_values[trl_eff_list_index]
-			variant_index_to_values[index] = np.array([
-				expression_variant_index, trl_eff_value])
-			variant_index_to_list_indices[index] = np.array([
-				expression_list_index, trl_eff_list_index])
-			variant_mask[trl_eff_list_index, expression_list_index] = True
-
-		# Create data structures that to use for the heatmaps
+		# Create data structures to use for the heatmaps
 		self.heatmap_data = {}
 		self.heatmap_data["completed_gens_heatmap"] = np.zeros((
 			1, len(new_gene_translation_efficiency_values),
@@ -2701,9 +2660,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print("---Data Extraction---")
 		reached_count_gen = {}
 		generations = {}
-
 		variants = self.ap.get_variants()
-		min_variant = min(variants)
 		for variant in variants:
 
 			print("Variant: ",variant)
