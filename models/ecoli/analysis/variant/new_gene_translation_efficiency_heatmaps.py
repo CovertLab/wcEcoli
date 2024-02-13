@@ -39,18 +39,18 @@ Possible Plots:
 import numpy as np
 from matplotlib import pyplot as plt
 import math
+from unum.units import fg
 
+from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.sim.variants.new_gene_internal_shift import (
 	get_new_gene_expression_factor_and_translation_efficiency,
 	determine_new_gene_ids_and_indices)
-from wholecell.io.tablereader import TableReader
-from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, \
 	read_stacked_columns, read_stacked_bulk_molecules, \
 	stacked_cell_identification
 from wholecell.analysis.plotting_tools import heatmap
+from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
-from unum.units import fg
 
 import os.path
 import pickle
@@ -396,8 +396,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					self.new_gene_monomer_ids)
 			else:
 				raise Exception(
-					"Heatmap " + h + " has no instructions for"
-					" data extraction.")
+					f"Heatmap {h} has no instructions for"
+					f" data extraction.")
 
 	def get_mRNA_ids_from_monomer_ids(self, target_monomer_ids):
 		"""
@@ -431,7 +431,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				target_RNA_ids.add(RNA_ids[index])
 		return target_RNA_ids
 
-	def get_mRNA_indexes_from_monomer_ids(self, all_cells, target_monomer_ids, index_type):
+	def get_mRNA_indexes_from_monomer_ids(
+			self, all_cells, target_monomer_ids, index_type):
 		"""
 		Retrieve new gene indexes of a given type.
 
@@ -473,8 +474,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		else:
 			raise Exception(
-				"Index type " + index_type +
-				" has no instructions for data extraction.")
+				f"Index type {index_type} has no instructions for data"
+				f" extraction.")
 
 		return output_indexes
 
@@ -557,7 +558,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells, self.heatmap_details[h]['data_table'],
 			target_probs_column, fun=lambda x: np.mean(x, axis=0))
 		# Get counts of overcrowded genes for each simulation
-		num_overcrowded_indexes = np.sum((avg_actual_prob < avg_target_prob), axis = 1)
+		num_overcrowded_indexes = np.sum((
+				avg_actual_prob < avg_target_prob), axis = 1)
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, cell_mask)
 
@@ -582,7 +584,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
 		"""
-		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		new_gene_indexes = self.get_new_gene_indexes(
+			all_cells, new_gene_index_type)
 		# Average fraction of time steps that overcrowding occurs for new genes
 		# per generation
 		new_gene_num_time_steps_overcrowded = (read_stacked_columns(
@@ -648,8 +651,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			Average counts of RNAPs.
 		"""
 		rnap_id = [self.sim_data.molecule_ids.full_RNAP]
-		(rnapCountsBulk,) = read_stacked_bulk_molecules(
-			all_cells, (rnap_id,))
+		(rnapCountsBulk,) = read_stacked_bulk_molecules(all_cells, (rnap_id,))
 		cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
 		cell_ids, idx, cell_total_timesteps = np.unique(
 			cell_id_vector, return_inverse=True, return_counts=True)
@@ -797,7 +799,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		new_gene_cistron_indexes = self.get_new_gene_indexes(all_cells, 'cistron')
+		new_gene_cistron_indexes = self.get_new_gene_indexes(
+			all_cells, 'cistron')
 		avg_new_gene_copy_number = (read_stacked_columns(
 			all_cells, 'RnaSynthProb', 'gene_copy_number',
 			fun=lambda x: np.mean(x[:, new_gene_cistron_indexes], axis=0)))
@@ -1381,7 +1384,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			new_gene_index_type: Index type to use for the data table
 			new_gene_ids: Ids of new genes in sim_data
 		"""
-		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		new_gene_indexes = self.get_new_gene_indexes(
+			all_cells, new_gene_index_type)
 		# Get mass for each new gene
 		new_gene_masses = [1 for id in new_gene_ids]
 		for i in range(len(new_gene_ids)):
@@ -1393,7 +1397,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
 		# Get average mass for all genes
 		avg_mass = read_stacked_columns(
-					all_cells, mass_data_table, mass_data_column, fun=lambda x: np.mean(x))
+			all_cells, mass_data_table, mass_data_column,
+			fun=lambda x: np.mean(x))
 		# Determine mass fractions for each new gene
 		for i in range(len(self.new_gene_mRNA_ids)):
 			new_gene_mass_fraction = (avg_new_gene_counts[:, i] *
@@ -1425,7 +1430,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				retreived
 			new_gene_index_type: Index type to use for the data table
 		"""
-		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		new_gene_indexes = self.get_new_gene_indexes(
+			all_cells, new_gene_index_type)
 		# Get counts for each new gene
 		avg_new_gene_counts = self.get_avg_new_gene_counts(
 			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
@@ -1520,7 +1526,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
 		"""
-		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		new_gene_indexes = self.get_new_gene_indexes(
+			all_cells, new_gene_index_type)
 		# Average init probability for each new gene
 		new_gene_init_probs = read_stacked_columns(
 			all_cells, data_table, data_column,
@@ -1551,7 +1558,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
 		"""
-		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
+		new_gene_indexes = self.get_new_gene_indexes(
+			all_cells, new_gene_index_type)
 		# Average init probability for each new gene
 		new_gene_rna_synth_probs = read_stacked_columns(
 			all_cells, data_table, data_column,
@@ -1663,14 +1671,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			fun=self.heatmap_details[dt_h]["function_to_apply"])
 
 		# Average glucose consumption rate fg/h
-		avg_glucose_consumption_rate = self.get_avg_glucose_consumption_rate(all_cells)
+		avg_glucose_consumption_rate = self.get_avg_glucose_consumption_rate(
+			all_cells)
 
 		# Avg new gene monomer mass yield
 		# Numerator: fg new gene monomer mass gained this gen
 		# Denominator: (fg/hr glucose * dt in hours) approximates amount of
 		# glucose consumed this gen
 		avg_new_gene_yield = (
-				new_gene_monomer_mass_diffs / (avg_glucose_consumption_rate * dt/60.))
+			new_gene_monomer_mass_diffs / (avg_glucose_consumption_rate * dt/60.))
 
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(
@@ -2050,7 +2059,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_translation_efficiency_values,
 				heatmap_x_label,
 				heatmap_y_label,
-				"Percentage of Sims That Reached Generation " + str(COUNT_INDEX + 1))
+				f"Percentage of Sims That Reached Generation {COUNT_INDEX + 1}")
 			row_ax = 0
 			col_ax = 1
 
@@ -2062,7 +2071,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						stop_index = len(self.new_gene_mRNA_ids)
 					for i in range(stop_index):
 						if self.heatmap_details[h]["is_new_gene_heatmap"]:
-							title_addition = ": " + self.new_gene_mRNA_ids[i][:-4]
+							title_addition = f": {self.new_gene_mRNA_ids[i][:-4]}"
 						self.make_single_heatmap(
 							h, axs[row_ax, col_ax], variant_mask,
 							heatmap_x_label, heatmap_y_label, i,
@@ -2087,21 +2096,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							plt.show()
 							exportFigure(
 								plt, plotOutDir,
-								'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap'
-								+ "_" + self.new_gene_mRNA_ids[i][:-4] +
-								plot_suffix)
+								f'new_gene_mRNA_{ntp_id[:-3]}_fraction_heatmap'
+								f'_{self.new_gene_mRNA_ids[i][:-4]}'
+								f'{plot_suffix}')
 							col_ax += 1
 							if (col_ax == dashboard_ncols):
 								col_ax = 0
 								row_ax += 1
 				else:
 					raise Exception(
-						"Heatmap " + h + " is neither a standard plot nor a"
-						" nonstandard plot that has specific instructions for"
-						" plotting.")
+						f"Heatmap {h} is neither a standard plot nor a"
+						f" nonstandard plot that has specific instructions for"
+						f" plotting.")
 			fig.tight_layout()
 			exportFigure(plt, plotOutDir,
-				"00_new_gene_exp_trl_eff_dashboard" + plot_suffix)
+				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}")
 			plt.close("all")
 
 		else: # individual plots
@@ -2115,8 +2124,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_translation_efficiency_values,
 				heatmap_x_label,
 				heatmap_y_label,
-				"Percentage of Sims that Reached Generation " \
-					+ str(COUNT_INDEX + 1))
+				f"Percentage of Sims that Reached Generation {COUNT_INDEX + 1}")
 			fig.tight_layout()
 			plt.show()
 			exportFigure(plt, plotOutDir, 'completed_gens_heatmap')
@@ -2130,8 +2138,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						stop_index = len(self.new_gene_mRNA_ids)
 					for i in range(stop_index):
 						if self.heatmap_details[h]["is_new_gene_heatmap"]:
-							title_addition = ": " + self.new_gene_mRNA_ids[i][:-4]
-							filename_addition = "_" + self.new_gene_mRNA_ids[i][:-4]
+							title_addition = f": {self.new_gene_mRNA_ids[i][:-4]}"
+							filename_addition = f"_{self.new_gene_mRNA_ids[i][:-4]}"
 						fig, ax = plt.subplots(1, 1, figsize=(figsize_x, figsize_y))
 						self.make_single_heatmap(
 							h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
@@ -2157,14 +2165,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							plt.show()
 							exportFigure(
 								plt, plotOutDir,
-								'new_gene_mRNA_' + ntp_id[:-3] + '_fraction_heatmap'
-								+ "_" + self.new_gene_mRNA_ids[i][:-4] +
-								plot_suffix)
+								f'new_gene_mRNA_{ntp_id[:-3]}_fraction_heatmap'
+								f'_{self.new_gene_mRNA_ids[i][:-4]}{plot_suffix}')
 				else:
 					raise Exception(
-						"Heatmap " + h + " is neither a standard plot nor a"
-						" nonstandard plot that has specific instructions for"
-						" plotting.")
+						f"Heatmap {h} is neither a standard plot nor a"
+						f" nonstandard plot that has specific instructions for"
+						f" plotting.")
 
 	def make_single_heatmap(
 			self, h, ax, variant_mask, heatmap_x_label, heatmap_y_label,
@@ -2197,7 +2204,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		title = self.heatmap_details[h]['plot_title'] + title_addition
 		if summary_statistic == "std_dev":
-			title = "Std Dev: " + title
+			title = f"Std Dev: {title}"
 
 		heatmap(
 			self, ax, variant_mask,
@@ -2236,10 +2243,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				heatmaps
 			ntp_id: Id of NTP to plot
 		"""
-		title = (self.heatmap_details[h]['plot_title'] + " " + ntp_id[:-3] +
-				 " Fraction: " + self.new_gene_mRNA_ids[initial_index][:-4])
+		title = (f"{self.heatmap_details[h]['plot_title']} {ntp_id[:-3]}"
+				 f" Fraction: {self.new_gene_mRNA_ids[initial_index][:-4]}")
 		if summary_statistic == 'std_dev':
-			title = "Std Dev: " + title
+			title = f"Std Dev: {title}"
 
 		heatmap(
 			self, ax, variant_mask,
