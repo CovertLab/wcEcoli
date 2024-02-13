@@ -77,14 +77,16 @@ STD_DEV_FLAG = True
 Count number of sims that reach this generation (remember index 7 
 corresponds to generation 8)
 """
-COUNT_INDEX = 23
+# COUNT_INDEX = 23
+COUNT_INDEX = 2 ### TODO: revert back after developing plot locally
 
 """
 Plot data from generations [MIN_CELL_INDEX, MAX_CELL_INDEX)
 Note that early generations may not be representative of dynamics 
 due to how they are initialized
 """
-MIN_CELL_INDEX = 16
+# MIN_CELL_INDEX = 16
+MIN_CELL_INDEX = 1 ### TODO: revert back after developing plot locally
 MAX_CELL_INDEX = 24
 
 """
