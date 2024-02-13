@@ -1114,7 +1114,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
 		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
-		avg_new_gene_mRNA_counts = self.get_avg_new_gene_counts(
+		avg_new_gene_mRNA_counts = self.get_avg_gene_counts(
 			all_cells, 'RNACounts', 'mRNA_counts', new_gene_mRNA_indexes)
 		avg_new_gene_ribosome_init_rates = (read_stacked_columns(
 			all_cells, 'RibosomeData', 'ribosome_init_event_per_monomer',
@@ -1306,27 +1306,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		return new_gene_indexes
 
-	def get_avg_new_gene_counts(
-			self, all_cells, data_table, data_column, new_gene_indexes):
-		"""
-		Retreives average counts of new gene mRNAs or proteins, which are needed
-		for multiple heatmaps.
-
-		Args:
-			all_cells: paths to all cells to read data from (directories should
-				contain a simOut/ subdirectory), typically the return from
-				AnalysisPaths.get_cells()
-			data_table: Table to find data that needs to be retrieved
-			data_column: Column to find data that needs to be retreived
-			new_gene_indexes: Global indexes of the new genes within data_table
-
-		Returns:
-			Average counts of new gene mRNAs or proteins.
-		"""
-		return (read_stacked_columns(
-				all_cells, data_table, data_column, fun=lambda
-				x: np.mean( x[:, new_gene_indexes], axis=0)))
-
 	def extract_new_gene_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
 			data_table, data_column, new_gene_index_type):
@@ -1349,8 +1328,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			new_gene_index_type: Index type to use for the data table
 		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, new_gene_index_type)
-		avg_new_gene_counts = self.get_avg_new_gene_counts(all_cells, data_table,
-			data_column, new_gene_indexes)
+		avg_new_gene_counts = self.get_avg_gene_counts(all_cells, data_table,
+													   data_column, new_gene_indexes)
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(h, i, trl_eff_index, exp_index,
 				np.log10(avg_new_gene_counts[:, i] + 1), cell_mask)
@@ -1393,7 +1372,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.sim_data.getter.get_mass(
 				new_gene_ids[i])/self.sim_data.constants.n_avogadro).asNumber(fg)
 		# Get counts for each new gene
-		avg_new_gene_counts = self.get_avg_new_gene_counts(
+		avg_new_gene_counts = self.get_avg_gene_counts(
 			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
 		# Get average mass for all genes
 		avg_mass = read_stacked_columns(
@@ -1433,7 +1412,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_gene_indexes = self.get_new_gene_indexes(
 			all_cells, new_gene_index_type)
 		# Get counts for each new gene
-		avg_new_gene_counts = self.get_avg_new_gene_counts(
+		avg_new_gene_counts = self.get_avg_gene_counts(
 			all_cells, counts_data_table, counts_data_column, new_gene_indexes)
 		# Get total avg counts for all genes
 		total_counts = np.sum(read_stacked_columns(
@@ -1482,7 +1461,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells, 'RNACounts', 'mRNA_counts', fun=lambda x: np.mean(x, axis=0))
 		# New gene mRNA
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
-		avg_new_gene_mRNA_counts = self.get_avg_new_gene_counts(
+		avg_new_gene_mRNA_counts = self.get_avg_gene_counts(
 			all_cells, 'RNACounts', 'mRNA_counts', new_gene_mRNA_indexes)
 		# Compute new gene NTP fractions
 		all_mRNA_ntp_totals = {}
@@ -1762,7 +1741,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 	"""
-	Capacity Gene Functions
+	Capacity and General Gene Functions
 	"""
 	def get_capacity_gene_indexes(
 			self, all_cells, index_type, capacity_gene_monomer_ids):
@@ -1830,10 +1809,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		return capacity_gene_indexes
 
-	def get_avg_capacity_gene_counts(
+	def get_avg_gene_counts(
 			self, all_cells, data_table, data_column, capacity_gene_indexes):
 		"""
-		Retreives average counts of new gene mRNAs or proteins, which are needed
+		Retreives average counts of gene mRNAs or proteins, which are needed
 		for multiple heatmaps.
 
 		Args:
@@ -1842,10 +1821,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				AnalysisPaths.get_cells()
 			data_table: Table to find data that needs to be retrieved
 			data_column: Column to find data that needs to be retreived
-			capacity_gene_indexes: Global indexes of the new genes within data_table
+			capacity_gene_indexes: Global indexes of the genes within data_table
 
 		Returns:
-			Average counts of new gene mRNAs or proteins.
+			Average counts of gene mRNAs or proteins.
 		"""
 		return (read_stacked_columns(
 				all_cells, data_table, data_column, fun=lambda
@@ -1875,7 +1854,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		capacity_gene_indexes = self.get_capacity_gene_indexes(
 			all_cells, capacity_gene_index_type, [capacity_gene_monomer_id])
 
-		avg_capacity_gene_counts = self.get_avg_capacity_gene_counts(
+		avg_capacity_gene_counts = self.get_avg_gene_counts(
 			all_cells, data_table, data_column, capacity_gene_indexes)
 
 		self.save_heatmap_data(h, 0, trl_eff_index, exp_index,
@@ -1926,7 +1905,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				capacity_gene_ids[i])/self.sim_data.constants.n_avogadro).asNumber(fg)
 
 		# Get counts for each capacity gene (mRNAs or monomer)
-		avg_capacity_gene_counts = self.get_avg_capacity_gene_counts(
+		avg_capacity_gene_counts = self.get_avg_gene_counts(
 			all_cells, counts_data_table, counts_data_column, capacity_gene_indexes)
 
 		# Get average mass for all genes
@@ -1979,7 +1958,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.get_mRNA_ids_from_monomer_ids([capacity_gene_monomer_id]))
 
 		# Get counts for each new gene
-		avg_capacity_gene_counts = self.get_avg_capacity_gene_counts(
+		avg_capacity_gene_counts = self.get_avg_gene_counts(
 			all_cells, counts_data_table, counts_data_column, capacity_gene_indexes)
 		if len(capacity_gene_ids) > 1:
 			avg_capacity_gene_counts = np.sum(
