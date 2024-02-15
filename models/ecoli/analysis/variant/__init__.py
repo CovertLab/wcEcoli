@@ -10,6 +10,7 @@ ACTIVE = [
 	"doubling_time_histogram.py",
 	"doubling_time_histogram_downsample.py",
 	"growthConditionComparison.py",
+	"instantaneous_doubling_times.py",
 	"growth_condition_comparison_validation.py",
 	"growth_correlations.py",
 	"growth_expression_comparison.py",
