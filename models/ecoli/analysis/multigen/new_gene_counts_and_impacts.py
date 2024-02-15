@@ -13,11 +13,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy import inf
 
-from wholecell.utils import units
 from models.ecoli.analysis import multigenAnalysisPlot
+from models.ecoli.sim.variants.new_gene_internal_shift import determine_new_gene_ids_and_indices
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
