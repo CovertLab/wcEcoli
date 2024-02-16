@@ -335,3 +335,66 @@ class SimulationDataEcoli(object):
 		transcription.exp_free /= transcription.exp_free.sum()
 		transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
 
+	def adjust_new_gene_final_expression(self, gene_indices, factors):
+		"""
+		Adjusting the final expression values of new genes must be handled
+		separately because the baseline new gene expression values need to be
+		set to small non-zero values using data loaded from
+		flat/new_gene_data/new_gene_baseline_expression_parameters.tsv,
+		as new genes are knocked out by default.
+
+		Args:
+			gene_indices: Indices of new genes to adjust
+			factors: Multiplicative factor to adjust by
+		"""
+
+		transcription = self.process.transcription
+		transcription_regulation = self.process.transcription_regulation
+
+		new_gene_rna_synth_prob_baseline = (
+			transcription.new_gene_expression_baselines["new_gene_rna_synth_prob_baseline"])
+		new_gene_rna_expression_baseline = (
+			transcription.new_gene_expression_baselines["new_gene_rna_expression_baseline"])
+		new_gene_exp_free_baseline = (
+			transcription.new_gene_expression_baselines["new_gene_exp_free_baseline"])
+		new_gene_exp_ppgpp_baseline = (
+			transcription.new_gene_expression_baselines["new_gene_exp_ppgpp_baseline"])
+		new_gene_reg_basal_prob_baseline = (
+			transcription.new_gene_expression_baselines["new_gene_reg_basal_prob_baseline"])
+
+		for gene_index, factor in zip(gene_indices, factors):
+			recruitment_mask = np.array([i == gene_index
+				for i in transcription_regulation.delta_prob['deltaI']])
+			for synth_prob in transcription.rna_synth_prob.values():
+				synth_prob[gene_index] = new_gene_rna_synth_prob_baseline * factor
+
+			for exp in transcription.rna_expression.values():
+				exp[gene_index] = new_gene_rna_expression_baseline * factor
+
+			transcription.exp_free[
+				gene_index] = new_gene_exp_free_baseline * factor
+			transcription.exp_ppgpp[
+				gene_index] = new_gene_exp_ppgpp_baseline * factor
+			transcription_regulation.basal_prob[
+				gene_index] = new_gene_reg_basal_prob_baseline * factor
+
+			# For the forseeable future, these will not be needed in the new
+			# gene implementation. For now, encode the assumption that these
+			# will be empty numpy arrays.
+			assert ((transcription.attenuation_basal_prob_adjustments[
+				transcription.attenuated_rna_indices == gene_index]).size == 0), (
+				"Attenuation basal probability adjustment for new genes is"
+				" not currently implemented in the model.")
+			assert ((transcription_regulation.delta_prob[
+				'deltaV'][recruitment_mask]).size == 0), (
+				"Transcriptional regulation of new genes is not currently"
+				" implemented in the model.")
+
+		# Renormalize parameters
+		for synth_prob in transcription.rna_synth_prob.values():
+			synth_prob /= synth_prob.sum()
+		for exp in transcription.rna_expression.values():
+			exp /= exp.sum()
+		transcription.exp_free /= transcription.exp_free.sum()
+		transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
+
