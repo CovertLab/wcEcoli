@@ -185,7 +185,8 @@ def induce_new_genes(sim_data, index):
 	effiencies to the values specified using the variant index.
 	"""
 	# Map variant index to expression factor and translation efficiency value
-	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
+	(expression_list_index, trl_eff_list_index, expression_factor,
+	trl_eff_value) = get_new_gene_expression_factor_and_translation_efficiency(
 		sim_data, index)
 
 	# Determine ids and indices of new genes
@@ -212,7 +213,8 @@ def knockout_induced_new_gene_expression(sim_data, index):
 	translation efficiency as when they were created.
 	"""
 	# Map variant index to expression factor and tranlsation efficiency value
-	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
+	(expression_list_index, trl_eff_list_index, expression_factor,
+	trl_eff_value) = get_new_gene_expression_factor_and_translation_efficiency(
 		sim_data, index)
 
 	# Determine ids and indices of new genes
