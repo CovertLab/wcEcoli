@@ -28,6 +28,7 @@ ACTIVE = [
 	"ppgpp_concentration_histogram.py",
 	"ppgpp_concentration_timetraces.py",
 	"remove_aa_inhibition.py",
+	"ribosome_concentrations.py",
 	"ribosome_crowding.py",
 	"rnap_counts_histogram.py",
 	"rnap_crowding.py",
