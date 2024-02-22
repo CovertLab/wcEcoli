@@ -19,6 +19,7 @@ ACTIVE = [
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
 	"new_gene_counts.py",
+	"new_gene_protein_diagnostics.py",
 	"new_gene_protein_mass_fraction_histogram.py",
 	"new_gene_translation_efficiency_heatmaps.py",
 	"param_sensitivity.py",
