@@ -126,6 +126,8 @@ To get _full_ analyses across all variants, generations, etc., run:
 * `analysisMultigen.py` for each combination of `--variant_index` and `--seed` you simulated
 * `analysisSingle.py` for each combination of `--variant_index`, `--seed`, and `--generation` you simulated
 
+Ranges of variant indices, seeds, and generations can be specified using the `--variant-range`, `--seed-range`, and `--generation-range` arguments, respectively.
+
 <p align="center">
   <img src="docs/analysis_schematic.svg" alt="Analysis schematic"/>
 </p>
