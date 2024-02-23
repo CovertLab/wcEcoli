@@ -32,6 +32,7 @@ ACTIVE = [
 	"ribosome_crowding.py",
 	"rnap_counts_histogram.py",
 	"rnap_crowding.py",
+	"rrna_gene_copy_numbers.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"time_step.py",
