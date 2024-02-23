@@ -165,9 +165,3 @@ reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 
 # VSCode:
 .vscode/
-
-# Fireworks files:
-wholecell/fireworks/my_launchpad.yaml
-wholecell/fireworks/my_qadapter.yaml
-wholecell/fireworks/nohup.out
-runscripts/fireworks/vioAE.sh

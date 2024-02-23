@@ -25,6 +25,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		cell_paths = self.ap.get_cells()
 		sim_dir = cell_paths[0]
+		print(sim_dir)
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
 		# Determine new gene ids
@@ -81,7 +82,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Protein Counts
 		plt.subplot(2, 1, 1)
-		if len(new_gene_monomer_ids):
+		if len(new_gene_monomer_ids)==1:
 			plt.plot(time / 60., new_gene_monomer_counts,
 					 label=new_gene_monomer_ids[0])
 		else:

@@ -6,25 +6,14 @@ import scipy.integrate
 import sympy as sp
 from wholecell.utils import data
 
-#TO DO: reactions catalyzed by several enzymes.
+#TODO: reactions catalyzed by several enzymes; reactions that have several substrates; spontaenous reactions have to be handled differently
 
 # Alternative methods to try (in order of priority) when solving ODEs to the next time step
-IVP_METHODS = ['LSODA', 'BDF']
-COUNTS_UNITS = units.mmol
-VOLUME_UNITS = units.L
-TIME_UNITS = units.s
-MODEL_FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
-DCW_FLUX_UNITS = units.mmol / units.g / units.h
+IVP_METHODS = ['LSODA']
 
 class MetabolismExternalPathway(object):
     def __init__(self, raw_data, sim_data):
-
-        if hasattr(raw_data, 'new_gene_data') and hasattr(getattr(raw_data.new_gene_data, dir(raw_data.new_gene_data)[-1]), 'metabolic_reactions_new'):
-            has_external_pathway = True
-        else:
-            has_external_pathway = False
-
-        if has_external_pathway==True:
+        if raw_data.new_genes_option != "off":
             # Build the abstractions needed for the metabolism corresponding to the external pathway
             molecules = []  # list of all molecules involved in the pathway
             kcats = []
@@ -41,8 +30,8 @@ class MetabolismExternalPathway(object):
             independentMolecules = []  # list of all specific independent molecule names
             independent_molecule_indexes = []  # index of each of the independent molecules
 
-            new_genes_folder = getattr(raw_data.new_gene_data, dir(raw_data.new_gene_data)[-1])
-            for reactionIndex, reaction in enumerate(new_genes_folder.metabolic_reactions_new):
+            new_genes_folder = getattr(raw_data.new_gene_data, raw_data.new_genes_option)
+            for reactionIndex, reaction in enumerate(new_genes_folder.metabolic_reactions_external):
                 reactionName = reaction["id"]
                 if reactionName not in rxnIds:
                     rxnIds.append(reactionName)
@@ -51,8 +40,6 @@ class MetabolismExternalPathway(object):
                     substrates.append(reaction["substrate"])
 
                     enzymes[reactionName] = reaction["catalyzed_by"]
-
-                    reactionIndex = len(rxnIds) - 1
 
                 #Build stoichiometry matrix
                 for mol_id, coeff in reaction["stoichiometry"].items():
@@ -69,44 +56,43 @@ class MetabolismExternalPathway(object):
                     stoichMatrixI.append(molecule_index)
                     stoichMatrixJ.append(reactionIndex)
                     stoichMatrixV.append(coeff)
-                    molecule = mol_id.split("[")[0]
-
-                    # Build matrix with linearly independent rows based on network orientation
-                    if str(molecule) in ["HK", "RR", "ATP"] and molecule not in independentMolecules:
-                        independentMolecules.append(molecule)
-                        independent_molecule_indexes.append(molecule_index)
 
                     # Find molecular mass of the molecule and add to mass matrix
-                    molecularMass = sim_data.getter.get_mass(mol_id_with_compartment.split('[')[0]).asNumber(units.g / units.mol)
+                    molecularMass = sim_data.getter.get_mass(mol_id_with_compartment[:-3]).asNumber(units.g / units.mol)
                     stoichMatrixMass.append(molecularMass)
-            self.molecule_names = np.array(molecules, dtype='U')
-            self.rxn_ids = rxnIds
-            self.flux = np.array(np.zeros(len(rxnIds)))
-            self.enzymes = enzymes
-            self.kcats = np.array(kcats)
-            self.kms = np.array(kms)
-            self.substrates = np.array(substrates)
 
-            self.independent_molecules = np.array(independentMolecules, dtype='U')
-            self.independent_molecule_indexes = np.array(independent_molecule_indexes)
-            self._stoichMatrixI = np.array(stoichMatrixI)
-            self._stoichMatrixJ = np.array(stoichMatrixJ)
-            self._stoichMatrixV = np.array(stoichMatrixV)
+                self.molecule_names = np.array(molecules, dtype='U')
+                self.rxn_ids = rxnIds
+                self.flux = np.array(np.zeros(len(rxnIds)))
+                self.enzymes = enzymes
+                self.kcats = np.array(kcats)
+                self.kms = np.array(kms)
+                self.substrates = np.array(substrates)
 
-            self._stoich_matrix_mass = np.array(stoichMatrixMass)
-            self.balance_matrix = self.stoich_matrix() * self.mass_matrix()
+                self.independent_molecules = np.array(independentMolecules, dtype='U')
+                self.independent_molecule_indexes = np.array(independent_molecule_indexes)
+                self._stoichMatrixI = np.array(stoichMatrixI)
+                self._stoichMatrixJ = np.array(stoichMatrixJ)
+                self._stoichMatrixV = np.array(stoichMatrixV)
 
-            # Find the mass balance of each equation in the balanceMatrix
-            massBalanceArray = self.mass_balance()
+                self._stoich_matrix_mass = np.array(stoichMatrixMass)
+                self.balance_matrix = self.stoich_matrix() * self.mass_matrix()
 
-            # The stoichometric matrix should balance out to numerical zero. This gives an error with smaller number.
-            assert np.max(np.absolute(massBalanceArray)) < 1e-9
+                # Find the mass balance of each equation in the balanceMatrix
+                massBalanceArray = self.mass_balance()
 
-            # Build matrices
-            self._populate_derivative_and_jacobian()
+                # The stoichometric matrix should balance out to numerical zero. This gives an error with smaller number.
+                assert np.max(np.absolute(massBalanceArray)) < 1e-9
 
-        self.has_external_pathway = has_external_pathway
+                # Build matrices
+                self._populate_derivative_and_jacobian()
 
+            if rxnIds==[]:
+                self.has_external_pathway = False
+            else:
+                self.has_external_pathway = True
+        else:
+            self.has_external_pathway = False
 
     def __getstate__(self):
         """Return the state to pickle, omitting derived attributes that
@@ -192,7 +178,7 @@ class MetabolismExternalPathway(object):
 
 
     def molecules_to_next_time_step(self, moleculeDict, enzymeDict, cellVolume,
-                                    nAvogadro, timeStepSec, method="LSODA", jit=True):
+                                    nAvogadro, timeStepSec, method="LSODA"):
 
         """
         Calculates the changes in the counts of molecules in the next timestep
@@ -218,18 +204,23 @@ class MetabolismExternalPathway(object):
         """
 
         subCounts, subNames, enzymeCounts, enzymeNames = [], [], [], []
+        # get the counts of the substrates.
+        # we assume that each reaction has only one substrate
         for sub in self.substrates:
             subCounts.append(moleculeDict[sub[0]])
             subNames.append(sub[0])
 
+        # get the counts of the enzymes
+        # we assume that each reaction has only one enzyme
         for reaction in self.rxn_ids:
             # if the reaction has an enzyme
             if self.enzymes[reaction]:
                 enzymeCounts.append(enzymeDict[self.enzymes[reaction][0]])
                 enzymeNames.append(self.enzymes[reaction][0])
-            #this might need to be modelled differently
+            #If the reaction is spontaneous, we set the enzyme counts to a high value to avoid creaitng a bottleneck.
+            #This might need to be modelled differently
             else:
-                enzymeCounts.append(1)
+                enzymeCounts.append(100000)
                 enzymeNames.append('None')
 
 

@@ -12,7 +12,7 @@ from .transcription import Transcription
 from .transcription_regulation import TranscriptionRegulation
 from .translation import Translation
 from .two_component_system import TwoComponentSystem
-from .external_pathway import MetabolismExternalPathway
+from .metabolism_external_pathway import MetabolismExternalPathway
 
 
 class Process(object):

@@ -121,4 +121,9 @@ TAGS = {
 	'TIMELINES': [
 		'growth_trajectory',
 		],
+	'NEW_GENE': [
+		'new_gene_counts.py',
+		'new_gene_protein_mass_fraction_histogram.py',
+		'new_gene_translation_efficiency_heatmaps.py',
+		],
 	}
