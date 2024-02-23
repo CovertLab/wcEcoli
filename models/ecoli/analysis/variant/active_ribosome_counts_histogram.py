@@ -1,20 +1,22 @@
 """
-Plot histograms of ppGpp concentrations and compares the distributions across
+Plot histograms of active ribosome counts and compares the distributions across
 different variants.
 """
 
 import numpy as np
 from matplotlib import pyplot as plt
+import os
 
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import (
 	exportFigure, read_stacked_columns, stacked_cell_threshold_mask)
 from wholecell.analysis.plotting_tools import (
 	DEFAULT_MATPLOTLIB_COLORS as COLORS)
+from wholecell.io.tablereader import TableReader
 
 FONT_SIZE = 9
-CONCENTRATION_BOUNDS = [0, 200]  # (uM)
-N_BINS = 40
+RIBOSOME_COUNT_BOUNDS = [0, 40000]
+N_BINS = 25
 
 # Set True to exclude cells that hit time limit
 EXCLUDE_TIMEOUT_CELLS = True
@@ -30,7 +32,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			max_cell_length += 1000000  # Arbitrary large number
 
 		# Data extraction
-		ppgpp_concentrations = {}
+		ribosome_counts = {}
 		n_total_gens = self.ap.n_generation
 		variant_indexes = self.ap.get_variants()
 
@@ -50,19 +52,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, 'Main', 'time', max_cell_length,
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 
-			# Get average ppGpp concentrations from each cell
-			avg_ppgpp_concentrations = read_stacked_columns(
-				all_cells, 'GrowthLimits', 'ppgpp_conc',
-				remove_first=True, fun=lambda x: np.mean(x)).squeeze()
-			ppgpp_concentrations[variant_index] = avg_ppgpp_concentrations[
+			# Get index of active ribosomes in unique molecule counts table
+			sim_dir = all_cells[0]
+			simOutDir = os.path.join(sim_dir, 'simOut')
+			unique_molecule_counts_table = TableReader(os.path.join(
+				simOutDir, "UniqueMoleculeCounts"))
+			active_ribosome_index = unique_molecule_counts_table.readAttribute(
+				"uniqueMoleculeIds").index('active_ribosome')
+
+			# Get ribosome counts from first timestep of every cell
+			ribosome_counts_this_variant = read_stacked_columns(
+				all_cells, 'UniqueMoleculeCounts','uniqueMoleculeCounts',
+				fun=lambda x: x[0, active_ribosome_index])
+			ribosome_counts[variant_index] = ribosome_counts_this_variant[
 				exclude_timeout_cell_mask]
 
-		n_variants = len(ppgpp_concentrations)
+
+		n_variants = len(ribosome_counts)
 
 		fig = plt.figure(figsize=(8, 2 * (n_variants + 1)))
 		bins = np.linspace(
-			CONCENTRATION_BOUNDS[0],
-			CONCENTRATION_BOUNDS[1],
+			RIBOSOME_COUNT_BOUNDS[0],
+			RIBOSOME_COUNT_BOUNDS[1],
 			N_BINS + 1
 			)
 
@@ -70,13 +81,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax0 = fig.add_subplot(n_variants + 1, 1, 1)
 		subplots = []
 
-		for i, (variant_index, rc) in enumerate(ppgpp_concentrations.items()):
+		for i, (variant_index, rc) in enumerate(ribosome_counts.items()):
 			color = COLORS[i % len(COLORS)]
 			ax0.hist(
 				rc, bins=bins, color=color, alpha=0.5,
 				label=f'Var {variant_index} (n={len(rc)}, {np.mean(rc):.1f} $\pm$ {np.std(rc):.1f})')
 
-			# Add vertical line at mean ppGpp concentrations
+			# Add vertical line at mean ribosome counts
 			ax0.axvline(np.mean(rc), color=color, ls='--', lw=3, alpha=0.5)
 
 			# Later subplots show the histograms for each variant separately
@@ -96,13 +107,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		ax0.legend()
 
-		ax0.set_xlim(*CONCENTRATION_BOUNDS)
+		ax0.set_xlim(*RIBOSOME_COUNT_BOUNDS)
 		ax0.set_xticks(
-			np.linspace(CONCENTRATION_BOUNDS[0], CONCENTRATION_BOUNDS[1], 11)
+			np.linspace(RIBOSOME_COUNT_BOUNDS[0], RIBOSOME_COUNT_BOUNDS[1], 11)
 			)
 		ax0.tick_params(labelsize=FONT_SIZE)
 
-		ax0.set_xlabel('ppGpp concentrations (uM)', fontsize=FONT_SIZE)
+		ax0.set_xlabel('Active ribosome counts', fontsize=FONT_SIZE)
 		ax0.spines["top"].set_visible(False)
 		ax0.spines["right"].set_visible(False)
 

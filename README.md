@@ -126,6 +126,12 @@ To get _full_ analyses across all variants, generations, etc., run:
 * `analysisMultigen.py` for each combination of `--variant_index` and `--seed` you simulated
 * `analysisSingle.py` for each combination of `--variant_index`, `--seed`, and `--generation` you simulated
 
+Ranges of variant indices, seeds, and generations can be specified using the `--variant-range`, `--seed-range`, and `--generation-range` arguments, respectively.
+
+<p align="center">
+  <img src="docs/analysis_schematic.svg" alt="Analysis schematic"/>
+</p>
+
 The `--plot` (or `-p`) optional parameter lets you pick one or more specific PLOTS to run.
 The list of PLOTs can include analysis class filenames like `aaCounts` (or `aaCounts.py`)
 and analysis group TAGS like `CORE`. See the `__init__.py` file in each analysis class directory

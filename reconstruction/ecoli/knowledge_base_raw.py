@@ -128,6 +128,7 @@ LIST_OF_PARAMETER_FILENAMES = [
 	"dna_supercoiling.tsv",
 	"parameters.tsv",
 	"mass_parameters.tsv",
+	os.path.join("new_gene_data", "new_gene_baseline_expression_parameters.tsv"),
 	]
 
 REMOVED_DATA = {
