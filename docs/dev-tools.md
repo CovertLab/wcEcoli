@@ -286,6 +286,12 @@ source code, and many other features for working with Python code.
 See [this PyCharm debugger tutorial video](https://youtu.be/QJtWxm12Eo0) or
 [this PyCharm debugger tutorial webpage](https://www.jetbrains.com/help/pycharm/debugging-your-first-python-application.html).
 
+#### Code style settings
+
+The checked-in file `.idea/codeStyles/Project.xml` should set up TAB
+indentations, line margins, and a few other code formatting styles.
+Otherwise do it manually.
+
 #### Mismatched package names
 
 PyCharm's inspector gives false-positive error messages like:
@@ -294,17 +300,7 @@ PyCharm's inspector gives false-positive error messages like:
 
 because it assumes imported module names (`Bio`) match their PyPI package names
 (`biopython`) except for a specific list of exceptions. The built-in exceptions
-list doesn't include `stochastic-arrow`, `biopython`, etc., but we can add them.
-
-**The fix:** Each time you install a PyCharm release, run the following shell command,
-then restart PyCharm:  
-
-> \[NOTE: So far, this script only works on macOS and maybe only for PyCharm Pro
-installed by JetBrains Toolbox. It won't work with snap-installed PyCharm since
-snap installs on a readonly file system. To support other installations,
-enhance the script for where `python.jar` or `python-ce.jar` gets installed.]
-
-    runscripts/tools/augment-pycharm-package-list.sh
+list doesn't include `stochastic-arrow`, `biopython`, etc.
 
 See [You Track issue #PY-27985](https://youtrack.jetbrains.com/issue/PY-27985).
 

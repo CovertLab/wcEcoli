@@ -237,8 +237,10 @@ class KnowledgeBaseEcoli(object):
 				os.path.join(new_gene_path, 'insertion_location.tsv'))
 			self.list_of_dict_filenames.append(
 				os.path.join(new_gene_path, 'gene_sequences.tsv'))
+
 			self.list_of_dict_filenames.append(
 				os.path.join(new_gene_path, 'metabolic_reactions_external.tsv'))
+
 
 			# These files need to be joined to existing files
 			new_gene_shared_files = [
@@ -259,7 +261,6 @@ class KnowledgeBaseEcoli(object):
 					f" subdirectory {new_gene_subdir}.")
 				self.list_of_dict_filenames.append(file_path)
 				self.new_gene_added_data.update({f: nested_attr + f})
-
 
 
 			# RNA sequence data aso needs to be joined to an existing file,
