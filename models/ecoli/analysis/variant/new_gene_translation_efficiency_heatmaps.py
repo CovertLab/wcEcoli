@@ -659,9 +659,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_inactive_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
 		return avg_inactive_rnap_counts
 
-	def get_avg_active_rnap_counts(self, all_cells):
+	def get_active_rnap_counts(self, all_cells):
 		"""
-		Retrieve active RNAP counts.
+		Retrieve active RNAP counts for all simulations.
 
 		Args:
 			all_cells: paths to all cells to read data from (directories should
@@ -669,7 +669,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				AnalysisPaths.get_cells()
 
 		Returns:
-			Average counts of RNAPs.
+			Counts of RNAPs for all simulations.
+		"""
+		# Determine active RNAP index
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+		uniqueMoleculeCounts = TableReader(
+			os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		active_rnap_index = uniqueMoleculeCounts.readAttribute(
+			"uniqueMoleculeIds").index('active_RNAP')
+		active_rnap_counts = read_stacked_columns(
+			all_cells, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts')[:, active_rnap_index]
+		return active_rnap_counts
+
+	def get_avg_active_rnap_counts(self, all_cells):
+		"""
+		Retrieve average active RNAP counts for each simulation.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of RNAPs for each simulation.
 		"""
 		# Determine active RNAP index
 		sim_dir = all_cells[0]
@@ -832,16 +856,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				to filter based on generations
 		"""
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
-		avg_new_gene_rnap_counts = read_stacked_columns(
+		new_gene_rnap_counts = read_stacked_columns(
 			all_cells, "RNACounts", "partial_mRNA_counts",
-			fun=lambda x: np.mean(x[:, new_gene_mRNA_indexes], axis=0))
-		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
-		avg_new_gene_rnap_portion = avg_new_gene_rnap_counts / avg_rnap_counts
+			fun=lambda x: x[:, new_gene_mRNA_indexes])
+		active_rnap_counts = self.get_active_rnap_counts(all_cells)
+		active_rnap_counts = np.expand_dims(active_rnap_counts, axis = 1)
+		avg_new_gene_rnap_portion = np.mean(
+			new_gene_rnap_counts / active_rnap_counts, axis = 0, keepdims = True)
 
+		# TODO: fix for standard deviation?
 		for i in range(len(self.new_gene_mRNA_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_rnap_portion[:, i], cell_mask)
+				avg_new_gene_rnap_portion[:, i], [True])
 
 	def extract_rrna_rnap_portion_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -860,14 +887,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_mask: Should be same size as curr_heatmap_data, typically used
 				to filter based on generations
 		"""
-		avg_rrna_rnap_counts = np.sum(read_stacked_columns(
-			all_cells, "RNACounts", "partial_rRNA_counts",
-			fun=lambda x: np.mean(x, axis=0)), axis = 1)
-		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
-		avg_rrna_rnap_portion = avg_rrna_rnap_counts / avg_rnap_counts
+		rrna_rnap_counts = np.sum(read_stacked_columns(
+			all_cells, "RNACounts", "partial_rRNA_counts"), axis=1)
+		active_rnap_counts = self.get_active_rnap_counts(all_cells)
+		avg_rrna_rnap_portion = np.mean(
+			rrna_rnap_counts / active_rnap_counts, axis=0, keepdims=True)
 
+		# TODO: fix standard deviation?
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_portion, cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_portion, [True])
 
 	def extract_rnap_subunits_rnap_portion_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -889,15 +917,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
 		rnap_subunit_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, RNAP_subunit_monomer_ids, "mRNA")
-		avg_rnap_subunit_rnap_counts = np.sum(
-			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
-			fun=lambda x: np.mean(x[:, rnap_subunit_mRNA_indexes], axis=0)),
-			axis = 1)
-		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
-		avg_rnap_subunit_rnap_portion = avg_rnap_subunit_rnap_counts / avg_rnap_counts
+		rnap_subunit_rnap_counts = np.sum(read_stacked_columns(
+			all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: x[:, rnap_subunit_mRNA_indexes]), axis=1)
+		active_rnap_counts = self.get_active_rnap_counts(all_cells)
+		avg_rnap_subunit_rnap_portion = np.mean(
+			rnap_subunit_rnap_counts / active_rnap_counts, axis=0,
+			keepdims=True)
+		# TODO: fix standard deviation
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_rnap_portion,
-			cell_mask)
+			[True])
 
 	def extract_ribosomal_protein_rnap_portion_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -919,15 +949,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ribosomal_monomer_ids = self.sim_data.molecule_groups.ribosomal_proteins
 		ribosomal_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, ribosomal_monomer_ids, "mRNA")
-		avg_ribosomal_rnap_counts = np.sum(
-			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
-			fun=lambda x: np.mean(x[:, ribosomal_mRNA_indexes], axis=0)),
-			axis=1)
-		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
-		avg_ribosomal_rnap_portion = avg_ribosomal_rnap_counts / avg_rnap_counts
+		ribosomal_rnap_counts = np.sum(read_stacked_columns(
+			all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: x[:, ribosomal_mRNA_indexes]), axis=1)
+		active_rnap_counts = self.get_active_rnap_counts(all_cells)
+		avg_ribosomal_rnap_portion = np.mean(
+			ribosomal_rnap_counts / active_rnap_counts, axis=0, keepdims=True)
+
+		# TODO: fix standard deviation
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_ribosomal_rnap_portion,
-			cell_mask)
+			[True])
 
 	def extract_capacity_gene_rnap_portion_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
@@ -948,15 +980,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		gene_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, [capacity_gene_monomer_id], "mRNA")
-		avg_gene_rnap_counts = np.sum(
-			read_stacked_columns(all_cells, "RNACounts", "partial_mRNA_counts",
-			fun=lambda x: np.mean(x[:, gene_mRNA_indexes], axis=0)),
-			axis = 1)
-		avg_rnap_counts = self.get_avg_active_rnap_counts(all_cells)
-		avg_gene_rnap_portion = avg_gene_rnap_counts / avg_rnap_counts
+		gene_rnap_counts = np.sum(read_stacked_columns(
+			all_cells, "RNACounts", "partial_mRNA_counts",
+			fun=lambda x: x[:, gene_mRNA_indexes]), axis=1)
+		active_rnap_counts = self.get_active_rnap_counts(all_cells)
+		avg_gene_rnap_portion = np.mean(
+			gene_rnap_counts / active_rnap_counts, axis=0, keepdims=True)
+
+		# TODO: fix standard deviation?
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_gene_rnap_portion,
-			cell_mask)
+			[True])
 
 
 	"""
