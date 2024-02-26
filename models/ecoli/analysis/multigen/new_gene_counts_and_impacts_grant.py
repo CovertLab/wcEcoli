@@ -21,11 +21,11 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
-START_GEN = 0
-END_GEN = 3
+# START_GEN = 0
+# END_GEN = 3
 
-# START_GEN = 16
-# END_GEN = 24
+START_GEN = 21
+END_GEN = 24
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 
