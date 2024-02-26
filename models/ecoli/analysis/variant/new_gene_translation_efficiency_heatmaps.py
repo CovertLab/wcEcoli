@@ -161,10 +161,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	General Functions
 	"""
 	def save_heatmap_data(
-			self, h, initial_index, trl_eff_index, exp_index, curr_heatmap_data,
-			cell_mask):
+			self, h, initial_index, trl_eff_index, exp_index, curr_heatmap_data):
 		"""
-		Applies cell_mask and saves average data value across seeds and generations
+		Saves average data value across seeds and generations
 		to the appropriate location in data structure for heatmap h.
 
 		Args:
@@ -175,21 +174,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				variant
 			exp_index: New gene expression value index for this variant
 			curr_heatmap_data: Data to save
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-			 	to filter based on generations
 		"""
 		self.heatmap_data[h]["mean"][
 			initial_index, trl_eff_index, exp_index] = round(
-			np.mean(curr_heatmap_data[cell_mask]),
+			np.mean(curr_heatmap_data),
 			self.heatmap_details[h]['num_digits_rounding'])
 		self.heatmap_data[h]["std_dev"][
 			initial_index, trl_eff_index, exp_index] = round(
-			np.std(curr_heatmap_data[cell_mask]),
+			np.std(curr_heatmap_data),
 			self.heatmap_details[h]['num_digits_rounding'])
 
 	def extract_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index,
-			cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Extracts and saves data associated with heatmap h to heatmap_data for a
 		single variant/parameter combination. Extraction is done based on the
@@ -204,8 +200,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-			 	to filter based on generations
 		"""
 		if not self.heatmap_details[h]['is_new_gene_heatmap']:
 			if not self.heatmap_details[h]['is_nonstandard_data_retrieval']:
@@ -215,91 +209,86 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					remove_first = self.heatmap_details[h]['remove_first'],
 					fun=self.heatmap_details[h]['function_to_apply'])
 				self.save_heatmap_data(
-					h, 0, trl_eff_index, exp_index, curr_heatmap_data, cell_mask)
+					h, 0, trl_eff_index, exp_index, curr_heatmap_data)
 			elif h == "rnap_counts_heatmap":
 				self.extract_rnap_counts_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "ribosome_counts_heatmap":
 				self.extract_ribosome_counts_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "rnap_ribosome_counts_ratio_heatmap":
 				self.extract_rnap_ribosome_counts_ratio_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "free_rnap_counts_heatmap":
 				self.extract_rnap_counts_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'inactive')
+					all_cells, h, trl_eff_index, exp_index, 'inactive')
 			elif h == "free_ribosome_counts_heatmap":
 				self.extract_ribosome_counts_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'inactive')
+					all_cells, h, trl_eff_index, exp_index, 'inactive')
 			elif h == "rnap_crowding_heatmap":
 				self.extract_crowding_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					all_cells, h, trl_eff_index, exp_index,
 					'actual_rna_synth_prob', 'target_rna_synth_prob')
 			elif h == "ribosome_crowding_heatmap":
 				self.extract_crowding_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					all_cells, h, trl_eff_index, exp_index,
 					'actual_prob_translation_per_transcript',
 					'target_prob_translation_per_transcript')
 			elif h == "weighted_avg_translation_efficiency_heatmap":
 				self.extract_trl_eff_weighted_avg_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "rrna_rnap_counts_heatmap":
 				self.extract_rrna_rnap_counts_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "rrna_rnap_portion_heatmap":
 				self.extract_rrna_rnap_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "rnap_subunit_rnap_portion_heatmap":
 				self.extract_rnap_subunits_rnap_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "rnap_subunit_ribosome_portion_heatmap":
 				self.extract_rnap_subunits_ribosome_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "ribosomal_protein_rnap_portion_heatmap":
 				self.extract_ribosomal_protein_rnap_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "ribosomal_protein_ribosome_portion_heatmap":
 				self.extract_ribosomal_protein_ribosome_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "capacity_gene_mRNA_counts_heatmap":
 				self.extract_capacity_gene_counts_heatmap_data(
 					all_cells, h, trl_eff_index,
-					exp_index, cell_mask, 'RNACounts', 'mRNA_counts',
-					'mRNA')
+					exp_index, 'RNACounts', 'mRNA_counts', 'mRNA')
 			elif h == "capacity_gene_monomer_counts_heatmap":
 				self.extract_capacity_gene_counts_heatmap_data(
 					all_cells, h, trl_eff_index,
-					exp_index, cell_mask, 'MonomerCounts', 'monomerCounts',
+					exp_index, 'MonomerCounts', 'monomerCounts',
 					'monomer')
 			elif h == "capacity_gene_rnap_portion_heatmap":
 				self.extract_capacity_gene_rnap_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "capacity_gene_ribosome_portion_heatmap":
 				self.extract_capacity_gene_ribosome_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "capacity_gene_mRNA_mass_fraction_heatmap":
 				self.extract_capacity_gene_mass_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RNACounts', 'mRNA_counts', 'Mass', 'mRnaMass',
-					'mRNA')
+					all_cells, h, trl_eff_index, exp_index,
+					'RNACounts', 'mRNA_counts', 'Mass', 'mRnaMass', 'mRNA')
 			elif h == "capacity_gene_monomer_mass_fraction_heatmap":
 				self.extract_capacity_gene_mass_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'MonomerCounts', 'monomerCounts', 'Mass', 'proteinMass',
-					'monomer')
+					all_cells, h, trl_eff_index, exp_index, 'MonomerCounts',
+					'monomerCounts', 'Mass', 'proteinMass', 'monomer')
 			elif h == "capacity_gene_mRNA_counts_fraction_heatmap":
 				self.extract_capacity_gene_counts_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RNACounts', 'mRNA_counts', 'mRNA')
+					all_cells, h, trl_eff_index, exp_index, 'RNACounts',
+					'mRNA_counts', 'mRNA')
 			elif h == "capacity_gene_monomer_counts_fraction_heatmap":
 				self.extract_capacity_gene_counts_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'MonomerCounts', 'monomerCounts', 'monomer')
+					all_cells, h, trl_eff_index, exp_index, 'MonomerCounts',
+					'monomerCounts', 'monomer')
 			elif h == "glucose_consumption_rate":
 				self.extract_glucose_consumption_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			else:
 				raise Exception(
 					"Heatmap " + h + " is neither a standard heatmap nor a"
@@ -310,89 +299,81 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if h == "new_gene_mRNA_counts_heatmap":
 				self.extract_new_gene_counts_heatmap_data(
 					all_cells, h, trl_eff_index,
-					exp_index, cell_mask, 'RNACounts', 'mRNA_counts',
-					'mRNA')
+					exp_index, 'RNACounts', 'mRNA_counts', 'mRNA')
 			elif h == "new_gene_monomer_counts_heatmap":
 				self.extract_new_gene_counts_heatmap_data(
 					all_cells, h, trl_eff_index,
-					exp_index, cell_mask, 'MonomerCounts', 'monomerCounts',
-					'monomer')
+					exp_index, 'MonomerCounts', 'monomerCounts', 'monomer')
 			elif h == "new_gene_mRNA_mass_fraction_heatmap":
 				self.extract_new_gene_mass_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RNACounts', 'mRNA_counts', 'Mass', 'mRnaMass',
-					'mRNA', self.new_gene_mRNA_ids)
+					all_cells, h, trl_eff_index, exp_index, 'RNACounts',
+					'mRNA_counts', 'Mass', 'mRnaMass', 'mRNA',
+					self.new_gene_mRNA_ids)
 			elif h == "new_gene_monomer_mass_fraction_heatmap":
 				self.extract_new_gene_mass_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'MonomerCounts', 'monomerCounts', 'Mass', 'proteinMass',
-					'monomer', self.new_gene_monomer_ids)
+					all_cells, h, trl_eff_index, exp_index, 'MonomerCounts',
+					'monomerCounts', 'Mass', 'proteinMass', 'monomer',
+					self.new_gene_monomer_ids)
 			elif h == "new_gene_mRNA_counts_fraction_heatmap":
 				self.extract_new_gene_counts_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RNACounts', 'mRNA_counts', 'mRNA')
+					all_cells, h, trl_eff_index, exp_index, 'RNACounts',
+					'mRNA_counts', 'mRNA')
 			elif h == "new_gene_monomer_counts_fraction_heatmap":
 				self.extract_new_gene_counts_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'MonomerCounts', 'monomerCounts', 'monomer')
+					all_cells, h, trl_eff_index, exp_index, 'MonomerCounts',
+					'monomerCounts', 'monomer')
 			elif h == "new_gene_mRNA_NTP_fraction_heatmap":
 				self.extract_new_gene_mRNA_NTP_fraction_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_rnap_init_rate_heatmap":
 				self.extract_new_gene_rnap_init_rate_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_ribosome_init_rate_heatmap":
 				self.extract_new_gene_ribosome_init_rate_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_rnap_time_overcrowded_heatmap":
 				self.extract_new_gene_time_overcrowded_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RnaSynthProb', 'tu_is_overcrowded',
-					'RNA')
+					all_cells, h, trl_eff_index, exp_index, 'RnaSynthProb',
+					'tu_is_overcrowded', 'RNA')
 			elif h == "new_gene_ribosome_time_overcrowded_heatmap":
 				self.extract_new_gene_time_overcrowded_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RibosomeData', 'mRNA_is_overcrowded',
-					'monomer')
+					all_cells, h, trl_eff_index, exp_index, 'RibosomeData',
+					'mRNA_is_overcrowded', 'monomer')
 			elif h == "new_gene_target_protein_init_prob_heatmap":
 				self.extract_new_gene_init_prob_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RibosomeData', 'target_prob_translation_per_transcript',
-					'monomer')
+					all_cells, h, trl_eff_index, exp_index, 'RibosomeData',
+					'target_prob_translation_per_transcript', 'monomer')
 			elif h == "new_gene_actual_protein_init_prob_heatmap":
 				self.extract_new_gene_init_prob_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RibosomeData', 'actual_prob_translation_per_transcript',
-					'monomer')
+					all_cells, h, trl_eff_index, exp_index, 'RibosomeData',
+					'actual_prob_translation_per_transcript', 'monomer')
 			elif h == "new_gene_target_rna_synth_prob_heatmap":
 				self.extract_new_gene_rna_synth_prob_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RnaSynthProb', 'target_rna_synth_prob',
-					'RNA')
+					all_cells, h, trl_eff_index, exp_index, 'RnaSynthProb',
+					'target_rna_synth_prob', 'RNA')
 			elif h == "new_gene_actual_rna_synth_prob_heatmap":
 				self.extract_new_gene_rna_synth_prob_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
-					'RnaSynthProb', 'actual_rna_synth_prob',
-					'RNA')
+					all_cells, h, trl_eff_index, exp_index, 'RnaSynthProb',
+					'actual_rna_synth_prob', 'RNA')
 			elif h == "new_gene_rnap_counts_heatmap":
 				self.extract_new_gene_rnap_counts_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_rnap_portion_heatmap":
 				self.extract_new_gene_rnap_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_ribosome_counts_heatmap":
 				self.extract_new_gene_ribosome_counts_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_ribosome_portion_heatmap":
 				self.extract_new_gene_ribosome_portion_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 			elif h == "new_gene_yield_per_glucose":
 				self.extract_new_gene_yield_per_glucose_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					all_cells, h, trl_eff_index, exp_index,
 					self.new_gene_monomer_ids)
 			elif h == "new_gene_yield_per_hour":
 				self.extract_new_gene_yield_per_hour_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask,
+					all_cells, h, trl_eff_index, exp_index,
 					self.new_gene_monomer_ids)
 			else:
 				raise Exception(
@@ -480,7 +461,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		return output_indexes
 
 	def extract_trl_eff_weighted_avg_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving of average translation
 		efficiency, weighted by full cistron counts.
@@ -493,15 +474,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		# Get normalized translation efficiency for all mRNAs
 		trl_effs = self.sim_data.process.translation.translation_efficiencies_by_monomer
 		# Get avg counts for all mRNAs
 		mRNA_cistron_counts = read_stacked_columns(
 			all_cells, 'RNACounts', 'full_mRNA_cistron_counts',
-			fun=lambda x: np.mean(x, axis=0))[cell_mask, :]
+			fun=lambda x: np.mean(x, axis=0))
 		total_mRNA_cistron_count = np.expand_dims(
 			np.sum(mRNA_cistron_counts,axis = 1), axis = 1)
 
@@ -520,9 +499,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			np.sum(mRNA_cistron_counts / total_mRNA_cistron_count
 			* trl_effs[np.argsort(trl_eff_id_mapping)], axis = 1)])
 
-		all_true_mask = np.ones_like(weighted_avg_trl_eff, dtype=bool)
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff, all_true_mask)
+			h, 0, trl_eff_index, exp_index, weighted_avg_trl_eff)
 
 
 	"""
@@ -530,8 +508,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	"""
 	# Crowding
 	def extract_crowding_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			actual_probs_column, target_probs_column):
+			self, all_cells, h, trl_eff_index, exp_index, actual_probs_column,
+			target_probs_column):
 		"""
 		Special function to handle extraction and saving of RNAP and ribosome
 		crowding counts heatmap data.
@@ -544,8 +522,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			actual_probs_column: Data column which contains actual
 				probabilities of RNA synthesis or translation
 			target_probs_column: Data column which contains target
@@ -561,11 +537,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		num_overcrowded_indexes = np.sum((
 				avg_actual_prob < avg_target_prob), axis = 1)
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes, cell_mask)
+			h, 0, trl_eff_index, exp_index, num_overcrowded_indexes)
 
 	def extract_new_gene_time_overcrowded_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			data_table, data_column, new_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, data_table,
+			data_column, new_gene_index_type):
 		"""
 		Special function to handle extraction and saving of RNAP and ribosome
 		new gene time overcrowded heatmap data.
@@ -578,8 +554,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			data_table: Table to find data that needs to be retrieved
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
@@ -595,11 +569,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				new_gene_num_time_steps_overcrowded[:,i], cell_mask)
+				new_gene_num_time_steps_overcrowded[:,i])
 
 	def extract_rnap_ribosome_counts_ratio_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			category='total'):
+			self, all_cells, h, trl_eff_index, exp_index, category='total'):
 		"""
 		Special function to handle extraction and saving of ribosome counts
 		heatmap data.
@@ -612,8 +585,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 			 	variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			category: 'active', 'inactive', or 'total'
 		"""
 		if category == 'inactive':
@@ -631,7 +602,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_counts_ratio = avg_rnap_counts / avg_ribosome_counts
 
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_counts_ratio, cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_counts_ratio)
 
 
 	"""
@@ -724,7 +695,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.get_avg_active_rnap_counts(all_cells))
 
 	def extract_rnap_counts_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			self, all_cells, h, trl_eff_index, exp_index,
 			rnap_category='total'):
 		"""
 		Special function to handle extraction and saving of RNAP counts heatmap
@@ -738,8 +709,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			rnap_category: 'active', 'inactive', or 'total'
 		"""
 		if rnap_category == 'inactive':
@@ -752,10 +721,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			raise Exception("The only supported RNAP categories are 'active',"
 							" 'inactive', and 'total.'")
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_rnap_counts, cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_rnap_counts)
 
 	def extract_new_gene_rnap_counts_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average counts of RNAP
 		that are on new genes at a time heatmap data.
@@ -768,8 +737,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
 		avg_new_gene_rnap_counts = read_stacked_columns(
@@ -779,10 +746,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_mRNA_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_rnap_counts[:, i], cell_mask)
+				avg_new_gene_rnap_counts[:, i])
 
 	def extract_rrna_rnap_counts_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average counts of RNAP
 		that are making rRNAs at a time heatmap data.
@@ -795,19 +762,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		avg_rrna_rnap_counts = np.sum(read_stacked_columns(
 			all_cells, "RNACounts", "partial_rRNA_counts",
 			fun=lambda x: np.mean(x, axis=0)), axis = 1)
 
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_counts, cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_counts)
 
 	# RNA Polymerase Initialization Rate
 	def extract_new_gene_rnap_init_rate_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving of RNAP new gene
 		initialization rate heatmap data.
@@ -820,8 +785,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		new_gene_cistron_indexes = self.get_new_gene_indexes(
 			all_cells, 'cistron')
@@ -835,11 +798,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_mRNA_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_rnap_init_rates[:, i], cell_mask)
+				avg_new_gene_rnap_init_rates[:, i])
 
 	# RNA Polymerase Portion
 	def extract_new_gene_rnap_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of RNAP
 		that are on new genes at a time heatmap data.
@@ -852,8 +815,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
 		new_gene_rnap_counts = read_stacked_columns(
@@ -868,10 +829,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_mRNA_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_rnap_portion[:, i], [True])
+				avg_new_gene_rnap_portion[:, i])
 
 	def extract_rrna_rnap_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of RNAP
 		that are making rRNAs at a time heatmap data.
@@ -884,8 +845,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		rrna_rnap_counts = np.sum(read_stacked_columns(
 			all_cells, "RNACounts", "partial_rRNA_counts"), axis=1)
@@ -895,10 +854,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# TODO: fix standard deviation?
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_portion, [True])
+			h, 0, trl_eff_index, exp_index, avg_rrna_rnap_portion)
 
 	def extract_rnap_subunits_rnap_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of RNAP
 		that are making RNAP subunits at a time heatmap data.
@@ -911,8 +870,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
 		rnap_subunit_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
@@ -926,11 +883,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			keepdims=True)
 		# TODO: fix standard deviation
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_rnap_portion,
-			[True])
+			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_rnap_portion)
 
 	def extract_ribosomal_protein_rnap_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of RNAP
 		that are making ribosomal proteins at a time heatmap data.
@@ -943,8 +899,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		ribosomal_monomer_ids = self.sim_data.molecule_groups.ribosomal_proteins
 		ribosomal_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
@@ -958,11 +912,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# TODO: fix standard deviation
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_ribosomal_rnap_portion,
-			[True])
+			h, 0, trl_eff_index, exp_index, avg_ribosomal_rnap_portion)
 
 	def extract_capacity_gene_rnap_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of RNAP
 		that are making capacity gene mRNAs at a time heatmap data.
@@ -975,8 +928,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		gene_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, [capacity_gene_monomer_id], "mRNA")
@@ -989,8 +940,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# TODO: fix standard deviation?
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_gene_rnap_portion,
-			[True])
+			h, 0, trl_eff_index, exp_index, avg_gene_rnap_portion)
 
 
 	"""
@@ -1071,7 +1021,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.get_avg_active_ribosome_counts(all_cells))
 
 	def extract_ribosome_counts_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
+			self, all_cells, h, trl_eff_index, exp_index,
 			ribosome_category='total'):
 		"""
 		Special function to handle extraction and saving of ribosome counts
@@ -1085,8 +1035,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 			 	variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			ribosome_category: 'active', 'inactive', or 'total'
 		"""
 		if ribosome_category == 'inactive':
@@ -1099,10 +1047,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			raise Exception("The only supported ribosome categories are 'active',"
 							" 'inactive', and 'total.'")
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_ribosome_counts, cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_ribosome_counts)
 
 	def extract_new_gene_ribosome_counts_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average counts of
 		ribosomes that are on new genes at a time heatmap data.
@@ -1115,8 +1063,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
 		avg_new_gene_ribosome_counts = read_stacked_columns(
@@ -1126,11 +1072,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_monomer_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_ribosome_counts[:, i], cell_mask)
+				avg_new_gene_ribosome_counts[:, i])
 
 	# Ribosome Initialization Rate
 	def extract_new_gene_ribosome_init_rate_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving of ribosome new gene
 		initialization rate heatmap data.
@@ -1143,8 +1089,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		new_gene_mRNA_indexes = self.get_new_gene_indexes(all_cells, 'mRNA')
 		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
@@ -1157,11 +1101,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_mRNA_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_ribosome_init_rates[:, i], cell_mask)
+				avg_new_gene_ribosome_init_rates[:, i])
 
 	# Ribosome Portion
 	def extract_new_gene_ribosome_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of
 		ribosomes that are on new genes at a time heatmap data.
@@ -1174,8 +1118,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
 		avg_new_gene_ribosome_counts = read_stacked_columns(
@@ -1187,10 +1129,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_monomer_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				avg_new_gene_ribosome_portion[:, i], cell_mask)
+				avg_new_gene_ribosome_portion[:, i])
 
 	def extract_rnap_subunits_ribosome_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of ribosomes
 		that are making RNAP subunits at a time heatmap data.
@@ -1203,8 +1145,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
 		rnap_subunit_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
@@ -1216,11 +1156,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		avg_rnap_subunit_ribosome_portion = avg_rnap_subunit_ribosome_counts/avg_ribosome_counts
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_ribosome_portion,
-			cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_ribosome_portion)
 
 	def extract_ribosomal_protein_ribosome_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of ribosomes
 		that are making ribosomal proteins at a time heatmap data.
@@ -1233,8 +1172,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		ribosomal_monomer_ids = self.sim_data.molecule_groups.ribosomal_proteins
 		ribosomal_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
@@ -1246,11 +1183,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		avg_ribosomal_ribosome_portion = avg_ribosomal_ribosome_counts / avg_ribosome_counts
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_ribosomal_ribosome_portion,
-			cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_ribosomal_ribosome_portion)
 
 	def extract_capacity_gene_ribosome_portion_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving average portion of ribosomes
 		that are making capacity gene proteins at a time heatmap data.
@@ -1263,8 +1199,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		gene_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, [capacity_gene_monomer_id], "monomer")
@@ -1275,8 +1209,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
 		avg_gene_ribosome_portion = avg_gene_ribosome_counts/avg_ribosome_counts
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_gene_ribosome_portion,
-			cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_gene_ribosome_portion)
 
 
 	"""
@@ -1341,8 +1274,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		return new_gene_indexes
 
 	def extract_new_gene_counts_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			data_table, data_column, new_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, data_table,
+			data_column, new_gene_index_type):
 		"""
 		Special function to handle extraction and saving of new gene mRNA and
 		protein counts heatmap data.
@@ -1355,8 +1288,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			data_table: Table to find data that needs to be retrieved
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
@@ -1366,12 +1297,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 													   data_column, new_gene_indexes)
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(h, i, trl_eff_index, exp_index,
-				np.log10(avg_new_gene_counts[:, i] + 1), cell_mask)
+				np.log10(avg_new_gene_counts[:, i] + 1))
 
 	def extract_new_gene_mass_fraction_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			counts_data_table, counts_data_column, mass_data_table,
-			mass_data_column, new_gene_index_type, new_gene_ids):
+			self, all_cells, h, trl_eff_index, exp_index, counts_data_table,
+			counts_data_column, mass_data_table, mass_data_column,
+			new_gene_index_type, new_gene_ids):
 		"""
 		Special function to handle extraction and saving of new gene mRNA and
 		protein mass fraction heatmap data.
@@ -1384,8 +1315,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			counts_data_table: Table to find the counts data that needs to be
 				retrieved
 			counts_data_column: Column to find the counts data that needs to be
@@ -1417,12 +1346,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			new_gene_mass_fraction = (avg_new_gene_counts[:, i] *
 				new_gene_masses[i]) / avg_mass
 			self.save_heatmap_data(
-				h, i, trl_eff_index, exp_index, new_gene_mass_fraction,
-				cell_mask)
+				h, i, trl_eff_index, exp_index, new_gene_mass_fraction)
 
 	def extract_new_gene_counts_fraction_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			counts_data_table, counts_data_column, new_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, counts_data_table,
+			counts_data_column, new_gene_index_type):
 		"""
 		Special function to handle extraction and saving of new gene mRNA and
 		protein counts fraction heatmap data.
@@ -1435,8 +1363,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			counts_data_table: Table to find the counts data that needs to be
 				retrieved
 			counts_data_column: Column to find the counts data that needs to be
@@ -1457,11 +1383,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(self.new_gene_mRNA_ids)):
 			new_gene_counts_fraction = avg_new_gene_counts[:, i] / total_counts
 			self.save_heatmap_data(
-				h, i, trl_eff_index, exp_index, new_gene_counts_fraction,
-				cell_mask)
+				h, i, trl_eff_index, exp_index, new_gene_counts_fraction)
 
 	def extract_new_gene_mRNA_NTP_fraction_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving of new gene mRNA and
 		NTP fraction heatmap data.
@@ -1474,8 +1399,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		# Determine number of NTPs per new gene mRNA
 		new_gene_mRNA_ntp_counts = [{} for id in self.new_gene_mRNA_ids]
@@ -1506,21 +1429,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for i in range(len(self.new_gene_mRNA_ids)):
 				self.heatmap_data[h]["mean"][ntp_id][
 					i, trl_eff_index, exp_index] = round(
-					np.mean((avg_new_gene_mRNA_counts[:, i][cell_mask] *
+					np.mean((avg_new_gene_mRNA_counts[:, i] *
 					new_gene_mRNA_ntp_counts[i][ntp_id]) / all_mRNA_ntp_totals[
-					ntp_id][cell_mask]),
+					ntp_id]),
 					self.heatmap_details[h]['num_digits_rounding'])
 				self.heatmap_data[h]["std_dev"][ntp_id][
 					i, trl_eff_index, exp_index] = round(
-					np.std((avg_new_gene_mRNA_counts[:, i][cell_mask] *
-							 new_gene_mRNA_ntp_counts[i][ntp_id]) /
-							all_mRNA_ntp_totals[
-								ntp_id][cell_mask]),
+						np.std((avg_new_gene_mRNA_counts[:, i] *
+						new_gene_mRNA_ntp_counts[i][ntp_id]) /
+						all_mRNA_ntp_totals[ntp_id]),
 					self.heatmap_details[h]['num_digits_rounding'])
 
 	def extract_new_gene_init_prob_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			data_table, data_column, new_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, data_table,
+			data_column, new_gene_index_type):
 		"""
 		Special function to handle extraction and saving of target and actual
 		initiation probabilities for new genes.
@@ -1533,8 +1455,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			data_table: Table to find data that needs to be retrieved
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
@@ -1548,11 +1468,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				new_gene_init_probs[:,i], cell_mask)
+				new_gene_init_probs[:,i])
 
 	def extract_new_gene_rna_synth_prob_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			data_table, data_column, new_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, data_table,
+			data_column, new_gene_index_type):
 		"""
 		Special function to handle extraction and saving of target and actual
 		RNA synthesis probabilities for new genes.
@@ -1565,8 +1485,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			data_table: Table to find data that needs to be retrieved
 			data_column: Column to find data that needs to be retreived
 			new_gene_index_type: Index type to use for the data table
@@ -1580,7 +1498,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
-				new_gene_rna_synth_probs[:,i], cell_mask)
+				new_gene_rna_synth_probs[:,i])
 
 	def get_gen_new_gene_monomer_counts_diff(self, all_cells, new_gene_indexes):
 		"""
@@ -1644,8 +1562,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	# TODO: make this more flexible for other carbon sources
 	def extract_new_gene_yield_per_glucose_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			new_gene_ids):
+			self, all_cells, h, trl_eff_index, exp_index, new_gene_ids):
 		"""
 		Special function to handle extraction and saving of fg new gene
 		monomer produced per fg of glucose uptake.
@@ -1658,8 +1575,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			new_gene_ids: Ids of new gene monomers in sim_data
 		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, "monomer")
@@ -1696,11 +1611,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(
-				h, i, trl_eff_index, exp_index, avg_new_gene_yield[:, i],
-				cell_mask)
+				h, i, trl_eff_index, exp_index, avg_new_gene_yield[:, i])
 
 	def extract_glucose_consumption_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask):
+			self, all_cells, h, trl_eff_index, exp_index):
 		"""
 		Special function to handle extraction and saving of fg/hr of glucose uptake.
 
@@ -1712,19 +1626,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 		"""
 		# Average glucose consumption rate fg/h
 		avg_glucose_consumption_rate = self.get_avg_glucose_consumption_rate(all_cells)
 
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, avg_glucose_consumption_rate,
-			cell_mask)
+			h, 0, trl_eff_index, exp_index, avg_glucose_consumption_rate)
 
 	def extract_new_gene_yield_per_hour_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			new_gene_ids):
+			self, all_cells, h, trl_eff_index, exp_index, new_gene_ids):
 		"""
 		Special function to handle extraction and saving of fg new gene
 		monomer produced per hour.
@@ -1737,8 +1647,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			new_gene_ids: Ids of new gene monomers in sim_data
 		"""
 		new_gene_indexes = self.get_new_gene_indexes(all_cells, "monomer")
@@ -1770,8 +1678,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for i in range(len(new_gene_indexes)):
 			self.save_heatmap_data(
-				h, i, trl_eff_index, exp_index, avg_new_gene_yield_rate[:, i],
-				cell_mask)
+				h, i, trl_eff_index, exp_index, avg_new_gene_yield_rate[:, i])
 
 
 	"""
@@ -1865,8 +1772,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				x: np.mean( x[:, capacity_gene_indexes], axis=0)))
 
 	def extract_capacity_gene_counts_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			data_table, data_column, capacity_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, data_table,
+			data_column, capacity_gene_index_type):
 		"""
 		Special function to handle extraction and saving of capacity gene mRNA
 		and protein counts heatmap data.
@@ -1879,8 +1786,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			data_table: Table to find data that needs to be retrieved
 			data_column: Column to find data that needs to be retreived
 			capacity_gene_index_type: Index type to use for the data table
@@ -1892,12 +1797,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			all_cells, data_table, data_column, capacity_gene_indexes)
 
 		self.save_heatmap_data(h, 0, trl_eff_index, exp_index,
-			np.log10(np.sum(avg_capacity_gene_counts, axis = 1) + 1), cell_mask)
+			np.log10(np.sum(avg_capacity_gene_counts, axis = 1) + 1))
 
 	def extract_capacity_gene_mass_fraction_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			counts_data_table, counts_data_column, mass_data_table,
-			mass_data_column, capacity_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, counts_data_table,
+			counts_data_column, mass_data_table, mass_data_column,
+			capacity_gene_index_type):
 		"""
 		Special function to handle extraction and saving of capacity gene mRNA and
 		protein mass fraction heatmap data.
@@ -1910,8 +1815,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			counts_data_table: Table to find the counts data that needs to be
 				retrieved
 			counts_data_column: Column to find the counts data that needs to be
@@ -1956,12 +1859,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			capacity_gene_mass_fractions = np.sum(
 				capacity_gene_mass_fractions, axis = 1)
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, capacity_gene_mass_fractions,
-			cell_mask)
+			h, 0, trl_eff_index, exp_index, capacity_gene_mass_fractions)
 
 	def extract_capacity_gene_counts_fraction_heatmap_data(
-			self, all_cells, h, trl_eff_index, exp_index, cell_mask,
-			counts_data_table, counts_data_column, capacity_gene_index_type):
+			self, all_cells, h, trl_eff_index, exp_index, counts_data_table,
+			counts_data_column, capacity_gene_index_type):
 		"""
 		Special function to handle extraction and saving of capacity gene mRNA and
 		protein counts fraction heatmap data.
@@ -1974,8 +1876,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			trl_eff_index: New gene translation efficiency value index for this
 				variant
 			exp_index: New gene expression value index for this variant
-			cell_mask: Should be same size as curr_heatmap_data, typically used
-				to filter based on generations
 			counts_data_table: Table to find the counts data that needs to be
 				retrieved
 			counts_data_column: Column to find the counts data that needs to be
@@ -2005,8 +1905,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		capacity_gene_counts_fraction = avg_capacity_gene_counts / total_counts
 		self.save_heatmap_data(
-			h, 0, trl_eff_index, exp_index, capacity_gene_counts_fraction,
-			cell_mask)
+			h, 0, trl_eff_index, exp_index, capacity_gene_counts_fraction)
 
 	"""
 	Plotting Functions
@@ -2686,22 +2585,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for variant in variants:
 
 			print("Variant: ",variant)
-			all_cells = self.ap.get_cells(variant=[variant], only_successful=True)
+			all_cells = self.ap.get_cells(
+				variant=[variant],
+				generation=np.arange(MIN_CELL_INDEX, MAX_CELL_INDEX),
+				only_successful=True)
 			exp_index, trl_eff_index = variant_index_to_list_indices[variant]
 			if len(all_cells) == 0:
-				continue
-
-			# Determine mask to apply based on generations
-			all_cells_gens = np.array([
-				int(os.path.basename(os.path.dirname(cell_path))[-6:])
-				for cell_path in all_cells])
-			generations[variant] = all_cells_gens
-			cell_mask = np.logical_and(
-				(generations[variant] >=MIN_CELL_INDEX),
-				(generations[variant] < MAX_CELL_INDEX))
-			if len(cell_mask) == 1:
-				cell_mask = cell_mask.reshape(1)
-			if sum(cell_mask) < 1:
 				continue
 
 			# Completed Gens Heatmap: Count the number of simulations that
@@ -2717,7 +2606,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Extract data for each heatmap
 			for h in heatmaps_to_make:
 				self.extract_heatmap_data(
-					all_cells, h, trl_eff_index, exp_index, cell_mask)
+					all_cells, h, trl_eff_index, exp_index)
 
 		# Plotting
 		print("---Plotting---")
