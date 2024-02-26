@@ -977,6 +977,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		return avg_inactive_ribosome_counts
 
+	def get_active_ribosome_counts(self, all_cells):
+		"""
+		Retrieve active ribosome counts.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+
+		Returns:
+			Average counts of ribosomes.
+		"""
+		# Determine ribosome index
+		sim_dir = all_cells[0]
+		simOutDir = os.path.join(sim_dir, 'simOut')
+		uniqueMoleculeCounts = TableReader(
+			os.path.join(simOutDir, "UniqueMoleculeCounts"))
+		ribosome_index = uniqueMoleculeCounts.readAttribute(
+			"uniqueMoleculeIds").index('active_ribosome')
+
+		ribosome_counts = read_stacked_columns(
+			all_cells, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts')[:, ribosome_index]
+
+		return ribosome_counts
+
 	def get_avg_active_ribosome_counts(self, all_cells):
 		"""
 		Retrieve active ribosome counts.
@@ -1120,12 +1146,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			exp_index: New gene expression value index for this variant
 		"""
 		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
-		avg_new_gene_ribosome_counts = read_stacked_columns(
+		new_gene_ribosome_counts = read_stacked_columns(
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
-			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes], axis=0))
-		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
-		avg_new_gene_ribosome_portion = avg_new_gene_ribosome_counts/avg_ribosome_counts
+			fun=lambda x: x[:, new_gene_monomer_indexes])
+		active_ribosome_counts = self.get_active_ribosome_counts(all_cells)
+		active_ribosome_counts = np.expand_dims(active_ribosome_counts, axis = 1)
+		avg_new_gene_ribosome_portion = np.mean(
+			new_gene_ribosome_counts / active_ribosome_counts, axis = 0,
+			keepdims = True)
 
+		# TODO: fix standard deviation?
 		for i in range(len(self.new_gene_monomer_ids)):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
@@ -1149,12 +1179,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		RNAP_subunit_monomer_ids = self.sim_data.molecule_groups.RNAP_subunits
 		rnap_subunit_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, RNAP_subunit_monomer_ids, "monomer")
-		avg_rnap_subunit_ribosome_counts = np.sum(read_stacked_columns(
+		rnap_subunit_ribosome_counts = np.sum(read_stacked_columns(
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
-			fun=lambda x: np.mean(x[:, rnap_subunit_monomer_indexes], axis=0)),
-			axis = 1)
-		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
-		avg_rnap_subunit_ribosome_portion = avg_rnap_subunit_ribosome_counts/avg_ribosome_counts
+			fun=lambda x: x[:, rnap_subunit_monomer_indexes]), axis = 1)
+		active_ribosome_counts = self.get_active_ribosome_counts(all_cells)
+		avg_rnap_subunit_ribosome_portion = np.mean(
+			rnap_subunit_ribosome_counts / active_ribosome_counts, axis = 0,
+			keepdims = True)
+
+		# TODO: fix standard deviation?
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_rnap_subunit_ribosome_portion)
 
@@ -1176,12 +1209,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ribosomal_monomer_ids = self.sim_data.molecule_groups.ribosomal_proteins
 		ribosomal_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, ribosomal_monomer_ids, "monomer")
-		avg_ribosomal_ribosome_counts = np.sum(read_stacked_columns(
+		ribosomal_ribosome_counts = np.sum(read_stacked_columns(
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
-			fun=lambda x: np.mean(x[:, ribosomal_monomer_indexes], axis=0)),
-			axis=1)
-		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
-		avg_ribosomal_ribosome_portion = avg_ribosomal_ribosome_counts / avg_ribosome_counts
+			fun=lambda x: x[:, ribosomal_monomer_indexes]), axis = 1)
+		active_ribosome_counts = self.get_active_ribosome_counts(all_cells)
+		avg_ribosomal_ribosome_portion = np.mean(
+			ribosomal_ribosome_counts / active_ribosome_counts, axis = 0,
+			keepdims = True)
+
+		# TODO: fix standard deviation
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_ribosomal_ribosome_portion)
 
@@ -1202,12 +1238,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		gene_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
 			all_cells, [capacity_gene_monomer_id], "monomer")
-		avg_gene_ribosome_counts = np.sum(read_stacked_columns(
+		gene_ribosome_counts = np.sum(read_stacked_columns(
 			all_cells, "RibosomeData", "n_ribosomes_per_transcript",
-			fun=lambda x: np.mean(x[:, gene_monomer_indexes], axis=0)),
-			axis = 1)
-		avg_ribosome_counts = self.get_avg_active_ribosome_counts(all_cells)
-		avg_gene_ribosome_portion = avg_gene_ribosome_counts/avg_ribosome_counts
+			fun=lambda x: x[:, gene_monomer_indexes]), axis = 1)
+		active_ribosome_counts = self.get_active_ribosome_counts(all_cells)
+		avg_gene_ribosome_portion = np.mean(
+			gene_ribosome_counts / active_ribosome_counts, axis = 0,
+			keepdims = True)
+
+		# TODO: fix standard deviation?
 		self.save_heatmap_data(
 			h, 0, trl_eff_index, exp_index, avg_gene_ribosome_portion)
 
