@@ -61,3 +61,5 @@
 "TU0-14528"	"Non-canonical rRNA transcription unit"
 "TU0-14530"	"Non-canonical rRNA transcription unit"
 "TU0-14533"	"Non-canonical rRNA transcription unit"
+"TU0-4242"	"Transcription unit ends before gene does"
+"TU0-8513"	"Transcription unit ends before gene does"
