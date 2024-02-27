@@ -29,14 +29,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		variant = 7
 		slice_sizes = [0.023 * 100, 100 - 0.023 * 100]
 		plot_suffix = "_" + str(variant) + "_rnap_fraction"
-		labels = ["gfp", "other"]
+		labels = ["Exogenous Gene", "Native Genes"]
+		colors = [SLICE_COLOR, "#dfdfdf"]
 
 		# Plotting
 		plt.figure(figsize = (4, 4))
 
-		# plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 		fig, ax = plt.subplots()
-		ax.pie(slice_sizes, labels=labels, autopct='%1.1f%%')
+		ax.pie(slice_sizes, labels=labels, colors=colors) # autopct='%1.1f%%'
 
 		exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
 		plt.close("all")
