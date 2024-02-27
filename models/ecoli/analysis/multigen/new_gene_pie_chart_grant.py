@@ -33,12 +33,40 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		colors = [SLICE_COLOR, "#dfdfdf"]
 
 		# Plotting
-		plt.figure(figsize = (4, 4))
 
+		# Pie Chart
+		plt.figure(figsize = (4, 4))
 		fig, ax = plt.subplots()
 		ax.pie(slice_sizes, labels=labels, colors=colors) # autopct='%1.1f%%'
-
 		exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
+		plt.close("all")
+
+		# Stacked Bar Chart
+		mpl.rcParams['axes.spines.right'] = False
+		mpl.rcParams['axes.spines.top'] = False
+		mpl.rcParams['axes.spines.left'] = False
+		mpl.rcParams['axes.spines.bottom'] = False
+
+		fig, ax = plt.subplots(figsize=(8.5/2, 11/5))
+		ax.invert_yaxis()
+		ax.xaxis.set_visible(False)
+		ax.yaxis.set_visible(False)
+		ax.set_xlim(0, 100)
+
+		bar_widths = np.array(slice_sizes)
+		bar_cum = bar_widths.cumsum()
+		bar_starts = bar_cum - bar_widths
+		for i in range(len(slice_sizes)):
+			rects = ax.barh(
+				0, bar_widths[i], left = bar_starts[i],
+				height = 0.5, label=labels[i], color=colors[i])
+			if i == (len(slice_sizes) - 1):
+				text_color = colors[0]
+				ax.bar_label(rects, labels = [str(slice_sizes[0]) + "%"], label_type='center', color=text_color)
+		ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
+				  loc='lower left', fontsize='small')
+
+		exportFigure(plt, plotOutDir, plotOutFileName + "_bar" + plot_suffix, metadata)
 		plt.close("all")
 
 if __name__ == '__main__':
