@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 28.0
-# Date and time generated: October 30, 2023, 10:06:12
+# Version: 28.1
+# Date and time generated: February 27, 2024, 13:07:22
 "id"	"stoichiometry"	"common_name"	"cofactors"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null	{"MG+2": 1}
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"	{"LIPOIC-ACID": 1, "THIAMINE-PYROPHOSPHATE": 2, "FAD": 3, "MG+2": 2}
@@ -191,7 +191,11 @@
 "CPLX0-10342_RXN"	{"CPLX0-10342": 1, "G7313-MONOMER": -2, "CPLX0-3761": -1}	"Hda-&beta;-clamp complex"	{}
 "CPLX0-10367_RXN"	{"CPLX0-10367": 1, "EG10778-MONOMER": null, "EG10777-MONOMER": null, "EG10776-MONOMER": null}	"PspABC complex"	{}
 "CPLX0-10380_RXN"	{"CPLX0-10380": 1, "G6487-MONOMER": -2}	null	{"CPD-8123": 1}
+"CPLX0-10815_RXN"	{"CPLX0-10815": 1, "EG12007-MONOMER": -2}	"high-affinity pyruvate receptor"	{}
+"CPLX0-10852_RXN"	{"CPLX0-10852": 1, "G6876-MONOMER": null, "G6875-MONOMER": null, "G6874-MONOMER": null, "G6873-MONOMER": null, "G6872-MONOMER": null, "G6871-MONOMER": null}	"SoxR [2Fe-2S] reducing system, Rsx complex"	{}
+"CPLX0-10853_RXN"	{"CPLX0-10853": 1, "EG12073-MONOMER": null, "G7347-MONOMER": null, "CPLX0-10852": null}	"SoxR [2Fe-2S] reducing system"	{}
 "CPLX0-1101_RXN"	{"CPLX0-1101": 1, "EG10996-MONOMER": -3}	"tRNA-guanine transglycosylase"	{"ZN+2": 1}
+"CPLX0-11183_RXN"	{"CPLX0-11183": 1, "EG10967-MONOMER": -2}	null	{}
 "CPLX0-1121_RXN"	{"CPLX0-1121": 1, "G7845-MONOMER": -2}	"23S rRNA 2'-<i>O</i>-ribose G2251 methyltransferase"	{}
 "CPLX0-1141_RXN"	{"CPLX0-1141": 1, "EG10941-MONOMER": -10}	"selenocysteine synthase"	{"PYRIDOXAL_PHOSPHATE": 1}
 "CPLX0-1142_RXN"	{"CPLX0-1142": 1, "G7237-MONOMER": -2}	"formyl-CoA transferase"	{}
@@ -412,7 +416,7 @@
 "CPLX0-7615_RXN"	{"CPLX0-7615": 1, "KDGALDOL-MONOMER": -6}	null	{"MG+2": 1}
 "CPLX0-7616_RXN"	{"CPLX0-7616": 1, "G6278-MONOMER": -4}	"tartronate semialdehyde reductase 2"	{}
 "CPLX0-7617_RXN"	{"CPLX0-7617": 1, "EG12332-MONOMER": -2}	"iron-sulfur cluster insertion protein ErpA"	{}
-"CPLX0-761_RXN"	{"CPLX0-761": 1, "G7485-MONOMER": null, "G7486-MONOMER": null, "G7487-MONOMER": null}	"putative xanthine dehydrogenase"	{"CPD0-1882": 1}
+"CPLX0-761_RXN"	{"CPLX0-761": 1, "G7485-MONOMER": null, "G7486-MONOMER": null, "G7487-MONOMER": null}	"putative xanthine dehydrogenase"	{"CPD-23445": 1}
 "CPLX0-7622_RXN"	{"CPLX0-7622": 1, "LSERINEDEAM3-MONOMER": -2}	"L-serine deaminase III"	{"CPD-7": 1}
 "CPLX0-7623_RXN"	{"CPLX0-7623": 1, "G6606-MONOMER": -2}	"putative two-component system connector protein AriR"	{}
 "CPLX0-7624_RXN"	{"CPLX0-7624": 1, "EG10955-MONOMER": -2, "G7629-MONOMER": -4}	"YhaV-PrlF toxin-antitoxin complex"	{}
@@ -515,7 +519,7 @@
 "CPLX0-7797_RXN"	{"CPLX0-7797": 1, "PD00197": -2}	"DNA-binding transcriptional dual regulator FNR"	{}
 "CPLX0-7801_RXN"	{"CPLX0-7801": 1, "G7271-MONOMER": -3}	"predicted structural protein, ethanolamine utilization microcompartment"	{}
 "CPLX0-7802_RXN"	{"CPLX0-7802": 1, "EG11643-MONOMER": -2}	"diguanylate cyclase DgcZ"	{}
-"CPLX0-7805_RXN"	{"CPLX0-7805": 1, "G6157-MONOMER": -1, "G6156-MONOMER": -1, "G6155-MONOMER": -1}	null	{"CPD-7": 1, "CPD-6": 1, "FAD": 1, "CPD0-1882": 1}
+"CPLX0-7805_RXN"	{"CPLX0-7805": 1, "G6157-MONOMER": -1, "G6156-MONOMER": -1, "G6155-MONOMER": -1}	null	{"CPD-7": 1, "CPD-6": 1, "FAD": 1, "CPD-23445": 1}
 "CPLX0-7806_RXN"	{"CPLX0-7806": 1, "G7194-MONOMER": -2}	"disulfide bond oxidoreductase YfcG"	{}
 "CPLX0-7807_RXN"	{"CPLX0-7807": 1, "EG11952-MONOMER": null, "YJCQ-MONOMER": null, "EG11954-MONOMER": null}	"putative multidrug efflux pump MdtNOP"	{}
 "CPLX0-7808_RXN"	{"CPLX0-7808": 1, "COPROGENOXI-MONOMER": -2}	null	{"MN+2": 1}
@@ -884,7 +888,7 @@
 "FABZ-CPLX_RXN"	{"FABZ-CPLX": 1, "FABZ-MONOMER": -6}	"3-hydroxy-acyl-[acyl-carrier-protein] dehydratase"	{}
 "FAO-CPLX_RXN"	{"FAO-CPLX": 1, "FADB-MONOMER": -2, "FADA-MONOMER": -2}	"aerobic fatty acid oxidation complex"	{}
 "FHLMULTI-CPLX_RXN"	{"FHLMULTI-CPLX": 1, "FORMATEDEHYDROGH-MONOMER": -1, "HYDROG3-CPLX": -1}	"formate hydrogenlyase complex"	{"CPD-15873": 1, "CPD-7": 1}
-"FLAGELLAR-MOTOR-COMPLEX_RXN"	{"FLAGELLAR-MOTOR-COMPLEX": 1, "FLGH-FLAGELLAR-L-RING": null, "MOTA-FLAGELLAR-MOTOR-STATOR-PROTEIN": null, "MOTB-FLAGELLAR-MOTOR-STATOR-PROTEIN": null, "FLGB-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGC-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGF-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGG-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGI-FLAGELLAR-P-RING": null, "FLIF-FLAGELLAR-MS-RING": null, "FLIG-FLAGELLAR-SWITCH-PROTEIN": null, "FLIM-FLAGELLAR-C-RING-SWITCH": null, "FLIN-FLAGELLAR-C-RING-SWITCH": null}	"flagellar basal body"	{}
+"FLAGELLAR-MOTOR-COMPLEX_RXN"	{"FLAGELLAR-MOTOR-COMPLEX": 1, "FLGH-FLAGELLAR-L-RING": null, "MOTA-FLAGELLAR-MOTOR-STATOR-PROTEIN": null, "MOTB-FLAGELLAR-MOTOR-STATOR-PROTEIN": null, "FLGB-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGC-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGF-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGG-FLAGELLAR-MOTOR-ROD-PROTEIN": null, "FLGI-FLAGELLAR-P-RING": null, "FLIF-FLAGELLAR-MS-RING": null, "FLIG-FLAGELLAR-SWITCH-PROTEIN": null, "FLIM-FLAGELLAR-C-RING-SWITCH": null, "FLIN-FLAGELLAR-C-RING-SWITCH": null, "EG10322-MONOMER": null, "EG11346-MONOMER": null}	"flagellar basal body"	{}
 "FOLD-CPLX_RXN"	{"FOLD-CPLX": 1, "FOLD-MONOMER": -2}	"bifunctional methylenetetrahydrofolate dehydrogenase / methenyltetrahydrofolate cyclohydrolase"	{}
 "FOLE-CPLX_RXN"	{"FOLE-CPLX": 1, "GTP-CYCLOHYDRO-I-MONOMER": -10}	"GTP cyclohydrolase 1"	{"ZN+2": 1}
 "FOLXTET-CPLX_RXN"	{"FOLXTET-CPLX": 1, "H2NTPEPIM-MONOMER": -8}	"dihydroneopterin triphosphate 2'-epimerase"	{"MG+2": 1}

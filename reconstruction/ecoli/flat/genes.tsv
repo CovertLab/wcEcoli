@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 28.0
-# Date and time generated: October 30, 2023, 10:06:18
+# Version: 28.1
+# Date and time generated: February 27, 2024, 13:07:30
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "EG10001"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
 "EG10002"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	795862	796551	"+"	["EG10002_RNA"]
@@ -3946,7 +3946,7 @@
 "G7061"	"zinT"	["zinT", "yodA", "b1973", "ECK1969"]	2041375	2042025	"+"	["G7061_RNA"]
 "G7062"	"yodB"	["yodB", "b1974", "ECK1970"]	2042368	2042898	"+"	["G7062_RNA"]
 "G7063"	"mtfA"	["mtfA", "yeeI", "b1976", "ECK1972"]	2043651	2044448	"+"	["G7063_RNA"]
-"G7064"	"yeeJ"	["yeeJ", "b1978", "ECK1974"]	2044938	2052014	"+"	["G7064_RNA"]
+"G7064"	"yeeJ"	["yeeJ", "b1978", "ECK1974"]	2044995	2052014	"+"	["G7064_RNA"]
 "G7066"	"yeeL"	["yeeL", "yeeK", "b1980", "b1979", "b4497", "ECK1975"]	2052276	2053328	"-"	["G7066_RNA"]
 "G7067"	"shiA"	["shiA", "yeeM", "b1981", "ECK1976"]	2053643	2054959	"+"	["G7067_RNA"]
 "G7068"	"yeeN"	["yeeN", "b1983", "ECK1978"]	2056858	2057574	"+"	["G7068_RNA"]
