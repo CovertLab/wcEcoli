@@ -60,9 +60,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			rects = ax.barh(
 				0, bar_widths[i], left = bar_starts[i],
 				height = 0.5, label=labels[i], color=colors[i])
-			if i == (len(slice_sizes) - 1):
+			if i == 0:
 				text_color = colors[0]
-				ax.bar_label(rects, labels = [str(slice_sizes[0]) + "%"], label_type='center', color=text_color)
+				ax.bar_label(rects, labels = [" " + str(slice_sizes[0]) + "%"], label_type='edge', color=text_color)
 		ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
 				  loc='lower left', fontsize='small')
 
