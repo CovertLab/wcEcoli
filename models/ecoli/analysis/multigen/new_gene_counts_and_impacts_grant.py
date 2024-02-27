@@ -306,7 +306,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
-			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
+			exportFigure(
+				plt, plotOutDir, plotOutFileName + plot_suffix + "_"
+				+ str(START_GEN) + "_" + str(END_GEN), metadata)
 			plt.close("all")
 
 if __name__ == '__main__':
