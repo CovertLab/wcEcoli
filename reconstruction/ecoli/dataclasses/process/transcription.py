@@ -820,8 +820,7 @@ class Transcription(object):
 				end_pos = start_pos + cistron_id_to_length[cistron_id] - 1
 
 				# End position should stay within length of entire RNA
-				try: assert end_pos < rna_lengths[rna_idx]
-				except: import ipdb; ipdb.set_trace()
+				assert end_pos < rna_lengths[rna_idx]
 
 				# Key: (index of cistron, index of RNA)
 				# Value: (start position, end position)
