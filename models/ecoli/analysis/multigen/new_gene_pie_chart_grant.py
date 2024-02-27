@@ -26,14 +26,16 @@ SLICE_COLOR = (66/255, 170/255, 154/255)
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		variant = 7
-		slice_sizes = [0.023 * 100, 100 - 0.023 * 100]
-		plot_suffix = "_" + str(variant) + "_rnap_fraction"
+		variant = 1 # TODO: CHANGE
+		fraction = 0.027 # TODO: CHANGE
+		data_desc = "_ribos_fraction" # TODO: CHANGE
+
+		slice_sizes = [fraction * 100, 100 - fraction * 100]
+		plot_suffix = "_" + str(variant) + data_desc
 		labels = ["Exogenous Gene", "Native Genes"]
 		colors = [SLICE_COLOR, "#dfdfdf"]
 
 		# Plotting
-
 		# Pie Chart
 		plt.figure(figsize = (4, 4))
 		fig, ax = plt.subplots()
