@@ -9,6 +9,7 @@ import pickle
 import os
 
 from matplotlib import pyplot as plt
+import matplotlib as mpl
 # noinspection PyUnresolvedReferences
 import numpy as np
 from numpy import inf
@@ -191,9 +192,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_suffix = plot_suffixes[i]
 
 			# Plotting
+			mpl.rcParams['axes.spines.right'] = False
+			mpl.rcParams['axes.spines.top'] = False
 			plt.figure(figsize = (8.5, 33))
 			plot_num = 1
-
 			ax1 = plt.subplot(total_plots, 1, plot_num)
 
 			# Growth Rate
