@@ -26,9 +26,9 @@ SLICE_COLOR = (66/255, 170/255, 154/255)
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		variant = 1 # TODO: CHANGE
-		fraction = 0.027 # TODO: CHANGE
-		data_desc = "_ribos_fraction" # TODO: CHANGE
+		variant = 6 # TODO: CHANGE
+		fraction = 0.232 # TODO: CHANGE
+		data_desc = "_ribos_frac" # TODO: CHANGE
 
 		slice_sizes = [fraction * 100, 100 - fraction * 100]
 		plot_suffix = "_" + str(variant) + data_desc
@@ -36,20 +36,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		colors = [SLICE_COLOR, "#dfdfdf"]
 
 		# Plotting
-		# Pie Chart
-		plt.figure(figsize = (4, 4))
-		fig, ax = plt.subplots()
-		ax.pie(slice_sizes, labels=labels, colors=colors) # autopct='%1.1f%%'
-		exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
-		plt.close("all")
-
 		# Stacked Bar Chart
 		mpl.rcParams['axes.spines.right'] = False
 		mpl.rcParams['axes.spines.top'] = False
 		mpl.rcParams['axes.spines.left'] = False
 		mpl.rcParams['axes.spines.bottom'] = False
 
-		fig, ax = plt.subplots(figsize=(8.5/2, 11/5))
+		fig, ax = plt.subplots(figsize=(8.5/2, 11/10))
 		ax.invert_yaxis()
 		ax.xaxis.set_visible(False)
 		ax.yaxis.set_visible(False)
@@ -63,8 +56,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				0, bar_widths[i], left = bar_starts[i],
 				height = 0.5, label=labels[i], color=colors[i])
 			if i == 0:
+				percent = round(slice_sizes[0], 1)
 				text_color = colors[0]
-				ax.bar_label(rects, labels = [" " + str(slice_sizes[0]) + "%"], label_type='edge', color=text_color)
+				ax.bar_label(rects, labels = [" " + str(percent) + "%"],
+							 label_type='edge', color=text_color, fontsize=14)
 		ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
 				  loc='lower left', fontsize='small')
 
