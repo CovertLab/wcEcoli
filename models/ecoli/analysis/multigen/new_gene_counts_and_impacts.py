@@ -20,6 +20,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
+LINE_COLOR = (66/255, 170/255, 154/255)
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def get_mRNA_ids_from_monomer_ids(self, sim_data, target_monomer_ids):
@@ -193,8 +194,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.figure(figsize = (8.5, 33))
 			plot_num = 1
 
-			# Growth Rate
 			ax1 = plt.subplot(total_plots, 1, plot_num)
+
+			# Growth Rate
 			growth_rate = np.ravel(read_stacked_columns(
 				cell_paths, "Mass", "instantaneous_growth_rate",
 				ignore_exception=True))
@@ -202,9 +204,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			convolution_array = (np.ones(moving_window) / moving_window)
 			growth_rate_convolved = np.convolve(
 				convolution_array, growth_rate, mode='same')
-			plt.plot(time.flatten() / 60., growth_rate_convolved)
+			plt.plot(time.flatten() / 60., growth_rate_convolved, color=LINE_COLOR)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim(0,.0004)
+			else:
+				plt.ylim(bottom=0)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
@@ -216,9 +220,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			mass = read_stacked_columns(
 				cell_paths, "Mass", "cellMass", ignore_exception=True)
-			plt.plot(time / 60., mass)
+			plt.plot(time / 60., mass, color=LINE_COLOR)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim(0,4000)
+			else:
+				plt.ylim(bottom=0)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
@@ -226,42 +232,46 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.title("Cell Mass")
 			plot_num += 1
 
-			# Gene Promoter Copy Number
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			if len(new_gene_mRNA_ids) == 1:
-				plt.plot(time / 60., new_gene_promoter_copy_numbers)
-			else:
-				for r in range(len(new_gene_mRNA_ids)):
-					plt.plot(time / 60., new_gene_promoter_copy_numbers[:,r],
-							 label = new_gene_mRNA_ids[r])
-				plt.legend()
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((0,6))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				plt.xlim(standard_xlim)
-			plt.xlabel("Time (min)")
-			plt.ylabel("Gene Promoter Copy Number", fontsize="small")
-			plt.title("New Gene Promoter Copy Number")
-			plot_num += 1
+			# # Gene Promoter Copy Number
+			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# if len(new_gene_mRNA_ids) == 1:
+			# 	plt.plot(time / 60., new_gene_promoter_copy_numbers,
+			# 			 color=LINE_COLOR)
+			# else:
+			# 	for r in range(len(new_gene_mRNA_ids)):
+			# 		plt.plot(time / 60., new_gene_promoter_copy_numbers[:,r],
+			# 				 label = new_gene_mRNA_ids[r], color=LINE_COLOR)
+			# 	plt.legend()
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	plt.ylim((0,6))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	plt.xlim(standard_xlim)
+			# plt.xlabel("Time (min)")
+			# plt.ylabel("Gene Promoter Copy Number", fontsize="small")
+			# plt.title("New Gene Promoter Copy Number")
+			# plot_num += 1
 
 			# mRNA Counts
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if plot_suffix == "":
 				if len(new_gene_mRNA_ids) == 1:
-					plt.plot(time / 60., new_gene_mRNA_counts)
+					plt.plot(time / 60., new_gene_mRNA_counts, color=LINE_COLOR)
 				else:
 					for r in range(len(new_gene_mRNA_ids)):
 						plt.plot(time / 60., new_gene_mRNA_counts[:,r],
-								 label = new_gene_mRNA_ids[r])
+								 label = new_gene_mRNA_ids[r],
+								 color=LINE_COLOR)
 					plt.legend()
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				# plot on log scale instead
 				if len(new_gene_mRNA_ids) == 1:
-					plt.plot(time / 60., np.log10(new_gene_mRNA_counts + 1))
+					plt.plot(time / 60., np.log10(new_gene_mRNA_counts + 1),
+							 color=LINE_COLOR)
 				else:
 					for r in range(len(new_gene_mRNA_ids)):
 						plt.plot(time / 60., np.log10(new_gene_mRNA_counts[:,r] + 1),
-								 label = new_gene_mRNA_ids[r])
+								 label = new_gene_mRNA_ids[r],
+								 color=LINE_COLOR)
 					plt.legend()
 				plt.ylim((-1,4.5))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
@@ -275,20 +285,24 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if plot_suffix == "":
 				if len(new_gene_monomer_ids) == 1:
-					plt.plot(time / 60., new_gene_monomer_counts)
+					plt.plot(time / 60., new_gene_monomer_counts,
+							 color=LINE_COLOR)
 				else:
 					for m in range(len(new_gene_monomer_ids)):
 						plt.plot(time / 60., new_gene_monomer_counts[:,m],
-								 label = new_gene_monomer_ids[m])
+								 label = new_gene_monomer_ids[m],
+								 color=LINE_COLOR)
 					plt.legend()
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				# plot on log scale instead
 				if len(new_gene_monomer_ids) == 1:
-					plt.plot(time / 60., np.log10(new_gene_monomer_counts + 1))
+					plt.plot(time / 60., np.log10(new_gene_monomer_counts + 1),
+							 color=LINE_COLOR)
 				else:
 					for m in range(len(new_gene_monomer_ids)):
 						plt.plot(time / 60., np.log10(new_gene_monomer_counts[:,m] + 1),
-								 label = new_gene_monomer_ids[m])
+								 label = new_gene_monomer_ids[m],
+								 color=LINE_COLOR)
 					plt.legend()
 				plt.ylim((-1,7.5))
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
@@ -303,9 +317,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ppGpp_concentration = read_stacked_columns(
 				cell_paths, "GrowthLimits", "ppgpp_conc", remove_first=True,
 				ignore_exception=True)
-			plt.plot(time_no_first / 60., ppGpp_concentration)
+			plt.plot(time_no_first / 60., ppGpp_concentration, color=LINE_COLOR)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((0,150))
+			else:
+				plt.ylim(bottom=0)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
@@ -330,11 +346,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				ignore_exception=True)[:, active_rnap_index]
 			# Total
 			total_rnap_counts = inactive_rnap_counts + active_rnap_counts
+			plt.plot(time / 60., total_rnap_counts, color=LINE_COLOR)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((0,10000))
+			else:
+				plt.ylim(bottom=0)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
-			plt.plot(time / 60., total_rnap_counts)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Total RNAP Counts", fontsize="small")
 			plt.title("Total RNAP Counts")
@@ -359,9 +377,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
 			# Total
 			total_ribosome_counts = active_ribosome_counts + inactive_ribosome_counts
-			plt.plot(time / 60., total_ribosome_counts)
+			plt.plot(time / 60., total_ribosome_counts, color=LINE_COLOR)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim((0,40000))
+			else:
+				plt.ylim(bottom=0)
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
@@ -369,238 +389,238 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.title("Total Ribosome Counts")
 			plot_num += 1
 
-			# Glucose Comsumption Rate
-			# TODO: extend to other carbon sources
-			GLUCOSE_ID = "GLC[p]"
-			FLUX_UNITS = units.mmol / units.g / units.h
-			MASS_UNITS = units.fg
-			GROWTH_UNITS = units.fg / units.s
-			fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
-			external_molecule_ids = np.array(
-				fba_results.readAttribute("externalMoleculeIDs"))
-			fba_results.close()
-			if GLUCOSE_ID not in external_molecule_ids:
-				print("This plot only runs when glucose is the carbon source.")
-				return
-			glucose_idx = np.where(external_molecule_ids == GLUCOSE_ID)[0][0]
-			glucose_flux = FLUX_UNITS * read_stacked_columns(
-				cell_paths, "FBAResults", "externalExchangeFluxes",
-				ignore_exception=True, remove_first=True)[:, glucose_idx]
-			glucose_mw = sim_data.getter.get_mass(GLUCOSE_ID)
-			cell_dry_mass = MASS_UNITS * read_stacked_columns(
-				cell_paths, "Mass", "dryMass", ignore_exception=True,
-				remove_first=True).flatten()
-			glucose_mass_flux = glucose_flux * glucose_mw * cell_dry_mass
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			moving_window = min(300, len(glucose_mass_flux.asNumber()))
-			convolution_array = (np.ones(moving_window) / moving_window)
-			glucose_mass_flux_convolved = np.convolve(
-				convolution_array, glucose_mass_flux.asNumber(), mode='same')
-			plt.plot(time_no_first / 60., -glucose_mass_flux_convolved)
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((0,1800))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				plt.xlim(standard_xlim)
-			plt.xlabel("Time (min)")
-			plt.ylabel("Glucose Comsumption Rate (fg/h)", fontsize='x-small')
-			plt.title("Glucose Consumption Rate")
-			plot_num += 1
-
-			# New Gene RNA Synthesis Probability
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			new_gene_target_rna_synth_prob = read_stacked_columns(
-				cell_paths, 'RnaSynthProb', 'target_rna_synth_prob',
-				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
-			new_gene_actual_rna_synth_prob = read_stacked_columns(
-				cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
-				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
-
-			if len(new_gene_mRNA_ids) == 1:
-				plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
-						 label="Target")
-				plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
-						 label="Actual")
-			else:
-				for r in range(len(new_gene_mRNA_ids)):
-					plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob[:,r],
-							 label = new_gene_mRNA_ids[r] + ": Target")
-					plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob[:, r],
-							 label=new_gene_mRNA_ids[r] + ": Actual")
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((-0.1,0.5))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				plt.xlim(standard_xlim)
-			plt.xlabel("Time (min)")
-			plt.ylabel("RNA Synthesis Probability", fontsize='x-small')
-			plt.title("New Gene RNA Synthesis Probability")
-			plt.legend()
-			plot_num += 1
-
-			# New Gene Protein Initialization Probability
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			new_gene_target_protein_init_prob = read_stacked_columns(
-				cell_paths, 'RibosomeData', 'target_prob_translation_per_transcript',
-				ignore_exception=True, remove_first=True)[:, new_gene_monomer_indexes]
-			new_gene_actual_protein_init_prob = read_stacked_columns(
-				cell_paths, 'RibosomeData', 'actual_prob_translation_per_transcript',
-				ignore_exception=True, remove_first=True)[:, new_gene_monomer_indexes]
-
-			if len(new_gene_monomer_ids) == 1:
-				plt.plot(time_no_first / 60., new_gene_target_protein_init_prob,
-						 label="Target")
-				plt.plot(time_no_first / 60., new_gene_actual_protein_init_prob,
-						 label="Actual")
-			else:
-				for r in range(len(new_gene_monomer_ids)):
-					plt.plot(time_no_first / 60., new_gene_target_protein_init_prob[:,r],
-							 label = new_gene_monomer_ids[r] + ": Target")
-					plt.plot(time_no_first/ 60., new_gene_actual_protein_init_prob[:, r],
-							 label=new_gene_monomer_ids[r] + ": Actual")
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((-0.1, 1.1))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				plt.xlim(standard_xlim)
-			plt.xlabel("Time (min)")
-			plt.ylabel("Probability Translation Per Transcript", fontsize='x-small')
-			plt.title("New Gene Protein Initialization Probability")
-			plt.legend()
-			plot_num += 1
-
-			# mRNA Counts, Gene Promoter Copy Number, and RNA Synth Prob
-			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			ax3 = ax2.twinx()
-			# plot on log scale instead
-			ax2.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
-					 label="Target")
-			ax2.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
-					 label="Actual")
-			ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
-			ax3.plot(time / 60., 2 * new_gene_promoter_copy_numbers, label="Copy Number", color = "red")
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				ax2.set_ylim(((-0.1, 0.5)))
-				ax3.set_ylim((-1,4.5))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				ax2.set_xlim(standard_xlim)
-			ax2.set_xlabel("Time (min)")
-			plt.title("New Gene mRNA Counts, Copy Number, and RNA Synth Prob")
-			plot_num += 1
-
-			# mRNA Counts and RNAP Counts
-			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			ax3 = ax2.twinx()
-			# plot on log scale instead
-			ax2.plot(time / 60., total_rnap_counts)
-			ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				ax2.set_ylim((0,10000))
-				ax3.set_ylim((-1,4.5))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				ax2.set_xlim(standard_xlim)
-			ax2.set_xlabel("Time (min)")
-			plt.title("New Gene mRNA Counts and RNAP Counts")
-			plot_num += 1
-
-			# TODO: New Gene mRNA mass fraction
-
-			# TODO: New Gene Protein Mass Fraction
-
-			# Active RNAP Portion Allocation
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			# Active RNAP Counts
-			uniqueMoleculeCounts = TableReader(
-				os.path.join(simOutDir, "UniqueMoleculeCounts"))
-			active_rnap_index = uniqueMoleculeCounts.readAttribute(
-				"uniqueMoleculeIds").index('active_RNAP')
-			active_rnap_counts = read_stacked_columns(
-				cell_paths, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts',
-				ignore_exception=True)[:, active_rnap_index]
-			# New Gene RNAP Portion
-			new_gene_mRNA_indexes = new_gene_mRNA_indexes
-			new_gene_rnap_counts = read_stacked_columns(
-				cell_paths, "RNACounts", "partial_mRNA_counts",
-				ignore_exception=True)[:, new_gene_mRNA_indexes].flatten()
-			new_gene_rnap_portion = new_gene_rnap_counts / active_rnap_counts
-			# rRNA RNAP Portion
-			rrna_rnap_counts = np.sum(read_stacked_columns(
-				cell_paths, "RNACounts", "partial_rRNA_counts",
-				ignore_exception=True), axis = 1).flatten()
-			rrna_rnap_portion = rrna_rnap_counts / active_rnap_counts
-			# RNAP Subunit RNAP Portion
-			RNAP_subunit_monomer_ids = sim_data.molecule_groups.RNAP_subunits
-			rnap_subunit_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
-				sim_data, cell_paths, RNAP_subunit_monomer_ids, "mRNA")
-			rnap_subunit_rnap_counts = np.sum(read_stacked_columns(
-				cell_paths, "RNACounts", "partial_mRNA_counts",
-				ignore_exception=True)[:, rnap_subunit_mRNA_indexes], axis=1).flatten()
-			rnap_subunit_rnap_portion = rnap_subunit_rnap_counts / active_rnap_counts
-			# Ribosomal Proteins RNAP Portion
-			ribosomal_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
-			ribosomal_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
-				sim_data, cell_paths, ribosomal_monomer_ids, "mRNA")
-			ribosomal_rnap_counts = np.sum(read_stacked_columns(
-				cell_paths, "RNACounts", "partial_mRNA_counts",
-				ignore_exception=True)[:, ribosomal_mRNA_indexes], axis=1).flatten()
-			ribosomal_rnap_portion = ribosomal_rnap_counts / active_rnap_counts
-			# Plot
-			plt.plot(time / 60., rnap_subunit_rnap_portion, label="RNAP Subunit")
-			plt.plot(time / 60., ribosomal_rnap_portion, label="Ribo. Prot.")
-			plt.plot(time / 60., new_gene_rnap_portion, label = "New Gene")
-			plt.plot(time / 60., rrna_rnap_portion, label="rRNA")
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((-0.1, 1.1))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				plt.xlim(standard_xlim)
-			plt.xlabel("Time (min)")
-			plt.ylabel("Portion of Active RNAPs", fontsize='x-small')
-			plt.title("Allocation of Active RNAPs")
-			plt.legend(fontsize="x-small")
-			plot_num += 1
-
-			# Active Ribosome Portion Allocation
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			# Active Ribosome Counts
-			unique_molecule_counts_table = TableReader(
-				os.path.join(simOutDir, "UniqueMoleculeCounts"))
-			ribosome_index = unique_molecule_counts_table.readAttribute(
-				"uniqueMoleculeIds").index('active_ribosome')
-			active_ribosome_counts = read_stacked_columns(
-				cell_paths, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
-			# New Gene Ribosome Portion
-			new_gene_ribosome_counts = read_stacked_columns(
-				cell_paths, "RibosomeData", "n_ribosomes_per_transcript",
-				ignore_exception=True)[:, new_gene_monomer_indexes].flatten()
-			new_gene_ribosome_portion = new_gene_ribosome_counts / active_ribosome_counts
-			# RNAP Subunits Ribosome Portion
-			RNAP_subunit_monomer_ids = sim_data.molecule_groups.RNAP_subunits
-			rnap_subunit_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
-				sim_data, cell_paths, RNAP_subunit_monomer_ids, "monomer")
-			rnap_subunit_ribosome_counts = np.sum(read_stacked_columns(
-				cell_paths, "RibosomeData", "n_ribosomes_per_transcript",
-				ignore_exception=True)[:, rnap_subunit_monomer_indexes], axis=1).flatten()
-			rnap_subunit_ribosome_portion = rnap_subunit_ribosome_counts / active_ribosome_counts
-			# Ribosomal Proteins Ribosome Portion
-			ribosomal_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
-			ribosomal_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
-				sim_data, cell_paths, ribosomal_monomer_ids, "monomer")
-			ribosomal_ribosome_counts = np.sum(read_stacked_columns(
-				cell_paths, "RibosomeData", "n_ribosomes_per_transcript",
-				ignore_exception=True)[:, ribosomal_monomer_indexes], axis=1).flatten()
-			ribosomal_ribosome_portion = ribosomal_ribosome_counts / active_ribosome_counts
-			# Plot
-			plt.plot(time / 60., rnap_subunit_ribosome_portion, label="RNAP Subunit")
-			plt.plot(time / 60., ribosomal_ribosome_portion, label="Ribo. Prot.")
-			plt.plot(time / 60., new_gene_ribosome_portion, label = "New Gene")
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-				plt.ylim((-0.1, 1.1))
-			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-				plt.xlim(standard_xlim)
-			plt.xlabel("Time (min)")
-			plt.ylabel("Portion of Active Ribosomes", fontsize='x-small')
-			plt.title("Allocation of Active Ribosomes")
-			plt.legend(fontsize="x-small")
-			plot_num += 1
+			# # Glucose Comsumption Rate
+			# # TODO: extend to other carbon sources
+			# GLUCOSE_ID = "GLC[p]"
+			# FLUX_UNITS = units.mmol / units.g / units.h
+			# MASS_UNITS = units.fg
+			# GROWTH_UNITS = units.fg / units.s
+			# fba_results = TableReader(os.path.join(simOutDir, "FBAResults"))
+			# external_molecule_ids = np.array(
+			# 	fba_results.readAttribute("externalMoleculeIDs"))
+			# fba_results.close()
+			# if GLUCOSE_ID not in external_molecule_ids:
+			# 	print("This plot only runs when glucose is the carbon source.")
+			# 	return
+			# glucose_idx = np.where(external_molecule_ids == GLUCOSE_ID)[0][0]
+			# glucose_flux = FLUX_UNITS * read_stacked_columns(
+			# 	cell_paths, "FBAResults", "externalExchangeFluxes",
+			# 	ignore_exception=True, remove_first=True)[:, glucose_idx]
+			# glucose_mw = sim_data.getter.get_mass(GLUCOSE_ID)
+			# cell_dry_mass = MASS_UNITS * read_stacked_columns(
+			# 	cell_paths, "Mass", "dryMass", ignore_exception=True,
+			# 	remove_first=True).flatten()
+			# glucose_mass_flux = glucose_flux * glucose_mw * cell_dry_mass
+			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# moving_window = min(300, len(glucose_mass_flux.asNumber()))
+			# convolution_array = (np.ones(moving_window) / moving_window)
+			# glucose_mass_flux_convolved = np.convolve(
+			# 	convolution_array, glucose_mass_flux.asNumber(), mode='same')
+			# plt.plot(time_no_first / 60., -glucose_mass_flux_convolved)
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	plt.ylim((0,1800))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	plt.xlim(standard_xlim)
+			# plt.xlabel("Time (min)")
+			# plt.ylabel("Glucose Comsumption Rate (fg/h)", fontsize='x-small')
+			# plt.title("Glucose Consumption Rate")
+			# plot_num += 1
+			#
+			# # New Gene RNA Synthesis Probability
+			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# new_gene_target_rna_synth_prob = read_stacked_columns(
+			# 	cell_paths, 'RnaSynthProb', 'target_rna_synth_prob',
+			# 	ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
+			# new_gene_actual_rna_synth_prob = read_stacked_columns(
+			# 	cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
+			# 	ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
+			#
+			# if len(new_gene_mRNA_ids) == 1:
+			# 	plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
+			# 			 label="Target")
+			# 	plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
+			# 			 label="Actual")
+			# else:
+			# 	for r in range(len(new_gene_mRNA_ids)):
+			# 		plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob[:,r],
+			# 				 label = new_gene_mRNA_ids[r] + ": Target")
+			# 		plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob[:, r],
+			# 				 label=new_gene_mRNA_ids[r] + ": Actual")
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	plt.ylim((-0.1,0.5))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	plt.xlim(standard_xlim)
+			# plt.xlabel("Time (min)")
+			# plt.ylabel("RNA Synthesis Probability", fontsize='x-small')
+			# plt.title("New Gene RNA Synthesis Probability")
+			# plt.legend()
+			# plot_num += 1
+			#
+			# # New Gene Protein Initialization Probability
+			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# new_gene_target_protein_init_prob = read_stacked_columns(
+			# 	cell_paths, 'RibosomeData', 'target_prob_translation_per_transcript',
+			# 	ignore_exception=True, remove_first=True)[:, new_gene_monomer_indexes]
+			# new_gene_actual_protein_init_prob = read_stacked_columns(
+			# 	cell_paths, 'RibosomeData', 'actual_prob_translation_per_transcript',
+			# 	ignore_exception=True, remove_first=True)[:, new_gene_monomer_indexes]
+			#
+			# if len(new_gene_monomer_ids) == 1:
+			# 	plt.plot(time_no_first / 60., new_gene_target_protein_init_prob,
+			# 			 label="Target")
+			# 	plt.plot(time_no_first / 60., new_gene_actual_protein_init_prob,
+			# 			 label="Actual")
+			# else:
+			# 	for r in range(len(new_gene_monomer_ids)):
+			# 		plt.plot(time_no_first / 60., new_gene_target_protein_init_prob[:,r],
+			# 				 label = new_gene_monomer_ids[r] + ": Target")
+			# 		plt.plot(time_no_first/ 60., new_gene_actual_protein_init_prob[:, r],
+			# 				 label=new_gene_monomer_ids[r] + ": Actual")
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	plt.ylim((-0.1, 1.1))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	plt.xlim(standard_xlim)
+			# plt.xlabel("Time (min)")
+			# plt.ylabel("Probability Translation Per Transcript", fontsize='x-small')
+			# plt.title("New Gene Protein Initialization Probability")
+			# plt.legend()
+			# plot_num += 1
+			#
+			# # mRNA Counts, Gene Promoter Copy Number, and RNA Synth Prob
+			# ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# ax3 = ax2.twinx()
+			# # plot on log scale instead
+			# ax2.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
+			# 		 label="Target")
+			# ax2.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
+			# 		 label="Actual")
+			# ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
+			# ax3.plot(time / 60., 2 * new_gene_promoter_copy_numbers, label="Copy Number", color = "red")
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	ax2.set_ylim(((-0.1, 0.5)))
+			# 	ax3.set_ylim((-1,4.5))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	ax2.set_xlim(standard_xlim)
+			# ax2.set_xlabel("Time (min)")
+			# plt.title("New Gene mRNA Counts, Copy Number, and RNA Synth Prob")
+			# plot_num += 1
+			#
+			# # mRNA Counts and RNAP Counts
+			# ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# ax3 = ax2.twinx()
+			# # plot on log scale instead
+			# ax2.plot(time / 60., total_rnap_counts)
+			# ax3.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), label = "log10(mRNA counts + 1)", color = "cyan")
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	ax2.set_ylim((0,10000))
+			# 	ax3.set_ylim((-1,4.5))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	ax2.set_xlim(standard_xlim)
+			# ax2.set_xlabel("Time (min)")
+			# plt.title("New Gene mRNA Counts and RNAP Counts")
+			# plot_num += 1
+			#
+			# # TODO: New Gene mRNA mass fraction
+			#
+			# # TODO: New Gene Protein Mass Fraction
+			#
+			# # Active RNAP Portion Allocation
+			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# # Active RNAP Counts
+			# uniqueMoleculeCounts = TableReader(
+			# 	os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			# active_rnap_index = uniqueMoleculeCounts.readAttribute(
+			# 	"uniqueMoleculeIds").index('active_RNAP')
+			# active_rnap_counts = read_stacked_columns(
+			# 	cell_paths, 'UniqueMoleculeCounts',
+			# 	'uniqueMoleculeCounts',
+			# 	ignore_exception=True)[:, active_rnap_index]
+			# # New Gene RNAP Portion
+			# new_gene_mRNA_indexes = new_gene_mRNA_indexes
+			# new_gene_rnap_counts = read_stacked_columns(
+			# 	cell_paths, "RNACounts", "partial_mRNA_counts",
+			# 	ignore_exception=True)[:, new_gene_mRNA_indexes].flatten()
+			# new_gene_rnap_portion = new_gene_rnap_counts / active_rnap_counts
+			# # rRNA RNAP Portion
+			# rrna_rnap_counts = np.sum(read_stacked_columns(
+			# 	cell_paths, "RNACounts", "partial_rRNA_counts",
+			# 	ignore_exception=True), axis = 1).flatten()
+			# rrna_rnap_portion = rrna_rnap_counts / active_rnap_counts
+			# # RNAP Subunit RNAP Portion
+			# RNAP_subunit_monomer_ids = sim_data.molecule_groups.RNAP_subunits
+			# rnap_subunit_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			# 	sim_data, cell_paths, RNAP_subunit_monomer_ids, "mRNA")
+			# rnap_subunit_rnap_counts = np.sum(read_stacked_columns(
+			# 	cell_paths, "RNACounts", "partial_mRNA_counts",
+			# 	ignore_exception=True)[:, rnap_subunit_mRNA_indexes], axis=1).flatten()
+			# rnap_subunit_rnap_portion = rnap_subunit_rnap_counts / active_rnap_counts
+			# # Ribosomal Proteins RNAP Portion
+			# ribosomal_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
+			# ribosomal_mRNA_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			# 	sim_data, cell_paths, ribosomal_monomer_ids, "mRNA")
+			# ribosomal_rnap_counts = np.sum(read_stacked_columns(
+			# 	cell_paths, "RNACounts", "partial_mRNA_counts",
+			# 	ignore_exception=True)[:, ribosomal_mRNA_indexes], axis=1).flatten()
+			# ribosomal_rnap_portion = ribosomal_rnap_counts / active_rnap_counts
+			# # Plot
+			# plt.plot(time / 60., rnap_subunit_rnap_portion, label="RNAP Subunit")
+			# plt.plot(time / 60., ribosomal_rnap_portion, label="Ribo. Prot.")
+			# plt.plot(time / 60., new_gene_rnap_portion, label = "New Gene")
+			# plt.plot(time / 60., rrna_rnap_portion, label="rRNA")
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	plt.ylim((-0.1, 1.1))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	plt.xlim(standard_xlim)
+			# plt.xlabel("Time (min)")
+			# plt.ylabel("Portion of Active RNAPs", fontsize='x-small')
+			# plt.title("Allocation of Active RNAPs")
+			# plt.legend(fontsize="x-small")
+			# plot_num += 1
+			#
+			# # Active Ribosome Portion Allocation
+			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# # Active Ribosome Counts
+			# unique_molecule_counts_table = TableReader(
+			# 	os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			# ribosome_index = unique_molecule_counts_table.readAttribute(
+			# 	"uniqueMoleculeIds").index('active_ribosome')
+			# active_ribosome_counts = read_stacked_columns(
+			# 	cell_paths, 'UniqueMoleculeCounts',
+			# 	'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
+			# # New Gene Ribosome Portion
+			# new_gene_ribosome_counts = read_stacked_columns(
+			# 	cell_paths, "RibosomeData", "n_ribosomes_per_transcript",
+			# 	ignore_exception=True)[:, new_gene_monomer_indexes].flatten()
+			# new_gene_ribosome_portion = new_gene_ribosome_counts / active_ribosome_counts
+			# # RNAP Subunits Ribosome Portion
+			# RNAP_subunit_monomer_ids = sim_data.molecule_groups.RNAP_subunits
+			# rnap_subunit_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			# 	sim_data, cell_paths, RNAP_subunit_monomer_ids, "monomer")
+			# rnap_subunit_ribosome_counts = np.sum(read_stacked_columns(
+			# 	cell_paths, "RibosomeData", "n_ribosomes_per_transcript",
+			# 	ignore_exception=True)[:, rnap_subunit_monomer_indexes], axis=1).flatten()
+			# rnap_subunit_ribosome_portion = rnap_subunit_ribosome_counts / active_ribosome_counts
+			# # Ribosomal Proteins Ribosome Portion
+			# ribosomal_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
+			# ribosomal_monomer_indexes = self.get_mRNA_indexes_from_monomer_ids(
+			# 	sim_data, cell_paths, ribosomal_monomer_ids, "monomer")
+			# ribosomal_ribosome_counts = np.sum(read_stacked_columns(
+			# 	cell_paths, "RibosomeData", "n_ribosomes_per_transcript",
+			# 	ignore_exception=True)[:, ribosomal_monomer_indexes], axis=1).flatten()
+			# ribosomal_ribosome_portion = ribosomal_ribosome_counts / active_ribosome_counts
+			# # Plot
+			# plt.plot(time / 60., rnap_subunit_ribosome_portion, label="RNAP Subunit")
+			# plt.plot(time / 60., ribosomal_ribosome_portion, label="Ribo. Prot.")
+			# plt.plot(time / 60., new_gene_ribosome_portion, label = "New Gene")
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+			# 	plt.ylim((-0.1, 1.1))
+			# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+			# 	plt.xlim(standard_xlim)
+			# plt.xlabel("Time (min)")
+			# plt.ylabel("Portion of Active Ribosomes", fontsize='x-small')
+			# plt.title("Allocation of Active Ribosomes")
+			# plt.legend(fontsize="x-small")
+			# plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
