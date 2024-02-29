@@ -4,10 +4,10 @@ This repository contains work to date on the [Covert Lab's](https://www.covert.s
 
 You can reach us at [WholeCellTeam](mailto:wholecellteam@lists.stanford.edu).
 
-For detailed information on the publication tentatively titled "Cross-evaluation
+For detailed information on the publication "Cross-evaluation
 of *E. coli*’s operon structures via a whole-cell model suggests alternative
-cellular benefits for low- versus high-expressing operons" (Sun et al., 2023),
-including instructions on how to reproduce the simulations and analyses, refer
+cellular benefits for low- versus high-expressing operons", Sun et al., *Cell Systems*
+(2024), including instructions on how to reproduce the simulations and analyses, refer
 to the [Operons](#Operons) section.
 
 ## Setup
