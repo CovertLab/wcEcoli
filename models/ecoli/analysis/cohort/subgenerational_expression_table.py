@@ -15,6 +15,9 @@ from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
 
+IGNORE_FIRST_N_GENS = 8
+
+
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -45,7 +48,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for cistron_id in mRNA_cistron_ids]
 
 		# Get subcolumn for mRNA cistron IDs in RNA counts table
-		cell_paths = self.ap.get_cells()
+		cell_paths = self.ap.get_cells(
+			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
+			only_successful=True)
 		simOutDir = os.path.join(cell_paths[0], 'simOut')
 		rna_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 		mRNA_cistron_ids_rna_counts_table = rna_counts_reader.readAttribute(
