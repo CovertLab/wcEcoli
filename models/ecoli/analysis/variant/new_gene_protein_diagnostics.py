@@ -39,6 +39,36 @@ if (exclude_timeout_cells==0):
 
 MAX_YLIM_PLOT = MAX_CELL_LENGTH
 
+"""
+designate any numbers for how many 
+proteins should be plotted in the plots here:
+"""
+# Number of random proteins to observe the protein counts (PCs) between variants:
+randnum = 10
+# Number of proteins with the largest PC increase between variants
+# to observe (this one will include GFP and other variants with zero PCs
+# in a variant:
+num = 10
+# Number of proteins with the smallest PC change between variants:
+min_num = 20
+# Number of proteins with the greatest change in PCs between variants
+# to observe (not including GFP and proteins with zero counts in a variant):
+max_num = 20
+# Number of proteins to visualize the max increases and max decreases in
+# protein counts between variants side by side:
+shared_diff_num = 10
+# Number of proteins to observe with the greatest fold increase in protein
+# counts when GFP is added:
+max_fold_num = 12
+# Number of proteins to observe with the largest fold decrease in
+# protein counts (not including GFP):
+min_fold_num = 200
+# Number of proteins to observe the max fold increase and decrease in protein
+# counts side by side:
+sharednum = 10
+# change this number to be the minimum PC value to plot with:
+filter_num = 1
+
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
@@ -68,9 +98,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids),\
 			'number of new gene monomers and mRNAs should be equal'
 
-		# Randomly select genes to observe with the new gene(s):
-		# edit this number as desired:
-		randnum = 100
+
+		# Randomly select proteins to observe with the new protein(s):
 
 		all_monomer_ids = monomer_sim_data['id']
 		original_monomer_ids = np.delete(all_monomer_ids, np.where(
@@ -113,50 +142,50 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:, protein_idxs], axis=0))
 			avg_monmer_counts = np.mean(gen_avg_monomer_counts, axis=0)
 
-			for i in range(len(protein_idxs)):
-				each_gen_avg_monomer_counts[i][variant] \
-					= gen_avg_monomer_counts[:,i]
-				each_gen_avg_log_monomer_counts[i][variant] = \
-					np.log10(gen_avg_monomer_counts[:,i] + 1)
-				all_avg_monomer_counts[i][variant] = avg_monmer_counts[i]
-				all_avg_log_monomer_counts[i][variant] = \
-					np.log10(avg_monmer_counts[i] + 1)
+			for m in range(len(protein_idxs)):
+				each_gen_avg_monomer_counts[m][variant] \
+					= gen_avg_monomer_counts[:,m]
+				each_gen_avg_log_monomer_counts[m][variant] = \
+					np.log10(gen_avg_monomer_counts[:,m] + 1)
+				all_avg_monomer_counts[m][variant] = avg_monmer_counts[m]
+				all_avg_log_monomer_counts[m][variant] = \
+					np.log10(avg_monmer_counts[m] + 1)
 
 		# Make plot for the random protein selections:
-		plt.figure(figsize = (8.5, 20))
+		plt.figure(figsize = (10, 6)) # 8.5, 11 is good for 100 genes!
 
 		logdata = all_avg_log_monomer_counts
 		ld=np.zeros((len(variants), len(protein_idxs)))
 
 		for variant in variants:
 			vardata=np.zeros((len(protein_idxs)))
-			for i in range(len(protein_idxs)):
-				data = logdata[i][variant]
-				vardata[i] = data
+			for m in range(len(protein_idxs)):
+				data = logdata[m][variant]
+				vardata[m] = data
 			ld[variant] = vardata
 
 		var0 = ld[0]
 		var1 = ld[1]
 
-		plt.barh(monomer_names, var0, 0.1, align = 'edge', label='no GFP')
+		plt.barh(monomer_names, var0, 0.1, align = 'edge',
+				 label='no GFP')
 		plt.barh(monomer_names, var1, -0.1, align = 'edge', label='GFP')
 
-		plt.xlabel("log(Average Protein Count)")
-		plt.ylabel("Protein ID")
+		plt.xlabel("log(Average Protein Count)", fontweight='bold')
+		plt.ylabel("Protein ID", fontweight='bold')
 		plt.legend()
-		plt.title("Protein Count Comparisons "
+		plt.title("Protein count comparisons between variants "
 				  "\n for "+str(randnum)
 				  +" randomly selected proteins ")
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName + '_Protein_Counts_for_'
-					 +str(randnum) +'_random_proteins', metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName + '_PCs_for_'
+					 +str(randnum) +'_random_proteins_wGFP_noFilter', metadata)
 		plt.close('all')
 
 
-		# Observe the protein count size differences between the two variants:
-		# TODO: change this number as desired:
-		num = 22
+
+		# Observe the largest protein count size differences between variants:
 
 		protein_counts = np.zeros((len(variants), len(original_monomer_ids)))
 		total_protein_counts = np.zeros((len(variants), len(all_monomer_ids)))
@@ -182,7 +211,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_protein_counts = np.array(total_protein_counts)
 
 		# Retreive the indicies and ids of the proteins with the maximum count
-		# differences between variants:
+		# differences between variants (including the newly added genes):
 		diff = abs(protein_counts[1] - protein_counts[0])
 		sortdiff = np.argsort(diff)
 		maxdiff = sortdiff[-num:]
@@ -198,32 +227,34 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_log_interest_proteins = np.zeros((
 			len(variants), len(interest_proteins)))
 		for variant in variants:
-			for i in range(len(interest_protein_idxs)):
-				avg_log_interest_proteins[variant][i] = \
-					np.log10(interest_protein_counts[variant][i] + 1)
+			for m in range(len(interest_protein_idxs)):
+				avg_log_interest_proteins[variant][m] = \
+					np.log10(interest_protein_counts[variant][m] + 1)
 
 		# Make plot for genes with the largest protein count differences:
-		plt.figure(figsize = (8.5, 20))
+		plt.figure(figsize = (10, 6))
+
 		var0 = avg_log_interest_proteins[0]
 		var1 = avg_log_interest_proteins[1]
 
-		plt.barh(interest_proteins, var0, 0.1, align='edge', label='no GFP')
-		plt.barh(interest_proteins, var1, -0.1, align='edge', label='GFP')
+		plt.barh(interest_proteins, var0, 0.1, align='edge',
+				 label='no GFP')
+		plt.barh(interest_proteins, var1, -0.1, align='edge',
+				 label='GFP')
 
 		plt.xlabel("log(Average Protein Count)")
 		plt.ylabel("Protein ID")
 		plt.legend()
-		plt.title(f"The {num} proteins with the greatest change in protein "
-				  f"\ncount between two varaints when a new gene is added")
+		plt.title(f"The {num} proteins with the greatest difference in protein "
+				  f"counts")
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName+'_max_' +
-					 str(num) +
-					 '_protein_count_differences_with_GFP',
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(num) +
+					 '_largest_absolute_PC_diffs_wGFP_noFilter',
 					 metadata)
 		plt.close('all')
 
-
+		# FILTER OUT ZEROS!
 		# Extract and view the proteins that have nonzero counts for a variant:
 		p_counts = np.array(protein_counts) # not including newly added proteins
 
@@ -262,28 +293,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		# Plot the results:
-		plt.figure(figsize=(8.5, 70))
+		plt.figure(figsize=(50, 60))
 		var0 = avg_log_NS_0_PCs[0]
 		var1 = avg_log_NS_0_PCs[1]
 
 		plt.barh(NS_0_PC_ids, var0, 0.1, align='edge', label='no GFP')
 		plt.barh(NS_0_PC_ids, var1, -0.1, align='edge', label='GFP')
 
-		plt.xlabel("log(Average Protein Count)")
-		plt.ylabel("Protein ID")
+		plt.xlabel("log(Average Protein Count)", fontweight='bold')
+		plt.ylabel("Protein ID", fontweight='bold')
 		plt.legend()
-		plt.title(f"The {len(nonshared_0_PC_ids)} proteins counts for proteins"
-				  f" that appear in only one variant"
-				  )
+		plt.title(f"The {len(nonshared_0_PC_ids)} proteins with zero protein"
+				  f"counts in one variant")
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 					 str(len(nonshared_0_PC_ids)) +
-					 '_unique_protein_appearances_PCs', metadata)
+					 '_unique_PC_appearances_noGFP_noFilter', metadata)
 		plt.close('all')
 
 
-
+		# Filter data to obtain all non-zero :
 		# Extract all proteins with non-zero protein counts in both variants:
 		nonzero_p_counts_var0_idxs = np.nonzero(p_counts[0])
 		nonzero_p_counts_var1_idxs = np.nonzero(p_counts[1])
@@ -292,20 +322,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		nonzero_PCs = p_counts[:, shared_nonzero_PCs_idxs]
 		nonzero_PCs_ids = [inv_monomer_idx_dict.get(monomer_id)
 						   for monomer_id in shared_nonzero_PCs_idxs]
+		nonzero_ids = all_monomer_ids[shared_nonzero_PCs_idxs]
 
 
-		# Observe which protiens have the greatest increase in
+
+		# filter again to a chosen minimum value:
+		if filter_num == 0:
+			pass
+		else:
+			var0_filter_PCs_idxs = np.nonzero(nonzero_PCs[0] > filter_num)
+			var1_filter_PCs_idxs = np.nonzero(nonzero_PCs[1] > filter_num)
+			shared_filtered_PC_idxs = np.intersect1d(var0_filter_PCs_idxs,
+													 var1_filter_PCs_idxs)
+			nonzero_PCs = nonzero_PCs[:, shared_filtered_PC_idxs]
+			nonzero_PCs_ids = np.array(nonzero_PCs_ids)
+			nonzero_PCs_ids = nonzero_PCs_ids[shared_filtered_PC_idxs]
+
+
+
+		# Observe which protiens have the smallest decrease in
 		# protein counts with the addition of GFP:
-		# TODO: Change this number as desired:
-		min_num = 21
 
 		min_diffs = abs(nonzero_PCs[1] - nonzero_PCs[0])
+		min_PC_diff_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		sortdiff = np.argsort(min_diffs)
 		min_diff_idxs = sortdiff[:min_num]
 		min_changes = []
 		min_PC_diffs_ids = []
 		for idx in min_diff_idxs:
-			min_changes.append(min_diffs[idx])
+			min_changes.append(min_PC_diff_percents[idx])
 			min_PC_diffs_ids.append(nonzero_PCs_ids[idx])
 		avg_log_min_PC_diffs = np.zeros((len(variants), len(min_diff_idxs)))
 		for variant in variants:
@@ -314,39 +360,79 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_log_min_PC_diffs[variant][idx] = \
 					np.log10(nonzero_PCs[variant][index] + 1)
 
-		# Make plot for genes with the largest protein count differences:
-		plt.figure(figsize=(8.5, 20))
+		# Make plot for genes with the smallest protein count differences:
+		plt.figure(figsize=(10, 6))
+
+		# create labels for the % changes:
+		min_change_str = []
+		for m in range(min_num):
+			min_value = ' ' + str(round(min_changes[m], 3)) + '%'
+			min_change_str.append(min_value)
+
 		min_diff_var0 = avg_log_min_PC_diffs[0]
 		min_diff_var1 = avg_log_min_PC_diffs[1]
 
 		plt.barh(min_PC_diffs_ids, min_diff_var0,
-				 0.1, align='edge', label='no GFP')
+				0.1, align='edge', label='no GFP')
 		plt.barh(min_PC_diffs_ids, min_diff_var1,
-				 height=-0.1, align='edge', label='GFP')
+				height=-0.1, align='edge', label='GFP')
 
-		plt.xlabel("log(Average Protein Count)")
-		plt.ylabel("Protein ID")
+		plt.xlabel("log(Average Protein Count)", fontweight='bold')
+		plt.ylabel("Protein ID", fontweight='bold')
 		plt.legend()
-		plt.title(f"The {min_num} proteins with the smallest change in protein"
-				  f" \ncount between two varaints when a new gene is added")
+		plt.title(f"The {min_num} proteins with the smallest change "
+					 f" \nin in protein counts when GFP is added "
+					 )
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
-					 '_min_protein_count_change', metadata)
+					 '_min_PC_diffs_woGFP_woPD_Filter_'
+					 + str(filter_num), metadata)
 		plt.close('all')
 
-		# Observe which protiens have the greatest increase in protein counts
-		# with the addition of GFP (but not including GFP):
-		# TODO: Change this number as desired:
-		max_num = 20
+		# plot with percent difference on the side
+		fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
+
+		ax.barh(min_PC_diffs_ids, min_diff_var0,
+				0.1, align='edge', label='no GFP')
+		ax.barh(min_PC_diffs_ids, min_diff_var1,
+				height=-0.1, align='edge', label='GFP')
+
+
+		ax.set_xlabel("log(Average Protein Count)", fontweight='bold')
+		ax.set_ylabel("Protein ID", fontweight='bold')
+
+		ax2 = ax.twinx()
+		ax2.set_ylim(ax.get_ylim())
+		min_change_str = np.array(min_change_str)
+		ax2.set_yticks(np.arange(len(min_PC_diffs_ids)), labels=min_change_str)
+		ax2.set_ylabel('% difference', fontweight='bold')
+
+		ax.legend()
+		ax.set_title(f"The {min_num} proteins with the smallest change "
+					 f" \nin in protein counts when GFP is added "
+					 )
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
+					 '_min_PC_diffs_woGFP_wPD_Filter_' + str(filter_num),
+					 metadata)
+		plt.close('all')
+
+
+		# Observe which protiens have the greatest change in protein counts
+		# with the addition of GFP (but not including GFP or other proteins
+		# with zero PCs for a variant):
 
 		max_diffs = abs(nonzero_PCs[1] - nonzero_PCs[0])
+		max_PC_diff_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		sortdiff = np.argsort(max_diffs)
 		max_diff_idxs = sortdiff[-max_num:]
 		max_changes = []
 		max_PC_diffs_ids = []
 		for idx in max_diff_idxs:
-			max_changes.append(max_diffs[idx])
+			max_changes.append(max_PC_diff_percents[idx])
 			max_PC_diffs_ids.append(nonzero_PCs_ids[idx])
 		avg_log_max_PC_diffs = np.zeros((len(variants), len(max_diff_idxs)))
 		for variant in variants:
@@ -356,7 +442,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(nonzero_PCs[variant][index] + 1)
 
 		# Make plot for genes with the largest protein count differences:
-		plt.figure(figsize=(8.5, 20))
+		plt.figure(figsize=(10, 6))
 		max_diff_var0 = avg_log_max_PC_diffs[0]
 		max_diff_var1 = avg_log_max_PC_diffs[1]
 
@@ -366,68 +452,130 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 height=-0.1, align='edge', label='GFP')
 
 		plt.xlabel("log(Average Protein Count)")
-		plt.ylabel("Protein ID")
+		plt.ylabel("Protein ID", fontweight='bold')
 		plt.legend()
-		plt.title(f"The {max_num} proteins with the greatest increase in protein"
-				  f" \ncounts between two varaints when GFP is added")
+		plt.title(f"The {max_num} proteins with the greatest change in protein"
+				  f" \ncounts when GFP is added")
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
-					 '_max_protein_count_change', metadata)
+					 '_max_PC_diffs_woGFP_woPD_Filter_' + str(filter_num),
+					 metadata)
+		plt.close('all')
+
+		# plot with percent difference on the side
+
+		fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
+
+		# create labels for the % changes:
+		max_change_str = []
+		for m in range(max_num):
+			max_value = ' ' + str(round(max_changes[m], 2)) + '%'
+			max_change_str.append(max_value)
+
+		ax.barh(max_PC_diffs_ids, max_diff_var0,
+				0.1, align='edge', label='no GFP')
+		ax.barh(max_PC_diffs_ids, max_diff_var1,
+				height=-0.1, align='edge', label='GFP')
+
+		ax.set_xlabel("log(Average Protein Count)", fontweight='bold')
+		ax.set_ylabel("Protein ID", fontweight='bold')
+
+		ax2 = ax.twinx()
+		ax2.set_ylim(ax.get_ylim())
+		min_change_str = np.array(max_change_str)
+		ax2.set_yticks(np.arange(len(max_PC_diffs_ids)), labels=max_change_str)
+		ax2.set_ylabel('% difference', fontweight='bold')
+
+		ax.legend()
+		ax.set_title(f"The {max_num} proteins with the largest change "
+					 f" \nin in protein counts when GFP is added "
+					 )
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
+					 '_max_PC_diffs_woGFP_wPD_Filter_' + str(filter_num),
+					 metadata)
 		plt.close('all')
 
 
-		# Observe the max and min fold changes in protein counts side by side:
-		# TODO: Change the number below to as desired:
-		shared_diff_num = 11
 
-		min_PC_diffs = abs(nonzero_PCs[1] - nonzero_PCs[0])
-		sortdiff = np.argsort(min_PC_diffs)
-		min_diff_idxs = sortdiff[:shared_diff_num]
-		min_PC_diff_changes = []
-		min_PC_diff_ids = []
-		for idx in min_diff_idxs:
-			min_PC_diff_changes.append(min_PC_diffs[idx])
-			min_PC_diff_ids.append(nonzero_PCs_ids[idx])
-		avg_log_min_PC_diffs = np.zeros((len(variants), len(min_diff_idxs)))
-		for variant in variants:
-			for idx in range(len(min_diff_idxs)):
-				index = min_diff_idxs[idx]
-				avg_log_min_PC_diffs[variant][idx] = \
-					np.log10(nonzero_PCs[variant][index] + 1)
+		# Observe the max and min changes in protein counts side by side:
 
-		max_PC_diffs = abs(nonzero_PCs[1] - nonzero_PCs[0])
+		max_PC_diffs = (nonzero_PCs[1] - nonzero_PCs[0])
+		max_PC_diff_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		sortdiff = np.argsort(max_PC_diffs)
 		max_diff_idxs = sortdiff[-shared_diff_num:]
 		max_PC_diff_changes = []
 		max_PC_diffs_ids = []
+		numbersmax = []
 		for idx in max_diff_idxs:
-			max_PC_diff_changes.append(max_PC_diffs[idx])
+			max_PC_diff_changes.append(max_PC_diff_percents[idx])
 			max_PC_diffs_ids.append(nonzero_PCs_ids[idx])
+			numbersmax.append(max_PC_diffs[idx])
 		avg_log_max_PC_diffs = np.zeros((len(variants), len(max_diff_idxs)))
+		avg_max_PC_diffs = np.zeros((len(variants), len(max_diff_idxs)))
 		for variant in variants:
 			for idx in range(len(max_diff_idxs)):
 				index = max_diff_idxs[idx]
+				avg_max_PC_diffs[variant][idx] = nonzero_PCs[variant][index]
 				avg_log_max_PC_diffs[variant][idx] = \
 					np.log10(nonzero_PCs[variant][index] + 1)
 
-		# Plot the max and min fold changes together:
-		fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+		min_PC_diffs = (nonzero_PCs[0] - nonzero_PCs[1])
+		min_PC_diff_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
+		sortdiff = np.argsort(min_PC_diffs)
+		min_diff_idxs = sortdiff[-shared_diff_num:]
+		min_PC_diff_changes = []
+		min_PC_diff_ids = []
+		numbersmin = []
+		for idx in min_diff_idxs:
+			min_PC_diff_changes.append(min_PC_diff_percents[idx])
+			min_PC_diff_ids.append(nonzero_PCs_ids[idx])
+			numbersmin.append(min_PC_diffs[idx])
+		avg_log_min_PC_diffs = np.zeros((len(variants), len(min_diff_idxs)))
+		avg_min_PC_diffs = np.zeros((len(variants), len(min_diff_idxs)))
+		for variant in variants:
+			for idx in range(len(min_diff_idxs)):
+				index = min_diff_idxs[idx]
+				avg_min_PC_diffs[variant][idx] = nonzero_PCs[variant][index]
+				avg_log_min_PC_diffs[variant][idx] = \
+					np.log10(nonzero_PCs[variant][index] + 1)
+
+		# Plot the max increases and decreases  together:
+		fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6))
 
 		# Name the results:
-		max_var0 = avg_log_max_PC_diffs[0]
-		max_var1 = avg_log_max_PC_diffs[1]
-		min_var0 = avg_log_min_PC_diffs[0]
-		min_var1 = avg_log_min_PC_diffs[1]
+		max_var0 = avg_max_PC_diffs[0]
+		max_var1 = avg_max_PC_diffs[1]
+		min_var0 = avg_min_PC_diffs[0]
+		min_var1 = avg_min_PC_diffs[1]
+
+		min_max_val = [max(avg_min_PC_diffs[0]), max(avg_min_PC_diffs[1])]
+		max_max_val = [max(avg_max_PC_diffs[0]), max(avg_max_PC_diffs[1])]
+		min_max_val = max(min_max_val)
+		max_max_val = max(max_max_val)
+		min_max_val = round(min_max_val) + 10000
+		max_max_val = round(max_max_val) + 1000
 
 		# create labels for the % changes:
 		max_change_str = []
 		min_change_str = []
 		for m in range(shared_diff_num):
-			max_val = '+' + str(round(max_PC_diff_changes[m], 2)) + '%'
-			min_val = '+' + str(round(min_PC_diff_changes[m], 2)) + '%'
-			max_change_str.append(max_val)
-			min_change_str.append(min_val)
+			max_value = '+' + str(round(max_PC_diff_changes[m], 2)) + '%'
+			min_value = str(round(min_PC_diff_changes[m], 2)) + '%'
+			max_change_str.append(max_value)
+			min_change_str.append(min_value)
+
+		max_change_str1 = []
+		min_change_str1 = []
+		for m in range(shared_diff_num):
+			max_value = '+ ' + str(round(numbersmax[m], 2))
+			min_value = '- ' + str(round(numbersmin[m], 2))
+			max_change_str1.append(max_value)
+			min_change_str1.append(min_value)
 
 		# maximum fold change plot specs:
 		ax[0].barh(max_PC_diffs_ids, max_var1,
@@ -437,15 +585,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax[0].tick_params(axis='both', which='major', labelsize=6)
 		ax[0].tick_params(labelbottom=True, labeltop=False,
 						  labelleft=True, labelright=False)
-		ax[0].set_xlim([0, 3])
-		for i, v in enumerate(max_var1):
-			ax[0].text(v + .05, i - .1, max_change_str[i],
+		ax[0].set_xlim([0, max_max_val])
+		for m, n in enumerate(max_var1):
+			ax[0].text(n + 5, m - .1, max_change_str[m],
 					   color='black', fontweight='bold', size=6)
-		ax[0].set_xlabel("log(Average Protein Counts)")
-		ax[0].set_ylabel("Protein ID")
-		ax[0].legend(loc='best')
+		ax[0].set_xlabel("Average Protein Counts", fontweight='bold')
+		ax[0].set_ylabel("Protein ID", fontweight='bold')
+		ax[0].legend(loc='lower center', bbox_to_anchor=(0.5, -.2), ncols=2,
+					 fontsize='small')
 		ax[0].set_title(f"The {shared_diff_num} proteins with the greatest "
-						f"increase \n in protein counts with the addition "
+						f"increase \n in protein count with the addition "
 						f"of GFP",size=10)
 
 		# minimum fold change plot specs:
@@ -457,85 +606,186 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax[1].tick_params(axis='both', which='major', labelsize=6)
 		ax[1].tick_params(labelbottom=True, labeltop=False,
 						  labelleft=False, labelright=True)
-		ax[1].set_xlim([0, 3])
-		for i, v in enumerate(min_var1):
-			ax[1].text(v + .05, i - .1, min_change_str[i],
+		ax[1].set_xlim([0, min_max_val])
+		for m, n in enumerate(min_var1):
+			ax[1].text(n + 5, m - .1, min_change_str[m],
 					   color='black', fontweight='bold', size=6)
-		ax[1].set_xlabel("log(Average Protein Counts)")
-		ax[1].legend(loc='best')
-		ax[1].set_title(f"The {shared_diff_num} proteins with the smallest "
-						f"increase \n in protein counts with the addition "
+		ax[1].set_xlabel("Average Protein Counts", fontweight='bold')
+		ax[1].legend(loc='lower center', bbox_to_anchor=(0.5, -.2), ncols=2,
+					 fontsize='small')
+		ax[1].set_title(f"The {shared_diff_num} proteins with the greatest "
+						f"decrease \n in protein count with the addition "
 						f"of GFP", size=10)
 
-		fig.suptitle("Maximum and Minimum Protein Count Change Comparisons "
+		fig.suptitle("Maximum Increases and Decreases in Protein Counts "
 					 "\nwith the Addition of GFP")
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 					 str(shared_diff_num) +
-					 '_max_and_min_PC_difference_comparisons',
+					 '_max_PC_diff_comparisons_Filter_' + str(filter_num),
 					 metadata)
 		plt.close('all')
 
 
+
+		# Plot the maximum increases and decreases on a log scale together:
+		fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6))
+
+		# Name the results:
+		max_var0 = avg_log_max_PC_diffs[0]
+		max_var1 = avg_log_max_PC_diffs[1]
+		min_var0 = avg_log_min_PC_diffs[0]
+		min_var1 = avg_log_min_PC_diffs[1]
+
+		max_val = [max(avg_log_min_PC_diffs[0]), max(avg_log_min_PC_diffs[1]),
+				   max(avg_log_max_PC_diffs[0]), max(avg_log_max_PC_diffs[1])]
+		max_val = max(max_val)
+		max_val = round(max_val) + 1
+
+		# create labels for the % changes:
+		max_change_str = []
+		min_change_str = []
+		for m in range(shared_diff_num):
+			max_value = '+' + str(round(max_PC_diff_changes[m], 2)) + '%'
+			min_value = str(round(min_PC_diff_changes[m], 2)) + '%'
+			max_change_str.append(max_value)
+			min_change_str.append(min_value)
+
+		# maximum fold change plot specs:
+		ax[0].barh(max_PC_diffs_ids, max_var1,
+				   align='center', label='GFP', color='#17becf')
+		ax[0].barh(max_PC_diffs_ids, max_var0,
+				   align='center', label='no GFP', color='#bcbd22')
+		ax[0].tick_params(axis='both', which='major', labelsize=6)
+		ax[0].tick_params(labelbottom=True, labeltop=False,
+						  labelleft=True, labelright=False)
+		ax[0].set_xlim([0, max_val])
+		for m, n in enumerate(max_var1):
+			ax[0].text(n + .05, m - .1, max_change_str[m],
+					   color='black', fontweight='bold', size=6)
+		ax[0].set_xlabel("log(Average Protein Counts)")
+		ax[0].set_ylabel("Protein ID")
+		ax[0].legend(loc='lower center', bbox_to_anchor=(0.5, -.2), ncols=2,
+					 fontsize='small')
+		ax[0].set_title(f"The {shared_diff_num} proteins with the greatest "
+						f"increase \n in protein count with the addition "
+						f"of GFP", size=10)
+
+		# minimum fold change plot specs:
+		ax[1].barh(min_PC_diff_ids, min_var0,
+				   align='center', label='no GFP', color='#bcbd22')
+		ax[1].barh(min_PC_diff_ids, min_var1,
+				   align='center', label='GFP', color='#17becf')
+		ax[1].tick_params(bottom=True, top=False, left=False, right=True)
+		ax[1].tick_params(axis='both', which='major', labelsize=6)
+		ax[1].tick_params(labelbottom=True, labeltop=False,
+						  labelleft=False, labelright=True)
+		ax[1].set_xlim([0, max_val])
+		for m, n in enumerate(min_var1):
+			ax[1].text(n - .7, m - .1, min_change_str[m],
+					   color='black', fontweight='bold', size=6)
+		ax[1].set_xlabel("log(Average Protein Counts)")
+		ax[1].legend(loc='lower center', bbox_to_anchor=(0.5, -.2), ncols=2,
+					 fontsize='small')
+		ax[1].set_title(f"The {shared_diff_num} proteins with the greatest "
+						f"decrease \n in protein count with the addition "
+						f"of GFP", size=10)
+
+		fig.suptitle("Maximum Increases and Decreases in Protein Counts "
+					 "\nwith the Addition of GFP")
+
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+					 str(shared_diff_num) +
+					 '_max_PC_diff_comparisons_logscale_Filter_' +
+					 str(filter_num),
+					 metadata)
+		plt.close('all')
+
+
+
 		# Observe which proteins have the greatest fold increase in
 		# protein counts:
-		# Change this number as desired:
-		max_fold_num = 12
 
 		# Obtain the proteins with the max fold change in protein counts
 		# between variants:
 		PC_max_folds = abs(nonzero_PCs[1] / nonzero_PCs[0])
+		PC_max_fold_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		psortdiff = np.argsort(PC_max_folds)
 		PC_max_fold_idxs = psortdiff[-max_fold_num:]
-		max_changes = []
+		max_fold_changes = []
 		NZ_max_fold_PCs_ids = []
 		for idx in PC_max_fold_idxs:
-			max_changes.append(PC_max_folds[idx])
+			max_fold_changes.append(PC_max_fold_percents[idx])
 			NZ_max_fold_PCs_ids.append(nonzero_PCs_ids[idx])
 		avg_log_NZ_max_fold_PCs = np.zeros((len(variants),
+											len(PC_max_fold_idxs)))
+		avg_NZ_max_fold_PCs = np.zeros((len(variants),
 											len(PC_max_fold_idxs)))
 		for variant in variants:
 			for idx in range(len(PC_max_fold_idxs)):
 				index = PC_max_fold_idxs[idx]
+				avg_NZ_max_fold_PCs[variant][idx] = nonzero_PCs[variant][index]
 				avg_log_NZ_max_fold_PCs[variant][idx] = \
 					np.log10(nonzero_PCs[variant][index] + 1)
 
 		# Plot the results:
-		plt.figure(figsize=(8.5, 20))
+		#plt.figure(figsize=(8.5, 20))
+		fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
+
 		max_var0 = avg_log_NZ_max_fold_PCs[0]
 		max_var1 = avg_log_NZ_max_fold_PCs[1]
 
-		plt.barh(NZ_max_fold_PCs_ids, max_var0,
+		max_fold_val = [max(avg_log_NZ_max_fold_PCs[0]),
+						max(avg_log_NZ_max_fold_PCs[1])]
+		max_fold_val = max(max_fold_val)
+		max_fold_val = round(max_fold_val) + 1
+
+		# create labels for the % changes:
+		max_change_str = []
+		for m in range(max_fold_num):
+			max_value = '+' + str(round(max_fold_changes[m], 2)) + '%'
+			max_change_str.append(max_value)
+
+		ax.barh(NZ_max_fold_PCs_ids, max_var0,
 				 0.1, align='edge', label='no GFP')
-		plt.barh(NZ_max_fold_PCs_ids, max_var1,
+		ax.barh(NZ_max_fold_PCs_ids, max_var1,
 				 height=-0.1, align='edge', label='GFP')
-		#ax.set_yticklabels(max_changes)
-		plt.xlabel("log(Average Protein Count)")
-		plt.ylabel("Protein ID")
-		plt.legend()
-		plt.title(f"The {max_fold_num} proteins with the greatest fold"
-				  f" \n increase in protein counts between variants"
+		ax.set_xlim([0, max_fold_val])
+		for m, n in enumerate(max_var1):
+			ax.text(n + .01, m - .15, max_change_str[m],
+					   color='black', fontweight='bold', size=10)
+		ax.set_xlabel("log(Average Protein Count)", fontweight='bold')
+		ax.set_ylabel("Protein ID", fontweight='bold')
+		ax.legend()
+		ax.set_title(f"The {max_fold_num} proteins with the greatest fold"
+				  f" \n increase in protein count between variants"
 				  )
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir,
 					 plotOutFileName + '_' + str(max_fold_num) +
-					 '_max_fold_protein_count_changes',
+					 '_max_PC_fold_increases_woGFP_wPD_Filter_' +
+					 str(filter_num),
 					 metadata)
 		plt.close('all')
 
-		# Observe which proteins have the largest fold decrease in protein counts:
-		# TODO: Change this number as desired:
-		min_fold_num = 13
+
+
+		# Observe which proteins have the largest fold decrease in
+		# protein counts:
 
 		PC_min_folds = abs(nonzero_PCs[0] / nonzero_PCs[1])
+		PC_min_fold_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		min_psortdiff = np.argsort(PC_min_folds)
 		PC_min_fold_idxs = min_psortdiff[-min_fold_num:]
 		min_changes = []
 		NZ_min_fold_PCs_ids = []
 		for idx in PC_min_fold_idxs:
-			min_changes.append(PC_min_folds[idx])
+			min_changes.append(PC_min_fold_percents[idx])
 			NZ_min_fold_PCs_ids.append(nonzero_PCs_ids[idx])
 		avg_log_NZ_min_fold_PCs = np.zeros((len(variants),
 											len(PC_min_fold_idxs)))
@@ -546,41 +796,59 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(nonzero_PCs[variant][index] + 1)
 
 		# Plot the results:
-		plt.figure(figsize=(8.5, 20))
+		fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 50))
+
 		min_var0 = avg_log_NZ_min_fold_PCs[0]
 		min_var1 = avg_log_NZ_min_fold_PCs[1]
-		plt.barh(NZ_min_fold_PCs_ids, min_var0,
+
+		min_fold_val = [max(avg_log_NZ_min_fold_PCs[0]),
+						max(avg_log_NZ_min_fold_PCs[1])]
+		min_fold_val = max(min_fold_val)
+		min_fold_val = round(min_fold_val) + 1
+
+		# create labels for the % changes:
+		min_change_str = []
+		for m in range(min_fold_num):
+			min_value = ' ' + str(round(min_changes[m], 2)) + '%'
+			min_change_str.append(min_value)
+
+		ax.barh(NZ_min_fold_PCs_ids, min_var0,
 				 0.1, align='edge', label='no GFP')
-		plt.barh(NZ_min_fold_PCs_ids, min_var1,
+		ax.barh(NZ_min_fold_PCs_ids, min_var1,
 				 height=-0.1, align='edge', label='GFP')
-		plt.xlabel("log(Average Protein Count)")
-		plt.ylabel("Protein ID")
-		plt.legend()
-		plt.title(f"The {min_fold_num} proteins with the largest fold "
+		ax.set_xlim([0, min_fold_val])
+		for m, n in enumerate(min_var1):
+			ax.text(n + .01, m - .3, min_change_str[m],
+					color='black', fontweight='bold', size=10)
+		ax.set_xlabel("log(Average Protein Count)", fontweight='bold')
+		ax.set_ylabel("Protein ID", fontweight='bold')
+		ax.legend()
+		ax.set_title(f"The {min_fold_num} proteins with the largest fold "
 				  f" \ndecrease in protein counts between variants"
 				  )
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir,
 					 plotOutFileName + '_' + str(min_fold_num) +
-					 '_min_fold_protein_count_changes',
+					 '_max_PC_fold_decreases_woGFP_wPD_Filter_' +
+					 str(filter_num),
 					 metadata)
 		plt.close('all')
 
 
 		# Observe the max and min fold changes in protein counts side by side:
-		# TODO: Change the number below to as desired:
-		sharednum = 100
 
 		# Obtain the proteins with the max fold change in protein counts
 		# between variants:
 		PC_max_folds = abs(nonzero_PCs[1] / nonzero_PCs[0])
+		PC_max_fold_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		psortdiff = np.argsort(PC_max_folds)
 		PC_max_fold_idxs = psortdiff[-sharednum:]
 		max_changes = []
 		NZ_max_fold_PCs_ids = []
 		for idx in PC_max_fold_idxs:
-			max_changes.append(PC_max_folds[idx])
+			max_changes.append(PC_max_fold_percents[idx])
 			NZ_max_fold_PCs_ids.append(nonzero_PCs_ids[idx])
 		avg_log_NZ_max_fold_PCs = np.zeros((len(variants),
 											len(PC_max_fold_idxs)))
@@ -593,14 +861,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Obtain the proteins with the min fold change in protein counts
 		# between variants:
 		PC_min_folds = abs(nonzero_PCs[0] / nonzero_PCs[1])
+		PC_min_fold_percents = (100 * (nonzero_PCs[1] - nonzero_PCs[0])
+								/ nonzero_PCs[0])
 		min_psortdiff = np.argsort(PC_min_folds)
 		PC_min_fold_idxs = min_psortdiff[-sharednum:]
 		min_changes = []
 		NZ_min_fold_PCs_ids = []
 		for idx in PC_min_fold_idxs:
-			min_changes.append(PC_min_folds[idx])
+			min_changes.append(PC_min_fold_percents[idx])
 			NZ_min_fold_PCs_ids.append(nonzero_PCs_ids[idx])
-		avg_log_NZ_min_fold_PCs = np.zeros((len(variants), len(PC_min_fold_idxs)))
+		avg_log_NZ_min_fold_PCs = np.zeros((len(variants),
+											len(PC_min_fold_idxs)))
 		for variant in variants:
 			for idx in range(len(PC_min_fold_idxs)):
 				index = PC_min_fold_idxs[idx]
@@ -608,7 +879,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(nonzero_PCs[variant][index] + 1)
 
 		# Plot the max and min fold changes together:
-		fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 50))
+		fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6))
 
 		# Name the results:
 		max_var0 = avg_log_NZ_max_fold_PCs[0]
@@ -621,45 +892,63 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		min_change_str = []
 		for m in range(sharednum):
 			max_val = '+' + str(round(max_changes[m],2)) + '%'
-			min_val = '-' + str(round(min_changes[m], 2)) + '%'
+			min_val = ' ' + str(round(min_changes[m], 2)) + '%'
 			max_change_str.append(max_val)
 			min_change_str.append(min_val)
 
 		# maximum fold change plot specs:
-		ax[0].barh(NZ_max_fold_PCs_ids, max_var1, align='center', label='GFP', color='#17becf')
-		ax[0].barh(NZ_max_fold_PCs_ids, max_var0, align='center', label='no GFP', color='#bcbd22')
+		ax[0].barh(NZ_max_fold_PCs_ids, max_var1, align='center',
+				   label='GFP', color='#17becf')
+		ax[0].barh(NZ_max_fold_PCs_ids, max_var0, align='center',
+				   label='no GFP', color='#bcbd22')
 		ax[0].tick_params(axis='both', which='major', labelsize=6)
-		ax[0].tick_params(labelbottom=True, labeltop=False, labelleft=True, labelright=False)
+		ax[0].tick_params(labelbottom=True, labeltop=False,
+						  labelleft=True, labelright=False)
 		ax[0].set_xlim([0, 3])
-		for i, v in enumerate(max_var1):
-			ax[0].text(v + .05, i - .1, max_change_str[i], color='black', fontweight='bold', size=6)
-		ax[0].set_xlabel("log(Average Protein Counts)")
-		ax[0].set_ylabel("Protein ID")
-		ax[0].legend(loc='best')
+		for m, n in enumerate(max_var1):
+			ax[0].text(n + .05, m - .1, max_change_str[m], color='black',
+					   fontweight='bold', size=6)
+		ax[0].set_xlabel("log(Average Protein Counts)", fontweight='bold')
+		ax[0].set_ylabel("Protein ID", fontweight='bold')
+		#ax[0].legend(loc='best')
+		ax[0].legend(loc='lower center', bbox_to_anchor=(0.5, -.2), ncols=2,
+					 fontsize='small')
 		ax[0].set_title(f"The {sharednum} proteins with the greatest fold "
-						f"increase \n in protein counts with the addition of GFP", size=10)
+						f"increase \n in protein counts with the"
+						f" addition of GFP", size=10)
 
 		# minimum fold change plot specs:
-		ax[1].barh(NZ_min_fold_PCs_ids, min_var0, align='center', label='no GFP', color='#bcbd22')
-		ax[1].barh(NZ_min_fold_PCs_ids, min_var1, align='center', label='GFP', color='#17becf')
+		ax[1].barh(NZ_min_fold_PCs_ids, min_var0, align='center',
+				   label='no GFP', color='#bcbd22')
+		ax[1].barh(NZ_min_fold_PCs_ids, min_var1, align='center',
+				   label='GFP', color='#17becf')
 		ax[1].tick_params(bottom=True, top=False, left=False, right=True)
 		ax[1].tick_params(axis='both', which='major', labelsize=6)
-		ax[1].tick_params(labelbottom=True, labeltop=False, labelleft=False, labelright=True)
+		ax[1].tick_params(labelbottom=True, labeltop=False,
+						  labelleft=False, labelright=True)
 		ax[1].set_xlim([0, 3])
-		for i, v in enumerate(min_var1):
-			ax[1].text(v + .05, i - .1, min_change_str[i], color='black', fontweight='bold', size=6)
-		ax[1].set_xlabel("log(Average Protein Counts)")
-		ax[1].legend(loc='best')
+		for m, n in enumerate(min_var1):
+			ax[1].text(n + .05, m - .1, min_change_str[m], color='black',
+					   fontweight='bold', size=6)
+		ax[1].set_xlabel("log(Average Protein Counts)", fontweight='bold')
+		#ax[1].legend(loc='best')
+		ax[1].legend(loc='lower center', bbox_to_anchor=(0.5, -.2), ncols=2,
+					 fontsize='small')
 		ax[1].set_title(f"The {sharednum} proteins with the greatest fold "
-						f"decrease \n in protein counts with the addition of GFP", size=10)
+						f"decrease \n in protein counts with the addition of"
+						f" GFP", size=10)
 
-		fig.suptitle("Maximum and Minimum Fold Change Comparisons for Protein Counts "
+		fig.suptitle("Maximum and Minimum Fold Change Comparisons for"
+					 " Protein Counts "
 					 "\nwith the Addition of GFP")
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(sharednum) +
-					 '_max_and_min_fold_comparisons', metadata)
+					 '_max_PC_fold_comparisons_Filter_' + str(filter_num),
+					 metadata)
 		plt.close('all')
+
+
 
 if __name__ == "__main__":
 	Plot().cli()
