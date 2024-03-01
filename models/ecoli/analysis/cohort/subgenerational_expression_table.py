@@ -23,6 +23,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
+		if self.ap.n_generation <= IGNORE_FIRST_N_GENS:
+			print('Skipping analysis - not enough generations run.')
+			return
+
 		# Get list of cistron IDs from sim_data
 		cistron_data = sim_data.process.transcription.cistron_data
 		cistron_ids = cistron_data['id']
