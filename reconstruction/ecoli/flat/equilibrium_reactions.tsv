@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 28.1
-# Date and time generated: February 27, 2024, 13:07:25
+# Date and time generated: March 1, 2024, 14:03:28
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"

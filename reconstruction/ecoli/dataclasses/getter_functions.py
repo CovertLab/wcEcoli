@@ -22,14 +22,12 @@ UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS = {
 	'CCO-PM-BAC-ACT': 'i',
 	'CCO-OUT': 'e',
 	'CCO-IN': 'c',
-	'CCO-OUT-CCO-IN': 'c',
 	'NIL': 'c',
 	'CCO-CW-BAC-NEG': 'o',
 	'CCO-CE-BAC': 'm',
 	'CCO-BAC-NUCLEOID': 'c',
 	'CCO-RIBOSOME': 'c',
 	'CCO-PEROXISOME': 'c',
-	'CCO-PEROX-MEM': 'm',
 }
 
 IGNORED_DNA_SITE_TYPES = {
