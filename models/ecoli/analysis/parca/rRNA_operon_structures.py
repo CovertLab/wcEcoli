@@ -37,6 +37,13 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		rna_data = sim_data.process.transcription.rna_data
 		rRNA_data = rna_data[rna_data['is_rRNA']]
 		rRNA_ids = rRNA_data['id']
+
+		# If the list of rRNA IDs does not match the rRNA TU IDs, skip analysis
+		# (likely using rRNA operon structure variants)
+		if set(rRNA_ids) != set(TU_ID_TO_RRNA_OPERON_ID.keys()):
+			print('Skipping analysis - this analysis should be run for simulations with WT rRNA operon structures.')
+			return
+
 		rRNA_id_to_index = {rRNA_id: i for (i, rRNA_id) in enumerate(rRNA_ids)}
 		rRNA_start_coordinates = rRNA_data['replication_coordinate']
 		rRNA_lengths = rRNA_data['length'].asNumber(units.nt)
