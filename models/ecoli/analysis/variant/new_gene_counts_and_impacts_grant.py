@@ -9,6 +9,7 @@ import pickle
 import os
 
 from matplotlib import pyplot as plt
+import matplotlib.ticker as mtick
 import matplotlib as mpl
 # noinspection PyUnresolvedReferences
 import numpy as np
@@ -29,9 +30,7 @@ END_GEN = 3
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 
-VARIANTS_TO_PLOT = [0, 1, 2]
-SEEDS_TO_PLOT = [0, 0, 0]
-assert len(VARIANTS_TO_PLOT) == len(SEEDS_TO_PLOT)
+
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def get_mRNA_ids_from_monomer_ids(self, sim_data, target_monomer_ids):
@@ -117,7 +116,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 		cell_paths = self.ap.get_cells(
-			variant=[VARIANTS_TO_PLOT[0]], seed=[SEEDS_TO_PLOT[0]],
+			variant=[0], seed=[0],
 			generation=np.arange(START_GEN, END_GEN))
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
@@ -197,31 +196,89 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# mpl.spines["left"].set_position(("outward", 10))
 
 		# Plotting
-		plt.figure(figsize = (6,3))
-		total_plots = len(VARIANTS_TO_PLOT)
+
 		standard_xlim = (0, 300)
 
-		# # Growth Rate
-		# plot_name = "growth_rate"
-		# ax1 = plt.subplot(total_plots, 1, plot_num)
-		# growth_rate = np.ravel(read_stacked_columns(
-		# 	cell_paths, "Mass", "instantaneous_growth_rate",
-		# 	ignore_exception=True))
-		# moving_window = min(150, len(growth_rate))
-		# convolution_array = (np.ones(moving_window) / moving_window)
-		# growth_rate_convolved = np.convolve(
-		# 	convolution_array, growth_rate, mode='same')
-		# plt.plot(time.flatten() / 60., growth_rate_convolved, color=LINE_COLOR)
-		# plt.ylim(bottom=0)
-		# plt.xlabel("Time (min)")
-		# plt.ylabel("Growth Rate", fontsize="small")
+		# # Mass
+		# VARIANTS_TO_PLOT = [0, 1, 2]
+		# SEEDS_TO_PLOT = [0, 0, 0]
+		# assert len(VARIANTS_TO_PLOT) == len(SEEDS_TO_PLOT)
+		# plt.figure(figsize=(6, 3))
+		# total_plots = len(VARIANTS_TO_PLOT)
+		# plot_name = "mass"
+		# plot_num = 1
+		# for i in range(len(VARIANTS_TO_PLOT)):
+		# 	curr_var = VARIANTS_TO_PLOT[i]
+		# 	curr_seed = SEEDS_TO_PLOT[i]
+		# 	print(curr_var, curr_seed)
+		# 	if i == 0:
+		# 		ax1 = plt.subplot(total_plots, 1, plot_num)
+		# 	if i == 1:
+		# 		ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+		# 	if i == 2:
+		# 		ax3 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+		#
+		# 	cell_paths = self.ap.get_cells(
+		# 		variant=[curr_var], seed=[curr_seed],
+		# 		generation=np.arange(START_GEN, END_GEN))
+		#
+		# 	time = read_stacked_columns(
+		# 		cell_paths, 'Main', 'time', ignore_exception=True)
+		# 	time_no_first = read_stacked_columns(
+		# 		cell_paths, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# 	time = time - time[0]
+		# 	time_no_first = time_no_first - time_no_first[0]
+		#
+		# 	mass = read_stacked_columns(
+		# 		cell_paths, "Mass", "cellMass", ignore_exception=True)
+		#
+		# 	plt.plot(time / 60., mass, color=LINE_COLOR, clip_on=False)
+		# 	plt.xlim(standard_xlim)
+		#
+		# 	if i == 0:
+		# 		ax1.spines["bottom"].set_position(("outward", 5))
+		# 		ax1.spines["left"].set_position(("outward", 5))
+		# 		ax1.spines["bottom"].set_visible(False)
+		# 		ax1.get_xaxis().set_visible(False)
+		# 		max_y = 2600
+		# 		ax1.set_ylim([0, max_y])
+		# 		ax1.set_yticks([0, max_y /2, max_y])
+		# 	elif i == 1:
+		# 		ax2.spines["bottom"].set_position(("outward", 5))
+		# 		ax2.spines["left"].set_position(("outward", 5))
+		# 		ax2.spines["bottom"].set_visible(False)
+		# 		ax2.get_xaxis().set_visible(False)
+		# 		max_y = 2600
+		# 		ax2.set_ylim([0, max_y])
+		# 		ax2.set_yticks([0, max_y /2, max_y])
+		# 	else:
+		# 		ax3.spines["bottom"].set_position(("outward", 5))
+		# 		ax3.spines["left"].set_position(("outward", 5))
+		# 		max_y = 2600
+		# 		ax3.set_ylim([0, max_y])
+		# 		ax3.set_yticks([0, max_y /2, max_y])
+		# 		ax3.set_xticks([0, 150, 300])
+		#
+		# 	plot_num += 1
+		#
+		# # plt.xlabel("Time (min)")
+		# # plt.ylabel("Cell Mass (fg)", fontsize="small")
+		# plt.tight_layout()
 		# exportFigure(
-		# 	plt, plotOutDir, plotOutFileName + plot_suffix + "_" + plot_name + "_"
-		# 					 + str(START_GEN) + "_" + str(END_GEN), metadata)
+		# 	plt, plotOutDir,
+		# 	plotOutFileName + plot_suffix + "_" + plot_name + "_"
+		# 		+ str(START_GEN) + "_" + str(END_GEN), metadata)
 		# plt.close("all")
 
-		# Mass
-		plot_name = "mass"
+
+		# mRNA Counts
+		VARIANTS_TO_PLOT = [0, 2, 7]
+		SEEDS_TO_PLOT = [1, 3, 2]
+		assert len(VARIANTS_TO_PLOT) == len(SEEDS_TO_PLOT)
+		plt.figure(figsize=(6, 3))
+		total_plots = len(VARIANTS_TO_PLOT)
+
+		plot_name = "mRNA_counts"
 		plot_num = 1
 		for i in range(len(VARIANTS_TO_PLOT)):
 			curr_var = VARIANTS_TO_PLOT[i]
@@ -245,10 +302,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			time = time - time[0]
 			time_no_first = time_no_first - time_no_first[0]
 
-			mass = read_stacked_columns(
-				cell_paths, "Mass", "cellMass", ignore_exception=True)
+			all_mRNA_stacked_counts = read_stacked_columns(
+					cell_paths, 'RNACounts', 'mRNA_counts', ignore_exception=True)
+			new_gene_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]
 
-			plt.plot(time / 60., mass, color=LINE_COLOR, clip_on=False)
+			plt.plot(time / 60., new_gene_mRNA_counts, color=LINE_COLOR, clip_on=False)
 			plt.xlim(standard_xlim)
 
 			if i == 0:
@@ -256,7 +314,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ax1.spines["left"].set_position(("outward", 5))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
-				max_y = 2600
+				max_y = 50
 				ax1.set_ylim([0, max_y])
 				ax1.set_yticks([0, max_y /2, max_y])
 			elif i == 1:
@@ -264,22 +322,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ax2.spines["left"].set_position(("outward", 5))
 				ax2.spines["bottom"].set_visible(False)
 				ax2.get_xaxis().set_visible(False)
-				max_y = 2600
+				max_y = 200
 				ax2.set_ylim([0, max_y])
 				ax2.set_yticks([0, max_y /2, max_y])
 			else:
 				ax3.spines["bottom"].set_position(("outward", 5))
 				ax3.spines["left"].set_position(("outward", 5))
-				max_y = 2600
+				max_y = 800
 				ax3.set_ylim([0, max_y])
 				ax3.set_yticks([0, max_y /2, max_y])
 				ax3.set_xticks([0, 150, 300])
 
 			plot_num += 1
-
-		# plt.xlabel("Time (min)")
-		# plt.ylabel("Cell Mass (fg)", fontsize="small")
-
 		plt.tight_layout()
 		exportFigure(
 			plt, plotOutDir,
@@ -287,54 +341,189 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				+ str(START_GEN) + "_" + str(END_GEN), metadata)
 		plt.close("all")
 
-		# # mRNA Counts
-		# plot_name = "mRNA_counts"
-		# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-		# plt.plot(time / 60., new_gene_mRNA_counts, color=LINE_COLOR)
-		# plt.ylim(bottom=0)
-		# plt.xlabel("Time (min)")
-		# plt.ylabel("Log(gfp mRNA Counts + 1)", fontsize="small")
-		# exportFigure(
-		# 	plt, plotOutDir, plotOutFileName + plot_suffix + "_" + plot_name + "_"
-		# 					 + str(START_GEN) + "_" + str(END_GEN), metadata)
-		# plt.close("all")
-		#
-		# # Protein Counts
-		# plot_name = "protein_counts"
-		# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-		# if plot_suffix == "":
-		# 	if len(new_gene_monomer_ids) == 1:
-		# 		plt.plot(time / 60., new_gene_monomer_counts, color=LINE_COLOR)
-		# 	else:
-		# 		for m in range(len(new_gene_monomer_ids)):
-		# 			plt.plot(time / 60., new_gene_monomer_counts[:,m],
-		# 					 label = new_gene_monomer_ids[m], color=LINE_COLOR)
-		# 		plt.legend()
-		# plt.xlabel("Time (min)")
-		# plt.ylabel("Log(GFP Counts + 1)", fontsize="small")
-		# exportFigure(
-		# 	plt, plotOutDir, plotOutFileName + plot_suffix + "_" + plot_name + "_"
-		# 					 + str(START_GEN) + "_" + str(END_GEN), metadata)
-		# plt.close("all")
-		#
-		# # ppGpp
-		# plot_name = "ppgpp_conc"
-		# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-		# ppGpp_concentration = read_stacked_columns(
-		# 	cell_paths, "GrowthLimits", "ppgpp_conc", remove_first=True,
-		# 	ignore_exception=True)
-		# plt.plot(time_no_first / 60., ppGpp_concentration, color=LINE_COLOR)
-		# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-		# 	plt.ylim((0,150))
-		# if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-		# 	plt.xlim(standard_xlim)
-		# plt.xlabel("Time (min)")
-		# plt.ylabel("ppGpp Concentration ($\mu$M)", fontsize="small")
-		# # plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
-		# exportFigure(
-		# 	plt, plotOutDir, plotOutFileName + plot_suffix + "_"
-		# 	+ str(START_GEN) + "_" + str(END_GEN), metadata)
-		# plt.close("all")
+
+		# Protein Counts
+		# VARIANTS_TO_PLOT = [1, 2]
+		# SEEDS_TO_PLOT = [0, 0]
+		VARIANTS_TO_PLOT = [7, 6]
+		SEEDS_TO_PLOT = [2, 0]
+		assert len(VARIANTS_TO_PLOT) == len(SEEDS_TO_PLOT)
+		plt.figure(figsize=(6, 3))
+		total_plots = 3
+
+		plot_name = "protein_counts"
+		plot_num = 1
+		for i in range(len(VARIANTS_TO_PLOT)):
+			curr_var = VARIANTS_TO_PLOT[i]
+			curr_seed = SEEDS_TO_PLOT[i]
+			print(curr_var, curr_seed)
+			if i == 0:
+				ax1 = plt.subplot(total_plots, 1, plot_num)
+			if i == 1:
+				ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+
+			cell_paths = self.ap.get_cells(
+				variant=[curr_var], seed=[curr_seed],
+				generation=np.arange(START_GEN, END_GEN))
+
+			time = read_stacked_columns(
+				cell_paths, 'Main', 'time', ignore_exception=True)
+			time_no_first = read_stacked_columns(
+				cell_paths, 'Main', 'time', remove_first=True, ignore_exception=True)
+			time = time - time[0]
+			time_no_first = time_no_first - time_no_first[0]
+
+			(new_gene_monomer_counts,) = read_stacked_bulk_molecules(
+				cell_paths, new_gene_monomer_ids, ignore_exception=True)
+
+			plt.plot(time / 60., new_gene_monomer_counts, color=LINE_COLOR, clip_on=False)
+			plt.xlim(standard_xlim)
+
+			if i == 0:
+				ax1.spines["bottom"].set_position(("outward", 5))
+				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_visible(False)
+				ax1.get_xaxis().set_visible(False)
+				max_y = 300000
+				ax1.set_ylim([0, max_y])
+				ax1.set_yticks([0, max_y /2, max_y])
+				# ax1.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+				ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
+			elif i == 1:
+				ax2.spines["bottom"].set_position(("outward", 5))
+				ax2.spines["left"].set_position(("outward", 5))
+				max_y = 1500000
+				ax2.set_ylim([0, max_y])
+				ax2.set_yticks([0, max_y /2, max_y])
+				ax2.set_xticks([0, 150, 300])
+				ax2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
+			plot_num += 1
+		plt.tight_layout()
+		exportFigure(
+			plt, plotOutDir,
+			plotOutFileName + plot_suffix + "_" + plot_name + "_"
+				+ str(START_GEN) + "_" + str(END_GEN), metadata)
+		plt.close("all")
+
+
+		# ppGpp
+		# VARIANTS_TO_PLOT = [1, 2]
+		# SEEDS_TO_PLOT = [0, 0]
+		VARIANTS_TO_PLOT = [7, 6]
+		SEEDS_TO_PLOT = [2, 0]
+		assert len(VARIANTS_TO_PLOT) == len(SEEDS_TO_PLOT)
+		plt.figure(figsize=(6, 3))
+		total_plots = 3
+
+		plot_name = "ppGpp"
+		plot_num = 1
+		for i in range(len(VARIANTS_TO_PLOT)):
+			curr_var = VARIANTS_TO_PLOT[i]
+			curr_seed = SEEDS_TO_PLOT[i]
+			print(curr_var, curr_seed)
+			if i == 0:
+				ax1 = plt.subplot(total_plots, 1, plot_num)
+			if i == 1:
+				ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+
+			cell_paths = self.ap.get_cells(
+				variant=[curr_var], seed=[curr_seed],
+				generation=np.arange(START_GEN, END_GEN))
+
+			time_no_first = read_stacked_columns(
+				cell_paths, 'Main', 'time', remove_first=True, ignore_exception=True)
+			time_no_first = time_no_first - time_no_first[0]
+
+			ppGpp_concentration = read_stacked_columns(
+				cell_paths, "GrowthLimits", "ppgpp_conc", remove_first=True,
+				ignore_exception=True)
+
+			plt.plot(time_no_first / 60., ppGpp_concentration, color=LINE_COLOR,
+					clip_on=False)
+			plt.xlim(standard_xlim)
+
+			if i == 0:
+				ax1.spines["bottom"].set_position(("outward", 5))
+				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_visible(False)
+				ax1.get_xaxis().set_visible(False)
+				max_y = 120
+				ax1.set_ylim([0, max_y])
+				ax1.set_yticks([0, max_y /2, max_y])
+			elif i == 1:
+				ax2.spines["bottom"].set_position(("outward", 5))
+				ax2.spines["left"].set_position(("outward", 5))
+				max_y = 120
+				ax2.set_ylim([0, max_y])
+				ax2.set_yticks([0, max_y /2, max_y])
+				ax2.set_xticks([0, 150, 300])
+			plot_num += 1
+		plt.tight_layout()
+		exportFigure(
+			plt, plotOutDir,
+			plotOutFileName + plot_suffix + "_" + plot_name + "_"
+				+ str(START_GEN) + "_" + str(END_GEN), metadata)
+		plt.close("all")
+
+
+		# Growth Rate
+		plt.figure(figsize=(6, 3))
+		total_plots = 3
+
+		plot_name = "growth_rate"
+		plot_num = 1
+		for i in range(len(VARIANTS_TO_PLOT)):
+			curr_var = VARIANTS_TO_PLOT[i]
+			curr_seed = SEEDS_TO_PLOT[i]
+			print(curr_var, curr_seed)
+			if i == 0:
+				ax1 = plt.subplot(total_plots, 1, plot_num)
+			if i == 1:
+				ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+
+			cell_paths = self.ap.get_cells(
+				variant=[curr_var], seed=[curr_seed],
+				generation=np.arange(START_GEN, END_GEN))
+
+			time = read_stacked_columns(
+				cell_paths, 'Main', 'time', ignore_exception=True)
+			time = time - time[0]
+
+			growth_rate = np.ravel(read_stacked_columns(
+				cell_paths, "Mass", "instantaneous_growth_rate",
+				ignore_exception=True))
+			moving_window = min(150, len(growth_rate))
+			convolution_array = (np.ones(moving_window) / moving_window)
+			growth_rate_convolved = np.convolve(
+				convolution_array, growth_rate, mode='same')
+
+			plt.plot(time / 60., growth_rate_convolved, color=LINE_COLOR,
+					clip_on=False)
+			plt.xlim(standard_xlim)
+
+			if i == 0:
+				ax1.spines["bottom"].set_position(("outward", 5))
+				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_visible(False)
+				ax1.get_xaxis().set_visible(False)
+				max_y = 0.0006
+				ax1.set_ylim([0, max_y])
+				ax1.set_yticks([0, max_y /2, max_y])
+			elif i == 1:
+				ax2.spines["bottom"].set_position(("outward", 5))
+				ax2.spines["left"].set_position(("outward", 5))
+				max_y = 0.0006
+				ax2.set_ylim([0, max_y])
+				ax2.set_yticks([0, max_y /2, max_y])
+				ax2.set_xticks([0, 150, 300])
+			plot_num += 1
+		plt.tight_layout()
+		exportFigure(
+			plt, plotOutDir,
+			plotOutFileName + plot_suffix + "_" + plot_name + "_"
+				+ str(START_GEN) + "_" + str(END_GEN), metadata)
+		plt.close("all")
+
 
 if __name__ == '__main__':
 	Plot().cli()
