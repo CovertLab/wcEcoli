@@ -197,8 +197,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# mpl.spines["left"].set_position(("outward", 10))
 
 		# Plotting
-		plt.figure(figsize = (8.5, 11))
+		plt.figure(figsize = (6,3))
 		total_plots = len(VARIANTS_TO_PLOT)
+		standard_xlim = (0, 300)
 
 		# # Growth Rate
 		# plot_name = "growth_rate"
@@ -247,27 +248,39 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			mass = read_stacked_columns(
 				cell_paths, "Mass", "cellMass", ignore_exception=True)
 
-			plt.plot(time / 60., mass, color=LINE_COLOR)
-			plt.ylim(bottom=0)
+			plt.plot(time / 60., mass, color=LINE_COLOR, clip_on=False)
+			plt.xlim(standard_xlim)
 
 			if i == 0:
-				ax1.spines["bottom"].set_position(("outward", 10))
-				ax1.spines["left"].set_position(("outward", 10))
+				ax1.spines["bottom"].set_position(("outward", 5))
+				ax1.spines["left"].set_position(("outward", 5))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
+				max_y = 2600
+				ax1.set_ylim([0, max_y])
+				ax1.set_yticks([0, max_y /2, max_y])
 			elif i == 1:
-				ax2.spines["bottom"].set_position(("outward", 10))
-				ax2.spines["left"].set_position(("outward", 10))
+				ax2.spines["bottom"].set_position(("outward", 5))
+				ax2.spines["left"].set_position(("outward", 5))
 				ax2.spines["bottom"].set_visible(False)
 				ax2.get_xaxis().set_visible(False)
+				max_y = 2600
+				ax2.set_ylim([0, max_y])
+				ax2.set_yticks([0, max_y /2, max_y])
 			else:
-				ax3.spines["bottom"].set_position(("outward", 10))
-				ax3.spines["left"].set_position(("outward", 10))
+				ax3.spines["bottom"].set_position(("outward", 5))
+				ax3.spines["left"].set_position(("outward", 5))
+				max_y = 2600
+				ax3.set_ylim([0, max_y])
+				ax3.set_yticks([0, max_y /2, max_y])
+				ax3.set_xticks([0, 150, 300])
 
 			plot_num += 1
 
-		plt.xlabel("Time (min)")
-		plt.ylabel("Cell Mass (fg)", fontsize="small")
+		# plt.xlabel("Time (min)")
+		# plt.ylabel("Cell Mass (fg)", fontsize="small")
+
+		plt.tight_layout()
 		exportFigure(
 			plt, plotOutDir,
 			plotOutFileName + plot_suffix + "_" + plot_name + "_"
