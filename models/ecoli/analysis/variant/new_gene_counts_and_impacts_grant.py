@@ -310,6 +310,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				time[time / 60. <= max_x] / 60.,
 				new_gene_mRNA_counts[time / 60. <= max_x],
 				color=LINE_COLOR, clip_on=False)
+			plt.xlim(standard_xlim)
 
 			if i == 0:
 				ax1.spines["bottom"].set_position(("outward", 5))
