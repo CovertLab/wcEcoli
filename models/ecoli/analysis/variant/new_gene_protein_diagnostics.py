@@ -156,7 +156,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		logdata = all_avg_log_monomer_counts
 		ld=np.zeros((len(variants), len(protein_idxs)))
-
 		for variant in variants:
 			vardata=np.zeros((len(protein_idxs)))
 			for m in range(len(protein_idxs)):
@@ -254,7 +253,54 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					 metadata)
 		plt.close('all')
 
+		# Observe the differences between var 0 and var 1 counts:
+		var0_x = protein_counts[0]
+		var1_y = protein_counts[1]
+
+		plt.figure(figsize= (10,10))
+		plt.scatter(var0_x, var1_y, 1)
+		m, b = np.polyfit(var0_x, var1_y, 1)
+		plt.plot(var0_x, m*var0_x +b, linewidth=.5, color='#bcbd22')
+		legstr = "linear fit: y = " + str(round(m,2)) + "x + " + str(round(b,2))
+		plt.legend(["PC data", legstr])
+		plt.xlabel("variant 0 (no GFP)")
+		plt.ylabel("variant 1 (GFP)")
+		plt.title(f"The {len(var0_x)} proteins plotted against each other")
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(var0_x)) +
+					 '_original_PC_comparisons',
+					 metadata)
+		plt.close('all')
+
+		# Observe the differences between var 0 and var 1 counts on a log scale:
+		avg_log_interest_proteins = np.zeros((
+			len(variants), len(protein_counts[0])))
+		for variant in variants:
+			for m in range(len(protein_counts[0])):
+				avg_log_interest_proteins[variant][m] = \
+					np.log10(protein_counts[variant][m] + 1)
+
+		var0_x = avg_log_interest_proteins[0]
+		var1_y = avg_log_interest_proteins[1]
+
+		plt.figure(figsize=(10, 10))
+		plt.scatter(var0_x, var1_y, 1)
+		m, b = np.polyfit(var0_x, var1_y, 1)
+		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
+		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
+		plt.legend(["PC data", legstr])
+		plt.xlabel("log(variant 0 (no GFP))")
+		plt.ylabel("log(variant 1 (GFP))")
+		plt.title(f"The {len(var0_x)} proteins plotted against each other")
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(var0_x)) +
+					 '_original_PC_comparisons_LogScale',
+					 metadata)
+		plt.close('all')
+
+
 		# FILTER OUT ZEROS!
+
 		# Extract and view the proteins that have nonzero counts for a variant:
 		p_counts = np.array(protein_counts) # not including newly added proteins
 
@@ -325,7 +371,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		nonzero_ids = all_monomer_ids[shared_nonzero_PCs_idxs]
 
 
-
 		# filter again to a chosen minimum value:
 		if filter_num == 0:
 			pass
@@ -338,7 +383,51 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			nonzero_PCs_ids = np.array(nonzero_PCs_ids)
 			nonzero_PCs_ids = nonzero_PCs_ids[shared_filtered_PC_idxs]
 
+		# Filtered x vs y comparisons of protein counts:
 
+		# Observe the differences between var 0 and var 1 counts:
+		var0_x = nonzero_PCs[0]
+		var1_y = nonzero_PCs[1]
+
+		plt.figure(figsize=(10, 10))
+		plt.scatter(var0_x, var1_y, 1)
+		m, b = np.polyfit(var0_x, var1_y, 1)
+		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
+		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
+		plt.legend(["PC data", legstr])
+		plt.xlabel("variant 0 (no GFP)")
+		plt.ylabel("variant 1 (GFP)")
+		plt.title(f"{len(var0_x)} proteins plotted against each other")
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(var0_x)) +
+					 '_PC_comparisons_Filter_' + str(filter_num),
+					 metadata)
+		plt.close('all')
+
+		# Observe the differences between var 0 and var 1 counts on a log scale:
+		avg_log_nonzero_PCs = np.zeros((len(variants), len(nonzero_PCs[0])))
+		for variant in variants:
+			for idx in range(len(nonzero_PCs[0])):
+				avg_log_nonzero_PCs[variant][idx] = \
+					np.log10(nonzero_PCs[variant][idx] + 1)
+
+		var0_x = avg_log_nonzero_PCs[0]
+		var1_y = avg_log_nonzero_PCs[1]
+
+		plt.figure(figsize=(10, 10))
+		plt.scatter(var0_x, var1_y, 1)
+		m, b = np.polyfit(var0_x, var1_y, 1)
+		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
+		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
+		plt.legend(["PC data", legstr])
+		plt.xlabel("log(variant 0 (no GFP))")
+		plt.ylabel("log(variant 1 (GFP))")
+		plt.title(f"{len(var0_x)} proteins plotted against each other")
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(var0_x)) +
+					 '_PC_comparisons_LogScale_Filter_' + str(filter_num),
+					 metadata)
+		plt.close('all')
 
 		# Observe which protiens have the smallest decrease in
 		# protein counts with the addition of GFP:
