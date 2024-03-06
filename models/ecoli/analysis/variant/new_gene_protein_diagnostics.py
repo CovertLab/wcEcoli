@@ -262,7 +262,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		m, b = np.polyfit(var0_x, var1_y, 1)
 		plt.plot(var0_x, m*var0_x +b, linewidth=.5, color='#bcbd22')
 		legstr = "linear fit: y = " + str(round(m,2)) + "x + " + str(round(b,2))
-		plt.legend(["PC data", legstr])
+		max_pt = np.argsort(protein_counts)
+		max_pt_idx = max_pt[0][-1]
+		max_pt_x = var0_x[max_pt_idx]
+		max_pt_y = var1_y[max_pt_idx]
+		slope = max_pt_y / max_pt_x
+		plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
+		otherstr = "y = " + str(round(slope, 2)) + "x"
+
+		plt.legend(["PC data", legstr, otherstr])
 		plt.xlabel("variant 0 (no GFP)")
 		plt.ylabel("variant 1 (GFP)")
 		plt.title(f"The {len(var0_x)} proteins plotted against each other")
@@ -288,7 +296,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		m, b = np.polyfit(var0_x, var1_y, 1)
 		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
 		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
-		plt.legend(["PC data", legstr])
+		max_pt = np.argsort(avg_log_interest_proteins)
+		max_pt_idx = max_pt[0][-1]
+		max_pt_x = var0_x[max_pt_idx]
+		max_pt_y = var1_y[max_pt_idx]
+		slope = max_pt_y / max_pt_x
+		plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
+		otherstr = "y = " + str(round(slope, 2)) + "x"
+
+		plt.legend(["PC data", legstr, otherstr])
 		plt.xlabel("log(variant 0 (no GFP))")
 		plt.ylabel("log(variant 1 (GFP))")
 		plt.title(f"The {len(var0_x)} proteins plotted against each other")
@@ -394,7 +410,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		m, b = np.polyfit(var0_x, var1_y, 1)
 		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
 		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
-		plt.legend(["PC data", legstr])
+
+		max_pt = np.argsort(nonzero_PCs)
+		max_pt_idx = max_pt[0][-1]
+		max_pt_x = var0_x[max_pt_idx]
+		max_pt_y = var1_y[max_pt_idx]
+		slope = max_pt_y / max_pt_x
+		plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
+		otherstr = "y = " + str(round(slope,2)) + "x"
+
+		plt.legend(["PC data", legstr, otherstr])
 		plt.xlabel("variant 0 (no GFP)")
 		plt.ylabel("variant 1 (GFP)")
 		plt.title(f"{len(var0_x)} proteins plotted against each other")
@@ -419,7 +444,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		m, b = np.polyfit(var0_x, var1_y, 1)
 		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
 		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
-		plt.legend(["PC data", legstr])
+		max_pt = np.argsort(avg_log_nonzero_PCs)
+		max_pt_idx = max_pt[0][-1]
+		max_pt_x = var0_x[max_pt_idx]
+		max_pt_y = var1_y[max_pt_idx]
+		slope = max_pt_y / max_pt_x
+		plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
+		otherstr = "y = " + str(round(slope, 2)) + "x"
+
+		plt.legend(["PC data", legstr, otherstr])
 		plt.xlabel("log(variant 0 (no GFP))")
 		plt.ylabel("log(variant 1 (GFP))")
 		plt.title(f"{len(var0_x)} proteins plotted against each other")
