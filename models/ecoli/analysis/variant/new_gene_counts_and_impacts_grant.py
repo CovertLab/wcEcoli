@@ -29,6 +29,15 @@ START_GEN = 16
 END_GEN = 24
 
 LINE_COLOR = (66/255, 170/255, 154/255)
+LINE_COLOR2 = (27/255, 132/255, 198/255)
+
+POSTER_VARIANT_COLORS = [ (136/255, 205/255, 240/255),
+						  (188/255, 140/255, 191/255),
+						  (66/255, 170/255, 154/255),
+						  (221/255, 203/255, 119/255),
+						  (27/255, 132/255, 198/255)]
+
+LINE_WIDTH = 0.7
 
 
 
@@ -236,24 +245,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# 	plt.xlim(standard_xlim)
 		#
 		# 	if i == 0:
-		# 		ax1.spines["bottom"].set_position(("outward", 5))
-		# 		ax1.spines["left"].set_position(("outward", 5))
+		# 		ax1.spines["bottom"].set_position(("outward", 10))
+		# 		ax1.spines["left"].set_position(("outward", 10))
 		# 		ax1.spines["bottom"].set_visible(False)
 		# 		ax1.get_xaxis().set_visible(False)
 		# 		max_y = 2600
 		# 		ax1.set_ylim([0, max_y])
 		# 		ax1.set_yticks([0, max_y /2, max_y])
 		# 	elif i == 1:
-		# 		ax2.spines["bottom"].set_position(("outward", 5))
-		# 		ax2.spines["left"].set_position(("outward", 5))
+		# 		ax2.spines["bottom"].set_position(("outward", 10))
+		# 		ax2.spines["left"].set_position(("outward", 10))
 		# 		ax2.spines["bottom"].set_visible(False)
 		# 		ax2.get_xaxis().set_visible(False)
 		# 		max_y = 2600
 		# 		ax2.set_ylim([0, max_y])
 		# 		ax2.set_yticks([0, max_y /2, max_y])
 		# 	else:
-		# 		ax3.spines["bottom"].set_position(("outward", 5))
-		# 		ax3.spines["left"].set_position(("outward", 5))
+		# 		ax3.spines["bottom"].set_position(("outward", 10))
+		# 		ax3.spines["left"].set_position(("outward", 10))
 		# 		max_y = 2600
 		# 		ax3.set_ylim([0, max_y])
 		# 		ax3.set_yticks([0, max_y /2, max_y])
@@ -309,28 +318,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.plot(
 				time[time / 60. <= max_x] / 60.,
 				new_gene_mRNA_counts[time / 60. <= max_x],
-				color=LINE_COLOR, clip_on=False)
+				color=LINE_COLOR, clip_on=False, linewidth=LINE_WIDTH)
 			plt.xlim(standard_xlim)
 
 			if i == 0:
-				ax1.spines["bottom"].set_position(("outward", 5))
-				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_position(("outward", 10))
+				ax1.spines["left"].set_position(("outward", 10))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
 				max_y = 100
 				ax1.set_ylim([0, max_y])
 				ax1.set_yticks([0, max_y /2, max_y])
 			elif i == 1:
-				ax2.spines["bottom"].set_position(("outward", 5))
-				ax2.spines["left"].set_position(("outward", 5))
+				ax2.spines["bottom"].set_position(("outward", 10))
+				ax2.spines["left"].set_position(("outward", 10))
 				ax2.spines["bottom"].set_visible(False)
 				ax2.get_xaxis().set_visible(False)
 				max_y = 300
 				ax2.set_ylim([0, max_y])
 				ax2.set_yticks([0, max_y /2, max_y])
 			else:
-				ax3.spines["bottom"].set_position(("outward", 5))
-				ax3.spines["left"].set_position(("outward", 5))
+				ax3.spines["bottom"].set_position(("outward", 10))
+				ax3.spines["left"].set_position(("outward", 10))
 				max_y = 900
 				ax3.set_ylim([0, max_y])
 				ax3.set_yticks([0, max_y /2, max_y])
@@ -379,12 +388,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.plot(
 				time[time / 60. <= max_x] / 60.,
 				new_gene_monomer_counts[(time / 60. <= max_x).squeeze()],
-				color=LINE_COLOR, clip_on=False)
+				color=LINE_COLOR, clip_on=False, linewidth=LINE_WIDTH)
 			plt.xlim(standard_xlim)
 
 			if i == 0:
-				ax1.spines["bottom"].set_position(("outward", 5))
-				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_position(("outward", 10))
+				ax1.spines["left"].set_position(("outward", 10))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
 				max_y = 750000
@@ -393,8 +402,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# ax1.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
 				ax1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
 			elif i == 1:
-				ax2.spines["bottom"].set_position(("outward", 5))
-				ax2.spines["left"].set_position(("outward", 5))
+				ax2.spines["bottom"].set_position(("outward", 10))
+				ax2.spines["left"].set_position(("outward", 10))
 				max_y = 1500000
 				ax2.set_ylim([0, max_y])
 				ax2.set_yticks([0, max_y /2, max_y])
@@ -408,16 +417,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				+ str(START_GEN) + "_" + str(END_GEN), metadata)
 		plt.close("all")
 
-
-		# ppGpp
-		# VARIANTS_TO_PLOT = [1, 2]
-		# SEEDS_TO_PLOT = [0, 0]
-		VARIANTS_TO_PLOT = [7, 6]
-		SEEDS_TO_PLOT = [2, 0]
+		VARIANTS_TO_PLOT = [0, 6]
+		SEEDS_TO_PLOT = [1, 0]
 		assert len(VARIANTS_TO_PLOT) == len(SEEDS_TO_PLOT)
 		plt.figure(figsize=(6, 3))
 		total_plots = 3
-
 		plot_name = "ppGpp"
 		plot_num = 1
 		for i in range(len(VARIANTS_TO_PLOT)):
@@ -444,33 +448,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.plot(
 				time_no_first[time_no_first / 60. <= max_x] / 60.,
 				ppGpp_concentration[time_no_first / 60. <= max_x],
-				color=LINE_COLOR,
-				clip_on=False)
+				color=LINE_COLOR2,
+				clip_on=False, linewidth=LINE_WIDTH)
 			plt.xlim(standard_xlim)
 
 			if i == 0:
-				ax1.spines["bottom"].set_position(("outward", 5))
-				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_position(("outward", 10))
+				ax1.spines["left"].set_position(("outward", 10))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
 				max_y = 120
 				ax1.set_ylim([0, max_y])
-				ax1.set_yticks([0, max_y /2, max_y])
+				ax1.set_yticks([0, max_y / 2, max_y])
 			elif i == 1:
-				ax2.spines["bottom"].set_position(("outward", 5))
-				ax2.spines["left"].set_position(("outward", 5))
+				ax2.spines["bottom"].set_position(("outward", 10))
+				ax2.spines["left"].set_position(("outward", 10))
 				max_y = 120
 				ax2.set_ylim([0, max_y])
-				ax2.set_yticks([0, max_y /2, max_y])
+				ax2.set_yticks([0, max_y / 2, max_y])
 				ax2.set_xticks([0, 150, 300])
 			plot_num += 1
 		plt.tight_layout()
 		exportFigure(
 			plt, plotOutDir,
-			plotOutFileName + plot_suffix + "_" + plot_name + "_"
-				+ str(START_GEN) + "_" + str(END_GEN), metadata)
+			plotOutFileName + plot_suffix + "_" + plot_name + "_0_6_"
+			+ str(START_GEN) + "_" + str(END_GEN), metadata)
 		plt.close("all")
-
 
 		# Growth Rate
 		plt.figure(figsize=(6, 3))
@@ -506,33 +509,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.plot(
 				time[time / 60. <= max_x] / 60.,
 				growth_rate_convolved[(time / 60. <= max_x).squeeze()],
-				color=LINE_COLOR,
-				clip_on=False)
+				color=LINE_COLOR2,
+				clip_on=False, linewidth=LINE_WIDTH)
 			plt.xlim(standard_xlim)
 
 			if i == 0:
-				ax1.spines["bottom"].set_position(("outward", 5))
-				ax1.spines["left"].set_position(("outward", 5))
+				ax1.spines["bottom"].set_position(("outward", 10))
+				ax1.spines["left"].set_position(("outward", 10))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
 				max_y = 0.0004
 				ax1.set_ylim([0, max_y])
-				ax1.set_yticks([0, max_y /2, max_y])
+				ax1.set_yticks([0, max_y / 2, max_y])
 			elif i == 1:
-				ax2.spines["bottom"].set_position(("outward", 5))
-				ax2.spines["left"].set_position(("outward", 5))
+				ax2.spines["bottom"].set_position(("outward", 10))
+				ax2.spines["left"].set_position(("outward", 10))
 				max_y = 0.0004
 				ax2.set_ylim([0, max_y])
-				ax2.set_yticks([0, max_y /2, max_y])
+				ax2.set_yticks([0, max_y / 2, max_y])
 				ax2.set_xticks([0, 150, 300])
 			plot_num += 1
 		plt.tight_layout()
 		exportFigure(
 			plt, plotOutDir,
-			plotOutFileName + plot_suffix + "_" + plot_name + "_"
-				+ str(START_GEN) + "_" + str(END_GEN), metadata)
+			plotOutFileName + plot_suffix + "_" + plot_name + "_0_6_"
+			+ str(START_GEN) + "_" + str(END_GEN), metadata)
 		plt.close("all")
-
 
 if __name__ == '__main__':
 	Plot().cli()
