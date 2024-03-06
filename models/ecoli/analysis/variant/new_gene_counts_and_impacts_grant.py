@@ -457,13 +457,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ax1.spines["left"].set_position(("outward", 10))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
-				max_y = 120
+				max_y = 140
 				ax1.set_ylim([0, max_y])
 				ax1.set_yticks([0, max_y / 2, max_y])
 			elif i == 1:
 				ax2.spines["bottom"].set_position(("outward", 10))
 				ax2.spines["left"].set_position(("outward", 10))
-				max_y = 120
+				max_y = 140
 				ax2.set_ylim([0, max_y])
 				ax2.set_yticks([0, max_y / 2, max_y])
 				ax2.set_xticks([0, 150, 300])
@@ -518,13 +518,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ax1.spines["left"].set_position(("outward", 10))
 				ax1.spines["bottom"].set_visible(False)
 				ax1.get_xaxis().set_visible(False)
-				max_y = 0.0004
+				max_y = 0.0005
 				ax1.set_ylim([0, max_y])
 				ax1.set_yticks([0, max_y / 2, max_y])
 			elif i == 1:
 				ax2.spines["bottom"].set_position(("outward", 10))
 				ax2.spines["left"].set_position(("outward", 10))
-				max_y = 0.0004
+				max_y = 0.0005
 				ax2.set_ylim([0, max_y])
 				ax2.set_yticks([0, max_y / 2, max_y])
 				ax2.set_xticks([0, 150, 300])
