@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 28.1
-# Date and time generated: March 1, 2024, 14:04:08
+# Date and time generated: March 7, 2024, 13:56:19
 "id"	"common_name"	"synonyms"	"chemical_formula"	"mw"	"molecular_charge"	"_smiles"
 "--TRANS-ACENAPHTHENE-12-DIOL"	"(+/-)-<i>trans</i>-acenaphthene-1,2-diol"	["<i>trans</i>-1,2-acenaphthylene glycol"]	"C12H10O2"	186.21	0	"c2(cc1(cccc3(c1c(c2)[C@@H]([C@H]3O)O)))"
 "1-2-Beta-D-Glucans"	"a 1,2-&beta;-D-glucan"	[]	null	null	0	"C(O)[C@H]7(O[C@@H](O)[C@H](O[C@@H]6(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O[C@H]5([C@H](O[C@@H]4(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O[C@H]3([C@H](O[C@@H]2(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O[C@H]1([C@H](O[R])[C@@H](O)[C@H](O)[C@@H](CO)O1))2))[C@@H](O)[C@H](O)[C@@H](CO)O3))4))[C@@H](O)[C@H](O)[C@@H](CO)O5))6))[C@@H](O)[C@H](O)7)"
@@ -6845,8 +6845,8 @@
 "Ribonucleosides-in-rRNA"	"a ribonucleoside within rRNA"	[]	null	null	0	null
 "Ribonucleosides-in-tRNA"	"a ribonucleoside within tRNA"	[]	null	null	0	null
 "Ribonucleotides"	"a ribonucleotide"	[]	null	null	-2	"C(OP(=O)([O-])[O-])[C@H]1(O[C@@H]([a nucleobase])[C@H](O)[C@H](O)1)"
-"Ribose"	"ribose"	["Rib"]	null	null	0	null
 "RIBOSE"	"D-ribose"	["ribose"]	"C5H10O5"	150.131	0	"C(=O)[C@H](O)[C@H](O)[C@H](O)CO"
+"Ribose"	"ribose"	["Rib"]	null	null	0	null
 "RIBOSE-15-BISPHOSPHATE"	"&alpha;-D-ribose 1,5-bisphosphate"	["ribose-1,5-bisphosphate"]	"C5H8O11P2"	306.059	-4	"C(OP(=O)([O-])[O-])[C@H]1(O[C@@H]([C@@H]([C@@H]1O)O)OP([O-])(=O)[O-])"
 "RIBOSE-1P"	"&alpha;-D-ribose-1-phosphate"	["D-ribose-1-phosphate", "&alpha;-D-ribose-1P", "&alpha;-D-ribofuranose 1-phosphate", "ribose-1-phosphate"]	"C5H9O8P"	228.095	-2	"C(O)[C@H]1(O[C@H](OP([O-])(=O)[O-])[C@H](O)[C@H](O)1)"
 "RIBOSE-5P"	"D-ribose 5-phosphate"	["D-ribose-5-phosphoric acid", "ribose-5-phosphoric acid", "ribose-5P", "D-ribose-5-P", "ribose-5-P", "D-ribose 5'-phosphate"]	"C5H9O8P"	228.095	-2	"C(=O)[C@H](O)[C@H](O)[C@@H](COP([O-])([O-])=O)O"
@@ -7324,10 +7324,10 @@
 "tRNA-containing-5-2-Meoxy-2-OxEt-uridine"	"a 5-(2-methoxy-2-oxoethyl)uridine in tRNA"	["a tRNA containing 5-(2-methoxy-2-oxoethyl)uridine", "an mcm<sup>5</sup>U in tRNA", "a 5-methoxycarbonylmethyl-uridine in tRNA"]	null	null	-2	"COC(=O)Cc1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
 "tRNA-containing-5-CarbMeAminome-2-methUr"	"a 5-carboxymethylaminomethyl-2'-O-methyluridine in tRNA"	[]	null	null	-3	"CO[C@@H]2([C@H](OP(=O)(O[a tRNA])[O-])[C@@H](COP(=O)([O-])O[a tRNA])O[C@@H](n1(cc(CNCC([O-])=O)c(=O)[nH]c(=O)1))2)"
 "tRNA-containing-5-CarbMeAminome-2-ThioU"	"a 5-carboxymethylaminomethyl-2-thiouridine<sup>34</sup> in tRNA"	["a tRNA containing 5-carboxymethylaminomethyl-2-thiouridine<sup>34</sup>", "cmnm<sup>5</sup>s<sup>2</sup>U in tRNA"]	null	null	-2	"C([NH2+]CC([O-])=O)C1(\C(=O)NC(=S)N(\C=1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
-"tRNA-containing-5-CarbMeAminome-uridine"	"a 5-carboxymethylaminomethyluridine<sup>34</sup> in tRNA"	["a tRNA containing 5-carboxymethylaminomethyluridine<sup>34</sup>"]	null	null	-2	"C([NH2+]CC([O-])=O)c1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
+"tRNA-containing-5-CarbMeAminome-uridine"	"a 5-carboxymethylaminomethyluridine<sup>34</sup> in tRNA"	["a tRNA containing 5-carboxymethylaminomethyluridine<sup>34</sup>", "cmnm<sup>5</sup>U in tRNA"]	null	null	-2	"C([NH2+]CC([O-])=O)c1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
 "tRNA-Containing-5-Methylcytosine"	"a 5-methylcytosine in tRNA"	["tRNA containing 5-methylcytidine", "tRNA containing 5-methylcytosine"]	null	null	-2	"Cc1(c(N)nc(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
 "tRNA-containing-5-taurinomethyluridine"	"a 5-taurinomethyluridine in tRNA"	["a tRNA containing 5-taurinomethyluridine"]	null	null	-3	"C(S(=O)(=O)[O-])CCNc1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
-"tRNA-Containing-5AminoMe-2-ThioUrdines"	"a 5-(aminomethyl)-2-thiouridine<sup>34</sup> in tRNA"	["a tRNA containing 5-(aminomethyl)-2-thiouridine<sup>34</sup>"]	null	null	-1	"C([NH3+])C1(\C(=O)NC(=S)N(\C=1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
+"tRNA-Containing-5AminoMe-2-ThioUrdines"	"a 5-(aminomethyl)-2-thiouridine<sup>34</sup> in tRNA"	["a tRNA containing 5-(aminomethyl)-2-thiouridine<sup>34</sup>", "nm<sup>5</sup>s<sup>2</sup>U in tRNA"]	null	null	-1	"C([NH3+])C1(\C(=O)NC(=S)N(\C=1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
 "tRNA-containing-5Me-uridine"	"a 5-methyluracil in tRNA"	["a tRNA containing 5-methyluracil"]	null	null	-2	"Cc1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
 "tRNA-containing-5Me-uridine54"	"a 5-methyluracil<sup>54</sup> in tRNA"	["a tRNA containing 5-methyluracil<sup>54</sup>"]	null	null	-2	"Cc1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"
 "tRNA-Containing-5MeAminoMe-2-ThioU"	"a 5-[(methylamino)methyl]-2-thiouridine<sup>34</sup> in tRNA"	["a 5-[(methylamino)methyl]-2-thiouridylate<sup>34</sup> in tRNA", "mnm5S2U"]	null	null	-1	"C[NH2+]CC1(\C(=O)NC(=S)N(\C=1)[C@@H]2(O[C@H](COP(=O)([O-])O[a tRNA])[C@@H](OP(=O)(O[a tRNA])[O-])[C@@H](O)2))"

@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 28.1
-# Date and time generated: March 1, 2024, 14:03:25
+# Date and time generated: March 7, 2024, 13:55:38
 "id"	"stoichiometry"	"common_name"	"cofactors"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null	{"MG+2": 1}
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"	{"LIPOIC-ACID": 1, "THIAMINE-PYROPHOSPHATE": 2, "FAD": 3, "MG+2": 2}
@@ -197,6 +197,8 @@
 "CPLX0-1101_RXN"	{"CPLX0-1101": 1, "EG10996-MONOMER": -3}	"tRNA-guanine transglycosylase"	{"ZN+2": 1}
 "CPLX0-11183_RXN"	{"CPLX0-11183": 1, "EG10967-MONOMER": -2}	null	{}
 "CPLX0-1121_RXN"	{"CPLX0-1121": 1, "G7845-MONOMER": -2}	"23S rRNA 2'-<i>O</i>-ribose G2251 methyltransferase"	{}
+"CPLX0-11240_RXN"	{"CPLX0-11240": 1, "EG11192-MONOMER": -6}	null	{}
+"CPLX0-11245_RXN"	{"CPLX0-11245": 1, "EG12167-MONOMER": -2}	null	{}
 "CPLX0-1141_RXN"	{"CPLX0-1141": 1, "EG10941-MONOMER": -10}	"selenocysteine synthase"	{"PYRIDOXAL_PHOSPHATE": 1}
 "CPLX0-1142_RXN"	{"CPLX0-1142": 1, "G7237-MONOMER": -2}	"formyl-CoA transferase"	{}
 "CPLX0-1161_RXN"	{"CPLX0-1161": 1, "EG11881-MONOMER": -6}	"HslU hexamer"	{}
