@@ -609,6 +609,9 @@ class TwoComponentSystem(object):
 		response regulators, and ligand-bound histidine kinases for positively oriented
 		networks) to their dependents.
 		'''
+		molecule_name_to_index = {
+			name: i for (i, name) in enumerate(self.molecule_names)}
+
 		dependencyMatrixI = []
 		dependencyMatrixJ = []
 		dependencyMatrixV = []
@@ -622,14 +625,15 @@ class TwoComponentSystem(object):
 			if self.molecule_names[independentMoleculeId] == "ATP[c]":
 				dependencyMatrixATPJ = independentMoleculeIndex
 			else:
-				dependentMoleculeId = int(np.where(self.molecule_names == self.independent_to_dependent_molecules[self.molecule_names[independentMoleculeId]])[0])
+				dependentMoleculeId = molecule_name_to_index[
+					self.independent_to_dependent_molecules[self.molecule_names[independentMoleculeId]]]
 				dependencyMatrixI.append(dependentMoleculeId)
 				dependencyMatrixJ.append(independentMoleculeIndex)
 				dependencyMatrixV.append(-1)
 
 		# ATP dependents: ADP, PI, WATER, PROTON)
 		for ATPdependent in ["ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"]:
-			dependencyMatrixI.append(int(np.where(self.molecule_names == ATPdependent)[0]))
+			dependencyMatrixI.append(molecule_name_to_index[ATPdependent])
 			dependencyMatrixJ.append(dependencyMatrixATPJ)
 			if ATPdependent == "WATER[c]":
 				dependencyMatrixV.append(1)
@@ -640,11 +644,11 @@ class TwoComponentSystem(object):
 			if col == dependencyMatrixATPJ:
 				continue
 			else:
-				dependencyMatrixI.append(int(np.where(self.molecule_names == "Pi[c]")[0]))
+				dependencyMatrixI.append(molecule_name_to_index["Pi[c]"])
 				dependencyMatrixJ.append(col)
 				dependencyMatrixV.append(1)
 
-				dependencyMatrixI.append(int(np.where(self.molecule_names == "WATER[c]")[0]))
+				dependencyMatrixI.append(molecule_name_to_index["WATER[c]"])
 				dependencyMatrixJ.append(col)
 				dependencyMatrixV.append(-1)
 
