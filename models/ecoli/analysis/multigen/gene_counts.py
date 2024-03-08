@@ -15,7 +15,15 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 # Replace with the proteins you would like to visualize here:
-interest_proteins = np.array(['PD00519[c]', 'CYNX-MONOMER[i]','B0270-MONOMER[i]'])
+interest_proteins = np.array([
+	# 'ACRD-MONOMER[i]',
+	# 'CYNX-MONOMER[i]',
+	# 'B0270-MONOMER[i]',
+	# 'G7634-MONOMER[i]',
+	'EG11854-MONOMER[c]',
+	'G7948-MONOMER[c]',
+	'PD00519[c]',
+])
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
@@ -26,6 +34,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		cell_paths = self.ap.get_cells()
+		variant = self.ap.get_variants()
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
@@ -68,15 +77,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
 								 cistron_ids]
 
-		# Extract protein indexes for each protein
-		monomer_counts_reader = TableReader(
-			os.path.join(simOutDir, "MonomerCounts"))
-		monomer_idx_dict = {monomer: i for i, monomer in
-							enumerate(monomer_counts_reader.readAttribute(
-								'monomerIds'))}
-		#new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-									#monomer_id in cistron_monomer_ids]
-
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(ip_monomer_counts,) = read_stacked_bulk_molecules(
@@ -92,7 +92,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.subplot(2, 1, 1)
 		if len(cistron_monomer_ids) == 1:
 			plt.plot(time / 60., ip_monomer_counts,
-					 label=cistron_monomer_ids[0])
+					 label = cistron_monomer_ids[0])
 		else:
 			for m in range(len(cistron_monomer_ids)):
 				plt.plot(time / 60., ip_monomer_counts[:,m],
@@ -119,6 +119,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
+
+
+
 
 if __name__ == '__main__':
 	Plot().cli()
