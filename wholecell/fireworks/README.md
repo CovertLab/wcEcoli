@@ -1,4 +1,6 @@
-# One-time setup
+# Setting up to run FireWorks
+
+## One-time setup
 
 To use FireWorks, your computer (to run the `lpad` command) and
 the Firetask worker nodes need to access a MongoDB
@@ -40,32 +42,56 @@ it also needs a queue-adapter file, `my_qadapter.yaml`.
 
    * **Atlas MongoDB cluster:** See the
      [MAT project forum](https://matsci.org/t/heres-how-to-connect-to-atlas-mongodb/4816)
-     on how to use the `lpad init -u` command to create `my_launchpad.yaml`.
+     on how to use the `lpad init -u` command to create a `my_launchpad.yaml`
+     looking something like this (after the `host` setting, are the rest
+     defaults that could be omitted?):
 
-   * **Google Cloud MongoDB database:** Run the script
-     `runscripts/cloud/mongo-ssh.sh` to open an ssh tunnel whenever you want to
-     access the server. (You can leave it running in one terminal tab then `^C`
-     it when you're done, or run `runscripts/cloud/mongo-ssh.sh bg` to run it in a
-     background process and kill it when you're done.)
-
-     Construct `my_launchpad.yaml` like this:
-
-     ```
-     host: localhost
-     port: 27017
-     name: <your-username-or-another-unique-name-for-your-database>
-     username: null
+     ```yaml
+     authsource: admin
+     host: mongodb+srv://<atlas-username>:<atlas-password>@<atlas-cluster>/wcEcoli?retryWrites=true&w=majority
+     logdir: null
+     mongoclient_kwargs: {}
+     name: null
      password: null
+     port: null
+     ssl: false
+     ssl_ca_certs: null
+     ssl_certfile: null
+     ssl_keyfile: null
+     ssl_pem_passphrase: null
+     strm_lvl: INFO
+     uri_mode: true
+     user_indices: []
+     username: null
+     wf_user_indices: []
      ```
 
-     These values ask FireWorks to connect to `localhost:27017`, which the
-     `mongo-ssh.sh` tunnel will forward to port `27017` on the Google Compute
-     Engine MongoDB server.
+     (The tool `wholecell/fireworks/initialize.py` could become useful again if updated.)
 
-     `name` will be your database name.
+  * **Google Cloud MongoDB database:** Run the script
+    `runscripts/cloud/mongo-ssh.sh` to open an ssh tunnel whenever you want to
+    access the server. (You can leave it running in one terminal tab then `^C`
+    it when you're done, or run `runscripts/cloud/mongo-ssh.sh bg` to run it in a
+    background process and kill it when you're done.)
 
-     We're not using user
-     authentication on this server since the ssh tunnel already requires Google login.
+    Construct `my_launchpad.yaml` like this:
+
+    ```yaml
+    host: localhost
+    port: 27017
+    name: <your-username-or-another-unique-name-for-your-database>
+    username: null
+    password: null
+    ```
+
+    These values ask FireWorks to connect to `localhost:27017`, which the
+    `mongo-ssh.sh` tunnel will forward to port `27017` on the Google Compute
+    Engine MongoDB server.
+
+    `name` will be your database name.
+
+    We're not using user
+    authentication on this server since the ssh tunnel already requires Google login.
 
 1. Run
 
