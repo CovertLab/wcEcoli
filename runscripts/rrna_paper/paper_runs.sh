@@ -150,3 +150,13 @@ python runscripts/fireworks/fw_queue.py
 # Uncomment one method - rlaunch is interactive, qlaunch is distributed
 # rlaunch rapidfire
 # qlaunch -r rapidfire --nlaunches infinite --sleep 5 --maxjobs_queue 100
+
+# Copy WT sims to copy number variant sims
+cp -r out/20240219.172800__SET_A1_16_gens_32_seeds_WT_with_glucose_minimal_media/wildtype_000000/ \
+out/20240221.112212__SET_C1_16_gens_32_seeds_rRNA_operon_knockouts_with_glucose_minimal_media/
+
+cp -r out/20240219.172825__SET_A2_16_gens_32_seeds_WT_with_rich_media/condition_000001/ \
+out/20240221.112243__SET_C2_16_gens_32_seeds_rRNA_operon_knockouts_with_rich_media/
+
+cp -r out/20240219.172845__SET_A3_24_gens_32_seeds_WT_with_shift_from_minimal_to_rich_media/timelines_000028 \
+out/20240221.112313__SET_C3_24_gens_32_seeds_rRNA_operon_knockouts_with_shift_from_minimal_to_rich_media/
