@@ -161,13 +161,40 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		while np.any(protein_init_prob > max_p_per_protein):
 			protein_init_prob[is_overcrowded] = max_p_per_protein[
 				is_overcrowded]
-			assert protein_init_prob[~is_overcrowded].sum() != 0
-			scale_the_rest_by = (
-				(1. - protein_init_prob[is_overcrowded].sum())
-				/ protein_init_prob[~is_overcrowded].sum()
-				)
-			protein_init_prob[~is_overcrowded] *= scale_the_rest_by
-			is_overcrowded |= (protein_init_prob > max_p_per_protein)
+			if protein_init_prob[~is_overcrowded].sum() != 0:
+				# Resolve overcrowding through rescaling (preferred)
+				scale_the_rest_by = (
+					(1. - protein_init_prob[is_overcrowded].sum())
+					/ protein_init_prob[~is_overcrowded].sum())
+				protein_init_prob[~is_overcrowded] *= scale_the_rest_by
+				is_overcrowded |= (protein_init_prob > max_p_per_protein)
+			else:
+				# If we cannot resolve the overcrowding through rescaling,
+				# we need to activate fewer ribosomes.
+				# Set the number of ribosomes so that there will be no overcrowding
+				max_index = np.argmax(protein_init_prob[is_overcrowded])
+				max_init_prob = protein_init_prob[is_overcrowded][max_index]
+				associated_cistron_counts = cistron_counts[
+					self.cistron_to_monomer_mapping][is_overcrowded][max_index]
+				print("Trying to activate fewer ribosomes")  # TODO: Remove after testing
+				print("Original number: ", n_ribosomes_to_activate)  # TODO: Remove after testing
+				n_ribosomes_to_activate = np.int64((
+					self.ribosomeElongationRate
+					/ self.active_ribosome_footprint_size
+					* (units.s) * self.timeStepSec() / max_init_prob
+					* associated_cistron_counts).asNumber())
+				print("New number: ", n_ribosomes_to_activate)  # TODO: Remove after testing
+				print("Original max_p: ", max_p)  # TODO: Remove after testing
+				# Update maximum probabilities based on new number of activated ribosomes
+				max_p = (
+					self.ribosomeElongationRate
+					/ self.active_ribosome_footprint_size
+					* (units.s) * self.timeStepSec()
+					/ n_ribosomes_to_activate).asNumber()
+				print("New max_p: ", max_p)  # TODO: Remove after testing
+				max_p_per_protein = max_p * cistron_counts[self.cistron_to_monomer_mapping]
+				is_overcrowded = (protein_init_prob > max_p_per_protein)
+				assert is_overcrowded.sum() == 0 # We expect no overcrowding
 
 		# Compute actual transcription probabilities of each transcript
 		actual_protein_init_prob = protein_init_prob.copy()
