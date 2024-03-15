@@ -162,9 +162,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		num_rescales = 0
 		while np.any(protein_init_prob > max_p_per_protein):
-			protein_init_prob[is_overcrowded] = max_p_per_protein[
-				is_overcrowded]
 			if protein_init_prob[~is_overcrowded].sum() != 0:
+				protein_init_prob[is_overcrowded] = max_p_per_protein[
+					is_overcrowded]
 				# Resolve overcrowding through rescaling (preferred)
 				scale_the_rest_by = (
 					(1. - protein_init_prob[is_overcrowded].sum())
