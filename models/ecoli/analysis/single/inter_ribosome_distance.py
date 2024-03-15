@@ -59,27 +59,39 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Calculate the total number of initiation events that happen to each
 		# transcript per mRNA throughout the cell cycle
-		n_total_ribosome_init_events_per_mRNA = np.divide(
-			ribosome_init_event_per_monomer[1:, :].astype(np.float64),
-			cistron_counts_for_monomers[1:, :]).sum(axis=0)
+		sum_ribosome_init_event_per_monomer = (
+			ribosome_init_event_per_monomer[1:, :].astype(np.float64).sum(axis=0))
+		avg_cistron_count_per_monomer = np.mean(
+			cistron_counts_for_monomers[1:, :], axis=0)
+		n_total_ribosome_init_events_per_mRNA = (
+				sum_ribosome_init_event_per_monomer / avg_cistron_count_per_monomer)
+
+		# Data filtering
+		mask = np.logical_and(
+			(sum_ribosome_init_event_per_monomer >= 10),  # filter out monomers with few ribosome init events
+			(avg_cistron_count_per_monomer > 0))  # filter out monomers with no cistrons
+		n_total_ribosome_init_events_per_mRNA_filtered = n_total_ribosome_init_events_per_mRNA[mask]
+		monomer_ids_filtered = np.array(monomer_ids)[mask]
 
 		# Divide by length of cell cycle to get average initiation rate
-		avg_init_rate = (1. / time[-1]) * n_total_ribosome_init_events_per_mRNA
+		avg_init_rate = (1. / time[-1]) * n_total_ribosome_init_events_per_mRNA_filtered
 
 		# Divide elongation rate with initiation rate to get average distance
-		# between RNAPs in nucleotides
-		avg_inter_ribosome_distance = (ribosome_elong_rate / avg_init_rate).asNumber(units.nt)
+		# between ribosomes in nucleotides
+		avg_inter_ribosome_distance = (
+				ribosome_elong_rate / avg_init_rate).asNumber(units.nt)
 
 		# Sort from shortest to longest
 		sorted_index = avg_inter_ribosome_distance.argsort()
-		sorted_monomer_ids = [monomer_ids[i] for i in sorted_index]
+		sorted_monomer_ids = [monomer_ids_filtered[i] for i in sorted_index]
 		avg_inter_ribosome_distance.sort()
 
-		# Mark genes with RNAPs that are too close to each other
-		n_too_close = (avg_inter_ribosome_distance[:SAMPLE_SIZE] < ribosome_footprint_size).sum()
+		# Mark genes with ribosomes that are too close to each other
+		n_too_close = (
+			avg_inter_ribosome_distance[:SAMPLE_SIZE] < ribosome_footprint_size).sum()
 		bar_colors = ["r"]*n_too_close + ["b"]*(SAMPLE_SIZE - n_too_close)
 
-		# Plot the first n genes with shortest distances
+		# Plot the first n monomers with shortest distances
 		plt.figure(figsize=(8, 6))
 		plt.barh(np.arange(SAMPLE_SIZE), avg_inter_ribosome_distance[:SAMPLE_SIZE],
 			tick_label=sorted_monomer_ids[:SAMPLE_SIZE],
