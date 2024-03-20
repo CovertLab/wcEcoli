@@ -26,7 +26,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 										monomer_sim_data['id']))
 		new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
 								for mRNA_id in new_gene_mRNA_ids]
-		print(new_gene_monomer_ids)
 		if len(new_gene_mRNA_ids) == 0:
 			print("This plot is intended to be run on simulations where the"
 				  " new gene option was enabled, but no new gene mRNAs were "

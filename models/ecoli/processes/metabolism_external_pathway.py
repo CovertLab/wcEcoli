@@ -72,8 +72,7 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
             self.cell_volume = self.cell_mass / self.cell_density
             self.dcw_to_volume = self.cell_density * (self.dry_mass / self.cell_mass)
 
-            print('Molecules before ', self.molecule_dict)
-            print('Enzymes before ', self.enzymes_dict)
+
             self.molecules_required, self.all_molecule_changes, self.flux = self.molecules_to_next_time_step(
                 self.molecule_dict, self.enzymes_dict,
                 self.cell_volume, self.n_avogadro, self.timeStepSec(), method="LSODA")
@@ -83,8 +82,6 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
 
     def evolveState(self):
         if self.external_pathway_exists:
-            print('Flux ', self.flux)
-            print('Molecules ', self.all_molecule_changes)
             self.writeToListener('FBAResults', 'externalPathwayFluxes', self.flux)
             # Increment changes in molecule counts
             self.molecules.countsInc(self.all_molecule_changes)

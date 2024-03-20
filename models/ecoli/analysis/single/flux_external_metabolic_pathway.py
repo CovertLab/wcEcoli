@@ -22,26 +22,15 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         if not sim_data.process.metabolism_external_pathway.has_external_pathway:
             print("This simulation does not have an external pathway")
             return
-        cell_density = sim_data.constants.cell_density
 
         # Listeners used
         main_reader = TableReader(os.path.join(simOutDir, 'Main'))
         initial_time = main_reader.readAttribute('initialTime')
         fba_results = TableReader(os.path.join(simOutDir, 'FBAResults'))
-        mass_table = TableReader(os.path.join(simOutDir, 'Mass'))
 
         # Load data
         time = main_reader.readColumn('time') - initial_time
         fluxes_external_pathway = fba_results.readColumn('externalPathwayFluxes')
-
-        # Calculate coefficients to be used to convert flux units from
-        # mM/s to mmol/gCDW/h
-        #cell_mass = mass_table.readColumn('cellMass')
-        #dry_mass =  mass_table.readColumn('dryMass')
-        #conversion_coeffs = (
-        #        dry_mass / cell_mass
-        #        * cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
-        #)
 
         # Fluxes
         plt.figure()

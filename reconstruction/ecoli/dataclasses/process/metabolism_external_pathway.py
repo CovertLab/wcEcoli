@@ -91,7 +91,7 @@ class MetabolismExternalPathway(object):
                 print('There are external genes, but no external pathway')
                 self.has_external_pathway = False
             else:
-                print('There is an external pathway.')
+                print('There is an external pathway and external genes.')
                 self.has_external_pathway = True
         else:
             print('There is no external pathway and no external genes.')

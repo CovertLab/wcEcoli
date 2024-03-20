@@ -25,7 +25,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		cell_paths = self.ap.get_cells()
 		sim_dir = cell_paths[0]
-		print(sim_dir)
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
 		# Determine new gene ids

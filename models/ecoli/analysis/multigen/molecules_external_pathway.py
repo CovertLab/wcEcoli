@@ -44,7 +44,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         plt.figure()
         plt.xlabel("Time (min)")
         plt.title("Molecule counts")
-        print(molecule_names.shape)
 
         for m in range(len(molecule_names)):
             plt.subplot(int(math.sqrt(len(molecule_names)))+1, int(math.sqrt(len(molecule_names)))+1, m+1)

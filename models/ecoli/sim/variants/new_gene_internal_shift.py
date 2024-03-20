@@ -171,7 +171,6 @@ def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 		expression_factor = (
 			10**(NEW_GENE_EXPRESSION_FACTORS[expression_list_index] - 1))
 		trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_VALUES[trl_eff_list_index]
-		print(expression_factor, trl_eff_value)
 
 	return expression_factor, trl_eff_value
 
