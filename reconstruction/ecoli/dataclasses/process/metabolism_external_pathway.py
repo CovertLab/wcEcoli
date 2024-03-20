@@ -88,10 +88,13 @@ class MetabolismExternalPathway(object):
                 self._populate_derivative_and_jacobian()
 
             if rxnIds==[]:
+                print('There are external genes, but no external pathway')
                 self.has_external_pathway = False
             else:
+                print('There is an external pathway.')
                 self.has_external_pathway = True
         else:
+            print('There is no external pathway and no external genes.')
             self.has_external_pathway = False
 
     def __getstate__(self):

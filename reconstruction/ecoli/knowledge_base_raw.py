@@ -238,7 +238,6 @@ class KnowledgeBaseEcoli(object):
 				os.path.join(new_gene_path, 'insertion_location.tsv'))
 			self.list_of_dict_filenames.append(
 				os.path.join(new_gene_path, 'gene_sequences.tsv'))
-
 			self.list_of_dict_filenames.append(
 				os.path.join(new_gene_path, 'metabolic_reactions_external.tsv'))
 
@@ -264,15 +263,15 @@ class KnowledgeBaseEcoli(object):
 				self.new_gene_added_data.update({f: nested_attr + f})
 
 
-			# RNA sequence data aso needs to be joined to an existing file,
+			# RNA sequence data also needs to be joined to an existing file,
 			# nested under the rna_seq_data
-			rnaseq_path = os.path.join(new_gene_path, 'rnaseq_rsem_tpm_mean.tsv')
-			assert os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)), (
-				f"File rnaseq_rsem_tpm_mean.tsv must be present in the"
-				f" new_genes_data subdirectory {new_gene_subdir}.")
-			self.list_of_dict_filenames.append(rnaseq_path)
-			self.new_gene_added_data.update({
-				'rna_seq_data.rnaseq_rsem_tpm_mean': nested_attr + 'rnaseq_rsem_tpm_mean'})
+			#rnaseq_path = os.path.join(new_gene_path, 'rnaseq_rsem_tpm_mean.tsv')
+			#assert os.path.isfile(os.path.join(FLAT_DIR,rnaseq_path)), (
+			#	f"File rnaseq_rsem_tpm_mean.tsv must be present in the"
+			#	f" new_genes_data subdirectory {new_gene_subdir}.")
+			#self.list_of_dict_filenames.append(rnaseq_path)
+			#self.new_gene_added_data.update({
+			#	'rna_seq_data.rnaseq_rsem_tpm_mean': nested_attr + 'rnaseq_rsem_tpm_mean'})
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
