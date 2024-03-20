@@ -184,3 +184,60 @@ Note: The numbers after new_gene must be integers. A different simulation will r
 `python models/ecoli/analysis/variant/doubling_time_histogram.py`
 
 `python models/ecoli/analysis/variant/new_gene_translation_efficiency_heatmaps.py`
+
+---
+<b>Addition of new metabolic genes<br>(in progress)
+
+* In the genome insertion directory ('reconstruction/ecoli/flat/new_gene_data/gene_names') populate the files: 
+
+  * metabolic_reaction_external.tsv - list the reactions from the additional pathway. Specify for each reaction their:
+  
+    * id (e.g. ‘rxnpath1’),  
+
+    * Stoichiometry represented as a dictionary where the keys are the reactants and the products, and the values represent the coefficients for each reactant (positive coefficient) or product (negative coefficient) 
+
+    * Direction for reading the reaction (e.g. L2R) 
+
+    * A list containing the name of the enzyme catalyzing the reactions. At the moment each reaction can only be catalyzed by 1 enzyme. 
+
+    * A list containing the name of the substrate of the reaction. At the moment, each reaction can only have one substrate. 
+
+    * The turnover number of an enzyme (kcat) 
+
+    * The Michaelis Menten constant (KM) 
+
+  * metabolites.tsv - list of the metabolites produced by the reaction. Specify for each of them: 
+
+    * Their ID as shown on Ecocyc (e.g. CPD-11890) 
+
+    * Their common name according to Ecocyc. 
+
+    * A list of synonyms. This can be empty. 
+
+    * Chemical formula (e.g. C11H9) 
+
+    * Molecular charge. 
+
+    * Smiles. 
+
+  * If these files are not empty, the WCM will run the metabolic_reactions_external process. 
+
+A new process was created to represent the metabolism corresponding to these reactions. This new process is based on Michaelis Menten kinetics and it is run at each time step before the Metabolism process. To achieve this, two Python files were added: 
+
+  * reconstruction/ecoli/dataclasses/process/metabolism_external_pathway.py an – This script loads the raw data from the files populated above and stores it in the sim_data object. It also makes it accessible as an instance of the new process class. In this file we also define the methods that represent the Michaelis Menten model. This script is called when runParca is run. 
+
+  * models/ecoli/metabolism_external_pathway.py is called when running the sim. The script defines a class corresponding to the process that initializes all the variables necessary, it calls the Michaelis Menten model and updates the state of the cell accordingly. Furthermore, in this sript it is possible to update any listeners with the data produced. 
+
+Analysis scripts  
+
+Four analysis scripts are added when there is data in the metabolic_reaction_external.tsv and metabolites.tsv: 
+
+  * models/ecoli/analysis/single/flux_external_metabolic_pathway.py - creates a plot of the fluxes corresponding to the external reactions added. This will be one plot for each cell. 
+
+  * models/ecoli/analysis/multigen/flux_external_metabolic_pathway.py - creates a plot of the fluxes corresponding to the external reactions added. This will show all these fluxes for all generations simulated in one variant. 
+
+  * models/ecoli/analysis/single/molecules_external_pathway.py - creates plots of molecule counts for each molecule involved in the external reactions, for each cell separately, from every generation. 
+
+  * models/ecoli/analysis/multigen/molecules_external_pathway.py - creates plots of molecule counts for each molecule involved in the external reactions, for all cells from all generations corresponding to a variant. 
+
+The variants and the sample commands for running this code are the same as in the case of gene addition (without any metabolic pathway involved).  
