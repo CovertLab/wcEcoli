@@ -20,8 +20,10 @@ interest_proteins = np.array([
 	# 'CYNX-MONOMER[i]',
 	# 'B0270-MONOMER[i]',
 	# 'G7634-MONOMER[i]',
-	'EG11854-MONOMER[c]',
-	'G7948-MONOMER[c]',
+	#'EG11854-MONOMER[c]',
+	#'G6606-MONOMER[c]',
+	'MONOMER0-2678[c]',
+	'EG10037-MONOMER[c]',
 	'PD00519[c]',
 ])
 
@@ -35,6 +37,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		cell_paths = self.ap.get_cells()
 		variant = self.ap.get_variants()
+		seed = self.ap.get_seeds()
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
@@ -83,7 +86,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths, cistron_monomer_ids)
 		all_mRNA_stacked_counts = read_stacked_columns(
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts')
-		ip_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]
+		ip_mRNA_counts = all_mRNA_stacked_counts[:, new_gene_mRNA_indexes]
 
 		# Plotting
 		plt.figure(figsize = (8.5, 11))
@@ -99,7 +102,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						 label = cistron_monomer_ids[m])
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
-		plt.title("Protein Counts for Proteins of Interest")
+		plt.title(f"Protein Counts for Proteins of Interest in variant"
+				  f" {variant}, seed {seed}")
 		plt.legend()
 
 		# mRNA Counts
@@ -113,11 +117,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						 label = cistron_ids[r])
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
-		plt.title("mRNA Counts for Proteins of Interest")
+		plt.title(f"mRNA Counts for Proteins of Interest in variant {variant},"
+				  f" seed {seed}")
 		plt.legend()
 
 		plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName + '_variant_' +
+					 str(variant) + '_seed_' + str(seed), metadata)
 		plt.close("all")
 
 
