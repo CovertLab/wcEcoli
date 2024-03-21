@@ -1,0 +1,6 @@
+"name"	"value"	"units"	"_source"	"_comments"
+"new_gene_rna_synth_prob_baseline"	1.696972873200787e-09			"This value was chosen using 0.01 read counts for RNAseq counts for a single new gene and reading ParCa output"
+"new_gene_rna_expression_baseline"	3.461732338318451e-10			"This value was chosen using 0.01 read counts for RNAseq counts for a single new gene and reading ParCa output"
+"new_gene_exp_free_baseline"	2.855602911429768e-10			"This value was chosen using 0.01 read counts for RNAseq counts for a single new gene and reading ParCa output"
+"new_gene_exp_ppgpp_baseline"	3.610996561760185e-10			"This value was chosen using 0.01 read counts for RNAseq counts for a single new gene and reading ParCa output"
+"new_gene_reg_basal_prob_baseline"	8.92401929277839e-10			"This value was chosen using 0.01 read counts for RNAseq counts for a single new gene and reading ParCa output"

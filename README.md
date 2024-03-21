@@ -126,6 +126,12 @@ To get _full_ analyses across all variants, generations, etc., run:
 * `analysisMultigen.py` for each combination of `--variant_index` and `--seed` you simulated
 * `analysisSingle.py` for each combination of `--variant_index`, `--seed`, and `--generation` you simulated
 
+Ranges of variant indices, seeds, and generations can be specified using the `--variant-range`, `--seed-range`, and `--generation-range` arguments, respectively.
+
+<p align="center">
+  <img src="docs/analysis_schematic.svg" alt="Analysis schematic"/>
+</p>
+
 The `--plot` (or `-p`) optional parameter lets you pick one or more specific PLOTS to run.
 The list of PLOTs can include analysis class filenames like `aaCounts` (or `aaCounts.py`)
 and analysis group TAGS like `CORE`. See the `__init__.py` file in each analysis class directory
@@ -216,9 +222,9 @@ To use the cached sim data file, set the `CACHED_SIM_DATA` environment variable
 DESC="Example run with cached sim data." CACHED_SIM_DATA=1 python runscripts/fireworks/fw_queue.py
 ```
 
-### Using an interactive Sherlock node to run a Fireworks workflow
+### Using an interactive Sherlock connection to run a Fireworks workflow
 
-To run queued simulations on an interactive Sherlock node:
+To run queued simulations on an interactive connection to a Sherlock compute node:
 
 ```bash
 rlaunch rapidfire
@@ -231,7 +237,7 @@ Don't do this on a Sherlock login node.
 
 ### Using the SLURM scheduler on Linux to run a Fireworks workflow
 
-To run simulations on a Sherlock cluster (helpful when running more than one simulation):
+To run simulations on a Sherlock compute cluster (helpful when running more than one simulation):
 
 ```bash
 qlaunch -r rapidfire --nlaunches infinite --sleep 5
@@ -240,7 +246,7 @@ qlaunch -r rapidfire --nlaunches infinite --sleep 5
 The `qlaunch` command will run forever. Hit `Ctrl-C` to kill it once the console
 logs shows that all the simulation and analysis steps have finished.
 
-`qlaunch` is relatively lightweight, so it might work on a Sherlock login node.
+`qlaunch` is lightweight so it might be fine on a Sherlock login node.
 
 `qlaunch` will create block directories with stdout and stderr from each Firework.  To troubleshoot any errors or just to see the output you would normally see from an interactive session, use the following commands to search the block directories for your desired fw_id:
 ```bash

@@ -1,5 +1,5 @@
 """
-Compares timetraces of ppGpp concentrations between two sets of simulations.
+Compares timetraces of ribosome concentrations between two sets of simulations.
 """
 
 from typing import Tuple
@@ -7,15 +7,17 @@ from typing import Tuple
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
+import os
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from validation.ecoli.validation_data import ValidationDataEcoli
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_bulk_molecules, read_stacked_columns)
+	read_stacked_columns, read_stacked_bulk_molecules)
 # noinspection PyUnresolvedReferences
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 
 
 WINDOW_SIZE = 60
@@ -28,13 +30,15 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, validation_data2 = self.setup(input_sim_dir)
 
-		ppgpp_id = sim_data1.molecule_ids.ppGpp
+		s30_full_complex_id = sim_data1.molecule_ids.s30_full_complex
+		s50_full_complex_id = sim_data1.molecule_ids.s50_full_complex
+		n_avogadro = sim_data1.constants.n_avogadro
 
 		def read_sims(ap):
-			all_ppgpp_timetraces = []
+			all_ribosome_timetraces = []
 			t_max = 0
 
-			# Get timetraces of ppGpp concentrations from each seed
+			# Get timetraces of ribosome concentrations from each seed
 			for seed in np.arange(ap.n_seed):
 				cell_paths = ap.get_cells(seed=[seed], only_successful=True)
 
@@ -43,23 +47,45 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 					continue
 
 				time = read_stacked_columns(
-					cell_paths, 'Main', 'time',
-					remove_first=True).squeeze()
-				counts_to_molar = read_stacked_columns(
-					cell_paths, 'EnzymeKinetics', 'countsToMolar',
-					remove_first=True).squeeze()
-				ppgpp_count, = read_stacked_bulk_molecules(
-					cell_paths, [ppgpp_id],
-					remove_first=True)
-				ppgpp_conc = ppgpp_count * counts_to_molar * 1000  # uM
+					cell_paths, 'Main', 'time', remove_first=True).squeeze()
 
-				all_ppgpp_timetraces.append((time[1:], ppgpp_conc[1:]))
+				# Get index of active ribosomes in the unique molecule counts
+				# reader
+				unique_molecule_counts_reader = TableReader(
+					os.path.join(cell_paths[0], 'simOut', 'UniqueMoleculeCounts'))
+				unique_molecule_ids = unique_molecule_counts_reader.readAttribute(
+					'uniqueMoleculeIds')
+				active_ribosome_idx = unique_molecule_ids.index('active_ribosome')
+
+				# Get counts of active ribosomes
+				active_ribosome_counts = read_stacked_columns(
+					cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+					remove_first=True,
+					ignore_exception=True)[:, active_ribosome_idx]
+
+				# Get counts of inactive ribosomal subunits
+				ribosome_subunit_counts = read_stacked_bulk_molecules(
+					cell_paths, ([s30_full_complex_id, s50_full_complex_id],),
+					remove_first=True, ignore_exception=True)[0]
+
+				# Get cell volume
+				cell_volume = (units.L) * 1e-15 * read_stacked_columns(
+					cell_paths, 'Mass', 'cellVolume', remove_first=True,
+					ignore_exception=True
+					).flatten()
+
+				# Calculate concentrations of all ribosomes in uM
+				ribosome_conc = ((1 / (n_avogadro * cell_volume)) * (
+					active_ribosome_counts + ribosome_subunit_counts.min(axis=1)
+					)).asNumber(units.mol/units.L) * 1e6
+
+				all_ribosome_timetraces.append((time[1:], ribosome_conc[1:]))
 				if time[-1] > t_max:
 					t_max = time[-1]
 
 			# Calculate sliding window averages of concentrations across
 			# multiple seeds
-			n_timetraces = len(all_ppgpp_timetraces)
+			n_timetraces = len(all_ribosome_timetraces)
 			swa_time = []
 			swa_conc = []
 
@@ -67,7 +93,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				t_window_max = t_window_min + WINDOW_SIZE
 				conc_this_window = []
 
-				for (t, conc) in all_ppgpp_timetraces:
+				for (t, conc) in all_ribosome_timetraces:
 					mask = np.logical_and(t_window_min <= t, t < t_window_max)
 
 					# Skip seed if no data exists for this window
@@ -83,16 +109,16 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				swa_time.append((t_window_min + t_window_max) / 2)
 				swa_conc.append(np.mean(conc_this_window))
 
-			swa_ppgpp_timetrace = (np.array(swa_time), np.array(swa_conc))
+			swa_ribosome_timetrace = (np.array(swa_time), np.array(swa_conc))
 
-			return all_ppgpp_timetraces, swa_ppgpp_timetrace, t_max
+			return all_ribosome_timetraces, swa_ribosome_timetrace, t_max
 
 		all_tt1, swa_tt1, t_max1 = read_sims(ap1)
 		all_tt2, swa_tt2, t_max2 = read_sims(ap2)
 
 		plt.figure(figsize=(10, 3))
 
-		# Plot timetraces of ppGpp concentrations from two sims on same plot
+		# Plot timetraces of ribosome concentrations from two sims on same plot
 		ax1 = plt.subplot(1, 1, 1)
 		for (t, conc) in all_tt1:
 			ax1.plot(t / 60, conc, clip_on=False, c='C0', lw=0.5, alpha=0.1)
@@ -107,13 +133,13 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			swa_tt2[0] / 60, swa_tt2[1], clip_on=False, c='C1', lw=3,
 			label='input')
 		ax1.set_xlabel('Time (min)')
-		ax1.set_ylabel('ppGpp concentration ($\mu$M)')
+		ax1.set_ylabel('Ribosome concentration ($\mu$M)')
 		ax1.spines["top"].set_visible(False)
 		ax1.spines["right"].set_visible(False)
 		ax1.spines["bottom"].set_position(("outward", 10))
 		ax1.spines["left"].set_position(("outward", 10))
 		ax1.set_xlim([0, max(t_max1, t_max2) / 60])
-		ax1.set_ylim([0, 400])
+		ax1.set_ylim([0, 60])
 		ax1.legend(loc=1)
 
 		plt.tight_layout()

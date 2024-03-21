@@ -89,8 +89,17 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			initiation_events_per_copy_each_rrna = (
 				initiation_events / copy_numbers
 				).sum(axis=0)
-			initiation_events_per_copy_all_rrnas = (
-				initiation_events.sum(axis=1) / copy_numbers.sum(axis=1)
+
+			# Get mask for rRNAs with zero initiation events throughout all
+			# sims - these rRNAs are assumed to be nonfunctional (most likely
+			# knocked out)
+			nonfunctional_rrna_mask = (
+				initiation_events_per_copy_each_rrna == 0)
+
+			# Calculate initiation events per copy amongst all functional rRNAs
+			initiation_events_per_copy_all_functional_rrnas = (
+				initiation_events[:, ~nonfunctional_rrna_mask].sum(axis=1)
+				/ copy_numbers[:, ~nonfunctional_rrna_mask].sum(axis=1)
 				).sum()
 
 			# Get total simulation time
@@ -102,12 +111,13 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 			# Calculate average distance between adjacent RNAPs for each operon
 			# and for all operons
-			avg_rrna_distance_each_rrna = (
-				rnap_elong_rate * total_simulation_time
-				/ initiation_events_per_copy_each_rrna)
+			with np.errstate(divide='ignore'):
+				avg_rrna_distance_each_rrna = (
+					rnap_elong_rate * total_simulation_time
+					/ initiation_events_per_copy_each_rrna)
 			avg_rrna_distance_all_rrnas = (
 				rnap_elong_rate * total_simulation_time
-				/ initiation_events_per_copy_all_rrnas)
+				/ initiation_events_per_copy_all_functional_rrnas)
 
 			return avg_rrna_distance_each_rrna, avg_rrna_distance_all_rrnas
 
@@ -120,10 +130,22 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Plot bar plots for each rRNA operon
 		ax0 = fig.add_subplot(gs[0, 0])
 		for i, (c1, c2) in enumerate(zip(d1, d2)):
-			ax0.bar(
-				1.5*i - 0.25, c1, width=0.5, alpha=0.5, color='C0', label='reference')
-			ax0.bar(
-				1.5*i + 0.25, c2, width=0.5, alpha=0.5, color='C1', label='input')
+			if c1 != np.inf:
+				ax0.bar(
+					1.5*i - 0.25, c1, width=0.5, alpha=0.5, color='C0',
+					label='reference')
+			# If value is equal to infinity (nonfunctional rRNA with zero
+			# expression), mark with a red "x" at y=0
+			else:
+				ax0.scatter(
+					1.5*i - 0.25, 0, marker='x', color='red', clip_on=False)
+			if c2 != np.inf:
+				ax0.bar(
+					1.5*i + 0.25, c2, width=0.5, alpha=0.5, color='C1',
+					label='input')
+			else:
+				ax0.scatter(
+					1.5*i + 0.25, 0, marker='x', color='red', clip_on=False)
 
 		ax0.axhline(y=rnap_footprint_size, ls='--', color='red')
 		ax0.set_xticks(1.5*np.arange(7))
