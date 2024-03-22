@@ -16,6 +16,8 @@ Addition of new genes to the chromosome<br>(in progress)
   * Currently supported optional data files:
     * `rna_half_lives.tsv` - Can specify if desired, otherwise will default to average of the other RNAs
     * `protein_half_lives_measured` - Can specify if desired, otherwise will default to average of the other proteins
+    * `metabolic_reactions_external` - Can specify if an external metabolic pathway uses the genes added
+    * `metabolites` - Can specify is an external metabolic pathway uses the genes added
 
 With `new_genes_option != 'off'`, `KnowledgeBaseEcoli` uses the information in the new gene subdirectory, which is specified in the command line via `new_genes_option`, to make the addition of the gene to the Ecoli chromosome.
 For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the ParCa. 
