@@ -12,6 +12,7 @@ ACTIVE = [
 	"centralCarbonMetabolismScatter.py",
 	"charging_molecules.py",
 	"environmental_shift_fluxes.py",
+	"flux_external_metabolic_pathway.py",
 	"functionalUnits.py",
 	"functionalUnitsFC.py",
 	"growthAffectingPolymerases.py",
@@ -24,6 +25,7 @@ ACTIVE = [
 	"massFractionToUnity.py",
 	"massShift.py",
 	"mene_limitations.py",
+	"molecules_external_pathway.py",
 	"new_gene_counts.py",
 	# "probProteinExistAndDouble.py",
 	"polycistronic_transcription.py",
@@ -153,5 +155,10 @@ TAGS = {
 		],
 	'VALIDATION': [
 		"proteinCountsValidation.py",
-		]
+		],
+	'NEW_GENE': [
+		"new_gene_counts.py",
+		"molecules_external_pathway.py",
+		"flux_external_metabolic_pathway.py",
+	],
 	}
