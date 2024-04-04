@@ -145,7 +145,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			self.timeStepSec())
 
 		n_ribosomes_to_activate = np.int64(self.activationProb * inactiveRibosomeCount)
-		n_ribosomes_to_activate_OLD = np.copy(n_ribosomes_to_activate)
 
 		if n_ribosomes_to_activate == 0:
 			return
@@ -156,50 +155,41 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		max_p = (self.ribosomeElongationRate / self.active_ribosome_footprint_size
 			* (units.s) * self.timeStepSec() / 
 			n_ribosomes_to_activate).asNumber()
-		max_p_OLD = np.copy(max_p)
 		max_p_per_protein = max_p*cistron_counts[self.cistron_to_monomer_mapping]
 		is_overcrowded = (protein_init_prob > max_p_per_protein)
 
-		num_rescales = 0
 		while np.any(protein_init_prob > max_p_per_protein):
 			if protein_init_prob[~is_overcrowded].sum() != 0:
+				# Resolve overcrowding through rescaling (preferred)
 				protein_init_prob[is_overcrowded] = max_p_per_protein[
 					is_overcrowded]
-				# Resolve overcrowding through rescaling (preferred)
 				scale_the_rest_by = (
 					(1. - protein_init_prob[is_overcrowded].sum())
 					/ protein_init_prob[~is_overcrowded].sum())
 				protein_init_prob[~is_overcrowded] *= scale_the_rest_by
 				is_overcrowded |= (protein_init_prob > max_p_per_protein)
-				num_rescales += 1
-				print("Num rescales: ", num_rescales)  # TODO: Remove after testing
 			else:
 				# If we cannot resolve the overcrowding through rescaling,
-				# we need to activate fewer ribosomes.
-				# Set the number of ribosomes so that there will be no overcrowding
-				max_index = np.argmax(protein_init_prob[is_overcrowded])
+				# we need to activate fewer ribosomes. Set the number of
+				# ribosomes to activate so that there will be no overcrowding.
+				max_index = np.argmax(
+					protein_init_prob[is_overcrowded] / max_p_per_protein[is_overcrowded])
 				max_init_prob = protein_init_prob[is_overcrowded][max_index]
 				associated_cistron_counts = cistron_counts[
 					self.cistron_to_monomer_mapping][is_overcrowded][max_index]
-				print("Trying to activate fewer ribosomes")  # TODO: Remove after testing
-				print("Num rescales before this: ", num_rescales)  # TODO: Remove after testing
-				print("Original number: ", n_ribosomes_to_activate)  # TODO: Remove after testing
-				print("Original number (COPY): ", n_ribosomes_to_activate_OLD)  # TODO: Remove after testing
 				n_ribosomes_to_activate = np.int64((
 					self.ribosomeElongationRate
 					/ self.active_ribosome_footprint_size
 					* (units.s) * self.timeStepSec() / max_init_prob
 					* associated_cistron_counts).asNumber())
-				print("New number: ", n_ribosomes_to_activate)  # TODO: Remove after testing
-				print("Original max_p: ", max_p)  # TODO: Remove after testing
-				print("Original max_p (COPY): ", max_p_OLD)  # TODO: Remove after testing
-				# Update maximum probabilities based on new number of activated ribosomes
+
+				# Update maximum probabilities based on new number of activated
+				# ribosomes.
 				max_p = (
 					self.ribosomeElongationRate
 					/ self.active_ribosome_footprint_size
 					* (units.s) * self.timeStepSec()
 					/ n_ribosomes_to_activate).asNumber()
-				print("New max_p: ", max_p)  # TODO: Remove after testing
 				max_p_per_protein = max_p * cistron_counts[self.cistron_to_monomer_mapping]
 				is_overcrowded = (protein_init_prob > max_p_per_protein)
 				assert is_overcrowded.sum() == 0 # We expect no overcrowding
