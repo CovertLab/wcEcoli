@@ -68,6 +68,7 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 		self.actual_prob_translation_per_transcript = np.zeros(self.nMonomers,
 														np.float64)
 		self.mRNA_is_overcrowded = np.zeros(self.nMonomers, np.float64)
+		self.is_n_ribosomes_to_activate_reduced = False
 		self.ribosome_init_event_per_monomer = np.zeros(self.nMonomers,
 													   np.int64)
 
@@ -185,4 +186,5 @@ class RibosomeData(wholecell.listeners.listener.Listener):
 			n_ribosomes_on_each_mRNA = self.n_ribosomes_on_each_mRNA,
 			mRNA_TU_index = self.mRNA_TU_index,
 			protein_mass_on_polysomes = self.protein_mass_on_polysomes,
+			is_n_ribosomes_to_activate_reduced = self.is_n_ribosomes_to_activate_reduced,
 			)

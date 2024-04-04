@@ -158,6 +158,11 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		max_p_per_protein = max_p*cistron_counts[self.cistron_to_monomer_mapping]
 		is_overcrowded = (protein_init_prob > max_p_per_protein)
 
+		# Initalize flag to record if the number of ribosomes activated at this
+		# time step needed to be reduced to prevent overcrowding
+		is_n_ribosomes_to_activate_reduced = False
+
+		# If needed, resolve overcrowding
 		while np.any(protein_init_prob > max_p_per_protein):
 			if protein_init_prob[~is_overcrowded].sum() != 0:
 				# Resolve overcrowding through rescaling (preferred)
@@ -172,6 +177,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 				# If we cannot resolve the overcrowding through rescaling,
 				# we need to activate fewer ribosomes. Set the number of
 				# ribosomes to activate so that there will be no overcrowding.
+				is_n_ribosomes_to_activate_reduced = True
 				max_index = np.argmax(
 					protein_init_prob[is_overcrowded] / max_p_per_protein[is_overcrowded])
 				max_init_prob = protein_init_prob[is_overcrowded][max_index]
@@ -201,6 +207,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			actual_protein_init_prob)
 		self.writeToListener(
 			"RibosomeData", "mRNA_is_overcrowded", is_overcrowded)
+		self.writeToListener(
+			"RibosomeData", "is_n_ribosomes_to_activate_reduced",
+			is_n_ribosomes_to_activate_reduced)
 
 		# Sample multinomial distribution to determine which mRNAs have full
 		# 70S ribosomes initialized on them
