@@ -43,7 +43,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 
 		self.target_rna_synth_prob = np.zeros(self.n_TU, np.float64)
 		self.actual_rna_synth_prob = np.zeros(self.n_TU, np.float64)
-		self.tu_is_overcrowded = np.zeros(self.n_TU, np.float64)
+		self.tu_is_overcrowded = np.zeros(self.n_TU, bool)
 		self.promoter_copy_number = np.zeros(self.n_TU, np.int16)
 		self.rna_synth_prob_per_cistron = np.zeros(self.n_cistron, np.float64)
 		self.total_rna_init = 0
