@@ -83,13 +83,22 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Sort from shortest to longest
 		sorted_index = avg_inter_ribosome_distance.argsort()
-		sorted_monomer_ids = [monomer_ids_filtered[i] for i in sorted_index]
+		sorted_monomer_ids = np.array([monomer_ids_filtered[i] for i in sorted_index])
 		avg_inter_ribosome_distance.sort()
 
 		# Mark genes with ribosomes that are too close to each other
 		n_too_close = (
 			avg_inter_ribosome_distance[:SAMPLE_SIZE] < ribosome_footprint_size).sum()
 		bar_colors = ["r"]*n_too_close + ["b"]*(SAMPLE_SIZE - n_too_close)
+
+		# Add an asterisk before the name of any mononomers that
+		# have ribosomes too close together and also have a small number of
+		# cistrons. This is to highlight that the average distance between
+		# ribosomes is not statistically representative for these monomers.
+		low_cistron_counts_and_too_close = (
+				avg_cistron_count_per_monomer[sorted_index][:n_too_close] < 20)
+		sorted_monomer_ids[:n_too_close][low_cistron_counts_and_too_close] = np.char.add(
+			'* ', sorted_monomer_ids[:n_too_close][low_cistron_counts_and_too_close])
 
 		# Plot the first n monomers with shortest distances
 		plt.figure(figsize=(8, 6))
