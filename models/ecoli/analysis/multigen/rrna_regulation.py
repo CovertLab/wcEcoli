@@ -156,7 +156,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		def plot_ax(ax, y, ylabel, ylim, yticks, clip_on=False):
 			ax.plot(time / 60, y, color='#8c8c8c', clip_on=clip_on)
-			ax.set_ylabel(ylabel)
+			ax.set_ylabel(ylabel, fontsize=5)
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 10))
@@ -173,61 +173,61 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ax1 = plt.subplot(12, 1, 1)
 		plot_ax(
 			ax1, rrna_synthesis_probs / rrna_copy_numbers,
-			'p_trc per\nrRNA copy', [0, 0.02], [0, 0.02])
+			'p_trc per\nrRNA copy', [0, 0.015], [0, 0.005, 0.01, 0.015])
 
 		# Plot copy numbers of rRNA operons
 		ax2 = plt.subplot(12, 1, 2, sharex=ax1)
 		plot_ax(
 			ax2, rrna_copy_numbers, 'rRNA\ncopy #',
-			[0, 40], [0, 20, 40])
+			[0, 60], [0, 20, 40, 60])
 
 		# Plot total transcription probability of rRNA operons
 		ax3 = plt.subplot(12, 1, 3)
 		plot_ax(
 			ax3, rrna_synthesis_probs,
-			'total rRNA\np_trc', [0, 0.3], [0, 0.3])
+			'total rRNA\np_trc', [0, 0.2], [0, 0.2])
 
 		# Plot number of transcription initiation events
 		ax4 = plt.subplot(12, 1, 4, sharex=ax1)
 		plot_ax(
 			ax4, rrna_init_events, 'rRNA\ninitiations',
-			[0, 30], [0, 15, 30])
+			[0, 60], [0, 30, 60])
 
 		# Plot number of ribosome subunit complexation events
 		ax5 = plt.subplot(12, 1, 5, sharex=ax1)
 		plot_ax(
 			ax5, ribosome_complexation_events, '# of comp.\nevents',
-			[0, 60], [0, 30, 60])
+			[0, 100], [0, 50, 100])
 
 		# Plot counts of active ribosomes
 		ax6 = plt.subplot(12, 1, 6, sharex=ax1)
 		plot_ax(
 			ax6, active_ribosome_counts, '# of active\nribosomes',
-			[0, 40000], [0, 40000])
+			[0, 80000], [0, 40000, 80000])
 
 		# Plot number of imported AAs
 		ax7 = plt.subplot(12, 1, 7, sharex=ax1)
 		plot_ax(
 			ax7, imported_aas, '# of imported\naas',
-			[0, 200000], [0, 200000])
+			[0, 3e6], [0, 1e6, 2e6, 3e6])
 
 		# Plot number of translated AAs
 		ax8 = plt.subplot(12, 1, 8, sharex=ax1)
 		plot_ax(
 			ax8, translated_aas, '# of translated\naas',
-			[0, 500000], [0, 500000])
+			[0, 2e6], [0, 1e6, 2e6])
 
 		# Plot ratio of uncharged tRNAs to all tRNAs
 		ax9 = plt.subplot(12, 1, 9, sharex=ax1)
 		plot_ax(
 			ax9, uncharged_trna_ratio, 'uncharged\ntRNA ratio',
-			[0, 0.2], [0, 0.2])
+			[0, 0.15], [0, 0.15])
 
 		# Plot SpoT and RelA concentrations
 		ax10 = plt.subplot(12, 1, 10, sharex=ax1)
 		ax10.plot(time / 60, rela_conc, color='#8c8c8c', label='RelA')
 		ax10.plot(time / 60, spot_conc, color='#8c8c8c', ls='--', label='SpoT')
-		ax10.set_ylabel('SpoT/RelA\nconc')
+		ax10.set_ylabel('SpoT/RelA\nconc (uM)')
 		ax10.spines["top"].set_visible(False)
 		ax10.spines["right"].set_visible(False)
 		ax10.spines["bottom"].set_position(("outward", 10))
@@ -243,13 +243,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		ax11 = plt.subplot(12, 1, 11, sharex=ax1)
 		plot_ax(
 			ax11, ppgpp_conc, 'ppGpp\nconc (uM)',
-			[0, 200], [0, 100, 200])
+			[0, 100], [0, 50, 100])
 
 		# Plot doubling times
 		ax12 = plt.subplot(12, 1, 12, sharex=ax1)
 		plot_ax(
 			ax12, doubling_times, 'DT\n(min)',
-			[0, 100], [0, 50, 100], clip_on=True)
+			[0, 80], [0, 40, 80], clip_on=True)
 		ax12.get_xaxis().set_visible(True)
 		ax12.spines["bottom"].set_visible(True)
 		ax12.set_xlabel('Time (generations)')
