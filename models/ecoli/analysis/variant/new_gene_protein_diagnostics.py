@@ -33,13 +33,13 @@ IGNORE_FIRST_N_GENS = 4
 
 """
 Indicate here the number of proteins that should be plotted for comparison in 
-comparison plots 1 and 3  (ideally a value between 5 and 100 should plot well,
+comparison plots 1 and 3 (ideally values between 5 and 100 should plot well,
 but technically any value between 2 and 4308 should work for graphs 1 and 3). 
 Setting one of the nubmers corresponding to graphs 1-4 equal to zero will prevent
-that graph from being generated. The user may need to manually edit the graphing 
-specification code if the number given is not close to the range the graph was 
-designed for originally (see more about this in the descriptions for each graph
-within the code).  
+that graph from being generated. One may need to manually edit the graphing 
+specifications in the code if the number of proteins given to graph is not close
+to the range the graph was originally encoded for originally (which are usually
+numbers between 10 and 25).   
 """
 
 """
@@ -51,7 +51,7 @@ The first four graph types do not need any filter applied in order to be generat
 Graph 1: Random protein count (PC) comparisons
 '''
 # Number of random proteins to compare protein counts (PCs) of between variants:
-randnum = 11
+randnum = 0
 '''
 Graph 2a: PC comparisons between two variants
 Graph 2b: Graph the data from Graph 2a using a log scale
@@ -67,26 +67,27 @@ Graph 3: Largest absolute PC differences
 '''
 # Number of proteins with the largest PC increase between variants
 # to observe (this one will include the new gene in the graph):
-num = 12
+num = 0
 '''
 Graph 4: Visualize proteins that appear uniquely in only one variant
 '''
 # Set this value to 1 to generate this graph, 0 otherwise:
-unique_PC_appearances = 1
+unique_PC_appearances = 0
 
 """
 The following graphs require a manditory filter to be applied to the data first
 in order to be generated. This filter by default is set to 0 (where in any 
 proteins with a PC value of 0 in at least one variant will be filtered out). 
-A number greater than zero can also be specified below in "filter_num" to 
-filter out proteins that have PCs below a desired threshold. 
+A number greater than zero can also be specified below by changing the
+"filter_num" value to a number greater than zero to 
+filter out proteins that have PCs below the desired minimum threshold. 
 
-Note: New genes (that appear in the experimental variant but the the control)
+Note: New genes (that appear in the experimental variant only)
 will be completely filtered out by the manditory filtration as it will have 0
-PCs in the control variable, so it will not show up in any of these graphs.
+PCs in the control variant, so it will also not show up in any of these graphs.
 """
 # Number to be set as the minimum threshold PC value proteins must have in both
-# variants in order to be used in the plots to follow (set to 0 by default):
+# variants in order to be used in the plots to follow (set to 0 for default):
 filter_num = 1
 
 '''
@@ -102,23 +103,23 @@ Graph 6a: Plot proteins with the smallest difference in PCs between variants
 Graph 6b: Same as Graph 6a but the change in PCs between vars is included 
 '''
 # Number of proteins with the smallest PC change between variants:
-min_num = 13
+min_num = 0
 # set to 1 to create a graph that displays the % differnce on the graph:
-show_PC_diff_6b = 1
+show_PC_diff_6b = 0
 '''
 Graph 7a: Plot proteins with the greatest difference in PCs
 Graph 7b: Same as Graph 7a but the change in PCs between vars is included 
 '''
 # Number of proteins with the greatest change in PCs between variants:
-max_num = 14
+max_num = 0
 # set this to 1 to create a graph that displays the % differnce on the graph:
-show_PC_diff_7b = 1
+show_PC_diff_7b = 0
 '''
 Graph 8a: Proteins with the max fold increase between variants
 Graph 8b: Same as Graph 8a but NOT plotted on a log scale 
 '''
 # Number of proteins to observe with the greatest fold increase in PCs:
-max_fold_num = 15
+max_fold_num = 0
 # set this to 1 to create the same graph plotted without a log scale:
 max_fold_num_woLogScale = 0
 ''' 
@@ -126,22 +127,22 @@ Graph 9a: Proteins with the max fold decrease between variants
 Graph 9b: Same as Graph 9a but NOT plotted on a log scale 
 '''
 # Number of proteins to observe with the largest fold decrease PCs:
-min_fold_num = 6
+min_fold_num = 0
 # set this to 1 to create the same graph plotted without a log scale:
-min_fold_num_woLogScale = 1
+min_fold_num_woLogScale = 0
 '''
 Graph 10a: visualize the max increases and decreases in PCs side by side
 Graph 10b: Graph 10a on a log scale
 '''
 # Number of proteins to compare max increases and decreases in PCs:
-shared_diff_num = 9
+shared_diff_num = 10
 # set this to 1 to plot the same comparison but with a log scale:
 shared_diff_LogScale = 0
 '''
 Graph 11: visualize the max fold increases and decreases in PCs side by side
 '''
 # Number of proteins to observe the max fold increases and decreases in PCs:
-sharednum = 9
+sharednum = 10
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def generate_data(self, simDataFile):
@@ -150,16 +151,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		Args:
 			simDataFile: simulation data file
 		Returns:
-			protein_counts: protein count (PC) data for all proteins (originally present on the E.coli chromosome) in the simulation for each variant (the PC for each protein is averaged over all the generations)
-			self.total_protein_counts: the original PCs and new gene (NG) PCs in one variable
-			self.new_gene_monomer_ids: protein ids for new genes inserted into the E.coli genome
-			self.original_gene_ids: protein ids for the original proteins on the E.coli genome
-			self.all_monomer_ids: list of all the monomer ids (NG protein ids and orginal proteins' gene ids)
+			protein_counts: protein count (PC) data for all proteins (originally
+			 present on the E.coli chromosome) in the simulation for each variant
+			  (the PC for each protein is averaged over all the generations)
+			self.total_protein_counts: the original PCs and new gene (NG) PCs
+			in one variable
+			self.new_gene_monomer_ids: protein ids for new genes inserted into
+			the E.coli genome
+			self.original_gene_ids: protein ids for the original proteins on
+			the E.coli genome
+			self.all_monomer_ids: list of all the monomer ids (NG protein ids
+			and orginal proteins' gene ids)
 		"""
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
-		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+		mRNA_sim_data = (
+			sim_data.process.transcription.cistron_data.struct_array)
+		monomer_sim_data = (
+			sim_data.process.translation.monomer_data.struct_array)
 		new_gene_mRNA_ids = mRNA_sim_data[
 			mRNA_sim_data['is_new_gene']]['id'].tolist()
 		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
@@ -185,8 +194,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.all_monomer_ids == self.new_gene_monomer_ids))
 		monomer_idx_dict = {monomer: i for i, monomer in
 							enumerate(self.all_monomer_ids)}
-		protein_counts = np.zeros((len(self.variants), len(self.original_monomer_ids)))
-		self.total_protein_counts = np.zeros((len(self.variants), len(self.all_monomer_ids)))
+		protein_counts = np.zeros((len(self.variants),
+								   len(self.original_monomer_ids)))
+		self.total_protein_counts = np.zeros((len(self.variants),
+											  len(self.all_monomer_ids)))
 		for variant in self.variants:
 			all_cells = self.ap.get_cells(variant=[variant],
 										  generation=np.arange(IGNORE_FIRST_N_GENS,
@@ -258,7 +269,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(interest_protein_counts[variant][index] + 1)
 		return avg_log_interest_proteins
 
-	def find_unique_proteins(self, nonfiltered_protein_counts, nonfiltered_monomer_idx_dict):
+	def find_unique_proteins(self, nonfiltered_protein_counts,
+							 nonfiltered_monomer_idx_dict):
 		"""
 		Obtain the proteins that have nonzero PCs in one variant only (these
 		are most likely the proteins that experience subgenerational gene expression
@@ -285,11 +297,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Obtain the protein counts of ALL the unique-zero protein counts:
 		nonshared_0_PC_idxs = np.append(var0_unique_0_PC_idxs,
 										var1_unique_0_PC_idxs, axis=0)
-		nonshared_0_PC_ids = self.get_ids(nonfiltered_monomer_idx_dict, nonshared_0_PC_idxs)
+		nonshared_0_PC_ids = self.get_ids(nonfiltered_monomer_idx_dict,
+										  nonshared_0_PC_idxs)
 		nonshared_0_PCs = p_counts[:, nonshared_0_PC_idxs]
 		return nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs
 
-	def filter_data(self, nonfiltered_protein_counts, nonfiltered_monomer_idx_dict, filter_num=0):
+	def filter_data(self, nonfiltered_protein_counts,
+					nonfiltered_monomer_idx_dict, filter_num=0):
 		"""
 		Filter the data to extract all proteins with 0 PCs in at least variant
 		Args:
@@ -307,7 +321,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		shared_nonzero_PCs_idxs = np.intersect1d(nonzero_p_counts_var0_idxs,
 												 nonzero_p_counts_var1_idxs)
 		nonzero_PCs = nonfiltered_protein_counts[:, shared_nonzero_PCs_idxs]
-		nonzero_PCs_ids = self.get_ids(nonfiltered_monomer_idx_dict, shared_nonzero_PCs_idxs)
+		nonzero_PCs_ids = self.get_ids(nonfiltered_monomer_idx_dict,
+									   shared_nonzero_PCs_idxs)
 		nonzero_ids = self.all_monomer_ids[shared_nonzero_PCs_idxs]
 
 		if filter_num == 0:
@@ -323,7 +338,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			nonzero_ids = shared_filtered_PC_idxs
 		return nonzero_PCs, nonzero_PCs_ids, nonzero_ids
 
-	def get_max_fold_increase(self, max_fold_num, filtered_PCs, filtered_ids, max_fold_num_woLogScale=0):
+	def get_max_fold_increase(self, max_fold_num, filtered_PCs, filtered_ids,
+							  max_fold_num_woLogScale=0):
 		"""
 		Obtains the proteins with the max fold increase in PCs from the control
 		variant (variant 0) and an experiemental variant (variant 1)
@@ -348,7 +364,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			max_fold_changes.append(PC_max_fold_percents[idx])
 			max_fold_PCs_ids.append(filtered_ids[idx])
 
-		max_fold_PC_Log_values = self.get_LogData(PC_max_fold_idxs, filtered_PCs, PC_max_fold_idxs)
+		max_fold_PC_Log_values = self.get_LogData(PC_max_fold_idxs,
+												  filtered_PCs,
+												  PC_max_fold_idxs)
 		max_fold_PC_values = max_fold_PC_Log_values
 
 		if max_fold_num_woLogScale == 1:
@@ -357,10 +375,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for variant in self.variants:
 				for idx in range(len(PC_max_fold_idxs)):
 					index = PC_max_fold_idxs[idx]
-					max_fold_PC_values[variant][idx] = filtered_PCs[variant][index]
+					max_fold_PC_values[variant][idx] = (
+						filtered_PCs)[variant][index]
 		return max_fold_PC_values, max_fold_PCs_ids, max_fold_changes
 
-	def get_max_fold_decrease(self, min_fold_num, filtered_PCs, filtered_ids, min_fold_num_woLogScale=0):
+	def get_max_fold_decrease(self, min_fold_num, filtered_PCs, filtered_ids,
+							  min_fold_num_woLogScale=0):
 		"""
 		Determines the proteins with the greatest fold decrease in PCs from
 		the experimental variant to the control variant
@@ -385,7 +405,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			min_fold_changes.append(PC_min_fold_percents[idx])
 			min_fold_PCs_ids.append(filtered_ids[idx])
 
-		min_fold_PC_Log_values = self.get_LogData(PC_min_fold_idxs, filtered_PCs, PC_min_fold_idxs)
+		min_fold_PC_Log_values = self.get_LogData(PC_min_fold_idxs, filtered_PCs,
+												  PC_min_fold_idxs)
 		min_fold_PC_values = min_fold_PC_Log_values
 
 		if min_fold_num_woLogScale == 1:
@@ -394,7 +415,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for variant in self.variants:
 				for idx in range(len(PC_min_fold_idxs)):
 					index = PC_min_fold_idxs[idx]
-					min_fold_PC_values[variant][idx] = filtered_PCs[variant][index]
+					min_fold_PC_values[variant][idx] = (
+						filtered_PCs)[variant][index]
 		return min_fold_PC_values, min_fold_PCs_ids, min_fold_changes
 
 	def gen_G1(self, randnum):
@@ -407,7 +429,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if larger numbers are used)
 		Returns: a plot comparing the  the random proteins PCs' for each variant
 		"""
-		rand_monomers = np.random.choice(self.original_monomer_ids, size=randnum, replace=False)
+		rand_monomers = np.random.choice(self.original_monomer_ids,
+										 size=randnum, replace=False)
 		monomer_names = np.append(rand_monomers, self.new_gene_monomer_ids)
 		protein_idxs = self.get_idxs(monomer_names)
 		rand_PCs = self.total_protein_counts[:, protein_idxs]
@@ -418,8 +441,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plt.barh(monomer_names, log_rand_PCs[0], 0.1, align='edge',
 				 label='no New Gene')
-		plt.barh(monomer_names, log_rand_PCs[1], -0.1, align='edge', label='New Gene')
-
+		plt.barh(monomer_names, log_rand_PCs[1], -0.1, align='edge',
+				 label='New Gene')
 		plt.xlabel("log(Average Protein Count)", fontweight='bold')
 		plt.ylabel("Protein ID", fontweight='bold')
 		plt.legend()
@@ -443,7 +466,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.scatter(var0_x, var1_y, 1)
 		m, b = np.polyfit(var0_x, var1_y, 1)
 		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
-		legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
+		legstr = "linear fit: y = "+ str(round(m, 2)) +"x + "+ str(round(b, 2))
 		max_pt = np.argsort(protein_counts)
 		max_pt_idx = max_pt[0][-1]
 		max_pt_x = var0_x[max_pt_idx]
@@ -509,12 +532,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		NS_0_PC_ids = []
 		for idx in max_change_order:
 			NS_0_PC_ids.append(nonshared_0_PC_ids[idx])
-		avg_log_NS_0_PCs = self.get_LogData(nonshared_0_PC_idxs, nonshared_0_PCs, max_change_order)
+		avg_log_NS_0_PCs = self.get_LogData(nonshared_0_PC_idxs, nonshared_0_PCs,
+											max_change_order)
 
 		# Plot the results:
 		plt.figure(figsize=(50, 60))
-		plt.barh(NS_0_PC_ids, avg_log_NS_0_PCs[0], 0.1, align='edge', label='no New Gene')
-		plt.barh(NS_0_PC_ids, avg_log_NS_0_PCs[1], -0.1, align='edge', label='New Gene')
+		plt.barh(NS_0_PC_ids, avg_log_NS_0_PCs[0], 0.1, align='edge',
+				 label='no New Gene')
+		plt.barh(NS_0_PC_ids, avg_log_NS_0_PCs[1], -0.1, align='edge',
+				 label='New Gene')
 		plt.xlabel("log(Average Protein Count)", fontweight='bold')
 		plt.ylabel("Protein ID", fontweight='bold')
 		plt.legend()
@@ -523,7 +549,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 
 	def gen_G5(self, filtered_PCs):
-		# TODO: should i delete this since its so simple
 		"""
 		Generates the same graph as the gen_G2 function but with filtered PCs
 		"""
@@ -547,11 +572,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		min_diff_idxs = sortdiff[:min_num]
 		min_changes = []
 		min_PC_diffs_ids = []
-		#TODO: make this into a funciton going forward since I use the structure quite often?
 		for idx in min_diff_idxs:
 			min_changes.append(min_PC_diff_changes[idx])
 			min_PC_diffs_ids.append(filtered_ids[idx])
-		avg_log_min_PC_diffs = self.get_LogData(min_diff_idxs, filtered_PCs, min_diff_idxs)
+		avg_log_min_PC_diffs = self.get_LogData(min_diff_idxs, filtered_PCs,
+												min_diff_idxs)
 		min_diff_var0 = avg_log_min_PC_diffs[0]
 		min_diff_var1 = avg_log_min_PC_diffs[1]
 
@@ -570,7 +595,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		else:
 			# plot with percent difference on the side
 			fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
-			# create labels for the % changes:
 			min_change_str = []
 			for m in range(min_num):
 				min_value = ' ' + str(round(min_changes[m], 3))
@@ -585,10 +609,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax2 = ax.twinx()
 			ax2.set_ylim(ax.get_ylim())
 			min_change_str = np.array(min_change_str)
-			ax2.set_yticks(np.arange(len(min_PC_diffs_ids)), labels=min_change_str)
-			ax2.set_ylabel(r'$\Delta$ in Protein Count (from var1 to var0)', fontweight='bold')
+			ax2.set_yticks(np.arange(len(min_PC_diffs_ids)),
+						   labels=min_change_str)
+			ax2.set_ylabel(r'$\Delta$ in Protein Count (from var1 to var0)',
+						   fontweight='bold')
 			ax.legend()
-			ax.set_title(f"The {min_num} proteins with the smallest absolute difference"
+			ax.set_title(f"The {min_num} proteins with the smallest absolute "
+						 f"difference"
 						 f" \nin protein counts when a new gene is added ")
 			plt.tight_layout()
 
@@ -613,7 +640,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for idx in max_diff_idxs:
 			max_changes.append(max_PC_diff_changes[idx])
 			max_PC_diffs_ids.append(filtered_ids[idx])
-		avg_log_max_PC_diffs = self.get_LogData(max_diff_idxs, filtered_PCs, max_diff_idxs)
+		avg_log_max_PC_diffs = self.get_LogData(max_diff_idxs, filtered_PCs,
+												max_diff_idxs)
 
 		max_diff_var0 = avg_log_max_PC_diffs[0]
 		max_diff_var1 = avg_log_max_PC_diffs[1]
@@ -628,7 +656,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.xlabel("log(Average Protein Count)")
 			plt.ylabel("Protein ID", fontweight='bold')
 			plt.legend()
-			plt.title(f"The {max_num} proteins with the greatest change in protein"
+			plt.title(f"The {max_num} proteins with the greatest change in"
+					  f" protein"
 					  f" \ncounts when a new gene is added")
 			plt.tight_layout()
 		else:
@@ -649,15 +678,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax2 = ax.twinx()
 			ax2.set_ylim(ax.get_ylim())
 			max_change_str = np.array(max_change_str)
-			ax2.set_yticks(np.arange(len(max_PC_diffs_ids)), labels=max_change_str)
-			ax2.set_ylabel(r'$\Delta$ in Protein Count (from var1 to var0)', fontweight='bold')
+			ax2.set_yticks(np.arange(len(max_PC_diffs_ids)),
+						   labels=max_change_str)
+			ax2.set_ylabel(r'$\Delta$ in Protein Count (from var1 to var0)',
+						   fontweight='bold')
 			ax.legend()
-			ax.set_title(f"The {max_num} proteins with the largest absolute change"
-						 f" \nin protein counts when a new gene is added "
-						 )
+			ax.set_title(f"The {max_num} proteins with the largest absolute "
+						 f"change"
+						 f" \nin protein counts when a new gene is added ")
 			plt.tight_layout()
 
-	def gen_G8(self, max_fold_num, filtered_PCs, filtered_ids, max_fold_num_woLogScale=0):
+	def gen_G8(self, max_fold_num, filtered_PCs, filtered_ids,
+			   max_fold_num_woLogScale=0):
 		"""
 		Find proteins with the max fold increase in PCs from the control variant
 		to the experimental variant
@@ -670,11 +702,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		Returns: a plot of the proteins with the largest fold increase in PCs
 		from the control variant to the experiemental variant
 		"""
-		log_max_fold_PCs, max_fold_PCs_ids, max_fold_changes = self.get_max_fold_increase(max_fold_num, filtered_PCs, filtered_ids)
+		log_max_fold_PCs, max_fold_PCs_ids, max_fold_changes = (
+			self.get_max_fold_increase(max_fold_num, filtered_PCs, filtered_ids))
 		max_fold_PC_values = log_max_fold_PCs
 
 		if max_fold_num_woLogScale == 1:
-			max_fold_PCs, max_fold_PCs_ids, max_fold_changes = self.get_max_fold_increase(max_fold_num, filtered_PCs, filtered_ids, 1)
+			max_fold_PCs, max_fold_PCs_ids, max_fold_changes = (
+				self.get_max_fold_increase(max_fold_num, filtered_PCs,
+										   filtered_ids, 1))
 			max_fold_PC_values = max_fold_PCs
 
 		# Plot the results:
@@ -707,11 +742,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		else:
 			ax.set_xlabel("log(Average Protein Count)", fontweight='bold')
 		ax.set_title(f"The {max_fold_num} proteins with the greatest fold"
-					 f" \n increase in protein count between variants"
-					 )
+					 f" \n increase in protein count between variants")
 		plt.tight_layout()
 
-	def gen_G9(self, min_fold_num, filtered_PCs, filtered_ids, min_fold_num_woLogScale=0):
+	def gen_G9(self, min_fold_num, filtered_PCs, filtered_ids,
+			   min_fold_num_woLogScale=0):
 		"""
 		Obtain proteins with the greatest fold decrease in protein counts from
 		the control variant to the experimental variant
@@ -725,11 +760,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		from the control variant to the experiemental variant
 		"""
 		self.get_max_fold_decrease(min_fold_num, filtered_PCs, filtered_ids)
-		log_min_fold_PCs, min_fold_PCs_ids, min_fold_changes = self.get_max_fold_decrease(min_fold_num, filtered_PCs, filtered_ids)
+		log_min_fold_PCs, min_fold_PCs_ids, min_fold_changes = (
+			self.get_max_fold_decrease(min_fold_num, filtered_PCs, filtered_ids))
 		min_fold_PC_values = log_min_fold_PCs
 
 		if min_fold_num_woLogScale == 1:
-			min_fold_PCs, min_fold_PCs_ids, min_fold_changes = self.get_max_fold_decrease(min_fold_num, filtered_PCs, filtered_ids, 1)
+			min_fold_PCs, min_fold_PCs_ids, min_fold_changes = (
+				self.get_max_fold_decrease(min_fold_num, filtered_PCs,
+										   filtered_ids, 1))
 			min_fold_PC_values = min_fold_PCs
 
 		fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 6))
@@ -806,9 +844,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_min_PC_diffs[variant][idx] = filtered_PCs[variant][index]
 
 		if PlotwLogScale == 1:
-			avg_log_max_PC_diffs = self.get_LogData(max_diff_idxs, filtered_PCs, max_diff_idxs)
+			avg_log_max_PC_diffs = self.get_LogData(max_diff_idxs,
+													filtered_PCs, max_diff_idxs)
 			avg_max_PC_diffs = avg_log_max_PC_diffs
-			avg_log_min_PC_diffs = self.get_LogData(min_diff_idxs, filtered_PCs, min_diff_idxs)
+			avg_log_min_PC_diffs = self.get_LogData(min_diff_idxs,
+													filtered_PCs, min_diff_idxs)
 			avg_min_PC_diffs = avg_log_min_PC_diffs
 
 		# Plot the max increases and decreases  together:
@@ -905,8 +945,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		Returns: a plot of the proteins with the greatest fold increases and
 		decreases compared side by side with each other
 		"""
-		max_fold_PC_values, max_fold_PCs_ids, max_fold_changes = self.get_max_fold_increase(sharednum, filtered_PCs, filtered_ids)
-		min_fold_PC_values, min_fold_PCs_ids, min_fold_changes = self.get_max_fold_decrease(sharednum, filtered_PCs, filtered_ids)
+		max_fold_PC_values, max_fold_PCs_ids, max_fold_changes = (
+			self.get_max_fold_increase(sharednum, filtered_PCs, filtered_ids))
+		min_fold_PC_values, min_fold_PCs_ids, min_fold_changes = (
+			self.get_max_fold_decrease(sharednum, filtered_PCs, filtered_ids))
 		# Plot the max and min fold changes together:
 		fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 6))
 		# designate variables
@@ -988,7 +1030,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if randnum > 0:
 			self.gen_G1(randnum)
 			exportFigure(plt, plotOutDir, plotOutFileName + '_PCs_for_'
-						 + str(randnum) + '_random_proteins_wNG_noFilter', metadata)
+						 + str(randnum) + '_random_proteins_wNG_noFilter',
+						 metadata)
 			plt.close('all')
 
 		# Plots 2a and 2b
@@ -1003,18 +1046,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		if var_PC_comparison == 1:
 			self.gen_G2(PCs)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(PCs[0])) +
-						 words,
-						 metadata)
+			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+						 str(len(PCs[0])) + words, metadata)
 			plt.close('all')
 
 		if var_PC_comparison_LogScale == 1:
 			PC_LogData_idxs = self.get_idxs(IDs)
 			PC_LogData = self.get_LogData(PC_LogData_idxs, PCs)
 			self.gen_G2(PC_LogData)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(PCs[0])) +
-						 words +'_LogScale',
-						 metadata)
+			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+						 str(len(PCs[0])) + words +'_LogScale', metadata)
 			plt.close('all')
 
 		# Plot 3:
@@ -1027,7 +1068,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Plot 4:
 		if unique_PC_appearances == 1:
-			nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs = self.find_unique_proteins(protein_counts, monomer_idx_dict_PreFilter)
+			nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs = (
+				self.find_unique_proteins(protein_counts,
+										  monomer_idx_dict_PreFilter))
 			self.gen_G4(nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs)
 			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 						 str(len(nonshared_0_PC_ids)) +
@@ -1035,13 +1078,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.close('all')
 
 		# Manditory Data Filtration
-		F_PCs, F_PC_ids, F_PC_idxs = self.filter_data(protein_counts, monomer_idx_dict_PreFilter, filter_num)
+		F_PCs, F_PC_ids, F_PC_idxs = (
+			self.filter_data(protein_counts, monomer_idx_dict_PreFilter,
+							 filter_num))
 		F_monomer_idx_dict = {monomer: i for i, monomer in enumerate(F_PC_ids)}
 
 		# Plot 5:
 		if var_PC_comparison_wF == 1:
 			self.gen_G5(F_PCs)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(F_PCs[0])) +
+			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+						 str(len(F_PCs[0])) +
 						 '_PC_comparisons_Filter_' + str(filter_num),
 						 metadata)
 			plt.close('all')
@@ -1049,7 +1095,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if var_PC_comparison_wF_LogScale == 1:
 			F_PC_LogData = self.get_LogData(F_PC_idxs, F_PCs)
 			self.gen_G5(F_PC_LogData)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(len(F_PC_LogData[0])) +
+			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+						 str(len(F_PC_LogData[0])) +
 						 '_PC_comparisons_LogScale_Filter_' + str(filter_num),
 						 metadata)
 			plt.close('all')
@@ -1130,7 +1177,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.gen_G10(shared_diff_num, F_PCs, F_PC_ids, 1)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(shared_diff_num) +
-							 '_max_PC_diff_comparisons_LogScale_Filter_' + str(filter_num),
+							 '_max_PC_diff_comparisons_LogScale_Filter_' +
+							 str(filter_num),
 							 metadata)
 				plt.close('all')
 
