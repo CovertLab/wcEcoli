@@ -46,8 +46,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			sim_data = pickle.load(f)
 		mRNA_cistron_sim_data = sim_data.process.transcription.cistron_data.struct_array
 		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
-		doubling_time = str(sim_data.doubling_time)
-		dt = float(doubling_time[0:4])
 
 		# extract info about the protein(s) from the monomer data:
 		monomer_data_idxs = []
@@ -98,15 +96,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		dt = read_stacked_columns(
 			cell_paths, 'Main', 'time',
 			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-
-		mins = time[-1:] / 60.
-		generations = mins / dt
-		generations = int(generations)
-		generations = round(generations)
-		dts = np.zeros(generations)
-		for i in range(len(dts)):
-			gt = dt * (i+1)
-			dts[i] = gt
+		dts = np.zeros(len(dt))
+		for i in range(len(dt)):
+			if i == 0:
+				gt = dt[i]
+				dts[i] = gt
+			else:
+				gt = dt[i] + dts[i-1]
+				dts[i] = gt
 
 		# Protein Counts
 		plt.subplot(2, 1, 1)
