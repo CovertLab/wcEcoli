@@ -81,11 +81,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 								 cistron_ids]
 
 		# Load data
-		time = read_stacked_columns(cell_paths, 'Main', 'time')
+		time = read_stacked_columns(cell_paths, 'Main', 'time', ignore_exception=True)
 		(ip_monomer_counts,) = read_stacked_bulk_molecules(
-			cell_paths, cistron_monomer_ids)
+			cell_paths, cistron_monomer_ids, ignore_exception=True)
 		all_mRNA_stacked_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts')
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
 		ip_mRNA_counts = all_mRNA_stacked_counts[:, new_gene_mRNA_indexes]
 
 		# Plotting
