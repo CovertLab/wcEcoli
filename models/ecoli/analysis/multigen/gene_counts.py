@@ -46,6 +46,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			sim_data = pickle.load(f)
 		mRNA_cistron_sim_data = sim_data.process.transcription.cistron_data.struct_array
 		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+		doubling_time = str(sim_data.doubling_time)
+		dt = float(doubling_time[0:4])
 
 		# extract info about the protein(s) from the monomer data:
 		monomer_data_idxs = []
@@ -91,8 +93,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Plotting
 		plt.figure(figsize = (8.5, 11))
 
+		# section out the generations:
+		mins = time[-1:] / 60.
+		generations = mins / dt
+		generations = int(generations)
+		generations = round(generations)
+		dts = np.zeros(generations)
+		for i in range(len(dts)):
+			gt = dt * (i+1)
+			dts[i] = gt
+
 		# Protein Counts
 		plt.subplot(2, 1, 1)
+		for x in dts:
+			plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=2)
 		if len(cistron_monomer_ids) == 1:
 			plt.plot(time / 60., ip_monomer_counts,
 					 label = cistron_monomer_ids[0])
@@ -100,6 +114,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for m in range(len(cistron_monomer_ids)):
 				plt.plot(time / 60., ip_monomer_counts[:,m],
 						 label = cistron_monomer_ids[m])
+
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
 		plt.title(f"Protein Counts for Proteins of Interest in variant"
@@ -125,9 +140,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName + '_variant_' +
 					 str(variant) + '_seed_' + str(seed), metadata)
 		plt.close("all")
-
-
-
 
 if __name__ == '__main__':
 	Plot().cli()
