@@ -123,6 +123,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# mRNA Counts
 		plt.subplot(2, 1, 2)
+		for x in dts:
+			plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=2)
 		if len(cistron_ids) == 1:
 			plt.plot(time / 60., ip_mRNA_counts,
 					 label=cistron_ids[0])
