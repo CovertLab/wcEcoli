@@ -94,6 +94,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.figure(figsize = (8.5, 11))
 
 		# section out the generations:
+		# Get doubling times from cells with this variant index
+		dt = read_stacked_columns(
+			cell_paths, 'Main', 'time',
+			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+
 		mins = time[-1:] / 60.
 		generations = mins / dt
 		generations = int(generations)
