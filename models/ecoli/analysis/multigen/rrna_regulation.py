@@ -27,6 +27,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		transcription = sim_data.process.transcription
 		uncharged_trna_names = transcription.uncharged_trna_names
 		charged_trna_names = transcription.charged_trna_names
+		aa_from_trna = transcription.aa_from_trna.T
+		aa_names = sim_data.molecule_groups.amino_acids
+		trp_index = aa_names.index('TRP[c]')
 
 		cell_paths = self.ap.get_cells()
 
@@ -125,22 +128,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths, 'RibosomeData', 'actualElongations',
 			remove_first=True).squeeze()
 
-		# Get trna uncharged ratios
+		# Get fraction of charged leucine tRNAs
 		(uncharged_trna_counts, charged_trna_counts, ) = read_stacked_bulk_molecules(
 			cell_paths,	(uncharged_trna_names, charged_trna_names, ),
 			remove_first=True)
-		uncharged_trna_ratio = uncharged_trna_counts.sum(axis=1) / (
-			uncharged_trna_counts.sum(axis=1)
-			+ charged_trna_counts.sum(axis=1)
-		)
-
-		# Get concentrations of SpoT and relA
-		spot_conc = read_stacked_columns(
-			cell_paths, 'GrowthLimits', 'spot_conc',
-			remove_first=True).squeeze()  # uM
-		rela_conc = read_stacked_columns(
-			cell_paths, 'GrowthLimits', 'rela_conc',
-			remove_first=True).squeeze()  # uM
+		charged_trna_counts = charged_trna_counts @ aa_from_trna
+		uncharged_trna_counts = uncharged_trna_counts @ aa_from_trna
+		fraction_charged = charged_trna_counts / (
+				uncharged_trna_counts + charged_trna_counts)
+		trp_fraction_charged = fraction_charged[:, trp_index]
 
 		# Get ppGpp concentrations
 		ppgpp_conc = read_stacked_columns(
@@ -156,7 +152,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		def plot_ax(ax, y, ylabel, ylim, yticks, clip_on=False):
 			ax.plot(time / 60, y, color='#8c8c8c', clip_on=clip_on)
-			ax.set_ylabel(ylabel, fontsize=5)
+			ax.set_ylabel(ylabel, fontsize=8)
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 10))
@@ -170,91 +166,75 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.figure(figsize=(12, 10))
 
 		# Plot per-copy transcription probability of rRNA operons
-		ax1 = plt.subplot(12, 1, 1)
+		ax1 = plt.subplot(11, 1, 1)
 		plot_ax(
 			ax1, rrna_synthesis_probs / rrna_copy_numbers,
-			'p_trc per\nrRNA copy', [0, 0.015], [0, 0.005, 0.01, 0.015])
+			'p_trc per\nrRNA copy', [0, 0.015], [0, 0.015])
 
 		# Plot copy numbers of rRNA operons
-		ax2 = plt.subplot(12, 1, 2, sharex=ax1)
+		ax2 = plt.subplot(11, 1, 2, sharex=ax1)
 		plot_ax(
 			ax2, rrna_copy_numbers, 'rRNA\ncopy #',
-			[0, 60], [0, 20, 40, 60])
+			[0, 60], [0, 60])
 
 		# Plot total transcription probability of rRNA operons
-		ax3 = plt.subplot(12, 1, 3)
+		ax3 = plt.subplot(11, 1, 3)
 		plot_ax(
 			ax3, rrna_synthesis_probs,
-			'total rRNA\np_trc', [0, 0.2], [0, 0.2])
+			'total rRNA\np_trc', [0, 0.25], [0, 0.25])
 
 		# Plot number of transcription initiation events
-		ax4 = plt.subplot(12, 1, 4, sharex=ax1)
+		ax4 = plt.subplot(11, 1, 4, sharex=ax1)
 		plot_ax(
-			ax4, rrna_init_events, 'rRNA\ninitiations',
-			[0, 60], [0, 30, 60])
+			ax4, rrna_init_events, 'rRNA\ninit #',
+			[0, 80], [0, 40, 80])
 
 		# Plot number of ribosome subunit complexation events
-		ax5 = plt.subplot(12, 1, 5, sharex=ax1)
+		ax5 = plt.subplot(11, 1, 5, sharex=ax1)
 		plot_ax(
 			ax5, ribosome_complexation_events, '# of comp.\nevents',
-			[0, 100], [0, 50, 100])
+			[0, 150], [0, 150])
 
 		# Plot counts of active ribosomes
-		ax6 = plt.subplot(12, 1, 6, sharex=ax1)
+		ax6 = plt.subplot(11, 1, 6, sharex=ax1)
 		plot_ax(
 			ax6, active_ribosome_counts, '# of active\nribosomes',
 			[0, 80000], [0, 40000, 80000])
 
 		# Plot number of imported AAs
-		ax7 = plt.subplot(12, 1, 7, sharex=ax1)
+		ax7 = plt.subplot(11, 1, 7, sharex=ax1)
 		plot_ax(
-			ax7, imported_aas, '# of imported\naas',
-			[0, 3e6], [0, 1e6, 2e6, 3e6])
+			ax7, imported_aas, '# of aas\nimported',
+			[0, 8e6], [0, 8e6])
 
 		# Plot number of translated AAs
-		ax8 = plt.subplot(12, 1, 8, sharex=ax1)
+		ax8 = plt.subplot(11, 1, 8, sharex=ax1)
 		plot_ax(
-			ax8, translated_aas, '# of translated\naas',
+			ax8, translated_aas, '# of aas\ntranslated',
 			[0, 2e6], [0, 1e6, 2e6])
 
-		# Plot ratio of uncharged tRNAs to all tRNAs
-		ax9 = plt.subplot(12, 1, 9, sharex=ax1)
+		# Plot fraction of charged TRP tRNAs
+		ax9 = plt.subplot(11, 1, 9, sharex=ax1)
 		plot_ax(
-			ax9, uncharged_trna_ratio, 'uncharged\ntRNA ratio',
-			[0, 0.15], [0, 0.15])
+			ax9, trp_fraction_charged, 'TRP charged\nfraction',
+			[0, 1], [0, 0.5, 1])
 
-		# Plot SpoT and RelA concentrations
-		ax10 = plt.subplot(12, 1, 10, sharex=ax1)
-		ax10.plot(time / 60, rela_conc, color='#8c8c8c', label='RelA')
-		ax10.plot(time / 60, spot_conc, color='#8c8c8c', ls='--', label='SpoT')
-		ax10.set_ylabel('SpoT/RelA\nconc (uM)')
-		ax10.spines["top"].set_visible(False)
-		ax10.spines["right"].set_visible(False)
-		ax10.spines["bottom"].set_position(("outward", 10))
-		ax10.spines["left"].set_position(("outward", 10))
-		ax10.spines["bottom"].set_visible(False)
-		ax10.get_xaxis().set_visible(False)
-		ax10.set_xlim([0, time[-1] / 60])
-		ax10.set_ylim([0, 0.3])
-		ax10.set_yticks([0, 0.15, 0.3])
-		ax10.legend(loc=1)
-		
 		# Plot ppGpp concentrations
-		ax11 = plt.subplot(12, 1, 11, sharex=ax1)
+		ax10 = plt.subplot(11, 1, 10, sharex=ax1)
 		plot_ax(
-			ax11, ppgpp_conc, 'ppGpp\nconc (uM)',
+			ax10, ppgpp_conc, 'ppGpp\nconc (uM)',
 			[0, 100], [0, 50, 100])
 
 		# Plot doubling times
-		ax12 = plt.subplot(12, 1, 12, sharex=ax1)
+		ax11 = plt.subplot(11, 1, 11, sharex=ax1)
 		plot_ax(
-			ax12, doubling_times, 'DT\n(min)',
+			ax11, doubling_times, 'DT\n(min)',
 			[0, 80], [0, 40, 80], clip_on=True)
-		ax12.get_xaxis().set_visible(True)
-		ax12.spines["bottom"].set_visible(True)
-		ax12.set_xlabel('Time (generations)')
-		ax12.set_xticks((gen_start_times / 60).tolist() + [time[-1] / 60])
-		ax12.set_xticklabels(np.arange(len(gen_start_times) + 1).tolist())
+		ax11.get_xaxis().set_visible(True)
+		ax11.spines["bottom"].set_visible(True)
+		ax11.set_xlabel('Time (generations)')
+		ax11.set_xticks((gen_start_times / 60).tolist() + [time[-1] / 60])
+		ax11.set_xticklabels(np.arange(len(gen_start_times) + 1).tolist())
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
