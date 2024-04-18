@@ -46,6 +46,7 @@ ACTIVE = [
 	"rna_decay_03_high.py",
 	"rnap_crowding.py",
 	"rRNA_operon_expression.py",
+	"rrna_regulation.py",
 	"subgenerationalTranscription.py",
 	"tf_binding.py",
 	"timeStep.py",
