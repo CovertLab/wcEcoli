@@ -28,7 +28,7 @@ MAX_VARIANT = 10 # do not include any variant >= this index
 generations before this may not be representative of dynamics 
 due to how they are initialized
 """
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 14
 
 
 """
