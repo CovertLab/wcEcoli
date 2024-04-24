@@ -43,6 +43,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		inactive_rnap_concentrations = {}
 		rrna_gene_copy_numbers = {}
 		rrna_gene_concentrations = {}
+		ppgpp_concentrations = {}
 		variant_indexes = self.ap.get_variants()
 
 		# Loop through all variant indexes
@@ -104,14 +105,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rrna_gene_copy_numbers_this_variant = read_stacked_columns(
 				all_cells, 'RnaSynthProb', 'gene_copy_number',
 				fun=lambda x: x[:, rrna_gene_indexes]).sum(axis=1)
-			rrna_gene_conc_this_variant = ((1 / (n_avogadro * cell_volume))
-				*rrna_gene_copy_numbers_this_variant).asNumber(units.mol / units.L) * 1e6
+
+			# Calculate "concentration" of rRNA genes on the DNA (count divided
+			# by mass of DNA)
+			dna_mass = read_stacked_columns(
+				all_cells, 'Mass', 'dnaMass').squeeze()
+			rrna_gene_conc_this_variant = rrna_gene_copy_numbers_this_variant / dna_mass
+
+			# Get ppGpp concentrations
+			ppgpp_concentrations_this_variant = read_stacked_columns(
+				all_cells, 'GrowthLimits', 'ppgpp_conc').squeeze()
 
 			ribosome_concentrations[variant_index] = ribosome_conc_this_variant.mean()
 			doubling_times[variant_index] = dt_this_variant.mean()
 			inactive_rnap_concentrations[variant_index] = inactive_rnap_conc_this_variant.mean()
 			rrna_gene_copy_numbers[variant_index] = rrna_gene_copy_numbers_this_variant.mean()
 			rrna_gene_concentrations[variant_index] = rrna_gene_conc_this_variant.mean()
+			ppgpp_concentrations[variant_index] = ppgpp_concentrations_this_variant.mean()
 
 		variant_indexes_sorted = [k for (k, v) in sorted(doubling_times.items(), key=lambda item: item[1])]
 
@@ -123,7 +133,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					'Ribosome conc. (uM)',
 					'Inactive RNAP conc. (uM)',
 					'rRNA promoter copy numbers',
-					'rRNA promoter conc. (uM)',
+					'rRNA promoter conc. (count / fg DNA)',
+					'ppgpp conc. (uM)',
 					'k_eff'
 					]) + '\n'
 				)
@@ -139,6 +150,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						str(inactive_rnap_concentrations[k]),
 						str(rrna_gene_copy_numbers[k]),
 						str(rrna_gene_concentrations[k]),
+						str(ppgpp_concentrations[k]),
 						str(k_eff)
 						]) + '\n'
 					)
