@@ -494,7 +494,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			new_gene_PCs = [PC for PC in var1_y
 									 if PC not in shared_PCs]
 			new_gene_PCs = var1_y[-1]
-			plt.scatter(0, new_gene_PCs, 1, color="red")
+			plt.scatter(0, new_gene_PCs, 5, color="red", marker="*")
 			m, b = np.polyfit(var0_x, var1_y, 1)
 			plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
 			legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
@@ -1048,7 +1048,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		Call graph generating functions
 		"""
-
 		all_variants = self.ap.get_variants()
 		control_var = all_variants[0]
 		experimental_vars = all_variants[1:]
@@ -1069,7 +1068,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if randnum > 0:
 				self.gen_G1(randnum)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_PCs_for_'
-							 + str(randnum) + '_random_proteins_wNG_noFilter_var'
+							 + str(randnum) + '_random_proteins_wNG_noFilter_Var'
 							 + str(experimental_var),
 							 metadata)
 				plt.close('all')
@@ -1079,7 +1078,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				if include_NG_G2 == 0:
 					PCs = protein_counts
 					IDs = self.original_monomer_ids
-					words = ('_original_PC_comparisons_woNG_TESTvar' +
+					words = ('_original_PC_comparisons_woNG_Var' +
 							 str(experimental_var))
 					self.gen_G2(PCs)
 				else:
@@ -1087,7 +1086,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					original_PCs = protein_counts
 					IDs = self.all_monomer_ids
 					original_IDs = self.original_monomer_ids
-					words = ('_original_PC_comparisons_wNG_TESTvar' +
+					words = ('_original_PC_comparisons_wNG_Var' +
 							 str(experimental_var))
 					self.gen_G2(PCs, original_PCs)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
@@ -1111,7 +1110,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if num > 0:
 				self.gen_G3(num, protein_counts, monomer_idx_dict_PreFilter)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(num) +
-							 '_largest_absolute_PC_diffs_wNG_noFilter_var' +
+							 '_largest_absolute_PC_diffs_wNG_noFilter_Var' +
 							 str(experimental_var),
 							 metadata)
 				plt.close('all')
@@ -1124,7 +1123,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.gen_G4(nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(nonshared_0_PC_ids)) +
-							 '_unique_PC_appearances_noNG_noFilter_var' +
+							 '_unique_PC_appearances_noNG_noFilter_Var' +
 							 str(experimental_var), metadata)
 				plt.close('all')
 
@@ -1140,7 +1139,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(F_PCs[0])) +
 							 '_PC_comparisons_Filter_' + str(filter_num) +
-							 '_TESTvar' + str(experimental_var),
+							 '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
@@ -1150,7 +1149,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(F_PC_LogData[0])) +
 							 '_PC_comparisons_LogScale_Filter_' + str(filter_num)
-							 + '_TESTvar' + str(experimental_var),
+							 + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
@@ -1159,14 +1158,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.gen_G6(min_num, F_PCs, F_PC_ids)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
 							 '_min_PC_diffs_woD_Filter_'
-							 + str(filter_num) + '_var' + str(experimental_var),
+							 + str(filter_num) + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 			if show_PC_diff_6b == 1:
 				self.gen_G6(min_num, F_PCs, F_PC_ids, show_PC_diff_6b)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
 							 '_min_PC_diffs_wD_Filter_' + str(filter_num)
-							 + '_var' + str(experimental_var),
+							 + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
@@ -1175,14 +1174,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.gen_G7(max_num, F_PCs, F_PC_ids)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
 							 '_max_PC_diffs_woD_Filter_' + str(filter_num)
-							 + '_var' + str(experimental_var),
+							 + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 			if show_PC_diff_7b == 1:
 				self.gen_G7(max_num, F_PCs, F_PC_ids, show_PC_diff_7b)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
 							 '_max_PC_diffs_wD_Filter_' + str(filter_num)
-							 + '_var' + str(experimental_var),
+							 + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
@@ -1192,7 +1191,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir,
 							 plotOutFileName + '_' + str(max_fold_num) +
 							 '_max_PC_fold_increases_LogScale_wPD_Filter_' +
-							 str(filter_num) + '_var' + str(experimental_var),
+							 str(filter_num) + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 				if max_fold_num_woLogScale == 1:
@@ -1200,7 +1199,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					exportFigure(plt, plotOutDir,
 								plotOutFileName + '_' + str(max_fold_num) +
 								'_max_PC_fold_increases_wPD_Filter_' +
-								str(filter_num) + '_var' + str(experimental_var),
+								str(filter_num) + '_Var' + str(experimental_var),
 								metadata)
 					plt.close('all')
 
@@ -1210,7 +1209,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir,
 							 plotOutFileName + '_' + str(min_fold_num) +
 							 '_max_PC_fold_decreases_LogScale_wPD_Filter_' +
-							 str(filter_num) + '_var' + str(experimental_var),
+							 str(filter_num) + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 				if min_fold_num_woLogScale == 1:
@@ -1218,7 +1217,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					exportFigure(plt, plotOutDir,
 								plotOutFileName + '_' + str(min_fold_num) +
 								'_max_PC_fold_decreases_wPD_Filter_' +
-								str(filter_num) + '_var' + str(experimental_var),
+								str(filter_num) + '_Var' + str(experimental_var),
 								metadata)
 					plt.close('all')
 
@@ -1228,7 +1227,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(shared_diff_num) +
 							 '_max_PC_diff_comparisons_Filter_' + str(filter_num)
-							 + '_var' + str(experimental_var),
+							 + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 				if shared_diff_LogScale == 1:
@@ -1236,7 +1235,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 								 str(shared_diff_num) +
 								 '_max_PC_diff_comparisons_LogScale_Filter_' +
-								 str(filter_num) + '_var' + str(experimental_var),
+								 str(filter_num) + '_Var' + str(experimental_var),
 								 metadata)
 					plt.close('all')
 
@@ -1245,7 +1244,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.gen_G11(sharednum, F_PCs, F_PC_ids)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(sharednum) +
 							 '_max_PC_fold_comparisons_Filter_' + str(filter_num)
-							 + '_var' + str(experimental_var),
+							 + '_Var' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
