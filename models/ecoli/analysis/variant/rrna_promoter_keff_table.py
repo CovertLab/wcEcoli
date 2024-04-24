@@ -41,6 +41,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ribosome_concentrations = {}
 		doubling_times = {}
 		inactive_rnap_concentrations = {}
+		rrna_gene_copy_numbers = {}
 		rrna_gene_concentrations = {}
 		variant_indexes = self.ap.get_variants()
 
@@ -109,6 +110,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ribosome_concentrations[variant_index] = ribosome_conc_this_variant.mean()
 			doubling_times[variant_index] = dt_this_variant.mean()
 			inactive_rnap_concentrations[variant_index] = inactive_rnap_conc_this_variant.mean()
+			rrna_gene_copy_numbers[variant_index] = rrna_gene_copy_numbers_this_variant.mean()
 			rrna_gene_concentrations[variant_index] = rrna_gene_conc_this_variant.mean()
 
 		variant_indexes_sorted = [k for (k, v) in sorted(doubling_times.items(), key=lambda item: item[1])]
@@ -120,6 +122,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					'Doubling time (min)',
 					'Ribosome conc. (uM)',
 					'Inactive RNAP conc. (uM)',
+					'rRNA promoter copy numbers',
 					'rRNA promoter conc. (uM)',
 					'k_eff'
 					]) + '\n'
@@ -134,6 +137,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						str(doubling_times[k]),
 						str(ribosome_concentrations[k]),
 						str(inactive_rnap_concentrations[k]),
+						str(rrna_gene_copy_numbers[k]),
 						str(rrna_gene_concentrations[k]),
 						str(k_eff)
 						]) + '\n'
