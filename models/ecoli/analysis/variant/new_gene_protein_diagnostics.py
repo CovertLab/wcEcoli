@@ -1075,17 +1075,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.close('all')
 
 			# Plots 2a and 2b
-			if include_NG_G2 == 0:
-				PCs = protein_counts
-				IDs = self.original_monomer_ids
-				words = ('_original_PC_comparisons_woNG_var' +
-						 str(experimental_var))
-			else:
-				PCs = self.total_protein_counts
-				IDs = self.all_monomer_ids
-				words = ('_original_PC_comparisons_wNG_var' +
-						 str(experimental_var))
-
 			if var_PC_comparison == 1:
 				if include_NG_G2 == 0:
 					PCs = protein_counts
@@ -1098,7 +1087,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					original_PCs = protein_counts
 					IDs = self.all_monomer_ids
 					original_IDs = self.original_monomer_ids
-					words = ('_original_PC_comparisons_wNG_var' +
+					words = ('_original_PC_comparisons_wNG_TESTvar' +
 							 str(experimental_var))
 					self.gen_G2(PCs, original_PCs)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
@@ -1151,7 +1140,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(F_PCs[0])) +
 							 '_PC_comparisons_Filter_' + str(filter_num) +
-							 '_var' + str(experimental_var),
+							 '_TESTvar' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
@@ -1161,7 +1150,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(F_PC_LogData[0])) +
 							 '_PC_comparisons_LogScale_Filter_' + str(filter_num)
-							 + '_var' + str(experimental_var),
+							 + '_TESTvar' + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
