@@ -95,9 +95,9 @@ Graph 5a: Filtered PC comparisons between two variants
 Graph 5b: Graph the data from Graph 5a on a log scale
 '''
 # a: Set this value to 1 to create this comparison graph, 0 otherwise:
-var_PC_comparison_wF = 0
+var_PC_comparison_wF = 1
 # b: Set this value to 1 to create Graph 5a on a log scale as well:
-var_PC_comparison_wF_LogScale = 0
+var_PC_comparison_wF_LogScale = 1
 ''' 
 Graph 6a: Plot proteins with the smallest difference in PCs between variants
 Graph 6b: Same as Graph 6a but the change in PCs between vars is included 
@@ -1090,7 +1090,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				if include_NG_G2 == 0:
 					PCs = protein_counts
 					IDs = self.original_monomer_ids
-					words = ('_original_PC_comparisons_woNG_var' +
+					words = ('_original_PC_comparisons_woNG_TESTvar' +
 							 str(experimental_var))
 					self.gen_G2(PCs)
 				else:
