@@ -198,7 +198,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								   len(self.original_monomer_ids)))
 		self.total_protein_counts = np.zeros((len(self.variant_pair),
 											  len(self.all_monomer_ids)))
-		for variant in self.variant_pair:
+		for var_idx in range(len(self.variant_pair)):
+			variant = self.variant_pair[var_idx]
 			all_cells = self.ap.get_cells(variant=[variant],
 										  generation=np.arange(IGNORE_FIRST_N_GENS,
 															   self.n_total_gens),
@@ -209,11 +210,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 									 'monomerCounts',
 									 fun=lambda x: np.mean(x[:], axis=0)))
 			total_avg_gene_counts = np.mean(gen_avg_monomer_counts, axis=0)
-			self.total_protein_counts[variant] = total_avg_gene_counts
+			self.total_protein_counts[var_idx] = total_avg_gene_counts
 			old_gene_idxs = [monomer_idx_dict.get(monomer_id)
 							 for monomer_id in self.original_monomer_ids]
 			avg_gene_monomer_counts = total_avg_gene_counts[old_gene_idxs]
-			protein_counts[variant] = avg_gene_monomer_counts
+			protein_counts[var_idx] = avg_gene_monomer_counts
 
 		protein_counts = np.array(protein_counts)
 		self.total_protein_counts = np.array(self.total_protein_counts)
@@ -259,7 +260,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		avg_log_interest_proteins = np.zeros((
 			len(self.variant_pair), len(protein_idxs)))
-		for variant in self.variant_pair:
+		for variant in range(len(self.variant_pair)):
 			for idx in range(len(protein_idxs)):
 				if len(index_vals) == 0:
 					index = idx
@@ -372,7 +373,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if max_fold_num_woLogScale == 1:
 			max_fold_PC_values = np.zeros((len(self.variant_pair),
 										   len(PC_max_fold_idxs)))
-			for variant in self.variant_pair:
+			for variant in range(len(self.variant_pair)):
 				for idx in range(len(PC_max_fold_idxs)):
 					index = PC_max_fold_idxs[idx]
 					max_fold_PC_values[variant][idx] = (
@@ -412,7 +413,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if min_fold_num_woLogScale == 1:
 			min_fold_PC_values = np.zeros((len(self.variant_pair),
 										   len(PC_min_fold_idxs)))
-			for variant in self.variant_pair:
+			for variant in range(len(self.variant_pair)):
 				for idx in range(len(PC_min_fold_idxs)):
 					index = PC_min_fold_idxs[idx]
 					min_fold_PC_values[variant][idx] = (
@@ -1020,9 +1021,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_variants = self.ap.get_variants()
 		control_var = all_variants[0]
 		experimental_vars = all_variants[1:]
+		print(control_var)
+		print(experimental_vars)
+		print(all_variants)
 		for variant_2 in experimental_vars:
 			self.variant_pair = [control_var, variant_2]
 			experimental_var = self.variant_pair[1]
+			print(self.variant_pair)
+			print(experimental_var)
+			print(variant_2)
 			# define/initialize commonly used variables
 			self.n_total_gens = self.ap.n_generation
 			self.all_monomer_ids = []
