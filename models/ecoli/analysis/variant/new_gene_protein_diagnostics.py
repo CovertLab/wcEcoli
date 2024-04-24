@@ -462,10 +462,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		var0_x = protein_counts[0]
 		var1_y = protein_counts[1]
+		plt.figure(figsize=(10, 10))
 		if len(original_protein_counts) == 0:
 			var0_x = protein_counts[0]
 			var1_y = protein_counts[1]
-			plt.figure(figsize=(10, 10))
 			plt.scatter(var0_x, var1_y, 1)
 			m, b = np.polyfit(var0_x, var1_y, 1)
 			plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
@@ -487,13 +487,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# protein counts are "original_protein_counts"
 			ori_var0_x = original_protein_counts[0]
 			ori_var1_y = original_protein_counts[1]
-			plt.figure(figsize=(10, 10))
 			plt.scatter(ori_var0_x, ori_var1_y, 1)
 			# find the new genes:
 			shared_PCs = np.intersect1d(ori_var1_y, var1_y)
 			# Obtain indexes of proteins w/ 0 counts that are unique for variants:
 			new_gene_PCs = [PC for PC in var1_y
 									 if PC not in shared_PCs]
+			new_gene_PCs = var1_y[-1]
 			plt.scatter(0, new_gene_PCs, 1, color="red")
 			m, b = np.polyfit(var0_x, var1_y, 1)
 			plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
