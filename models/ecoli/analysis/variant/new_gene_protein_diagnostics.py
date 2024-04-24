@@ -57,7 +57,7 @@ Graph 2a: PC comparisons between two variants
 Graph 2b: Graph the data from Graph 2a using a log scale
 '''
 # If the NG is to be included on the plots, set this variable equal to 1:
-include_NG_G2 = 0
+include_NG_G2 = 1
 # a: Set this value to 1 to create this comparison graph, 0 otherwise:
 var_PC_comparison = 1
 # b: Set this value to 1 to create Graph 2a on a log scale as well:
