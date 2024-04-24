@@ -452,7 +452,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				  + " randomly selected proteins ")
 		plt.tight_layout()
 
-	def gen_G2(self, protein_counts):
+	def gen_G2(self, protein_counts, original_protein_counts=[]):
 		"""
 		Generates a plot of the control variant's PC data plotted against the
 		experimental variants' PC data
@@ -462,24 +462,55 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		var0_x = protein_counts[0]
 		var1_y = protein_counts[1]
+		if len(original_protein_counts) == 0:
+			var0_x = protein_counts[0]
+			var1_y = protein_counts[1]
+			plt.figure(figsize=(10, 10))
+			plt.scatter(var0_x, var1_y, 1)
+			m, b = np.polyfit(var0_x, var1_y, 1)
+			plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
+			legstr = "linear fit: y = "+ str(round(m, 2)) +"x + "+ str(round(b, 2))
+			max_pt = np.argsort(protein_counts)
+			max_pt_idx = max_pt[0][-1]
+			max_pt_x = var0_x[max_pt_idx]
+			max_pt_y = var1_y[max_pt_idx]
+			slope = max_pt_y / max_pt_x
+			plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
+			otherstr = "y = " + str(round(slope, 2)) + "x"
+			plt.legend(["PC data", legstr, otherstr])
+			plt.xlabel("variant 0 (no New Gene)")
+			plt.ylabel("variant 1 (New Gene)")
+			plt.title(f"The {len(var0_x)} proteins plotted against each other")
+			plt.tight_layout()
+		else:
+			# all protein counts are the "protein_counts" variable, the original
+			# protein counts are "original_protein_counts"
+			ori_var0_x = original_protein_counts[0]
+			ori_var1_y = original_protein_counts[1]
+			plt.figure(figsize=(10, 10))
+			plt.scatter(ori_var0_x, ori_var1_y, 1)
+			# find the new genes:
+			shared_PCs = np.intersect1d(ori_var1_y, var1_y)
+			# Obtain indexes of proteins w/ 0 counts that are unique for variants:
+			new_gene_PCs = [PC for PC in var1_y
+									 if PC not in shared_PCs]
+			plt.scatter(0, new_gene_PCs, 1, color="red")
+			m, b = np.polyfit(var0_x, var1_y, 1)
+			plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
+			legstr = "linear fit: y = " + str(round(m, 2)) + "x + " + str(round(b, 2))
+			max_pt = np.argsort(protein_counts)
+			max_pt_idx = max_pt[0][-1]
+			max_pt_x = var0_x[max_pt_idx]
+			max_pt_y = var1_y[max_pt_idx]
+			slope = max_pt_y / max_pt_x
+			plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
+			otherstr = "y = " + str(round(slope, 2)) + "x"
+			plt.legend(["PC data", "New Gene PCs", legstr, otherstr])
+			plt.xlabel("variant 0 (no New Gene)")
+			plt.ylabel("variant 1 (New Gene)")
+			plt.title(f"The {len(var0_x)} proteins plotted against each other")
+			plt.tight_layout()
 
-		plt.figure(figsize=(10, 10))
-		plt.scatter(var0_x, var1_y, 1)
-		m, b = np.polyfit(var0_x, var1_y, 1)
-		plt.plot(var0_x, m * var0_x + b, linewidth=.5, color='#bcbd22')
-		legstr = "linear fit: y = "+ str(round(m, 2)) +"x + "+ str(round(b, 2))
-		max_pt = np.argsort(protein_counts)
-		max_pt_idx = max_pt[0][-1]
-		max_pt_x = var0_x[max_pt_idx]
-		max_pt_y = var1_y[max_pt_idx]
-		slope = max_pt_y / max_pt_x
-		plt.plot(var0_x, slope * var0_x, linewidth=.5, color='#FFA500')
-		otherstr = "y = " + str(round(slope, 2)) + "x"
-		plt.legend(["PC data", legstr, otherstr])
-		plt.xlabel("variant 0 (no New Gene)")
-		plt.ylabel("variant 1 (New Gene)")
-		plt.title(f"The {len(var0_x)} proteins plotted against each other")
-		plt.tight_layout()
 
 	def gen_G3(self, num, protein_counts, monomer_idx_dict):
 		"""
@@ -1021,15 +1052,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_variants = self.ap.get_variants()
 		control_var = all_variants[0]
 		experimental_vars = all_variants[1:]
-		print(control_var)
-		print(experimental_vars)
-		print(all_variants)
 		for variant_2 in experimental_vars:
 			self.variant_pair = [control_var, variant_2]
 			experimental_var = self.variant_pair[1]
-			print(self.variant_pair)
-			print(experimental_var)
-			print(variant_2)
+
 			# define/initialize commonly used variables
 			self.n_total_gens = self.ap.n_generation
 			self.all_monomer_ids = []
@@ -1061,7 +1087,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 str(experimental_var))
 
 			if var_PC_comparison == 1:
-				self.gen_G2(PCs)
+				if include_NG_G2 == 0:
+					PCs = protein_counts
+					IDs = self.original_monomer_ids
+					words = ('_original_PC_comparisons_woNG_var' +
+							 str(experimental_var))
+					self.gen_G2(PCs)
+				else:
+					PCs = self.total_protein_counts
+					original_PCs = protein_counts
+					IDs = self.all_monomer_ids
+					original_IDs = self.original_monomer_ids
+					words = ('_original_PC_comparisons_wNG_var' +
+							 str(experimental_var))
+					self.gen_G2(PCs, original_PCs)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(PCs[0])) + words, metadata)
 				plt.close('all')
@@ -1069,7 +1108,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if var_PC_comparison_LogScale == 1:
 				PC_LogData_idxs = self.get_idxs(IDs)
 				PC_LogData = self.get_LogData(PC_LogData_idxs, PCs)
-				self.gen_G2(PC_LogData)
+				if include_NG_G2 ==0:
+					self.gen_G2(PC_LogData)
+				else:
+					ori_PC_LogData_idxs = self.get_idxs(original_IDs)
+					ori_PC_LogData = self.get_LogData(ori_PC_LogData_idxs, original_PCs)
+					self.gen_G2(PC_LogData, ori_PC_LogData)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
 							 str(len(PCs[0])) + words +'_LogScale', metadata)
 				plt.close('all')
