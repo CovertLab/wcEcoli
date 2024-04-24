@@ -135,14 +135,14 @@ Graph 10a: visualize the max increases and decreases in PCs side by side
 Graph 10b: Graph 10a on a log scale
 '''
 # Number of proteins to compare max increases and decreases in PCs:
-shared_diff_num = 10
+shared_diff_num = 0
 # set this to 1 to plot the same comparison but with a log scale:
 shared_diff_LogScale = 0
 '''
 Graph 11: visualize the max fold increases and decreases in PCs side by side
 '''
 # Number of proteins to observe the max fold increases and decreases in PCs:
-sharednum = 10
+sharednum = 0
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def generate_data(self, simDataFile):
@@ -194,11 +194,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.all_monomer_ids == self.new_gene_monomer_ids))
 		monomer_idx_dict = {monomer: i for i, monomer in
 							enumerate(self.all_monomer_ids)}
-		protein_counts = np.zeros((len(self.variants),
+		protein_counts = np.zeros((len(self.variant_pair),
 								   len(self.original_monomer_ids)))
-		self.total_protein_counts = np.zeros((len(self.variants),
+		self.total_protein_counts = np.zeros((len(self.variant_pair),
 											  len(self.all_monomer_ids)))
-		for variant in self.variants:
+		for variant in self.variant_pair:
 			all_cells = self.ap.get_cells(variant=[variant],
 										  generation=np.arange(IGNORE_FIRST_N_GENS,
 															   self.n_total_gens),
@@ -258,8 +258,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		Returns: an data structure of the log version of interest PCs
 		"""
 		avg_log_interest_proteins = np.zeros((
-			len(self.variants), len(protein_idxs)))
-		for variant in self.variants:
+			len(self.variant_pair), len(protein_idxs)))
+		for variant in self.variant_pair:
 			for idx in range(len(protein_idxs)):
 				if len(index_vals) == 0:
 					index = idx
@@ -370,9 +370,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		max_fold_PC_values = max_fold_PC_Log_values
 
 		if max_fold_num_woLogScale == 1:
-			max_fold_PC_values = np.zeros((len(self.variants),
+			max_fold_PC_values = np.zeros((len(self.variant_pair),
 										   len(PC_max_fold_idxs)))
-			for variant in self.variants:
+			for variant in self.variant_pair:
 				for idx in range(len(PC_max_fold_idxs)):
 					index = PC_max_fold_idxs[idx]
 					max_fold_PC_values[variant][idx] = (
@@ -410,9 +410,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		min_fold_PC_values = min_fold_PC_Log_values
 
 		if min_fold_num_woLogScale == 1:
-			min_fold_PC_values = np.zeros((len(self.variants),
+			min_fold_PC_values = np.zeros((len(self.variant_pair),
 										   len(PC_min_fold_idxs)))
-			for variant in self.variants:
+			for variant in self.variant_pair:
 				for idx in range(len(PC_min_fold_idxs)):
 					index = PC_min_fold_idxs[idx]
 					min_fold_PC_values[variant][idx] = (
@@ -823,8 +823,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for idx in max_diff_idxs:
 			max_changes.append(max_diffs[idx])
 			max_PC_diffs_ids.append(filtered_ids[idx])
-		avg_max_PC_diffs = np.zeros((len(self.variants), len(max_diff_idxs)))
-		for variant in self.variants:
+		avg_max_PC_diffs = np.zeros((len(self.variant_pair), len(max_diff_idxs)))
+		for variant in self.variant_pair:
 			for idx in range(len(max_diff_idxs)):
 				index = max_diff_idxs[idx]
 				avg_max_PC_diffs[variant][idx] = filtered_PCs[variant][index]
@@ -837,8 +837,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for idx in min_diff_idxs:
 			min_changes.append(min_diffs[idx])
 			min_PC_diffs_ids.append(filtered_ids[idx])
-		avg_min_PC_diffs = np.zeros((len(self.variants), len(min_diff_idxs)))
-		for variant in self.variants:
+		avg_min_PC_diffs = np.zeros((len(self.variant_pair), len(min_diff_idxs)))
+		for variant in self.variant_pair:
 			for idx in range(len(min_diff_idxs)):
 				index = min_diff_idxs[idx]
 				avg_min_PC_diffs[variant][idx] = filtered_PCs[variant][index]
@@ -1016,179 +1016,198 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		"""
 		Call graph generating functions
 		"""
-		# define/initialize commonly used variables
-		self.variants = self.ap.get_variants()
-		self.n_total_gens = self.ap.n_generation
-		self.all_monomer_ids = []
-		self.original_monomer_ids = []
-		self.new_gene_monomer_ids = []
-		self.total_protein_counts = []
-		protein_counts = self.generate_data(simDataFile)
-		monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
-									  enumerate(self.all_monomer_ids)}
-		# Plot 1
-		if randnum > 0:
-			self.gen_G1(randnum)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_PCs_for_'
-						 + str(randnum) + '_random_proteins_wNG_noFilter',
-						 metadata)
-			plt.close('all')
 
-		# Plots 2a and 2b
-		if include_NG_G2 == 0:
-			PCs = protein_counts
-			IDs = self.original_monomer_ids
-			words = '_original_PC_comparisons_woNG'
-		else:
-			PCs = self.total_protein_counts
-			IDs = self.all_monomer_ids
-			words = '_original_PC_comparisons_wNG'
-
-		if var_PC_comparison == 1:
-			self.gen_G2(PCs)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-						 str(len(PCs[0])) + words, metadata)
-			plt.close('all')
-
-		if var_PC_comparison_LogScale == 1:
-			PC_LogData_idxs = self.get_idxs(IDs)
-			PC_LogData = self.get_LogData(PC_LogData_idxs, PCs)
-			self.gen_G2(PC_LogData)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-						 str(len(PCs[0])) + words +'_LogScale', metadata)
-			plt.close('all')
-
-		# Plot 3:
-		if num > 0:
-			self.gen_G3(num, protein_counts, monomer_idx_dict_PreFilter)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(num) +
-						 '_largest_absolute_PC_diffs_wNG_noFilter',
-						 metadata)
-			plt.close('all')
-
-		# Plot 4:
-		if unique_PC_appearances == 1:
-			nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs = (
-				self.find_unique_proteins(protein_counts,
-										  monomer_idx_dict_PreFilter))
-			self.gen_G4(nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-						 str(len(nonshared_0_PC_ids)) +
-						 '_unique_PC_appearances_noNG_noFilter', metadata)
-			plt.close('all')
-
-		# Manditory Data Filtration
-		F_PCs, F_PC_ids, F_PC_idxs = (
-			self.filter_data(protein_counts, monomer_idx_dict_PreFilter,
-							 filter_num))
-		F_monomer_idx_dict = {monomer: i for i, monomer in enumerate(F_PC_ids)}
-
-		# Plot 5:
-		if var_PC_comparison_wF == 1:
-			self.gen_G5(F_PCs)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-						 str(len(F_PCs[0])) +
-						 '_PC_comparisons_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
-
-		if var_PC_comparison_wF_LogScale == 1:
-			F_PC_LogData = self.get_LogData(F_PC_idxs, F_PCs)
-			self.gen_G5(F_PC_LogData)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-						 str(len(F_PC_LogData[0])) +
-						 '_PC_comparisons_LogScale_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
-
-		# Plot 6
-		if min_num > 0:
-			self.gen_G6(min_num, F_PCs, F_PC_ids)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
-						 '_min_PC_diffs_woD_Filter_'
-						 + str(filter_num), metadata)
-			plt.close('all')
-		if show_PC_diff_6b == 1:
-			self.gen_G6(min_num, F_PCs, F_PC_ids, show_PC_diff_6b)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
-						 '_min_PC_diffs_wD_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
-
-		# Plot 7:
-		if max_num > 0:
-			self.gen_G7(max_num, F_PCs, F_PC_ids)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
-						 '_max_PC_diffs_woD_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
-		if show_PC_diff_7b == 1:
-			self.gen_G7(max_num, F_PCs, F_PC_ids, show_PC_diff_7b)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
-						 '_max_PC_diffs_wD_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
-
-		# Plot 8
-		if max_fold_num > 0:
-			self.gen_G8(max_fold_num, F_PCs, F_PC_ids)
-			exportFigure(plt, plotOutDir,
-						 plotOutFileName + '_' + str(max_fold_num) +
-						 '_max_PC_fold_increases_LogScale_wPD_Filter_' +
-						 str(filter_num),
-						 metadata)
-			plt.close('all')
-			if max_fold_num_woLogScale == 1:
-				self.gen_G8(max_fold_num, F_PCs, F_PC_ids, 1)
-				exportFigure(plt, plotOutDir,
-						 	plotOutFileName + '_' + str(max_fold_num) +
-						 	'_max_PC_fold_increases_wPD_Filter_' +
-						 	str(filter_num),
-						 	metadata)
-				plt.close('all')
-
-		# Plot 9
-		if min_fold_num > 0:
-			self.gen_G9(min_fold_num, F_PCs, F_PC_ids)
-			exportFigure(plt, plotOutDir,
-						 plotOutFileName + '_' + str(min_fold_num) +
-						 '_max_PC_fold_decreases_LogScale_wPD_Filter_' +
-						 str(filter_num),
-						 metadata)
-			plt.close('all')
-			if min_fold_num_woLogScale == 1:
-				self.gen_G9(min_fold_num, F_PCs, F_PC_ids, 1)
-				exportFigure(plt, plotOutDir,
-						 	plotOutFileName + '_' + str(min_fold_num) +
-						 	'_max_PC_fold_decreases_wPD_Filter_' +
-						 	str(filter_num),
-						 	metadata)
-				plt.close('all')
-
-		# Plot 10
-		if shared_diff_num > 0:
-			self.gen_G10(shared_diff_num, F_PCs, F_PC_ids)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-						 str(shared_diff_num) +
-						 '_max_PC_diff_comparisons_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
-			if shared_diff_LogScale == 1:
-				self.gen_G10(shared_diff_num, F_PCs, F_PC_ids, 1)
-				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-							 str(shared_diff_num) +
-							 '_max_PC_diff_comparisons_LogScale_Filter_' +
-							 str(filter_num),
+		all_variants = self.ap.get_variants()
+		control_var = all_variants[0]
+		experimental_vars = all_variants[1:]
+		for variant_2 in experimental_vars:
+			self.variant_pair = [control_var, variant_2]
+			experimental_var = self.variant_pair[1]
+			# define/initialize commonly used variables
+			self.n_total_gens = self.ap.n_generation
+			self.all_monomer_ids = []
+			self.original_monomer_ids = []
+			self.new_gene_monomer_ids = []
+			self.total_protein_counts = []
+			protein_counts = self.generate_data(simDataFile)
+			monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
+										  enumerate(self.all_monomer_ids)}
+			# Plot 1
+			if randnum > 0:
+				self.gen_G1(randnum)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_PCs_for_'
+							 + str(randnum) + '_random_proteins_wNG_noFilter_var'
+							 + str(experimental_var),
 							 metadata)
 				plt.close('all')
 
-		# Plot 11
-		if sharednum > 0:
-			self.gen_G11(sharednum, F_PCs, F_PC_ids)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(sharednum) +
-						 '_max_PC_fold_comparisons_Filter_' + str(filter_num),
-						 metadata)
-			plt.close('all')
+			# Plots 2a and 2b
+			if include_NG_G2 == 0:
+				PCs = protein_counts
+				IDs = self.original_monomer_ids
+				words = ('_original_PC_comparisons_woNG_var' +
+						 str(experimental_var))
+			else:
+				PCs = self.total_protein_counts
+				IDs = self.all_monomer_ids
+				words = ('_original_PC_comparisons_wNG_var' +
+						 str(experimental_var))
+
+			if var_PC_comparison == 1:
+				self.gen_G2(PCs)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+							 str(len(PCs[0])) + words, metadata)
+				plt.close('all')
+
+			if var_PC_comparison_LogScale == 1:
+				PC_LogData_idxs = self.get_idxs(IDs)
+				PC_LogData = self.get_LogData(PC_LogData_idxs, PCs)
+				self.gen_G2(PC_LogData)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+							 str(len(PCs[0])) + words +'_LogScale', metadata)
+				plt.close('all')
+
+			# Plot 3:
+			if num > 0:
+				self.gen_G3(num, protein_counts, monomer_idx_dict_PreFilter)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(num) +
+							 '_largest_absolute_PC_diffs_wNG_noFilter_var' +
+							 str(experimental_var),
+							 metadata)
+				plt.close('all')
+
+			# Plot 4:
+			if unique_PC_appearances == 1:
+				nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs = (
+					self.find_unique_proteins(protein_counts,
+											  monomer_idx_dict_PreFilter))
+				self.gen_G4(nonshared_0_PCs, nonshared_0_PC_ids, nonshared_0_PC_idxs)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+							 str(len(nonshared_0_PC_ids)) +
+							 '_unique_PC_appearances_noNG_noFilter_var' +
+							 str(experimental_var), metadata)
+				plt.close('all')
+
+			# Manditory Data Filtration
+			F_PCs, F_PC_ids, F_PC_idxs = (
+				self.filter_data(protein_counts, monomer_idx_dict_PreFilter,
+								 filter_num))
+			F_monomer_idx_dict = {monomer: i for i, monomer in enumerate(F_PC_ids)}
+
+			# Plot 5:
+			if var_PC_comparison_wF == 1:
+				self.gen_G5(F_PCs)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+							 str(len(F_PCs[0])) +
+							 '_PC_comparisons_Filter_' + str(filter_num) +
+							 '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+
+			if var_PC_comparison_wF_LogScale == 1:
+				F_PC_LogData = self.get_LogData(F_PC_idxs, F_PCs)
+				self.gen_G5(F_PC_LogData)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+							 str(len(F_PC_LogData[0])) +
+							 '_PC_comparisons_LogScale_Filter_' + str(filter_num)
+							 + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+
+			# Plot 6
+			if min_num > 0:
+				self.gen_G6(min_num, F_PCs, F_PC_ids)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
+							 '_min_PC_diffs_woD_Filter_'
+							 + str(filter_num) + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+			if show_PC_diff_6b == 1:
+				self.gen_G6(min_num, F_PCs, F_PC_ids, show_PC_diff_6b)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(min_num) +
+							 '_min_PC_diffs_wD_Filter_' + str(filter_num)
+							 + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+
+			# Plot 7:
+			if max_num > 0:
+				self.gen_G7(max_num, F_PCs, F_PC_ids)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
+							 '_max_PC_diffs_woD_Filter_' + str(filter_num)
+							 + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+			if show_PC_diff_7b == 1:
+				self.gen_G7(max_num, F_PCs, F_PC_ids, show_PC_diff_7b)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(max_num) +
+							 '_max_PC_diffs_wD_Filter_' + str(filter_num)
+							 + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+
+			# Plot 8
+			if max_fold_num > 0:
+				self.gen_G8(max_fold_num, F_PCs, F_PC_ids)
+				exportFigure(plt, plotOutDir,
+							 plotOutFileName + '_' + str(max_fold_num) +
+							 '_max_PC_fold_increases_LogScale_wPD_Filter_' +
+							 str(filter_num) + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+				if max_fold_num_woLogScale == 1:
+					self.gen_G8(max_fold_num, F_PCs, F_PC_ids, 1)
+					exportFigure(plt, plotOutDir,
+								plotOutFileName + '_' + str(max_fold_num) +
+								'_max_PC_fold_increases_wPD_Filter_' +
+								str(filter_num) + '_var' + str(experimental_var),
+								metadata)
+					plt.close('all')
+
+			# Plot 9
+			if min_fold_num > 0:
+				self.gen_G9(min_fold_num, F_PCs, F_PC_ids)
+				exportFigure(plt, plotOutDir,
+							 plotOutFileName + '_' + str(min_fold_num) +
+							 '_max_PC_fold_decreases_LogScale_wPD_Filter_' +
+							 str(filter_num) + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+				if min_fold_num_woLogScale == 1:
+					self.gen_G9(min_fold_num, F_PCs, F_PC_ids, 1)
+					exportFigure(plt, plotOutDir,
+								plotOutFileName + '_' + str(min_fold_num) +
+								'_max_PC_fold_decreases_wPD_Filter_' +
+								str(filter_num) + '_var' + str(experimental_var),
+								metadata)
+					plt.close('all')
+
+			# Plot 10
+			if shared_diff_num > 0:
+				self.gen_G10(shared_diff_num, F_PCs, F_PC_ids)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+							 str(shared_diff_num) +
+							 '_max_PC_diff_comparisons_Filter_' + str(filter_num)
+							 + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
+				if shared_diff_LogScale == 1:
+					self.gen_G10(shared_diff_num, F_PCs, F_PC_ids, 1)
+					exportFigure(plt, plotOutDir, plotOutFileName + '_' +
+								 str(shared_diff_num) +
+								 '_max_PC_diff_comparisons_LogScale_Filter_' +
+								 str(filter_num) + '_var' + str(experimental_var),
+								 metadata)
+					plt.close('all')
+
+			# Plot 11
+			if sharednum > 0:
+				self.gen_G11(sharednum, F_PCs, F_PC_ids)
+				exportFigure(plt, plotOutDir, plotOutFileName + '_' + str(sharednum) +
+							 '_max_PC_fold_comparisons_Filter_' + str(filter_num)
+							 + '_var' + str(experimental_var),
+							 metadata)
+				plt.close('all')
 
 if __name__ == "__main__":
 	Plot().cli()

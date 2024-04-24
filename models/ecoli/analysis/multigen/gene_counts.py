@@ -84,14 +84,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time = read_stacked_columns(cell_paths, 'Main', 'time', ignore_exception=True)
 		(ip_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, cistron_monomer_ids, ignore_exception=True)
-		all_mRNA_stacked_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
-		ip_mRNA_counts = all_mRNA_stacked_counts[:, new_gene_mRNA_indexes]
+		ip_mRNA_counts = read_stacked_columns(
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)[:, new_gene_mRNA_indexes]
 
 		# Plotting
 		plt.figure(figsize = (8.5, 11))
-
-		# section out the generations:
 		# Get doubling times from cells with this variant index
 		dt = read_stacked_columns(
 			cell_paths, 'Main', 'time',

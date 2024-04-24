@@ -72,9 +72,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(new_gene_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, new_gene_monomer_ids)
-		all_mRNA_stacked_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_counts')
-		new_gene_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]
+		new_gene_mRNA_counts = read_stacked_columns(
+			cell_paths, 'RNACounts', 'mRNA_counts')[:,new_gene_mRNA_indexes]
 
 		# Plotting
 		plt.figure(figsize = (8.5, 11))
