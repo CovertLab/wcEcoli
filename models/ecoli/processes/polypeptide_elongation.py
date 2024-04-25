@@ -140,6 +140,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.timeStepSec(),
 			self.variable_elongation)
 
+		### TODO: Check size, Override for GFP?
+
 		sequences = buildSequences(
 			self.proteinSequences,
 			proteinIndexes,
