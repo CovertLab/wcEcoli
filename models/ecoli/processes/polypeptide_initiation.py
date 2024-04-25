@@ -48,7 +48,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.monomerIds = sim_data.process.translation.monomer_data[
 			'id']
 
-		# Create view on to active 70S ribosomes
+		# Create view on to active ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto bulk 30S and 50S ribosomal subunits
@@ -212,7 +212,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			is_n_ribosomes_to_activate_reduced)
 
 		# Sample multinomial distribution to determine which mRNAs have full
-		# 70S ribosomes initialized on them
+		# ribosomes initialized on them
 		n_new_proteins = self.randomState.multinomial(
 			n_ribosomes_to_activate,
 			protein_init_prob
@@ -262,7 +262,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 			start_index += counts
 
-		# Create active 70S ribosomes and assign their attributes
+		# Create active ribosomes and assign their attributes
 		self.active_ribosomes.moleculesNew(
 			n_ribosomes_to_activate,
 			protein_index=protein_indexes,
@@ -271,7 +271,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
-		# Decrement free 30S and 70S ribosomal subunit counts
+		# Decrement free 30S and 50S ribosomal subunit counts
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
 
