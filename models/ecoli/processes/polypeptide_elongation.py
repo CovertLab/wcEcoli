@@ -54,9 +54,18 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.max_time_step = translation.max_time_step
 
+		# TODO: clean up
+		mRNA_sim_data = transcription.cistron_data.struct_array
+		monomer_sim_data = translation.monomer_data.struct_array
+		new_gene_mRNA_ids = mRNA_sim_data[mRNA_sim_data['is_new_gene']]['id'].tolist()
+		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
+										monomer_sim_data['id']))
+		self.new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
+			for mRNA_id in new_gene_mRNA_ids]
+
 		# Load parameters
 		self.n_avogadro = constants.n_avogadro
-		proteinIds = translation.monomer_data['id']
+		self.monomerIds = translation.monomer_data['id']
 		self.proteinLengths = translation.monomer_data["length"].asNumber()
 		self.proteinSequences = translation.translation_sequences
 		self.aaWeightsIncorporated = translation.translation_monomer_weights
@@ -71,7 +80,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.import_threshold = sim_data.external_state.import_constraint_threshold
 
 		# Used for figure in publication
-		self.trpAIndex = np.where(proteinIds == "TRYPSYN-APROTEIN[c]")[0][0]
+		self.trpAIndex = np.where(self.monomerIds == "TRYPSYN-APROTEIN[c]")[0][0]
 
 		# Create view onto actively elongating 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
@@ -81,7 +90,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.ribosome50S = self.bulkMoleculeView(sim_data.molecule_ids.s50_full_complex)
 
 		# Create view onto all proteins
-		self.bulkMonomers = self.bulkMoleculesView(proteinIds)
+		self.bulkMonomers = self.bulkMoleculesView(self.monomerIds)
 
 		# Create views onto all polymerization reaction small molecules
 		self.aaNames = sim_data.molecule_groups.amino_acids
@@ -140,7 +149,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.timeStepSec(),
 			self.variable_elongation)
 
-		### TODO: Check size, Override for GFP?
+		# TODO: if these simulations produce useful data, implement this in a
+		# non-forced, more general way (perhaps a new gene flat file? variant?)
+		monomer_idx_dict = {monomer: i for i, monomer in
+			enumerate(self.monomerIds)}
+		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
+									monomer_id in self.new_gene_monomer_ids]
+		self.elongation_rates[new_gene_monomer_indexes] = 300  # units.aa/units.s
 
 		sequences = buildSequences(
 			self.proteinSequences,

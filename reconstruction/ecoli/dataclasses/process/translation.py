@@ -21,6 +21,9 @@ class Translation(object):
 		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 		self.next_aa_pad = 1  # Need an extra amino acid in sequences lengths to find next one
 
+		### TODO: This is a temporary fix to get the GFP no ribosome simulations to work
+		self.next_aa_pad = 301
+
 		self._build_monomer_data(raw_data, sim_data)
 		self._build_translation(raw_data, sim_data)
 		self._build_translation_efficiency(raw_data, sim_data)
