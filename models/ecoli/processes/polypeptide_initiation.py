@@ -10,6 +10,8 @@ import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 
+# TODO: make an option somehow
+new_gene_ribosome_usage = False
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
@@ -202,6 +204,39 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Compute actual transcription probabilities of each transcript
 		actual_protein_init_prob = protein_init_prob.copy()
+
+		# Sample multinomial distribution to determine which mRNAs have full
+		# ribosomes initialized on them
+		n_new_proteins = self.randomState.multinomial(
+			n_ribosomes_to_activate,
+			protein_init_prob
+		)
+
+		if not new_gene_ribosome_usage:
+			print("doing new stuff!")
+
+			# TODO: Determine number of ribosomes that would be allocated to new genes
+			# TODO: save the target init prob, actual init prob, is overcrowded for GFP,
+			# n_new_proteins for GFP
+
+
+			# TODO: renormalize target init probabilities excluding GFP, recompute protein_init_probs
+			# TODO: what will we do about overcrowding here?
+
+			# Sample multinomial distribution to determine which mRNAs have full
+			# ribosomes initialized on them
+			n_new_proteins = self.randomState.multinomial(
+				n_ribosomes_to_activate,
+				protein_init_prob
+				)
+			# TODO: overrite to make the GFP one special
+
+			# TODO: override the GFP one before writing to listener
+
+
+
+		# TODO: move the target prob listener writing down here?
+		# Write information to listeners
 		self.writeToListener(
 			"RibosomeData", "actual_prob_translation_per_transcript",
 			actual_protein_init_prob)
@@ -211,12 +246,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			"RibosomeData", "is_n_ribosomes_to_activate_reduced",
 			is_n_ribosomes_to_activate_reduced)
 
-		# Sample multinomial distribution to determine which mRNAs have full
-		# ribosomes initialized on them
-		n_new_proteins = self.randomState.multinomial(
-			n_ribosomes_to_activate,
-			protein_init_prob
-		)
+
+		# TODO: nothing until decrement subunits
 
 		protein_indexes = np.empty(n_ribosomes_to_activate, np.int64)
 		mRNA_indexes = np.empty(n_ribosomes_to_activate, np.int64)
@@ -271,6 +302,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
+
+		# TODO: do not decrement subunits for ribosomes "assigned to GFP"
 		# Decrement free 30S and 50S ribosomal subunit counts
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
