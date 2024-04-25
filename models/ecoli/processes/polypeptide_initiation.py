@@ -10,8 +10,6 @@ import wholecell.processes.process
 from wholecell.utils import units
 from wholecell.utils.fitting import normalize
 
-# TODO: make an option somehow
-new_gene_ribosome_usage = False
 
 class PolypeptideInitiation(wholecell.processes.process.Process):
 	""" PolypeptideInitiation """
@@ -39,10 +37,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.active_ribosome_footprint_size = \
 			sim_data.process.translation.active_ribosome_footprint_size
 
-		# TODO: find another way to get these?
-		self.mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
-		self.monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
-
 		# Get mapping from cistrons to protein monomers and TUs
 		self.cistron_to_monomer_mapping = sim_data.relation.cistron_to_monomer_mapping
 		self.cistron_tu_mapping_matrix = sim_data.process.transcription.cistron_tu_mapping_matrix
@@ -54,7 +48,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.monomerIds = sim_data.process.translation.monomer_data[
 			'id']
 
-		# Create view on to active ribosomes
+		# Create view on to active 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 
 		# Create views onto bulk 30S and 50S ribosomal subunits
@@ -137,6 +131,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			cistron_counts[self.cistron_to_monomer_mapping] * self.translationEfficiencies
 		)
 		target_protein_init_prob = protein_init_prob.copy()
+		self.writeToListener(
+			"RibosomeData", "target_prob_translation_per_transcript",
+			target_protein_init_prob)
 
 		# Calculate actual number of ribosomes that should be activated based
 		# on probabilities
@@ -205,68 +202,6 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Compute actual transcription probabilities of each transcript
 		actual_protein_init_prob = protein_init_prob.copy()
-
-		# Sample multinomial distribution to determine which mRNAs have full
-		# ribosomes initialized on them
-		n_new_proteins = self.randomState.multinomial(
-			n_ribosomes_to_activate,
-			protein_init_prob
-		)
-
-		total_n_new_proteins = n_new_proteins.sum()
-
-		if not new_gene_ribosome_usage:
-			print("doing new stuff!")
-
-			# Get ids and indexes associated with new genes
-			new_gene_mRNA_ids = self.mRNA_sim_data[self.mRNA_sim_data['is_new_gene']]['id'].tolist()
-			mRNA_monomer_id_dict = dict(zip(self.monomer_sim_data['cistron_id'],
-											self.monomer_sim_data['id']))
-			new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
-				for mRNA_id in new_gene_mRNA_ids]
-			monomer_idx_dict = {monomer: i for i, monomer in
-				enumerate(self.monomerIds)}
-			new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-				monomer_id in new_gene_monomer_ids]
-
-			# TODO: Determine number of ribosomes that would be allocated to new genes
-			# TODO: save the target init prob, actual init prob, is overcrowded for GFP,
-			# n_new_proteins for GFP
-			n_new_new_gene_proteins = n_new_proteins[new_gene_monomer_indexes]
-			target_protein_init_prob_new_genes = target_protein_init_prob[new_gene_monomer_indexes]
-			actual_protein_init_prob_new_genes = actual_protein_init_prob[new_gene_monomer_indexes]
-			is_overcrowded_new_genes = is_overcrowded[new_gene_monomer_indexes]
-
-			# TODO: renormalize target init probabilities excluding GFP, recompute protein_init_probs
-			# TODO: what will we do about overcrowding here?
-
-
-
-
-
-			# Sample multinomial distribution to determine which mRNAs have full
-			# ribosomes initialized on them
-			n_new_proteins = self.randomState.multinomial(
-				n_ribosomes_to_activate,
-				protein_init_prob
-				)
-			# TODO: overrite to make the GFP one special
-			n_new_proteins[new_gene_monomer_indexes] = n_new_new_gene_proteins
-			total_n_new_proteins = n_new_proteins.sum() - n_new_new_gene_proteins.sum()
-
-			# TODO: override the GFP ones before writing to listener
-			target_protein_init_prob[new_gene_monomer_indexes] = target_protein_init_prob_new_genes
-			actual_protein_init_prob[new_gene_monomer_indexes] = actual_protein_init_prob_new_genes
-			is_overcrowded[new_gene_monomer_indexes] = is_overcrowded_new_genes
-
-
-
-		# Write information to listeners
-		# Note: if new_gene_ribosome_usage is False, the probabilities
-		# will not sum to 1
-		self.writeToListener(
-			"RibosomeData", "target_prob_translation_per_transcript",
-			target_protein_init_prob)
 		self.writeToListener(
 			"RibosomeData", "actual_prob_translation_per_transcript",
 			actual_protein_init_prob)
@@ -276,8 +211,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			"RibosomeData", "is_n_ribosomes_to_activate_reduced",
 			is_n_ribosomes_to_activate_reduced)
 
-
-		# TODO: nothing until decrement subunits
+		# Sample multinomial distribution to determine which mRNAs have full
+		# 70S ribosomes initialized on them
+		n_new_proteins = self.randomState.multinomial(
+			n_ribosomes_to_activate,
+			protein_init_prob
+		)
 
 		protein_indexes = np.empty(n_ribosomes_to_activate, np.int64)
 		mRNA_indexes = np.empty(n_ribosomes_to_activate, np.int64)
@@ -323,7 +262,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 			start_index += counts
 
-		# Create active ribosomes and assign their attributes
+		# Create active 70S ribosomes and assign their attributes
 		self.active_ribosomes.moleculesNew(
 			n_ribosomes_to_activate,
 			protein_index=protein_indexes,
@@ -332,11 +271,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
-
-		# TODO: do not decrement subunits for ribosomes "assigned to GFP"
-		# Decrement free 30S and 50S ribosomal subunit counts
-		self.ribosome30S.countDec(total_n_new_proteins)
-		self.ribosome50S.countDec(total_n_new_proteins)
+		# Decrement free 30S and 70S ribosomal subunit counts
+		self.ribosome30S.countDec(n_new_proteins.sum())
+		self.ribosome50S.countDec(n_new_proteins.sum())
 
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
