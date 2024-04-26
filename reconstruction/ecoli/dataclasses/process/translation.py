@@ -22,7 +22,7 @@ class Translation(object):
 		self.next_aa_pad = 1  # Need an extra amino acid in sequences lengths to find next one
 
 		### TODO: This is a temporary fix to get the GFP no ribosome simulations to work
-		self.next_aa_pad = 301
+		self.extra_pad = 300
 
 		self._build_monomer_data(raw_data, sim_data)
 		self._build_translation(raw_data, sim_data)
@@ -191,7 +191,7 @@ class Translation(object):
 		max_len = np.int64(
 			self.monomer_data["length"].asNumber().max()
 			+ self.max_time_step * sim_data.constants.ribosome_elongation_rate_max.asNumber(units.aa / units.s)
-			) + self.next_aa_pad
+			) + self.next_aa_pad + self.extra_pad
 
 		print("YOU ARE HERE")
 		print("GFP length = ", self.monomer_data["length"][-1])
