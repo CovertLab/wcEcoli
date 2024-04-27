@@ -193,16 +193,6 @@ class Translation(object):
 			+ self.max_time_step * sim_data.constants.ribosome_elongation_rate_max.asNumber(units.aa / units.s)
 			) + self.next_aa_pad + self.extra_pad
 
-		print("YOU ARE HERE")
-		print("GFP length = ", self.monomer_data["length"][-1])
-		print("pad = ", max_len - self.monomer_data["length"].asNumber().max())
-		print("Max_len = ", max_len)
-		print("max len monomer = ", self.monomer_data["length"].asNumber().max())
-		print("self.next_aa_pad = ", self.next_aa_pad)
-		print("self.max_time_step = ", self.max_time_step)
-		print("sim_data.constants.ribosome_elongation_rate_max.asNumber(units.aa / units.s) = ", sim_data.constants.ribosome_elongation_rate_max.asNumber(units.aa / units.s))
-		print("product = ", self.max_time_step * sim_data.constants.ribosome_elongation_rate_max.asNumber(units.aa / units.s))
-
 		self.translation_sequences = np.full((len(sequences), max_len), polymerize.PAD_VALUE, dtype=np.int8)
 		aa_ids_single_letter = sim_data.amino_acid_code_to_id_ordered.keys()
 		aaMapping = {aa: i for i, aa in enumerate(aa_ids_single_letter)}

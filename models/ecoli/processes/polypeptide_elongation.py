@@ -204,15 +204,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			'protein_index', 'peptide_length', 'pos_on_mRNA'
 			)
 
-		elongation_max = self.elongation_rates.max() + self.next_aa_pad
-		base_sequences = self.proteinSequences
-
-		print("Error checking elongation")
-		print(np.where(peptide_lengths + elongation_max > base_sequences.shape[1]))
-		print(peptide_lengths.max())
-		print(elongation_max)
-		print(base_sequences.shape[1])
-
 		all_sequences = buildSequences(
 			self.proteinSequences,
 			protein_indexes,
