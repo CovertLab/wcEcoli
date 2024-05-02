@@ -229,6 +229,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		# allowed from the known RNAP footprint sizes
 		max_p = (self.rnaPolymeraseElongationRate / self.active_rnap_footprint_size
 			* (units.s) * self.timeStepSec() / n_RNAPs_to_activate).asNumber()
+		self.writeToListener("RnaSynthProb", "max_p", max_p)
 		is_overcrowded = (self.promoter_init_probs > max_p)
 
 		while np.any(self.promoter_init_probs > max_p):
