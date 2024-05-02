@@ -274,7 +274,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
-		# Decrement free 30S and 70S ribosomal subunit counts
+		# Decrement free 30S and 50S ribosomal subunit counts
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
 
