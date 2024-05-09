@@ -31,7 +31,7 @@ due to how they are initialized
 # for sherlock:
 IGNORE_FIRST_N_GENS = 14
 # for local data:
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 14
 
 
 """
@@ -59,14 +59,14 @@ randnum = 0
 Graph 2a: PC comparisons between two variants
 Graph 2b: Graph the data from Graph 2a using a log scale
 '''
-# If the NG is to be included on the plots, set this variable equal to 1:
+# If the NG is to be included in the calcs , set this variable equal to 1:
 include_NG_G2 = 0
 # a: Set this value to 1 to create this comparison graph, 0 otherwise:
-var_PC_comparison = 0
+var_PC_comparison = 1
 # b: Set this value to 1 to create Graph 2a on a log scale as well:
-var_PC_comparison_LogScale = 0
+var_PC_comparison_LogScale = 1
 # Plot using plot 2a function?
-plot_using_2a = 0
+plot_using_2a = 1
 '''
 Graph 3: Largest absolute PC differences 
 '''
@@ -100,11 +100,11 @@ Graph 5a: Filtered PC comparisons between two variants
 Graph 5b: Graph the data from Graph 5a on a log scale
 '''
 # a: Set this value to 1 to create this comparison graph, 0 otherwise:
-var_PC_comparison_wF = 0
+var_PC_comparison_wF = 1
 # b: Set this value to 1 to create Graph 5a on a log scale as well:
-var_PC_comparison_wF_LogScale = 0
+var_PC_comparison_wF_LogScale = 1
 # do graph 5A:
-var_PC_comparison_wF_5A = 0
+var_PC_comparison_wF_5A = 1
 ''' 
 Graph 6a: Plot proteins with the smallest difference in PCs between variants
 Graph 6b: Same as Graph 6a but the change in PCs between vars is included 
