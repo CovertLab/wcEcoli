@@ -33,6 +33,7 @@ ACTIVE = [
 	"rnap_counts_histogram.py",
 	"rnap_crowding.py",
 	"rrna_gene_copy_numbers.py",
+	"rrna_gene_rnap_densities.py",
 	"tfFit.py",
 	"tfFitComparison.py",
 	"time_step.py",
