@@ -1,4 +1,3 @@
-# Measured half lives (from Gupta et al., 2023 bioRxiv)
 	Uniprot accession	Protein name	Gene name	MinimalMedia_1	MinimalMedia_2	MinimalMedia_mean
 1	A5A614	YCIZ_ECOLI	yciZ	0.4426310636149453		0.4426310636149453
 2	O32583	THIS_ECOLI	thiS	0.4248123987985789	0.6736407720006498	0.5492265853996143
