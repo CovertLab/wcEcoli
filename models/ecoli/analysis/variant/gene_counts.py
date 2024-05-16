@@ -23,17 +23,17 @@ interest_proteins = np.array([
 	#'EG11854-MONOMER[c]',
 	#'G6606-MONOMER[c]',
 	#'MONOMER0-2678[c]',
-	'EG10037-MONOMER[c]',
-	'NG-GFP-MONOMER[c]'
+	#'EG10037-MONOMER[c]',
+	#'NG-GFP-MONOMER[c]',
+	'TRYPSYN-APROTEIN[c]',
+	"ANTHRANSYNCOMPI-MONOMER[c]"
 	#'PD00519[c]',
 ])
-
-# TODO: should I add a way to do this for an average of all the seeds as well?
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
-	def generate_data(self, experimental_var):
+	def generate_seed_data(self, experimental_var):
 		# get the seeds for the experimental variant:
 		seeds = self.ap.get_seeds()
 		seed_data = []
@@ -51,6 +51,93 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			seed_data.append((time, ip_monomer_counts, ip_mRNA_counts))
 		return seed_data
 
+	def seed_plot(self, control_seed_data, experimental_seed_data, experimental_vars):
+		# retrieve the seed data
+		seeds = self.ap.get_seeds()
+		# Plotting
+		plt.figure(figsize=(8.5, 11))
+
+		# Protein Counts
+		plt.subplot(2, 1, 1)
+		for seed in range(len(seeds)):
+			ctime, cip_monomer_counts, cip_mRNA_counts = control_seed_data[seed]
+			if len(self.cistron_monomer_ids) == 1:
+				name = 'seed ' + str(seed) + ' cntrl var '
+				plt.plot(ctime / 60., cip_monomer_counts,
+						 label=name)
+				for variant in range(len(experimental_vars)):
+					time, ip_monomer_counts, ip_mRNA_counts = (
+						experimental_seed_data)[variant][seed]
+					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
+					plt.plot(time / 60., ip_monomer_counts, label=name)
+				# plot specs
+				plt.title(f"Protein Counts for {self.cistron_monomer_ids[0]} in "
+						  f"\nthe control variant"
+						  f" and {len(experimental_vars)} experimental variants")
+
+			else:
+				for m in range(len(self.cistron_monomer_ids)):
+					name = (self.cistron_monomer_ids[m] + ' seed ' +
+							str(seed) + ' cntrl var ')
+					plt.plot(ctime / 60., cip_monomer_counts[:, m],
+							 label=name)
+					for variant in range(len(experimental_vars)):
+						time, ip_monomer_counts, ip_mRNA_counts = (
+							experimental_seed_data)[variant][seed]
+						name = (self.cistron_monomer_ids[m] + ' seed ' +
+								str(seed) + ' exp  var ' + str(variant))
+						plt.plot(time / 60., ip_monomer_counts[:, m],
+								 label=name)
+				# plot specs
+				plt.title(f"Protein Counts for {self.cistron_monomer_ids} in the"
+						  f"\n control variant"
+						  f" and {len(experimental_vars)} experimental variants")
+
+		# finish protein count plot
+		plt.xlabel("Time (min)")
+		plt.ylabel("Protein Counts")
+		plt.legend()
+
+		# mRNA Counts
+		plt.subplot(2, 1, 2)
+		for seed in range(len(seeds)):
+			ctime, cip_monomer_counts, cip_mRNA_counts = control_seed_data[seed]
+			if len(self.cistron_ids) == 1:
+				name = 'seed ' + str(seed) + ' cntrl var '
+				plt.plot(ctime / 60., cip_mRNA_counts,
+						 label=name)
+				for variant in range(len(experimental_vars)):
+					time, ip_monomer_counts, ip_mRNA_counts = (
+						experimental_seed_data)[variant][seed]
+					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
+					plt.plot(time / 60., ip_mRNA_counts, label=name)
+				# plot specs
+				plt.title(f"mRNA Counts for {self.cistron_ids[0]} in the \n "
+						  f"control variant"
+						  f" and {len(experimental_vars)} experimental variants")
+			else:
+				for m in range(len(self.cistron_ids)):
+					name = (self.cistron_ids[m] + ' seed ' + str(seed) +
+							' cntrl var ')
+					plt.plot(ctime / 60., cip_mRNA_counts[:, m],
+							 label=name)
+					for variant in range(len(experimental_vars)):
+						time, ip_monomer_counts, ip_mRNA_counts = (
+							experimental_seed_data)[variant][seed]
+						name = (self.cistron_ids[m] + ' seed ' + str(seed) +
+								' exp  var ' + str(variant))
+						plt.plot(time / 60., ip_mRNA_counts[:, m],
+								 label=name)
+				# plot specs
+				plt.title(f"mRNA Counts for {self.cistron_ids} in the\n"
+						  f" control variant"
+						  f" and {len(experimental_vars)} experimental variants")
+
+		plt.xlabel("Time (min)")
+		plt.ylabel("Cistron Counts")
+		plt.legend()
+		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
+
 	def generate_gen_data(self, experimental_var):
 		# get the seeds and generations for the experimental variant:
 		generations = self.ap.get_generations() # this is the max number of gens
@@ -62,16 +149,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			monomer_data = np.zeros((len(generations), 1), dtype=object)
 			mRNA_data = np.zeros((len(generations), 1), dtype=object)
 			for s in seeds:
-				seed_dir = self.ap.get_cells(variant=[experimental_var], seed=[s], generation=[gen], only_successful=True)
+				seed_dir = self.ap.get_cells(variant=[experimental_var],
+											 seed=[s], generation=[gen],
+											 only_successful=True)
 				if seed_dir == []:
 					continue
 				else:
 					# Load data for the seed
-					time = read_stacked_columns(seed_dir, 'Main', 'time', ignore_exception=True)
+					time = read_stacked_columns(seed_dir, 'Main',
+												'time', ignore_exception=True)
 					(ip_monomer_counts,) = read_stacked_bulk_molecules(
 						seed_dir, self.cistron_monomer_ids, ignore_exception=True)
 					ip_mRNA_counts = read_stacked_columns(
-						seed_dir, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)[:, self.new_gene_mRNA_indexes]
+						seed_dir, 'RNACounts', 'mRNA_cistron_counts',
+						ignore_exception=True)[:, self.new_gene_mRNA_indexes]
 					time_data[s] = np.mean(time)
 					monomer_data[s] = [np.mean(ip_monomer_counts, axis=0)]
 					mRNA_data[s] = [np.mean(ip_mRNA_counts, axis=0)]
@@ -96,13 +187,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for var in range(len(experimental_vars)):
 				time = experimental_gen_data[var][:, 0]
 				ip_monomer_counts = experimental_gen_data[var][:, 1]
-				plt.scatter(time / 60., ip_monomer_counts, label='exp var ' + str(var))
+				plt.scatter(time / 60., ip_monomer_counts, label='exp var ' +
+																 str(var))
 				plt.plot(time / 60., ip_monomer_counts, linestyle='-')
 			plt.title(f"Protein Counts for {self.cistron_monomer_ids[0]} in the"
 					  f"\n control variant"
-					  f" and {len(experimental_vars)} experimental variants")
+					  f" and {len(experimental_vars)} experimental variants"
+					  f"\n averaged over all seeds at each generation")
 		else:
-
 			for m in range(len(self.cistron_monomer_ids)):
 				ip_monomer_counts = control_gen_data[:, 1]
 				monomer_counts = np.zeros((len(ip_monomer_counts), 1))
@@ -123,7 +215,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					plt.plot(time / 60., monomer_counts, linestyle='-')
 			plt.title(f"Protein Counts for {self.cistron_monomer_ids} in the"
 					  f"\n control variant and {len(experimental_vars)} "
-					  f"experimental variants")
+					  f"experimental variants"
+					  f"\n averaged over all seeds at each generation")
 
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
@@ -139,10 +232,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for var in range(len(experimental_vars)):
 				time = experimental_gen_data[var][:, 0]
 				ip_mRNA_counts = experimental_gen_data[var][:, 2]
-				plt.scatter(time / 60., ip_mRNA_counts, label='exp var ' + str(var))
+				plt.scatter(time / 60., ip_mRNA_counts, label='exp var ' +
+															  str(var))
 				plt.plot(time / 60., ip_mRNA_counts, linestyle='-')
 			plt.title(f"mRNA Counts for {self.cistron_ids[0]} in the control variant"
-					  f" and {len(experimental_vars)} experimental variants")
+					  f" and {len(experimental_vars)} experimental variants"
+					  f"\n averaged over all seeds at each generation")
 		else:
 			for m in range(len(self.cistron_ids)):
 				time = control_gen_data[:, 0]
@@ -163,8 +258,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					plt.scatter(time / 60., mRNA_counts, label=name)
 					plt.plot(time / 60., mRNA_counts, linestyle='-')
 			plt.title(f"mRNA Counts for {self.cistron_ids} in the \n control variant"
-					  f" and {len(experimental_vars)} experimental variants over"
-					  f" {experimental_gen_data[0][3]} generations")
+					  f" and {len(experimental_vars)} experimental variants"
+					  f"\n averaged over all seeds at each generation")
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
 		plt.legend()
@@ -176,8 +271,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# extract shared information
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		mRNA_cistron_sim_data = sim_data.process.transcription.cistron_data.struct_array
-		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+		mRNA_cistron_sim_data = (
+			sim_data.process.transcription.cistron_data.struct_array)
+		monomer_sim_data = (
+			sim_data.process.translation.monomer_data.struct_array)
 
 		# extract info about the protein(s) from the monomer data:
 		monomer_data_idxs = []
@@ -220,10 +317,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# generate the control variant's data:
 		control_var = all_variants[0]
-		control_data = self.generate_data(control_var)
+		control_data = self.generate_seed_data(control_var)
 		control_gen_data = self.generate_gen_data(control_var)
 
-		hell0 = 0
 		# generate the experimental variant's data:
 		experimental_vars = all_variants[1:]
 		exp_data = []
@@ -231,95 +327,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for variant_2 in experimental_vars:
 			self.variant_pair = [control_var, variant_2]
 			experimental_var = self.variant_pair[1]
-			experimental_data = self.generate_data(experimental_var)
+			experimental_data = self.generate_seed_data(experimental_var)
 			exp_data.append(experimental_data)
 			generation_data = self.generate_gen_data(experimental_var)
 			exp_gen_data.append(generation_data)
 
+		# plot for seeds:
+		self.seed_plot(control_data, exp_data, experimental_vars)
+		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
+		exportFigure(plt, plotOutDir, plotOutFileName + '_all_variants',
+					 metadata)
 
 		# plot for generations:
 		self.generation_plot(control_gen_data, exp_gen_data, experimental_vars)
 		exportFigure(plt, plotOutDir, plotOutFileName +
 					 '_all_variants_over_all_generations', metadata)
 
-		#Plotting
-		plt.figure(figsize=(8.5, 11))
-
-		# Protein Counts
-		plt.subplot(2, 1, 1)
-		for seed in range(len(seeds)):
-			ctime, cip_monomer_counts, cip_mRNA_counts = control_data[seed]
-			if len(self.cistron_monomer_ids) == 1:
-				name = 'seed ' + str(seed) + ' cntrl var '
-				plt.plot(ctime / 60., cip_monomer_counts,
-						 label=name)
-				for variant in range(len(experimental_vars)):
-					time, ip_monomer_counts, ip_mRNA_counts = exp_data[variant][seed]
-					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
-					plt.plot(time / 60., ip_monomer_counts, label=name)
-				# plot specs
-				plt.title(f"Protein Counts for {self.cistron_monomer_ids[0]} in the control variant"
-						  f" and {len(experimental_vars)} experimental variants")
-
-			else:
-				for m in range(len(self.cistron_monomer_ids)):
-					name = self.cistron_monomer_ids[m] + ' seed ' + str(seed) + ' cntrl var '
-					plt.plot(ctime / 60., cip_monomer_counts[:, m],
-							 label=name)
-					for variant in range(len(experimental_vars)):
-						time, ip_monomer_counts, ip_mRNA_counts = exp_data[variant][seed]
-						name = self.cistron_monomer_ids[m] + ' seed ' + str(seed) + ' exp  var ' + str(variant)
-						plt.plot(time / 60., ip_monomer_counts[:, m], label=name)
-				# plot specs
-				plt.title(f"Protein Counts for {self.cistron_monomer_ids} in the control variant"
-							f" and {len(experimental_vars)} experimental variants")
-
-		# finish protein count plot
-		plt.xlabel("Time (min)")
-		plt.ylabel("Protein Counts")
-		plt.legend()
-
-		# mRNA Counts
-		plt.subplot(2, 1, 2)
-		for seed in range(len(seeds)):
-			ctime, cip_monomer_counts, cip_mRNA_counts = control_data[seed]
-			if len(self.cistron_ids) == 1:
-				name = 'seed ' + str(seed) + ' cntrl var '
-				plt.plot(ctime / 60., cip_mRNA_counts,
-						 label=name)
-				for variant in range(len(experimental_vars)):
-					time, ip_monomer_counts, ip_mRNA_counts = exp_data[variant][seed]
-					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
-					plt.plot(time / 60., ip_mRNA_counts, label=name)
-				# plot specs
-				plt.title(f"mRNA Counts for {self.cistron_ids[0]} in the control variant"
-						  f" and {len(experimental_vars)} experimental variants")
-
-			else:
-				for m in range(len(self.cistron_ids)):
-					name = self.cistron_ids[m] + ' seed ' + str(seed) + ' cntrl var '
-					plt.plot(ctime / 60., cip_mRNA_counts[:, m],
-							 label=name)
-					for variant in range(len(experimental_vars)):
-						time, ip_monomer_counts, ip_mRNA_counts = exp_data[variant][seed]
-						name = self.cistron_ids[m] + ' seed ' + str(seed) + ' exp  var ' + str(variant)
-						plt.plot(time / 60., ip_mRNA_counts[:, m], label=name)
-
-				# plot specs
-				plt.title(f"mRNA Counts for {self.cistron_ids} in the control variant"
-						  f" and {len(experimental_vars)} experimental variants")
-		plt.xlabel("Time (min)")
-		plt.ylabel("Cistron Counts")
-		plt.legend()
-
-
-		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
-		exportFigure(plt, plotOutDir, plotOutFileName + '_all_variants', metadata)
 		plt.close("all")
-		hello = 0
-
-
-
 
 if __name__ == '__main__':
 	Plot().cli()
