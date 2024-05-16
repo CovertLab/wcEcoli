@@ -26,7 +26,7 @@ interest_proteins = np.array([
 	#'EG10037-MONOMER[c]',
 	#'NG-GFP-MONOMER[c]',
 	'TRYPSYN-APROTEIN[c]',
-	"ANTHRANSYNCOMPI-MONOMER[c]"
+	#"ANTHRANSYNCOMPI-MONOMER[c]"
 	#'PD00519[c]',
 ])
 
@@ -63,7 +63,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ctime, cip_monomer_counts, cip_mRNA_counts = control_seed_data[seed]
 			if len(self.cistron_monomer_ids) == 1:
 				name = 'seed ' + str(seed) + ' cntrl var '
-				plt.plot(ctime / 60., cip_monomer_counts,
+				plt.plot(ctime / 60., cip_monomer_counts, linestyle='-',
 						 label=name)
 				for variant in range(len(experimental_vars)):
 					time, ip_monomer_counts, ip_mRNA_counts = (
@@ -80,7 +80,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					name = (self.cistron_monomer_ids[m] + ' seed ' +
 							str(seed) + ' cntrl var ')
 					plt.plot(ctime / 60., cip_monomer_counts[:, m],
-							 label=name)
+							 linestyle='-', label=name)
 					for variant in range(len(experimental_vars)):
 						time, ip_monomer_counts, ip_mRNA_counts = (
 							experimental_seed_data)[variant][seed]
@@ -104,7 +104,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ctime, cip_monomer_counts, cip_mRNA_counts = control_seed_data[seed]
 			if len(self.cistron_ids) == 1:
 				name = 'seed ' + str(seed) + ' cntrl var '
-				plt.plot(ctime / 60., cip_mRNA_counts,
+				plt.plot(ctime / 60., cip_mRNA_counts, linestyle='-',
 						 label=name)
 				for variant in range(len(experimental_vars)):
 					time, ip_monomer_counts, ip_mRNA_counts = (
@@ -120,7 +120,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					name = (self.cistron_ids[m] + ' seed ' + str(seed) +
 							' cntrl var ')
 					plt.plot(ctime / 60., cip_mRNA_counts[:, m],
-							 label=name)
+							 linestyle='-', label=name)
 					for variant in range(len(experimental_vars)):
 						time, ip_monomer_counts, ip_mRNA_counts = (
 							experimental_seed_data)[variant][seed]
@@ -335,12 +335,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# plot for seeds:
 		self.seed_plot(control_data, exp_data, experimental_vars)
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
-		exportFigure(plt, plotOutDir, plotOutFileName + '_all_variants',
+		exportFigure(plt, plotOutDir, plotOutFileName + str(interest_proteins)
+					 +'_all_variants',
 					 metadata)
 
 		# plot for generations:
 		self.generation_plot(control_gen_data, exp_gen_data, experimental_vars)
-		exportFigure(plt, plotOutDir, plotOutFileName +
+		exportFigure(plt, plotOutDir, plotOutFileName + str(interest_proteins)+
 					 '_all_variants_over_all_generations', metadata)
 
 		plt.close("all")
