@@ -58,8 +58,8 @@ def number_params(sim_data):
 	'''
 
 	n_rna_deg_rates = len(sim_data.process.transcription.rna_data['deg_rate'])
-	n_protein_deg_rates = len(sim_data.process.translation_with_deg_rate_selection_tool.monomer_data['deg_rate'])
-	n_translation_efficiencies = len(sim_data.process.translation_with_deg_rate_selection_tool.translation_efficiencies_by_monomer)
+	n_protein_deg_rates = len(sim_data.process.translation.monomer_data['deg_rate'])
+	n_translation_efficiencies = len(sim_data.process.translation.translation_efficiencies_by_monomer)
 	n_synth_prob = len(sim_data.process.transcription.rna_synth_prob
 		[list(sim_data.process.transcription.rna_synth_prob.keys())[0]])
 
