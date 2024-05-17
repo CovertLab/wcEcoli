@@ -1,0 +1,19 @@
+Index: models/ecoli/analysis/parca/template.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"\nTemplate for parca analysis plots\n\"\"\"\n\nimport pickle\nimport os\n\nfrom matplotlib import pyplot as plt\n# noinspection PyUnresolvedReferences\nimport numpy as np\n\nfrom models.ecoli.analysis import parcaAnalysisPlot\nfrom wholecell.analysis.analysis_tools import exportFigure\nfrom wholecell.utils import constants\n\n\nclass Plot(parcaAnalysisPlot.ParcaAnalysisPlot):\n\tdef do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):\n\t\twith open(os.path.join(input_dir, constants.SERIALIZED_RAW_DATA), 'rb') as f:\n\t\t\traw_data = pickle.load(f)\n\t\twith open(sim_data_file, 'rb') as f:\n\t\t\tsim_data = pickle.load(f)\n\t\twith open(validation_data_file, 'rb') as f:\n\t\t\tvalidation_data = pickle.load(f)\n\n\t\tplt.figure()\n\n\t\t### Create Plot ###\n\n\t\tplt.tight_layout()\n\t\texportFigure(plt, plot_out_dir, plot_out_filename, metadata)\n\t\tplt.close('all')\n\n\nif __name__ == \"__main__\":\n\tPlot().cli()\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/models/ecoli/analysis/parca/template.py b/models/ecoli/analysis/parca/template.py
+--- a/models/ecoli/analysis/parca/template.py	
++++ b/models/ecoli/analysis/parca/template.py	
+@@ -22,7 +22,7 @@
+ 			sim_data = pickle.load(f)
+ 		with open(validation_data_file, 'rb') as f:
+ 			validation_data = pickle.load(f)
+-
++		
+ 		plt.figure()
+ 
+ 		### Create Plot ###
