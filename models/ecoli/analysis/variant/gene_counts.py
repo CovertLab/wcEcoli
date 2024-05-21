@@ -24,7 +24,7 @@ interest_proteins = np.array([
 	#'G6606-MONOMER[c]',
 	#'MONOMER0-2678[c]',
 	#'EG10037-MONOMER[c]',
-	'NG-GFP-MONOMER[c]',
+	#'NG-GFP-MONOMER[c]',
 	#'TRYPSYN-APROTEIN[c]',
 	"ANTHRANSYNCOMPI-MONOMER[c]",
 	#'PD00519[c]',
@@ -39,9 +39,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		seeds = self.ap.get_seeds()
 		# Plotting
 		plt.figure(figsize=(8.5, 11))
-		colors = ["turquoise", "yellowgreen", "mediumpurple", "deeppink",
-				  "deepskyblue","lightcoral","gold", "darkorange", "darkred",
-				  "darkgreen", "darkblue", "darkviolet", "darkturquoise",]
+		colors = [["turquoise", "yellowgreen", "mediumpurple", "deeppink"],
+				  ["deepskyblue","lightcoral","gold", "darkorange"], ["darkred",
+				  "darkgreen", "darkblue", "darkviolet"],]
 		ccolors = ["#FF796C", "slateblue", "darkviolet", "plum", "sandybrown",]
 		# Protein Counts
 		plt.subplot(2, 1, 1)
@@ -68,7 +68,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						seed_dir, self.cistron_monomer_ids, ignore_exception=True)
 					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
 					plt.plot(time / 60., ip_monomer_counts, label=name,
-							 color=colors[variant-1], linestyle=LS[seed], linewidth=.5)
+							 color=colors[0][variant-1], linestyle=LS[seed], linewidth=.5)
 				# plot specs
 				plt.title(f"Protein Counts for {self.cistron_monomer_ids[0]} in "
 						  f"\nthe control variant"
@@ -84,6 +84,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							 linestyle=ls, label=name, color=cc,
 							 linewidth=.5)
 					for variant in experimental_vars:
+						c = c[variant-1]
 						seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 													 only_successful=True)
 						time = read_stacked_columns(seed_dir, 'Main', 'time',
@@ -130,7 +131,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						ignore_exception=True)[:, self.new_gene_mRNA_indexes]
 					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
 					plt.plot(time / 60., ip_mRNA_counts, label=name,
-							 color=colors[variant-1], linestyle=LS[seed], linewidth=.5)
+							 color=colors[0][variant-1], linestyle=LS[seed], linewidth=.5)
 				# plot specs
 				plt.title(f"mRNA Counts for {self.cistron_ids[0]} in the \n "
 						  f"control variant"
@@ -146,6 +147,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							 linestyle=ls, label=name, color=cc,
 							 linewidth=.6)
 					for variant in experimental_vars:
+						c = c[variant-1]
 						seed_dir = self.ap.get_cells(variant=[variant],
 													 seed=[seed],
 													 only_successful=True)
