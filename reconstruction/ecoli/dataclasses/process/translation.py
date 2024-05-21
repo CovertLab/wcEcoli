@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 0
+USE_NEW_DEG_RATES  = 2
 
 class Translation(object):
 	""" Translation """
@@ -20,7 +20,6 @@ class Translation(object):
 	def __init__(self, raw_data, sim_data):
 		self.max_time_step = min(MAX_TIME_STEP, PROCESS_MAX_TIME_STEP)
 		self.next_aa_pad = 1  # Need an extra amino acid in sequences lengths to find next one
-
 		self._build_monomer_data(raw_data, sim_data)
 		self._build_translation(raw_data, sim_data)
 		self._build_translation_efficiency(raw_data, sim_data)
@@ -143,6 +142,20 @@ class Translation(object):
 					deg_rate[i] = measured_deg_rates[protein['id']]
 				elif protein['id'] in ammonia_deg_rates:
 					deg_rate[i] = ammonia_deg_rates[protein['id']]
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+
+		# Use measured degradation rates if available, then n end rule rates
+		if USE_NEW_DEG_RATES == 2:
+			deg_rate = np.zeros(len(all_proteins))
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
 				else:
 					seq = protein['seq']
 					assert seq[0] == 'M'
