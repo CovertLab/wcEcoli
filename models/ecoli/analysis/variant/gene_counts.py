@@ -18,14 +18,14 @@ from wholecell.io.tablereader import TableReader
 interest_proteins = np.array([
 	 #'ACRD-MONOMER[i]',
 	 #'CYNX-MONOMER[i]',
-	# 'B0270-MONOMER[i]',
+	 #'B0270-MONOMER[i]',
 	# 'G7634-MONOMER[i]',
 	#'EG11854-MONOMER[c]',
 	#'G6606-MONOMER[c]',
 	#'MONOMER0-2678[c]',
 	#'EG10037-MONOMER[c]',
-	#'NG-GFP-MONOMER[c]',
-	'TRYPSYN-APROTEIN[c]',
+	'NG-GFP-MONOMER[c]',
+	#'TRYPSYN-APROTEIN[c]',
 	#"ANTHRANSYNCOMPI-MONOMER[c]"
 	#'PD00519[c]',
 ])
@@ -39,8 +39,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		seeds = self.ap.get_seeds()
 		# Plotting
 		plt.figure(figsize=(8.5, 11))
+		colors = ["turquoise", "yellowgreen", "mediumpurple", "deeppink",
+				  "deepskyblue","lightcoral","gold", "darkorange", "darkred",
+				  "darkgreen", "darkblue", "darkviolet", "darkturquoise",]
 		# Protein Counts
 		plt.subplot(2, 1, 1)
+		LS = ['-', ':', '-.', '--']
 		for seed in range(len(seeds)):
 			cseed_dir = self.ap.get_cells(variant=[control_var], seed=[seed],
 										 only_successful=True)
@@ -50,9 +54,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				cseed_dir, self.cistron_monomer_ids, ignore_exception=True)
 			if len(self.cistron_monomer_ids) == 1:
 				name = 'seed ' + str(seed) + ' cntrl var '
-				plt.plot(ctime / 60., cip_monomer_counts, linestyle='-',
-						 label=name)
-				for variant in range(len(experimental_vars)):
+				plt.plot(ctime / 60., cip_monomer_counts,
+						 linestyle=LS[seed],
+						 label=name, color="#FF796C", linewidth=.5)
+				for variant in experimental_vars:
 					seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 												 only_successful=True)
 					# Load data for the seed
@@ -60,20 +65,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 												ignore_exception=True)
 					(ip_monomer_counts,) = read_stacked_bulk_molecules(
 						seed_dir, self.cistron_monomer_ids, ignore_exception=True)
-					name = 'seed ' + str(seed) + ' exp  var ' + str(variant+1)
-					plt.plot(time / 60., ip_monomer_counts, label=name)
+					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
+					plt.plot(time / 60., ip_monomer_counts, label=name,
+							 color=colors[variant-1], linestyle=LS[seed], linewidth=.5)
 				# plot specs
 				plt.title(f"Protein Counts for {self.cistron_monomer_ids[0]} in "
 						  f"\nthe control variant"
-						  f" and {len(experimental_vars)} experimental variants")
+						  f" and {len(experimental_vars)} experimental variant(s)")
 
 			else:
+				LS = ['-', ':', '-.', '--']
 				for m in range(len(self.cistron_monomer_ids)):
+					ls = LS[m]
 					name = (self.cistron_monomer_ids[m] + ' seed ' +
 							str(seed) + ' cntrl var ')
 					plt.plot(ctime / 60., cip_monomer_counts[:, m],
-							 linestyle='-', label=name)
-					for variant in range(len(experimental_vars)):
+							 linestyle=ls, label=name, color="#FF796C",
+							 linewidth=.5)
+					for variant in experimental_vars:
 						seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 													 only_successful=True)
 						time = read_stacked_columns(seed_dir, 'Main', 'time',
@@ -81,13 +90,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						(ip_monomer_counts,) = read_stacked_bulk_molecules(
 							seed_dir, self.cistron_monomer_ids, ignore_exception=True)
 						name = (self.cistron_monomer_ids[m] + ' seed ' +
-								str(seed) + ' exp  var ' + str(variant+1))
+								str(seed) + ' exp  var ' + str(variant))
 						plt.plot(time / 60., ip_monomer_counts[:, m],
-								 label=name)
+								 label=name, linestyle=ls, color=colors[variant-1],
+								 linewidth=.5)
 				# plot specs
 				plt.title(f"Protein Counts for {self.cistron_monomer_ids} in the"
 						  f"\n control variant"
-						  f" and {len(experimental_vars)} experimental variants")
+						  f" and {len(experimental_vars)} experimental variant(s)")
 
 		# finish protein count plot
 		plt.xlabel("Time (min)")
@@ -101,17 +111,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 										  only_successful=True)
 			ctime = read_stacked_columns(cseed_dir, 'Main', 'time',
 										 ignore_exception=True)
-			(cip_monomer_counts,) = read_stacked_bulk_molecules(
-				cseed_dir, self.cistron_monomer_ids, ignore_exception=True)
 			cip_mRNA_counts = read_stacked_columns(
 				cseed_dir, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True)[:, self.new_gene_mRNA_indexes]
-
 			if len(self.cistron_ids) == 1:
 				name = 'seed ' + str(seed) + ' cntrl var '
-				plt.plot(ctime / 60., cip_mRNA_counts, linestyle='-',
-						 label=name)
-				for variant in range(len(experimental_vars)):
+				plt.plot(ctime / 60., cip_mRNA_counts, linestyle=LS[seed],
+						 label=name, color="#FF796C", linewidth=.5)
+				for variant in experimental_vars:
 					seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 												 only_successful=True)
 					# Load data for the seed
@@ -120,19 +127,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					ip_mRNA_counts = read_stacked_columns(
 						seed_dir, 'RNACounts', 'mRNA_cistron_counts',
 						ignore_exception=True)[:, self.new_gene_mRNA_indexes]
-					name = 'seed ' + str(seed) + ' exp  var ' + str(variant+1)
-					plt.plot(time / 60., ip_mRNA_counts, label=name)
+					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
+					plt.plot(time / 60., ip_mRNA_counts, label=name,
+							 color=colors[variant-1], linestyle=LS[seed], linewidth=.5)
 				# plot specs
 				plt.title(f"mRNA Counts for {self.cistron_ids[0]} in the \n "
 						  f"control variant"
-						  f" and {len(experimental_vars)} experimental variants")
+						  f" and {len(experimental_vars)} experimental variant(s)")
 			else:
+				LS = ['-', ':', '-.', '--']
 				for m in range(len(self.cistron_ids)):
+					ls = LS[m]
 					name = (self.cistron_ids[m] + ' seed ' + str(seed) +
 							' cntrl var ')
 					plt.plot(ctime / 60., cip_mRNA_counts[:, m],
-							 linestyle='-', label=name)
-					for variant in range(len(experimental_vars)):
+							 linestyle=ls, label=name, color="#FF796C",
+							 linewidth=.4)
+					for variant in experimental_vars:
 						seed_dir = self.ap.get_cells(variant=[variant],
 													 seed=[seed],
 													 only_successful=True)
@@ -143,13 +154,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							seed_dir, 'RNACounts', 'mRNA_cistron_counts',
 							ignore_exception=True)[:, self.new_gene_mRNA_indexes]
 						name = (self.cistron_ids[m] + ' seed ' + str(seed) +
-								' exp  var ' + str(variant+1))
+								' exp  var ' + str(variant))
 						plt.plot(time / 60., ip_mRNA_counts[:, m],
-								 label=name)
+								 label=name, linestyle=ls, color=colors[variant-1],
+								 linewidth=.4)
 				# plot specs
 				plt.title(f"mRNA Counts for {self.cistron_ids} in the\n"
 						  f" control variant"
-						  f" and {len(experimental_vars)} experimental variants")
+						  f" and {len(experimental_vars)} experimental variant(s)")
 
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
@@ -197,15 +209,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				m_mono = []
 				m_mRNA = []
 				for s in range(len(seeds)):
-					if monomer_data[s][0][m] >= 0:
-						m_mono.append(monomer_data[s][0][m])
-					if mRNA_data[s][0][m] >= 0:
-						m_mRNA.append(mRNA_data[s][0][m])
+					if monomer_data[s][m] >= 0:
+						m_mono.append(monomer_data[s][m])
+					if mRNA_data[s][m] >= 0:
+						m_mRNA.append(mRNA_data[s][m])
 				m_mono = np.array(m_mono); m_mRNA = np.array(m_mRNA)
 				m_mono = np.mean(m_mono, axis=0); m_mRNA = np.mean(m_mRNA,
 																   axis=0)
 				monomer_d.append(m_mono); mRNA_d.append(m_mRNA)
 			time = np.mean(time, axis=0)
+			time = np.array(time)
 			num_gens = len(time_data) # number of generations averaged over
 			gen_data[gen] = (time, monomer_d, mRNA_d, num_gens)
 
@@ -220,17 +233,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if len(self.cistron_monomer_ids) == 1:
 			time = control_gen_data[:, 0]
 			ip_monomer_counts = control_gen_data[:, 1]
-			plt.scatter(time / 60., ip_monomer_counts, label='cntrl var')
-			plt.plot(time / 60., ip_monomer_counts, linestyle='-')
+			monomer_counts = np.zeros((len(ip_monomer_counts), 1))
+			for gen in range(len(ip_monomer_counts)):
+				monomer_counts[gen] = ip_monomer_counts[gen][0]
+			plt.scatter(time / 60., monomer_counts, label='cntrl var')
+			plt.plot(time / 60., monomer_counts, linestyle=':')
 			for var in range(len(experimental_vars)):
 				time = experimental_gen_data[var][:, 0]
 				ip_monomer_counts = experimental_gen_data[var][:, 1]
-				plt.scatter(time / 60., ip_monomer_counts, label='exp var ' +
+				monomer_counts = np.zeros((len(ip_monomer_counts), 1))
+				for gen in range(len(ip_monomer_counts)):
+					monomer_counts[gen] = ip_monomer_counts[gen][0]
+				plt.scatter(time / 60., monomer_counts, label='exp var ' +
 																 str(var))
-				plt.plot(time / 60., ip_monomer_counts, linestyle='-')
+				plt.plot(time / 60., monomer_counts, linestyle='-')
 			plt.title(f"Protein Counts for {self.cistron_monomer_ids[0]} in the"
 					  f"\n control variant"
-					  f" and {len(experimental_vars)} experimental variants"
+					  f" and {len(experimental_vars)} experimental variant(s)"
 					  f"\n averaged over all seeds at each generation")
 		else:
 			for m in range(len(self.cistron_monomer_ids)):
@@ -241,7 +260,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				time = control_gen_data[:, 0]
 				name = self.cistron_monomer_ids[m] + ' cntrl var '
 				plt.scatter(time / 60., monomer_counts, label=name)
-				plt.plot(time / 60., monomer_counts, linestyle='-')
+				plt.plot(time / 60., monomer_counts, linestyle=':')
 				for var in range(len(experimental_vars)):
 					time = experimental_gen_data[var][:, 0]
 					ip_monomer_counts = experimental_gen_data[var][:, 1]
@@ -253,7 +272,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					plt.plot(time / 60., monomer_counts, linestyle='-')
 			plt.title(f"Protein Counts for {self.cistron_monomer_ids} in the"
 					  f"\n control variant and {len(experimental_vars)} "
-					  f"experimental variants"
+					  f"experimental variant(s)"
 					  f"\n averaged over all seeds at each generation")
 
 		plt.xlabel("Time (min)")
@@ -265,17 +284,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if len(self.cistron_ids) == 1:
 			time = control_gen_data[:, 0]
 			ip_mRNA_counts = control_gen_data[:, 2]
-			plt.scatter(time / 60., ip_mRNA_counts, label='cntrl var')
-			plt.plot(time / 60., ip_mRNA_counts, linestyle='-')
+			mRNA_counts = np.zeros((len(ip_mRNA_counts), 1))
+			for gen in range(len(ip_mRNA_counts)):
+				mRNA_counts[gen] = ip_mRNA_counts[gen][0]
+			plt.scatter(time / 60., mRNA_counts, label='cntrl var')
+			plt.plot(time / 60., mRNA_counts, linestyle=':')
 			for var in range(len(experimental_vars)):
 				time = experimental_gen_data[var][:, 0]
 				ip_mRNA_counts = experimental_gen_data[var][:, 2]
-				plt.scatter(time / 60., ip_mRNA_counts, label='exp var ' +
+				mRNA_counts = np.zeros((len(ip_mRNA_counts), 1))
+				for gen in range(len(ip_mRNA_counts)):
+					mRNA_counts[gen] = ip_mRNA_counts[gen][0]
+				plt.scatter(time / 60., mRNA_counts, label='exp var ' +
 															  str(var))
-				plt.plot(time / 60., ip_mRNA_counts, linestyle='-')
+				plt.plot(time / 60., mRNA_counts, linestyle='-')
 			plt.title(f"mRNA Counts for {self.cistron_ids[0]} in the control"
 					  f" variant"
-					  f" and {len(experimental_vars)} experimental variants"
+					  f" and {len(experimental_vars)} experimental variant(s)"
 					  f"\n averaged over all seeds at each generation")
 		else:
 			for m in range(len(self.cistron_ids)):
@@ -286,7 +311,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					mRNA_counts[gen] = ip_mRNA_counts[gen][m]
 				name = self.cistron_ids[m] + ' cntrl var '
 				plt.scatter(time / 60., mRNA_counts, label=name)
-				plt.plot(time / 60., mRNA_counts, linestyle='-')
+				plt.plot(time / 60., mRNA_counts, linestyle=':')
 				for var in range(len(experimental_vars)):
 					time = experimental_gen_data[var][:, 0]
 					ip_mRNA_counts = experimental_gen_data[var][:, 2]
@@ -298,7 +323,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					plt.plot(time / 60., mRNA_counts, linestyle='-')
 			plt.title(f"mRNA Counts for {self.cistron_ids} in the \n control"
 					  f" variant"
-					  f" and {len(experimental_vars)} experimental variants"
+					  f" and {len(experimental_vars)} experimental variant(s)"
 					  f"\n averaged over all seeds at each generation")
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
@@ -355,6 +380,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# specifiy the control and variants:
 		control_var = all_variants[0]
 		experimental_vars = all_variants[1:]
+		#experimental_vars = [16, 17, 18, 19, 20]
 
 		# plot for seeds:
 		if show_seed_plot == 1:
