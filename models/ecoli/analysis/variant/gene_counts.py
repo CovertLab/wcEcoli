@@ -38,9 +38,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# retrieve the seed data
 		seeds = self.ap.get_seeds()
 		# Plotting
-		colors = [["turquoise", "yellowgreen", "mediumpurple", "deeppink"],
-				  ["deepskyblue","lightcoral","gold", "darkorange"], ["darkred",
-				  "darkgreen", "darkblue", "darkviolet"],]
+		colors = [["turquoise", "yellowgreen", "mediumpurple", "deeppink", "darkturquoise"],
+				  ["deepskyblue","lightcoral","gold", "darkorange", "indigo"], ["darkred",
+				  "darkgreen", "darkblue", "darkviolet", "cornflowerblue"],]
 		ccolors = ["#FF796C", "slateblue", "darkviolet", "plum", "sandybrown",]
 		# Protein Counts
 		#plt.figure(figsize=(11, 11))
