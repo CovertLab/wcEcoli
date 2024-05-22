@@ -59,6 +59,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ax[0].plot(ctime / 60., cip_monomer_counts,
 						 linestyle=LS[seed],
 						 label=name, color="#FF796C", linewidth=.5)
+				var_num = 0
 				for variant in experimental_vars:
 					seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 												 only_successful=True)
@@ -69,7 +70,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						seed_dir, self.cistron_monomer_ids, ignore_exception=True)
 					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
 					ax[0].plot(time / 60., ip_monomer_counts, label=name,
-							 color=colors[0][variant-1], linestyle=LS[seed], linewidth=.5)
+							 color=colors[0][var_num], linestyle=LS[seed], linewidth=.5)
+					var_num = var_num + 1
 				# plot specs
 				ax[0].set_title(f"Protein Counts for {self.cistron_monomer_ids[0]} in "
 						  f"\nthe control variant"
@@ -84,8 +86,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					ax[0].plot(ctime / 60., cip_monomer_counts[:, m],
 							 linestyle=ls, label=name, color=cc,
 							 linewidth=.5)
+					var_num = 0
 					for variant in experimental_vars:
-						c = c[variant-1]
+						c = c[var_num]
+						var_num = var_num + 1
 						seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 													 only_successful=True)
 						time = read_stacked_columns(seed_dir, 'Main', 'time',
@@ -123,6 +127,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				name = 'seed ' + str(seed) + ' cntrl var '
 				ax[1].plot(ctime / 60., cip_mRNA_counts, linestyle=LS[seed],
 						 label=name, color="#FF796C", linewidth=.5)
+				var_num = 0
 				for variant in experimental_vars:
 					seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
 												 only_successful=True)
@@ -134,7 +139,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						ignore_exception=True)[:, self.new_gene_mRNA_indexes]
 					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
 					ax[1].plot(time / 60., ip_mRNA_counts, label=name,
-							 color=colors[0][variant-1], linestyle=LS[seed], linewidth=.5)
+							 color=colors[0][var_num], linestyle=LS[seed], linewidth=.5)
+					var_num = var_num + 1
 				# plot specs
 				ax[1].set_title(f"mRNA Counts for {self.cistron_ids[0]} in the \n "
 						  f"control variant"
@@ -149,8 +155,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					ax[1].plot(ctime / 60., cip_mRNA_counts[:, m],
 							 linestyle=ls, label=name, color=cc,
 							 linewidth=.6)
+					var_num = 0
 					for variant in experimental_vars:
-						c = c[variant-1]
+						c = c[var_num]; var_num = var_num + 1
 						seed_dir = self.ap.get_cells(variant=[variant],
 													 seed=[seed],
 													 only_successful=True)
