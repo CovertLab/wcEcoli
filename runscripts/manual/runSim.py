@@ -22,12 +22,12 @@ import os
 import sys
 from typing import Tuple
 
+from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSION_FACTORS,
+	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
+	NEW_GENE_KNOCKOUT_GEN)
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
-from models.ecoli.sim.variants .new_gene_expression_and_translation_efficiency \
-	import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
-
 
 SIM_DIR_PATTERN = r'({})__(.+)'.format(fp.TIMESTAMP_PATTERN)
 
@@ -104,12 +104,14 @@ class RunSimulation(scriptBase.ScriptBase):
 			total_init_sims=args.total_init_sims or args.init_sims,
 			)
 
-		if variant_type == 'new_gene_expression_and_translation_efficiency':
+		if variant_type == 'new_gene_internal_shift':
 			# Record the values used in this variant for analysis scripts
 			metadata.update(
 				new_gene_expression_factors=NEW_GENE_EXPRESSION_FACTORS,
 				new_gene_translation_efficiency_values=
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,)
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+				new_gene_induction_gen=NEW_GENE_INDUCTION_GEN,
+				new_gene_knockout_gen=NEW_GENE_KNOCKOUT_GEN,)
 
 		metadata_dir = fp.makedirs(args.sim_path, constants.METADATA_DIR)
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)

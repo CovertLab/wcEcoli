@@ -19,7 +19,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		TCS_IDS = []
 		moleculeTypeOrder = ["HK", "PHOSPHO-HK", "LIGAND", "HK-LIGAND", "PHOSPHO-HK-LIGAND", "RR", "PHOSPHO-RR"]
 		moleculeTypeColor = ["b", "b", "orange", "g", "g", "r", "r"]

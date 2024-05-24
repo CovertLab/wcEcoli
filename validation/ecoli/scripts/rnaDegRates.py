@@ -44,6 +44,7 @@ raw_data = KnowledgeBaseEcoli(
 	operons_on=False,
 	remove_rrna_operons=False,
 	remove_rrff=False,
+	stable_rrna=False,
 	)  # type: Any
 
 modelRates = {}

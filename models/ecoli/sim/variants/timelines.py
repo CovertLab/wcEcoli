@@ -6,7 +6,7 @@ Modifies:
 	sim_data.external_state.current_timeline_id
 
 Expected variant indices (dependent on sorted order from reconstruction/ecoli/flat/condition/timelines_def.tsv):
-	0-26
+	0-28
 """
 
 def timelines(sim_data, index):

@@ -321,6 +321,9 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		removed_RNAs_mask = np.isin(
 			RNA_RNAP_indexes, RNAP_unique_indexes[removed_RNAPs_mask])
 
+		# Initialize counts of incomplete transcription events
+		incomplete_transcription_event = np.zeros(self.n_TUs)
+
 		# Remove RNAPs and RNAs that have collided with replisomes
 		if n_total_collisions > 0:
 			self.active_RNAPs.delByIndexes(np.where(removed_RNAPs_mask)[0])
@@ -337,6 +340,8 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 
 			if n_initiated_sequences > 0:
 				incomplete_rna_indexes = RNA_TU_indexes[removed_RNAs_mask]
+				incomplete_transcription_event = np.bincount(
+					incomplete_rna_indexes, minlength=self.n_TUs)
 
 				incomplete_sequences = buildSequences(
 					self.rna_sequences,
@@ -379,6 +384,13 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 					self.ppi.countInc(n_ppi_added)
 				else:
 					self.ppi.countDec(-n_ppi_added)
+
+			assert n_initiated_sequences == incomplete_transcription_event.sum()
+
+		# Write to listener
+		self.writeToListener(
+			'RnapData', 'incomplete_transcription_event',
+			incomplete_transcription_event)
 
 		# Get mask for ribosomes that are bound to nonexisting mRNAs
 		remaining_RNA_unique_indexes = RNA_unique_indexes[

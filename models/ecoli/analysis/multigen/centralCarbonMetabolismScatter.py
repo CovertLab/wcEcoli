@@ -22,14 +22,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get all cells
 		cell_paths = self.ap.get_cells()
 
-		validation_data = pickle.load(open(validationDataFile, "rb"))
+		validation_data = self.read_pickle_file(validationDataFile)
 		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
 		toyaFluxes = validation_data.reactionFlux.toya2010fluxes["reactionFlux"]
 		toyaStdev = validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]
 		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
-		sim_data = pickle.load(open(simDataFile, 'rb'))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		modelFluxes = {}
 		toyaOrder = []

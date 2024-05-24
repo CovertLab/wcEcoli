@@ -36,7 +36,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 		# allDir = self.ap.get_cells(generation = [0, 1, 2])
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		allTargetFluxList = []
 		allActualFluxList = []

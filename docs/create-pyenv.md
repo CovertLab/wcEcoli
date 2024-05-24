@@ -187,26 +187,18 @@ virtualenv.
    The simplest setup is to `pip install` numpy and scipy from precompiled
    binary "wheels", that is,
    **without** the `--no-binary numpy,scipy` option. This uses their default
-   BLAS library -- usually an embedded copy of OpenBLAS. This is usually the
-   way to go.
+   BLAS library -- usually an embedded copy of OpenBLAS.
 
    You can use a package manager to install a specific version of the
    OpenBLAS library to help with consistency or bug fixes.
 
-   On macOS 13.3+, Apple's Accelerate library has suitable APIs to replace
-   OpenBLAS and it should run faster **but** numpy 1.24.3 is not quite ready to
-   use it. An upcoming numpy release should work correctly on Accelerate when
-   installed with `--no-binary` on macOS 1.13.3+ or installed from binary wheels
-   on macOS 14+.
+   **TODO:** Document how to install numpy 1.26+ and scipy 1.11+ using `--no-binary`
+   and specified linear algebra libraries, e.g.,
+   `-Csetup-args=-Dblas=accelerate -Csetup-args=-Dlapack=accelerate`. (The
+   `~/.numpy-site.cfg` file is obsolete.)
 
-   Then link numpy and scipy to your chosen BLAS library the way
-   `cloud/docker/runtime/Dockerfile` _optionally_ does when building the
-   wcm-runtime Docker Image.
-
-   To use the OpenBLAS library, you need to know where it is.
-   * Brew on Intel macOS installs OpenBLAS in `/usr/local/opt/openblas/`.  
-     (To check, run `brew --prefix openblas`.)
-   * Brew on Apple Silicon (M1+) macOS installs OpenBLAS in `/opt/homebrew/opt/openblas`.
+   To use an OpenBLAS library, you need to know where it is.
+   * Brew on macOS installs OpenBLAS in `brew --prefix openblas`.
    * For other package managers, find out where they installed `lib/libopenblas*`.
    * Compiling OpenBLAS from source in Ubuntu goes into `/opt/OpenBLAS/` by default.
    * Compiling from source with
@@ -216,45 +208,19 @@ virtualenv.
      (Using an environment module to load the OpenBLAS when installing numpy and
      scipy works if the same environment module is loaded at runtime.)
 
-   To link numpy and scipy to OpenBLAS, create a `~/.numpy-site.cfg` file
-   that points to it. Copy the following lines to `~/.numpy-site.cfg`,
-   adjusting the paths as needed,
-   and remember to run `pip install <<packages>> --no-binary numpy` or
-   `pip install <<packages>> --no-binary numpy,scipy` in the
-   pip-install steps below.
-
-      ```
-      [openblas]
-      libraries = openblas
-      library_dirs = /usr/local/opt/openblas/lib
-      include_dirs = /usr/local/opt/openblas/include
-      runtime_library_dirs = /usr/local/opt/openblas/lib
-      ```
-
-   To link numpy to Accelerate (when ready), create a `~/.numpy-site.cfg` file
-   like this (or go without the file if Accelerate becomes the default),
-   and remember to run `pip install <<packages>> --no-binary numpy` in the
-   pip-install steps below.
-
-      ```
-      [accelerate]
-      libraries = Accelerate, vecLib
-      ```
-
 1. Install NumPy.
 
    Install numpy before installing `scipy` and `stochastic-arrow` to avoid
    installation errors.
 
    ```shell script
-   pip install numpy==1.24.3  # see requirements.txt for the right version
+   pip install numpy==1.26.3  # see requirements.txt for the right version
    ```
 
-   **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
-   instead so pip will compile numpy from source code using `~/.numpy-site.cfg`:
+   Or:
 
    ```shell script
-   pip install numpy==1.24.3 --no-binary numpy  # see requirements.txt for the right version
+   pip install numpy==1.26.3 --no-binary numpy  # see requirements.txt for the right version
    ```
 
 1. Install the packages listed in `requirements.txt`.
@@ -263,8 +229,7 @@ virtualenv.
    pip install -r requirements.txt && pyenv rehash
    ```
 
-   **NOTE:** If you installed OpenBLAS and created `~/.numpy-site.cfg`, use this command
-   instead:
+   Or:
 
    ```shell script
    LDFLAGS="-shared $LDFLAGS" pip install -r requirements.txt --no-binary numpy,scipy && pyenv rehash

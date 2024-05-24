@@ -138,7 +138,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
         # Extract validation data and strip the units while numerically
         # converting to the plotted units
-        validation_data = pickle.load(open(validationDataFile, "rb"))
+        validation_data = self.read_pickle_file(validationDataFile)
         db_table = validation_data.macromolecular_growth_rate_modulation
         val_table = dict()
         for idx in range(len(plotted_variables)):
@@ -162,7 +162,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
         test_cell = ap.get_cells(variant=[variants[0]])[0]
         simOutDir = os.path.join(test_cell, "simOut")
         try:
-            sim_data = pickle.load(open(self.ap.get_variant_kb(variants[0]), 'rb'))
+            sim_data = self.read_pickle_file(self.ap.get_variant_kb(variants[0]))
         except Exception as e:
             print("Couldn't load sim_data object. Exiting.", e)
             return

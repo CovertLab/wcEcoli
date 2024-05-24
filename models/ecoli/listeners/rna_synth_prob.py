@@ -41,9 +41,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 	def allocate(self):
 		super(RnaSynthProb, self).allocate()
 
+		self.max_p = 0.
 		self.target_rna_synth_prob = np.zeros(self.n_TU, np.float64)
 		self.actual_rna_synth_prob = np.zeros(self.n_TU, np.float64)
-		self.tu_is_overcrowded = np.zeros(self.n_TU, np.float64)
+		self.tu_is_overcrowded = np.zeros(self.n_TU, bool)
 		self.promoter_copy_number = np.zeros(self.n_TU, np.int16)
 		self.rna_synth_prob_per_cistron = np.zeros(self.n_cistron, np.float64)
 		self.total_rna_init = 0
@@ -143,6 +144,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			target_rna_synth_prob = self.target_rna_synth_prob,
 			actual_rna_synth_prob =	self.actual_rna_synth_prob,
 			tu_is_overcrowded = self.tu_is_overcrowded,
+			max_p = self.max_p,
 			actual_rna_synth_prob_per_cistron = self.actual_rna_synth_prob_per_cistron,
 			target_rna_synth_prob_per_cistron = self.target_rna_synth_prob_per_cistron,
 			expected_rna_init_per_cistron = self.expected_rna_init_per_cistron,

@@ -1,5 +1,6 @@
 """
-Template for parca analysis plots
+Plots the RNA-Seq read counts of short genes before and after correction using
+RNA-Seq read counts of other genes in the same operon.
 """
 
 import pickle
@@ -97,6 +98,14 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 		plt.close('all')
 
+		# Output table of adjusted genes and their before/after values
+		with open(os.path.join(plot_out_dir, plot_out_filename + '_table.tsv'), 'w') as f:
+			f.write('gene_id\tbefore_correction\tafter_correction\n')
+			for i, gene_index in enumerate(np.where(is_adjusted)[0]):
+				f.write(
+					f'{cistron_id_to_gene_id[all_cistron_ids[gene_index]]}\t'
+					f'{before_adjustment[i]}\t'
+					f'{after_adjustment[i]}\n')
 
 if __name__ == "__main__":
 	Plot().cli()

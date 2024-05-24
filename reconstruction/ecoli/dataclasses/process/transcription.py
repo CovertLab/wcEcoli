@@ -5,6 +5,7 @@ TODO: add mapping of tRNA to charged tRNA if allowing more than one modified for
 TODO: handle ppGpp and DksA-ppGpp regulation separately
 """
 
+from functools import cache
 from typing import cast
 
 import numpy as np
@@ -50,6 +51,7 @@ class Transcription(object):
 		self._build_charged_trna(raw_data, sim_data)
 		self._build_attenuation(raw_data, sim_data)
 		self._build_elongation_rates(raw_data, sim_data)
+		self._build_new_gene_data(raw_data, sim_data)
 
 	def __getstate__(self):
 		"""Return the state to pickle with transcriptionSequences removed and
@@ -333,18 +335,28 @@ class Transcription(object):
 				if cistron_id in mRNA_cistron_ids:
 					reported_mRNA_cistron_half_lives.append(gene['half_life'])
 
-		# Half-lives of stable cistrons (rRNAs and tRNAs) are set separately
-		stable_cistron_ids = np.array(all_cistron_ids)[np.logical_or(is_rRNA, is_tRNA)]
-		for cistron_id in stable_cistron_ids:
-			cistron_id_to_half_life[cistron_id] = sim_data.constants.stable_RNA_half_life
-
 		# Calculate averaged reported half life of mRNAs
-		average_mRNA_cistron_half_life = np.mean(reported_mRNA_cistron_half_lives)
+		self.average_mRNA_cistron_half_life = np.mean(
+			reported_mRNA_cistron_half_lives)
+
+		# Half-lives of rRNAs are set to be equal to the average reported half
+		# life of mRNAs
+		# Note: rRNAs complexed into ribosomal subunits will not degrade, so
+		# this will only significantly affect excess rRNAs
+		rRNA_cistron_ids = np.array(all_cistron_ids)[is_rRNA]
+		for cistron_id in rRNA_cistron_ids:
+			cistron_id_to_half_life[cistron_id] = self.average_mRNA_cistron_half_life
+
+		# Half-life of tRNAs are set to the stable RNA half life value defined
+		# in sim_data.constants
+		tRNA_cistron_ids = np.array(all_cistron_ids)[is_tRNA]
+		for cistron_id in tRNA_cistron_ids:
+			cistron_id_to_half_life[cistron_id] = sim_data.constants.stable_RNA_half_life
 
 		# Get half life of each RNA cistron - if the half life is not given, use
 		# the averaged reported half life of mRNAs
 		cistron_half_lives = np.array([
-			cistron_id_to_half_life.get(cistron_id, average_mRNA_cistron_half_life).asNumber(units.s)
+			cistron_id_to_half_life.get(cistron_id, self.average_mRNA_cistron_half_life).asNumber(units.s)
 			for cistron_id in all_cistron_ids])
 
 		# Calculate expected first-order degradation rates of each cistron
@@ -724,7 +736,8 @@ class Transcription(object):
 		max_mRNA_deg_rate = mRNA_cistron_deg_rates.max()
 		rna_deg_rates[np.logical_and(is_mRNA, rna_deg_rates > max_mRNA_deg_rate)] = max_mRNA_deg_rate
 
-		# Set degradation rates of rRNAs and tRNAs to that of stable RNAs
+		# Set degradation rates of rRNAs and tRNAs from the stable RNA half life
+		# value defined in sim_data.constants
 		rna_deg_rates[is_rtRNA] = np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s)
 
 		# Calculate synthesis probabilities from expression and normalize
@@ -833,6 +846,7 @@ class Transcription(object):
 				('tRNA_mw', 'f8'),
 				('Km_endoRNase', 'f8'),
 				('replication_coordinate', 'int64'),
+				('wt_replication_coordinate', 'int64'),
 				('is_forward', 'bool'),
 				('is_mRNA', 'bool'),
 				('is_miscRNA', 'bool'),
@@ -855,6 +869,7 @@ class Transcription(object):
 		rna_data['tRNA_mw'] = tRNA_mws
 		rna_data['Km_endoRNase'] = np.zeros(len(rna_ids_with_compartments))  # Set later in ParCa
 		rna_data['replication_coordinate'] = replication_coordinate
+		rna_data['wt_replication_coordinate'] = replication_coordinate
 		rna_data['is_forward'] = is_forward
 		rna_data['is_mRNA'] = is_mRNA
 		rna_data['is_miscRNA'] = is_miscRNA
@@ -876,6 +891,7 @@ class Transcription(object):
 			'tRNA_mw': units.g / units.mol,
 			'Km_endoRNase': units.mol / units.L,
 			'replication_coordinate': None,
+			'wt_replication_coordinate': None,
 			'is_forward': None,
 			'is_mRNA': None,
 			'is_miscRNA': None,
@@ -907,6 +923,7 @@ class Transcription(object):
 		return self.cistron_tu_mapping_matrix.getrow(
 			self._cistron_id_to_index[cistron_id]).nonzero()[1]
 
+	@cache
 	def rna_id_to_cistron_indexes(self, rna_id):
 		"""
 		Returns the indexes of cistrons that constitute the given transcription
@@ -1117,20 +1134,31 @@ class Transcription(object):
 		assert np.all(degraded_nt_counts >= 0)
 		self.rna_maturation_degraded_nt_counts = degraded_nt_counts
 
-		# Set degradation rates to that of stable RNAs
-		rna_deg_rates = np.full(
-			n_mature_rnas,
-			np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s))
-
-		# Get MWs of mature RNA molecules
-		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
-
 		# Get identities of each stable RNA
 		is_rRNA = self.cistron_data['is_rRNA'][mature_rna_cistron_indexes]
 		is_tRNA = self.cistron_data['is_tRNA'][mature_rna_cistron_indexes]
 		is_23S_rRNA = self.cistron_data['is_23S_rRNA'][mature_rna_cistron_indexes]
 		is_16S_rRNA = self.cistron_data['is_16S_rRNA'][mature_rna_cistron_indexes]
 		is_5S_rRNA = self.cistron_data['is_5S_rRNA'][mature_rna_cistron_indexes]
+
+		rna_deg_rates = np.zeros(n_mature_rnas)
+		if sim_data.stable_rrna:
+			# If stable rRNA option is on, set degradation rates of mature rRNAs
+			# to the values calculated from the half-life in sim_data.constants
+			rna_deg_rates[is_rRNA] = np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s)
+		else:
+			# Default: Set degradation rates of mature rRNAs to the average
+			# reported degradation rates of mRNAs
+			# Note: rRNAs complexed into ribosomal subunits will not degrade, so
+			# this will only significantly affect excess rRNAs
+			rna_deg_rates[is_rRNA] = np.log(2) / self.average_mRNA_cistron_half_life.asNumber(units.s)
+
+		# Set degradation rates of tRNAs to the values calculated from the
+		# half-life in sim_data.constants
+		rna_deg_rates[is_tRNA] = np.log(2) / sim_data.constants.stable_RNA_half_life.asNumber(units.s)
+
+		# Get MWs of mature RNA molecules
+		mws = sim_data.getter.get_masses(mature_rna_ids).asNumber(units.g / units.mol)
 
 		if n_mature_rnas > 0:
 			max_rna_id_length = max(
@@ -1875,7 +1903,7 @@ class Transcription(object):
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
 
-	def synth_prob_from_ppgpp(self, ppgpp, copy_number):
+	def synth_prob_from_ppgpp(self, ppgpp, copy_number, balanced_rRNA_prob=True):
 		"""
 		Calculates the synthesis probability of each gene at a given concentration
 		of ppGpp.
@@ -1884,6 +1912,8 @@ class Transcription(object):
 			ppgpp (float with mol / volume units): concentration of ppGpp
 			copy_number (Callable[float, int]): function that gives the expected copy
 				number given a doubling time and gene replication coordinate
+			balanced_rRNA_prob (bool): if True, set the synthesis probabilities
+				of rRNA promoters to be equal to one another
 
 		Returns
 			prob (ndarray[float]): normalized synthesis probability for each gene
@@ -1902,14 +1932,29 @@ class Transcription(object):
 		growth = max(cast(float, y), 0.0)
 		tau = np.log(2) / growth / 60
 		loss = growth + self.rna_data['deg_rate'].asNumber(1 / units.s)
-		n_avg_copy = copy_number(tau, self.rna_data['replication_coordinate'])
+		# Use the wildtype replication coordinates that were used to calculate
+		# exp_free and exp_ppgpp, instead of coordinates that can be adjusted
+		# via variants
+		n_avg_copy = copy_number(
+			tau, self.rna_data['wt_replication_coordinate'])
 
 		# Return values
 		factor = loss / n_avg_copy
 		prob = normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * factor)
+
+		if balanced_rRNA_prob:
+			prob[self.rna_data['is_rRNA']] = prob[self.rna_data['is_rRNA']].mean()
 
 		return prob, factor
 
 	def get_rnap_active_fraction_from_ppGpp(self, ppgpp):
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return self.fraction_active_rnap_bound * f_ppgpp + self.fraction_active_rnap_free * (1 - f_ppgpp)
+
+	def _build_new_gene_data(self, raw_data, sim_data):
+		"""
+		Load baseline values for new gene expression in all simulations.
+		"""
+
+		self.new_gene_expression_baselines = (
+			raw_data.new_gene_data.new_gene_baseline_expression_parameters)

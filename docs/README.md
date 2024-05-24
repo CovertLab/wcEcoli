@@ -100,7 +100,7 @@ Docker mechanics.
    * [Required development tools](dev-tools.md) -- installation and tips
    * [Creating the "pyenv" runtime environment](create-pyenv.md)
    * [Setting up to run FireWorks](../wholecell/fireworks/README.md) -- needed only to run a FireWorks workflow of cell simulations and analysis plots
-   * [Set up Zookeeper and Kafka](../agent/README.md) -- needed only for multi-scale agents
+   * [Maintaining the shared Sherlock runtime environment](maintaining_the_sherlock_environment.md) -- how to update the shared virtualenv on Sherlock
 
 * **Also**
 
@@ -131,6 +131,7 @@ Docker mechanics.
 
 * [Simultaneous cross-evaluation of heterogeneous _E. coli_ datasets via mechanistic simulation](https://science.sciencemag.org/content/369/6502/eaav3751.full), _Science_, 24 July 2020
 * [A Whole-Cell Computational Model Predicts Phenotype from Genotype](https://www.cell.com/cell/abstract/S0092-8674(12)00776-3), _Cell_, July 20, 2012
+* TODO: Many more...
 
 ## dissertations
 * _Computational Simulations of Whole Cells: Strategies for Framework Design and Model Parameterization_, John Mason

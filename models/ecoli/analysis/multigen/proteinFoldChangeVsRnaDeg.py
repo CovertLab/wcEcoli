@@ -18,7 +18,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 		# Get all ids reqiured
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		# Get all cells
 		allDir = self.ap.get_cells()

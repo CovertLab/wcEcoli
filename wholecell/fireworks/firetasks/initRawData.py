@@ -17,6 +17,7 @@ class InitRawDataTask(FiretaskBase):
 		'new_genes',
 		'remove_rrna_operons',
 		'remove_rrff',
+		'stable_rrna',
 		]
 
 	def run_task(self, fw_spec):
@@ -31,6 +32,7 @@ class InitRawDataTask(FiretaskBase):
 			new_genes_option=new_gene_option,
 			remove_rrna_operons=self.get('remove_rrna_operons', False),
 			remove_rrff=self.get('remove_rrff', False),
+			stable_rrna=self.get('stable_rrna', False),
 			)
 
 		print(f"{time.ctime()}: Saving raw_data")

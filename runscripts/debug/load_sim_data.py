@@ -38,8 +38,10 @@ else:
 raw_data_filename = constants.SERIALIZED_RAW_DATA
 sim_data_filename = constants.SERIALIZED_SIM_DATA_FILENAME
 
-raw_data = pickle.load(open(os.path.join(data_dir, raw_data_filename), 'rb'))
-sim_data = pickle.load(open(os.path.join(data_dir, sim_data_filename), 'rb'))
+with open(os.path.join(data_dir, raw_data_filename), 'rb') as f:
+	raw_data = pickle.load(f)
+with open(os.path.join(data_dir, sim_data_filename), 'rb') as f:
+	sim_data = pickle.load(f)
 print('Loaded {} from {}'.format(sim_data_filename, data_dir))
 
 # Shortcuts for easier access or tab complete

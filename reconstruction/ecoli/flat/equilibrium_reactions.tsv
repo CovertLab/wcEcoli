@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 27.1
-# Date and time generated: March 16, 2023, 13:52:36
+# Version: 28.1
+# Date and time generated: March 7, 2024, 13:55:41
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
@@ -9,6 +9,11 @@
 "CPLX-125_RXN"	{"CPLX-125": 1, "TRP": null, "PC00007": null}	"DNA-binding transcriptional repressor TrpR-L-tryptophan"
 "CPLX-127_RXN"	{"CPLX-127": 1, "PC00061": null, "FRU1P": null}	"Cra-&beta;-D-fructofuranose 1-phosphate"
 "CPLX-172_RXN"	{"CPLX-172": 1, "PC00003": null, "ARABINOSE": null}	"AraC-&alpha;-L-arabinopyranose DNA-binding transcriptional activator"
+"CPLX0-10393_RXN"	{"CPLX0-10393": 1, "CPLX0-7708": null, "CU+": null}	"CueR-Cu<SUP>+</SUP>"
+"CPLX0-10394_RXN"	{"CPLX0-10394": 1, "CPLX0-7678": null, "ZN+2": null}	"ZntR-Zn<SUP>2+</SUP>"
+"CPLX0-10427_RXN"	{"CPLX0-10427": 1, "G6812-MONOMER": null, "GLT": null}	"PtrR-glt"
+"CPLX0-10428_RXN"	{"CPLX0-10428": 1, "G6812-MONOMER": null, "GLN": null}	"DNA-binding transcriptional regulator PtrR-L-glutamine"
+"CPLX0-10669_RXN"	{"CPLX0-10669": 1, "CPLX0-7672": null, "MN+2": null}	"MntR-Mn<SUP>2+</SUP>"
 "CPLX0-226_RXN"	{"CPLX0-226": 1, "PC00004": null, "CAMP": null}	"CRP-cyclic-AMP DNA-binding transcriptional dual regulator"
 "CPLX0-228_RXN"	{"CPLX0-228": 1, "PC00005": null, "ARG": null}	"ArgR-L-arginine DNA-binding transcriptional dual regulator"
 "CPLX0-2781_RXN"	{"CPLX0-2781": 1, "PC00040": null, "ACETYLSERINE": null}	"CysB-<i>O</i>-acetyl-L-serine DNA-binding transcriptional dual regulator"
@@ -18,7 +23,7 @@
 "CPLX0-7606_RXN"	{"CPLX0-7606": 1, "PD04099": null, "GLYOX": null}	"IclR-glyoxylate"
 "CPLX0-7618_RXN"	{"CPLX0-7618": 1, "G7137-MONOMER": null, "NI+2": null}	"RcnR-Ni<SUP>2+</SUP>"
 "CPLX0-7619_RXN"	{"CPLX0-7619": 1, "G7137-MONOMER": null, "CO+2": null}	"RcnR-Co<SUP>2+</SUP>"
-"CPLX0-7639_RXN"	{"CPLX0-7639": 1, "FE+2": -2, "PD00260": -2}	"Fur-Fe<SUP>2+</SUP> DNA-binding transcriptional dual regulator"
+"CPLX0-7639_RXN"	{"CPLX0-7639": 1, "FE+2": -2, "PD00260": -2}	"Fur-a [2Fe-2S] iron-sulfur cluster DNA-binding transcriptional dual regulator"
 "CPLX0-7650_RXN"	{"CPLX0-7650": 1, "PD00444": null, "FUCULOSE-1P": null}	"FucR-L-fuculose-1-phosphate DNA-binding transcriptional activator"
 "CPLX0-7651_RXN"	{"CPLX0-7651": 1, "PD01352": null, "URACIL": null}	"RutR-uracil"
 "CPLX0-7670_RXN"	{"CPLX0-7670": 1, "CPLX0-7669": null, "LYS": null}	"ArgP-L-lysine"
@@ -82,12 +87,9 @@
 "CPLX0-8952_RXN"	{"CPLX0-8952": 1, "EG12116-MONOMER": null, "CPD-21022": null}	"AcrR-3,6-diaminoacridine"
 "CPLX0-8953_RXN"	{"CPLX0-8953": 1, "EG12116-MONOMER": null, "CPD-20901": null}	"AcrR-rhodamine 6G"
 "CPLX0-9022_RXN"	{"CPLX0-9022": 1, "G7071-MONOMER": null, "S2O3": null}	"Cbl-thiosulfate"
-"CPLX0-9122_RXN"	{"CPLX0-9122": 1, "CPLX0-7708": null, "CU+": null}	"CueR-Cu<SUP>+</SUP>"
 "CPLX0-9152_CPD-16168_RXN"	{"CPLX0-9152": 1, "CPD-16168": null, "G7262-MONOMER": null}	"MurR-N-acetylglucosamine-6-phosphate"
 "CPLX0-9162_CPD-14019_RXN"	{"CPLX0-9162": 1, "CPD-14019": null, "PC00003": null}	"AraC-D-fucose"
-"CPLX0-9265_RXN"	{"CPLX0-9265": 1, "CPLX0-7678": null, "ZN+2": null}	"ZntR-Zn<SUP>2+</SUP>"
-"CPLX0-9318_RXN"	{"CPLX0-9318": 1, "G6812-MONOMER": null, "4-AMINO-BUTYRATE": null}	"PtrR-GABA"
-"CPLX0-9693_RXN"	{"CPLX0-9693": 1, "CPLX0-7796": null, "S-ADENOSYLMETHIONINE": null}	"MetJ-SAM-AdoMet"
+"CPLX0-9318_RXN"	{"CPLX0-9318": 1, "G6812-MONOMER": null, "4-AMINO-BUTYRATE": null}	"PtrR-4-aminobutanoate"
 "CPLX0-9742_RXN"	{"CPLX0-9742": 1, "EG12116-MONOMER": null, "PUTRESCINE": null}	"AcrR-putrescine"
 "CPLX0-9743_RXN"	{"CPLX0-9743": 1, "EG12116-MONOMER": null, "CADAVERINE": null}	"AcrR-cadaverine"
 "CPLX0-9744_RXN"	{"CPLX0-9744": 1, "EG12116-MONOMER": null, "SPERMIDINE": null}	"AcrR-spermidine"
@@ -196,7 +198,7 @@
 "MONOMER0-157_RXN"	{"MONOMER0-157": 1, "S-ADENOSYLMETHIONINE": null, "PD04032": null}	"MetJ-S-adenosylmethionine"
 "MONOMER0-158_RXN"	{"MONOMER0-158": 1, "PD00237": null, "MALTOTRIOSE": null, "ATP": null}	"DNA-binding transcriptional activator MalT-maltotriose-ATP"
 "MONOMER0-159_RXN"	{"MONOMER0-159": 1, "PD00763": null, "ALLOLACTOSE": null}	"LacI-allolactose"
-"MONOMER0-160_RXN"	{"MONOMER0-160": 1, "PD03831": null, "ATP": null}	"DnaA-ATP DNA-binding transcriptional dual regulator"
+"MONOMER0-160_RXN"	{"MONOMER0-160": 1, "PD03831": null, "ATP": null}	"DnaA-ATP"
 "MONOMER0-161_RXN"	{"MONOMER0-161": 1, "PD00208": null, "MELIBIOSE": null}	"DNA-binding transcriptional activator MelR-melibiose"
 "MONOMER0-162_RXN"	{"MONOMER0-162": 1, "PD00413": null, "TYR": null}	"DNA-binding transcriptional repressor TyrR-L-tyrosine"
 "MONOMER0-163_RXN"	{"MONOMER0-163": 1, "PD00413": null, "PHE": null}	"DNA-binding transcriptional repressor TyrR-L-phenylalanine"
@@ -216,6 +218,7 @@
 "MONOMER0-2341_CPD0-2701_RXN"	{"MONOMER0-2341": 1, "CPD0-2701": null, "CPLX0-8593": null}	"NanR-<i>N</i>-acetylneuraminate"
 "MONOMER0-2421_RXN"	{"MONOMER0-2421": 1, "G6195-MONOMER": null, "CPD-622": null}	"DNA-binding transcriptional dual regulator PrpR-(2<i>S</i>,3<i>S</i>)-2-methylcitrate"
 "MONOMER0-2482_CPD-15629_RXN"	{"MONOMER0-2482": 1, "CPD-15629": null, "G7821-MONOMER": null}	"AlsR-D-allose"
+"MONOMER0-4565_RXN"	{"MONOMER0-4565": 1, "ADP": null, "PD03831": null}	"DnaA-ADP"
 "MONOMER0-46_RXN"	{"MONOMER0-46": 1, "PD00474": null, "NA+": null}	"NhaR-Na<SUP>+</SUP> DNA-binding transcriptional activator"
 "MONOMER0-49_RXN"	{"MONOMER0-49": 1, "PD00251": null, "CHOLINE": null}	"BetI-choline"
 "MONOMER0-562_RXN"	{"MONOMER0-562": 1, "G7546-MONOMER": null, "GLYCOLLATE": null}	"GlcC-glycolate DNA-binding transcriptional dual regulator"

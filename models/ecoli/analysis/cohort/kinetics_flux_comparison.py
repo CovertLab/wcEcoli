@@ -30,7 +30,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Get all cells
 		allDir = self.ap.get_cells()
 
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 
 		targetFluxList = []
 		actualFluxList = []

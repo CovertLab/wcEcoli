@@ -18,7 +18,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return
 
 		# Get IDs of mRNAs
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		rnaIds = sim_data.process.transcription.rna_data["id"]
 		isMRna = sim_data.process.transcription.rna_data['is_mRNA']
 		basalExpression = sim_data.process.transcription.rna_expression["basal"]

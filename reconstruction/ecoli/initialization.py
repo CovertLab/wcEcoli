@@ -269,12 +269,6 @@ def set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
 def initializeComplexation(bulkMolCntr, sim_data, randomState):
 	moleculeNames = sim_data.process.complexation.molecule_names
 	moleculeView = bulkMolCntr.countsView(moleculeNames)
-
-	# save rnase counts for after complexation, need to be monomers
-	rnases = sim_data.process.rna_decay.endoRNase_ids
-	rnaseCounts = bulkMolCntr.countsView(rnases).counts()
-	bulkMolCntr.countsIs(0, rnases)
-
 	stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64, order='F')
 
 	moleculeCounts = moleculeView.counts()
@@ -290,8 +284,6 @@ def initializeComplexation(bulkMolCntr, sim_data, randomState):
 
 	if np.any(updatedMoleculeCounts < 0):
 		raise ValueError('Negative counts after complexation')
-
-	bulkMolCntr.countsIs(rnaseCounts, rnases)
 
 
 def initializeFullChromosome(bulkMolCntr, uniqueMolCntr, sim_data):

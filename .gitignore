@@ -22,7 +22,7 @@ __pycache__
 
 # Coverage file #
 #################
-.coverage
+.coverage*
 coverage.xml
 
 # Nosetests and Pytest #
@@ -132,6 +132,9 @@ reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 .idea/codeStyleSettings.xml
 .idea/codeStyles/codeStyleConfig.xml
 .idea/inspectionProfiles/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/wcEcoli.iml
+.idea/.name
 
 # Potentially OK if editing it to project-jdk-name="Python 2.7" works:
 .idea/misc.xml

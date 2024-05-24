@@ -21,7 +21,7 @@ FONT = {
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Load data from KB
-		sim_data = pickle.load(open(simDataFile, "rb"))
+		sim_data = self.read_pickle_file(simDataFile)
 		proteinIds = sim_data.molecule_groups.s50_proteins
 		cistron_ids = [sim_data.process.translation.monomer_data['cistron_id'][np.where(sim_data.process.translation.monomer_data['id'] == pid)[0][0]] for pid in proteinIds]
 		rRnaIds = sim_data.molecule_groups.s50_23s_rRNA

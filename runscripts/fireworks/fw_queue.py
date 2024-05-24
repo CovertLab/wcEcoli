@@ -75,14 +75,12 @@ Simulation parameters:
 		if charging creates a large update to improve stability of sims
 	LOG_TO_DISK_EVERY (int, "1"): frequency at which simulation outputs are
 		logged to disk
-	JIT (int, "1"): if nonzero, jit compiled functions are used for certain
-		processes, otherwise only uses lambda functions
+	JIT (int, "0"): NO-OP (This used to select jit-compiled functions in certain
+		processes)
 
 Modeling options:
 	MASS_DISTRIBUTION (int, "1"): if nonzero, a mass coefficient is drawn from
 		a normal distribution centered on 1; otherwise it is set equal to 1
-	GROWTH_RATE_NOISE (int, "0"): if nonzero, a growth rate coefficient is drawn
-		from a normal distribution centered on 1; otherwise it is set equal to 1
 	D_PERIOD_DIVISION (int, "1"): if nonzero, ends simulation once D period has
 		occurred after chromosome termination; otherwise simulation terminates
 		once a given mass has been added to the cell
@@ -96,6 +94,8 @@ Modeling options:
 	REMOVE_RRFF (int, "0"): if nonzero, remove the rrfF gene the simulation.
 		If OPERONS is set to "on", this also removes the rrfF gene from the
 		rrnD rRNA operon.
+	STABLE_RRNA (int, "0"): if nonzero, the mature rRNA molecules are set to be
+		stable (half-life of 48 hours)
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
@@ -225,6 +225,9 @@ from typing import Any, Dict, List, Optional, Union
 
 from fireworks import FiretaskBase, Firework, LaunchPad, Workflow, ScriptTask
 
+from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSION_FACTORS,
+	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
+	NEW_GENE_KNOCKOUT_GEN)
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
@@ -242,8 +245,6 @@ from wholecell.fireworks.firetasks import BuildCausalityNetworkTask
 from wholecell.sim.simulation import DEFAULT_SIMULATION_KWARGS
 from wholecell.utils import constants
 from wholecell.utils import filepath
-from models.ecoli.sim.variants.new_gene_expression_and_translation_efficiency \
-	import NEW_GENE_EXPRESSION_FACTORS, NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
 
 def get_environment(variable, default):
 	'''
@@ -292,13 +293,13 @@ ADJUST_TIMESTEP_FOR_CHARGING = int(get_environment("ADJUST_TIMESTEP_FOR_CHARGING
 LOG_TO_DISK_EVERY = int(get_environment("LOG_TO_DISK_EVERY", DEFAULT_SIMULATION_KWARGS["logToDiskEvery"]))
 JIT = bool(int(get_environment("JIT", DEFAULT_SIMULATION_KWARGS["jit"])))
 MASS_DISTRIBUTION = bool(int(get_environment("MASS_DISTRIBUTION", DEFAULT_SIMULATION_KWARGS["massDistribution"])))
-GROWTH_RATE_NOISE = bool(int(get_environment("GROWTH_RATE_NOISE", DEFAULT_SIMULATION_KWARGS["growthRateNoise"])))
 D_PERIOD_DIVISION = bool(int(get_environment("D_PERIOD_DIVISION", DEFAULT_SIMULATION_KWARGS["dPeriodDivision"])))
 OPERONS = get_environment("OPERONS", constants.DEFAULT_OPERON_OPTION)
 assert OPERONS in constants.EXTENDED_OPERON_OPTIONS, f'{OPERONS=} needs to be in {constants.EXTENDED_OPERON_OPTIONS}'
 NEW_GENES = get_environment("NEW_GENES", constants.DEFAULT_NEW_GENES_OPTION)
 REMOVE_RRNA_OPERONS = bool(int(get_environment("REMOVE_RRNA_OPERONS", DEFAULT_SIMULATION_KWARGS["remove_rrna_operons"])))
 REMOVE_RRFF = bool(int(get_environment("REMOVE_RRFF", DEFAULT_SIMULATION_KWARGS["remove_rrff"])))
+STABLE_RRNA = bool(int(get_environment("STABLE_RRNA", DEFAULT_SIMULATION_KWARGS["stable_rrna"])))
 VARIABLE_ELONGATION_TRANSCRIPTION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSCRIPTION", DEFAULT_SIMULATION_KWARGS["variable_elongation_transcription"])))
 VARIABLE_ELONGATION_TRANSLATION = bool(int(get_environment("VARIABLE_ELONGATION_TRANSLATION", DEFAULT_SIMULATION_KWARGS["variable_elongation_translation"])))
 TRANSLATION_SUPPLY = bool(int(get_environment("TRANSLATION_SUPPLY", DEFAULT_SIMULATION_KWARGS["translationSupply"])))
@@ -459,6 +460,7 @@ class WorkflowBuilder:
 			"new_genes": NEW_GENES,
 			"remove_rrna_operons": REMOVE_RRNA_OPERONS,
 			"remove_rrff": REMOVE_RRFF,
+			"stable_rrna": STABLE_RRNA,
 			"time": SUBMISSION_TIME,
 			"python": sys.version.splitlines()[0],
 			"total_gens": N_GENS,
@@ -467,7 +469,6 @@ class WorkflowBuilder:
 			"variant": VARIANT,
 			"total_variants": str(len(VARIANTS_TO_RUN)),
 			"mass_distribution": MASS_DISTRIBUTION,
-			"growth_rate_noise": GROWTH_RATE_NOISE,
 			"d_period_division": D_PERIOD_DIVISION,
 			"variable_elongation_transcription": VARIABLE_ELONGATION_TRANSCRIPTION,
 			"variable_elongation_translation": VARIABLE_ELONGATION_TRANSLATION,
@@ -485,12 +486,14 @@ class WorkflowBuilder:
 			"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 			}
 
-		if VARIANT == 'new_gene_expression_and_translation_efficiency':
+		if VARIANT == 'new_gene_internal_shift':
 			# Record the values used in this variant for analysis scripts
 			self.metadata.update({
 				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
 				"new_gene_translation_efficiency_values":
-				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES})
+				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+				"new_gene_induction_gen": NEW_GENE_INDUCTION_GEN,
+				"new_gene_knockout_gen": NEW_GENE_KNOCKOUT_GEN,})
 
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
@@ -525,6 +528,7 @@ class WorkflowBuilder:
 				new_genes=NEW_GENES,
 				remove_rrna_operons=REMOVE_RRNA_OPERONS,
 				remove_rrff=REMOVE_RRFF,
+				stable_rrna=STABLE_RRNA,
 				output=os.path.join(KB_DIRECTORY, constants.SERIALIZED_RAW_DATA)),
 			"InitRawData",
 			priority=12)
@@ -789,7 +793,6 @@ class WorkflowBuilder:
 							log_to_disk_every=LOG_TO_DISK_EVERY,
 							jit=JIT,
 							mass_distribution=MASS_DISTRIBUTION,
-							growth_rate_noise=GROWTH_RATE_NOISE,
 							d_period_division=D_PERIOD_DIVISION,
 							variable_elongation_transcription=VARIABLE_ELONGATION_TRANSCRIPTION,
 							variable_elongation_translation=VARIABLE_ELONGATION_TRANSLATION,
