@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 2
+USE_NEW_DEG_RATES  = 1
 
 class Translation(object):
 	""" Translation """
@@ -134,9 +134,9 @@ class Translation(object):
 			for p in raw_data.protein_half_lives_15N_ammonia_TMTproC
 		}
 
+		deg_rate = np.zeros(n_proteins)
 		# Use measured degradation rates if available, then ammonia rates
 		if USE_NEW_DEG_RATES == 1:
-			deg_rate = np.zeros(len(all_proteins))
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -152,7 +152,6 @@ class Translation(object):
 
 		# Use measured degradation rates if available, then n end rule rates
 		if USE_NEW_DEG_RATES == 2:
-			deg_rate = np.zeros(len(all_proteins))
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -165,7 +164,6 @@ class Translation(object):
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
 		else:
-			deg_rate = np.zeros(len(all_proteins))
 			for i, protein in enumerate(all_proteins):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
@@ -182,22 +180,22 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
-		deg_rate = np.zeros(len(all_proteins))
-		for i, protein in enumerate(all_proteins):
-			# Use measured degradation rates if available
-			if protein['id'] in measured_deg_rates:
-				deg_rate[i] = measured_deg_rates[protein['id']]
-			elif protein['id'] in pulsed_silac_deg_rates:
-				deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
-			# If measured rates are unavailable, use N-end rule
-			else:
-				seq = protein['seq']
-				assert seq[0] == 'M'  # All protein sequences should start with methionine
-
-				# Set N-end residue as second amino acid if initial methionine
-				# is cleaved
-				n_end_residue = seq[protein['cleavage_of_initial_methionine']]
-				deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+		# deg_rate = np.zeros(len(all_proteins))
+		# for i, protein in enumerate(all_proteins):
+		# 	# Use measured degradation rates if available
+		# 	if protein['id'] in measured_deg_rates:
+		# 		deg_rate[i] = measured_deg_rates[protein['id']]
+		# 	elif protein['id'] in pulsed_silac_deg_rates:
+		# 		deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+		# 	# If measured rates are unavailable, use N-end rule
+		# 	else:
+		# 		seq = protein['seq']
+		# 		assert seq[0] == 'M'  # All protein sequences should start with methionine
+		#
+		# 		# Set N-end residue as second amino acid if initial methionine
+		# 		# is cleaved
+		# 		n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+		# 		deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
