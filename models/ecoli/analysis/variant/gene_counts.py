@@ -72,6 +72,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					ax[0].plot(time / 60., ip_monomer_counts, label=name,
 							 color=colors[0][var_num], linestyle=LS[seed], linewidth=.5)
 					var_num = var_num + 1
+					print(var_num)
 				# plot specs
 				ax[0].set_title(f"Protein Counts for {self.cistron_monomer_ids[0]} in "
 						  f"\nthe control variant"
