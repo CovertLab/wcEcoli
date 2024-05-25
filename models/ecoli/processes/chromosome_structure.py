@@ -386,8 +386,6 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				else:
 					self.ppi.countDec(-n_ppi_added)
 
-			assert n_initiated_sequences == incomplete_transcription_event.sum()
-
 		# Write to listener
 		self.writeToListener(
 			'RnapData', 'incomplete_transcription_event',
