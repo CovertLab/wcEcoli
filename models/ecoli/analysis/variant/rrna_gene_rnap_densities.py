@@ -32,6 +32,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
+		# Load IDs of rRNA transcription units
+		rna_data = sim_data.process.transcription.rna_data
+		rRNA_ids = rna_data['id'][rna_data['is_rRNA']]
+
+		# If the list of rRNA IDs does not match the rRNA TU IDs, skip analysis
+		# (likely using rRNA operon structure variants)
+		if set(rRNA_ids) != set(TU_ID_TO_RRNA_OPERON_ID.keys()):
+			print(
+				'Skipping analysis - this analysis should be run for simulations with WT rRNA operon structures.')
+			return
+
 		rnap_footprint_size = sim_data.process.transcription.active_rnap_footprint_size.asNumber(
 			units.nt)
 
