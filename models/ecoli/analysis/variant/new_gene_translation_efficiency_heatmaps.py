@@ -10,6 +10,7 @@ Possible Plots:
 - Average mRNA count, monomer count, mRNA mass fraction, protein mass fraction,
 	RNAP portion, and ribosome portion for a capacity gene to measure burden on
 	overall host expression
+- Average new gene copy number
 - Average new gene mRNA count
 - Average new gene mRNA mass fraction
 - Average new gene mRNA counts fraction
@@ -23,18 +24,20 @@ Possible Plots:
 - Average number and proportion of ribosomes on new gene mRNAs at a given time
 	step
 - Average number and proportion of RNAP making rRNAs at a given time step
-- Average proportion of RNAP and ribosomes making RNAP subunits at a given time
-	step
-- Average proportion of RNAP and ribosomes making ribosomal proteins at a given
- 	time step
+- Average number and proportion of RNAP and ribosomes making RNAP subunits at
+	a given time step
+- Average number and proportion of RNAP and ribosomes making ribosomal proteins
+	at a given time step
 - Average fraction of time new gene is overcrowded by RNAP and Ribosomes
+- Average overcrowding probability ratio for new gene RNA synthesis and
+	polypeptide initiation
+- Average max_p probabilities for RNA synthesis and polypeptide initiation
 - Average number of overcrowded genes for RNAP and Ribosomes
-- Average number of total and free ribosomes
-- Average number of total and free RNA polymerases
+- Average number of total, active, and free ribosomes
+- Average number of total active, and free RNA polymerases
 - Average ppGpp concentration
 - Average rate of glucose consumption
 - Average new gene monomer yields - per hour and per fg of glucose
-TODO: update for new plots
 """
 
 import numpy as np
@@ -78,17 +81,17 @@ STD_DEV_FLAG = True
 Count number of sims that reach this generation (remember index 7 
 corresponds to generation 8)
 """
-# COUNT_INDEX = 23
-COUNT_INDEX = 2 ### TODO: revert back after developing plot locally
+COUNT_INDEX = 23
+# COUNT_INDEX = 2 ### TODO: revert back after developing plot locally
 
 """
 Plot data from generations [MIN_CELL_INDEX, MAX_CELL_INDEX)
 Note that early generations may not be representative of dynamics 
 due to how they are initialized
 """
-# MIN_CELL_INDEX = 16
-# MIN_CELL_INDEX = 1 ### TODO: revert back after developing plot locally
-MIN_CELL_INDEX = 0
+MIN_CELL_INDEX = 16
+# # MIN_CELL_INDEX = 1 ### TODO: revert back after developing plot locally
+# MIN_CELL_INDEX = 0
 MAX_CELL_INDEX = 24
 
 """
@@ -108,10 +111,10 @@ HEATMAPS_TO_MAKE_LIST = [
 		# # # "ribosome_crowding_heatmap",
 		# "cell_mRNA_mass_heatmap",
 		# "cell_protein_mass_heatmap",
-		# "rnap_counts_heatmap",
-		# "ribosome_counts_heatmap",
-		# "new_gene_mRNA_counts_heatmap",
-		# "new_gene_monomer_counts_heatmap",
+		"rnap_counts_heatmap",
+		"ribosome_counts_heatmap",
+		"new_gene_mRNA_counts_heatmap",
+		"new_gene_monomer_counts_heatmap",
 		"new_gene_copy_number_heatmap",
 		# "new_gene_rnap_init_rate_heatmap",
 		# "new_gene_ribosome_init_rate_heatmap",
@@ -123,29 +126,29 @@ HEATMAPS_TO_MAKE_LIST = [
 		# "new_gene_monomer_counts_fraction_heatmap",
 		"active_rnap_counts_heatmap",
 		"active_ribosome_counts_heatmap",
-		# "new_gene_rnap_counts_heatmap",
-		# "new_gene_rnap_portion_heatmap",
-		# "rrna_rnap_counts_heatmap",
-		# "rrna_rnap_portion_heatmap",
+		"new_gene_rnap_counts_heatmap",
+		"new_gene_rnap_portion_heatmap",
+		"rrna_rnap_counts_heatmap",
+		"rrna_rnap_portion_heatmap",
 		"rnap_subunit_rnap_counts_heatmap",
-		# "rnap_subunit_rnap_portion_heatmap",
+		"rnap_subunit_rnap_portion_heatmap",
 		"rnap_subunit_ribosome_counts_heatmap",
-		# "rnap_subunit_ribosome_portion_heatmap",
+		"rnap_subunit_ribosome_portion_heatmap",
 		"ribosomal_protein_rnap_counts_heatmap",
-		# "ribosomal_protein_rnap_portion_heatmap",
+		"ribosomal_protein_rnap_portion_heatmap",
 		"ribosomal_protein_ribosome_counts_heatmap",
-		# "ribosomal_protein_ribosome_portion_heatmap",
-		# "new_gene_ribosome_counts_heatmap",
-		# "new_gene_ribosome_portion_heatmap",
+		"ribosomal_protein_ribosome_portion_heatmap",
+		"new_gene_ribosome_counts_heatmap",
+		"new_gene_ribosome_portion_heatmap",
 		# # # "weighted_avg_translation_efficiency_heatmap",
 		"protein_init_prob_max_p_heatmap",
 		"new_gene_protein_init_prob_max_p_target_ratio_heatmap",
-		# "new_gene_target_protein_init_prob_heatmap",
-		# "new_gene_actual_protein_init_prob_heatmap",
+		"new_gene_target_protein_init_prob_heatmap",
+		"new_gene_actual_protein_init_prob_heatmap",
 		"rna_synth_prob_max_p_heatmap",
 		"new_gene_rna_synth_prob_max_p_target_ratio_heatmap",
-		# "new_gene_target_rna_synth_prob_heatmap",
-		# "new_gene_actual_rna_synth_prob_heatmap",
+		"new_gene_target_rna_synth_prob_heatmap",
+		"new_gene_actual_rna_synth_prob_heatmap",
 		# "capacity_gene_mRNA_counts_heatmap",
 		# "capacity_gene_monomer_counts_heatmap",
 		# "capacity_gene_rnap_portion_heatmap",
@@ -154,8 +157,8 @@ HEATMAPS_TO_MAKE_LIST = [
 		# "capacity_gene_monomer_mass_fraction_heatmap",
 		# "capacity_gene_mRNA_counts_fraction_heatmap",
 		# "capacity_gene_monomer_counts_fraction_heatmap",
-		# "free_rnap_counts_heatmap",
-		# "free_ribosome_counts_heatmap",
+		"free_rnap_counts_heatmap",
+		"free_ribosome_counts_heatmap",
 		# "rnap_ribosome_counts_ratio_heatmap",
 		# "new_gene_yield_per_glucose",
 		# "new_gene_yield_per_hour",
@@ -1556,7 +1559,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			fun=lambda x: np.mean(x[:, new_gene_cistron_indexes], axis=0)))
 		for i in range(len(new_gene_cistron_indexes)):
 			self.save_heatmap_data(h, i, trl_eff_index, exp_index,
-				np.log10(avg_new_gene_copy_number[:, i] + 1))
+				avg_new_gene_copy_number[:, i])
 
 	def extract_new_gene_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index, data_table,
@@ -2307,7 +2310,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						f" plotting.")
 			fig.tight_layout()
 			exportFigure(plt, plotOutDir,
-				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}_new_plots") ## TODO: Revert back after running new plots
+				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}_new_plots") ## TODO: Revert back after running new plots on Sherlock sims
 			plt.close("all")
 
 		else: # individual plots
