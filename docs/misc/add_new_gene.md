@@ -19,8 +19,7 @@ Addition of new genes to the chromosome<br>(in progress)
 
 With `new_genes_option != 'off'`, `KnowledgeBaseEcoli` uses the information in the new gene subdirectory, which is specified in the command line via `new_genes_option`, to make the addition of the gene to the Ecoli chromosome.
 For example: `python runscripts/manual/runParca.py --new-genes 'gfp'` will add the genes from the `new_genes_data/gfp` subdirectory to the Ecoli chromosome and then run the ParCa. 
-Note that even though the gene is added, it will have no expression (i.e. is knocked-out) unless a new
-expression level and translation efficiency are set using `models/ecoli/sim/variants/new_gene.py`.
+Note that even though the gene is added, it will have no expression (i.e. is knocked-out) unless a new expression level and translation efficiency are set using `models/ecoli/sim/variants/new_gene_internal_shift.py`.
 
 The following steps occur in incorporating the new genes into the chromosome:
 * Read in all data tables from the specified `<new_genes_option>` (e.g. 'gfp'), and join rows with information about the new genes to the corresponding tables with information about the original genes.
@@ -95,7 +94,7 @@ The following steps occur in incorporating the new genes into the chromosome:
       set `NEW_GENE_INDUTION_GEN = -1` and/or `NEW_GENE_KNOCKOUT_GEN = -1`, 
       respectively.
     * Note: `NEW_GENE_INDUTION_GEN` and `NEW_GENE_KNOCKOUT_GEN` cannot be set to 0.
-      * New genes must be induced after the first generation to establish an acurate shift.
+      * New genes must be induced after the first generation to establish an accurate shift.
       * New genes are knocked out by default, so induction should happen before knockout.
     * Note: if the values you choose for `NEW_GENE_INDUTION_GEN` 
       and `NEW_GENE_KNOCKOUT_GEN` are greater than the number of 

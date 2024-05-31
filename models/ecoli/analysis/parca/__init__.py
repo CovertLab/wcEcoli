@@ -16,6 +16,7 @@ ACTIVE = [
 	'mRNA_cistron_expression.py',
 	'mRNA_transcript_table.py',
 	'ppgpp_expression.py',
+	'rRNA_operon_structures.py',
 	'start_codon_distribution.py',
 	'target_vs_actual_ppgpp_fold_change.py',
 	'tf_target.py',

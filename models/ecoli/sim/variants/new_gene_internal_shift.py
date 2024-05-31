@@ -249,8 +249,7 @@ def new_gene_internal_shift(sim_data, index):
 
 	# Map variant index to expression factor and tranlsation efficiency value
 	index_remainder = index - condition_index * 1000
-	(expression_list_index, trl_eff_list_index, expression_factor,
-		trl_eff_value) = get_new_gene_expression_factor_and_translation_efficiency(
+	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
 		sim_data, index_remainder)
 
 	# Initialize internal shift dictionary
