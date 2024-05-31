@@ -18,8 +18,10 @@ Possible Plots:
 - Average new gene protein count
 - Average new gene protein mass fraction
 - Average new gene protein counts fraction
-- Average new gene initialization rate for RNAP and Ribosomes
-- Average new gene initialization probabilities for RNAP and Ribosomes
+- Average new gene initialization rate for RNAP and ribosomes
+- Average new gene initialization probabilities for RNAP and ribosomes
+- Average count and portion of new gene ribosome initialization events per time
+	step
 - Average number and proportion of RNAP on new genes at a given time step
 - Average number and proportion of ribosomes on new gene mRNAs at a given time
 	step
@@ -34,6 +36,7 @@ Possible Plots:
 - Average max_p probabilities for RNA synthesis and polypeptide initiation
 - Average number of overcrowded genes for RNAP and Ribosomes
 - Average number of total, active, and free ribosomes
+- Average number of ribosomes initialized at each time step
 - Average number of total active, and free RNA polymerases
 - Average ppGpp concentration
 - Average rate of glucose consumption
@@ -160,6 +163,9 @@ HEATMAPS_TO_MAKE_LIST = [
 		"free_rnap_counts_heatmap",
 		"free_ribosome_counts_heatmap",
 		# "rnap_ribosome_counts_ratio_heatmap",
+		"ribosome_init_events_heatmap",
+		"new_gene_ribosome_init_events_heatmap",
+		"new_gene_ribosome_init_events_portion_heatmap",
 		# "new_gene_yield_per_glucose",
 		# "new_gene_yield_per_hour",
 		# "glucose_consumption_rate",
@@ -421,6 +427,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			elif h == "new_gene_ribosome_portion_heatmap":
 				self.extract_new_gene_ribosome_portion_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index)
+			elif h == "new_gene_ribosome_init_events_heatmap":
+				self.extract_new_gene_ribosome_init_events_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, "count")
+			elif h == "new_gene_ribosome_init_events_portion_heatmap":
+				self.extract_new_gene_ribosome_init_events_heatmap_data(
+					all_cells, h, trl_eff_index, exp_index, "portion")
 			elif h == "new_gene_yield_per_glucose":
 				self.extract_new_gene_yield_per_glucose_heatmap_data(
 					all_cells, h, trl_eff_index, exp_index,
@@ -1330,6 +1342,46 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			self.save_heatmap_data(
 				h, i, trl_eff_index, exp_index,
 				avg_new_gene_ribosome_portion[:, i])
+
+	def extract_new_gene_ribosome_init_events_heatmap_data(
+			self, all_cells, h, trl_eff_index, exp_index, data_type):
+		"""
+		Special function to handle extraction and saving of the count and portion
+		of activated ribosomes assigned to new gene mRNAs at each time step.
+
+		Args:
+			all_cells: paths to all cells to read data from (directories should
+				contain a simOut/ subdirectory), typically the return from
+				AnalysisPaths.get_cells()
+			h: heatmap identifier
+			trl_eff_index: New gene translation efficiency value index for this
+				variant
+			exp_index: New gene expression value index for this variant
+			data_type: 'count' or 'portion'
+		"""
+		new_gene_monomer_indexes = self.get_new_gene_indexes(all_cells, 'monomer')
+		new_gene_ribosome_init_events = read_stacked_columns(
+			all_cells, "RibosomeData", "ribosome_init_event_per_monomer",
+			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes], axis = 0))
+		if data_type == 'count':
+			for i in range(len(self.new_gene_monomer_ids)):
+				self.save_heatmap_data(
+					h, i, trl_eff_index, exp_index,
+					new_gene_ribosome_init_events[:, i])
+		elif data_type == 'portion':
+			total_ribosome_init_events = read_stacked_columns(
+				all_cells, "RibosomeData", "didInitialize",
+				fun=lambda x: np.mean(x, axis=0))
+			new_gene_ribosome_init_events_portion = (
+					new_gene_ribosome_init_events / total_ribosome_init_events)
+			for i in range(len(self.new_gene_monomer_ids)):
+				self.save_heatmap_data(
+					h, i, trl_eff_index, exp_index,
+					new_gene_ribosome_init_events_portion[:, i])
+		else:
+			raise Exception(
+				"The only supported data types for this function are 'count' and "
+				"'portion'.")
 
 	def extract_rnap_subunits_ribosome_counts_heatmap_data(
 			self, all_cells, h, trl_eff_index, exp_index):
@@ -2310,7 +2362,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						f" plotting.")
 			fig.tight_layout()
 			exportFigure(plt, plotOutDir,
-				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}_new_plots") ## TODO: Revert back after running new plots on Sherlock sims
+				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}_new_plots2") ## TODO: Revert back after running new plots on Sherlock sims
 			plt.close("all")
 
 		else: # individual plots
@@ -2586,6 +2638,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				 'num_digits_rounding': 1,
 				 'plot_title': 'ppGpp Concentration (uM)',
 				},
+			"ribosome_init_events_heatmap":
+				{'data_table': 'RibosomeData',
+					'data_column': 'didInitialize',
+					'num_digits_rounding': 0,
+					'box_text_size': 'x-small',
+					'plot_title': 'Ribosome Init Events Per Time Step',
+					},
 			"rnap_counts_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'num_digits_rounding': 0,
@@ -2731,6 +2790,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"new_gene_rna_synth_prob_max_p_target_ratio_heatmap":
 				{'is_nonstandard_data_retrieval': True,
 				 'plot_title': 'New Gene RNA Synth Max Prob / Target Prob Ratio',
+				 'num_digits_rounding': 4},
+			"new_gene_ribosome_init_events_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene Ribosome Init Events Per Time Step',
+				 'num_digits_rounding': 0,
+				 'box_text_size': 'x-small'},
+			"new_gene_ribosome_init_events_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene Portion of Initiated Ribosomes',
 				 'num_digits_rounding': 4},
 			"new_gene_actual_rna_synth_prob_heatmap":
 				{'plot_title': 'New Gene Actual RNA Synth Prob',
