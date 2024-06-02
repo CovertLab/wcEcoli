@@ -122,7 +122,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.aa_exchange_rates = CONC_UNITS / units.s * np.zeros(len(self.aaNames))
 
 	def calculateRequest(self):
-		print("Start calculate request for elongation")
 
 		# Set ribosome elongation rate based on simulation medium environment and elongation rate factor
 		# which is used to create single-cell variability in growth rate
@@ -157,7 +156,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			enumerate(self.monomerIds)}
 		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
 									monomer_id in self.new_gene_monomer_ids]
-		self.elongation_rates[new_gene_monomer_indexes] = 600  # units.aa/units.s
+		self.elongation_rates[new_gene_monomer_indexes] = 900  # units.aa/units.s
 
 		sequences = buildSequences(
 			self.proteinSequences,
@@ -186,11 +185,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# Request full access to active ribosome molecules
 		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
 
-		print("End calculate request for elongation")
-
 	def evolveState(self):
-		print("Start evolve state for elongation")
-
 		# Set values for metabolism in case of early return
 		self.gtp_to_hydrolyze = 0
 		self.aa_count_diff = {}
@@ -209,16 +204,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		protein_indexes, peptide_lengths, positions_on_mRNA = self.active_ribosomes.attrs(
 			'protein_index', 'peptide_length', 'pos_on_mRNA'
 			)
-
-		print("Elongation active ribosomes for GFP: ")
-		unique_indexes2, protein_indexes2, peptide_lengths2, positions_on_mRNA2 = self.active_ribosomes.attrs(
-			'unique_index', 'protein_index', 'peptide_length', 'pos_on_mRNA'
-			)
-		ng_protein_indexes_mask2 = np.where(protein_indexes2 == 4309)
-		ng_unique_indexes = unique_indexes2[ng_protein_indexes_mask2]
-		ng_peptide_lengths = peptide_lengths2[ng_protein_indexes_mask2]
-		print(ng_unique_indexes)
-		print(ng_peptide_lengths)
 
 		all_sequences = buildSequences(
 			self.proteinSequences,
@@ -297,8 +282,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
 
-		print("Number of GFP ribos terminated: ", terminatedProteins[-1])
-
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
 
@@ -331,8 +314,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("RibosomeData", "numTrpATerminated", terminatedProteins[self.trpAIndex])
 
 		self.writeToListener("RibosomeData", "processElongationRate", self.ribosomeElongationRate / self.timeStepSec())
-
-		print("End evolve state for elongation")
 
 	def isTimeStepShortEnough(self, inputTimeStep, timeStepSafetyFraction):
 		model_specific = self.elongation_model.isTimeStepShortEnough(inputTimeStep, timeStepSafetyFraction)
