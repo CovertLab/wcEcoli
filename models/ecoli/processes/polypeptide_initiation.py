@@ -59,6 +59,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.RNAs = self.uniqueMoleculesView('RNA')
 
 	def calculateRequest(self):
+		print("Start calculate request for initiation")
 		current_media_id = self._external_states['Environment'].current_media_id
 
 		self.ribosome30S.requestAll()
@@ -83,8 +84,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Ensure rates are never zero
 		self.elongation_rates = np.fmax(self.elongation_rates, 1)
+		print("End calculate request for initiation")
 
 	def evolveState(self):
+		print("start evolve for initiation")
 		# Calculate number of ribosomes that could potentially be initialized
 		# based on counts of free 30S and 50S subunits
 		inactiveRibosomeCount = np.min([
@@ -274,14 +277,28 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
+		print("Initiation active ribosomes for GFP: ")
+		unique_indexes2, protein_indexes2, peptide_lengths2, positions_on_mRNA2 = self.active_ribosomes.attrs(
+			'unique_index', 'protein_index', 'peptide_length', 'pos_on_mRNA'
+			)
+		ng_protein_indexes_mask2 = np.where(protein_indexes2 == 4309)
+		ng_unique_indexes = unique_indexes2[ng_protein_indexes_mask2]
+		ng_peptide_lengths = peptide_lengths2[ng_protein_indexes_mask2]
+		print(ng_unique_indexes)
+		print(ng_peptide_lengths)
+
 		# Decrement free 30S and 50S ribosomal subunit counts
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
+
+		print("Number of GFP ribos intialized: ", n_new_proteins[-1])
 
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
 		self.writeToListener("RibosomeData", "ribosome_init_event_per_monomer",
 							 n_new_proteins)
+
+		print("End evolve for initiation")
 
 	def _calculateActivationProb(
 			self, fracActiveRibosome, proteinLengths, ribosomeElongationRates,
