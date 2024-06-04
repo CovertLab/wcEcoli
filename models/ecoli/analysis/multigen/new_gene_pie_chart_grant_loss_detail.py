@@ -24,18 +24,27 @@ from wholecell.utils import units
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		data_desc = "_loss_ribo" # TODO: CHANGE
+		data_desc = "_loss_ribo_detail" # TODO: CHANGE
 		plot_suffix = data_desc
 		data = { # TODO: CHANGE
-			"Wildtype (no GFP)": 20973,
-			"Normal GFP Degradation": 9530,
-			"Rapid GFP Degradation": 13283
+			"New Gene": np.array([ 0, 3367, 3778]),
+			"RNAP Subunits": np.array([204, 45, 79]),
+			"Ribosomal Proteins": np.array([3114, 720, 1162]),
+			"rRNA": np.array([0, 0, 0]),
+			"Other": np.array([13955, 3582, 5751])
 			}
 		ylab = "Ribosome Counts" # TODO: CHANGE
+		species = (
+			"Wildtype (no GFP)",
+			"Normal GFP Degradation",
+			"Rapid GFP Degradation"
+			)
 		colors = [
+			(66 / 255, 170 / 255, 154 / 255),
 			(136/255, 205/255, 240/255),
 			(188/255, 140/255, 191/255),
-			(221/255, 203/255, 119/255)
+			(221/255, 203/255, 119/255),
+			"#dfdfdf"
 			]
 
 		# Plotting
@@ -52,9 +61,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# mpl.rcParams['axes.spines.left'] = False
 		# mpl.rcParams['axes.spines.bottom'] = False
 
-		fig = plt.figure(figsize=(7.25, 6))
-		plt.bar(list(data.keys()), list(data.values()), color=colors)
+		fig, ax = plt.subplots()
+		width = 0.5
+		counter = 0
+		bottom = np.zeros(3)
+		# plt.bar(species, list(data.values()), color=colors)
+		for category, allocation in data.items():
+			p = ax.bar(species, allocation, width, label=category, bottom=bottom, color = colors[counter])
+			bottom += allocation
+			counter += 1
 		plt.ylabel(ylab)
+		ax.legend(loc="upper center")
 			# if i == 0:
 			# 	text_color = colors[0]
 			# 	ax.bar_label(rects, labels = [" -" + str(percent_loss) + "%"], label_type='edge', color=text_color, fontsize=14)

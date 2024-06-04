@@ -26,9 +26,9 @@ SLICE_COLOR = (66/255, 170/255, 154/255)
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		variant = 6 # TODO: CHANGE
-		fraction = 0.232 # TODO: CHANGE
-		data_desc = "_ribos_frac" # TODO: CHANGE
+		variant = 11 # TODO: CHANGE
+		fraction = 0.359 # TODO: CHANGE
+		data_desc = "_ribos_frac_rapid_deg" # TODO: CHANGE
 
 		slice_sizes = [fraction * 100, 100 - fraction * 100]
 		plot_suffix = "_" + str(variant) + data_desc
@@ -60,8 +60,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				text_color = colors[0]
 				ax.bar_label(rects, labels = [" " + str(percent) + "%"],
 							 label_type='edge', color=text_color, fontsize=14)
-		ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
-				  loc='lower left', fontsize='small')
+		# ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
+		# 		  loc='lower left', fontsize='small')
 
 		exportFigure(plt, plotOutDir, plotOutFileName + "_bar" + plot_suffix, metadata)
 		plt.close("all")
