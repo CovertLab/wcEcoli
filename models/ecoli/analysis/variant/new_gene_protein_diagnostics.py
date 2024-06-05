@@ -15,18 +15,11 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 											   read_stacked_columns, stacked_cell_threshold_mask)
 from wholecell.io.tablereader import TableReader
 
-"""
-1 to plot early (before MIN_LATE_CELL_INDEX), and late generations in
-addition to all generations
-"""
-exclude_early_gens = 1
-
-#FONT_SIZE=9
-#MAX_VARIANT = 10 # do not include any variant >= this index
 
 """
-generations before this may not be representative of dynamics 
-due to how they are initialized
+Indicate which generation the data should start being collected from (sometimes 
+this number should be greater than 0 because the first few generations may not 
+be representative of the true dynamics occuring in the cell).
 """
 # for sherlock:
 IGNORE_FIRST_N_GENS = 14
@@ -35,7 +28,7 @@ IGNORE_FIRST_N_GENS = 14
 
 
 """
-Indicate here the number of proteins that should be plotted for comparison in 
+For the next few varainbles, indicate the # of proteins to  be plotted in 
 comparison plots 1 and 3 (ideally values between 5 and 100 should plot well,
 but technically any value between 2 and 4308 should work for graphs 1 and 3). 
 Setting one of the nubmers corresponding to graphs 1-4 equal to zero will prevent
