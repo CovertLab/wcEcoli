@@ -2,9 +2,6 @@
 # Use Google Cloud Build servers to build a personalized "${ID}-wcm-code" Docker
 # Image and store it in a Google Artifact Registry.
 #
-# TODO: Require and use config artifacts/location, artifacts/repository?
-#       Otherwise check that $REGION is not empty.
-#
 # COMMAND LINE ARGUMENTS:
 #   ARG1: Distinguishing ID prefix for the "wcm-code" Docker Image tag;
 #     defaults to "${USER}".
