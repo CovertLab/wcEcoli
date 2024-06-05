@@ -6,7 +6,7 @@ Before you begin all the steps below to install the Python runtime for the Whole
 
 The script `cloud/build-containers-locally.sh` will build a Docker Image on
 your computer if you have Docker Engine or Docker Desktop installed.
-The script `cloud/build.sh` will do the same using Google Container Registry if
+The script `cloud/build.sh` will do the same using Google Artifact Registry if
 you have a Google Cloud project set up.
 
 Either way, you can run the Whole Cell Model (WCM) in a Docker Container, isolated from your computer's operating system, Python versions, binary libraries, and everything else installed.
