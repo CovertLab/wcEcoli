@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 2
+USE_NEW_DEG_RATES  = 3
 
 class Translation(object):
 	""" Translation """
@@ -163,6 +163,7 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
+		# Use measured degradation rates if available, then pulsed SILAC rates
 		if USE_NEW_DEG_RATES == 3:
 			for i, protein in enumerate(all_proteins):
 				# Use measured degradation rates if available
