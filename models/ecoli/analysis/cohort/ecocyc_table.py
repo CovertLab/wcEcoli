@@ -309,6 +309,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, (complex_ids, ), remove_first=True,
 			ignore_exception=True)
 
+		# Special case: ribosomes and ribosomal subunits
+		# EcoCyc IDs: ribosome (CPLX0-3964), 30S ribosomal subunit (CPLX0-3953), 50S ribosomal subunit (CPLX0-3962)
+
+		# Special case: RNA polymerases (APORNAP-CPLX)
+
+		# Special case: transcription factors
+
+
 		# Calculate derived protein values
 		complex_counts_avg = complex_counts.mean(axis=0)
 		complex_counts_std = complex_counts.std(axis=0)
