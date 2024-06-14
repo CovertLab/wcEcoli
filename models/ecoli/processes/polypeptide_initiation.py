@@ -156,18 +156,52 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			* (units.s) * self.timeStepSec() / 
 			n_ribosomes_to_activate).asNumber()
 		max_p_per_protein = max_p*cistron_counts[self.cistron_to_monomer_mapping]
+		self.writeToListener("RibosomeData", "max_p", max_p)
+		self.writeToListener(
+			"RibosomeData", "max_p_per_protein", max_p_per_protein)
 		is_overcrowded = (protein_init_prob > max_p_per_protein)
 
+		# Initalize flag to record if the number of ribosomes activated at this
+		# time step needed to be reduced to prevent overcrowding
+		is_n_ribosomes_to_activate_reduced = False
+
+		# If needed, resolve overcrowding
 		while np.any(protein_init_prob > max_p_per_protein):
-			protein_init_prob[is_overcrowded] = max_p_per_protein[
-				is_overcrowded]
-			assert protein_init_prob[~is_overcrowded].sum() != 0
-			scale_the_rest_by = (
-				(1. - protein_init_prob[is_overcrowded].sum())
-				/ protein_init_prob[~is_overcrowded].sum()
-				)
-			protein_init_prob[~is_overcrowded] *= scale_the_rest_by
-			is_overcrowded |= (protein_init_prob > max_p_per_protein)
+			if protein_init_prob[~is_overcrowded].sum() != 0:
+				# Resolve overcrowding through rescaling (preferred)
+				protein_init_prob[is_overcrowded] = max_p_per_protein[
+					is_overcrowded]
+				scale_the_rest_by = (
+					(1. - protein_init_prob[is_overcrowded].sum())
+					/ protein_init_prob[~is_overcrowded].sum())
+				protein_init_prob[~is_overcrowded] *= scale_the_rest_by
+				is_overcrowded |= (protein_init_prob > max_p_per_protein)
+			else:
+				# If we cannot resolve the overcrowding through rescaling,
+				# we need to activate fewer ribosomes. Set the number of
+				# ribosomes to activate so that there will be no overcrowding.
+				is_n_ribosomes_to_activate_reduced = True
+				max_index = np.argmax(
+					protein_init_prob[is_overcrowded] / max_p_per_protein[is_overcrowded])
+				max_init_prob = protein_init_prob[is_overcrowded][max_index]
+				associated_cistron_counts = cistron_counts[
+					self.cistron_to_monomer_mapping][is_overcrowded][max_index]
+				n_ribosomes_to_activate = np.int64((
+					self.ribosomeElongationRate
+					/ self.active_ribosome_footprint_size
+					* (units.s) * self.timeStepSec() / max_init_prob
+					* associated_cistron_counts).asNumber())
+
+				# Update maximum probabilities based on new number of activated
+				# ribosomes.
+				max_p = (
+					self.ribosomeElongationRate
+					/ self.active_ribosome_footprint_size
+					* (units.s) * self.timeStepSec()
+					/ n_ribosomes_to_activate).asNumber()
+				max_p_per_protein = max_p * cistron_counts[self.cistron_to_monomer_mapping]
+				is_overcrowded = (protein_init_prob > max_p_per_protein)
+				assert is_overcrowded.sum() == 0 # We expect no overcrowding
 
 		# Compute actual transcription probabilities of each transcript
 		actual_protein_init_prob = protein_init_prob.copy()
@@ -176,6 +210,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			actual_protein_init_prob)
 		self.writeToListener(
 			"RibosomeData", "mRNA_is_overcrowded", is_overcrowded)
+		self.writeToListener(
+			"RibosomeData", "is_n_ribosomes_to_activate_reduced",
+			is_n_ribosomes_to_activate_reduced)
 
 		# Sample multinomial distribution to determine which mRNAs have full
 		# 70S ribosomes initialized on them
@@ -237,7 +274,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
-		# Decrement free 30S and 70S ribosomal subunit counts
+		# Decrement free 30S and 50S ribosomal subunit counts
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
 

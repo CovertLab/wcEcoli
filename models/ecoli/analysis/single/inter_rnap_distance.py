@@ -47,10 +47,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 
 		# Calculate the total number of initiation events that happen to each
 		# gene per gene copy throughout the cell cycle
-		n_total_rna_init_events_per_copy = np.divide(
-			n_rna_init_events[1:, :].astype(np.float64),
-			promoter_copy_numbers[1:, :]
-			).sum(axis=0)
+		sum_n_rna_init_events = n_rna_init_events[1:, :].astype(np.float64).sum(axis=0)
+		avg_promoter_copy_number = np.mean(promoter_copy_numbers[1:, :], axis=0)
+		n_total_rna_init_events_per_copy = sum_n_rna_init_events / avg_promoter_copy_number
 
 		# Divide by length of cell cycle to get average initiation rate
 		avg_init_rate = (1./time[-1])*n_total_rna_init_events_per_copy

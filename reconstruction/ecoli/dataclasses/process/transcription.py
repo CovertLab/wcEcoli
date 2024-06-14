@@ -1903,7 +1903,7 @@ class Transcription(object):
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
 
-	def synth_prob_from_ppgpp(self, ppgpp, copy_number):
+	def synth_prob_from_ppgpp(self, ppgpp, copy_number, balanced_rRNA_prob=True):
 		"""
 		Calculates the synthesis probability of each gene at a given concentration
 		of ppGpp.
@@ -1912,6 +1912,8 @@ class Transcription(object):
 			ppgpp (float with mol / volume units): concentration of ppGpp
 			copy_number (Callable[float, int]): function that gives the expected copy
 				number given a doubling time and gene replication coordinate
+			balanced_rRNA_prob (bool): if True, set the synthesis probabilities
+				of rRNA promoters to be equal to one another
 
 		Returns
 			prob (ndarray[float]): normalized synthesis probability for each gene
@@ -1939,6 +1941,9 @@ class Transcription(object):
 		# Return values
 		factor = loss / n_avg_copy
 		prob = normalize((self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp) * factor)
+
+		if balanced_rRNA_prob:
+			prob[self.rna_data['is_rRNA']] = prob[self.rna_data['is_rRNA']].mean()
 
 		return prob, factor
 
