@@ -36,6 +36,9 @@ MEDIA_NAME_TO_ID = {
 	'minimal_succinate': 'MIX0-844',
 	}
 
+# We do not use this in our model, hardcoding it here to route active ribosome
+# counts data to the correct EcoCyc page
+ECOCYC_FULL_RIBOSOME_ID = 'CPLX0-3964'
 
 def save_file(out_dir, filename, columns, values):
 	output_file = os.path.join(out_dir, filename)
@@ -309,13 +312,24 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, (complex_ids, ), remove_first=True,
 			ignore_exception=True)
 
-		# Special case: ribosomes and ribosomal subunits
-		# EcoCyc IDs: ribosome (CPLX0-3964), 30S ribosomal subunit (CPLX0-3953), 50S ribosomal subunit (CPLX0-3962)
+		# Add active RNA polymerase counts to inactive RNA polymerase counts
+		active_RNAP_index = unique_molecule_counts_reader.readAttribute(
+			"uniqueMoleculeIds").index('active_RNAP')
+		active_RNAP_counts = read_stacked_columns(
+			cell_paths, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts', remove_first=True,
+			ignore_exception=True)[:, active_RNAP_index]
+		inactive_RNAP_id = sim_data.molecule_ids.full_RNAP
+		complex_table_RNAP_index = complex_ids.index(inactive_RNAP_id)
+		complex_counts[:, complex_table_RNAP_index] += active_RNAP_counts
 
-		# Special case: RNA polymerases (APORNAP-CPLX)
-
-		# Special case: transcription factors
-
+		# Count active ribosomes as full ribosome complexes
+		complex_ids.append(ECOCYC_FULL_RIBOSOME_ID)
+		full_ribosome_mw = (sim_data.getter.get_mass(
+			sim_data.molecule_ids.s50_full_complex) + sim_data.getter.get_mass(
+			sim_data.molecule_ids.s30_full_complex)).asNumber(units.fg / units.count)
+		complex_mw = np.append(complex_mw, full_ribosome_mw)
+		complex_counts = np.hstack((complex_counts, full_ribosome_counts[:, None]))
 
 		# Calculate derived protein values
 		complex_counts_avg = complex_counts.mean(axis=0)
