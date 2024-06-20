@@ -278,6 +278,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
 
+		print("(Evolve Initialize) Number of GFP ribos intialized: ", n_new_proteins[-1])
+
 		# Write number of initialized ribosomes to listener
 		self.writeToListener("RibosomeData", "didInitialize", n_new_proteins.sum())
 		self.writeToListener("RibosomeData", "ribosome_init_event_per_monomer",

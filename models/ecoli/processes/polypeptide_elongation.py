@@ -182,6 +182,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("GrowthLimits", "aaPoolSize", self.aas.total_counts())
 		self.writeToListener("GrowthLimits", "aaRequestSize", aa_counts_for_translation)
 
+		self.aa_counts_for_translation_request = np.copy(aa_counts_for_translation)
+		# print("AA Request Size (request): ", aa_counts_for_translation)
+
 		# Request full access to active ribosome molecules
 		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
 
@@ -192,6 +195,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Write allocation data to listener
 		self.writeToListener("GrowthLimits", "aaAllocated", self.aas.counts())
+
+		# print("AA Allocated (evolve): ", self.aas.counts())
 
 		# Get number of active ribosomes
 		n_active_ribosomes = self.active_ribosomes.total_count()
@@ -222,6 +227,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		# MODEL SPECIFIC: Get amino acid counts
 		aa_counts_for_translation = self.elongation_model.final_amino_acids(total_aa_counts)
 
+		# print("AA Evolve size (evolve): ", aa_counts_for_translation)
+		# print("AA DIFF): ", aa_counts_for_translation - self.aa_counts_for_translation_request)
+
 		# Using polymerization algorithm elongate each ribosome up to the limits
 		# of amino acids, sequence, and GTP
 		result = polymerize(
@@ -232,6 +240,15 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.elongation_rates[protein_indexes],
 			variable_elongation=self.variable_polymerize,
 			)
+
+		# TODO: if these simulations produce useful data, implement this in a
+		# non-forced, more general way (perhaps a new gene flat file? variant?)
+		monomer_idx_dict = {monomer: i for i, monomer in
+			enumerate(self.monomerIds)}
+		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
+			monomer_id in self.new_gene_monomer_ids]
+		print("Evolve Elongation Rate: ", self.elongation_rates[new_gene_monomer_indexes])
+		assert self.elongation_rates[new_gene_monomer_indexes][0] == 900, "not 900 anymore!"
 
 		sequence_elongations = result.sequenceElongation
 		aas_used = result.monomerUsages
@@ -261,6 +278,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		currElongRate = (sequence_elongations.sum() / n_active_ribosomes) / self.timeStepSec()
 		self.writeToListener("RibosomeData", "effectiveElongationRate", currElongRate)
 
+		if new_gene_monomer_indexes[0] in protein_indexes:
+			ng_mask = new_gene_monomer_indexes[0] == protein_indexes
+			ng_sequence_elongations = sequence_elongations[ng_mask]
+			ng_active_ribosomes = ng_mask.sum()
+			ng_effective_elong_rate = (ng_sequence_elongations.sum() / ng_active_ribosomes) / self.timeStepSec()
+			print("New gene effective elongation rate: ", ng_effective_elong_rate)
+
 		# Update active ribosomes, terminating if necessary
 		self.active_ribosomes.attrIs(
 			peptide_length=updated_lengths,
@@ -281,6 +305,8 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
+
+		print("(Evolve Elong) Number of GFP ribos terminated: ", terminatedProteins[-1])
 
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
