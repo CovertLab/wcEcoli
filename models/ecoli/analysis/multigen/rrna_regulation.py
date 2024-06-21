@@ -17,6 +17,7 @@ from wholecell.utils import units
 
 
 COMPLEXATION_RXN_IDS = ['CPLX0-3953_RXN', 'CPLX0-3962_RXN']
+DOWNSAMPLE_RATIO = 10
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -151,7 +152,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				(1 / growth_rates) * np.log(2)).asNumber(units.min)
 
 		def plot_ax(ax, y, ylabel, ylim, yticks, clip_on=False):
-			ax.plot(time / 60, y, color='#8c8c8c', clip_on=clip_on)
+			ax.plot(
+				time[::DOWNSAMPLE_RATIO] / 60,
+				y[::DOWNSAMPLE_RATIO],
+				color='#8c8c8c', clip_on=clip_on)
 			ax.set_ylabel(ylabel, fontsize=8)
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
