@@ -38,8 +38,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		n_avogadro = sim_data.constants.n_avogadro
 
 		# Data extraction
+		ribosome_counts = {}
 		ribosome_concentrations = {}
 		doubling_times = {}
+		inactive_rnap_counts = {}
 		inactive_rnap_concentrations = {}
 		rrna_gene_copy_numbers = {}
 		rrna_gene_concentrations = {}
@@ -74,9 +76,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, 'Mass', 'cellVolume').flatten()
 
 			# Calculate concentrations of all ribosomes in uM
-			ribosome_conc_this_variant = ((1 / (n_avogadro * cell_volume)) * (
-				active_ribosome_counts + ribosome_subunit_counts.min(axis=1)
-				)).asNumber(units.mol / units.L) * 1e6
+			ribosome_counts_this_variant = (
+				active_ribosome_counts + ribosome_subunit_counts.min(axis=1))
+			ribosome_conc_this_variant = (
+				(1 / (n_avogadro * cell_volume)) * ribosome_counts_this_variant
+				).asNumber(units.mol / units.L) * 1e6
 
 			# Get doubling times of this variant
 			dt_this_variant = read_stacked_columns(
@@ -84,10 +88,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 
 			# Get inactive rnap concentrations in uM
-			(inactive_rnap_counts,) = read_stacked_bulk_molecules(
+			(inactive_rnap_counts_this_variant,) = read_stacked_bulk_molecules(
 				all_cells, ([inactive_rnap_id],))
 			inactive_rnap_conc_this_variant = ((1 / (n_avogadro * cell_volume))
-				*inactive_rnap_counts).asNumber(units.mol / units.L) * 1e6
+				*inactive_rnap_counts_this_variant).asNumber(units.mol / units.L) * 1e6
 
 			# Get gene_ids attribute from reference cell path
 			reference_cell_path = all_cells[0]
@@ -116,11 +120,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ppgpp_concentrations_this_variant = read_stacked_columns(
 				all_cells, 'GrowthLimits', 'ppgpp_conc').squeeze()
 
+			ribosome_counts[variant_index] = ribosome_counts_this_variant.mean()
 			ribosome_concentrations[variant_index] = ribosome_conc_this_variant.mean()
 			doubling_times[variant_index] = dt_this_variant.mean()
+			inactive_rnap_counts[variant_index] = inactive_rnap_counts_this_variant.mean()
 			inactive_rnap_concentrations[variant_index] = inactive_rnap_conc_this_variant.mean()
 			rrna_gene_copy_numbers[variant_index] = rrna_gene_copy_numbers_this_variant.mean()
-			rrna_gene_concentrations[variant_index] = rrna_gene_conc_this_variant.mean()
+			rrna_gene_concentrations[variant_index] = np.nanmean(rrna_gene_conc_this_variant)
 			ppgpp_concentrations[variant_index] = ppgpp_concentrations_this_variant.mean()
 
 		variant_indexes_sorted = [k for (k, v) in sorted(doubling_times.items(), key=lambda item: item[1])]
@@ -130,7 +136,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'\t'.join([
 					'Variant index',
 					'Doubling time (min)',
+					'Ribosome counts',
 					'Ribosome conc. (uM)',
+					'Inactive RNAP counts',
 					'Inactive RNAP conc. (uM)',
 					'rRNA promoter copy numbers',
 					'rRNA promoter conc. (count / fg DNA)',
@@ -146,7 +154,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					'\t'.join([
 						str(k),
 						str(doubling_times[k]),
+						str(ribosome_counts[k]),
 						str(ribosome_concentrations[k]),
+						str(inactive_rnap_counts[k]),
 						str(inactive_rnap_concentrations[k]),
 						str(rrna_gene_copy_numbers[k]),
 						str(rrna_gene_concentrations[k]),
