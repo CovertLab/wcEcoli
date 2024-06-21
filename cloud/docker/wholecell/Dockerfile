@@ -9,7 +9,7 @@
 # (If you want to build container image #3 on top of the locally-built base,
 # you'll have to edit that Dockerfile or upload this image.)
 #
-# (To build using the Cloud Build service and store in the Container Registry,
+# (To build using the Cloud Build service and store in an Artifact Registry,
 # run `cloud/build.sh`.)
 #
 # After building locally you can start up a new container from the image:
@@ -18,8 +18,9 @@
 #
 # or if you used build.sh or build-wcm.sh to build using Cloud Build:
 #
-#     > PROJECT="$(gcloud config get-value core/project)"
-#     > TAG="gcr.io/${PROJECT}/${USER}-wcm-code"
+#     > PROJECT="$(gcloud config get core/project)"
+#     > REGION="$(gcloud config get compute/region)"
+#     > TAG="${REGION}-docker.pkg.dev/${PROJECT}/wcm/${USER}-wcm-code"
 #     > docker run --name wholecelltest -it --rm "${TAG}"
 #
 # It will start a shell where you can execute commands:
@@ -46,7 +47,8 @@ LABEL application="Whole Cell Model of Escherichia coli" \
     email="allencentercovertlab@gmail.com" \
     license="https://github.com/CovertLab/WholeCellEcoliRelease/blob/master/LICENSE.md" \
     organization="Covert Lab at Stanford" \
-    website="https://www.covert.stanford.edu/"
+    website="https://www.covert.stanford.edu/" \
+    repository="https://github.com/CovertLab/wcEcoli"
 
 COPY . /wcEcoli
 WORKDIR /wcEcoli
