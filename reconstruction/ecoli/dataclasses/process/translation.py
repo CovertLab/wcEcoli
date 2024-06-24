@@ -13,6 +13,7 @@ from wholecell.utils.random import make_elongation_rates
 
 PROCESS_MAX_TIME_STEP = 2.
 USE_NEW_DEG_RATES  = 4
+SAVE_DATA = 0
 
 class Translation(object):
 	""" Translation """
@@ -135,13 +136,30 @@ class Translation(object):
 		}
 
 		deg_rate = np.zeros(n_proteins)
+
+		# save rate constants for each protein
+		CL_rate_contstants = []
+		ML_rate_constants = []
+		NH3_rate_constants = []
+		NE_rate_contstants = []
+		# save protein id for each rate constant:
+		CL_protein_ids = []
+		ML_protein_ids = []
+		NH3_protein_ids = []
+		NE_protein_ids = []
+
 		# Use measured degradation rates if available, then ammonia rates
 		if USE_NEW_DEG_RATES == 1:
+			name = "CLNH3NE"
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
 				elif protein['id'] in ammonia_deg_rates:
 					deg_rate[i] = ammonia_deg_rates[protein['id']]
+					NH3_protein_ids.append(protein['id'])
+					NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
 				else:
 					seq = protein['seq']
 					assert seq[0] == 'M'
@@ -149,12 +167,17 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
 		# Use measured degradation rates if available, then n end rule rates
 		if USE_NEW_DEG_RATES == 2:
+			name= "CLNE"
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
 				else:
 					seq = protein['seq']
 					assert seq[0] == 'M'
@@ -162,15 +185,22 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
 		# Use measured degradation rates if available, then pulsed SILAC rates
 		if USE_NEW_DEG_RATES == 3:
+			name = "CLMLNE"
 			for i, protein in enumerate(all_proteins):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -180,18 +210,28 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
 
 		# Use lab's measured degradation rates, the ammonia measured rates,
 		# then pulsed SILAC rates followed by N end rule rates:
 		if USE_NEW_DEG_RATES == 4:
+			name = "CLNH3MLNE"
 			for i, protein in enumerate(all_proteins):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
 				elif protein['id'] in ammonia_deg_rates:
 					deg_rate[i] = ammonia_deg_rates[protein['id']]
+					NH3_protein_ids.append(protein['id'])
+					NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -200,6 +240,32 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
+
+		if SAVE_DATA == 1:
+			# generate the dataframes to be saved for the specific rate sources in the above data:
+			import pandas as pd
+			import os
+			outpth = os.path.join("/Users/miagrahn/wcEcoli/out", "saved_data", name)
+			if not os.path.exists(outpth):
+				os.makedirs(outpth)
+			# Save CL rate constants
+			CL_df = pd.DataFrame(list(zip(CL_protein_ids, CL_rate_contstants)), columns =['Protein ID', 'Rate Constant'])
+			CL_df.to_csv(os.path.join(outpth, f"CL_rate_constants.csv"), index=False)
+			# Save NH3 rate constants
+			NH3_df = pd.DataFrame(list(zip(NH3_protein_ids, NH3_rate_constants)), columns =['Protein ID', 'Rate Constant'])
+			NH3_df.to_csv(os.path.join(outpth, f"NH3_rate_constants.csv"), index=False)
+			# Save ML rate constants
+			ML_df = pd.DataFrame(list(zip(ML_protein_ids, ML_rate_constants)), columns =['Protein ID', 'Rate Constant'])
+			ML_df.to_csv(os.path.join(outpth, f"ML_rate_constants.csv"), index=False)
+			# Save NE rate constants
+			NE_df = pd.DataFrame(list(zip(NE_protein_ids, NE_rate_contstants)), columns =['Protein ID', 'Rate Constant'])
+			NE_df.to_csv(os.path.join(outpth, f"NE_rate_constants.csv"), index=False)
+
+
+
 
 		# deg_rate = np.zeros(len(all_proteins))
 		# for i, protein in enumerate(all_proteins):
