@@ -156,6 +156,9 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			* (units.s) * self.timeStepSec() / 
 			n_ribosomes_to_activate).asNumber()
 		max_p_per_protein = max_p*cistron_counts[self.cistron_to_monomer_mapping]
+		self.writeToListener("RibosomeData", "max_p", max_p)
+		self.writeToListener(
+			"RibosomeData", "max_p_per_protein", max_p_per_protein)
 		is_overcrowded = (protein_init_prob > max_p_per_protein)
 
 		# Initalize flag to record if the number of ribosomes activated at this
@@ -271,7 +274,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			pos_on_mRNA=positions_on_mRNA,
 		)
 
-		# Decrement free 30S and 70S ribosomal subunit counts
+		# Decrement free 30S and 50S ribosomal subunit counts
 		self.ribosome30S.countDec(n_new_proteins.sum())
 		self.ribosome50S.countDec(n_new_proteins.sum())
 
