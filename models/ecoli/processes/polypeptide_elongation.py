@@ -156,7 +156,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			enumerate(self.monomerIds)}
 		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
 									monomer_id in self.new_gene_monomer_ids]
-		self.elongation_rates[new_gene_monomer_indexes] = 900  # units.aa/units.s
+		self.elongation_rates[new_gene_monomer_indexes] = 300  # units.aa/units.s
 
 		sequences = buildSequences(
 			self.proteinSequences,
@@ -164,8 +164,17 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			peptideLengths,
 			self.elongation_rates)
 
+		self.request_sequences = sequences
+		self.proteinIndexes = proteinIndexes
+		self.peptideLengths = peptideLengths
+		# TODO: CHECK THIS
+
 		sequenceHasAA = (sequences != polymerize.PAD_VALUE)
 		aasInSequences = np.bincount(sequences[sequenceHasAA], minlength=21)
+
+		self.NGsequences = sequences[proteinIndexes == new_gene_monomer_indexes[0], :]
+		self.NGsequenceHasAA = (self.NGsequences != polymerize.PAD_VALUE)
+		self.aasInNGSequences = np.bincount(self.NGsequences[self.NGsequenceHasAA], minlength=21)
 
 		# Calculate AA supply for expected doubling of protein
 		dryMass = (self.readFromListener("Mass", "dryMass") * units.fg)
@@ -187,6 +196,14 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		# Request full access to active ribosome molecules
 		self.active_ribosomes.request_access(self.EDIT_DELETE_ACCESS)
+
+		if (self.NGsequenceHasAA.sum(axis = 1)).sum() < len(self.NGsequenceHasAA):
+			print("yay")
+			import ipdb
+			ipdb.set_trace()
+
+		# import ipdb
+		# ipdb.set_trace()
 
 	def evolveState(self):
 		# Set values for metabolism in case of early return
@@ -224,6 +241,17 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		aaCountInSequence = np.bincount(sequences[(sequences != polymerize.PAD_VALUE)])
 		total_aa_counts = self.aas.counts()
 
+		# TODO: if these simulations produce useful data, implement this in a
+		# non-forced, more general way (perhaps a new gene flat file? variant?)
+		monomer_idx_dict = {monomer: i for i, monomer in
+			enumerate(self.monomerIds)}
+		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
+			monomer_id in self.new_gene_monomer_ids]
+
+		self.NGsequences2 = sequences[protein_indexes == new_gene_monomer_indexes[0], :]
+		self.NGsequenceHasAA2 = (self.NGsequences2 != polymerize.PAD_VALUE)
+		self.aasInNGSequences2 = np.bincount(self.NGsequences2[self.NGsequenceHasAA2], minlength=21)
+
 		# MODEL SPECIFIC: Get amino acid counts
 		aa_counts_for_translation = self.elongation_model.final_amino_acids(total_aa_counts)
 
@@ -241,12 +269,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			variable_elongation=self.variable_polymerize,
 			)
 
-		# TODO: if these simulations produce useful data, implement this in a
-		# non-forced, more general way (perhaps a new gene flat file? variant?)
-		monomer_idx_dict = {monomer: i for i, monomer in
-			enumerate(self.monomerIds)}
-		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-			monomer_id in self.new_gene_monomer_ids]
 		print("Evolve Elongation Rate: ", self.elongation_rates[new_gene_monomer_indexes])
 		assert self.elongation_rates[new_gene_monomer_indexes][0] == 900, "not 900 anymore!"
 
@@ -307,6 +329,11 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers.countsInc(terminatedProteins)
 
 		print("(Evolve Elong) Number of GFP ribos terminated: ", terminatedProteins[-1])
+		print("\n")
+
+		if new_gene_monomer_indexes[0] in protein_indexes and ng_effective_elong_rate < 238:
+			import ipdb
+			ipdb.set_trace()
 
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()

@@ -79,7 +79,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		self._reactionLimit = reactionLimit
 		self._randomState = randomState
 		self._raw_elongation_rates = elongation_rates
-		self.elongation_rates = elongation_rates / np.max(elongation_rates)
+		self.elongation_rates = elongation_rates / np.max(elongation_rates) # THIS IS UNITLESS NOW? NOT ACTUALLY A RATE?
 		self.variable_elongation = variable_elongation
 
 		# Prepare for iteration

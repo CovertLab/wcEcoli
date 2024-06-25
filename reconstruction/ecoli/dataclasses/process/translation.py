@@ -22,7 +22,7 @@ class Translation(object):
 		self.next_aa_pad = 1  # Need an extra amino acid in sequences lengths to find next one
 
 		### TODO: This is a temporary fix to get the GFP no ribosome simulations to work
-		self.extra_pad = 1000
+		self.extra_pad = 300
 
 		self._build_monomer_data(raw_data, sim_data)
 		self._build_translation(raw_data, sim_data)
