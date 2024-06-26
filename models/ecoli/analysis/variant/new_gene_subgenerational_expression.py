@@ -8,16 +8,13 @@ import pickle
 import os
 
 import csv
-from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
+from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
-# IGNORE_FIRST_N_GENS = 16
-IGNORE_FIRST_N_GENS = 0
+IGNORE_FIRST_N_GENS = 16
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
