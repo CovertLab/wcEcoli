@@ -267,6 +267,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			self.randomState,
 			self.elongation_rates[protein_indexes],
 			variable_elongation=self.variable_polymerize,
+			debug_flag=True,
 			)
 
 		print("Evolve Elongation Rate: ", self.elongation_rates[new_gene_monomer_indexes])

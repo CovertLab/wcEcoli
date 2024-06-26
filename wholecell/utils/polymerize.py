@@ -67,7 +67,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			reactionLimit,
 			randomState,
 			elongation_rates,
-			variable_elongation=False):
+			variable_elongation=False,
+			debug_flag=False):
+
+		self.debug_flag = debug_flag
 
 		# Check dimensions
 		if sequences.shape[0] != len(elongation_rates):
@@ -91,6 +94,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		# Clean up
 		self._finalize()
 
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
+
 	# __init__ subroutines
 	# Several of these assign new attributes outside of __init__'s immediate
 	# context; however, they should only ever be called by __init__.
@@ -106,6 +113,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		self._gather_sequence_data()
 		self._prepare_running_values()
 		self._prepare_outputs()
+
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
 
 	def _sanitize_inputs(self):
 		'''
@@ -207,6 +218,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			# Otherwise, update running values
 			self._update_elongation_resource_demands()
 
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
+
 	def _elongate_to_limit(self):
 		'''
 		Elongate as far as possible without hitting any resource limitations.
@@ -283,6 +298,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		# consequently removing the need to "return" anything
 		fully_elongated = (limitingExtent == self._maxElongation)
 
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
+
 		return fully_elongated
 
 	def _finalize_resource_limited_elongations(self):
@@ -345,6 +364,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 
 				sequencesToCull[culledIndexes] = True
 
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
+
 		# Cull sequences
 		self._activeSequencesIndexes = self._activeSequencesIndexes[~sequencesToCull]
 		self.elongation_rates = self.elongation_rates[~sequencesToCull]
@@ -357,6 +380,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		'''
 
 		self._maxElongation = self._sequenceLength - self._currentStep
+
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
 
 	# Finalization subroutines
 
@@ -374,6 +401,10 @@ class polymerize(object): # Class name is lowercase because interface is functio
 			!= self.sequenceElongation
 			)
 
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
+
 	def _clamp_elongation_to_sequence_length(self):
 		'''
 		A post-iteration clean-up operation.  Restricts the elongation of a
@@ -385,3 +416,7 @@ class polymerize(object): # Class name is lowercase because interface is functio
 		self.sequenceElongation = np.fmin(
 			self.sequenceElongation,
 			self._sequenceLengths)
+
+		if self.debug_flag:
+			import ipdb
+			ipdb.set_trace()
