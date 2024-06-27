@@ -81,6 +81,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_essential_genes = len(essential_genes)
 
 		for variant in variants:
+			print("Variant: ", variant)
 
 			cell_paths = self.ap.get_cells(
 				variant=[variant],
@@ -120,7 +121,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Write data to table for this variant
 			with open(os.path.join(
-					plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
+					plotOutDir, plotOutFileName + '.tsv'), 'a') as f:
 				writer = csv.writer(f, delimiter='\t')
 				if variant == min(variants):
 					writer.writerow([
@@ -135,7 +136,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Write gene data to detailed table for this variant
 			with open(os.path.join(
-					plotOutDir, plotOutFileName + '_detailed.tsv'), 'w') as f:
+					plotOutDir, plotOutFileName + '_detailed.tsv'), 'a') as f:
 				writer = csv.writer(f, delimiter='\t')
 				if variant == min(variants):
 					writer.writerow([
