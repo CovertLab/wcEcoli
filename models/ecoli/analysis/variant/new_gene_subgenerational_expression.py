@@ -15,7 +15,6 @@ from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
 IGNORE_FIRST_N_GENS = 16
-IGNORE_FIRST_N_GENS = 0
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
