@@ -103,11 +103,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True).max(axis=0)[mRNA_cistron_indexes]
 
-			# Get maximum counts of monomers for each gene across all timepoints
-			max_monomer_counts = read_stacked_columns(
-				cell_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True).max(axis=0)[monomer_indexes]
-
 			# Get indexes of subgenerationally expressed genes
 			subgen_exp_indexes = np.where(np.logical_and(
 				p_mRNA_exists_in_gen > 0, p_mRNA_exists_in_gen < 1
@@ -118,6 +113,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Count number of subgenerationally expressed genes that are essential
 			n_subgen_essential_genes = np.sum(is_essential[subgen_exp_indexes])
+
+			# Get maximum counts of monomers for each gene across all timepoints
+			max_monomer_counts = read_stacked_columns(
+				cell_paths, 'MonomerCounts', 'monomerCounts',
+				ignore_exception=True).max(axis=0)[monomer_indexes]
+
+			# Get boolean matrix for whether each gene's monomer exists in each
+			# generation or not
+			monomer_exists_in_gen = read_stacked_columns(
+				cell_paths, 'MonomerCounts', 'monomerCounts',
+				ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[:, monomer_indexes]
+
+			# Divide by total number of cells to get probability
+			p_monomer_exists_in_gen = (
+					monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
+
+			# Get indexes of genes that are subgenerational at the monomer level
+			monomer_subgen_exp_indexes = np.where(np.logical_and(
+				p_monomer_exists_in_gen > 0, p_monomer_exists_in_gen < 1
+				))[0]
+
+			# Get number of genes that are subgenerational at the monomer level
+			n_monomer_subgen_genes = len(monomer_subgen_exp_indexes)
+
+			# Count number of essential genes that are subgenerational at the monomer level
+			n_monomer_subgen_essential_genes = np.sum(is_essential[monomer_subgen_exp_indexes])
 
 			# Write data to table for this variant
 			with open(os.path.join(
@@ -150,6 +171,39 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
 						max_mRNA_counts[i], max_monomer_counts[i],
 						is_essential[i]])
+
+			# Write monomer data to table for this variant
+			with open(os.path.join(
+					plotOutDir, plotOutFileName + '_monomer.tsv'), 'a') as f:
+				writer = csv.writer(f, delimiter='\t')
+				if variant == min(variants):
+					writer.writerow([
+						'variant', 'n_monomer_subgen_genes', 'n_monomer_subgen_essential_genes',
+						'fraction_genes_monomer_subgen',
+						'fraction_essential_genes_monomer_subgen'])
+
+				writer.writerow([
+					variant, n_monomer_subgen_genes, n_monomer_subgen_essential_genes,
+					n_monomer_subgen_genes / total_genes,
+					n_monomer_subgen_essential_genes / total_essential_genes])
+
+			# Write monomer data to detailed table for this variant
+			with open(os.path.join(
+					plotOutDir, plotOutFileName + '_monomer_detailed.tsv'), 'a') as f:
+				writer = csv.writer(f, delimiter='\t')
+				if variant == min(variants):
+					writer.writerow([
+						'variant','gene_name', 'cistron_name', 'protein_name',
+						'p_mRNA_expressed', 'p_monomer_expressed',
+						'max_mRNA_count', 'max_protein_count',
+						'is_essential'])
+
+				for i in monomer_subgen_exp_indexes:
+					writer.writerow([
+						variant, gene_ids[i], mRNA_cistron_ids[i],
+						monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
+						p_monomer_exists_in_gen[i], max_mRNA_counts[i],
+						max_monomer_counts[i], is_essential[i]])
 
 if __name__ == "__main__":
 	Plot().cli()
