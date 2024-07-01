@@ -304,6 +304,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Load attributes for complexes
 		complex_ids = sim_data.process.complexation.ids_complexes
+		complex_ecocyc_ids = [complex_id[:-3] for complex_id in complex_ids]  # strip [*]
 		complex_mw = sim_data.getter.get_masses(complex_ids).asNumber(units.fg / units.count)
 
 		# Read columns
@@ -325,6 +326,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Count active ribosomes as full ribosome complexes
 		complex_ids.append(ECOCYC_FULL_RIBOSOME_ID)
+		complex_ecocyc_ids.append(ECOCYC_FULL_RIBOSOME_ID)
 		full_ribosome_mw = (sim_data.getter.get_mass(
 			sim_data.molecule_ids.s50_full_complex) + sim_data.getter.get_mass(
 			sim_data.molecule_ids.s30_full_complex)).asNumber(units.fg / units.count)
@@ -342,8 +344,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		complex_mass_relative_to_total_dcw = complex_mass_avg / dry_masses.mean()
 
 		# Save complex data in table
-		complex_ecocyc_ids = [complex_id[:-3] for complex_id in complex_ids]  # strip [*]
-
 		columns = {
 			'id': 'Object ID, according to EcoCyc',
 			'complex-count-avg': 'A floating point number',
