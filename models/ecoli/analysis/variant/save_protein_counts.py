@@ -9,11 +9,13 @@ import csv
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-from models.ecoli.analysis import multigenAnalysisPlot
+
+from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 											   read_bulk_molecule_counts, read_stacked_bulk_molecules,
 											   read_stacked_columns, stacked_cell_threshold_mask)
 from wholecell.io.tablereader import TableReader
+# TODO: figure out how to add a clause in here that handles data specifically for variants? In fact, maybe this should be a script in multigen and not variants (ie there should be another script for saving all the diffent variant types)
 #TODO: consider whether to maybe combine this script with the new gene data saving script, and just have a clause that says "if new genes are present, save this way instead"
 """
 Indicate which generation the data should start being collected from (sometimes 
@@ -32,10 +34,7 @@ The default is set to 0, but can be changed to any number greater than 0.
 """
 # Number to be set as the minimum threshold PC value proteins must have in both
 # variants in order to be used in the plots to follow (set to 0 for default):
-#todo: edit this to have a "produce_filtered_csv" question and then if that is set to one, you can specifiy a filter number (cant be the same bc filter num can be zero)
 filter_num = 0
-
-save_filtered_data = 1
 
 def save_file(out_dir, filename, columns, values):
 	output_file = os.path.join(out_dir, filename)
@@ -50,7 +49,7 @@ def save_file(out_dir, filename, columns, values):
 		for i in range(values.shape[0]):
 			writer.writerow(values[i,:])
 
-class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
+class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def generate_data(self, simDataFile):
 		"""
 		Generates csv files of protein count data from simulations
@@ -82,142 +81,164 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		self.all_monomer_ids = monomer_sim_data['id']
 		monomer_idx_dict = {monomer: i for i, monomer in
 							enumerate(self.all_monomer_ids)}
-		total_protein_counts = np.zeros(len(self.all_monomer_ids))
-		all_cells = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens), only_successful=True)
+		self.total_protein_counts = np.zeros((len(self.variant_pair),
+											  len(self.all_monomer_ids)))
+		for var_idx in range(len(self.variant_pair)):
+			variant = self.variant_pair[var_idx]
+			all_cells = self.ap.get_cells(variant=[variant],
+										  generation=np.arange(IGNORE_FIRST_N_GENS,
+															   self.n_total_gens),
+										  only_successful=True)
+			# Get the protein counts for each gene/protein
+			gen_avg_monomer_counts = (
+				read_stacked_columns(all_cells,'MonomerCounts',
+									 'monomerCounts',
+									 fun=lambda x: np.mean(x[:], axis=0)))
+			total_avg_gene_counts = np.mean(gen_avg_monomer_counts, axis=0)
+			self.total_protein_counts[var_idx] = total_avg_gene_counts
+			old_gene_idxs = [monomer_idx_dict.get(monomer_id)
+							 for monomer_id in self.original_monomer_ids]
+			avg_gene_monomer_counts = total_avg_gene_counts[old_gene_idxs]
+			protein_counts[var_idx] = avg_gene_monomer_counts
 
-		# Get the protein counts for each gene/protein
-		gen_avg_monomer_counts = (read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts', fun=lambda x: np.mean(x[:], axis=0)))
-		total_avg_gene_counts = np.mean((gen_avg_monomer_counts), axis=0)
-		total_protein_counts = total_avg_gene_counts
-		total_protein_counts = np.array(total_protein_counts)
-
-		return total_protein_counts
-
+		protein_counts = np.array(protein_counts)
+		self.total_protein_counts = np.array(self.total_protein_counts)
+		return protein_counts
 
 	def get_ids(self, monomer_idx_dict, protein_idxs):
 		"""
-		Obtain the protein ids for each protein based on its respective index
+		Obtain the protein ids for proteins based on their indexes
 		Args:
 			monomer_idx_dict: a dictionary that maps protein names to their idx
 			protein_idxs: an array of indices for proteins of interest
 		Returns: the corresponding id for each respective protein index
 		"""
 		inv_monomer_idx_dict = {idx: i for i, idx in monomer_idx_dict.items()}
-		protein_ids = [inv_monomer_idx_dict.get(monomer_id) for monomer_id in protein_idxs]
+		protein_ids = [
+			inv_monomer_idx_dict.get(monomer_id) for monomer_id in protein_idxs]
 		return protein_ids
 
 	def get_LogData(self, protein_idxs, interest_protein_counts, index_vals=[]):
 		"""
-		todo: update full description
-		Covert normal protein count data to their log10 values
+		Covert normal protein count data to their log values
 		Args:
 			protein_idxs: an array of the indices for proteins of interest
 			interest_protein_counts: the full data structure  of protein counts
 			(usually size variants by # of proteins), either filtered or unfiltered
-			index_vals: if the protein idxs are not in sequential order (usually happens
-			after filtering the data)
+			index_vals: if the protein idxs are not in sequential order
 		Returns: an data structure of the log version of interest PCs
 		"""
-		avg_log_interest_proteins = np.zeros(len(protein_idxs))
-		for idx in range(len(protein_idxs)):
-			if len(index_vals) == 0:
-				index = idx
-			else:
-				index = index_vals[idx]
-			avg_log_interest_proteins[idx] = (
-                np.log10(interest_protein_counts[index] + 1))
+		avg_log_interest_proteins = np.zeros((
+			len(self.variant_pair), len(protein_idxs)))
+		for variant in range(len(self.variant_pair)):
+			for idx in range(len(protein_idxs)):
+				if len(index_vals) == 0:
+					index = idx
+				else:
+					index = index_vals[idx]
+				avg_log_interest_proteins[variant][idx] = \
+					np.log10(interest_protein_counts[variant][index] + 1)
 		return avg_log_interest_proteins
 
 	def filter_data(self, nonfiltered_protein_counts,
 					nonfiltered_monomer_idx_dict, filter_num=0):
 		"""
-		Filter the data to extract all proteins with 0 (or below a specified filter_num)
-		protein counts (PCs)
+		Filter the data to extract all proteins with 0 PCs in at least variant
 		Args:
 			nonfiltered_protein_counts: array of PCs for all proteins
 			nonfiltered_monomer_idx_dict: dictionary that maps id to index
-			filter_num: the minimum number of PCs a protein must have to avoid being
-			discarded from the new filtered data (set to zero by default).
+			filter_num: the minimum number of PCs a protein must have in both
+			variants to avoid being discarded from the new filtered data
+			(by default this is set to zero).
 		Returns: an array of PCs, ids, and indexes for the remaining proteins
 		that successfully pass the user defined filter (or the default set to 0)
 		"""
 		# Extract all proteins with non-zero protein counts in both variants:
-		nonzero_PC_idxs = np.nonzero(nonfiltered_protein_counts)
-		nonzero_PCs = nonfiltered_protein_counts[nonzero_PC_idxs]
-		#todo why are there nonzero_PC_ids and nonzero_ids? do they make the same output?
-		nonzero_PC_ids = self.get_ids(nonfiltered_monomer_idx_dict,
-									   nonzero_PC_idxs)
-		nonzero_ids = self.all_monomer_ids[nonzero_PC_idxs]
+		nonzero_p_counts_var0_idxs = np.nonzero(nonfiltered_protein_counts[0])
+		nonzero_p_counts_var1_idxs = np.nonzero(nonfiltered_protein_counts[1])
+		shared_nonzero_PCs_idxs = np.intersect1d(nonzero_p_counts_var0_idxs,
+												 nonzero_p_counts_var1_idxs)
+		nonzero_PCs = nonfiltered_protein_counts[:, shared_nonzero_PCs_idxs]
+		nonzero_PCs_ids = self.get_ids(nonfiltered_monomer_idx_dict,
+									   shared_nonzero_PCs_idxs)
+		nonzero_ids = self.all_monomer_ids[shared_nonzero_PCs_idxs]
 
 		if filter_num == 0:
 			pass
 		else:
-			filter_PC_idxs = np.nonzero(nonzero_PCs > filter_num)
-			nonzero_PCs = nonzero_PCs[filter_PC_idxs]
-			nonzero_PC_ids = np.array(nonzero_PC_ids)
-			nonzero_PC_ids = nonzero_PC_ids[filter_PC_idxs]
-			nonzero_PC_idxs = filter_PC_idxs
-
-		return nonzero_PCs, nonzero_PC_ids, nonzero_PC_idxs
+			var0_filter_PCs_idxs = np.nonzero(nonzero_PCs[0] > filter_num)
+			var1_filter_PCs_idxs = np.nonzero(nonzero_PCs[1] > filter_num)
+			shared_filtered_PC_idxs = np.intersect1d(var0_filter_PCs_idxs,
+													 var1_filter_PCs_idxs)
+			nonzero_PCs = nonzero_PCs[:, shared_filtered_PC_idxs]
+			nonzero_PCs_ids = np.array(nonzero_PCs_ids)
+			nonzero_PCs_ids = nonzero_PCs_ids[shared_filtered_PC_idxs]
+			nonzero_ids = shared_filtered_PC_idxs
+		return nonzero_PCs, nonzero_PCs_ids, nonzero_ids
 
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 		"""
-		Call data generating functions for saving data to csv files
+		Call data generating functions for saving
 		"""
 
 		# Create saving paths
-		#todo why is it written like this?
 		outDir = plotOutDir[:-8]
-		save_pth = os.path.join(outDir, "saved_protein_count_data")
+		save_pth = os.path.join(outDir, "saved_data")
 		pth = os.path.join(save_pth, "unfiltered_data")
-		log_pth = os.path.join(pth, "log_data")
-
+		F_pth = os.path.join(save_pth, "filtered_data")
 
 		if not os.path.exists(save_pth):
 			os.mkdir(save_pth)
 			os.mkdir(pth)
-			os.mkdir(log_pth)
+			os.mkdir(F_pth)
 
-		# define/initialize commonly used variables
-		self.n_total_gens = self.ap.n_generation
-		self.all_monomer_ids = []
-		monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
-									  enumerate(self.all_monomer_ids)}
-		total_protein_counts = self.generate_data(simDataFile)
+		# Get data for all variants
+		all_variants = self.ap.get_variants()
+		control_var = all_variants[0]
+		experimental_vars = all_variants[1:]
+		for variant_2 in experimental_vars:
+			self.variant_pair = [control_var, variant_2]
+			experimental_var = self.variant_pair[1]
 
-		# Save unfiltered data
-		startGen = IGNORE_FIRST_N_GENS + 1
-		col_labels = ["Monomer ID", "Average Protein Count"]
-		ids = np.transpose(np.array(self.all_monomer_ids))
-		ids = ids.reshape(-1, 1)
-		PCs_current = np.transpose(np.array(total_protein_counts))
-		PCs_current = PCs_current.reshape(-1, 1)
-		values = np.concatenate((ids, PCs_current), axis=1)
-		save_file(
-			pth,
-			f'AvgProteinCounts_startGen_'
-			f'{startGen}.csv',
-			col_labels, values)
+			# define/initialize commonly used variables
+			self.n_total_gens = self.ap.n_generation
+			self.all_monomer_ids = []
+			self.original_monomer_ids = []
+			self.new_gene_monomer_ids = []
+			self.total_protein_counts = []
+			protein_counts = self.generate_data(simDataFile)
+			monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
+										  enumerate(self.all_monomer_ids)}
 
-		# Create and save filtered data
-		if save_filtered_data == 1:
-			F_pth = os.path.join(save_pth, "filtered_data")
-			F_log_pth = os.path.join(F_pth, "log_data")
-			if not os.path.exists(F_pth):
-				os.mkdir(F_pth)
-				os.mkdir(F_log_pth)
 			# Manditory Data Filtration
 			F_PCs, F_PC_ids, F_PC_idxs = (
-				self.filter_data(total_protein_counts, monomer_idx_dict_PreFilter,
-								filter_num))
-			Fcol_labels = ["Filtered Monomer ID", "Average Protein Count"]
+				self.filter_data(protein_counts, monomer_idx_dict_PreFilter,
+								 filter_num))
+
+			# Save unfiltered data
+			expstr = "var_" + str(experimental_var) + "_avg_PCs"
+			col_labels = ["all_monomer_ids","var_0_avg_PCs", expstr]
+			ids = [np.array(self.all_monomer_ids)]
+			ids = np.transpose(ids)
+			PCs_current = self.total_protein_counts
+			values = np.concatenate((ids, PCs_current.T), axis=1)
+			save_file(
+				pth,
+				f'wcm_full_monomers_var_{experimental_var}_startGen_'
+				f'{IGNORE_FIRST_N_GENS}.csv',
+				col_labels, values)
+
+			# Save filtered data
+			Fcol_labels = ["filtered_monomer_ids", "var_0_avg_PCs", expstr]
 			F_PC_ids = [np.array(F_PC_ids)]; F_PC_ids = np.transpose(F_PC_ids)
 			F_PCs_current = F_PCs
 			Fvalues = np.concatenate((F_PC_ids, F_PCs.T), axis=1)
 			save_file(
 				F_pth,
-				f'Filtered_AvgProteinCounts_startGen_{startGen}.csv', Fcol_labels, Fvalues)
+				f'wcm_filter_{filter_num}_monomers_var_{experimental_var}'
+				f'_startGen_{IGNORE_FIRST_N_GENS}.csv',
+				Fcol_labels, Fvalues)
 
 if __name__ == "__main__":
 	Plot().cli()
