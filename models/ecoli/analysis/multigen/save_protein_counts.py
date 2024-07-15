@@ -77,12 +77,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		self.all_monomer_ids = monomer_sim_data['id']
 		all_cells = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens), only_successful=True)
-		# todo: need to figure out how to get it to average across all the seeds too.
 		# Get the protein counts for each gene/protein
 		gen_avg_monomer_counts = (read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts', fun=lambda x: np.mean(x[:], axis=0)))
+
+		# todo: need to figure out how to get it to average across all the seeds too. (or figure out if it is automatically doing that)
+		# attempt to average over seeds:
+		(gen_avg_monomer_counts_seeds,) =  read_stacked_bulk_molecules(
+			all_cells, self.all_monomer_ids, ignore_exception=True)
+		# average gen_avg_monomer_counts_seeds along the 0th axis
+		avg_monomer_counts = np.mean(gen_avg_monomer_counts_seeds, axis=0)
+
+		# todo: make sure to check these numbers when debugging:
 		total_avg_gene_counts = np.mean((gen_avg_monomer_counts), axis=0)
-		total_protein_counts = total_avg_gene_counts
-		total_protein_counts = np.array(total_protein_counts)
+		total_protein_counts = np.array(total_avg_gene_counts)
+		hi = 3
 
 		return total_protein_counts
 
