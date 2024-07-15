@@ -13,6 +13,7 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 											   read_bulk_molecule_counts, read_stacked_bulk_molecules,
 											   read_stacked_columns, stacked_cell_threshold_mask)
+from wholecell.utils.protein_counts import get_simulated_validation_counts
 from wholecell.io.tablereader import TableReader
 #TODO: consider whether to maybe combine this script with the new gene data saving script, and just have a clause that says "if new genes are present, save this way instead"
 """
@@ -37,6 +38,9 @@ filter_num = 0
 
 save_filtered_data = 1
 
+#todo write an explaination here
+save_with_validation_data = 1
+
 def save_file(out_dir, filename, columns, values):
 	output_file = os.path.join(out_dir, filename)
 	print(f'Saving data to {output_file}')
@@ -51,7 +55,7 @@ def save_file(out_dir, filename, columns, values):
 			writer.writerow(values[i,:])
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
-	def generate_data(self, simDataFile):
+	def generate_data(self, simDataFile, validationDataFile):
 		"""
 		Generates csv files of protein count data from simulations
 		Args:
@@ -74,7 +78,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			sim_data = pickle.load(f)
 		monomer_sim_data = (
 			sim_data.process.translation.monomer_data.struct_array)
-
+		validation_data = self.read_pickle_file(validationDataFile)
 		self.all_monomer_ids = monomer_sim_data['id']
 		all_cells = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens), only_successful=True)
 		# Get the protein counts for each gene/protein
@@ -90,9 +94,46 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# todo: make sure to check these numbers when debugging:
 		total_avg_gene_counts = np.mean((gen_avg_monomer_counts), axis=0)
 		total_protein_counts = np.array(total_avg_gene_counts)
-		hi = 3
 
 		return total_protein_counts
+
+	def get_validation_data(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		#adapted from multigen and single/proteinCountsValidation.py
+		sim_data = self.read_pickle_file(simDataFile)
+		validation_data = self.read_pickle_file(validationDataFile)
+
+		monomer_ids = sim_data.process.translation.monomer_data["id"]
+		sim_monomer_ids = sim_data.process.translation.monomer_data["id"]
+		wisniewski_ids = validation_data.protein.wisniewski2014Data["monomerId"]
+		schmidt_ids = validation_data.protein.schmidt2015Data["monomerId"]
+		wisniewski_counts = validation_data.protein.wisniewski2014Data["avgCounts"]
+		schmidt_counts = validation_data.protein.schmidt2015Data["glucoseCounts"]
+
+		# Get all cells
+		allDir = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens), only_successful=True)
+		sim_schmidt_counts_multigen = []
+		sim_wisniewski_counts_multigen = []
+
+		for simDir in allDir:
+
+			simOutDir = os.path.join(simDir, "simOut")
+
+			monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
+			monomer_counts = monomer_counts_reader.readColumn("monomerCounts")
+
+			# Obtain the protein counts for protiens that are present in both the simluation and validation datasets:
+			sim_schmidt_counts, val_schmidt_counts, schmidt_overlap_ids = get_simulated_validation_counts(
+				schmidt_counts, monomer_counts, schmidt_ids, monomer_ids)
+			sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = get_simulated_validation_counts(
+				wisniewski_counts, monomer_counts, wisniewski_ids, sim_monomer_ids)
+
+			sim_schmidt_counts_multigen.append(sim_schmidt_counts)
+			sim_wisniewski_counts_multigen.append(sim_wisniewski_counts)
+
+		sim_schmidt_counts_multigen = (np.array(sim_schmidt_counts_multigen)).mean(axis=0)
+		sim_wisniewski_couts_multigen = (np.array(sim_wisniewski_counts_multigen)).mean(axis=0)
+
+		return sim_schmidt_counts_multigen, val_schmidt_counts, schmidt_overlap_ids, sim_wisniewski_couts_multigen, val_wisniewski_counts, wisniewski_overlap_ids
 
 
 	def get_ids(self, monomer_idx_dict, protein_idxs):
@@ -185,12 +226,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		self.n_total_gens = self.ap.n_generation
 		seeds = self.ap.get_seeds()
 		self.all_monomer_ids = []
-		total_protein_counts = self.generate_data(simDataFile)
+		total_protein_counts = self.generate_data(simDataFile, validationDataFile)
 		monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
 									  enumerate(self.all_monomer_ids)}
 
 		# Save unfiltered data
-		startGen = IGNORE_FIRST_N_GENS + 1
+		startGen = IGNORE_FIRST_N_GENS + 1 # account for the fact that python numbering starts at 0
 		col_labels = ["Monomer ID", "Average Protein Count"]
 		ids = np.transpose(np.array(self.all_monomer_ids)); ids = ids.reshape(-1, 1)
 		PCs_current = np.transpose(np.array(total_protein_counts))
@@ -241,6 +282,73 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			save_file(
 				F_log_pth,
 				f'Filtered_LogAvgProteinCounts_startGen_{startGen}.csv', F_log_col_labels, F_log_values)
+
+		# Save protein counts with available validation data:
+		if save_with_validation_data == 1:
+			validation_pth = os.path.join(save_pth, "validation_data")
+			validation_log_path = os.path.join(validation_pth, "log_data")
+			if not os.path.exists(validation_pth):
+				os.mkdir(validation_pth)
+				os.mkdir(validation_log_path)
+			# Get validation data
+			sim_schmidt_counts, val_schmidt_counts, s_ids, sim_wisniewski_counts, val_wisniewski_counts, w_ids = self.get_validation_data(
+				inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata)
+
+			# Save Wisniewski data:
+			col_labels = ["Monomer ID", "Simulated Wisniewski Counts", "Validation Wisniewski Counts"]
+			ids = np.transpose(np.array(w_ids));
+			ids = ids.reshape(-1, 1)
+			sim_wisniewski_counts = np.transpose(np.array(sim_wisniewski_counts));
+			sim_wisniewski_counts = sim_wisniewski_counts.reshape(-1, 1)
+			val_wisniewski_counts = np.transpose(np.array(val_wisniewski_counts));
+			val_wisniewski_counts = val_wisniewski_counts.reshape(-1, 1)
+			values = np.concatenate((ids, sim_wisniewski_counts, val_wisniewski_counts), axis=1)
+			save_file(
+				validation_pth,
+				f'Wisniewski_Comparison_startGen_{IGNORE_FIRST_N_GENS + 1}.csv', col_labels, values)
+
+			# Save Schmidt data:
+			col_labels = ["Monomer ID", "Simulated Schmidt Counts", "Validation Schmidt Counts"]
+			ids = np.transpose(np.array(s_ids));
+			ids = ids.reshape(-1, 1)
+			sim_schmidt_counts = np.transpose(np.array(sim_schmidt_counts));
+			sim_schmidt_counts = sim_schmidt_counts.reshape(-1, 1)
+			val_schmidt_counts = np.transpose(np.array(val_schmidt_counts));
+			val_schmidt_counts = val_schmidt_counts.reshape(-1, 1)
+			values = np.concatenate((ids, sim_schmidt_counts, val_schmidt_counts), axis=1)
+			save_file(
+				validation_pth,
+				f'Schmidt_Comparison_startGen_{IGNORE_FIRST_N_GENS + 1}.csv', col_labels, values)
+
+			# Save log data for Wisniewski validation data:
+			log_sim_wisniewski_counts = self.get_LogData(sim_wisniewski_counts, sim_wisniewski_counts)
+			log_val_wisniewski_counts = self.get_LogData(val_wisniewski_counts, val_wisniewski_counts)
+			log_col_labels = ["Monomer ID", "Log10 Simulated Wisniewski Counts", "Log10 Validation Wisniewski Counts"]
+			log_ids = np.transpose(np.array(w_ids));
+			log_ids = log_ids.reshape(-1, 1)
+			log_sim_wisniewski_counts = np.transpose(np.array(log_sim_wisniewski_counts));
+			log_sim_wisniewski_counts = log_sim_wisniewski_counts.reshape(-1, 1)
+			log_val_wisniewski_counts = np.transpose(np.array(log_val_wisniewski_counts));
+			log_val_wisniewski_counts = log_val_wisniewski_counts.reshape(-1, 1)
+			log_values = np.concatenate((log_ids, log_sim_wisniewski_counts, log_val_wisniewski_counts), axis=1)
+			save_file(
+				validation_log_path,
+				f'Log10_Wisniewski_Comparison_startGen_{IGNORE_FIRST_N_GENS + 1}.csv', log_col_labels, log_values)
+
+			# Save log data for Schmidt validation data:
+			log_sim_schmidt_counts = self.get_LogData(sim_schmidt_counts, sim_schmidt_counts)
+			log_val_schmidt_counts = self.get_LogData(val_schmidt_counts, val_schmidt_counts)
+			log_col_labels = ["Monomer ID", "Log10 Simulated Schmidt Counts", "Log10 Validation Schmidt Counts"]
+			log_ids = np.transpose(np.array(s_ids));
+			log_ids = log_ids.reshape(-1, 1)
+			log_sim_schmidt_counts = np.transpose(np.array(log_sim_schmidt_counts));
+			log_sim_schmidt_counts = log_sim_schmidt_counts.reshape(-1, 1)
+			log_val_schmidt_counts = np.transpose(np.array(log_val_schmidt_counts));
+			log_val_schmidt_counts = log_val_schmidt_counts.reshape(-1, 1)
+			log_values = np.concatenate((log_ids, log_sim_schmidt_counts, log_val_schmidt_counts), axis=1)
+			save_file(
+				validation_log_path,
+				f'Log10_Schmidt_Comparison_startGen_{IGNORE_FIRST_N_GENS + 1}.csv', log_col_labels, log_values)
 
 if __name__ == "__main__":
 	Plot().cli()
