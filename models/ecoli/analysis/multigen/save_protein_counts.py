@@ -72,17 +72,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		"""
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		mRNA_sim_data = (
-			sim_data.process.transcription.cistron_data.struct_array)
 		monomer_sim_data = (
 			sim_data.process.translation.monomer_data.struct_array)
-		mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
-										monomer_sim_data['id']))
 
 		self.all_monomer_ids = monomer_sim_data['id']
-		monomer_idx_dict = {monomer: i for i, monomer in
-							enumerate(self.all_monomer_ids)}
-		total_protein_counts = np.zeros(len(self.all_monomer_ids))
 		all_cells = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens), only_successful=True)
 
 		# Get the protein counts for each gene/protein
@@ -111,8 +104,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		todo: update full description
 		Covert normal protein count data to their log10 values
 		Args:
-			protein_idxs: an array of the indices for proteins of interest
-			interest_protein_counts: the full data structure  of protein counts
+			protein_idxs: an array of the indices for proteins of interest (this should be smaller than the next entry if the data has been filtered)
+			interest_protein_counts: the full data structure of all original proteins and their respective counts
 			(usually size variants by # of proteins), either filtered or unfiltered
 			index_vals: if the protein idxs are not in sequential order (usually happens
 			after filtering the data)
@@ -144,10 +137,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Extract all proteins with non-zero protein counts in both variants:
 		nonzero_PC_idxs = np.nonzero(nonfiltered_protein_counts)
 		nonzero_PCs = nonfiltered_protein_counts[nonzero_PC_idxs]
+		nonzero_PC_idxs = nonzero_PC_idxs[0]
 		#todo why are there nonzero_PC_ids and nonzero_ids? do they make the same output?
 		nonzero_PC_ids = self.get_ids(nonfiltered_monomer_idx_dict,
 									   nonzero_PC_idxs)
-		nonzero_ids = self.all_monomer_ids[nonzero_PC_idxs]
 
 		if filter_num == 0:
 			pass
@@ -167,12 +160,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		"""
 
 		# Create saving paths
-		#todo why is it written like this?
+		#todo Figure out how to make this be placed in just the "out" folder!
+		# todo: note that right now I think I am not saving the data and averaging over seeds, just saving the data per seed (and averaging over all those gens. ask for a second opinion on whether this is what I want)
+
 		outDir = plotOutDir[:-8]
-		save_pth = os.path.join(outDir, "saved_protein_count_data")
+		save_pth = os.path.join(outDir, "multigen_saved_protein_count_data")
 		pth = os.path.join(save_pth, "unfiltered_data")
 		log_pth = os.path.join(pth, "log_data")
-
 
 		if not os.path.exists(save_pth):
 			os.mkdir(save_pth)
@@ -182,15 +176,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# define/initialize commonly used variables
 		self.n_total_gens = self.ap.n_generation
 		self.all_monomer_ids = []
+		total_protein_counts = self.generate_data(simDataFile)
 		monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
 									  enumerate(self.all_monomer_ids)}
-		total_protein_counts = self.generate_data(simDataFile)
 
 		# Save unfiltered data
 		startGen = IGNORE_FIRST_N_GENS + 1
 		col_labels = ["Monomer ID", "Average Protein Count"]
-		ids = np.transpose(np.array(self.all_monomer_ids))
-		ids = ids.reshape(-1, 1)
+		ids = np.transpose(np.array(self.all_monomer_ids)); ids = ids.reshape(-1, 1)
 		PCs_current = np.transpose(np.array(total_protein_counts))
 		PCs_current = PCs_current.reshape(-1, 1)
 		values = np.concatenate((ids, PCs_current), axis=1)
@@ -199,6 +192,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			f'AvgProteinCounts_startGen_'
 			f'{startGen}.csv',
 			col_labels, values)
+
+		# Save log data
+		log_PCs = self.get_LogData(self.all_monomer_ids, total_protein_counts)
+		log_col_labels = ["Monomer ID", "Log10 Average Protein Count"]
+		log_PC_ids = np.transpose(np.array(self.all_monomer_ids)); log_PC_ids = log_PC_ids.reshape(-1, 1)
+		log_PCs = np.transpose(np.array(log_PCs)); log_PCs = log_PCs.reshape(-1, 1)
+		log_values = np.concatenate((log_PC_ids, log_PCs), axis=1)
+		save_file(
+			log_pth,
+			f'LogAvgProteinCounts_startGen_{startGen}.csv', log_col_labels, log_values)
 
 		# Create and save filtered data
 		if save_filtered_data == 1:
@@ -212,12 +215,23 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				self.filter_data(total_protein_counts, monomer_idx_dict_PreFilter,
 								filter_num))
 			Fcol_labels = ["Filtered Monomer ID", "Average Protein Count"]
-			F_PC_ids = [np.array(F_PC_ids)]; F_PC_ids = np.transpose(F_PC_ids)
-			F_PCs_current = F_PCs
-			Fvalues = np.concatenate((F_PC_ids, F_PCs.T), axis=1)
+			F_PC_ids = np.transpose(np.array(F_PC_ids)); F_PC_ids = F_PC_ids.reshape(-1, 1)
+			F_PCs = np.transpose(np.array(F_PCs)); F_PCs = F_PCs.reshape(-1, 1)
+			Fvalues = np.concatenate((F_PC_ids, F_PCs), axis=1)
 			save_file(
 				F_pth,
 				f'Filtered_AvgProteinCounts_startGen_{startGen}.csv', Fcol_labels, Fvalues)
+
+			# Save log data
+			# todo: double check that entry #2 in the following line should be total_protein_counts
+			F_log_PCs = self.get_LogData(F_PC_idxs, total_protein_counts, F_PC_idxs)
+			F_log_col_labels = ["Filtered Monomer ID", "Log10 Average Protein Count"]
+			F_log_PC_ids = np.transpose(np.array(F_PC_ids)); F_log_PC_ids = F_log_PC_ids.reshape(-1, 1)
+			F_log_PCs = np.transpose(np.array(F_log_PCs)); F_log_PCs = F_log_PCs.reshape(-1, 1)
+			F_log_values = np.concatenate((F_log_PC_ids, F_log_PCs), axis=1)
+			save_file(
+				F_log_pth,
+				f'Filtered_LogAvgProteinCounts_startGen_{startGen}.csv', F_log_col_labels, F_log_values)
 
 if __name__ == "__main__":
 	Plot().cli()
