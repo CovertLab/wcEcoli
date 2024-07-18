@@ -1,7 +1,7 @@
 # Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
-# Version: 28.1
-# Date and time generated: March 7, 2024, 13:55:41
+# Version: 28.5
+# Date and time generated: July 18, 2024, 11:02:16
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
@@ -14,6 +14,8 @@
 "CPLX0-10427_RXN"	{"CPLX0-10427": 1, "G6812-MONOMER": null, "GLT": null}	"PtrR-glt"
 "CPLX0-10428_RXN"	{"CPLX0-10428": 1, "G6812-MONOMER": null, "GLN": null}	"DNA-binding transcriptional regulator PtrR-L-glutamine"
 "CPLX0-10669_RXN"	{"CPLX0-10669": 1, "CPLX0-7672": null, "MN+2": null}	"MntR-Mn<SUP>2+</SUP>"
+"CPLX0-11559_RXN"	{"CPLX0-11559": 1, "G7133-MONOMER": null, "ADP-D-GLUCOSE": null}	"YegW-ADP-&alpha;-D-glucose"
+"CPLX0-11744_RXN"	{"CPLX0-11744": 1, "CPLX0-7796": null, "S-ADENOSYLMETHIONINE": null}	"MetJ-SAM-AdoMet"
 "CPLX0-226_RXN"	{"CPLX0-226": 1, "PC00004": null, "CAMP": null}	"CRP-cyclic-AMP DNA-binding transcriptional dual regulator"
 "CPLX0-228_RXN"	{"CPLX0-228": 1, "PC00005": null, "ARG": null}	"ArgR-L-arginine DNA-binding transcriptional dual regulator"
 "CPLX0-2781_RXN"	{"CPLX0-2781": 1, "PC00040": null, "ACETYLSERINE": null}	"CysB-<i>O</i>-acetyl-L-serine DNA-binding transcriptional dual regulator"
@@ -23,7 +25,7 @@
 "CPLX0-7606_RXN"	{"CPLX0-7606": 1, "PD04099": null, "GLYOX": null}	"IclR-glyoxylate"
 "CPLX0-7618_RXN"	{"CPLX0-7618": 1, "G7137-MONOMER": null, "NI+2": null}	"RcnR-Ni<SUP>2+</SUP>"
 "CPLX0-7619_RXN"	{"CPLX0-7619": 1, "G7137-MONOMER": null, "CO+2": null}	"RcnR-Co<SUP>2+</SUP>"
-"CPLX0-7639_RXN"	{"CPLX0-7639": 1, "FE+2": -2, "PD00260": -2}	"Fur-a [2Fe-2S] iron-sulfur cluster DNA-binding transcriptional dual regulator"
+"CPLX0-7639_RXN"	{"CPLX0-7639": 1, "FE+2": -2, "PD00260": -2}	"[2Fe-2S] cluster DNA-binding transcriptional dual regulator"
 "CPLX0-7650_RXN"	{"CPLX0-7650": 1, "PD00444": null, "FUCULOSE-1P": null}	"FucR-L-fuculose-1-phosphate DNA-binding transcriptional activator"
 "CPLX0-7651_RXN"	{"CPLX0-7651": 1, "PD01352": null, "URACIL": null}	"RutR-uracil"
 "CPLX0-7670_RXN"	{"CPLX0-7670": 1, "CPLX0-7669": null, "LYS": null}	"ArgP-L-lysine"
@@ -48,7 +50,7 @@
 "CPLX0-7750_RXN"	{"CPLX0-7750": 1, "G6799-MONOMER": null, "CPD-10551": null}	"LsrR-(2<i>S</i>)-2-hydroxy-3,4-dioxopentyl phosphate"
 "CPLX0-7751_RXN"	{"CPLX0-7751": 1, "EG11212-MONOMER": null, "NITRIC-OXIDE": null}	"NsrR-nitric oxide"
 "CPLX0-7752_RXN"	{"CPLX0-7752": 1, "CPLX0-7759": null, "HOMO-CYS": null}	"MetR-L-homocysteine"
-"CPLX0-7761_RXN"	{"CPLX0-7761": 1, "CPD-7": -2, "ACONITATEDEHYDRB-MONOMER": -2}	"bifunctional aconitate hydratase B and 2-methylisocitrate dehydratase"
+"CPLX0-7761_RXN"	{"CPLX0-7761": 1, "CPD-7": -2, "ACONITATEDEHYDRB-MONOMER": -2}	"bifunctional aconitate hydratase B/2-methylisocitrate dehydratase"
 "CPLX0-8026_RXN"	{"CPLX0-8026": 1, "5-METHYLTHIOADENOSINE": null, "PD04032": null}	"MetJ-MTA"
 "CPLX0-8027_RXN"	{"CPLX0-8027": 1, "ADENINE": null, "PD04032": null}	"MetJ-adenine"
 "CPLX0-8048_RXN"	{"CPLX0-8048": 1, "EG12694-MONOMER": null, "TARTRATE": null}	"Dan-L-tartrate DNA-binding transcriptional activator"
@@ -60,7 +62,7 @@
 "CPLX0-8060_RXN"	{"CPLX0-8060": 1, "PD00339": null, "GLY": null}	"GcvA-glycine"
 "CPLX0-8061_RXN"	{"CPLX0-8061": 1, "EG11320-MONOMER": null, "ZN+2": null}	"NrdR-Zn<sup>2+</sup> DNA-binding transcriptional repressor"
 "CPLX0-8062_RXN"	{"CPLX0-8062": 1, "CPLX0-7666": null, "CARNITINE": null}	"CaiF-L-carnitine DNA-binding Transcriptional Activator"
-"CPLX0-8069_RXN"	{"CPLX0-8069": 1, "G7594-MONOMER": null, "NI+2": null}	"NfeR-Ni<SUP>2+</SUP>"
+"CPLX0-8069_RXN"	{"CPLX0-8069": 1, "G7594-MONOMER": null, "NI+2": null}	"NfeR-Ni(2+)"
 "CPLX0-8070_RXN"	{"CPLX0-8070": 1, "EG10230-MONOMER": null, "GUANOSINE-5DP-3DP": null}	"DksA-ppGpp"
 "CPLX0-8071_R--ALLANTOIN_RXN"	{"CPLX0-8071": 1, "R--ALLANTOIN": null, "G6276-MONOMER": null}	"AllR-allantoin"
 "CPLX0-8071_S-ALLANTOIN_RXN"	{"CPLX0-8071": 1, "S-ALLANTOIN": null, "G6276-MONOMER": null}	"AllR-allantoin"
