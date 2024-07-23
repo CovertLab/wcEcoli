@@ -1,7 +1,7 @@
 """
-Generates a table of genes that are subgenerationally expressed, with their
-expression frequencies and average/maximum mRNA/protein counts for each variant
-index.
+Generates a tables of genes that are subgenerationally and not expressed at the
+mRNA and monomer level, with their expression frequencies and average/maximum
+mRNA/protein counts for each variant index.
 """
 
 import pickle
@@ -83,6 +83,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for variant in variants:
 			print("Variant: ", variant)
 
+			if variant == min(variants):
+				file_mode = "w"
+			else:
+				file_mode = "a"
+
 			cell_paths = self.ap.get_cells(
 				variant=[variant],
 				generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
@@ -102,27 +107,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			max_mRNA_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True).max(axis=0)[mRNA_cistron_indexes]
-
-			# Get indexes of subgenerationally expressed genes
-			subgen_exp_indexes = np.where(np.logical_and(
-				p_mRNA_exists_in_gen > 0, p_mRNA_exists_in_gen < 1
-				))[0]
-
-			# Get number of subgenerationally expressed genes
-			n_subgen_genes = len(subgen_exp_indexes)
-
-			# Count number of subgenerationally expressed genes that are essential
-			n_subgen_essential_genes = np.sum(is_essential[subgen_exp_indexes])
-
-			# Get indexes of subgenerationally expressed genes
-			zero_exp_indexes = np.where(p_mRNA_exists_in_gen == 0)[0]
-
-			# Get number of 0 expressed genes
-			n_zero_genes = len(zero_exp_indexes)
-
-			# Count number of subgenerationally expressed genes that are essential
-			n_zero_essential_genes = np.sum(is_essential[zero_exp_indexes])
-
+			#
+			# # Get indexes of subgenerationally expressed genes
+			# subgen_exp_indexes = np.where(np.logical_and(
+			# 	p_mRNA_exists_in_gen > 0, p_mRNA_exists_in_gen < 1
+			# 	))[0]
+			#
+			# # Get number of subgenerationally expressed genes
+			# n_subgen_genes = len(subgen_exp_indexes)
+			#
+			# # Count number of subgenerationally expressed genes that are essential
+			# n_subgen_essential_genes = np.sum(is_essential[subgen_exp_indexes])
+			#
+			# # Get indexes of subgenerationally expressed genes
+			# zero_exp_indexes = np.where(p_mRNA_exists_in_gen == 0)[0]
+			#
+			# # Get number of 0 expressed genes
+			# n_zero_genes = len(zero_exp_indexes)
+			#
+			# # Count number of subgenerationally expressed genes that are essential
+			# n_zero_essential_genes = np.sum(is_essential[zero_exp_indexes])
+			#
 			# Get maximum counts of monomers for each gene across all timepoints
 			max_monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts',
@@ -137,139 +142,196 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Divide by total number of cells to get probability
 			p_monomer_exists_in_gen = (
 					monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
+			#
+			# # Get indexes of genes that are subgenerational at the monomer level
+			# monomer_subgen_exp_indexes = np.where(np.logical_and(
+			# 	p_monomer_exists_in_gen > 0, p_monomer_exists_in_gen < 1
+			# 	))[0]
+			#
+			# # Get number of genes that are subgenerational at the monomer level
+			# n_monomer_subgen_genes = len(monomer_subgen_exp_indexes)
+			#
+			# # Count number of essential genes that are subgenerational at the monomer level
+			# n_monomer_subgen_essential_genes = np.sum(is_essential[monomer_subgen_exp_indexes])
+			#
+			# # Get indexes of zero expressed genes
+			# monomer_zero_exp_indexes = np.where(p_monomer_exists_in_gen == 0)[0]
+			#
+			# # Get number of 0 expressed genes
+			# n_monomer_zero_genes = len(monomer_zero_exp_indexes)
+			#
+			# # Count number of subgenerationally expressed genes that are essential
+			# n_monomer_zero_essential_genes = np.sum(is_essential[monomer_zero_exp_indexes])
+			#
+			# # Write data to table for this variant
+			# with open(os.path.join(
+			# 		plotOutDir, plotOutFileName + '.tsv'), file_mode) as f:
+			# 	writer = csv.writer(f, delimiter='\t')
+			# 	if variant == min(variants):
+			# 		writer.writerow([
+			# 			'variant', 'n_subgen_genes', 'n_subgen_essential_genes',
+			# 			'fraction_genes_subgen',
+			# 			'fraction_essential_genes_subgen',
+			# 			'n_zero_genes', 'n_zero_essential_genes',
+			# 			'fraction_genes_zero',
+			# 			'fraction_essential_genes_zero'
+			# 			])
+			#
+			# 	writer.writerow([
+			# 		variant, n_subgen_genes, n_subgen_essential_genes,
+			# 		n_subgen_genes / total_genes,
+			# 		n_subgen_essential_genes / total_essential_genes,
+			# 		n_zero_genes, n_zero_essential_genes,
+			# 		n_zero_genes / total_genes,
+			# 		n_zero_essential_genes / total_essential_genes])
+			#
+			# # Write gene data to detailed table for this variant
+			# with open(os.path.join(
+			# 		plotOutDir, plotOutFileName + '_detailed.tsv'), file_mode) as f:
+			# 	writer = csv.writer(f, delimiter='\t')
+			# 	if variant == min(variants):
+			# 		writer.writerow([
+			# 			'variant','gene_name', 'cistron_name', 'protein_name',
+			# 			'p_expressed', 'max_mRNA_count', 'max_protein_count',
+			# 			'is_essential'])
+			#
+			# 	for i in subgen_exp_indexes:
+			# 		writer.writerow([
+			# 			variant, gene_ids[i], mRNA_cistron_ids[i],
+			# 			monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
+			# 			max_mRNA_counts[i], max_monomer_counts[i],
+			# 			is_essential[i]])
+			#
+			# # Write gene zero expression data to detailed table for this variant
+			# with open(os.path.join(
+			# 		plotOutDir, plotOutFileName + '_zero_detailed.tsv'), file_mode) as f:
+			# 	writer = csv.writer(f, delimiter='\t')
+			# 	if variant == min(variants):
+			# 		writer.writerow([
+			# 			'variant','gene_name', 'cistron_name', 'protein_name',
+			# 			'p_expressed', 'max_mRNA_count', 'max_protein_count',
+			# 			'is_essential'])
+			#
+			# 	for i in zero_exp_indexes:
+			# 		writer.writerow([
+			# 			variant, gene_ids[i], mRNA_cistron_ids[i],
+			# 			monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
+			# 			max_mRNA_counts[i], max_monomer_counts[i],
+			# 			is_essential[i]])
+			#
+			# # Write monomer data to table for this variant
+			# with open(os.path.join(
+			# 		plotOutDir, plotOutFileName + '_monomer.tsv'), file_mode) as f:
+			# 	writer = csv.writer(f, delimiter='\t')
+			# 	if variant == min(variants):
+			# 		writer.writerow([
+			# 			'variant', 'n_monomer_subgen_genes', 'n_monomer_subgen_essential_genes',
+			# 			'fraction_genes_monomer_subgen',
+			# 			'fraction_essential_genes_monomer_subgen',
+			# 			'n_monomer_zero_genes', 'n_monomer_zero_essential_genes',
+			# 			'fraction_genes_zero_subgen',
+			# 			'fraction_essential_genes_zero_subgen'])
+			#
+			# 	writer.writerow([
+			# 		variant, n_monomer_subgen_genes, n_monomer_subgen_essential_genes,
+			# 		n_monomer_subgen_genes / total_genes,
+			# 		n_monomer_subgen_essential_genes / total_essential_genes,
+			# 		n_monomer_zero_genes, n_monomer_zero_essential_genes,
+			# 		n_monomer_zero_genes / total_genes,
+			# 		n_monomer_zero_essential_genes / total_essential_genes])
+			#
+			# # Write monomer data to detailed table for this variant
+			# with open(os.path.join(
+			# 		plotOutDir, plotOutFileName + '_monomer_detailed.tsv'), file_mode) as f:
+			# 	writer = csv.writer(f, delimiter='\t')
+			# 	if variant == min(variants):
+			# 		writer.writerow([
+			# 			'variant','gene_name', 'cistron_name', 'protein_name',
+			# 			'p_mRNA_expressed', 'p_monomer_expressed',
+			# 			'max_mRNA_count', 'max_protein_count',
+			# 			'is_essential'])
+			#
+			# 	for i in monomer_subgen_exp_indexes:
+			# 		writer.writerow([
+			# 			variant, gene_ids[i], mRNA_cistron_ids[i],
+			# 			monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
+			# 			p_monomer_exists_in_gen[i], max_mRNA_counts[i],
+			# 			max_monomer_counts[i], is_essential[i]])
+			#
+			# # Write zero monomer data to detailed table for this variant
+			# with open(os.path.join(
+			# 		plotOutDir, plotOutFileName + '_zero_monomer_detailed.tsv'), file_mode) as f:
+			# 	writer = csv.writer(f, delimiter='\t')
+			# 	if variant == min(variants):
+			# 		writer.writerow([
+			# 			'variant', 'gene_name', 'cistron_name', 'protein_name',
+			# 			'p_mRNA_expressed', 'p_monomer_expressed',
+			# 			'max_mRNA_count', 'max_protein_count',
+			# 			'is_essential'])
+			#
+			# 	for i in monomer_zero_exp_indexes:
+			# 		writer.writerow([
+			# 			variant, gene_ids[i], mRNA_cistron_ids[i],
+			# 			monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
+			# 			p_monomer_exists_in_gen[i], max_mRNA_counts[i],
+			# 			max_monomer_counts[i], is_essential[i]])
 
-			# Get indexes of genes that are subgenerational at the monomer level
-			monomer_subgen_exp_indexes = np.where(np.logical_and(
-				p_monomer_exists_in_gen > 0, p_monomer_exists_in_gen < 1
-				))[0]
+			# Get list of monomers whose counts were 0 at any time point
+			monomer_ever_nonexistent_by_gen = read_stacked_columns(
+				cell_paths, 'MonomerCounts', 'monomerCounts',
+				ignore_exception=True, fun=lambda x: np.count_nonzero(x == 0, axis = 0))[:, monomer_indexes]
+			monomer_ever_nonexistent = np.sum(monomer_ever_nonexistent_by_gen, axis = 0) > 0
 
-			# Get number of genes that are subgenerational at the monomer level
-			n_monomer_subgen_genes = len(monomer_subgen_exp_indexes)
+			num_time_steps_monomer_not_present_for = np.sum(monomer_ever_nonexistent_by_gen, axis = 0)
+			num_gens_monomer_ever_nonexistent = np.sum(monomer_ever_nonexistent_by_gen > 0, axis = 0)
 
-			# Count number of essential genes that are subgenerational at the monomer level
-			n_monomer_subgen_essential_genes = np.sum(is_essential[monomer_subgen_exp_indexes])
+			# Get indexes of genes that are ever nonexistent at the monomer level
+			monomer_ever_nonexistent_indexes = np.where(monomer_ever_nonexistent > 0)[0]
 
-			# Get indexes of zero expressed genes
-			monomer_zero_exp_indexes = np.where(p_monomer_exists_in_gen == 0)[0]
+			# Get number of genes that are ever nonexistent at the monomer level
+			n_monomer_ever_nonexistent_genes = len(monomer_ever_nonexistent_indexes)
 
-			# Get number of 0 expressed genes
-			n_monomer_zero_genes = len(monomer_zero_exp_indexes)
-
-			# Count number of subgenerationally expressed genes that are essential
-			n_monomer_zero_essential_genes = np.sum(is_essential[monomer_zero_exp_indexes])
-
-			# Write data to table for this variant
-			with open(os.path.join(
-					plotOutDir, plotOutFileName + '.tsv'), 'a') as f:
-				writer = csv.writer(f, delimiter='\t')
-				if variant == min(variants):
-					writer.writerow([
-						'variant', 'n_subgen_genes', 'n_subgen_essential_genes',
-						'fraction_genes_subgen',
-						'fraction_essential_genes_subgen',
-						'n_zero_genes', 'n_zero_essential_genes',
-						'fraction_genes_zero',
-						'fraction_essential_genes_zero'
-						])
-
-				writer.writerow([
-					variant, n_subgen_genes, n_subgen_essential_genes,
-					n_subgen_genes / total_genes,
-					n_subgen_essential_genes / total_essential_genes,
-					n_zero_genes, n_zero_essential_genes,
-					n_zero_genes / total_genes,
-					n_zero_essential_genes / total_essential_genes])
-
-			# Write gene data to detailed table for this variant
-			with open(os.path.join(
-					plotOutDir, plotOutFileName + '_detailed.tsv'), 'a') as f:
-				writer = csv.writer(f, delimiter='\t')
-				if variant == min(variants):
-					writer.writerow([
-						'variant','gene_name', 'cistron_name', 'protein_name',
-						'p_expressed', 'max_mRNA_count', 'max_protein_count',
-						'is_essential'])
-
-				for i in subgen_exp_indexes:
-					writer.writerow([
-						variant, gene_ids[i], mRNA_cistron_ids[i],
-						monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
-						max_mRNA_counts[i], max_monomer_counts[i],
-						is_essential[i]])
-
-			# Write gene zero expression data to detailed table for this variant
-			with open(os.path.join(
-					plotOutDir, plotOutFileName + '_zero_detailed.tsv'), 'a') as f:
-				writer = csv.writer(f, delimiter='\t')
-				if variant == min(variants):
-					writer.writerow([
-						'variant','gene_name', 'cistron_name', 'protein_name',
-						'p_expressed', 'max_mRNA_count', 'max_protein_count',
-						'is_essential'])
-
-				for i in zero_exp_indexes:
-					writer.writerow([
-						variant, gene_ids[i], mRNA_cistron_ids[i],
-						monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
-						max_mRNA_counts[i], max_monomer_counts[i],
-						is_essential[i]])
+			# Count number of essential genes that are ever nonexistent at the monomer level
+			n_monomer_ever_nonexistent_essential_genes = np.sum(is_essential[monomer_ever_nonexistent_indexes])
 
 			# Write monomer data to table for this variant
 			with open(os.path.join(
-					plotOutDir, plotOutFileName + '_monomer.tsv'), 'a') as f:
+					plotOutDir, plotOutFileName + '_monomer_ever_nonexistent.tsv'), file_mode) as f:
 				writer = csv.writer(f, delimiter='\t')
 				if variant == min(variants):
 					writer.writerow([
-						'variant', 'n_monomer_subgen_genes', 'n_monomer_subgen_essential_genes',
-						'fraction_genes_monomer_subgen',
-						'fraction_essential_genes_monomer_subgen',
-						'n_monomer_zero_genes', 'n_monomer_zero_essential_genes',
-						'fraction_genes_zero_subgen',
-						'fraction_essential_genes_zero_subgen'])
+						'variant', 'n_monomer_ever_nonexistent_genes',
+						'n_monomer_ever_nonexistent_essential_genes',
+						'fraction_genes_monomer_ever_nonexistent',
+						'fraction_essential_genes_monomer_ever_nonexistent',])
 
 				writer.writerow([
-					variant, n_monomer_subgen_genes, n_monomer_subgen_essential_genes,
-					n_monomer_subgen_genes / total_genes,
-					n_monomer_subgen_essential_genes / total_essential_genes,
-					n_monomer_zero_genes, n_monomer_zero_essential_genes,
-					n_monomer_zero_genes / total_genes,
-					n_monomer_zero_essential_genes / total_essential_genes])
+					variant, n_monomer_ever_nonexistent_genes, n_monomer_ever_nonexistent_essential_genes,
+					n_monomer_ever_nonexistent_genes / total_genes,
+					n_monomer_ever_nonexistent_essential_genes / total_essential_genes])
 
-			# Write monomer data to detailed table for this variant
+			# Write ever non-existent monomer data to detailed table for this variant
 			with open(os.path.join(
-					plotOutDir, plotOutFileName + '_monomer_detailed.tsv'), 'a') as f:
+					plotOutDir, plotOutFileName + '_monomer_ever_nonexistent_detailed.tsv'), file_mode) as f:
 				writer = csv.writer(f, delimiter='\t')
 				if variant == min(variants):
 					writer.writerow([
 						'variant','gene_name', 'cistron_name', 'protein_name',
 						'p_mRNA_expressed', 'p_monomer_expressed',
 						'max_mRNA_count', 'max_protein_count',
+						'num_time_steps_monomer_not_present_for'
+						'num_gens_monomer_ever_nonexistent',
 						'is_essential'])
 
-				for i in monomer_subgen_exp_indexes:
+				for i in monomer_ever_nonexistent_indexes:
 					writer.writerow([
 						variant, gene_ids[i], mRNA_cistron_ids[i],
 						monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
 						p_monomer_exists_in_gen[i], max_mRNA_counts[i],
-						max_monomer_counts[i], is_essential[i]])
+						max_monomer_counts[i],
+						num_time_steps_monomer_not_present_for[i],
+						num_gens_monomer_ever_nonexistent[i], is_essential[i]])
 
-			# Write zero monomer data to detailed table for this variant
-			with open(os.path.join(
-					plotOutDir, plotOutFileName + '_zero_monomer_detailed.tsv'), 'a') as f:
-				writer = csv.writer(f, delimiter='\t')
-				if variant == min(variants):
-					writer.writerow([
-						'variant', 'gene_name', 'cistron_name', 'protein_name',
-						'p_mRNA_expressed', 'p_monomer_expressed',
-						'max_mRNA_count', 'max_protein_count',
-						'is_essential'])
-
-				for i in monomer_zero_exp_indexes:
-					writer.writerow([
-						variant, gene_ids[i], mRNA_cistron_ids[i],
-						monomer_ids[i][:-3], p_mRNA_exists_in_gen[i],
-						p_monomer_exists_in_gen[i], max_mRNA_counts[i],
-						max_monomer_counts[i], is_essential[i]])
 
 if __name__ == "__main__":
 	Plot().cli()
