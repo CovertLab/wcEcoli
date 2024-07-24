@@ -319,7 +319,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						'variant','gene_name', 'cistron_name', 'protein_name',
 						'p_mRNA_expressed', 'p_monomer_expressed',
 						'max_mRNA_count', 'max_protein_count',
-						'num_time_steps_monomer_not_present_for'
+						'num_time_steps_monomer_not_present_for',
 						'num_gens_monomer_ever_nonexistent',
 						'is_essential'])
 
