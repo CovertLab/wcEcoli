@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 5
+USE_NEW_DEG_RATES  = 4
 SAVE_DATA = 1
 
 class Translation(object):
@@ -148,11 +148,49 @@ class Translation(object):
 		NH3_protein_ids = []
 		NE_protein_ids = []
 
-		# Use measured degradation rates if available, then ammonia rates
+		# proteins that work when changed to their ML rate in the CLNH3NE model (but don't work when assigned to an NE rate in CLNH3NE):
+		problem_proteins = ["B1596-MONOMER", "CHAINF-MONOMER",
+							"DTDPDEHYRHAMREDUCT-MONOMER", "DTDPGLUCDEHYDRAT-MONOMER", "EG10836-MONOMER", "EG10891-MONOMER",
+							"EG11398-MONOMER", "EG11401-MONOMER", "EG11505-MONOMER", "EG11508-MONOMER", "EG11516-MONOMER",
+							"EG11644-MONOMER", "EG11922-MONOMER", "EG11985-MONOMER", "EG12019-MONOMER", "EG12176-MONOMER",
+							"EG12203-MONOMER", "EG12314-MONOMER", "EG12391-MONOMER", "EG12402-MONOMER", "EG12861-MONOMER",
+							"EVGA-MONOMER", "G369-MONOMER", "G6394-MONOMER", "G6543-MONOMER", "G6705-MONOMER",
+							"G6762-MONOMER", "G6939-MONOMER", "G6970-MONOMER", "G7093-MONOMER", "G7128-MONOMER",
+							"G7217-MONOMER", "G7280-MONOMER", "G7442-MONOMER", "G7829-MONOMER", "GALPMUT-MONOMER",
+							"GATA-MONOMER", "GLUTDECARBOXA-MONOMER", "TAGAALDOL2-MONOMER", "TREHALOSEPHOSPHASYN-MONOMER",
+							"YEHZ-MONOMER", "YHIV-MONOMER"]
+
+		problem_protein_ML_rates = [2.31E-06, 0.00027571, 5.86E-05, 8.91E-05, 0.00036558, 9.44E-05, 9.44E-06, 7.70E-05,
+									0.00025961, 0.00036558, 0.00078588, 6.26E-05, 0.00020375, 5.44E-05, 0.00035656,
+									1.74E-05, 0.00134331, 1.24E-05, 3.99E-05, 9.68E-05, 0.00013128, 5.75E-05, 0.00027055,
+									9.84E-05, 0.00010107, 5.56E-05, 2.31E-06, 3.25E-05, 0.00023481, 4.98E-05, 8.50E-05,
+									0.00010474, 2.24E-05, 1.17E-05, 0.00022005, 7.24E-05, 3.32E-05, 9.18E-06, 5.07E-05,
+									2.31E-06, 6.39E-05, 2.31E-06]
+
+		problem_protein_NE_rates = [1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05,1.93e-05,
+									1.93e-05,1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05,
+									1.93e-05, 1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,
+									1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,
+									1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05]
+
+
+		# make a dictionary mapping problem proteins to their ML rates:
+		problem_protein_ML_dict = {problem_proteins[i]: problem_protein_ML_rates[i] for i in range(len(problem_proteins))}
+		problem_protein_NE_dict = {problem_proteins[i]: problem_protein_NE_rates[i] for i in range(len(problem_proteins))}
+
+		# assign current protein
+		problem_protein = problem_proteins[4]
+
+
+		# Use measured degradation rates if available, then ammonia rates, then N end rule
 		if USE_NEW_DEG_RATES == 1:
-			name = "CLNH3NE"
+			name = "CLNH3NE_ML_" + problem_protein
 			for i, protein in enumerate(all_proteins):
-				if protein['id'] in measured_deg_rates:
+				if protein['id'] == problem_protein:
+					deg_rate[i] = problem_protein_ML_dict[problem_protein]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(problem_protein_ML_dict[problem_protein])
+				elif protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					CL_protein_ids.append(protein['id'])
 					CL_rate_contstants.append(measured_deg_rates[protein['id']])
@@ -217,10 +255,14 @@ class Translation(object):
 		# Use lab's measured degradation rates, the ammonia measured rates,
 		# then pulsed SILAC rates followed by N end rule rates:
 		if USE_NEW_DEG_RATES == 4:
-			name = "CLNH3MLNE"
+			name = "CLNH3MLNE_NE_" + problem_protein
 			for i, protein in enumerate(all_proteins):
+				if protein['id'] == problem_protein:
+					deg_rate[i] = problem_protein_NE_dict[problem_protein]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(problem_protein_NE_dict[problem_protein])
 				# Use measured degradation rates if available
-				if protein['id'] in measured_deg_rates:
+				elif protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					CL_protein_ids.append(protein['id'])
 					CL_rate_contstants.append(measured_deg_rates[protein['id']])
@@ -279,7 +321,7 @@ class Translation(object):
 			# generate the dataframes to be saved for the specific rate sources in the above data:
 			import pandas as pd
 			import os
-			outpth = os.path.join("/Users/miagrahn/wcEcoli/out", "saved_data", name)
+			outpth = os.path.join("/Users/miagrahn/wcEcoli/out", "saved_PDRs", name)
 			if not os.path.exists(outpth):
 				os.makedirs(outpth)
 			# Save CL rate constants
