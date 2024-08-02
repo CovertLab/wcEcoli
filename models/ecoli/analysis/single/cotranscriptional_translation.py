@@ -16,7 +16,7 @@ from wholecell.utils import units
 
 PLOT_TOP_N_GENES = 30  # Number of genes to be plotted in panes 2, 3, 6, and 7
 MEMBRANE_COMPARTMENT_IDS = ['w', 'm', 'o', 'p', 'i']
-LABEL_TOP_N_GENES = 10  # Number of genes to be labeled in pane 8
+LABEL_TOP_N_GENES = 20  # Number of genes to be labeled in pane 8
 
 
 class Plot(singleAnalysisPlot.SingleAnalysisPlot):
@@ -25,6 +25,8 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 	def do_plot(self, simOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
+		with open(validationDataFile, 'rb') as f:
+			validation_data = pickle.load(f)
 
 		# Listeners used
 		main_reader = TableReader(os.path.join(simOutDir, 'Main'))
@@ -73,6 +75,9 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			protein_id: cistron_id_to_coordinates[cistron_id] for (protein_id, cistron_id)
 			in protein_id_to_cistron_id.items()
 			}
+
+		# Get essential genes list
+		essential_genes = validation_data.essential_genes.essential_genes
 
 		# Get mask and genomic coordinates of membrane-bound proteins
 		membrane_protein_mask = np.array(
@@ -311,6 +316,19 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		fig.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
+
+		# Output table of genes taht are likely to be involved in transertion
+		with open(os.path.join(plotOutDir, plotOutFileName + '_transertion_table.tsv'), 'w') as f:
+			f.write('\t'.join(['Gene ID', 'Gene name', 'Protein ID', '# of anchored ribosomes', 'Essential?']) + '\n')
+			for i in top_gene_indexes:
+				gene_id = protein_id_to_gene_id[membrane_protein_ids[i]]
+				f.write('\t'.join([
+					gene_id,
+					sim_data.common_names.get_common_name(gene_id),
+					membrane_protein_ids[i],
+					str(bound_ribosome_counts_mean[membrane_protein_mask][i]),
+					str(gene_id in essential_genes)
+					]) + '\n')
 
 
 if __name__ == '__main__':
