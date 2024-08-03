@@ -26,6 +26,7 @@ def get_simulated_validation_counts(
 		validation data, and the validation counts of the monomers in the same
 		order.
 	"""
+
 	avg_sim_counts = monomer_counts.mean(axis=0)
 
 	sim_ids_lst = cast(List[str], simulation_ids.tolist())
