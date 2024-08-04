@@ -51,7 +51,7 @@ def save_file(out_dir, filename, columns, values):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def generate_data(self, simDataFile):
 		"""
-		Generates data variables that will be used for subsequen graphs
+		Generates data variables that will be used for subsequent graphs
 		Args:
 			simDataFile: simulation data file
 		Returns:
