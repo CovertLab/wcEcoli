@@ -474,36 +474,5 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					log_col_labels, log_w_values)
 
 
-
-
-
-
-
-
-
-# # Save unfiltered data
-			# expstr = "var_" + str(experimental_var) + "_avg_PCs"
-			# col_labels = ["all_monomer_ids","var_0_avg_PCs", expstr]
-			# ids = [np.array(self.all_monomer_ids)]
-			# ids = np.transpose(ids)
-			# PCs_current = self.total_protein_counts
-			# values = np.concatenate((ids, PCs_current.T), axis=1)
-			# save_file(
-			# 	pth,
-			# 	f'wcm_full_monomers_var_{experimental_var}_startGen_'
-			# 	f'{IGNORE_FIRST_N_GENS}.csv',
-			# 	col_labels, values)
-			#
-			# # Save filtered data
-			# Fcol_labels = ["filtered_monomer_ids", "var_0_avg_PCs", expstr]
-			# F_PC_ids = [np.array(F_PC_ids)]; F_PC_ids = np.transpose(F_PC_ids)
-			# F_PCs_current = F_PCs
-			# Fvalues = np.concatenate((F_PC_ids, F_PCs.T), axis=1)
-			# save_file(
-			# 	F_pth,
-			# 	f'wcm_filter_{filter_num}_monomers_var_{experimental_var}'
-			# 	f'_startGen_{IGNORE_FIRST_N_GENS}.csv',
-			# 	Fcol_labels, Fvalues)
-
 if __name__ == "__main__":
 	Plot().cli()
