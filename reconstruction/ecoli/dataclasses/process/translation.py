@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 4
+USE_NEW_DEG_RATES  = 6
 SAVE_DATA = 1
 
 class Translation(object):
@@ -135,6 +135,11 @@ class Translation(object):
 			for p in raw_data.protein_half_lives_15N_ammonia_TMTproC
 		}
 
+		# get C-limited degredation rates from Gupta, et al., 2023 half lifes:
+		C_lim_deg_rates = {
+			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
+			for p in raw_data.protein_half_lives_C_lim}
+
 		deg_rate = np.zeros(n_proteins)
 
 		# save rate constants for each protein
@@ -142,62 +147,87 @@ class Translation(object):
 		ML_rate_constants = []
 		NH3_rate_constants = []
 		NE_rate_contstants = []
+		Clim_rate_contstants = []
 		# save protein id for each rate constant:
 		CL_protein_ids = []
 		ML_protein_ids = []
 		NH3_protein_ids = []
 		NE_protein_ids = []
+		Clim_protein_ids = []
 
-		# proteins that work when changed to their ML rate in the CLNH3NE model (but don't work when assigned to an NE rate in CLNH3NE):
-		problem_proteins = ["B1596-MONOMER", "CHAINF-MONOMER",
-							"DTDPDEHYRHAMREDUCT-MONOMER", "DTDPGLUCDEHYDRAT-MONOMER", "EG10836-MONOMER", "EG10891-MONOMER",
-							"EG11398-MONOMER", "EG11401-MONOMER", "EG11505-MONOMER", "EG11508-MONOMER", "EG11516-MONOMER",
-							"EG11644-MONOMER", "EG11922-MONOMER", "EG11985-MONOMER", "EG12019-MONOMER", "EG12176-MONOMER",
-							"EG12203-MONOMER", "EG12314-MONOMER", "EG12391-MONOMER", "EG12402-MONOMER", "EG12861-MONOMER",
-							"EVGA-MONOMER", "G369-MONOMER", "G6394-MONOMER", "G6543-MONOMER", "G6705-MONOMER",
-							"G6762-MONOMER", "G6939-MONOMER", "G6970-MONOMER", "G7093-MONOMER", "G7128-MONOMER",
-							"G7217-MONOMER", "G7280-MONOMER", "G7442-MONOMER", "G7829-MONOMER", "GALPMUT-MONOMER",
-							"GATA-MONOMER", "GLUTDECARBOXA-MONOMER", "TAGAALDOL2-MONOMER", "TREHALOSEPHOSPHASYN-MONOMER",
-							"YEHZ-MONOMER", "YHIV-MONOMER"]
+		# # proteins that work when changed to their ML rate in the CLNH3NE model (but don't work when assigned to an NE rate in CLNH3NE):
+		# problem_proteins = ["B1596-MONOMER", "CHAINF-MONOMER",
+		# 					"DTDPDEHYRHAMREDUCT-MONOMER", "DTDPGLUCDEHYDRAT-MONOMER", "EG10836-MONOMER", "EG10891-MONOMER",
+		# 					"EG11398-MONOMER", "EG11401-MONOMER", "EG11505-MONOMER", "EG11508-MONOMER", "EG11516-MONOMER",
+		# 					"EG11644-MONOMER", "EG11922-MONOMER", "EG11985-MONOMER", "EG12019-MONOMER", "EG12176-MONOMER",
+		# 					"EG12203-MONOMER", "EG12314-MONOMER", "EG12391-MONOMER", "EG12402-MONOMER", "EG12861-MONOMER",
+		# 					"EVGA-MONOMER", "G369-MONOMER", "G6394-MONOMER", "G6543-MONOMER", "G6705-MONOMER",
+		# 					"G6762-MONOMER", "G6939-MONOMER", "G6970-MONOMER", "G7093-MONOMER", "G7128-MONOMER",
+		# 					"G7217-MONOMER", "G7280-MONOMER", "G7442-MONOMER", "G7829-MONOMER", "GALPMUT-MONOMER",
+		# 					"GATA-MONOMER", "GLUTDECARBOXA-MONOMER", "TAGAALDOL2-MONOMER", "TREHALOSEPHOSPHASYN-MONOMER",
+		# 					"YEHZ-MONOMER", "YHIV-MONOMER"]
+		#
+		# problem_protein_ML_rates = [2.31E-06, 0.00027571, 5.86E-05, 8.91E-05, 0.00036558, 9.44E-05, 9.44E-06, 7.70E-05,
+		# 							0.00025961, 0.00036558, 0.00078588, 6.26E-05, 0.00020375, 5.44E-05, 0.00035656,
+		# 							1.74E-05, 0.00134331, 1.24E-05, 3.99E-05, 9.68E-05, 0.00013128, 5.75E-05, 0.00027055,
+		# 							9.84E-05, 0.00010107, 5.56E-05, 2.31E-06, 3.25E-05, 0.00023481, 4.98E-05, 8.50E-05,
+		# 							0.00010474, 2.24E-05, 1.17E-05, 0.00022005, 7.24E-05, 3.32E-05, 9.18E-06, 5.07E-05,
+		# 							2.31E-06, 6.39E-05, 2.31E-06]
+		#
+		# problem_protein_NE_rates = [1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05,1.93e-05,
+		# 							1.93e-05,1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05,
+		# 							1.93e-05, 1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,
+		# 							1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,
+		# 							1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05]
+		#
+		#
+		# # make a dictionary mapping problem proteins to their ML rates:
+		# problem_protein_ML_dict = {problem_proteins[i]: problem_protein_ML_rates[i] for i in range(len(problem_proteins))}
+		# problem_protein_NE_dict = {problem_proteins[i]: problem_protein_NE_rates[i] for i in range(len(problem_proteins))}
+		#
+		# # assign current protein
+		# problem_protein = problem_proteins[4]
+		#
 
-		problem_protein_ML_rates = [2.31E-06, 0.00027571, 5.86E-05, 8.91E-05, 0.00036558, 9.44E-05, 9.44E-06, 7.70E-05,
-									0.00025961, 0.00036558, 0.00078588, 6.26E-05, 0.00020375, 5.44E-05, 0.00035656,
-									1.74E-05, 0.00134331, 1.24E-05, 3.99E-05, 9.68E-05, 0.00013128, 5.75E-05, 0.00027055,
-									9.84E-05, 0.00010107, 5.56E-05, 2.31E-06, 3.25E-05, 0.00023481, 4.98E-05, 8.50E-05,
-									0.00010474, 2.24E-05, 1.17E-05, 0.00022005, 7.24E-05, 3.32E-05, 9.18E-06, 5.07E-05,
-									2.31E-06, 6.39E-05, 2.31E-06]
+		# # Use measured degradation rates if available, then ammonia rates, then N end rule
+		# if USE_NEW_DEG_RATES == 1:
+		# 	name = "CLNH3NE_ML_" + problem_protein
+		# 	for i, protein in enumerate(all_proteins):
+		# 		if protein['id'] == problem_protein:
+		# 			deg_rate[i] = problem_protein_ML_dict[problem_protein]
+		# 			ML_protein_ids.append(protein['id'])
+		# 			ML_rate_constants.append(problem_protein_ML_dict[problem_protein])
+		# 		elif protein['id'] in measured_deg_rates:
+		# 			deg_rate[i] = measured_deg_rates[protein['id']]
+		# 			CL_protein_ids.append(protein['id'])
+		# 			CL_rate_contstants.append(measured_deg_rates[protein['id']])
+		# 		elif protein['id'] in ammonia_deg_rates:
+		# 			deg_rate[i] = ammonia_deg_rates[protein['id']]
+		# 			NH3_protein_ids.append(protein['id'])
+		# 			NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
+		# 		else:
+		# 			seq = protein['seq']
+		# 			assert seq[0] == 'M'
+		# 			# Set N-end residue as second amino acid if initial methionine
+		# 			# is cleaved
+		# 			n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+		# 			deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+		# 			NE_protein_ids.append(protein['id'])
+		# 			NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
-		problem_protein_NE_rates = [1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05,1.93e-05,
-									1.93e-05,1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05, 1.93e-05,
-									1.93e-05, 1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,
-									1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,
-									1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05,1.93e-05]
 
-
-		# make a dictionary mapping problem proteins to their ML rates:
-		problem_protein_ML_dict = {problem_proteins[i]: problem_protein_ML_rates[i] for i in range(len(problem_proteins))}
-		problem_protein_NE_dict = {problem_proteins[i]: problem_protein_NE_rates[i] for i in range(len(problem_proteins))}
-
-		# assign current protein
-		problem_protein = problem_proteins[4]
-
-
-		# Use measured degradation rates if available, then ammonia rates, then N end rule
-		if USE_NEW_DEG_RATES == 1:
-			name = "CLNH3NE_ML_" + problem_protein
+		# Use measured degradation rates if available, then C-lim rates, then N end rule
+		if USE_NEW_DEG_RATES == 6:
+			name = "CLClimNE"
 			for i, protein in enumerate(all_proteins):
-				if protein['id'] == problem_protein:
-					deg_rate[i] = problem_protein_ML_dict[problem_protein]
-					ML_protein_ids.append(protein['id'])
-					ML_rate_constants.append(problem_protein_ML_dict[problem_protein])
-				elif protein['id'] in measured_deg_rates:
+				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					CL_protein_ids.append(protein['id'])
 					CL_rate_contstants.append(measured_deg_rates[protein['id']])
-				elif protein['id'] in ammonia_deg_rates:
-					deg_rate[i] = ammonia_deg_rates[protein['id']]
-					NH3_protein_ids.append(protein['id'])
-					NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
+				elif protein['id'] in C_lim_deg_rates:
+					deg_rate[i] = C_lim_deg_rates[protein['id']]
+					Clim_protein_ids.append(protein['id'])
+					Clim_rate_contstants.append(C_lim_deg_rates[protein['id']])
 				else:
 					seq = protein['seq']
 					assert seq[0] == 'M'
@@ -207,6 +237,9 @@ class Translation(object):
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					NE_protein_ids.append(protein['id'])
 					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
+
+
 
 		# Use measured degradation rates if available, then n end rule rates
 		if USE_NEW_DEG_RATES == 2:
@@ -252,38 +285,38 @@ class Translation(object):
 					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
 
-		# Use lab's measured degradation rates, the ammonia measured rates,
-		# then pulsed SILAC rates followed by N end rule rates:
-		if USE_NEW_DEG_RATES == 4:
-			name = "CLNH3MLNE_NE_" + problem_protein
-			for i, protein in enumerate(all_proteins):
-				if protein['id'] == problem_protein:
-					deg_rate[i] = problem_protein_NE_dict[problem_protein]
-					NE_protein_ids.append(protein['id'])
-					NE_rate_contstants.append(problem_protein_NE_dict[problem_protein])
-				# Use measured degradation rates if available
-				elif protein['id'] in measured_deg_rates:
-					deg_rate[i] = measured_deg_rates[protein['id']]
-					CL_protein_ids.append(protein['id'])
-					CL_rate_contstants.append(measured_deg_rates[protein['id']])
-				elif protein['id'] in ammonia_deg_rates:
-					deg_rate[i] = ammonia_deg_rates[protein['id']]
-					NH3_protein_ids.append(protein['id'])
-					NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
-				elif protein['id'] in pulsed_silac_deg_rates:
-					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
-					ML_protein_ids.append(protein['id'])
-					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
-				# If measured rates are unavailable, use N-end rule
-				else:
-					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start with methionine
-					# Set N-end residue as second amino acid if initial methionine
-					# is cleaved
-					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
-					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
-					NE_protein_ids.append(protein['id'])
-					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+		# # Use lab's measured degradation rates, the ammonia measured rates,
+		# # then pulsed SILAC rates followed by N end rule rates:
+		# if USE_NEW_DEG_RATES == 4:
+		# 	name = "CLNH3MLNE_NE_" + problem_protein
+		# 	for i, protein in enumerate(all_proteins):
+		# 		if protein['id'] == problem_protein:
+		# 			deg_rate[i] = problem_protein_NE_dict[problem_protein]
+		# 			NE_protein_ids.append(protein['id'])
+		# 			NE_rate_contstants.append(problem_protein_NE_dict[problem_protein])
+		# 		# Use measured degradation rates if available
+		# 		elif protein['id'] in measured_deg_rates:
+		# 			deg_rate[i] = measured_deg_rates[protein['id']]
+		# 			CL_protein_ids.append(protein['id'])
+		# 			CL_rate_contstants.append(measured_deg_rates[protein['id']])
+		# 		elif protein['id'] in ammonia_deg_rates:
+		# 			deg_rate[i] = ammonia_deg_rates[protein['id']]
+		# 			NH3_protein_ids.append(protein['id'])
+		# 			NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
+		# 		elif protein['id'] in pulsed_silac_deg_rates:
+		# 			deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+		# 			ML_protein_ids.append(protein['id'])
+		# 			ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+		# 		# If measured rates are unavailable, use N-end rule
+		# 		else:
+		# 			seq = protein['seq']
+		# 			assert seq[0] == 'M'  # All protein sequences should start with methionine
+		# 			# Set N-end residue as second amino acid if initial methionine
+		# 			# is cleaved
+		# 			n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+		# 			deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+		# 			NE_protein_ids.append(protein['id'])
+		# 			NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
 		# Use lab's measured degradation rates, the ML rates, the ammonia measured rates,
 		# then the N end rule rates:
@@ -336,6 +369,9 @@ class Translation(object):
 			# Save NE rate constants
 			NE_df = pd.DataFrame(list(zip(NE_protein_ids, NE_rate_contstants)), columns =['Protein ID', 'Rate Constant'])
 			NE_df.to_csv(os.path.join(outpth, f"NE_rate_constants.csv"), index=False)
+			# Save Clim rate constants
+			Clim_df = pd.DataFrame(list(zip(Clim_protein_ids, Clim_rate_contstants)), columns =['Protein ID', 'Rate Constant'])
+			Clim_df.to_csv(os.path.join(outpth, f"Clim_rate_constants.csv"), index=False)
 
 
 
