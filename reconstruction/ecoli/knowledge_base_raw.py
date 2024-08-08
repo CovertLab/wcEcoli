@@ -238,6 +238,9 @@ class KnowledgeBaseEcoli(object):
 				os.path.join(new_gene_path, 'insertion_location.tsv'))
 			self.list_of_dict_filenames.append(
 				os.path.join(new_gene_path, 'gene_sequences.tsv'))
+			self.list_of_dict_filenames.append(
+				os.path.join(new_gene_path, 'metabolic_reactions_external.tsv'))
+
 
 			# These files need to be joined to existing files
 			new_gene_shared_files = [
@@ -246,7 +249,9 @@ class KnowledgeBaseEcoli(object):
 				'proteins',
 				'rna_half_lives',
 				'protein_half_lives_measured',
+				'metabolites'
 				]
+
 			for f in new_gene_shared_files:
 				file_path = os.path.join(new_gene_path, f + '.tsv')
 				# If these files are empty, fill in with default values at a
@@ -256,6 +261,7 @@ class KnowledgeBaseEcoli(object):
 					f" subdirectory {new_gene_subdir}.")
 				self.list_of_dict_filenames.append(file_path)
 				self.new_gene_added_data.update({f: nested_attr + f})
+
 
 		# Load raw data from TSV files
 		for filename in self.list_of_dict_filenames:
