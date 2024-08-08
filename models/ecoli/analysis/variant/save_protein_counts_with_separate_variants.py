@@ -24,7 +24,7 @@ this number should be greater than 0 because the first few generations may not
 be representative of the true dynamics occuring in the cell).
 """
 
-IGNORE_FIRST_N_GENS = 1
+IGNORE_FIRST_N_GENS = 14
 
 """
 Enter a "filter number" below to filter out any proteins that have counts less
@@ -436,7 +436,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				save_file(
 					schmidt_log_pth,
 					f'Log10_SchmidtValidation_Variant_{experimental_var}'
-					f'_startGen_{IGNORE_FIRST_N_GENS}TEST.csv',
+					f'_startGen_{IGNORE_FIRST_N_GENS}.csv',
 					log_col_labels, log_s_values)
 
 
@@ -450,7 +450,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				save_file(
 					wisniewski_pth,
 					f'WisniewskiValidation_Variant_{experimental_var}'
-					f'_startGen_{IGNORE_FIRST_N_GENS}try again to be sure that the 2 moves fine.csv', col_labels,
+					f'_startGen_{IGNORE_FIRST_N_GENS}', col_labels,
 					values)
 
 				# Save log data for Wisniewski validation data:
@@ -470,7 +470,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				save_file(
 					wisniewski_log_pth,
 					f'Log10_WisniewskiValidation_Variant_{experimental_var}'
-					f'_startGen_{IGNORE_FIRST_N_GENS}TEST.csv',
+					f'_startGen_{IGNORE_FIRST_N_GENS}.csv',
 					log_col_labels, log_w_values)
 
 
