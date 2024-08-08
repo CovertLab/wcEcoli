@@ -29,6 +29,10 @@ LINE_COLOR = (66/255, 170/255, 154/255)
 
 cistron_of_interest = "EG10945_RNA"
 gene_name = "serB" # TODO: don't hardcode this
+reaction_ids_of_interest = ['RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.'] # TODO: don't hardcode this
+AA_of_interest = "SER[c]" # TODO: don't hardcode this
+
+# 'RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.', 'RXN0-5114[CCO-PERI-BAC]-3-P-SERINE/WATER//SER/Pi.39.',
 
 # EG10945 EG10945_RNA	PSERPHOSPHA-MONOMER
 
@@ -140,7 +144,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# TODO: make a option for this plot that you could run without new genes
 
-		# Extract mRNA indexes for each new gene
+		# Extract mRNA indexes for each gene of interest
 		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
 													  'RNACounts'))
 		mRNA_idx_dict = {rna: i for i, rna in enumerate(
@@ -149,7 +153,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 								 gene_of_interest_cistron_ids]
 		mRNA_counts_reader.close()
 
-		# Extract protein indexes for each new gene
+		# Extract protein indexes for each gene of interest
 		monomer_counts_reader = TableReader(
 			os.path.join(simOutDir, "MonomerCounts"))
 		monomer_idx_dict = {monomer: i for i, monomer in
@@ -158,6 +162,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		gene_of_interest_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
 									monomer_id in gene_of_interest_monomer_ids]
 		monomer_counts_reader.close()
+
+		# Extract reaction index for each reaction of interest
+		fba_results_reader = TableReader(os.path.join(simOutDir, 'FBAResults'))
+		reaction_ids = fba_results_reader.readAttribute('reactionIDs')
+		reaction_idx_dict = {reaction: i for i, reaction in enumerate(reaction_ids)}
+		reaction_of_interest_indexes = [
+			reaction_idx_dict.get(reaction_id) for reaction_id in reaction_ids_of_interest]
+		fba_results_reader.close()
 
 		# Load data
 		time = read_stacked_columns(
@@ -175,9 +187,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
 		gene_of_interest_mRNA_counts = all_mRNA_stacked_counts[:,gene_of_interest_cistron_indexes]
 
+		all_rection_fluxes = read_stacked_columns(
+			cell_paths, 'FBAResults', 'reactionFluxes', ignore_exception=True)
+		reaction_of_interest_flux = all_rection_fluxes[:,reaction_of_interest_indexes]
+
+		(aa_of_interest_counts, ) = read_stacked_bulk_molecules(
+			cell_paths, [AA_of_interest], ignore_exception=True)
+
 		plot_suffixes = [""]
 		standard_xlim = (0,1500)
-		total_plots = 5 # TODO Modularize and get rid of this magic number
+		total_plots = 7 # TODO Modularize and get rid of this magic number
 
 		mpl.rcParams['axes.spines.right'] = False
 		mpl.rcParams['axes.spines.top'] = False
@@ -202,6 +221,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Cell Mass (fg)", fontsize="small")
 			plot_num += 1
+
+			# TODO: transcription event
 
 			# mRNA Cistron Counts
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
@@ -254,6 +275,23 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.xlabel("Time (min)")
 			plt.ylabel("Monomer Counts: " + gene_name, fontsize="small")
 			plot_num += 1
+
+			# TODO: reaction flux
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			plt.plot(time / 60., reaction_of_interest_flux, color=LINE_COLOR)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Reaction flux (mmol/g DCW/hr)", fontsize="small")
+			plot_num += 1
+
+
+			# TODO: reaction product
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			plt.plot(time / 60., aa_of_interest_counts, color=LINE_COLOR)
+			plt.xlabel("Time (min)")
+			plt.ylabel("" + AA_of_interest + " counts", fontsize="small")
+			plot_num += 1
+
+			# TODO: translation stalling
 
 			# Growth Rate
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
