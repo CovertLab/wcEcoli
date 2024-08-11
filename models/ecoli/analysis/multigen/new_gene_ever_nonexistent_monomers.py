@@ -8,6 +8,7 @@ import os
 
 from matplotlib import pyplot as plt
 import matplotlib as mpl
+from matplotlib.collections import PatchCollection
 # noinspection PyUnresolvedReferences
 import numpy as np
 from numpy import inf
@@ -29,12 +30,11 @@ LINE_COLOR = (66/255, 170/255, 154/255)
 
 cistron_of_interest = "EG10945_RNA"
 gene_name = "serB" # TODO: don't hardcode this
-reaction_ids_of_interest = ['RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.'] # TODO: don't hardcode this
+reaction_ids_of_interest = ['RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.', 'RXN0-5114[CCO-PERI-BAC]-3-P-SERINE/WATER//SER/Pi.39.'] # TODO: don't hardcode this
 AA_of_interest = "SER[c]" # TODO: don't hardcode this
 
-# 'RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.', 'RXN0-5114[CCO-PERI-BAC]-3-P-SERINE/WATER//SER/Pi.39.',
-
 # EG10945 EG10945_RNA	PSERPHOSPHA-MONOMER
+# 'RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.', 'RXN0-5114[CCO-PERI-BAC]-3-P-SERINE/WATER//SER/Pi.39.',
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def get_mRNA_ids_from_monomer_ids(self, sim_data, target_monomer_ids):
@@ -183,6 +183,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		all_monomer_stacked_counts = read_stacked_columns(
 			cell_paths, 'MonomerCounts', 'monomerCounts', ignore_exception=True)
 		gene_of_interest_monomer_counts = all_monomer_stacked_counts[:,gene_of_interest_monomer_indexes]
+		when_is_monomer_nonexistent = time[gene_of_interest_monomer_counts == 0] / 60.
+
+		patches = []
+		for i in range(len(when_is_monomer_nonexistent)):
+			patches.append(mpl.patches.Rectangle((when_is_monomer_nonexistent[i], 0), 1, 100000000, color='lightgray', alpha=0.05))
+
 		all_mRNA_stacked_counts = read_stacked_columns(
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
 		gene_of_interest_mRNA_counts = all_mRNA_stacked_counts[:,gene_of_interest_cistron_indexes]
@@ -220,12 +226,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Cell Mass (fg)", fontsize="small")
+			ax1.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# TODO: transcription event
 
 			# mRNA Cistron Counts
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if plot_suffix == "":
 				if len(gene_of_interest_cistron_ids) == 1:
 					plt.plot(time / 60., gene_of_interest_mRNA_counts, color=LINE_COLOR)
@@ -248,10 +255,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("mRNA Cistron Counts: " + gene_name, fontsize="small")
+			ax2.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# Protein Counts
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax3 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			if plot_suffix == "":
 				if len(gene_of_interest_monomer_ids) == 1:
 					plt.plot(time / 60., gene_of_interest_monomer_counts, color=LINE_COLOR)
@@ -274,27 +282,35 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Monomer Counts: " + gene_name, fontsize="small")
+			ax3.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# TODO: reaction flux
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			plt.plot(time / 60., reaction_of_interest_flux, color=LINE_COLOR)
+			ax4 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			for i in range(len(reaction_ids_of_interest)):
+				plt.plot(
+					time / 60., reaction_of_interest_flux[:,i],
+					label=reaction_ids_of_interest[i][0:20] + "...")
+			plt.legend(fontsize="x-small")
 			plt.xlabel("Time (min)")
 			plt.ylabel("Reaction flux (mmol/g DCW/hr)", fontsize="small")
+			plt.ylim(-0.0001, 0.003)
+			ax4.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 
 			# TODO: reaction product
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax5 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			plt.plot(time / 60., aa_of_interest_counts, color=LINE_COLOR)
 			plt.xlabel("Time (min)")
 			plt.ylabel("" + AA_of_interest + " counts", fontsize="small")
+			ax5.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# TODO: translation stalling
 
 			# Growth Rate
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax6 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			growth_rate = np.ravel(read_stacked_columns(
 				cell_paths, "Mass", "instantaneous_growth_rate",
 				ignore_exception=True))
@@ -309,10 +325,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Growth Rate", fontsize="small")
+			ax6.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# ppGpp
-			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			ax7 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			ppGpp_concentration = read_stacked_columns(
 				cell_paths, "GrowthLimits", "ppgpp_conc", remove_first=True,
 				ignore_exception=True)
@@ -323,6 +340,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("ppGpp Concentration ($\mu$M)", fontsize="small")
+			ax7.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
