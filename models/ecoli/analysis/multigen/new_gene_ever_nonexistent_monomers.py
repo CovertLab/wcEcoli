@@ -28,13 +28,13 @@ END_GEN = 24
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 
-cistron_of_interest = "EG10945_RNA"
-gene_name = "serB" # TODO: don't hardcode this
-reaction_ids_of_interest = ['RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.', 'RXN0-5114[CCO-PERI-BAC]-3-P-SERINE/WATER//SER/Pi.39.'] # TODO: don't hardcode this
-AA_of_interest = "SER[c]" # TODO: don't hardcode this
+### TODO: change these so that they don't all need to be hardcoded
 
-# EG10945 EG10945_RNA	PSERPHOSPHA-MONOMER
-# 'RXN0-5114[CCO-CYTOSOL]-3-P-SERINE/WATER//SER/Pi.38.', 'RXN0-5114[CCO-PERI-BAC]-3-P-SERINE/WATER//SER/Pi.39.',
+# serB
+gene_name = "serB"
+cistron_of_interest = "EG10945_RNA"
+reaction_ids_of_interest = ['RXN0-5114']
+reaction_product_of_interest = "SER[c]"
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def get_mRNA_ids_from_monomer_ids(self, sim_data, target_monomer_ids):
@@ -165,7 +165,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Extract reaction index for each reaction of interest
 		fba_results_reader = TableReader(os.path.join(simOutDir, 'FBAResults'))
-		reaction_ids = fba_results_reader.readAttribute('reactionIDs')
+		reaction_ids = fba_results_reader.readAttribute('base_reaction_ids')
 		reaction_idx_dict = {reaction: i for i, reaction in enumerate(reaction_ids)}
 		reaction_of_interest_indexes = [
 			reaction_idx_dict.get(reaction_id) for reaction_id in reaction_ids_of_interest]
@@ -194,11 +194,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		gene_of_interest_mRNA_counts = all_mRNA_stacked_counts[:,gene_of_interest_cistron_indexes]
 
 		all_rection_fluxes = read_stacked_columns(
-			cell_paths, 'FBAResults', 'reactionFluxes', ignore_exception=True)
+			cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True)
 		reaction_of_interest_flux = all_rection_fluxes[:,reaction_of_interest_indexes]
 
-		(aa_of_interest_counts, ) = read_stacked_bulk_molecules(
-			cell_paths, [AA_of_interest], ignore_exception=True)
+		if gene_name == "serB":
+			(reaction_product_of_interest_counts, ) = read_stacked_bulk_molecules(
+				cell_paths, [reaction_product_of_interest], ignore_exception=True)
 
 		plot_suffixes = [""]
 		standard_xlim = (0,1500)
@@ -228,8 +229,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel("Cell Mass (fg)", fontsize="small")
 			ax1.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
-
-			# TODO: transcription event
 
 			# mRNA Cistron Counts
 			ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
@@ -285,12 +284,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax3.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
-			# TODO: reaction flux
+			# Reaction flux
 			ax4 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			for i in range(len(reaction_ids_of_interest)):
 				plt.plot(
 					time / 60., reaction_of_interest_flux[:,i],
-					label=reaction_ids_of_interest[i][0:20] + "...")
+					label=reaction_ids_of_interest[i][0:20] + "...", color=LINE_COLOR)
 			plt.legend(fontsize="x-small")
 			plt.xlabel("Time (min)")
 			plt.ylabel("Reaction flux (mmol/g DCW/hr)", fontsize="small")
@@ -298,18 +297,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax4.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
-
-			# TODO: reaction product
+			# Reaction product counts
 			ax5 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			plt.plot(time / 60., aa_of_interest_counts, color=LINE_COLOR)
+			plt.plot(time / 60., reaction_product_of_interest_counts, color=LINE_COLOR)
 			plt.xlabel("Time (min)")
-			plt.ylabel("" + AA_of_interest + " counts", fontsize="small")
+			plt.ylabel("" + reaction_product_of_interest + " counts", fontsize="small")
 			ax5.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
-			# TODO: translation stalling
-
-			# Growth Rate
+			# Growth rate
 			ax6 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			growth_rate = np.ravel(read_stacked_columns(
 				cell_paths, "Mass", "instantaneous_growth_rate",
