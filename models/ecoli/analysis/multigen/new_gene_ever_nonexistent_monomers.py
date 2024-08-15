@@ -30,11 +30,35 @@ LINE_COLOR = (66/255, 170/255, 154/255)
 
 ### TODO: change these so that they don't all need to be hardcoded
 
-# serB
-gene_name = "serB"
-cistron_of_interest = "EG10945_RNA"
-reaction_ids_of_interest = ['RXN0-5114']
-reaction_product_of_interest = "SER[c]"
+# # serB
+# gene_name = "serB"
+# cistron_of_interest = "EG10945_RNA"
+# reaction_ids_of_interest = ['RXN0-5114']
+# reaction_product_of_interest = "SER[c]"
+
+# murG
+gene_name = "murG"
+cistron_of_interest = "EG10623_RNA"
+reaction_ids_of_interest = ['NACGLCTRANS-RXN'] # This reaction is reversible
+reaction_product_of_interest = "C6[c]"
+
+# # coaD
+# gene_name = "coaD"
+# cistron_of_interest = "EG11190_RNA"
+# reaction_ids_of_interest = ['PANTEPADENYLYLTRAN-RXN']
+# reaction_product_of_interest = "DEPHOSPHO-COA[c]"
+
+# # hemH
+# gene_name = "hemH"
+# cistron_of_interest = "EG10945_RNA"
+# reaction_ids_of_interest = ['PROTOHEMEFERROCHELAT-RXN']
+# reaction_product_of_interest = "PROTOHEME[c]"
+
+# # metB
+# gene_name = "metB"
+# cistron_of_interest = "EG10582_RNA"
+# reaction_ids_of_interest = ['O-SUCCHOMOSERLYASE-RXN','METBALT-RXN']
+# reaction_products_of_interest = ['L-CYSTATHIONINE[c]', 'SUC[c]']
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def get_mRNA_ids_from_monomer_ids(self, sim_data, target_monomer_ids):
@@ -200,6 +224,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		if gene_name == "serB":
 			(reaction_product_of_interest_counts, ) = read_stacked_bulk_molecules(
 				cell_paths, [reaction_product_of_interest], ignore_exception=True)
+		elif gene_name == "metB":
+			(reaction_product_of_interest_counts, ) = read_stacked_bulk_molecules(
+				cell_paths, reaction_products_of_interest, ignore_exception=True)
+		else:
+			(reaction_product_of_interest_counts,) = read_stacked_bulk_molecules(cell_paths, [reaction_product_of_interest], ignore_exception=True)
 
 		plot_suffixes = [""]
 		standard_xlim = (0,1500)
@@ -289,20 +318,39 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for i in range(len(reaction_ids_of_interest)):
 				plt.plot(
 					time / 60., reaction_of_interest_flux[:,i],
-					label=reaction_ids_of_interest[i][0:20] + "...", color=LINE_COLOR)
+					label=reaction_ids_of_interest[i][0:20] + "...")
 			plt.legend(fontsize="x-small")
 			plt.xlabel("Time (min)")
 			plt.ylabel("Reaction flux (mmol/g DCW/hr)", fontsize="small")
-			plt.ylim(-0.0001, 0.003)
+			if gene_name == "serB":
+				plt.ylim(-0.0001, 0.003)
+			elif gene_name == "murG":
+				plt.ylim(-0.0001, 0.0001)
+			elif gene_name == "coaD":
+				plt.ylim(-0.0001, 0.003)
+			elif gene_name == "hemH":
+				plt.ylim(-0.0001, 0.0005)
+			elif gene_name == "metB":
+				plt.ylim(-0.000001, 0.0001)
+			else:
+				plt.ylim(-0.0001, 0.003)
 			ax4.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# Reaction product counts
 			ax5 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			plt.plot(time / 60., reaction_product_of_interest_counts, color=LINE_COLOR)
-			plt.xlabel("Time (min)")
-			plt.ylabel("" + reaction_product_of_interest + " counts", fontsize="small")
-			ax5.add_collection(PatchCollection(patches, match_original=True))
+			if gene_name == "metB":
+				plt.plot(time / 60., reaction_product_of_interest_counts[:, 0], label = reaction_products_of_interest[0])
+				plt.plot(time / 60., reaction_product_of_interest_counts[:, 1], label = reaction_products_of_interest[1])
+				plt.xlabel("Time (min)")
+				plt.ylabel("Reaction product counts", fontsize="small")
+				plt.legend(fontsize="x-small")
+				ax5.add_collection(PatchCollection(patches, match_original=True))
+			else:
+				plt.plot(time / 60., reaction_product_of_interest_counts, color=LINE_COLOR)
+				plt.xlabel("Time (min)")
+				plt.ylabel("" + reaction_product_of_interest + " counts", fontsize="small")
+				ax5.add_collection(PatchCollection(patches, match_original=True))
 			plot_num += 1
 
 			# Growth rate
@@ -342,7 +390,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 			exportFigure(
 				plt, plotOutDir, plotOutFileName + plot_suffix + "_"
-				+ str(START_GEN) + "_" + str(END_GEN), metadata)
+				+ str(START_GEN) + "_" + str(END_GEN) + "_" + gene_name,
+				metadata)
 			plt.close("all")
 
 if __name__ == '__main__':
