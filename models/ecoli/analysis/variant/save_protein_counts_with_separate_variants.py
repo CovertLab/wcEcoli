@@ -366,8 +366,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				Fvalues = np.concatenate((F_PC_ids, F_PCs.T), axis=1)
 				save_file(
 					F_pth,
-					f'Filtered_AvgProteinCounts_Variant_{experimental_var}'
-					f'_startGen_{IGNORE_FIRST_N_GENS}.csv', Fcol_labels, Fvalues)
+					f'AvgProteinCounts_Variant_{experimental_var}_'
+					f'filter_{filter_num}_startGen_{IGNORE_FIRST_N_GENS}.csv', Fcol_labels, Fvalues)
 
 				# save filtered log data:
 				F_log_C_PCs = (self.get_LogData(F_PC_idxs, self.total_protein_counts, F_PC_idxs))[0]
@@ -378,8 +378,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				F_log_values = np.transpose(F_log_values)
 				save_file(
 					F_log_pth,
-					f'Filtered_LogAvgProteinCounts_Variant_{experimental_var}'
-					f'_startGen_{IGNORE_FIRST_N_GENS}.csv', F_log_col_labels,
+					f'LogAvgProteinCounts_Variant_{experimental_var}_'
+					f'filter_{filter_num}_startGen_{IGNORE_FIRST_N_GENS}.csv', F_log_col_labels,
 					F_log_values)
 
 			# Save validation data
