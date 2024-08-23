@@ -42,11 +42,16 @@ LINE_COLOR = (66/255, 170/255, 154/255)
 # reaction_ids_of_interest = ['NACGLCTRANS-RXN'] # This reaction is reversible
 # reaction_product_of_interest = "C6[c]"
 
-# # coaD
-# gene_name = "coaD"
-# cistron_of_interest = "EG11190_RNA"
-# reaction_ids_of_interest = ['PANTEPADENYLYLTRAN-RXN']
-# reaction_product_of_interest = "DEPHOSPHO-COA[c]"
+# coaD
+gene_name = "coaD"
+cistron_of_interest = "EG11190_RNA"
+reaction_ids_of_interest = ['PANTEPADENYLYLTRAN-RXN']
+reaction_product_of_interest = "DEPHOSPHO-COA[c]"
+# We also want to plot the next reaction in the CoA pathway
+supplementary_gene_name = "coaE"
+supplementary_cistron_of_interest = "EG12312_RNA"
+supplementary_reaction_ids_of_interest = ["DEPHOSPHOCOAKIN-RXN"]
+supplementary_reaction_product_of_interest = "CO-A[c]"
 
 # # hemH
 # gene_name = "hemH"
@@ -80,7 +85,11 @@ genes_of_interest["coaD"] = {
 	"gene_name": "coaD",
 	"cistron_of_interest": "EG11190_RNA",
 	"reaction_ids_of_interest": ['PANTEPADENYLYLTRAN-RXN'],
-	"reaction_product_of_interest": "DEPHOSPHO-COA[c]"
+	"reaction_product_of_interest": "DEPHOSPHO-COA[c]",
+	"supplementary_gene_name": "coaE",
+	"supplementary_cistron_of_interest": "EG12312_RNA",
+	"supplementary_reaction_ids_of_interest": ["DEPHOSPHOCOAKIN-RXN"],
+	"supplementary_reaction_product_of_interest": "CO-A[c]",
 }
 
 genes_of_interest["hemH"] = {
@@ -198,6 +207,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				reaction_products_of_interest = gene_data["reaction_products_of_interest"]
 			else:
 				reaction_product_of_interest = gene_data["reaction_product_of_interest"]
+			if "supplementary_gene_name" in gene_data.keys():
+				supplementary_gene_name = gene_data["supplementary_gene_name"]
+				supplementary_cistron_of_interest = gene_data["supplementary_cistron_of_interest"]
+				supplementary_reaction_ids_of_interest = gene_data["supplementary_reaction_ids_of_interest"]
+				supplementary_reaction_product_of_interest = gene_data["supplementary_reaction_product_of_interest"]
 
 			# Determine gene ids
 			with open(simDataFile, 'rb') as f:
@@ -207,8 +221,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			gene_of_interest_cistron_ids = [cistron_of_interest]
 			mRNA_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
 											monomer_sim_data['id']))
-			gene_of_interest_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
-									for mRNA_id in gene_of_interest_cistron_ids]
+			gene_of_interest_monomer_ids = [
+				mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in gene_of_interest_cistron_ids]
 
 			# Extract mRNA indexes for each gene of interest
 			mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
@@ -216,6 +230,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
 			gene_of_interest_cistron_indexes = [
 				mRNA_idx_dict.get(mRNA_id) for mRNA_id in gene_of_interest_cistron_ids]
+			if "supplementary_cistron_of_interest" in gene_data.keys():
+				supplementary_cistron_of_interest_ids = [supplementary_cistron_of_interest]
+				supplementary_gene_of_interest_cistron_indexes = [
+					mRNA_idx_dict.get(mRNA_id) for mRNA_id in supplementary_cistron_of_interest_ids]
 			mRNA_counts_reader.close()
 
 			# Extract protein indexes for each gene of interest
@@ -226,6 +244,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				monomer_counts_reader.readAttribute('monomerIds'))}
 			gene_of_interest_monomer_indexes = [
 				monomer_idx_dict.get(monomer_id) for monomer_id in gene_of_interest_monomer_ids]
+			if "supplementary_cistron_of_interest" in gene_data.keys():
+				supplementary_gene_of_interest_monomer_ids = [
+					mRNA_monomer_id_dict.get(mRNA_id) for mRNA_id in supplementary_cistron_of_interest_ids]
+				supplementary_gene_of_interest_monomer_indexes = [
+					monomer_idx_dict.get(monomer_id) for monomer_id in supplementary_gene_of_interest_monomer_ids]
 			monomer_counts_reader.close()
 
 			# Extract reaction index for each reaction of interest
@@ -234,6 +257,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			reaction_idx_dict = {reaction: i for i, reaction in enumerate(reaction_ids)}
 			reaction_of_interest_indexes = [
 				reaction_idx_dict.get(reaction_id) for reaction_id in reaction_ids_of_interest]
+			if "supplementary_reaction_ids_of_interest" in gene_data.keys():
+				supplementary_reaction_of_interest_indexes = [
+					reaction_idx_dict.get(reaction_id) for reaction_id in supplementary_reaction_ids_of_interest]
 			fba_results_reader.close()
 
 			# Load data
@@ -248,6 +274,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_monomer_stacked_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts', ignore_exception=True)
 			gene_of_interest_monomer_counts = all_monomer_stacked_counts[:,gene_of_interest_monomer_indexes]
+			if "supplementary_gene_name" in gene_data.keys():
+				supplementary_gene_of_interest_monomer_counts = (
+					all_monomer_stacked_counts[:,supplementary_gene_of_interest_monomer_indexes])
 			when_is_monomer_nonexistent = time[gene_of_interest_monomer_counts == 0] / 60.
 
 			patches = []
@@ -259,24 +288,30 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_mRNA_stacked_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
 			gene_of_interest_mRNA_counts = all_mRNA_stacked_counts[:,gene_of_interest_cistron_indexes]
+			if "supplementary_gene_name" in gene_data.keys():
+				supplementary_gene_of_interest_mRNA_counts = (
+					all_mRNA_stacked_counts[:,supplementary_gene_of_interest_cistron_indexes])
 
 			all_rection_fluxes = read_stacked_columns(
 				cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True)
 			reaction_of_interest_flux = all_rection_fluxes[:,reaction_of_interest_indexes]
+			if "supplementary_gene_name" in gene_data.keys():
+				supplementary_reaction_of_interest_flux = (
+					all_rection_fluxes[:,supplementary_reaction_of_interest_indexes])
 
-			if gene_name == "serB":
-				(reaction_product_of_interest_counts, ) = read_stacked_bulk_molecules(
-					cell_paths, [reaction_product_of_interest], ignore_exception=True)
-			elif gene_name == "metB":
+			if gene_name == "metB":
 				(reaction_product_of_interest_counts, ) = read_stacked_bulk_molecules(
 					cell_paths, reaction_products_of_interest, ignore_exception=True)
 			else:
 				(reaction_product_of_interest_counts,) = read_stacked_bulk_molecules(
 					cell_paths, [reaction_product_of_interest], ignore_exception=True)
+			if "supplementary_gene_name" in gene_data.keys():
+				(supplementary_reaction_product_of_interest_counts,) = read_stacked_bulk_molecules(
+					cell_paths, [supplementary_reaction_product_of_interest], ignore_exception=True)
 
 			plot_suffixes = [""]
 			standard_xlim = (0,1500)
-			total_plots = 7 # TODO Modularize and get rid of this magic number
+			total_plots = 12 # TODO Modularize and get rid of this magic number
 
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
@@ -286,7 +321,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plot_suffix = plot_suffixes[i]
 
 				# Plotting
-				plt.figure(figsize = (8.5, 11))
+				plt.figure(figsize = (8.5, 22))
 				plot_num = 1
 
 				# Mass
@@ -305,30 +340,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				# mRNA Cistron Counts
 				ax2 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-				if plot_suffix == "":
-					if len(gene_of_interest_cistron_ids) == 1:
-						plt.plot(time / 60., gene_of_interest_mRNA_counts, color=LINE_COLOR)
-					else:
-						for r in range(len(gene_of_interest_cistron_ids)):
-							plt.plot(
-								time / 60., gene_of_interest_mRNA_counts[:,r],
-								label = gene_of_interest_cistron_ids[r], color=LINE_COLOR)
-						plt.legend()
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-					# plot on log scale instead
-					if len(gene_of_interest_cistron_ids) == 1:
-						plt.plot(
-							time / 60., np.log10(gene_of_interest_mRNA_counts + 1),
-							color=LINE_COLOR)
-					else:
-						for r in range(len(gene_of_interest_cistron_ids)):
-							plt.plot(
-								time / 60., np.log10(gene_of_interest_mRNA_counts[:,r] + 1),
-								label = gene_of_interest_cistron_ids[r], color=LINE_COLOR)
-						plt.legend()
-					plt.ylim((-1,4.5))
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-					plt.xlim(standard_xlim)
+				plt.plot(time / 60., gene_of_interest_mRNA_counts, color=LINE_COLOR)
 				plt.xlabel("Time (min)")
 				plt.ylabel("mRNA Cistron Counts: " + gene_name, fontsize="small")
 				ax2.add_collection(PatchCollection(patches, match_original=True))
@@ -336,31 +348,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				# Protein Counts
 				ax3 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-				if plot_suffix == "":
-					if len(gene_of_interest_monomer_ids) == 1:
-						plt.plot(time / 60., gene_of_interest_monomer_counts, color=LINE_COLOR)
-					else:
-						for m in range(len(gene_of_interest_monomer_ids)):
-							plt.plot(
-								time / 60., gene_of_interest_monomer_counts[:,m],
-								label = gene_of_interest_monomer_ids[m],
-								color=LINE_COLOR)
-						plt.legend()
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-					# plot on log scale instead
-					if len(gene_of_interest_monomer_ids) == 1:
-						plt.plot(
-							time / 60., np.log10(gene_of_interest_monomer_counts + 1),
-							color=LINE_COLOR)
-					else:
-						for m in range(len(gene_of_interest_monomer_ids)):
-							plt.plot(
-								time / 60., np.log10(gene_of_interest_monomer_counts[:,m] + 1),
-								label = gene_of_interest_monomer_ids[m], color=LINE_COLOR)
-						plt.legend()
-					plt.ylim((-1,7.5))
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
-					plt.xlim(standard_xlim)
+				plt.plot(time / 60., gene_of_interest_monomer_counts, color=LINE_COLOR)
 				plt.xlabel("Time (min)")
 				plt.ylabel("Monomer Counts: " + gene_name, fontsize="small")
 				ax3.add_collection(PatchCollection(patches, match_original=True))
@@ -413,6 +401,62 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						fontsize="small")
 					ax5.add_collection(PatchCollection(patches, match_original=True))
 				plot_num += 1
+
+
+				if "supplementary_gene_name" in gene_data.keys():
+					# Plot counts of enzyme for next step in pathway
+
+					# mRNA Cistron Counts
+					ax2s = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+					plt.plot(time / 60., supplementary_gene_of_interest_mRNA_counts, color=LINE_COLOR)
+					plt.xlabel("Time (min)")
+					plt.ylabel("mRNA Cistron Counts: " + supplementary_gene_name, fontsize="small")
+					ax2s.add_collection(PatchCollection(patches, match_original=True))
+					plot_num += 1
+
+					# Protein Counts
+					ax3s = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+					plt.plot(time / 60., supplementary_gene_of_interest_monomer_counts, color=LINE_COLOR)
+					plt.xlabel("Time (min)")
+					plt.ylabel("Monomer Counts: " + supplementary_gene_name, fontsize="small")
+					ax3s.add_collection(PatchCollection(patches, match_original=True))
+					plot_num += 1
+
+					# Reaction flux
+					ax4s = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+					for i in range(len(supplementary_reaction_ids_of_interest)):
+						plt.plot(
+							time / 60., supplementary_reaction_of_interest_flux[:, i],
+							label=supplementary_reaction_ids_of_interest[i][0:20] + "...")
+					plt.legend(fontsize="x-small")
+					plt.xlabel("Time (min)")
+					plt.ylabel("Reaction flux (mmol/g DCW/hr)", fontsize="small")
+					if gene_name == "serB":
+						plt.ylim(-0.0005, 0.002)
+					elif gene_name == "murG":
+						plt.ylim(-0.0001, 0.0001)
+					elif gene_name == "coaD":
+						plt.ylim(-0.0001, 0.0007)
+					elif gene_name == "hemH":
+						plt.ylim(-0.00005, 0.00001)
+					elif gene_name == "metB":
+						plt.ylim(-0.00005, 0.0002)
+					else:
+						plt.ylim(-0.0001, 0.003)
+					ax4s.add_collection(PatchCollection(patches, match_original=True))
+					plot_num += 1
+
+					# Reaction product counts
+					ax5s = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+					plt.plot(
+						time / 60., supplementary_reaction_product_of_interest_counts,
+						color=LINE_COLOR)
+					plt.xlabel("Time (min)")
+					plt.ylabel(
+						"" + supplementary_reaction_product_of_interest + " counts",
+						fontsize="small")
+					ax5s.add_collection(PatchCollection(patches, match_original=True))
+					plot_num += 1
 
 				# Growth rate
 				ax6 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
