@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 7
+USE_NEW_DEG_RATES  = 8
 SAVE_DATA = 1
 
 class Translation(object):
@@ -238,7 +238,7 @@ class Translation(object):
 					NE_protein_ids.append(protein['id'])
 					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
-		# Use measured degradation rates if available, then C-lim rates, the ML,
+		# Use measured degradation rates if available, then C-lim rates, then ML,
 		# then N end rule
 		if USE_NEW_DEG_RATES == 7:
 			name = "CLClimNE"
@@ -255,6 +255,33 @@ class Translation(object):
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
 					ML_protein_ids.append(protein['id'])
 					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
+
+		# Use measured degradation rates if available, then ML rates, then C-lim rates, then N end rule
+		if USE_NEW_DEG_RATES == 8:
+			name = "CLClimNE"
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
+				elif protein['id'] in pulsed_silac_deg_rates:
+					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+				elif protein['id'] in C_lim_deg_rates:
+					deg_rate[i] = C_lim_deg_rates[protein['id']]
+					Clim_protein_ids.append(protein['id'])
+					Clim_rate_contstants.append(C_lim_deg_rates[protein['id']])
 				else:
 					seq = protein['seq']
 					assert seq[0] == 'M'
