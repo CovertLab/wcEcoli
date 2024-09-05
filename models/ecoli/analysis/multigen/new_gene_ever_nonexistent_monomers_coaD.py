@@ -200,6 +200,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				# Specifies whether the reaction consumes, produces, or both the
 				# supplementary product of interest
 				handling_of_supplementary_product = []
+				# Involves "ACETYL-COA[c]"
+				involves_acetyl_CoA = []
 				# Set of all metabolites that contain CoA
 				metabolites_containing_CoA = set()
 				for reaction in reaction_dict.keys():
@@ -215,6 +217,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						for key in reaction_dict[reaction].keys():
 							if "COA" in key:
 								metabolites_containing_CoA.add(key)
+
+						if "ACETYL-COA[c]" in reaction_dict[reaction].keys():
+							involves_acetyl_CoA.append(True)
+						else:
+							involves_acetyl_CoA.append(False)
 
 			# Extract reaction index for each reaction of interest
 			fba_results_reader = TableReader(os.path.join(simOutDir, 'FBAResults'))
@@ -359,7 +366,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 							((time[patch_start_index[j]] / 60.)[0], ax2.get_ylim()[0]),
 							width, height, color='gray', alpha=0.15,
 							linewidth=0.))
-				ax2.add_collection(PatchCollection(ax1_patches, match_original=True))
+				ax2.add_collection(PatchCollection(ax2_patches, match_original=True))
 				plot_num += 1
 
 				# Protein Counts
@@ -378,7 +385,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 							((time[patch_start_index[j]] / 60.)[0], ax3.get_ylim()[0]),
 							width, height, color='gray', alpha=0.15,
 							linewidth=0.))
-				ax3.add_collection(PatchCollection(ax1_patches, match_original=True))
+				ax3.add_collection(PatchCollection(ax3_patches, match_original=True))
 				plot_num += 1
 
 				# Reaction flux
@@ -540,7 +547,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 								((time[patch_start_index[j]] / 60.)[0], ax5s.get_ylim()[0]),
 								width, height, color='gray', alpha=0.15,
 								linewidth=0.))
-					ax5s.add_collection(PatchCollection(ax2s_patches, match_original=True))
+					ax5s.add_collection(PatchCollection(ax5s_patches, match_original=True))
 					plot_num += 1
 
 				# Growth rate
@@ -607,7 +614,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					metabolite_counts = metabolites_containing_CoA_counts[:,j]
 					plt.plot(time / 60., metabolite_counts, color=LINE_COLOR)
 					plt.xlabel("Time (min)")
-					plt.ylabel(metabolite + " counts", fontsize="small")
+					plt.ylabel(metabolite + " counts", fontsize="x-small")
 					ax_patches = []
 					for p in range(len(patch_start_index)):
 						width = (time[patch_end_index[p]] / 60. - time[patch_start_index[p]] / 60.)[
@@ -627,6 +634,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				if 'supplementary_reaction_product_of_interest' in gene_data.keys():
 					for k in range(len(base_supplementary_product_reaction_of_interest_indexes)):
 
+						if not involves_acetyl_CoA[k]:
+							continue
+
 						if handling_of_supplementary_product[k] == "produces":
 							color = "green"
 						elif handling_of_supplementary_product[k] == "consumes":
@@ -642,7 +652,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						plt.xlabel("Time (min)")
 						plt.ylabel(
 							"" + base_reactions_for_supplementary_product[k] + " flux",
-							fontsize="small")
+							fontsize="x-small")
 						plt.ylim(
 							mean_reaction_counts - 1 * std_dev_reaction_counts,
 							mean_reaction_counts + 3 * std_dev_reaction_counts)
@@ -657,7 +667,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 							ax_patches.append(
 								mpl.patches.Rectangle(
 									((time[patch_start_index[p]] / 60.)[0], ax.get_ylim()[0]),
-									width, height, color='gray', alpha=0.15,
+									width, height, color='gray', alpha=0.25,
 									linewidth=0.))
 						ax.add_collection(PatchCollection(ax_patches, match_original=True))
 						plot_num += 1
