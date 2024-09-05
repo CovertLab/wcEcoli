@@ -139,10 +139,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
-
-
-
-
 		reaction_dict = sim_data.process.metabolism.reaction_stoich
 
 		for gene, gene_data in genes_of_interest.items():
@@ -256,12 +252,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					all_monomer_stacked_counts[:,supplementary_gene_of_interest_monomer_indexes])
 			when_is_monomer_nonexistent = time[gene_of_interest_monomer_counts == 0] / 60.
 
-			# TODO: make this one rectangle instead of a series of small rectangles
-			patches = []
-			for i in range(len(when_is_monomer_nonexistent)):
-				patches.append(mpl.patches.Rectangle(
-					(when_is_monomer_nonexistent[i], -10), 1, 100000000,
-					color='lightgray', alpha=0.05))
+			# Find patches of time where monomer is nonexistent to highlight on plot
+			monomer_nonexistent_indexes = np.where(np.array(gene_of_interest_monomer_counts) == 0)[0]
+			patch_start_index = []
+			patch_end_index = []
+			if len(monomer_nonexistent_indexes):
+				prev = monomer_nonexistent_indexes[0]
+				patch_start_index.append(prev)
+				for i in monomer_nonexistent_indexes:
+					if np.abs(i - prev) > 1:
+						patch_start_index.append(i)
+						patch_end_index.append(prev)
+					prev = i
+				patch_end_index.append(prev)
 
 			all_mRNA_stacked_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
@@ -326,7 +329,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.xlim(standard_xlim)
 				plt.xlabel("Time (min)")
 				plt.ylabel("Cell Mass (fg)", fontsize="small")
-				ax1.add_collection(PatchCollection(patches, match_original=True))
+				ax1_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax1.get_ylim()[1] - ax1.get_ylim()[0]
+					ax1_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax1.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax1.add_collection(PatchCollection(ax1_patches, match_original=True))
 				plot_num += 1
 
 				# mRNA Cistron Counts
@@ -334,7 +348,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.plot(time / 60., gene_of_interest_mRNA_counts, color=LINE_COLOR)
 				plt.xlabel("Time (min)")
 				plt.ylabel("mRNA Cistron Counts: " + gene_name, fontsize="small")
-				ax2.add_collection(PatchCollection(patches, match_original=True))
+				ax2_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax2.get_ylim()[1] - ax2.get_ylim()[0]
+					ax2_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax2.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax2.add_collection(PatchCollection(ax1_patches, match_original=True))
 				plot_num += 1
 
 				# Protein Counts
@@ -342,7 +367,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.plot(time / 60., gene_of_interest_monomer_counts, color=LINE_COLOR)
 				plt.xlabel("Time (min)")
 				plt.ylabel("Monomer Counts: " + gene_name, fontsize="small")
-				ax3.add_collection(PatchCollection(patches, match_original=True))
+				ax3_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax3.get_ylim()[1] - ax3.get_ylim()[0]
+					ax3_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax3.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax3.add_collection(PatchCollection(ax1_patches, match_original=True))
 				plot_num += 1
 
 				# Reaction flux
@@ -366,31 +402,41 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.ylim(-0.00005, 0.0002)
 				else:
 					plt.ylim(-0.0001, 0.003)
-				ax4.add_collection(PatchCollection(patches, match_original=True))
+				ax4_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax4.get_ylim()[1] - ax4.get_ylim()[0]
+					ax4_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax4.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax4.add_collection(PatchCollection(ax4_patches, match_original=True))
 				plot_num += 1
 
 				# Reaction product counts
 				ax5 = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-				if gene_name == "metB":
-					plt.plot(
-						time / 60., reaction_product_of_interest_counts[:, 0],
-						label = reaction_products_of_interest[0])
-					plt.plot(
-						time / 60., reaction_product_of_interest_counts[:, 1],
-						label = reaction_products_of_interest[1])
-					plt.xlabel("Time (min)")
-					plt.ylabel("Reaction product counts", fontsize="small")
-					plt.legend(fontsize="x-small")
-					ax5.add_collection(PatchCollection(patches, match_original=True))
-				else:
-					plt.plot(
-						time / 60., reaction_product_of_interest_counts,
-						color=LINE_COLOR)
-					plt.xlabel("Time (min)")
-					plt.ylabel(
-						"" + reaction_product_of_interest + " counts",
-						fontsize="small")
-					ax5.add_collection(PatchCollection(patches, match_original=True))
+				plt.plot(
+					time / 60., reaction_product_of_interest_counts,
+					color=LINE_COLOR)
+				plt.xlabel("Time (min)")
+				plt.ylabel(
+					"" + reaction_product_of_interest + " counts",
+					fontsize="small")
+				ax5_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax5.get_ylim()[1] - ax5.get_ylim()[0]
+					ax5_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax5.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax5.add_collection(PatchCollection(ax5_patches, match_original=True))
 				plot_num += 1
 
 
@@ -402,7 +448,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.plot(time / 60., supplementary_gene_of_interest_mRNA_counts, color=LINE_COLOR)
 					plt.xlabel("Time (min)")
 					plt.ylabel("mRNA Cistron Counts: " + supplementary_gene_name, fontsize="small")
-					ax2s.add_collection(PatchCollection(patches, match_original=True))
+					ax2s_patches = []
+					for j in range(len(patch_start_index)):
+						width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[
+							0]
+						if width <= 0.1:
+							continue
+						height = ax2s.get_ylim()[1] - ax2s.get_ylim()[0]
+						ax2s_patches.append(
+							mpl.patches.Rectangle(
+								((time[patch_start_index[j]] / 60.)[0], ax2s.get_ylim()[0]),
+								width, height, color='gray', alpha=0.15,
+								linewidth=0.))
+					ax2s.add_collection(PatchCollection(ax2s_patches, match_original=True))
 					plot_num += 1
 
 					# Protein Counts
@@ -410,7 +468,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.plot(time / 60., supplementary_gene_of_interest_monomer_counts, color=LINE_COLOR)
 					plt.xlabel("Time (min)")
 					plt.ylabel("Monomer Counts: " + supplementary_gene_name, fontsize="small")
-					ax3s.add_collection(PatchCollection(patches, match_original=True))
+					ax3s_patches = []
+					for j in range(len(patch_start_index)):
+						width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[
+							0]
+						if width <= 0.1:
+							continue
+						height = ax3s.get_ylim()[1] - ax3s.get_ylim()[0]
+						ax3s_patches.append(
+							mpl.patches.Rectangle(
+								((time[patch_start_index[j]] / 60.)[0], ax3s.get_ylim()[0]),
+								width, height, color='gray', alpha=0.15,
+								linewidth=0.))
+					ax3s.add_collection(PatchCollection(ax3s_patches, match_original=True))
 					plot_num += 1
 
 					# Reaction flux
@@ -434,7 +504,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						plt.ylim(-0.00005, 0.0002)
 					else:
 						plt.ylim(-0.0001, 0.003)
-					ax4s.add_collection(PatchCollection(patches, match_original=True))
+					ax4s_patches = []
+					for j in range(len(patch_start_index)):
+						width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[
+							0]
+						if width <= 0.1:
+							continue
+						height = ax4s.get_ylim()[1] - ax4s.get_ylim()[0]
+						ax4s_patches.append(
+							mpl.patches.Rectangle(
+								((time[patch_start_index[j]] / 60.)[0], ax4s.get_ylim()[0]),
+								width, height, color='gray', alpha=0.15,
+								linewidth=0.))
+					ax4s.add_collection(PatchCollection(ax2s_patches, match_original=True))
 					plot_num += 1
 
 					# Reaction product counts
@@ -446,7 +528,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.ylabel(
 						"" + supplementary_reaction_product_of_interest + " counts",
 						fontsize="small")
-					ax5s.add_collection(PatchCollection(patches, match_original=True))
+					ax5s_patches = []
+					for j in range(len(patch_start_index)):
+						width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[
+							0]
+						if width <= 0.1:
+							continue
+						height = ax5s.get_ylim()[1] - ax5s.get_ylim()[0]
+						ax5s_patches.append(
+							mpl.patches.Rectangle(
+								((time[patch_start_index[j]] / 60.)[0], ax5s.get_ylim()[0]),
+								width, height, color='gray', alpha=0.15,
+								linewidth=0.))
+					ax5s.add_collection(PatchCollection(ax2s_patches, match_original=True))
 					plot_num += 1
 
 				# Growth rate
@@ -465,7 +559,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.xlim(standard_xlim)
 				plt.xlabel("Time (min)")
 				plt.ylabel("Growth Rate", fontsize="small")
-				ax6.add_collection(PatchCollection(patches, match_original=True))
+				ax6_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax6.get_ylim()[1] - ax6.get_ylim()[0]
+					ax6_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax6.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax6.add_collection(PatchCollection(ax6_patches, match_original=True))
 				plot_num += 1
 
 				# ppGpp
@@ -480,7 +585,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.xlim(standard_xlim)
 				plt.xlabel("Time (min)")
 				plt.ylabel("ppGpp Concentration ($\mu$M)", fontsize="small")
-				ax7.add_collection(PatchCollection(patches, match_original=True))
+				ax7_patches = []
+				for j in range(len(patch_start_index)):
+					width = (time[patch_end_index[j]] / 60. - time[patch_start_index[j]] / 60.)[0]
+					if width <= 0.1:
+						continue
+					height = ax7.get_ylim()[1] - ax7.get_ylim()[0]
+					ax7_patches.append(
+						mpl.patches.Rectangle(
+							((time[patch_start_index[j]] / 60.)[0], ax7.get_ylim()[0]),
+							width, height, color='gray', alpha=0.15,
+							linewidth=0.))
+				ax7.add_collection(PatchCollection(ax7_patches, match_original=True))
 				plot_num += 1
 
 				# Plot everything containing CoA
@@ -492,7 +608,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.plot(time / 60., metabolite_counts, color=LINE_COLOR)
 					plt.xlabel("Time (min)")
 					plt.ylabel(metabolite + " counts", fontsize="small")
-					ax.add_collection(PatchCollection(patches, match_original=True))
+					ax_patches = []
+					for p in range(len(patch_start_index)):
+						width = (time[patch_end_index[p]] / 60. - time[patch_start_index[p]] / 60.)[
+							0]
+						if width <= 0.1:
+							continue
+						height = ax.get_ylim()[1] - ax.get_ylim()[0]
+						ax_patches.append(
+							mpl.patches.Rectangle(
+								((time[patch_start_index[p]] / 60.)[0], ax.get_ylim()[0]),
+								width, height, color='gray', alpha=0.15,
+								linewidth=0.))
+					ax.add_collection(PatchCollection(ax_patches, match_original=True))
 					plot_num += 1
 
 				# Plot all reactions that produce or consume the supplementary product of interest
@@ -518,7 +646,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						plt.ylim(
 							mean_reaction_counts - 1 * std_dev_reaction_counts,
 							mean_reaction_counts + 3 * std_dev_reaction_counts)
-						ax.add_collection(PatchCollection(patches, match_original=True))
+						ax_patches = []
+						for p in range(len(patch_start_index)):
+							width = \
+							(time[patch_end_index[p]] / 60. - time[patch_start_index[p]] / 60.)[
+								0]
+							if width <= 0.1:
+								continue
+							height = ax.get_ylim()[1] - ax.get_ylim()[0]
+							ax_patches.append(
+								mpl.patches.Rectangle(
+									((time[patch_start_index[p]] / 60.)[0], ax.get_ylim()[0]),
+									width, height, color='gray', alpha=0.15,
+									linewidth=0.))
+						ax.add_collection(PatchCollection(ax_patches, match_original=True))
 						plot_num += 1
 
 				plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
