@@ -399,6 +399,66 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		save_file(
 			plotOutDir, f'wcm_metabolic_reactions_{media_id}.tsv', columns, values)
 
+		# Cell level properties for WCM overview page
+		# Read columns
+		cell_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'cellMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		dry_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'dryMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		protein_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'proteinMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		rna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'rnaMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		doubling_time = read_stacked_columns(
+			cell_paths, 'Main', 'time', fun=lambda x: (x[-1] - x[0]) / 60.,
+			ignore_exception=True)
+		time_step_length = read_stacked_columns(
+			cell_paths, 'Main', 'timeStepSec', ignore_exception=True)
+
+		# Calculate derived cell values
+		cell_mass_avg = cell_mass.mean(axis = 0)
+		cell_mass_std = cell_mass.std(axis = 0)
+		dry_mass_avg = dry_mass.mean(axis = 0)
+		dry_mass_std = dry_mass.std(axis = 0)
+		protein_mass_avg = protein_mass.mean(axis = 0)
+		protein_mass_std = protein_mass.std(axis = 0)
+		rna_mass_avg = rna_mass.mean(axis = 0)
+		rna_mass_std = rna_mass.std(axis = 0)
+		doubling_time_avg = doubling_time.mean(axis = 0)
+		doubling_time_std = doubling_time.std(axis = 0)
+		time_step_length_avg = time_step_length.mean(axis = 0)
+		time_step_length_std = time_step_length.std(axis = 0)
+
+		columns = {
+			'media_id': 'Media ID, according to EcoCyc',
+			'cell_mass_avg': 'A floating point number in fg units',
+			'cell_mass_std': 'A floating point number in fg units',
+			'dry_mass_avg': 'A floating point number in fg units',
+			'dry_mass_std': 'A floating point number in fg units',
+			'protein_mass_avg': 'A floating point number in fg units',
+			'protein_mass_std': 'A floating point number in fg units',
+			'rna_mass_avg': 'A floating point number in fg units',
+			'rna_mass_std': 'A floating point number in fg units',
+			'doubling_time_avg': 'A floating point number in min units',
+			'doubling_time_std': 'A floating point number in min units',
+			'time_step_length_avg': 'A floating point number in sec units',
+			'time_step_length_std': 'A floating point number in sec units',
+			}
+
+		values = [
+			[media_id], cell_mass_avg, cell_mass_std, dry_mass_avg, dry_mass_std,
+			protein_mass_avg, protein_mass_std, rna_mass_avg, rna_mass_std,
+			doubling_time_avg, doubling_time_std, time_step_length_avg,
+			time_step_length_std,
+			]
+
+		save_file(
+			plotOutDir, f'wcm_cell_properties_{media_id}.tsv', columns, values)
+
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:
 			print(f'Saving data to {metadata_file}')
