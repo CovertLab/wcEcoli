@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 6
+USE_NEW_DEG_RATES  = 11
 SAVE_DATA = 1
 
 class Translation(object):
@@ -215,6 +215,89 @@ class Translation(object):
 		# 			NE_protein_ids.append(protein['id'])
 		# 			NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
+		# change the TFs back to their ML rates:
+		TFs = ['PD00423', 'PD00242', 'PD00257', 'PD00194', 'EG10490-MONOMER', 'PD00196', 'PD04028',
+			   'PD04032', 'G7948-MONOMER', 'EG12123-MONOMER', 'PD00197', 'PD00353', 'PD03831',
+			   'PD00413', 'PD00205', 'PD00347', 'PD00288', 'PD00519', 'ARCA-MONOMER',
+			   'BAER-MONOMER', 'DCUR-MONOMER', 'NARL-MONOMER', 'PUTA-MONOMER']
+
+		hi = 5
+		# Use measured degradation rates if available, then C-lim rates, then N end rule
+		if USE_NEW_DEG_RATES == 10:
+			name = "TFs_MLNE_ClimCLMLNE"
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in TFs:
+					if protein['id'] in pulsed_silac_deg_rates:
+
+						deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+						ML_protein_ids.append(protein['id'])
+						ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+					else:
+						seq = protein['seq']
+						assert seq[0] == 'M'
+						# Set N-end residue as second amino acid if initial methionine
+						# is cleaved
+						n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+						deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+						NE_protein_ids.append(protein['id'])
+						NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+				elif protein['id'] in C_lim_deg_rates:
+					deg_rate[i] = C_lim_deg_rates[protein['id']]
+					Clim_protein_ids.append(protein['id'])
+					Clim_rate_contstants.append(C_lim_deg_rates[protein['id']])
+				elif protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
+				elif protein['id'] in pulsed_silac_deg_rates:
+					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
+		hi = 5
+		# Use measured degradation rates if available, then C-lim rates, then N end rule
+		if USE_NEW_DEG_RATES == 11:
+			name = "TFs_NE_ClimCLMLNE"
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in TFs:
+					seq = protein['seq']
+					assert seq[0] == 'M'
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+				elif protein['id'] in C_lim_deg_rates:
+					deg_rate[i] = C_lim_deg_rates[protein['id']]
+					Clim_protein_ids.append(protein['id'])
+					Clim_rate_contstants.append(C_lim_deg_rates[protein['id']])
+				elif protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
+				elif protein['id'] in pulsed_silac_deg_rates:
+					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
 		# Use measured degradation rates if available, then C-lim rates, then N end rule
 		if USE_NEW_DEG_RATES == 6:
@@ -392,6 +475,38 @@ class Translation(object):
 					deg_rate[i] = ammonia_deg_rates[protein['id']]
 					NH3_protein_ids.append(protein['id'])
 					NH3_rate_constants.append(ammonia_deg_rates[protein['id']])
+				# If measured rates are unavailable, use N-end rule
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'  # All protein sequences should start with methionine
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
+
+		# Use lab's measured degradation rates, the ML rates, the ammonia measured rates,
+		# then the N end rule rates:
+		if USE_NEW_DEG_RATES == 9:
+			name = "ClimCLMLNE"
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in C_lim_deg_rates:
+					deg_rate[i] = C_lim_deg_rates[protein['id']]
+					Clim_protein_ids.append(protein['id'])
+					Clim_rate_contstants.append(C_lim_deg_rates[protein['id']])
+				# Use measured degradation rates if available
+				elif protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
+				# use the ML rates if available
+				elif protein['id'] in pulsed_silac_deg_rates:
+					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					ML_protein_ids.append(protein['id'])
+					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
