@@ -109,123 +109,123 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_data.molecule_ids.s50_full_complex]
 		ribosome_index = unique_molecule_counts_reader.readAttribute('uniqueMoleculeIds').index('active_ribosome')
 
-		# Read columns
-		# remove_first=True because countsToMolar is 0 at first time step
-		gene_copy_numbers = read_stacked_columns(
-			cell_paths, 'RnaSynthProb', 'gene_copy_number',
-			remove_first=True, ignore_exception=True)
-		mRNA_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-			remove_first=True, ignore_exception=True)
+		# # Read columns
+		# # remove_first=True because countsToMolar is 0 at first time step
+		# gene_copy_numbers = read_stacked_columns(
+		# 	cell_paths, 'RnaSynthProb', 'gene_copy_number',
+		# 	remove_first=True, ignore_exception=True)
+		# mRNA_counts = read_stacked_columns(
+		# 	cell_paths, 'RNACounts', 'mRNA_cistron_counts',
+		# 	remove_first=True, ignore_exception=True)
 		counts_to_molar = read_stacked_columns(
 			cell_paths, 'EnzymeKinetics', 'countsToMolar',
 			remove_first=True, ignore_exception=True)
-		dry_masses = read_stacked_columns(
-			cell_paths, 'Mass', 'dryMass',
-			remove_first=True, ignore_exception=True)
-
-		(uncharged_tRNA_counts, charged_tRNA_counts, rRNA_counts, ribosomal_subunit_counts) = read_stacked_bulk_molecules(
-			cell_paths,
-			(uncharged_tRNA_ids, charged_tRNA_ids, rRNA_ids, ribosomal_subunit_ids),
-			remove_first=True, ignore_exception=True)
-		full_ribosome_counts = read_stacked_columns(
-			cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
-			remove_first=True, ignore_exception=True)[:, ribosome_index]
-
-		# Add up to total counts of tRNAs and rRNAs
-		tRNA_counts = uncharged_tRNA_counts + charged_tRNA_counts
-		rRNA_counts[:, 0] += ribosomal_subunit_counts[:, 0]
-		rRNA_counts[:, 1:] += ribosomal_subunit_counts[:, 1:]
-		rRNA_counts += full_ribosome_counts[:, None]
-
-		# Concatenate arrays
-		n_mRNA = len(mRNA_ids)
-		n_tRNA = len(tRNA_cistron_ids)
-		n_rRNA = len(rRNA_cistron_ids)
-		rna_ids = np.concatenate((mRNA_ids, tRNA_cistron_ids, rRNA_cistron_ids))
-		rna_counts = np.hstack((mRNA_counts, tRNA_counts, rRNA_counts))
-
-		cistron_id_to_mw = {
-			cistron_id: cistron_mw for (cistron_id, cistron_mw)
-			in zip(
-				sim_data.process.transcription.cistron_data['id'],
-				sim_data.process.transcription.cistron_data['mw'].asNumber(
-					units.fg / units.count))
-			}
-		rna_mw = np.array(
-			[cistron_id_to_mw[cistron_id] for cistron_id in rna_ids])
-
-		# Calculate derived RNA values
-		def normalize_within_each_type(values, n_mRNA, n_tRNA, n_rRNA):
-			assert len(values) == n_mRNA + n_tRNA + n_rRNA
-			normalized_values = np.zeros_like(values)
-
-			normalized_values[:n_mRNA] = values[:n_mRNA] / values[:n_mRNA].sum()
-			normalized_values[n_mRNA:(n_mRNA + n_tRNA)] = values[n_mRNA:(n_mRNA + n_tRNA)] / values[n_mRNA:(n_mRNA + n_tRNA)].sum()
-			normalized_values[-n_rRNA:] = values[-n_rRNA:] / values[-n_rRNA:].sum()
-
-			return normalized_values
-
-		gene_copy_numbers_avg = gene_copy_numbers.mean(axis=0)
-		gene_copy_numbers_std = gene_copy_numbers.std(axis=0)
-		rna_counts_avg = rna_counts.mean(axis=0)
-		rna_counts_std = rna_counts.std(axis=0)
-		rna_conc = rna_counts * counts_to_molar
-		rna_conc_avg = rna_conc.mean(axis=0)
-		rna_conc_std = rna_conc.std(axis=0)
-		rna_counts_relative_to_total_rna_counts = rna_counts_avg / rna_counts_avg.sum()
-		rna_counts_relative_to_total_rna_type_counts = normalize_within_each_type(
-			rna_counts_avg, n_mRNA, n_tRNA, n_rRNA)
-		rna_masses_avg = rna_counts_avg * rna_mw
-		rna_masses_relative_to_total_rna_mass = rna_masses_avg / rna_masses_avg.sum()
-		rna_masses_relative_to_total_rna_type_mass = normalize_within_each_type(
-			rna_masses_avg, n_mRNA, n_tRNA, n_rRNA)
-		rna_masses_relative_to_total_dcw = rna_masses_avg / dry_masses.mean()
-
-		# Save RNA data in table
-		cistron_id_to_gene_id = {
-			cistron['id']: cistron['gene_id']
-			for cistron in sim_data.process.transcription.cistron_data
-			}
-		gene_ids = [cistron_id_to_gene_id[x] for x in rna_ids]
-
-		gene_id_to_index = {
-			gene_id: i for i,gene_id in enumerate(gene_ids_rna_synth_prob)
-			}
-		reordering_indexes = np.array([
-			gene_id_to_index[gene_id] for gene_id in gene_ids])
-		assert np.all(
-			np.array(gene_ids_rna_synth_prob)[reordering_indexes] == gene_ids)
-		gene_copy_numbers_avg = gene_copy_numbers_avg[reordering_indexes]
-		gene_copy_numbers_std = gene_copy_numbers_std[reordering_indexes]
-
-		columns = {
-			'id': 'Object ID, according to EcoCyc',
-			'gene-copy-number-avg': 'A floating point number',
-			'gene-copy-number-std': 'A floating point number',
-			'rna-count-avg': 'A floating point number',
-			'rna-count-std': 'A floating point number',
-			'rna-concentration-avg': 'A floating point number in mM units',
-			'rna-concentration-std': 'A floating point number in mM units',
-			'relative-rna-count-to-total-rna-counts': 'A floating point number',
-			'relative-rna-count-to-total-rna-type-counts': 'A floating point number',
-			'relative-rna-mass-to-total-rna-mass': 'A floating point number',
-			'relative-rna-mass-to-total-rna-type-mass': 'A floating point number',
-			'relative-rna-mass-to-total-cell-dry-mass': 'A floating point number',
-			}
-		values = [
-			gene_ids, gene_copy_numbers_avg, gene_copy_numbers_std,
-			rna_counts_avg, rna_counts_std, rna_conc_avg,
-			rna_conc_std, rna_counts_relative_to_total_rna_counts,
-			rna_counts_relative_to_total_rna_type_counts,
-			rna_masses_relative_to_total_rna_mass,
-			rna_masses_relative_to_total_rna_type_mass,
-			rna_masses_relative_to_total_dcw,
-			]
-
-		save_file(
-			plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
-
+		# dry_masses = read_stacked_columns(
+		# 	cell_paths, 'Mass', 'dryMass',
+		# 	remove_first=True, ignore_exception=True)
+		#
+		# (uncharged_tRNA_counts, charged_tRNA_counts, rRNA_counts, ribosomal_subunit_counts) = read_stacked_bulk_molecules(
+		# 	cell_paths,
+		# 	(uncharged_tRNA_ids, charged_tRNA_ids, rRNA_ids, ribosomal_subunit_ids),
+		# 	remove_first=True, ignore_exception=True)
+		# full_ribosome_counts = read_stacked_columns(
+		# 	cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+		# 	remove_first=True, ignore_exception=True)[:, ribosome_index]
+		#
+		# # Add up to total counts of tRNAs and rRNAs
+		# tRNA_counts = uncharged_tRNA_counts + charged_tRNA_counts
+		# rRNA_counts[:, 0] += ribosomal_subunit_counts[:, 0]
+		# rRNA_counts[:, 1:] += ribosomal_subunit_counts[:, 1:]
+		# rRNA_counts += full_ribosome_counts[:, None]
+		#
+		# # Concatenate arrays
+		# n_mRNA = len(mRNA_ids)
+		# n_tRNA = len(tRNA_cistron_ids)
+		# n_rRNA = len(rRNA_cistron_ids)
+		# rna_ids = np.concatenate((mRNA_ids, tRNA_cistron_ids, rRNA_cistron_ids))
+		# rna_counts = np.hstack((mRNA_counts, tRNA_counts, rRNA_counts))
+		#
+		# cistron_id_to_mw = {
+		# 	cistron_id: cistron_mw for (cistron_id, cistron_mw)
+		# 	in zip(
+		# 		sim_data.process.transcription.cistron_data['id'],
+		# 		sim_data.process.transcription.cistron_data['mw'].asNumber(
+		# 			units.fg / units.count))
+		# 	}
+		# rna_mw = np.array(
+		# 	[cistron_id_to_mw[cistron_id] for cistron_id in rna_ids])
+		#
+		# # Calculate derived RNA values
+		# def normalize_within_each_type(values, n_mRNA, n_tRNA, n_rRNA):
+		# 	assert len(values) == n_mRNA + n_tRNA + n_rRNA
+		# 	normalized_values = np.zeros_like(values)
+		#
+		# 	normalized_values[:n_mRNA] = values[:n_mRNA] / values[:n_mRNA].sum()
+		# 	normalized_values[n_mRNA:(n_mRNA + n_tRNA)] = values[n_mRNA:(n_mRNA + n_tRNA)] / values[n_mRNA:(n_mRNA + n_tRNA)].sum()
+		# 	normalized_values[-n_rRNA:] = values[-n_rRNA:] / values[-n_rRNA:].sum()
+		#
+		# 	return normalized_values
+		#
+		# gene_copy_numbers_avg = gene_copy_numbers.mean(axis=0)
+		# gene_copy_numbers_std = gene_copy_numbers.std(axis=0)
+		# rna_counts_avg = rna_counts.mean(axis=0)
+		# rna_counts_std = rna_counts.std(axis=0)
+		# rna_conc = rna_counts * counts_to_molar
+		# rna_conc_avg = rna_conc.mean(axis=0)
+		# rna_conc_std = rna_conc.std(axis=0)
+		# rna_counts_relative_to_total_rna_counts = rna_counts_avg / rna_counts_avg.sum()
+		# rna_counts_relative_to_total_rna_type_counts = normalize_within_each_type(
+		# 	rna_counts_avg, n_mRNA, n_tRNA, n_rRNA)
+		# rna_masses_avg = rna_counts_avg * rna_mw
+		# rna_masses_relative_to_total_rna_mass = rna_masses_avg / rna_masses_avg.sum()
+		# rna_masses_relative_to_total_rna_type_mass = normalize_within_each_type(
+		# 	rna_masses_avg, n_mRNA, n_tRNA, n_rRNA)
+		# rna_masses_relative_to_total_dcw = rna_masses_avg / dry_masses.mean()
+		#
+		# # Save RNA data in table
+		# cistron_id_to_gene_id = {
+		# 	cistron['id']: cistron['gene_id']
+		# 	for cistron in sim_data.process.transcription.cistron_data
+		# 	}
+		# gene_ids = [cistron_id_to_gene_id[x] for x in rna_ids]
+		#
+		# gene_id_to_index = {
+		# 	gene_id: i for i,gene_id in enumerate(gene_ids_rna_synth_prob)
+		# 	}
+		# reordering_indexes = np.array([
+		# 	gene_id_to_index[gene_id] for gene_id in gene_ids])
+		# assert np.all(
+		# 	np.array(gene_ids_rna_synth_prob)[reordering_indexes] == gene_ids)
+		# gene_copy_numbers_avg = gene_copy_numbers_avg[reordering_indexes]
+		# gene_copy_numbers_std = gene_copy_numbers_std[reordering_indexes]
+		#
+		# columns = {
+		# 	'id': 'Object ID, according to EcoCyc',
+		# 	'gene-copy-number-avg': 'A floating point number',
+		# 	'gene-copy-number-std': 'A floating point number',
+		# 	'rna-count-avg': 'A floating point number',
+		# 	'rna-count-std': 'A floating point number',
+		# 	'rna-concentration-avg': 'A floating point number in mM units',
+		# 	'rna-concentration-std': 'A floating point number in mM units',
+		# 	'relative-rna-count-to-total-rna-counts': 'A floating point number',
+		# 	'relative-rna-count-to-total-rna-type-counts': 'A floating point number',
+		# 	'relative-rna-mass-to-total-rna-mass': 'A floating point number',
+		# 	'relative-rna-mass-to-total-rna-type-mass': 'A floating point number',
+		# 	'relative-rna-mass-to-total-cell-dry-mass': 'A floating point number',
+		# 	}
+		# values = [
+		# 	gene_ids, gene_copy_numbers_avg, gene_copy_numbers_std,
+		# 	rna_counts_avg, rna_counts_std, rna_conc_avg,
+		# 	rna_conc_std, rna_counts_relative_to_total_rna_counts,
+		# 	rna_counts_relative_to_total_rna_type_counts,
+		# 	rna_masses_relative_to_total_rna_mass,
+		# 	rna_masses_relative_to_total_rna_type_mass,
+		# 	rna_masses_relative_to_total_dcw,
+		# 	]
+		#
+		# save_file(
+		# 	plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
+		#
 		# Build dictionary for metadata
 		ecocyc_metadata = {
 			'git_hash': metadata['git_hash'],
@@ -235,171 +235,232 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'n_cells': len(cell_paths),
 			'n_timesteps': len(counts_to_molar),
 			}
-
-		# Load tables and attributes for proteins
-		monomer_reader = TableReader(
-			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
-		monomer_ids = monomer_reader.readAttribute('monomerIds')
-		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
-
-		# Read columns
-		# remove_first=True because countsToMolar is 0 at first time step
-		monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts',
-			remove_first=True, ignore_exception=True)
-
-		# Calculate derived protein values
-		monomer_counts_avg = monomer_counts.mean(axis=0)
-		monomer_counts_std = monomer_counts.std(axis=0)
-		monomer_conc = monomer_counts * counts_to_molar
-		monomer_conc_avg = monomer_conc.mean(axis=0)
-		monomer_conc_std = monomer_conc.std(axis=0)
-		monomer_counts_relative_to_total_monomer_counts = monomer_counts_avg / monomer_counts_avg.sum()
-		monomer_mass_avg = monomer_counts_avg * monomer_mw
-		monomer_mass_relative_to_total_monomer_mass = monomer_mass_avg / monomer_mass_avg.sum()
-		monomer_mass_relative_to_total_dcw = monomer_mass_avg / dry_masses.mean()
-
-		# Save monomer data in table
-		monomer_ecocyc_ids = [monomer[:-3] for monomer in monomer_ids]  # strip [*]
-
-		columns = {
-			'id': 'Object ID, according to EcoCyc',
-			'protein-count-avg': 'A floating point number',
-			'protein-count-std': 'A floating point number',
-			'protein-concentration-avg': 'A floating point number in mM units',
-			'protein-concentration-std': 'A floating point number in mM units',
-			'relative-protein-count-to-protein-rna-counts': 'A floating point number',
-			'relative-protein-mass-to-total-protein-mass': 'A floating point number',
-			'relative-protein-mass-to-total-cell-dry-mass': 'A floating point number',
-			}
-		values = [
-			monomer_ecocyc_ids, monomer_counts_avg, monomer_counts_std,
-			monomer_conc_avg, monomer_conc_std,
-			monomer_counts_relative_to_total_monomer_counts,
-			monomer_mass_relative_to_total_monomer_mass,
-			monomer_mass_relative_to_total_dcw,
-			]
-
-		# Add validation data if sims used minimal glucose media
-		if media_name == 'minimal':
-			protein_id_to_schmidt_counts = {
-				item[0]: item[1] for item in validation_data.protein.schmidt2015Data
-				}
-			protein_counts_val = np.array([
-				protein_id_to_schmidt_counts.get(protein_id, np.nan) for protein_id in monomer_ids
-				])
-
-			columns['validation-count'] = 'A floating point number'
-			values.append(protein_counts_val)
-
-			protein_val_exists = np.logical_not(np.isnan(protein_counts_val))
-			r, _ = pearsonr(
-				monomer_counts_avg[protein_val_exists],
-				protein_counts_val[protein_val_exists])
-
-			ecocyc_metadata['protein_validation_r_squared'] = r ** 2
-
-		save_file(
-			plotOutDir, f'wcm_monomers_{media_id}.tsv', columns, values)
-
-		# Load attributes for complexes
-		complex_ids = sim_data.process.complexation.ids_complexes
-		complex_ecocyc_ids = [complex_id[:-3] for complex_id in complex_ids]  # strip [*]
-		complex_mw = sim_data.getter.get_masses(complex_ids).asNumber(units.fg / units.count)
-
-		# Read columns
-		# remove_first=True because countsToMolar is 0 at first time step
-		(complex_counts, ) = read_stacked_bulk_molecules(
-			cell_paths, (complex_ids, ), remove_first=True,
-			ignore_exception=True)
-
-		# Add active RNA polymerase counts to inactive RNA polymerase counts
-		active_RNAP_index = unique_molecule_counts_reader.readAttribute(
-			"uniqueMoleculeIds").index('active_RNAP')
-		active_RNAP_counts = read_stacked_columns(
-			cell_paths, 'UniqueMoleculeCounts',
-			'uniqueMoleculeCounts', remove_first=True,
-			ignore_exception=True)[:, active_RNAP_index]
-		inactive_RNAP_id = sim_data.molecule_ids.full_RNAP
-		complex_table_RNAP_index = complex_ids.index(inactive_RNAP_id)
-		complex_counts[:, complex_table_RNAP_index] += active_RNAP_counts
-
-		# Count active ribosomes as full ribosome complexes
-		complex_ids.append(ECOCYC_FULL_RIBOSOME_ID)
-		complex_ecocyc_ids.append(ECOCYC_FULL_RIBOSOME_ID)
-		full_ribosome_mw = (sim_data.getter.get_mass(
-			sim_data.molecule_ids.s50_full_complex) + sim_data.getter.get_mass(
-			sim_data.molecule_ids.s30_full_complex)).asNumber(units.fg / units.count)
-		complex_mw = np.append(complex_mw, full_ribosome_mw)
-		complex_counts = np.hstack((complex_counts, full_ribosome_counts[:, None]))
-
-		# Calculate derived protein values
-		complex_counts_avg = complex_counts.mean(axis=0)
-		complex_counts_std = complex_counts.std(axis=0)
-		complex_conc = complex_counts * counts_to_molar
-		complex_conc_avg = complex_conc.mean(axis=0)
-		complex_conc_std = complex_conc.std(axis=0)
-		complex_mass_avg = complex_counts_avg * complex_mw
-		complex_mass_relative_to_total_protein_mass = complex_mass_avg / monomer_mass_avg.sum()
-		complex_mass_relative_to_total_dcw = complex_mass_avg / dry_masses.mean()
-
-		# Save complex data in table
-		columns = {
-			'id': 'Object ID, according to EcoCyc',
-			'complex-count-avg': 'A floating point number',
-			'complex-count-std': 'A floating point number',
-			'complex-concentration-avg': 'A floating point number in mM units',
-			'complex-concentration-std': 'A floating point number in mM units',
-			'relative-complex-mass-to-total-protein-mass': 'A floating point number',
-			'relative-complex-mass-to-total-cell-dry-mass': 'A floating point number',
-			}
-		values = [
-			complex_ecocyc_ids, complex_counts_avg, complex_counts_std,
-			complex_conc_avg, complex_conc_std,
-			complex_mass_relative_to_total_protein_mass,
-			complex_mass_relative_to_total_dcw,
-			]
-
-		save_file(
-			plotOutDir, f'wcm_complexes_{media_id}.tsv', columns, values)
-
-		# Load attributes for metabolic fluxes
-		cell_density = sim_data.constants.cell_density
-		reaction_ids = sim_data.process.metabolism.base_reaction_ids
-
-		# Read columns
-		cell_mass = read_stacked_columns(
-			cell_paths, 'Mass', 'cellMass', ignore_exception=True)
-		dry_mass = read_stacked_columns(
-			cell_paths, 'Mass', 'dryMass', ignore_exception=True)
-		conversion_coeffs = (
-			dry_mass / cell_mass
-			* cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
-		)
-
-		# Calculate flux in units of mmol/g DCW/h
-		fluxes = (
-			(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-			* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
-			).asNumber(units.mmol / units.g / units.h)
-
-		# Calculate derived flux values
-		fluxes_avg = fluxes.mean(axis=0)
-		fluxes_std = fluxes.std(axis=0)
-
-		columns = {
-			'id': 'Object ID, according to EcoCyc',
-			'flux-avg': 'A floating point number in mmol/g DCW/h units',
-			'flux-std': 'A floating point number in mmol/g DCW/h units',
-			}
-		values = [
-			reaction_ids, fluxes_avg, fluxes_std,
-			]
-
-		save_file(
-			plotOutDir, f'wcm_metabolic_reactions_{media_id}.tsv', columns, values)
+		#
+		# # Load tables and attributes for proteins
+		# monomer_reader = TableReader(
+		# 	os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
+		# monomer_ids = monomer_reader.readAttribute('monomerIds')
+		# monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
+		#
+		# # Read columns
+		# # remove_first=True because countsToMolar is 0 at first time step
+		# monomer_counts = read_stacked_columns(
+		# 	cell_paths, 'MonomerCounts', 'monomerCounts',
+		# 	remove_first=True, ignore_exception=True)
+		#
+		# # Calculate derived protein values
+		# monomer_counts_avg = monomer_counts.mean(axis=0)
+		# monomer_counts_std = monomer_counts.std(axis=0)
+		# monomer_conc = monomer_counts * counts_to_molar
+		# monomer_conc_avg = monomer_conc.mean(axis=0)
+		# monomer_conc_std = monomer_conc.std(axis=0)
+		# monomer_counts_relative_to_total_monomer_counts = monomer_counts_avg / monomer_counts_avg.sum()
+		# monomer_mass_avg = monomer_counts_avg * monomer_mw
+		# monomer_mass_relative_to_total_monomer_mass = monomer_mass_avg / monomer_mass_avg.sum()
+		# monomer_mass_relative_to_total_dcw = monomer_mass_avg / dry_masses.mean()
+		#
+		# # Save monomer data in table
+		# monomer_ecocyc_ids = [monomer[:-3] for monomer in monomer_ids]  # strip [*]
+		#
+		# columns = {
+		# 	'id': 'Object ID, according to EcoCyc',
+		# 	'protein-count-avg': 'A floating point number',
+		# 	'protein-count-std': 'A floating point number',
+		# 	'protein-concentration-avg': 'A floating point number in mM units',
+		# 	'protein-concentration-std': 'A floating point number in mM units',
+		# 	'relative-protein-count-to-protein-rna-counts': 'A floating point number',
+		# 	'relative-protein-mass-to-total-protein-mass': 'A floating point number',
+		# 	'relative-protein-mass-to-total-cell-dry-mass': 'A floating point number',
+		# 	}
+		# values = [
+		# 	monomer_ecocyc_ids, monomer_counts_avg, monomer_counts_std,
+		# 	monomer_conc_avg, monomer_conc_std,
+		# 	monomer_counts_relative_to_total_monomer_counts,
+		# 	monomer_mass_relative_to_total_monomer_mass,
+		# 	monomer_mass_relative_to_total_dcw,
+		# 	]
+		#
+		# # Add validation data if sims used minimal glucose media
+		# if media_name == 'minimal':
+		# 	protein_id_to_schmidt_counts = {
+		# 		item[0]: item[1] for item in validation_data.protein.schmidt2015Data
+		# 		}
+		# 	protein_counts_val = np.array([
+		# 		protein_id_to_schmidt_counts.get(protein_id, np.nan) for protein_id in monomer_ids
+		# 		])
+		#
+		# 	columns['validation-count'] = 'A floating point number'
+		# 	values.append(protein_counts_val)
+		#
+		# 	protein_val_exists = np.logical_not(np.isnan(protein_counts_val))
+		# 	r, _ = pearsonr(
+		# 		monomer_counts_avg[protein_val_exists],
+		# 		protein_counts_val[protein_val_exists])
+		#
+		# 	ecocyc_metadata['protein_validation_r_squared'] = r ** 2
+		#
+		# save_file(
+		# 	plotOutDir, f'wcm_monomers_{media_id}.tsv', columns, values)
+		#
+		# # Load attributes for complexes
+		# complex_ids = sim_data.process.complexation.ids_complexes
+		# complex_ecocyc_ids = [complex_id[:-3] for complex_id in complex_ids]  # strip [*]
+		# complex_mw = sim_data.getter.get_masses(complex_ids).asNumber(units.fg / units.count)
+		#
+		# # Read columns
+		# # remove_first=True because countsToMolar is 0 at first time step
+		# (complex_counts, ) = read_stacked_bulk_molecules(
+		# 	cell_paths, (complex_ids, ), remove_first=True,
+		# 	ignore_exception=True)
+		#
+		# # Add active RNA polymerase counts to inactive RNA polymerase counts
+		# active_RNAP_index = unique_molecule_counts_reader.readAttribute(
+		# 	"uniqueMoleculeIds").index('active_RNAP')
+		# active_RNAP_counts = read_stacked_columns(
+		# 	cell_paths, 'UniqueMoleculeCounts',
+		# 	'uniqueMoleculeCounts', remove_first=True,
+		# 	ignore_exception=True)[:, active_RNAP_index]
+		# inactive_RNAP_id = sim_data.molecule_ids.full_RNAP
+		# complex_table_RNAP_index = complex_ids.index(inactive_RNAP_id)
+		# complex_counts[:, complex_table_RNAP_index] += active_RNAP_counts
+		#
+		# # Count active ribosomes as full ribosome complexes
+		# complex_ids.append(ECOCYC_FULL_RIBOSOME_ID)
+		# complex_ecocyc_ids.append(ECOCYC_FULL_RIBOSOME_ID)
+		# full_ribosome_mw = (sim_data.getter.get_mass(
+		# 	sim_data.molecule_ids.s50_full_complex) + sim_data.getter.get_mass(
+		# 	sim_data.molecule_ids.s30_full_complex)).asNumber(units.fg / units.count)
+		# complex_mw = np.append(complex_mw, full_ribosome_mw)
+		# complex_counts = np.hstack((complex_counts, full_ribosome_counts[:, None]))
+		#
+		# # Calculate derived protein values
+		# complex_counts_avg = complex_counts.mean(axis=0)
+		# complex_counts_std = complex_counts.std(axis=0)
+		# complex_conc = complex_counts * counts_to_molar
+		# complex_conc_avg = complex_conc.mean(axis=0)
+		# complex_conc_std = complex_conc.std(axis=0)
+		# complex_mass_avg = complex_counts_avg * complex_mw
+		# complex_mass_relative_to_total_protein_mass = complex_mass_avg / monomer_mass_avg.sum()
+		# complex_mass_relative_to_total_dcw = complex_mass_avg / dry_masses.mean()
+		#
+		# # Save complex data in table
+		# columns = {
+		# 	'id': 'Object ID, according to EcoCyc',
+		# 	'complex-count-avg': 'A floating point number',
+		# 	'complex-count-std': 'A floating point number',
+		# 	'complex-concentration-avg': 'A floating point number in mM units',
+		# 	'complex-concentration-std': 'A floating point number in mM units',
+		# 	'relative-complex-mass-to-total-protein-mass': 'A floating point number',
+		# 	'relative-complex-mass-to-total-cell-dry-mass': 'A floating point number',
+		# 	}
+		# values = [
+		# 	complex_ecocyc_ids, complex_counts_avg, complex_counts_std,
+		# 	complex_conc_avg, complex_conc_std,
+		# 	complex_mass_relative_to_total_protein_mass,
+		# 	complex_mass_relative_to_total_dcw,
+		# 	]
+		#
+		# save_file(
+		# 	plotOutDir, f'wcm_complexes_{media_id}.tsv', columns, values)
+		#
+		# # Load attributes for metabolic fluxes
+		# cell_density = sim_data.constants.cell_density
+		# reaction_ids = sim_data.process.metabolism.base_reaction_ids
+		#
+		# # Read columns
+		# cell_mass = read_stacked_columns(
+		# 	cell_paths, 'Mass', 'cellMass', ignore_exception=True)
+		# dry_mass = read_stacked_columns(
+		# 	cell_paths, 'Mass', 'dryMass', ignore_exception=True)
+		# conversion_coeffs = (
+		# 	dry_mass / cell_mass
+		# 	* cell_density.asNumber(MASS_UNITS / VOLUME_UNITS)
+		# )
+		#
+		# # Calculate flux in units of mmol/g DCW/h
+		# fluxes = (
+		# 	(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
+		# 	* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
+		# 	).asNumber(units.mmol / units.g / units.h)
+		#
+		# # Calculate derived flux values
+		# fluxes_avg = fluxes.mean(axis=0)
+		# fluxes_std = fluxes.std(axis=0)
+		#
+		# columns = {
+		# 	'id': 'Object ID, according to EcoCyc',
+		# 	'flux-avg': 'A floating point number in mmol/g DCW/h units',
+		# 	'flux-std': 'A floating point number in mmol/g DCW/h units',
+		# 	}
+		# values = [
+		# 	reaction_ids, fluxes_avg, fluxes_std,
+		# 	]
+		#
+		# save_file(
+		# 	plotOutDir, f'wcm_metabolic_reactions_{media_id}.tsv', columns, values)
 
 		# Cell level properties for WCM overview page
+		# Load tables and attributes
+		# ribosomal_proteins = sim_data.molecule_groups.ribosomal_proteins
+		# mw_ribosomal_proteins = (
+		# 	sim_data.getter.get_masses(ribosomal_proteins).asNumber(units.fg / units.count))
+		# ribosomal_protein_indexes = [
+		# 	monomer_ids.index(ribosomal_protein) for ribosomal_protein in ribosomal_proteins]
+		# complexation = sim_data.process.complexation
+		# equilibrium = sim_data.process.equilibrium
+		# two_component_system = sim_data.process.two_component_system
+		# enzyme_ids = sim_data.process.metabolism.catalyst_ids
+		#
+		# enzyme_proteins = set()
+		# nonclassified_enzymes = set()
+		# for enzyme in enzyme_ids:
+		# 	subunit_ids = []
+		# 	if enzyme in complexation.complex_names:
+		# 		subunit_ids = complexation.get_monomers(enzyme)['subunitIds']
+		# 	elif enzyme in equilibrium.ids_complexes:
+		# 		subunit_ids = equilibrium.get_monomers(enzyme)['subunitIds']
+		# 	elif enzyme in two_component_system.complex_to_monomer.keys():
+		# 		subunit_ids = two_component_system.get_monomers(enzyme)['subunitIds']
+		# 	elif enzyme in monomer_ids:
+		# 		continue
+		# 	else:
+		# 		nonclassified_enzymes.add(enzyme)
+		# 		if enzyme == "CPLX0-7761[c]" or enzyme == "G6260-MONOMER[m]" or enzyme == "MONOMER-48[c]": ### TODO: Investigate why this is happening
+		# 			continue
+		# 		raise ValueError(f'Enzyme {enzyme} not found in any complex generator.')
+		#
+		# 	for subunit in subunit_ids:
+		# 		enzyme_proteins.add(subunit)
+		#
+		# enzyme_proteins = sorted(enzyme_proteins)
+		#
+		# ### TODO: DELETE THIS
+		# enzyme_proteins_old = sorted({ # Map enzyme complexes to monomers
+		# 	subunit
+		# 	for enzyme in enzyme_ids
+		# 	for subunit in complexation.get_monomers(enzyme)['subunitIds']
+		# })
+		#
+		# print(nonclassified_enzymes)
+		#
+		# nonclassified_monomers = set()
+		# for protein in enzyme_proteins:
+		# 	if protein not in monomer_ids:
+		# 		nonclassified_monomers.add(protein)
+		#
+		# import ipdb
+		# ipdb.set_trace()
+		#
+		# enzyme_proteins_indexes = [
+		# 	monomer_ids.index(enzyme_protein) for enzyme_protein in enzyme_proteins]
+		# mw_enzyme_proteins = (
+		# 	sim_data.getter.get_masses(enzyme_proteins).asNumber(units.fg / units.count))
+		#
+		#
+		#
+		# import ipdb
+		# ipdb.set_trace()
+
 		# Read columns
 		cell_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'cellMass', fun=lambda x: x[0],
@@ -410,7 +471,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		protein_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'proteinMass', fun=lambda x: x[0],
 			ignore_exception=True)
-		rna_mass = read_stacked_columns(
+		initial_rna_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'rnaMass', fun=lambda x: x[0],
 			ignore_exception=True)
 		doubling_time = read_stacked_columns(
@@ -419,6 +480,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		time_step_length = read_stacked_columns(
 			cell_paths, 'Main', 'timeStepSec', ignore_exception=True)
 
+		rna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'rnaMass', ignore_exception=True)
+		mrna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'mRnaMass', ignore_exception=True)
+		rrna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'rRnaMass', ignore_exception=True)
+		trna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'tRnaMass', ignore_exception=True)
+
+		# ribosomal_monomer_counts = monomer_counts[:, ribosomal_protein_indexes]
+		# enzyme_monomer_counts = monomer_counts[:, enzyme_proteins_indexes]
+
 		# Calculate derived cell values
 		cell_mass_avg = cell_mass.mean(axis = 0)
 		cell_mass_std = cell_mass.std(axis = 0)
@@ -426,34 +499,54 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		dry_mass_std = dry_mass.std(axis = 0)
 		protein_mass_avg = protein_mass.mean(axis = 0)
 		protein_mass_std = protein_mass.std(axis = 0)
-		rna_mass_avg = rna_mass.mean(axis = 0)
-		rna_mass_std = rna_mass.std(axis = 0)
+		initial_rna_mass_avg = initial_rna_mass.mean(axis = 0)
+		initial_rna_mass_std = initial_rna_mass.std(axis = 0)
 		doubling_time_avg = doubling_time.mean(axis = 0)
 		doubling_time_std = doubling_time.std(axis = 0)
 		time_step_length_avg = time_step_length.mean(axis = 0)
 		time_step_length_std = time_step_length.std(axis = 0)
 
+		mrna_fraction = mrna_mass / rna_mass
+		mrna_fraction_avg = mrna_fraction.mean(axis = 0)
+		mrna_fraction_std = mrna_fraction.std(axis = 0)
+
+		rrna_fraction = rrna_mass / rna_mass
+		rrna_fraction_avg = rrna_fraction.mean(axis = 0)
+		rrna_fraction_std = rrna_fraction.std(axis = 0)
+
+		trna_fraction = trna_mass / rna_mass
+		trna_fraction_avg = trna_fraction.mean(axis = 0)
+		trna_fraction_std = trna_fraction.std(axis = 0)
+
 		columns = {
-			'media_id': 'Media ID, according to EcoCyc',
-			'cell_mass_avg': 'A floating point number in fg units',
-			'cell_mass_std': 'A floating point number in fg units',
-			'dry_mass_avg': 'A floating point number in fg units',
-			'dry_mass_std': 'A floating point number in fg units',
-			'protein_mass_avg': 'A floating point number in fg units',
-			'protein_mass_std': 'A floating point number in fg units',
-			'rna_mass_avg': 'A floating point number in fg units',
-			'rna_mass_std': 'A floating point number in fg units',
-			'doubling_time_avg': 'A floating point number in min units',
-			'doubling_time_std': 'A floating point number in min units',
-			'time_step_length_avg': 'A floating point number in sec units',
-			'time_step_length_std': 'A floating point number in sec units',
+			'media-id': 'Media ID, according to EcoCyc',
+			'cell-mass-avg': 'A floating point number in fg units',
+			'cell-mass-std': 'A floating point number in fg units',
+			'dry-mass-avg': 'A floating point number in fg units',
+			'dry-mass-std': 'A floating point number in fg units',
+			'protein-mass-avg': 'A floating point number in fg units',
+			'protein-mass-std': 'A floating point number in fg units',
+			'rna-mass-avg': 'A floating point number in fg units',
+			'rna-mass-std': 'A floating point number in fg units',
+			'doubling-time-avg': 'A floating point number in min units',
+			'doubling-time-std': 'A floating point number in min units',
+			'time-step-length-avg': 'A floating point number in sec units',
+			'time-step-length-std': 'A floating point number in sec units',
+			'mrna-mass-to-total-rna-mass-avg': 'A floating point number',
+			'mrna-mass-to-total-rna-mass-std': 'A floating point number',
+			'rrna-mass-to-total-rna-mass-avg': 'A floating point number',
+			'rrna-mass-to-total-rna-mass-std': 'A floating point number',
+			'trna-mass-to-total-rna-mass-avg': 'A floating point number',
+			'trna-mass-to-total-rna-mass-std': 'A floating point number',
 			}
 
 		values = [
 			[media_id], cell_mass_avg, cell_mass_std, dry_mass_avg, dry_mass_std,
-			protein_mass_avg, protein_mass_std, rna_mass_avg, rna_mass_std,
+			protein_mass_avg, protein_mass_std, initial_rna_mass_avg, initial_rna_mass_std,
 			doubling_time_avg, doubling_time_std, time_step_length_avg,
-			time_step_length_std,
+			time_step_length_std, mrna_fraction_avg, mrna_fraction_std,
+			rrna_fraction_avg, rrna_fraction_std, trna_fraction_avg,
+			trna_fraction_std,
 			]
 
 		save_file(
