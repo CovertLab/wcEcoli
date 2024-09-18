@@ -226,15 +226,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# save_file(
 		# 	plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
 		#
-		# Build dictionary for metadata
-		ecocyc_metadata = {
-			'git_hash': metadata['git_hash'],
-			'n_ignored_generations': IGNORE_FIRST_N_GENS,
-			'n_total_generations': metadata['total_gens'],
-			'n_seeds': metadata['total_init_sims'],
-			'n_cells': len(cell_paths),
-			'n_timesteps': len(counts_to_molar),
-			}
+
 		#
 		# # Load tables and attributes for proteins
 		# monomer_reader = TableReader(
@@ -518,39 +510,57 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		trna_fraction_avg = trna_fraction.mean(axis = 0)
 		trna_fraction_std = trna_fraction.std(axis = 0)
 
-		columns = {
-			'media-id': 'Media ID, according to EcoCyc',
-			'cell-mass-avg': 'A floating point number in fg units',
-			'cell-mass-std': 'A floating point number in fg units',
-			'dry-mass-avg': 'A floating point number in fg units',
-			'dry-mass-std': 'A floating point number in fg units',
-			'protein-mass-avg': 'A floating point number in fg units',
-			'protein-mass-std': 'A floating point number in fg units',
-			'rna-mass-avg': 'A floating point number in fg units',
-			'rna-mass-std': 'A floating point number in fg units',
-			'doubling-time-avg': 'A floating point number in min units',
-			'doubling-time-std': 'A floating point number in min units',
-			'time-step-length-avg': 'A floating point number in sec units',
-			'time-step-length-std': 'A floating point number in sec units',
-			'mrna-mass-to-total-rna-mass-avg': 'A floating point number',
-			'mrna-mass-to-total-rna-mass-std': 'A floating point number',
-			'rrna-mass-to-total-rna-mass-avg': 'A floating point number',
-			'rrna-mass-to-total-rna-mass-std': 'A floating point number',
-			'trna-mass-to-total-rna-mass-avg': 'A floating point number',
-			'trna-mass-to-total-rna-mass-std': 'A floating point number',
+		# Build dictionary for metadata
+		ecocyc_metadata = {
+			'git_hash': metadata['git_hash'], ### TODO: ADD A DOC
+			'git_hash_doc': 'A string',
+			'n_ignored_generations': IGNORE_FIRST_N_GENS,
+			'n_ignored_generations_doc': 'An integer',
+			'n_total_generations': metadata['total_gens'],
+			'n_total_generations_doc': 'An integer',
+			'n_seeds': metadata['total_init_sims'],
+			'n_seeds_doc': 'An integer',
+			'n_cells': len(cell_paths),
+			'n_cells_doc': 'An integer',
+			'n_timesteps': len(counts_to_molar),
+			'n_timesteps_doc': 'An integer',
+			'cell_mass_avg': cell_mass_avg,
+			'cell_mass_avg_doc': 'A floating point number in fg units',
+			'cell_mass_std': cell_mass_std,
+			'cell_mass_std_doc': 'A floating point number in fg units',
+			'dry_mass_avg': dry_mass_avg,
+			'dry_mass_avg_doc': 'A floating point number in fg units',
+			'dry_mass_std': dry_mass_std,
+			'dry_mass_std_doc': 'A floating point number in fg units',
+			'protein_mass_avg': protein_mass_avg,
+			'protein_mass_avg_doc': 'A floating point number in fg units',
+			'protein_mass_std': protein_mass_std,
+			'protein_mass_std_doc': 'A floating point number in fg units',
+			'rna_mass_avg': initial_rna_mass_avg,
+			'rna_mass_avg_doc': 'A floating point number in fg units',
+			'rna_mass_std': initial_rna_mass_std,
+			'rna_mass_std_doc': 'A floating point number in fg units',
+			'doubling_time_avg': doubling_time_avg,
+			'doubling_time_avg_doc': 'A floating point number in min units',
+			'doubling_time_std': doubling_time_std,
+			'doubling_time_std_doc': 'A floating point number in min units',
+			'time_step_length_avg': time_step_length_avg,
+			'time_step_length_avg_doc': 'A floating point number in sec units',
+			'time_step_length_std': time_step_length_std,
+			'time_step_length_std_doc': 'A floating point number in sec units',
+			'mrna_mass_to_total_rna_mass_avg': mrna_fraction_avg,
+			'mrna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
+			'mrna_mass_to_total_rna_mass_std': mrna_fraction_std,
+			'mrna_mass_to_total_rna_mass_std_doc': 'A floating point number',
+			'rrna_mass_to_total_rna_mass_avg': rrna_fraction_avg,
+			'rrna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
+			'rrna_mass_to_total_rna_mass_std': rrna_fraction_std,
+			'rrna_mass_to_total_rna_mass_std_doc': 'A floating point number',
+			'trna_mass_to_total_rna_mass_avg': trna_fraction_avg,
+			'trna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
+			'trna_mass_to_total_rna_mass_std': trna_fraction_std,
+			'trna_mass_to_total_rna_mass_std_doc': 'A floating point number',
 			}
-
-		values = [
-			[media_id], cell_mass_avg, cell_mass_std, dry_mass_avg, dry_mass_std,
-			protein_mass_avg, protein_mass_std, initial_rna_mass_avg, initial_rna_mass_std,
-			doubling_time_avg, doubling_time_std, time_step_length_avg,
-			time_step_length_std, mrna_fraction_avg, mrna_fraction_std,
-			rrna_fraction_avg, rrna_fraction_std, trna_fraction_avg,
-			trna_fraction_std,
-			]
-
-		save_file(
-			plotOutDir, f'wcm_cell_properties_{media_id}.tsv', columns, values)
 
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:
