@@ -29,18 +29,18 @@ Modifies (after shift):
 	sim_data.process.transcription_regulation.delta_prob
 	sim_data.process.translation.translation_efficiencies_by_monomer
 
-Expected variant indices (int, positive):
-	0: control (knockout new gene expression)
-	z > 0: converted to an index for a media condition, an index for a list of
-		new gene expression variant factors, and an index for a list of new gene
-		translation efficiency values
-
-		media condition index = index div 1000
-		index remainder = index - media condition index * 1000
-
-		separator = number of translation efficiency values to try
-		expression index = remainder index div separator + 1
-		translation efficiency index = remainder index mod separator
+Expected variant indices (int, positive, dependent on sim_data.ordered_conditions
+and should be the same order as rows in condition_defs.tsv):
+	0: minimal media, control (knockout new gene expression)
+	1: minimal media, sampled new gene expression
+	10: with amino acids, control (knockout new gene expression)
+	11: with amino acids, sampled new gene expression
+	20: acetate, control (knockout new gene expression)
+	21: acetate, sampled new gene expression
+	30: succinate, , control (knockout new gene expression)
+	31: succinate, sampled new gene expression
+	40: minimal media (anaerobic), control (knockout new gene expression)
+	41: minimal media (anaerobic), sampled new gene expression
 
 New gene expression factor:
 	x > 0: multiply new gene expression by a factor of 10^(x-1)
@@ -48,6 +48,8 @@ New gene expression factor:
 New gene translation efficiency value (normalized):
 	y > 0: set new gene translation efficiency to y
 """
+
+import numpy as np
 
 CONTROL_OUTPUT = dict(
 	shortName = "control",
@@ -71,13 +73,14 @@ if NEW_GENE_KNOCKOUT_GEN != -1:
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
-NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10]
-NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0]
 
-SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
-assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, (
-	"The first new gene expression factor should always be the control sim")
-
+### TODO: Write these to simulation metadata?
+NEW_GENE_EXPRESSION_FACTOR_CONTROL = 0
+NEW_GENE_EXPRESSION_FACTOR_MIN = 7
+NEW_GENE_EXPRESSION_FACTOR_MAX = 10
+NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL = 0
+NEW_GENE_TRANSLATION_EFFICIENCY_MIN = np.log10(0.01)
+NEW_GENE_TRANSLATION_EFFICIENCY_MAX = np.log10(10)
 
 def condition(sim_data, condition_index):
 	"""
@@ -145,7 +148,7 @@ def determine_new_gene_ids_and_indices(sim_data):
 	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
 
 
-def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
+def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	"""
 	Maps variant index to new gene expression factor and translation effieincy
 
@@ -156,21 +159,13 @@ def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
 	# Determine factor for new gene expression and value for new
 	# gene translation efficiency
-	trl_eff_data = sim_data.process.translation.translation_efficiencies_by_monomer
 	if index == 0:
-		expression_factor = NEW_GENE_EXPRESSION_FACTORS[0]
+		expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
 		# Note: this value should not matter since gene is knocked out
-		trl_eff_value = min(trl_eff_data)
+		trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL
 	else:
-		trl_eff_list_index = index % SEPARATOR
-		if trl_eff_list_index == 0:
-			expression_list_index = index // SEPARATOR
-		else:
-			expression_list_index = index // SEPARATOR + 1
-
-		expression_factor = (
-			10**(NEW_GENE_EXPRESSION_FACTORS[expression_list_index] - 1))
-		trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_VALUES[trl_eff_list_index]
+		expression_factor = np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX)
+		trl_eff_value = 10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN, NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
 
 	return expression_factor, trl_eff_value
 
@@ -181,8 +176,8 @@ def induce_new_genes(sim_data, index):
 	effiencies to the values specified using the variant index.
 	"""
 	# Map variant index to expression factor and translation efficiency value
-	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
-		sim_data, index)
+	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+		index)
 
 	# Determine ids and indices of new genes
 	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
@@ -208,8 +203,8 @@ def knockout_induced_new_gene_expression(sim_data, index):
 	translation efficiency as when they were created.
 	"""
 	# Map variant index to expression factor and tranlsation efficiency value
-	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
-		sim_data, index)
+	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+		index)
 
 	# Determine ids and indices of new genes
 	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
@@ -226,7 +221,7 @@ def knockout_induced_new_gene_expression(sim_data, index):
 			monomer_index] = trl_eff_value
 
 
-def new_gene_internal_shift(sim_data, index):
+def new_gene_param_sampling_internal_shift(sim_data, index):
 	"""
 	Apply variant. Specifies that from NEW_GENE_INDUCTION_GEN to
 	NEW_GENE_KNOCKOUT_GEN, the new gene expression and translation efficiency
@@ -238,13 +233,13 @@ def new_gene_internal_shift(sim_data, index):
 	transcribed.
 	"""
 	# Set media condition
-	condition_index = index // 1000
+	condition_index = index // 10
 	condition(sim_data, condition_index)
 
 	# Map variant index to expression factor and tranlsation efficiency value
-	index_remainder = index - condition_index * 1000
-	expression_factor, trl_eff_value = get_new_gene_expression_factor_and_translation_efficiency(
-		sim_data, index_remainder)
+	index_remainder = index - condition_index * 10
+	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+		index_remainder)
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
@@ -264,7 +259,7 @@ def new_gene_internal_shift(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	return dict(
-		shortName = "{}_NGEXP_TRLEFF_INTERNAL_SHIFT."
+		shortName = "{}_NGEXP_TRLEFF_PARAM_SAMPLING_INTERNAL_SHIFT."
 			+ "{}_env".format(sim_data.ordered_conditions[condition_index]),
 		desc = "Changed expression of new genes by multiplicative {}".format(
 			expression_factor) + ". Set translation efficiency of new genes "
