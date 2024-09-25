@@ -25,7 +25,6 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 IGNORE_FIRST_N_GENS = 2
-IGNORE_FIRST_N_GENS = 0 # TODO: Remove this line
 
 # TODO (ggsun): Add this to sim_data somewhere?
 # Maps media names used in model to IDs used in EcoCyc
@@ -473,13 +472,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		time_step_length = read_stacked_columns(
 			cell_paths, 'Main', 'timeStepSec', ignore_exception=True)
 		cell_volume = read_stacked_columns(
-			cell_paths, 'Mass', 'cellVolume', ignore_exception=True)
+			cell_paths, 'Mass', 'cellVolume', fun=lambda x: x[0],
+			ignore_exception=True)
 		membrane_mass = read_stacked_columns(
-			cell_paths, 'Mass', 'membrane_mass', ignore_exception=True)
+			cell_paths, 'Mass', 'membrane_mass', fun=lambda x: x[0],
+			ignore_exception=True)
 		dna_mass = read_stacked_columns(
-			cell_paths, 'Mass', 'dnaMass', ignore_exception=True)
+			cell_paths, 'Mass', 'dnaMass', fun=lambda x: x[0],
+			ignore_exception=True)
 		small_molecule_mass = read_stacked_columns(
-			cell_paths, 'Mass', 'smallMoleculeMass', ignore_exception=True)
+			cell_paths, 'Mass', 'smallMoleculeMass', fun=lambda x: x[0],
+			ignore_exception=True)
 
 		rna_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'rnaMass', ignore_exception=True)
@@ -490,7 +493,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		trna_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'tRnaMass', ignore_exception=True)
 
+		protein_mass_over_time = read_stacked_columns(
+			cell_paths, 'Mass', 'proteinMass',
+			remove_first=True, ignore_exception=True).squeeze()
 		ribosomal_monomer_counts = monomer_counts[:, ribosomal_protein_indexes]
+		ribosomal_monomer_mass = ribosomal_monomer_counts * mw_ribosomal_proteins
+		total_ribosomal_monomer_mass = ribosomal_monomer_mass.sum(axis = 1)
+		total_ribosomal_monomer_mass_fraction = total_ribosomal_monomer_mass / protein_mass_over_time
+
 		# enzyme_monomer_counts = monomer_counts[:, enzyme_proteins_indexes]
 
 		# Calculate derived cell values
@@ -526,6 +536,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		trna_fraction = trna_mass / rna_mass
 		trna_fraction_avg = trna_fraction.mean(axis = 0)
 		trna_fraction_std = trna_fraction.std(axis = 0)
+
+		ribosomal_protein_mass_fraction_avg = total_ribosomal_monomer_mass_fraction.mean()
+		ribosomal_protein_mass_fraction_std = total_ribosomal_monomer_mass_fraction.std()
 
 		# Build dictionary for metadata
 		ecocyc_metadata = {
@@ -593,13 +606,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'small_molecule_mass_avg_doc': 'A floating point number in fg units',
 			'small_molecule_mass_std': small_molecule_mass_std.item(),
 			'small_molecule_mass_std_doc': 'A floating point number in fg units',
+			'ribosomal_protein_mass_fraction_avg': ribosomal_protein_mass_fraction_avg.item(),
+			'ribosomal_protein_mass_fraction_avg_doc': 'A floating point number',
+			'ribosomal_protein_mass_fraction_std': ribosomal_protein_mass_fraction_std.item(),
+			'ribosomal_protein_mass_fraction_std_doc': 'A floating point number',
 			}
 
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:
 			print(f'Saving data to {metadata_file}')
 			json.dump(ecocyc_metadata, f, indent=4)
-
 
 if __name__ == '__main__':
 	Plot().cli()
