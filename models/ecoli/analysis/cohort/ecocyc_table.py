@@ -25,6 +25,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 IGNORE_FIRST_N_GENS = 2
+IGNORE_FIRST_N_GENS = 0 # TODO: Remove this line
 
 # TODO (ggsun): Add this to sim_data somewhere?
 # Maps media names used in model to IDs used in EcoCyc
@@ -229,16 +230,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		#
 		# # Load tables and attributes for proteins
-		# monomer_reader = TableReader(
-		# 	os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
-		# monomer_ids = monomer_reader.readAttribute('monomerIds')
-		# monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
+		monomer_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
+		monomer_ids = monomer_reader.readAttribute('monomerIds')
+		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
 		#
-		# # Read columns
-		# # remove_first=True because countsToMolar is 0 at first time step
-		# monomer_counts = read_stacked_columns(
-		# 	cell_paths, 'MonomerCounts', 'monomerCounts',
-		# 	remove_first=True, ignore_exception=True)
+		# Read columns
+		# remove_first=True because countsToMolar is 0 at first time step
+		monomer_counts = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts',
+			remove_first=True, ignore_exception=True)
 		#
 		# # Calculate derived protein values
 		# monomer_counts_avg = monomer_counts.mean(axis=0)
@@ -393,11 +394,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Cell level properties for WCM overview page
 		# Load tables and attributes
-		# ribosomal_proteins = sim_data.molecule_groups.ribosomal_proteins
-		# mw_ribosomal_proteins = (
-		# 	sim_data.getter.get_masses(ribosomal_proteins).asNumber(units.fg / units.count))
-		# ribosomal_protein_indexes = [
-		# 	monomer_ids.index(ribosomal_protein) for ribosomal_protein in ribosomal_proteins]
+		ribosomal_proteins = sim_data.molecule_groups.ribosomal_proteins
+		mw_ribosomal_proteins = (
+			sim_data.getter.get_masses(ribosomal_proteins).asNumber(units.fg / units.count))
+		ribosomal_protein_indexes = [
+			monomer_ids.index(ribosomal_protein) for ribosomal_protein in ribosomal_proteins]
 		# complexation = sim_data.process.complexation
 		# equilibrium = sim_data.process.equilibrium
 		# two_component_system = sim_data.process.two_component_system
@@ -471,6 +472,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			ignore_exception=True)
 		time_step_length = read_stacked_columns(
 			cell_paths, 'Main', 'timeStepSec', ignore_exception=True)
+		cell_volume = read_stacked_columns(
+			cell_paths, 'Mass', 'cellVolume', ignore_exception=True)
+		membrane_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'membrane_mass', ignore_exception=True)
+		dna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'dnaMass', ignore_exception=True)
+		small_molecule_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'smallMoleculeMass', ignore_exception=True)
 
 		rna_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'rnaMass', ignore_exception=True)
@@ -481,7 +490,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		trna_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'tRnaMass', ignore_exception=True)
 
-		# ribosomal_monomer_counts = monomer_counts[:, ribosomal_protein_indexes]
+		ribosomal_monomer_counts = monomer_counts[:, ribosomal_protein_indexes]
 		# enzyme_monomer_counts = monomer_counts[:, enzyme_proteins_indexes]
 
 		# Calculate derived cell values
@@ -497,6 +506,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		doubling_time_std = doubling_time.std(axis = 0)
 		time_step_length_avg = time_step_length.mean(axis = 0)
 		time_step_length_std = time_step_length.std(axis = 0)
+		cell_volume_avg = cell_volume.mean(axis = 0)
+		cell_volume_std = cell_volume.std(axis = 0)
+		membrane_mass_avg = membrane_mass.mean(axis = 0)
+		membrane_mass_std = membrane_mass.std(axis = 0)
+		dna_mass_avg = dna_mass.mean(axis = 0)
+		dna_mass_std = dna_mass.std(axis = 0)
+		small_molecule_mass_avg = small_molecule_mass.mean(axis = 0)
+		small_molecule_mass_std = small_molecule_mass.std(axis = 0)
 
 		mrna_fraction = mrna_mass / rna_mass
 		mrna_fraction_avg = mrna_fraction.mean(axis = 0)
@@ -560,6 +577,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			'trna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
 			'trna_mass_to_total_rna_mass_std': trna_fraction_std.item(),
 			'trna_mass_to_total_rna_mass_std_doc': 'A floating point number',
+			'cell_volume_avg': cell_volume_avg.item(),
+			'cell_volume_avg_doc': 'A floating point number in fL units',
+			'cell_volume_std': cell_volume_std.item(),
+			'cell_volume_std_doc': 'A floating point number in fL units',
+			'membrane_mass_avg': membrane_mass_avg.item(),
+			'membrane_mass_avg_doc': 'A floating point number in fg units',
+			'membrane_mass_std': membrane_mass_std.item(),
+			'membrane_mass_std_doc': 'A floating point number in fg units',
+			'dna_mass_avg': dna_mass_avg.item(),
+			'dna_mass_avg_doc': 'A floating point number in fg units',
+			'dna_mass_std': dna_mass_std.item(),
+			'dna_mass_std_doc': 'A floating point number in fg units',
+			'small_molecule_mass_avg': small_molecule_mass_avg.item(),
+			'small_molecule_mass_avg_doc': 'A floating point number in fg units',
+			'small_molecule_mass_std': small_molecule_mass_std.item(),
+			'small_molecule_mass_std_doc': 'A floating point number in fg units',
 			}
 
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
