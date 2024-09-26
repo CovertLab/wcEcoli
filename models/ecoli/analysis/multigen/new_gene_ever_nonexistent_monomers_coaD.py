@@ -5,6 +5,7 @@ Plot ...
 
 import pickle
 import os
+from cmath import phase
 
 from matplotlib import pyplot as plt
 import matplotlib as mpl
@@ -33,6 +34,13 @@ supplementary_gene_name = "coaE"
 supplementary_cistron_of_interest = "EG12312_RNA"
 supplementary_reaction_ids_of_interest = ["DEPHOSPHOCOAKIN-RXN"]
 supplementary_reaction_product_of_interest = "CO-A[c]"
+
+phase2_reaction_ids_of_interest = [
+	'ACETALD-DEHYDROG-RXN',
+	'ACETALD-DEHYDROG-RXN (reverse)',
+	'PYRUVDEH-RXN',
+	'RXN0-1133 (reverse)',
+	]
 
 genes_of_interest = {}
 
@@ -228,6 +236,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			base_reaction_ids = fba_results_reader.readAttribute('base_reaction_ids')
 			fba_reaction_ids = fba_results_reader.readAttribute('reactionIDs')
 			base_reaction_idx_dict = {reaction: i for i, reaction in enumerate(base_reaction_ids)}
+			all_reaction_idx_dict = {reaction: i for i, reaction in enumerate(fba_reaction_ids)}
 			base_reaction_of_interest_indexes = [
 				base_reaction_idx_dict.get(reaction_id) for reaction_id in reaction_ids_of_interest]
 			if "supplementary_reaction_ids_of_interest" in gene_data.keys():
@@ -280,15 +289,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				supplementary_gene_of_interest_mRNA_counts = (
 					all_mRNA_stacked_counts[:,supplementary_gene_of_interest_cistron_indexes])
 
-			all_rection_fluxes = read_stacked_columns(
+			all_reaction_fluxes = read_stacked_columns(
+				cell_paths, 'FBAResults', 'reactionFluxes', ignore_exception=True)
+			all_base_reaction_fluxes = read_stacked_columns(
 				cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True)
-			reaction_of_interest_flux = all_rection_fluxes[:,base_reaction_of_interest_indexes]
+			reaction_of_interest_flux = all_base_reaction_fluxes[:,base_reaction_of_interest_indexes]
 			if "supplementary_gene_name" in gene_data.keys():
 				supplementary_reaction_of_interest_flux = (
-					all_rection_fluxes[:,base_supplementary_reaction_of_interest_indexes])
+					all_base_reaction_fluxes[:,base_supplementary_reaction_of_interest_indexes])
 			if 'supplementary_reaction_product_of_interest' in gene_data.keys():
 				supplementary_product_reaction_of_interest_flux = (
-					all_rection_fluxes[:, base_supplementary_product_reaction_of_interest_indexes])
+					all_base_reaction_fluxes[:, base_supplementary_product_reaction_of_interest_indexes])
+			if phase2_reaction_ids_of_interest:
+				phase2_reaction_indexes = [
+					all_reaction_idx_dict.get(reaction_id) for reaction_id in phase2_reaction_ids_of_interest]
+				phase2_reaction_flux = all_reaction_fluxes[:, phase2_reaction_indexes]
 
 			if gene_name == "metB":
 				(reaction_product_of_interest_counts, ) = read_stacked_bulk_molecules(
@@ -312,7 +327,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			plot_suffixes = [""]
 			standard_xlim = (0,1500)
-			total_plots = 12 + len(metabolites_containing_CoA) + len(base_supplementary_product_reaction_of_interest_indexes) # TODO Modularize and get rid of this magic number
+			total_plots = 12 + len(metabolites_containing_CoA) + len(base_supplementary_product_reaction_of_interest_indexes) + len(phase2_reaction_ids_of_interest) # TODO Modularize and get rid of this magic number
+			total_plots = 90 # TODO Modularize and get rid of this magic number
 
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
@@ -322,7 +338,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plot_suffix = plot_suffixes[i]
 
 				# Plotting
-				plt.figure(figsize = (10, 22 + 2 * (len(metabolites_containing_CoA) + len(base_supplementary_product_reaction_of_interest_indexes))))
+				plt.figure(figsize = (10, 22 + 1.5 * total_plots))
 				plot_num = 1
 
 				# Mass
@@ -606,15 +622,53 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				ax7.add_collection(PatchCollection(ax7_patches, match_original=True))
 				plot_num += 1
 
+
+				if phase2_reaction_ids_of_interest:
+					# Plot these reaction fluxes (NOTE: not base reactions)
+
+					### TODO: smoothing
+
+					for p in range(len(phase2_reaction_ids_of_interest)):
+						ax6p = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+						reaction_counts = phase2_reaction_flux[:,p]
+						mean_reaction_counts = np.mean(reaction_counts)
+						std_dev_reaction_counts = np.std(reaction_counts)
+						reaction_counts_smoothed = np.convolve(
+							reaction_counts, np.ones(75) / 75, mode='same')
+						plt.plot(
+							time / 60., reaction_counts_smoothed, color = "orange")
+						plt.ylim(
+							mean_reaction_counts - 1 * std_dev_reaction_counts,
+							mean_reaction_counts + 3 * std_dev_reaction_counts)
+						plt.xlabel("Time (min)")
+						plt.ylabel(
+							"" + phase2_reaction_ids_of_interest[p] + " flux",
+							fontsize="xx-small")
+						ax_patches = []
+						for p in range(len(patch_start_index)):
+							width = \
+								(time[patch_end_index[p]] / 60. - time[patch_start_index[p]] / 60.)[
+									0]
+							if width <= 0.1:
+								continue
+							height = ax6p.get_ylim()[1] - ax6p.get_ylim()[0]
+							ax_patches.append(
+								mpl.patches.Rectangle(
+									((time[patch_start_index[p]] / 60.)[0], ax6p.get_ylim()[0]),
+									width, height, color='gray', alpha=0.25,
+									linewidth=0.))
+						ax6p.add_collection(PatchCollection(ax_patches, match_original=True))
+						plot_num += 1
+
 				# Plot everything containing CoA
 				metabolites_containing_CoA_list = list(metabolites_containing_CoA)
 				for j in range(len(metabolites_containing_CoA_list)):
 					metabolite = metabolites_containing_CoA_list[j]
 					ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 					metabolite_counts = metabolites_containing_CoA_counts[:,j]
-					plt.plot(time / 60., metabolite_counts, color=LINE_COLOR)
+					plt.plot(time / 60., metabolite_counts, color = "purple")
 					plt.xlabel("Time (min)")
-					plt.ylabel(metabolite + " counts", fontsize="x-small")
+					plt.ylabel(metabolite + " counts", fontsize="xx-small")
 					ax_patches = []
 					for p in range(len(patch_start_index)):
 						width = (time[patch_end_index[p]] / 60. - time[patch_start_index[p]] / 60.)[
@@ -632,27 +686,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				# Plot all reactions that produce or consume the supplementary product of interest
 				if 'supplementary_reaction_product_of_interest' in gene_data.keys():
+					already_plotted = set()
 					for k in range(len(base_supplementary_product_reaction_of_interest_indexes)):
+
+						if base_reactions_for_supplementary_product[k] in already_plotted:
+							continue
+						else:
+							already_plotted.add(base_reactions_for_supplementary_product[k])
 
 						if not involves_acetyl_CoA[k]:
 							continue
-
-						if handling_of_supplementary_product[k] == "produces":
-							color = "green"
-						elif handling_of_supplementary_product[k] == "consumes":
-							color = "red"
-						else:
-							color = "blue"
 
 						ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 						reaction_counts = supplementary_product_reaction_of_interest_flux[:,k]
 						mean_reaction_counts = np.mean(reaction_counts)
 						std_dev_reaction_counts = np.std(reaction_counts)
-						plt.plot(time / 60., reaction_counts, color=color)
+						plt.plot(time / 60., reaction_counts)
 						plt.xlabel("Time (min)")
 						plt.ylabel(
 							"" + base_reactions_for_supplementary_product[k] + " flux",
-							fontsize="x-small")
+							fontsize="xx-small")
 						plt.ylim(
 							mean_reaction_counts - 1 * std_dev_reaction_counts,
 							mean_reaction_counts + 3 * std_dev_reaction_counts)
@@ -678,6 +731,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					+ str(START_GEN) + "_" + str(END_GEN) + "_" + gene_name,
 					metadata)
 				plt.close("all")
+
+				import ipdb
+				ipdb.set_trace()
 
 if __name__ == '__main__':
 	Plot().cli()
