@@ -635,11 +635,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						std_dev_reaction_counts = np.std(reaction_counts)
 						reaction_counts_smoothed = np.convolve(
 							reaction_counts, np.ones(75) / 75, mode='same')
+						mean_reaction_counts_smoothed = np.mean(reaction_counts_smoothed)
+						std_dev_reaction_counts_smoothed = np.std(reaction_counts_smoothed)
 						plt.plot(
 							time / 60., reaction_counts_smoothed, color = "orange")
 						plt.ylim(
-							mean_reaction_counts - 1 * std_dev_reaction_counts,
-							mean_reaction_counts + 3 * std_dev_reaction_counts)
+							mean_reaction_counts_smoothed - 2 * std_dev_reaction_counts_smoothed,
+							mean_reaction_counts_smoothed + 3 * std_dev_reaction_counts_smoothed)
 						plt.xlabel("Time (min)")
 						plt.ylabel(
 							"" + phase2_reaction_ids_of_interest[p] + " flux",
@@ -701,14 +703,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						reaction_counts = supplementary_product_reaction_of_interest_flux[:,k]
 						mean_reaction_counts = np.mean(reaction_counts)
 						std_dev_reaction_counts = np.std(reaction_counts)
-						plt.plot(time / 60., reaction_counts)
+						reaction_counts_smoothed = np.convolve(
+							reaction_counts, np.ones(75) / 75, mode='same')
+						mean_reaction_counts_smoothed = np.mean(reaction_counts_smoothed)
+						std_dev_reaction_counts_smoothed = np.std(reaction_counts_smoothed)
+						plt.plot(time / 60., reaction_counts_smoothed)
 						plt.xlabel("Time (min)")
 						plt.ylabel(
 							"" + base_reactions_for_supplementary_product[k] + " flux",
 							fontsize="xx-small")
 						plt.ylim(
-							mean_reaction_counts - 1 * std_dev_reaction_counts,
-							mean_reaction_counts + 3 * std_dev_reaction_counts)
+							mean_reaction_counts_smoothed - 2 * std_dev_reaction_counts_smoothed,
+							mean_reaction_counts_smoothed + 3 * std_dev_reaction_counts_smoothed)
 						ax_patches = []
 						for p in range(len(patch_start_index)):
 							width = \
@@ -731,9 +737,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					+ str(START_GEN) + "_" + str(END_GEN) + "_" + gene_name,
 					metadata)
 				plt.close("all")
-
-				import ipdb
-				ipdb.set_trace()
 
 if __name__ == '__main__':
 	Plot().cli()
