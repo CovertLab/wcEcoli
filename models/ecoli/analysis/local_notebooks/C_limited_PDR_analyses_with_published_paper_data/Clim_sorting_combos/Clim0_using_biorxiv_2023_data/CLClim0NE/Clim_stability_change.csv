@@ -1,0 +1,1913 @@
+Protein ID,HL Source,CLClim0NE Clim0 half life (min),gene symbol,Stability
+2-ISOPROPYLMALATESYN-MONOMER,Clim0 (protease substrate),222.80000000000004,leuA,Less Stable
+4OHBENZOATE-OCTAPRENYLTRANSFER-MONOMER,Clim0 (protease substrate),76.50000000001637,ubiA,Less Stable
+ACETATEKINA-MONOMER,Clim0 (protease substrate),720.0000000000001,ackA,More Stable
+ACONITATEDEHYDRB-MONOMER,Clim0 (protease substrate),282.70000000000005,acnB,Less Stable
+ACYLCOADEHYDROG-MONOMER,Clim0 (protease substrate),86.00000000001654,fadE,Less Stable
+AERGLYC3PDEHYDROG-MONOMER,Clim0 (protease substrate),210.89999999999998,glpD,Less Stable
+ALPHACOMP-MONOMER,Clim0 (protease substrate),299.40000000000003,cysJ,Less Stable
+ALTRODEHYDRAT-MONOMER,Clim0 (protease substrate),233.8,uxaA,Less Stable
+ARGSUCCTRAN-MONOMER,Clim0 (protease substrate),273.4,astA,Less Stable
+AROD-MONOMER,Clim0 (protease substrate),333.8,aroD,Less Stable
+AROE-MONOMER,Clim0 (protease substrate),325.7,aroE,Less Stable
+AROG-MONOMER,Clim0 (protease substrate),348.50000000000006,aroG,Less Stable
+AROK-MONOMER,Clim0 (protease substrate),239.30000000000004,aroK,Less Stable
+AROL-MONOMER,Clim0 (protease substrate),315.2,aroL,Less Stable
+ASNSYNA-MONOMER,Clim0 (protease substrate),152.0,asnA,Less Stable
+ASPARTASE-MONOMER,Clim0 (protease substrate),257.0,aspA,Less Stable
+ASPKINIHOMOSERDEHYDROGI-MONOMER,Clim0 (protease substrate),720.0000000000001,thrA,More Stable
+BETACOMP-MONOMER,Clim0 (protease substrate),249.8,cysI,Less Stable
+BIOTIN-SYN-MONOMER,Clim0 (protease substrate),48.20000000001986,bioB,Less Stable
+BIOTINLIG-MONOMER,Clim0 (protease substrate),284.5,birA,Less Stable
+BRANCHED-CHAINAMINOTRANSFER-MONOMER,Clim0 (protease substrate),338.00000000000006,ilvE,Less Stable
+CELA-MONOMER,Clim0 (protease substrate),218.40000000000003,chbB,Less Stable
+CFA-MONOMER,Clim0 (protease substrate),28.40000000000094,cfa,Less Stable
+CHORISMUTPREPHENDEHYDROG-MONOMER,Clim0 (protease substrate),273.5,tyrA,Less Stable
+CHORPYRLY-MONOMER,Clim0 (protease substrate),256.20000000000005,ubiC,Less Stable
+CYCA-MONOMER,Clim0 (protease substrate),501.50000000000006,cycA,Less Stable
+CYSD-MONOMER,Clim0 (protease substrate),94.6000000000182,cysD,Less Stable
+CYSN-MONOMER,Clim0 (protease substrate),94.90000000007147,cysN,Less Stable
+DALADEHYDROGA-MONOMER,Clim0 (protease substrate),60.40000000000178,dadA,Less Stable
+DIAMINOPIMDECARB-MONOMER,Clim0 (protease substrate),285.8,lysA,Less Stable
+DIHYDRODIPICSYN-MONOMER,Clim0 (protease substrate),327.9,dapA,Less Stable
+DIHYDROPTERIREDUCT-MONOMER,Clim0 (protease substrate),202.9,nfsB,Less Stable
+DIOHBUTANONEPSYN-MONOMER,Clim0 (protease substrate),72.0000000000126,ribB,Less Stable
+DMBPPRIBOSYLTRANS-MONOMER,Clim0 (protease substrate),277.80000000000007,cobT,Less Stable
+DXPREDISOM-MONOMER,Clim0 (protease substrate),319.50000000000006,dxr,Less Stable
+EG10011-MONOMER,Clim0 (protease substrate),213.9,yaaA,Less Stable
+EG10124-MONOMER,Clim0 (protease substrate),274.0,bisC,Less Stable
+EG10156-MONOMER,Clim0 (protease substrate),48.000000000018375,clpA,Less Stable
+EG10159-MONOMER,Clim0 (protease substrate),88.20000000004978,clpX,Less Stable
+EG10216-MONOMER,Clim0 (protease substrate),301.6,dedA,Less Stable
+EG10218-MONOMER,Clim0 (protease substrate),207.30000000000004,dedD,Less Stable
+EG10230-MONOMER,Clim0 (protease substrate),196.30000000000004,dksA,Less Stable
+EG10236-MONOMER,Clim0 (protease substrate),333.1,dnaB,Less Stable
+EG10237-MONOMER,Clim0 (protease substrate),280.2,dnaC,Less Stable
+EG10238-MONOMER,Clim0 (protease substrate),289.2,dnaE,Less Stable
+EG10241-MONOMER,Clim0 (protease substrate),350.90000000000003,dnaK,Less Stable
+EG10243-MONOMER,Clim0 (protease substrate),50.80000000002085,dnaQ,Less Stable
+EG10270-MONOMER,Clim0 (protease substrate),250.40000000000006,era,Less Stable
+EG10300-MONOMER,Clim0 (protease substrate),293.90000000000003,ffh,Less Stable
+EG10335-MONOMER,Clim0 (protease substrate),290.1,frr,Less Stable
+EG10341-MONOMER,Clim0 (protease substrate),105.00000000004019,ftsI,Less Stable
+EG10347-MONOMER,Clim0 (protease substrate),74.90000000000597,ftsZ,Less Stable
+EG10370-MONOMER,Clim0 (protease substrate),281.1,ispG,Less Stable
+EG10375-MONOMER,Clim0 (protease substrate),84.90000000003381,mnmG,Less Stable
+EG10415-MONOMER,Clim0 (protease substrate),268.80000000000007,greA,Less Stable
+EG10426-MONOMER,Clim0 (protease substrate),303.4,helD,Less Stable
+EG10437-MONOMER,Clim0 (protease substrate),248.99999999999997,hflX,Less Stable
+EG10456-MONOMER,Clim0 (protease substrate),217.4,hmp,Less Stable
+EG10458-MONOMER,Clim0 (protease substrate),315.09999999999997,hsdM,Less Stable
+EG10487-MONOMER,Clim0 (protease substrate),548.6,hypE,Less Stable
+EG10534-MONOMER,Clim0 (protease substrate),340.8,ligA,Less Stable
+EG10572-MONOMER,Clim0 (protease substrate),303.8,mazG,Less Stable
+EG10598-MONOMER,Clim0 (protease substrate),275.7,minE,Less Stable
+EG10618-MONOMER,Clim0 (protease substrate),309.4,mukB,Less Stable
+EG10625-MONOMER,Clim0 (protease substrate),297.9,mutS,Less Stable
+EG10651-MONOMER,Clim0 (protease substrate),107.20000000007518,nfo,Less Stable
+EG10686-MONOMER,Clim0 (protease substrate),224.69999999999996,parC,Less Stable
+EG10687-MONOMER,Clim0 (protease substrate),286.7,parE,Less Stable
+EG10690-MONOMER,Clim0 (protease substrate),262.0,pcnB,Less Stable
+EG10776-MONOMER,Clim0 (protease substrate),306.5999999999999,pspA,Less Stable
+EG10823-MONOMER,Clim0 (protease substrate),289.1,recA,Less Stable
+EG10826-MONOMER,Clim0 (protease substrate),263.7,recD,Less Stable
+EG10828-MONOMER,Clim0 (protease substrate),304.0,recF,Less Stable
+EG10830-MONOMER,Clim0 (protease substrate),219.8,recJ,Less Stable
+EG10844-MONOMER,Clim0 (protease substrate),344.00000000000006,rhlB,Less Stable
+EG10884-MONOMER,Clim0 (protease substrate),293.79999999999995,rplX,Less Stable
+EG10900-MONOMER,Clim0 (protease substrate),607.1000000000001,rpsA,More Stable
+EG10925-MONOMER,Clim0 (protease substrate),260.2,ruvC,Less Stable
+EG10927-MONOMER,Clim0 (protease substrate),312.6,sbcC,Less Stable
+EG10943-MONOMER,Clim0 (protease substrate),297.0,selD,Less Stable
+EG10955-MONOMER,Clim0 (protease substrate),210.99999999999997,prlF,Less Stable
+EG10975-MONOMER,Clim0 (protease substrate),328.1,srmB,Less Stable
+EG11012-MONOMER,Clim0 (protease substrate),216.10000000000002,tonB,Less Stable
+EG11014-MONOMER,Clim0 (protease substrate),187.5,topB,Less Stable
+EG11062-MONOMER,Clim0 (protease substrate),241.2,uvrB,Less Stable
+EG11064-MONOMER,Clim0 (protease substrate),283.2,uvrD,Less Stable
+EG11081-MONOMER,Clim0 (protease substrate),223.3,ispH,Less Stable
+EG11094-MONOMER,Clim0 (protease substrate),324.2,sbcD,Less Stable
+EG11100-MONOMER,Clim0 (protease substrate),266.49999999999994,ybaB,Less Stable
+EG11131-MONOMER,Clim0 (protease substrate),255.20000000000002,relE,Less Stable
+EG11137-MONOMER,Clim0 (protease substrate),240.79999999999998,yebC,Less Stable
+EG11139-MONOMER,Clim0 (protease substrate),312.70000000000005,yecA,Less Stable
+EG11140-MONOMER,Clim0 (protease substrate),182.3,uvrY,Less Stable
+EG11187-MONOMER,Clim0 (protease substrate),233.89999999999998,yibA,Less Stable
+EG11195-MONOMER,Clim0 (protease substrate),342.8,yidA,Less Stable
+EG11199-MONOMER,Clim0 (protease substrate),279.9,mioC,Less Stable
+EG11239-MONOMER,Clim0 (protease substrate),209.10000000000002,ybhA,Less Stable
+EG11247-MONOMER,Clim0 (protease substrate),307.40000000000003,rlmD,Less Stable
+EG11249-MONOMER,Clim0 (protease substrate),720.0000000000001,mazF,More Stable
+EG11296-MONOMER,Clim0 (protease substrate),293.59999999999997,radA,Less Stable
+EG11299-MONOMER,Clim0 (protease substrate),261.8,rng,Less Stable
+EG11306-MONOMER,Clim0 (protease substrate),73.70000000003031,lipA,Less Stable
+EG11357-MONOMER,Clim0 (protease substrate),235.8,dinG,Less Stable
+EG11384-MONOMER,Clim0 (protease substrate),303.1,ahpC,Less Stable
+EG11385-MONOMER,Clim0 (protease substrate),281.3,ahpF,Less Stable
+EG11404-MONOMER,Clim0 (protease substrate),286.4,ychF,Less Stable
+EG11410-MONOMER,Clim0 (protease substrate),253.10000000000002,yjgA,Less Stable
+EG11415-MONOMER,Clim0 (protease substrate),101.80000000000582,dps,Less Stable
+EG11440-MONOMER,Clim0 (protease substrate),236.2,def,Less Stable
+EG11467-MONOMER,Clim0 (protease substrate),343.6,yigI,Less Stable
+EG11516-MONOMER,Clim0 (protease substrate),63.0000000000012,ycgB,Less Stable
+EG11534-MONOMER,Clim0 (protease substrate),72.0000000000126,ibpA,Less Stable
+EG11578-MONOMER,Clim0 (protease substrate),278.1000000000001,greB,Less Stable
+EG11784-MONOMER,Clim0 (protease substrate),87.50000000004674,grcA,Less Stable
+EG11830-MONOMER,Clim0 (protease substrate),285.8,yihD,Less Stable
+EG11835-MONOMER,Clim0 (protease substrate),261.8,yihI,Less Stable
+EG11874-MONOMER,Clim0 (protease substrate),315.5,yiiQ,Less Stable
+EG12044-MONOMER,Clim0 (protease substrate),284.6000000000001,rsuA,Less Stable
+EG12045-MONOMER,Clim0 (protease substrate),263.00000000000006,radD,Less Stable
+EG12052-MONOMER,Clim0 (protease substrate),567.1,ccmH,Less Stable
+EG12110-MONOMER,Clim0 (protease substrate),344.1,ydcF,Less Stable
+EG12130-MONOMER,Clim0 (protease substrate),268.6,hscA,Less Stable
+EG12131-MONOMER,Clim0 (protease substrate),284.3999999999999,hscB,Less Stable
+EG12132-MONOMER,Clim0 (protease substrate),71.9000000000147,iscA,Less Stable
+EG12179-MONOMER,Clim0 (protease substrate),129.3,cspE,Less Stable
+EG12204-MONOMER,Clim0 (protease substrate),193.70000000000005,cspC,Less Stable
+EG12265-MONOMER,Clim0 (protease substrate),256.9,bcsG,Less Stable
+EG12289-MONOMER,Clim0 (protease substrate),653.5,yiaU,More Stable
+EG12303-MONOMER,Clim0 (protease substrate),283.5,ycfH,Less Stable
+EG12308-MONOMER,Clim0 (protease substrate),258.7,yfhH,Less Stable
+EG12329-MONOMER,Clim0 (protease substrate),278.9,hrpB,Less Stable
+EG12332-MONOMER,Clim0 (protease substrate),97.40000000000221,erpA,Less Stable
+EG12352-MONOMER,Clim0 (protease substrate),334.20000000000005,ppiC,Less Stable
+EG12401-MONOMER,Clim0 (protease substrate),80.90000000000884,rlmN,Less Stable
+EG12407-MONOMER,Clim0 (protease substrate),299.20000000000005,iaaA,Less Stable
+EG12432-MONOMER,Clim0 (protease substrate),311.9,ydiF,Less Stable
+EG12690-MONOMER,Clim0 (protease substrate),323.70000000000005,rarA,Less Stable
+EG12693-MONOMER,Clim0 (protease substrate),302.00000000000006,nudL,Less Stable
+EG12866-MONOMER,Clim0 (protease substrate),270.80000000000007,proQ,Less Stable
+EG12879-MONOMER,Clim0 (protease substrate),240.20000000000002,ybcJ,Less Stable
+EG50003-MONOMER,Clim0 (protease substrate),296.7,acpP,Less Stable
+F16B-MONOMER,Clim0 (protease substrate),301.0,fbp,Less Stable
+FADB-MONOMER,Clim0 (protease substrate),293.1,fadB,Less Stable
+FUCISOM-MONOMER,Clim0 (protease substrate),307.1000000000001,fucI,Less Stable
+G6152-MONOMER,Clim0 (protease substrate),52.60000000000976,intF,Less Stable
+G6195-MONOMER,Clim0 (protease substrate),241.2,prpR,Less Stable
+G6337-MONOMER,Clim0 (protease substrate),61.30000000001785,rnk,Less Stable
+G6363-MONOMER,Clim0 (protease substrate),288.59999999999997,ybeZ,Less Stable
+G6364-MONOMER,Clim0 (protease substrate),90.30000000005097,miaB,Less Stable
+G6379-MONOMER,Clim0 (protease substrate),619.2000000000002,ybgI,More Stable
+G6406-MONOMER,Clim0 (protease substrate),322.1,clsB,Less Stable
+G6424-MONOMER,Clim0 (protease substrate),260.6,ybiU,Less Stable
+G6442-MONOMER,Clim0 (protease substrate),237.5,ybjI,Less Stable
+G6464-MONOMER,Clim0 (protease substrate),53.400000000003246,ftsK,Less Stable
+G6472-MONOMER,Clim0 (protease substrate),283.8999999999999,ycaR,Less Stable
+G6569-MONOMER,Clim0 (protease substrate),101.50000000000502,comR,Less Stable
+G6581-MONOMER,Clim0 (protease substrate),304.3,rluE,Less Stable
+G6662-MONOMER,Clim0 (protease substrate),282.9,mpaA,Less Stable
+G6701-MONOMER,Clim0 (protease substrate),201.1,ydbK,Less Stable
+G6731-MONOMER,Clim0 (protease substrate),203.30000000000004,azoR,Less Stable
+G6737-MONOMER,Clim0 (protease substrate),189.5,ydcI,Less Stable
+G6783-MONOMER,Clim0 (protease substrate),256.0,dosP,Less Stable
+G6791-MONOMER,Clim0 (protease substrate),141.0,ydeP,Less Stable
+G6811-MONOMER,Clim0 (protease substrate),283.1,sad,Less Stable
+G6815-MONOMER,Clim0 (protease substrate),249.89999999999998,ydfZ,Less Stable
+G6843-MONOMER,Clim0 (protease substrate),98.50000000006371,ynfC,Less Stable
+G6890-MONOMER,Clim0 (protease substrate),127.59999999999998,nemA,Less Stable
+G6894-MONOMER,Clim0 (protease substrate),69.0000000000067,ydhQ,Less Stable
+G6896-MONOMER,Clim0 (protease substrate),312.2000000000001,ydhS,Less Stable
+G6906-MONOMER,Clim0 (protease substrate),521.8,sufS,Less Stable
+G6907-MONOMER,Clim0 (protease substrate),234.40000000000003,sufD,Less Stable
+G6909-MONOMER,Clim0 (protease substrate),187.2,sufB,Less Stable
+G6970-MONOMER,Clim0 (protease substrate),82.40000000003211,yeaH,Less Stable
+G7131-MONOMER,Clim0 (protease substrate),302.50000000000006,yegU,Less Stable
+G7133-MONOMER,Clim0 (protease substrate),290.6,yegW,Less Stable
+G7162-MONOMER,Clim0 (protease substrate),315.9,yfaY,Less Stable
+G7168-MONOMER,Clim0 (protease substrate),292.90000000000003,arnA,Less Stable
+G7169-MONOMER,Clim0 (protease substrate),323.30000000000007,arnD,Less Stable
+G7174-MONOMER,Clim0 (protease substrate),257.70000000000005,elaA,Less Stable
+G7184-MONOMER,Clim0 (protease substrate),338.1000000000001,alaA,Less Stable
+G7200-MONOMER,Clim0 (protease substrate),203.2,yfcL,Less Stable
+G7211-MONOMER,Clim0 (protease substrate),63.70000000000354,sixA,Less Stable
+G7214-MONOMER,Clim0 (protease substrate),248.40000000000003,yfcZ,Less Stable
+G7242-MONOMER,Clim0 (protease substrate),235.10000000000005,alaC,Less Stable
+G7263-MONOMER,Clim0 (protease substrate),316.80000000000007,murQ,Less Stable
+G7296-MONOMER,Clim0 (protease substrate),358.20000000000005,ypfH,Less Stable
+G7311-MONOMER,Clim0 (protease substrate),304.99999999999994,bepA,Less Stable
+G7324-MONOMER,Clim0 (protease substrate),114.0000000000081,iscU,Less Stable
+G7325-MONOMER,Clim0 (protease substrate),134.0,iscS,Less Stable
+G7326-MONOMER,Clim0 (protease substrate),73.00000000002731,iscR,Less Stable
+G7395-MONOMER,Clim0 (protease substrate),333.30000000000007,kbp,Less Stable
+G7398-MONOMER,Clim0 (protease substrate),537.7,ygaP,Less Stable
+G7454-MONOMER,Clim0 (protease substrate),335.1,csdA,Less Stable
+G7502-MONOMER,Clim0 (protease substrate),614.6,guaD,More Stable
+G7532-MONOMER,Clim0 (protease substrate),308.4,yggX,Less Stable
+G7596-MONOMER,Clim0 (protease substrate),22.700000000002383,patA,Less Stable
+G7656-MONOMER,Clim0 (protease substrate),215.1,obgE,Less Stable
+G7678-MONOMER,Clim0 (protease substrate),250.2,nanR,Less Stable
+G7715-MONOMER,Clim0 (protease substrate),281.7,yheO,Less Stable
+G7746-MONOMER,Clim0 (protease substrate),281.3999999999999,yhgF,Less Stable
+G7748-MONOMER,Clim0 (protease substrate),204.0,nfuA,Less Stable
+G7808-MONOMER,Clim0 (protease substrate),264.5,tatB,Less Stable
+G7836-MONOMER,Clim0 (protease substrate),84.40000000002705,epmB,Less Stable
+G7865-MONOMER,Clim0 (protease substrate),340.4,fklB,Less Stable
+G7883-MONOMER,Clim0 (protease substrate),487.09999999999997,tabA,Less Stable
+G7951-MONOMER,Clim0 (protease substrate),233.40000000000003,yjjU,Less Stable
+GABATRANSAM-MONOMER,Clim0 (protease substrate),291.3,gabT,Less Stable
+GCVT-MONOMER,Clim0 (protease substrate),342.8,gcvT,Less Stable
+GDHA-MONOMER,Clim0 (protease substrate),279.5,gdhA,Less Stable
+GKI-MONOMER,Clim0 (protease substrate),301.0,garK,Less Stable
+GLND-MONOMER,Clim0 (protease substrate),281.1,glnD,Less Stable
+GPH-MONOMER,Clim0 (protease substrate),333.40000000000003,gph,Less Stable
+GTP-CYCLOHYDRO-I-MONOMER,Clim0 (protease substrate),207.8,folE,Less Stable
+H2NTPEPIM-MONOMER,Clim0 (protease substrate),286.4,folX,Less Stable
+HOMOCYSMETB12-MONOMER,Clim0 (protease substrate),303.1,metH,Less Stable
+L-ASPARTATE-OXID-MONOMER,Clim0 (protease substrate),264.6000000000001,nadB,Less Stable
+L-LACTDEHYDROGFMN-MONOMER,Clim0 (protease substrate),225.90000000000006,lldD,Less Stable
+LARGEILVB-MONOMER,Clim0 (protease substrate),144.3,ilvB,Less Stable
+LEUC-MONOMER,Clim0 (protease substrate),190.0,leuC,Less Stable
+LEUD-MONOMER,Clim0 (protease substrate),181.40000000000003,leuD,Less Stable
+LSERINEDEAM1-MONOMER,Clim0 (protease substrate),91.40000000003862,sdaA,Less Stable
+MONOMER0-149,Clim0 (protease substrate),323.20000000000005,dkgB,Less Stable
+MONOMER0-2383,Clim0 (protease substrate),266.0,dnaX,Less Stable
+N-ACETYLTRANSFER-MONOMER,Clim0 (protease substrate),197.3,argA,Less Stable
+NACMURLALAAMI2-MONOMER,Clim0 (protease substrate),98.30000000001115,amiB,Less Stable
+NARP-MONOMER,Clim0 (protease substrate),204.90000000000003,narP,Less Stable
+PAPSSULFOTRANS-MONOMER,Clim0 (protease substrate),126.9,cysH,Less Stable
+PD00197,Clim0 (protease substrate),74.00000000002063,fnr,Less Stable
+PD00205,Clim0 (protease substrate),192.60000000000002,lexA,Less Stable
+PD00214,Clim0 (protease substrate),305.9000000000001,oxyR,Less Stable
+PD02936,Clim0 (protease substrate),320.1,fhlA,Less Stable
+PD03270,Clim0 (protease substrate),221.69999999999996,exuR,Less Stable
+PD03831,Clim0 (protease substrate),233.8,dnaA,Less Stable
+PD03938,Clim0 (protease substrate),48.700000000001104,metR,Less Stable
+PPX-MONOMER,Clim0 (protease substrate),281.3999999999999,ppx,Less Stable
+PUTA-MONOMER,Clim0 (protease substrate),210.10000000000002,putA,Less Stable
+PYRUVFORMLY-MONOMER,Clim0 (protease substrate),182.6,pflB,Less Stable
+QUINOLINATE-SYNTHA-MONOMER,Clim0 (protease substrate),68.30000000001189,nadA,Less Stable
+RED-THIOREDOXIN2-MONOMER,Clim0 (protease substrate),185.2,trxC,Less Stable
+RIBONUCLEOSIDE-TRIP-REDUCT-MONOMER,Clim0 (protease substrate),157.70000000000002,nrdD,Less Stable
+RPOB-MONOMER,Clim0 (protease substrate),322.1,rpoB,Less Stable
+RPOC-MONOMER,Clim0 (protease substrate),294.4,rpoC,Less Stable
+RPOD-MONOMER,Clim0 (protease substrate),294.2,rpoD,Less Stable
+RPOS-MONOMER,Clim0 (protease substrate),17.700000000000895,rpoS,Less Stable
+S-ADENMETSYN-MONOMER,Clim0 (protease substrate),277.6,metK,Less Stable
+SECG,Clim0 (protease substrate),294.90000000000003,secG,Less Stable
+SUCCARGDIHYDRO-MONOMER,Clim0 (protease substrate),310.20000000000005,astB,Less Stable
+SUCCGLUALDDEHYD-MONOMER,Clim0 (protease substrate),330.0,astD,Less Stable
+SUCCGLUDESUCC-MONOMER,Clim0 (protease substrate),118.60000000000001,astE,Less Stable
+SUCCORNTRANSAM-MONOMER,Clim0 (protease substrate),266.49999999999994,astC,Less Stable
+THI-P-KIN-MONOMER,Clim0 (protease substrate),324.6000000000001,thiL,Less Stable
+THIC-MONOMER,Clim0 (protease substrate),84.80000000001483,thiC,Less Stable
+THIE-MONOMER,Clim0 (protease substrate),285.4,thiE,Less Stable
+THIF-MONOMER,Clim0 (protease substrate),241.80000000000004,thiF,Less Stable
+THIG-MONOMER,Clim0 (protease substrate),95.20000000001336,thiG,Less Stable
+THIH-MONOMER,Clim0 (protease substrate),56.90000000001872,thiH,Less Stable
+THIOREDOXIN-REDUCT-NADPH-MONOMER,Clim0 (protease substrate),344.50000000000006,trxB,Less Stable
+THZ-KIN-MONOMER,Clim0 (protease substrate),293.7,thiM,Less Stable
+TRANSKETOI-MONOMER,Clim0 (protease substrate),311.6000000000001,tktA,Less Stable
+TREHALOSE6PSYN-MONOMER,Clim0 (protease substrate),231.5,otsA,Less Stable
+TRYPSYN-BPROTEIN,Clim0 (protease substrate),316.80000000000007,trpB,Less Stable
+UDPACYLGLCNACDEACETYL-MONOMER,Clim0 (protease substrate),28.00000000000393,lpxC,Less Stable
+UDPGLCNACEPIM-MONOMER,Clim0 (protease substrate),348.0,wecB,Less Stable
+UGD-MONOMER,Clim0 (protease substrate),215.4,ugd,Less Stable
+UHPA-MONOMER,Clim0 (protease substrate),255.40000000000003,uhpA,Less Stable
+UROGENDECARBOX-MONOMER,Clim0 (protease substrate),356.3,hemE,Less Stable
+VALINE-PYRUVATE-AMINOTRANSFER-MONOMER,Clim0 (protease substrate),255.5,avtA,Less Stable
+YHES-MONOMER,Clim0 (protease substrate),257.8,yheS,Less Stable
+YHHO-MONOMER,Clim0 (protease substrate),272.9,zntA,Less Stable
+YLIA-MONOMER,Clim0 (protease substrate),237.20000000000002,gsiA,Less Stable
+ZNUC-MONOMER,Clim0 (protease substrate),263.3,znuC,Less Stable
+1-PFK-MONOMER,Clim0,720.0000000000001,fruK,More Stable
+2-OCTAPRENYL-METHOXY-BENZOQ-METH-MONOMER,Clim0,280.5,ubiE,Less Stable
+2-OCTAPRENYLPHENOL-HYDROX-MONOMER,Clim0,720.0000000000001,ubiB,More Stable
+3-CH3-2-OXOBUTANOATE-OH-CH3-XFER-MONOMER,Clim0,720.0000000000001,panB,More Stable
+3-ISOPROPYLMALDEHYDROG-MONOMER,Clim0,303.4,leuB,Less Stable
+3-OXOACYL-ACP-REDUCT-MONOMER,Clim0,720.0000000000001,fabG,More Stable
+3-OXOACYL-ACP-SYNTHII-MONOMER,Clim0,720.0000000000001,fabF,More Stable
+6PFK-1-MONOMER,Clim0,349.70000000000005,pfkA,Less Stable
+6PFK-2-MONOMER,Clim0,642.7,pfkB,More Stable
+6PGLUCONDEHYDROG-MONOMER,Clim0,351.1000000000001,gnd,Less Stable
+6PGLUCONOLACT-MONOMER,Clim0,663.8,pgl,More Stable
+7-ALPHA-HYDROXYSTEROID-DEH-MONOMER,Clim0,330.50000000000006,hdhA,Less Stable
+7KAPSYN-MONOMER,Clim0,309.8,bioF,Less Stable
+AAS-MONOMER,Clim0,720.0000000000001,aas,More Stable
+ABC-MONOMER,Clim0,345.6,metN,Less Stable
+ACETOLACTSYNIII-HCHAIN-MONOMER,Clim0,355.8999999999999,ilvH,Less Stable
+ACETOLACTSYNIII-ICHAIN-MONOMER,Clim0,664.3,ilvI,More Stable
+ACETYLGLUTKIN-MONOMER,Clim0,311.4,argB,Less Stable
+ACETYLORNDEACET-MONOMER,Clim0,327.8,argE,Less Stable
+ACETYLORNTRANSAM-MONOMER,Clim0,550.8000000000001,argD,Less Stable
+ACNEULY-MONOMER,Clim0,228.3,nanA,Less Stable
+ACONITASE-MONOMER,Clim0,328.00000000000006,acnA,Less Stable
+ACRB-MONOMER,Clim0,720.0000000000001,acrB,More Stable
+ACRD-MONOMER,Clim0,718.9999999999999,acrD,More Stable
+ACS-MONOMER,Clim0,294.3,acs,Less Stable
+ACSERLYA-MONOMER,Clim0,708.2999999999998,cysK,More Stable
+ACSERLYB-MONOMER,Clim0,614.4000000000001,cysM,More Stable
+ACYLCOASYN-MONOMER,Clim0,238.7,fadD,Less Stable
+ADCLY-MONOMER,Clim0,334.9,pabC,Less Stable
+ADENODEAMIN-MONOMER,Clim0,635.3000000000001,add,More Stable
+ADENPRIBOSYLTRAN-MONOMER,Clim0,274.5,apt,Less Stable
+ADENYL-KIN-MONOMER,Clim0,677.2,adk,More Stable
+ADENYLOSUCCINATE-SYN-MONOMER,Clim0,351.8,purA,Less Stable
+ADENYLYLSULFKIN-MONOMER,Clim0,287.7,cysC,Less Stable
+ADHC-MONOMER,Clim0,352.0,frmA,Less Stable
+ADHE-MONOMER,Clim0,310.0,adhE,Less Stable
+AGAB-MONOMER,Clim0,303.90000000000003,agaB,Less Stable
+AGMATIN-MONOMER,Clim0,709.1,speB,More Stable
+AICARTRANSIMPCYCLO-CPLX,Clim0,352.50000000000006,purH,Less Stable
+AIRS-MONOMER,Clim0,339.6,purM,Less Stable
+AKBLIG-MONOMER,Clim0,720.0000000000001,kbl,More Stable
+ALARACEBIOSYN-MONOMER,Clim0,345.09999999999997,alr,Less Stable
+ALARACECAT-MONOMER,Clim0,594.3000000000001,dadX,Less Stable
+ALAS-MONOMER,Clim0,661.8000000000001,alaS,More Stable
+ALDDEHYDROGB-MONOMER,Clim0,305.9000000000001,aldB,Less Stable
+ALDHDEHYDROG-MONOMER,Clim0,161.10000000000002,puuC,Less Stable
+ALDOSE1EPIM-MONOMER,Clim0,720.0000000000001,galM,More Stable
+ALKAPHOSPHA-MONOMER,Clim0,720.0000000000001,phoA,More Stable
+ALPHA-AMYL-CYTO-MONOMER,Clim0,720.0000000000001,amyA,More Stable
+ALPHA-AMYL-PERI-MONOMER,Clim0,720.0000000000001,malS,More Stable
+ALPHAGALACTOSID-MONOMER,Clim0,254.8,melA,Less Stable
+ALTRO-OXIDOREDUCT-MONOMER,Clim0,275.1,uxaB,Less Stable
+AMP-NUCLEOSID-MONOMER,Clim0,635.3000000000001,amn,More Stable
+AMYLOMALT-MONOMER,Clim0,720.0000000000001,malQ,More Stable
+ANSA-MONOMER,Clim0,720.0000000000001,ansA,More Stable
+ANSB-MONOMER,Clim0,720.0000000000001,ansB,More Stable
+ANTHRANSYNCOMPI-MONOMER,Clim0,342.3,trpE,Less Stable
+APHA-MONOMER,Clim0,704.0,aphA,More Stable
+APPA-MONOMER,Clim0,694.4,appA,More Stable
+ARABISOM-MONOMER,Clim0,346.3,araA,Less Stable
+ARAF-MONOMER,Clim0,720.0000000000001,araF,More Stable
+ARAG-MONOMER,Clim0,235.3,araG,Less Stable
+ARAH-MONOMER,Clim0,242.50000000000006,araH,Less Stable
+ARCA-MONOMER,Clim0,346.9,arcA,Less Stable
+ARCB-MONOMER,Clim0,353.00000000000006,arcB,Less Stable
+ARGDECARBOXBIO-MONOMER,Clim0,325.6,speA,Less Stable
+ARGDECARBOXDEG-MONOMER,Clim0,308.6,adiA,Less Stable
+ARGS-MONOMER,Clim0,353.2,argS,Less Stable
+ARGSUCCINLYA-MONOMER,Clim0,335.2,argH,Less Stable
+ARGSUCCINSYN-MONOMER,Clim0,316.2,argG,Less Stable
+ARGT-MONOMER,Clim0,694.8000000000001,argT,More Stable
+AROA-MONOMER,Clim0,357.3,aroA,Less Stable
+AROB-MONOMER,Clim0,309.7,aroB,Less Stable
+AROC-MONOMER,Clim0,720.0000000000001,aroC,More Stable
+AROF-MONOMER,Clim0,134.5,aroF,Less Stable
+AROH-MONOMER,Clim0,617.5,aroH,More Stable
+ARTI-MONOMER,Clim0,354.2,artI,Less Stable
+ARTJ-MONOMER,Clim0,559.1,artJ,Less Stable
+ARTQ-MONOMER,Clim0,713.4,artQ,More Stable
+ASL-MONOMER,Clim0,333.0,purB,Less Stable
+ASNS-MONOMER,Clim0,693.0000000000001,asnS,More Stable
+ASNSYNB-MONOMER,Clim0,298.4,asnB,Less Stable
+ASP-SEMIALDEHYDE-DEHYDROGENASE-MONOMER,Clim0,332.70000000000005,asd,Less Stable
+ASPAMINOTRANS-MONOMER,Clim0,333.30000000000007,aspC,Less Stable
+ASPCARBCAT-MONOMER,Clim0,350.1,pyrB,Less Stable
+ASPCARBREG-MONOMER,Clim0,311.6000000000001,pyrI,Less Stable
+ASPKINIIHOMOSERDEHYDROGII-MONOMER,Clim0,293.4,metL,Less Stable
+ASPKINIII-MONOMER,Clim0,280.4,lysC,Less Stable
+ASPS-MONOMER,Clim0,720.0000000000001,aspS,More Stable
+ATOC-MONOMER,Clim0,333.8,atoC,Less Stable
+ATPA-MONOMER,Clim0,698.3000000000001,atpA,More Stable
+ATPB-MONOMER,Clim0,720.0000000000001,atpB,More Stable
+ATPC-MONOMER,Clim0,673.0,atpC,More Stable
+ATPD-MONOMER,Clim0,720.0000000000001,atpD,More Stable
+ATPE-MONOMER,Clim0,355.7,atpE,Less Stable
+ATPF-MONOMER,Clim0,720.0000000000001,atpF,More Stable
+ATPG-MONOMER,Clim0,720.0000000000001,atpG,More Stable
+ATPH-MONOMER,Clim0,720.0000000000001,atpH,More Stable
+ATPPHOSRIBOSTRANS-MONOMER,Clim0,296.5,hisG,Less Stable
+B0260-MONOMER,Clim0,247.7,mmuP,Less Stable
+B0427-MONOMER,Clim0,326.80000000000007,yajR,Less Stable
+B0899-MONOMER,Clim0,347.30000000000007,ygaM,Less Stable
+B2076-MONOMER,Clim0,720.0000000000001,mdtC,More Stable
+BADH-MONOMER,Clim0,312.8,betB,Less Stable
+BAER-MONOMER,Clim0,332.19999999999993,baeR,Less Stable
+BAES-MONOMER,Clim0,675.9,baeS,More Stable
+BARA-MONOMER,Clim0,359.1,barA,Less Stable
+BASR-MONOMER,Clim0,319.8,basR,Less Stable
+BASS-MONOMER,Clim0,359.49999999999994,basS,Less Stable
+BCCP-MONOMER,Clim0,330.90000000000003,accB,Less Stable
+BETA-GLUCURONID-MONOMER,Clim0,327.8,uidA,Less Stable
+BETAGALACTOSID-MONOMER,Clim0,323.90000000000003,lacZ,Less Stable
+BIOTIN-CARBOXYL-MONOMER,Clim0,676.7,accC,More Stable
+BTUE-MONOMER,Clim0,295.7,btuE,Less Stable
+CARBOXYL-TRANSFERASE-ALPHA-MONOMER,Clim0,720.0000000000001,accA,More Stable
+CARBOXYL-TRANSFERASE-BETA-MONOMER,Clim0,671.2,accD,More Stable
+CARBPSYN-LARGE,Clim0,344.8,carB,Less Stable
+CARDIOLIPSYN-MONOMER,Clim0,720.0000000000001,clsA,More Stable
+CARNRACE-MONOMER,Clim0,297.5,caiD,Less Stable
+CCME-MONOMER,Clim0,535.2,ccmE,Less Stable
+CDPDIGLYPYPHOSPHA-MONOMER,Clim0,720.0000000000001,cdh,More Stable
+CHAINI-MONOMER,Clim0,282.6,argI,Less Stable
+CHEB-MONOMER,Clim0,192.7,cheB,Less Stable
+CHEW-MONOMER,Clim0,104.50000000008478,cheW,Less Stable
+CHEY-MONOMER,Clim0,244.7,cheY,Less Stable
+CHORISMUTPREPHENDEHYDRAT-MONOMER,Clim0,322.5,pheA,Less Stable
+CITSYN-MONOMER,Clim0,314.3,gltA,Less Stable
+CMPKI-MONOMER,Clim0,326.70000000000005,cmk,Less Stable
+COBALADENOSYLTRANS-MONOMER,Clim0,303.1,btuR,Less Stable
+COBS-MONOMER,Clim0,720.0000000000001,cobS,More Stable
+COPROGENOXI-MONOMER,Clim0,314.3999999999999,hemF,Less Stable
+CORA-MONOMER,Clim0,706.6,corA,More Stable
+CPDB-MONOMER,Clim0,720.0000000000001,cpdB,More Stable
+CPM-KDOSYNTH-MONOMER,Clim0,647.5,kdsB,More Stable
+CPXA-MONOMER,Clim0,355.40000000000003,cpxA,Less Stable
+CPXR-MONOMER,Clim0,326.3,cpxR,Less Stable
+CREB-MONOMER,Clim0,291.7,creB,Less Stable
+CREC-MONOMER,Clim0,597.2,creC,Less Stable
+CRR-MONOMER,Clim0,320.1,crr,Less Stable
+CTPSYN-MONOMER,Clim0,720.0000000000001,pyrG,More Stable
+CYCLASE-MONOMER,Clim0,331.6000000000001,hisF,Less Stable
+CYDA-MONOMER,Clim0,720.0000000000001,cydA,More Stable
+CYDC-MONOMER,Clim0,720.0000000000001,cydC,More Stable
+CYDD-MONOMER,Clim0,720.0000000000001,cydD,More Stable
+CYOA-MONOMER,Clim0,720.0000000000001,cyoA,More Stable
+CYOB-MONOMER,Clim0,720.0000000000001,cyoB,More Stable
+CYSA-MONOMER,Clim0,215.0,cysA,Less Stable
+CYSP-MONOMER,Clim0,601.0000000000001,cysP,More Stable
+CYSS-MONOMER,Clim0,324.4,cysS,Less Stable
+CYSTATHIONINE-BETA-LYASE-MONOMER,Clim0,285.50000000000006,metC,Less Stable
+CYTDEAM-MONOMER,Clim0,720.0000000000001,codA,More Stable
+CYTIDEAM-MONOMER,Clim0,643.1000000000001,cdd,More Stable
+DALADALALIGA-MONOMER,Clim0,627.5000000000001,ddlA,More Stable
+DALADALALIGB-MONOMER,Clim0,720.0000000000001,ddlB,More Stable
+DAPASYN-MONOMER,Clim0,356.8,bioA,Less Stable
+DCTA-MONOMER,Clim0,335.50000000000006,dctA,Less Stable
+DCTP-DEAM-MONOMER,Clim0,288.7,dcd,Less Stable
+DCUS-MONOMER,Clim0,353.00000000000006,dcuS,Less Stable
+DCYSDESULF-MONOMER,Clim0,720.0000000000001,dcyD,More Stable
+DEOA-MONOMER,Clim0,720.0000000000001,deoA,More Stable
+DEOD-MONOMER,Clim0,720.0000000000001,deoD,More Stable
+DEOXYGLUCONOKIN-MONOMER,Clim0,357.40000000000003,kdgK,Less Stable
+DEOXYRIBOSE-P-ALD-MONOMER,Clim0,720.0000000000001,deoC,More Stable
+DGTPTRIPHYDRO-MONOMER,Clim0,698.0,dgt,More Stable
+DHHB-METHYLTRANSFER-MONOMER,Clim0,297.5,ubiG,Less Stable
+DIACYLGLYKIN-MONOMER,Clim0,720.0000000000001,dgkA,More Stable
+DIAMINOPIMEPIM-MONOMER,Clim0,355.40000000000003,dapF,Less Stable
+DIENOYLCOAREDUCT-MONOMER,Clim0,296.3,fadH,Less Stable
+DIHYDROFOLATEREDUCT-MONOMER,Clim0,693.8,folA,More Stable
+DIHYDROOROT-MONOMER,Clim0,338.5,pyrC,Less Stable
+DIHYDROOROTOX-MONOMER,Clim0,720.0000000000001,pyrD,More Stable
+DIHYDROPICRED-MONOMER,Clim0,718.9,dapB,More Stable
+DIHYDROXYACIDDEHYDRAT-MONOMER,Clim0,318.40000000000003,ilvD,Less Stable
+DISULFOXRED-MONOMER,Clim0,319.1000000000001,dsbA,Less Stable
+DLACTDEHYDROGFAD-MONOMER,Clim0,256.80000000000007,dld,Less Stable
+DLACTDEHYDROGNAD-MONOMER,Clim0,358.20000000000005,ldhA,Less Stable
+DPPA-MONOMER,Clim0,720.0000000000001,dppA,More Stable
+DPPB-MONOMER,Clim0,720.0000000000001,dppB,More Stable
+DPPD-MONOMER,Clim0,718.6000000000001,dppD,More Stable
+DPPF-MONOMER,Clim0,696.2,dppF,More Stable
+DSBC-MONOMER,Clim0,341.8999999999999,dsbC,Less Stable
+DSBD-MONOMER,Clim0,720.0000000000001,dsbD,More Stable
+DSBG-MONOMER,Clim0,675.9,dsbG,More Stable
+DSERDEAM-MONOMER,Clim0,600.2,dsdA,More Stable
+DTDPGLUCDEHYDRAT2-MONOMER,Clim0,702.0000000000001,rffG,More Stable
+DTDPGLUCOSEPP2-MONOMER,Clim0,641.2,rffH,More Stable
+DTMPKI-MONOMER,Clim0,306.7,tmk,Less Stable
+DUTP-PYROP-MONOMER,Clim0,720.0000000000001,dut,More Stable
+DXS-MONOMER,Clim0,643.5,dxs,More Stable
+E1O-MONOMER,Clim0,308.0,sucA,Less Stable
+E1P-MONOMER,Clim0,720.0000000000001,aceE,More Stable
+E2O-MONOMER,Clim0,342.1,sucB,Less Stable
+E2P-MONOMER,Clim0,346.70000000000005,aceF,Less Stable
+E3-MONOMER,Clim0,720.0000000000001,lpd,More Stable
+EG10015-MONOMER,Clim0,341.2,rodZ,Less Stable
+EG10018-MONOMER,Clim0,720.0000000000001,csrD,More Stable
+EG10021-MONOMER,Clim0,308.4,yjiA,Less Stable
+EG10040-MONOMER,Clim0,357.59999999999997,ampC,Less Stable
+EG10041-MONOMER,Clim0,246.70000000000002,ampD,Less Stable
+EG10042-MONOMER,Clim0,720.0000000000001,ampE,More Stable
+EG10043-MONOMER,Clim0,341.6,cysQ,Less Stable
+EG10044-MONOMER,Clim0,626.2999999999998,osmE,More Stable
+EG10048-MONOMER,Clim0,283.1,apaH,Less Stable
+EG10087-MONOMER,Clim0,294.5,ascG,Less Stable
+EG10108-MONOMER,Clim0,321.70000000000005,bcp,Less Stable
+EG10113-MONOMER,Clim0,681.2,bfr,More Stable
+EG10122-MONOMER,Clim0,720.0000000000001,bioH,More Stable
+EG10126-MONOMER,Clim0,720.0000000000001,btuB,More Stable
+EG10136-MONOMER,Clim0,303.6,cca,Less Stable
+EG10144-MONOMER,Clim0,597.1000000000001,chbF,Less Stable
+EG10153-MONOMER,Clim0,297.80000000000007,moeA,Less Stable
+EG10154-MONOMER,Clim0,680.5,moeB,More Stable
+EG10155-MONOMER,Clim0,720.0000000000001,cirA,More Stable
+EG10158-MONOMER,Clim0,671.8,clpP,More Stable
+EG10167-MONOMER,Clim0,320.70000000000005,cstA,Less Stable
+EG10168-MONOMER,Clim0,720.0000000000001,lnt,More Stable
+EG10201-MONOMER,Clim0,719.8000000000001,dacA,More Stable
+EG10202-MONOMER,Clim0,720.0000000000001,dacB,More Stable
+EG10203-MONOMER,Clim0,720.0000000000001,dacC,More Stable
+EG10204-MONOMER,Clim0,338.8999999999999,dam,Less Stable
+EG10211-MONOMER,Clim0,199.4,dcm,Less Stable
+EG10212-MONOMER,Clim0,340.3,dcp,Less Stable
+EG10215-MONOMER,Clim0,84.10000000001892,deaD,Less Stable
+EG10226-MONOMER,Clim0,314.90000000000003,dicA,Less Stable
+EG10239-MONOMER,Clim0,251.30000000000004,dnaG,Less Stable
+EG10240-MONOMER,Clim0,298.1,dnaJ,Less Stable
+EG10242-MONOMER,Clim0,358.9,dnaN,Less Stable
+EG10252-MONOMER,Clim0,720.0000000000001,ebgA,More Stable
+EG10272-MONOMER,Clim0,80.50000000004789,exbD,Less Stable
+EG10280-MONOMER,Clim0,656.7,fadL,More Stable
+EG10284-MONOMER,Clim0,208.90000000000003,fdhE,Less Stable
+EG10293-MONOMER,Clim0,720.0000000000001,fepA,More Stable
+EG10302-MONOMER,Clim0,720.0000000000001,fhuA,More Stable
+EG10306-MONOMER,Clim0,720.0000000000001,fhuE,More Stable
+EG10307-MONOMER,Clim0,608.9999999999999,fic,More Stable
+EG10321-MONOMER,Clim0,43.00000000000827,fliC,Less Stable
+EG10322-MONOMER,Clim0,102.9000000000057,fliL,Less Stable
+EG10329-MONOMER,Clim0,720.0000000000001,mutM,More Stable
+EG10339-MONOMER,Clim0,344.3,ftsA,Less Stable
+EG10343-MONOMER,Clim0,334.1,rsmD,Less Stable
+EG10346-MONOMER,Clim0,350.1,ftsY,Less Stable
+EG10355-MONOMER,Clim0,720.0000000000001,fucU,More Stable
+EG10360-MONOMER,Clim0,648.8,fusA,More Stable
+EG10374-MONOMER,Clim0,720.0000000000001,ggt,More Stable
+EG10376-MONOMER,Clim0,630.1999999999999,rsmG,More Stable
+EG10381-MONOMER,Clim0,328.30000000000007,glgX,Less Stable
+EG10416-MONOMER,Clim0,325.6,grpE,Less Stable
+EG10423-MONOMER,Clim0,301.7,gyrA,Less Stable
+EG10424-MONOMER,Clim0,352.8,gyrB,Less Stable
+EG10434-MONOMER,Clim0,720.0000000000001,hemY,More Stable
+EG10435-MONOMER,Clim0,701.5000000000001,hflC,More Stable
+EG10436-MONOMER,Clim0,720.0000000000001,hflK,More Stable
+EG10438-MONOMER,Clim0,720.0000000000001,hfq,More Stable
+EG10443-MONOMER,Clim0,338.8,hipA,Less Stable
+EG10454-MONOMER,Clim0,706.4,truA,More Stable
+EG10455-MONOMER,Clim0,615.0999999999999,skp,More Stable
+EG10459-MONOMER,Clim0,282.30000000000007,hsdR,Less Stable
+EG10460-MONOMER,Clim0,653.0000000000001,hsdS,More Stable
+EG10461-MONOMER,Clim0,345.4,htpG,Less Stable
+EG10462-MONOMER,Clim0,289.70000000000005,htpX,Less Stable
+EG10463-MONOMER,Clim0,353.00000000000006,degP,Less Stable
+EG10466-MONOMER,Clim0,333.0,hupA,Less Stable
+EG10467-MONOMER,Clim0,306.0,hupB,Less Stable
+EG10484-MONOMER,Clim0,251.30000000000004,hypB,Less Stable
+EG10486-MONOMER,Clim0,236.69999999999996,hypD,Less Stable
+EG10490-MONOMER,Clim0,697.7,argP,More Stable
+EG10504-MONOMER,Clim0,320.3,infA,Less Stable
+EG10523-MONOMER,Clim0,720.0000000000001,rsmA,More Stable
+EG10528-MONOMER,Clim0,720.0000000000001,lamB,More Stable
+EG10529-MONOMER,Clim0,329.40000000000003,lepA,Less Stable
+EG10530-MONOMER,Clim0,720.0000000000001,lepB,More Stable
+EG10542-MONOMER,Clim0,356.6,lon,Less Stable
+EG10544-MONOMER,Clim0,295.40000000000003,lpp,Less Stable
+EG10559-MONOMER,Clim0,296.1,malM,Less Stable
+EG10564-MONOMER,Clim0,315.70000000000005,malY,Less Stable
+EG10570-MONOMER,Clim0,331.1,map,Less Stable
+EG10595-MONOMER,Clim0,328.20000000000005,miaA,Less Stable
+EG10596-MONOMER,Clim0,343.4,minC,Less Stable
+EG10597-MONOMER,Clim0,332.70000000000005,minD,Less Stable
+EG10599-MONOMER,Clim0,720.0000000000001,groL,More Stable
+EG10600-MONOMER,Clim0,636.9,groS,More Stable
+EG10603-MONOMER,Clim0,329.3,mprA,Less Stable
+EG10606-MONOMER,Clim0,708.5,mrdA,More Stable
+EG10607-MONOMER,Clim0,720.0000000000001,mrdB,More Stable
+EG10608-MONOMER,Clim0,720.0000000000001,mreB,More Stable
+EG10609-MONOMER,Clim0,334.3,mreC,Less Stable
+EG10611-MONOMER,Clim0,313.4,mrp,Less Stable
+EG10612-MONOMER,Clim0,292.7,mrr,Less Stable
+EG10613-MONOMER,Clim0,337.80000000000007,msbA,Less Stable
+EG10624-MONOMER,Clim0,309.7,mutH,Less Stable
+EG10626-MONOMER,Clim0,302.7,mutT,Less Stable
+EG10657-MONOMER,Clim0,329.7,nlpA,Less Stable
+EG10658-MONOMER,Clim0,357.20000000000005,bamC,Less Stable
+EG10662-MONOMER,Clim0,334.6000000000001,nth,Less Stable
+EG10665-MONOMER,Clim0,633.0,nusA,More Stable
+EG10666-MONOMER,Clim0,313.1,nusB,Less Stable
+EG10667-MONOMER,Clim0,338.20000000000005,nusG,Less Stable
+EG10669-MONOMER,Clim0,720.0000000000001,ompA,More Stable
+EG10670-MONOMER,Clim0,697.0000000000001,ompC,More Stable
+EG10671-MONOMER,Clim0,667.5000000000001,ompF,More Stable
+EG10673-MONOMER,Clim0,690.1000000000001,ompT,More Stable
+EG10680-MONOMER,Clim0,720.0000000000001,osmC,More Stable
+EG10684-MONOMER,Clim0,336.20000000000005,pal,Less Stable
+EG10689-MONOMER,Clim0,289.70000000000005,pcm,Less Stable
+EG10694-MONOMER,Clim0,702.3000000000001,pepA,More Stable
+EG10695-MONOMER,Clim0,336.70000000000005,pepD,Less Stable
+EG10696-MONOMER,Clim0,333.1,pepN,Less Stable
+EG10697-MONOMER,Clim0,720.0000000000001,pepP,More Stable
+EG10698-MONOMER,Clim0,343.4,pepQ,Less Stable
+EG10735-MONOMER,Clim0,302.1000000000001,phoU,Less Stable
+EG10739-MONOMER,Clim0,676.9000000000001,pldB,More Stable
+EG10746-MONOMER,Clim0,356.00000000000006,polA,Less Stable
+EG10747-MONOMER,Clim0,294.3,polB,Less Stable
+EG10748-MONOMER,Clim0,342.1,mrcA,Less Stable
+EG10757-MONOMER,Clim0,298.80000000000007,ppiA,Less Stable
+EG10758-MONOMER,Clim0,595.2,ppiB,Less Stable
+EG10760-MONOMER,Clim0,339.7,prc,Less Stable
+EG10761-MONOMER,Clim0,580.9000000000001,prfA,Less Stable
+EG10762-MONOMER,Clim0,299.40000000000003,prfB,Less Stable
+EG10763-MONOMER,Clim0,350.80000000000007,priA,Less Stable
+EG10777-MONOMER,Clim0,720.0000000000001,pspB,More Stable
+EG10778-MONOMER,Clim0,228.5,pspC,Less Stable
+EG10785-MONOMER,Clim0,631.6,pth,More Stable
+EG10786-MONOMER,Clim0,354.6,ptrA,Less Stable
+EG10812-MONOMER,Clim0,288.9,queA,Less Stable
+EG10817-MONOMER,Clim0,638.7,rbsD,More Stable
+EG10824-MONOMER,Clim0,720.0000000000001,recB,More Stable
+EG10825-MONOMER,Clim0,720.0000000000001,recC,More Stable
+EG10827-MONOMER,Clim0,251.8,recE,Less Stable
+EG10829-MONOMER,Clim0,632.7000000000002,recG,More Stable
+EG10837-MONOMER,Clim0,293.20000000000005,rep,Less Stable
+EG10838-MONOMER,Clim0,677.2,rfaD,More Stable
+EG10839-MONOMER,Clim0,314.3,rfaH,Less Stable
+EG10841-MONOMER,Clim0,84.10000000001892,fliD,Less Stable
+EG10845-MONOMER,Clim0,355.00000000000006,rho,Less Stable
+EG10851-MONOMER,Clim0,301.0,rimJ,Less Stable
+EG10852-MONOMER,Clim0,318.0,rimK,Less Stable
+EG10853-MONOMER,Clim0,347.30000000000007,rimL,Less Stable
+EG10854-MONOMER,Clim0,720.0000000000001,rlpA,More Stable
+EG10855-MONOMER,Clim0,720.0000000000001,lptE,More Stable
+EG10856-MONOMER,Clim0,720.0000000000001,rna,More Stable
+EG10857-MONOMER,Clim0,332.19999999999993,rnc,Less Stable
+EG10858-MONOMER,Clim0,314.1000000000001,rnd,Less Stable
+EG10859-MONOMER,Clim0,341.2,rne,Less Stable
+EG10864-MONOMER,Clim0,354.50000000000006,rplA,Less Stable
+EG10865-MONOMER,Clim0,688.6,rplB,More Stable
+EG10866-MONOMER,Clim0,353.7,rplC,Less Stable
+EG10867-MONOMER,Clim0,703.7,rplD,More Stable
+EG10868-MONOMER,Clim0,614.0,rplE,More Stable
+EG10869-MONOMER,Clim0,655.9,rplF,More Stable
+EG10870-MONOMER,Clim0,318.2,rplI,Less Stable
+EG10871-MONOMER,Clim0,720.0000000000001,rplJ,More Stable
+EG10872-MONOMER,Clim0,358.20000000000005,rplK,Less Stable
+EG10873-MONOMER,Clim0,720.0000000000001,rplL,More Stable
+EG10874-MONOMER,Clim0,709.1,rplM,More Stable
+EG10875-MONOMER,Clim0,339.6,rplN,Less Stable
+EG10876-MONOMER,Clim0,311.9,rplO,Less Stable
+EG10877-MONOMER,Clim0,720.0000000000001,rplP,More Stable
+EG10878-MONOMER,Clim0,720.0000000000001,rplQ,More Stable
+EG10879-MONOMER,Clim0,336.8,rplR,Less Stable
+EG10880-MONOMER,Clim0,314.80000000000007,rplS,Less Stable
+EG10881-MONOMER,Clim0,327.4,rplT,Less Stable
+EG10882-MONOMER,Clim0,638.7,rplV,More Stable
+EG10883-MONOMER,Clim0,316.5,rplW,Less Stable
+EG10885-MONOMER,Clim0,337.9,rplY,Less Stable
+EG10886-MONOMER,Clim0,328.00000000000006,rpmB,Less Stable
+EG10888-MONOMER,Clim0,343.6,rpmD,Less Stable
+EG10893-MONOMER,Clim0,626.2,rpoA,More Stable
+EG10899-MONOMER,Clim0,218.00000000000003,rpoZ,Less Stable
+EG10901-MONOMER,Clim0,354.0,rpsB,Less Stable
+EG10902-MONOMER,Clim0,707.0,rpsC,More Stable
+EG10903-MONOMER,Clim0,620.6,rpsD,More Stable
+EG10904-MONOMER,Clim0,330.50000000000006,rpsE,Less Stable
+EG10905-MONOMER,Clim0,705.7,rpsF,More Stable
+EG10906-MONOMER,Clim0,711.0000000000001,rpsG,More Stable
+EG10907-MONOMER,Clim0,649.4,rpsH,More Stable
+EG10908-MONOMER,Clim0,720.0000000000001,rpsI,More Stable
+EG10909-MONOMER,Clim0,640.7000000000002,rpsJ,More Stable
+EG10910-MONOMER,Clim0,720.0000000000001,rpsK,More Stable
+EG10911-MONOMER,Clim0,686.0000000000001,rpsL,More Stable
+EG10912-MONOMER,Clim0,326.50000000000006,rpsM,Less Stable
+EG10913-MONOMER,Clim0,517.5,rpsN,Less Stable
+EG10914-MONOMER,Clim0,720.0000000000001,rpsO,More Stable
+EG10915-MONOMER,Clim0,529.7,rpsP,Less Stable
+EG10916-MONOMER,Clim0,720.0000000000001,rpsQ,More Stable
+EG10917-MONOMER,Clim0,584.0,rpsR,Less Stable
+EG10918-MONOMER,Clim0,333.1,rpsS,Less Stable
+EG10919-MONOMER,Clim0,587.1,rpsT,Less Stable
+EG10921-MONOMER,Clim0,347.79999999999995,ftnA,Less Stable
+EG10923-MONOMER,Clim0,302.50000000000006,ruvA,Less Stable
+EG10924-MONOMER,Clim0,212.0,ruvB,Less Stable
+EG10926-MONOMER,Clim0,352.2,sbcB,Less Stable
+EG10941-MONOMER,Clim0,705.0000000000001,selA,More Stable
+EG10942-MONOMER,Clim0,333.90000000000003,selB,Less Stable
+EG10949-MONOMER,Clim0,673.5000000000001,sfsA,More Stable
+EG10950-MONOMER,Clim0,719.7000000000002,slt,More Stable
+EG10951-MONOMER,Clim0,720.0000000000001,ytjB,More Stable
+EG10956-MONOMER,Clim0,680.9999999999999,sohB,More Stable
+EG10967-MONOMER,Clim0,341.8999999999999,trmH,Less Stable
+EG10968-MONOMER,Clim0,320.9,sppA,Less Stable
+EG10973-MONOMER,Clim0,320.3,gutQ,Less Stable
+EG10976-MONOMER,Clim0,312.8,ssb,Less Stable
+EG10977-MONOMER,Clim0,354.1,sspA,Less Stable
+EG10978-MONOMER,Clim0,353.5,sspB,Less Stable
+EG10983-MONOMER,Clim0,720.0000000000001,suhB,More Stable
+EG10985-MONOMER,Clim0,702.7,surA,More Stable
+EG10996-MONOMER,Clim0,656.2,tgt,More Stable
+EG10997-MONOMER,Clim0,327.5,mnmE,Less Stable
+EG11003-MONOMER,Clim0,344.3,tig,Less Stable
+EG11004-MONOMER,Clim0,306.5999999999999,ptrB,Less Stable
+EG11007-MONOMER,Clim0,694.7,tolA,More Stable
+EG11008-MONOMER,Clim0,679.2,tolB,More Stable
+EG11009-MONOMER,Clim0,720.0000000000001,tolC,More Stable
+EG11010-MONOMER,Clim0,716.4000000000001,tolQ,More Stable
+EG11011-MONOMER,Clim0,341.1,tolR,Less Stable
+EG11013-MONOMER,Clim0,357.50000000000006,topA,Less Stable
+EG11022-MONOMER,Clim0,720.0000000000001,trmA,More Stable
+EG11023-MONOMER,Clim0,352.6000000000001,trmD,Less Stable
+EG11033-MONOMER,Clim0,350.29999999999995,tsf,Less Stable
+EG11035-MONOMER,Clim0,720.0000000000001,tsx,More Stable
+EG11038-MONOMER,Clim0,332.6000000000001,tus,Less Stable
+EG11058-MONOMER,Clim0,310.1,ung,Less Stable
+EG11059-MONOMER,Clim0,336.8,usg,Less Stable
+EG11061-MONOMER,Clim0,720.0000000000001,uvrA,More Stable
+EG11063-MONOMER,Clim0,305.8,uvrC,Less Stable
+EG11071-MONOMER,Clim0,182.20000000000002,xerD,Less Stable
+EG11072-MONOMER,Clim0,683.4000000000001,xseA,More Stable
+EG11073-MONOMER,Clim0,351.8,xthA,Less Stable
+EG11082-MONOMER,Clim0,337.40000000000003,rihC,Less Stable
+EG11083-MONOMER,Clim0,720.0000000000001,rapA,More Stable
+EG11084-MONOMER,Clim0,720.0000000000001,mraZ,More Stable
+EG11085-MONOMER,Clim0,343.4,rsmH,Less Stable
+EG11088-MONOMER,Clim0,569.4000000000001,pdhR,Less Stable
+EG11091-MONOMER,Clim0,225.70000000000002,frsA,Less Stable
+EG11096-MONOMER,Clim0,688.3,yajC,More Stable
+EG11101-MONOMER,Clim0,320.9,aes,Less Stable
+EG11110-MONOMER,Clim0,359.1,ybgC,Less Stable
+EG11117-MONOMER,Clim0,322.4,yceB,Less Stable
+EG11118-MONOMER,Clim0,346.80000000000007,rluC,Less Stable
+EG11119-MONOMER,Clim0,269.1,yceD,Less Stable
+EG11121-MONOMER,Clim0,343.4,yciA,Less Stable
+EG11124-MONOMER,Clim0,720.0000000000001,ompW,More Stable
+EG11125-MONOMER,Clim0,313.4,yciE,Less Stable
+EG11126-MONOMER,Clim0,302.6,yciF,Less Stable
+EG11128-MONOMER,Clim0,246.70000000000002,yciH,Less Stable
+EG11132-MONOMER,Clim0,338.5,ppsR,Less Stable
+EG11134-MONOMER,Clim0,329.3,ydjA,Less Stable
+EG11147-MONOMER,Clim0,587.1,yffB,Less Stable
+EG11149-MONOMER,Clim0,328.69999999999993,gcvR,Less Stable
+EG11153-MONOMER,Clim0,283.4,rimM,Less Stable
+EG11157-MONOMER,Clim0,265.50000000000006,ygeA,Less Stable
+EG11160-MONOMER,Clim0,720.0000000000001,mscS,More Stable
+EG11164-MONOMER,Clim0,222.9,ygiB,Less Stable
+EG11165-MONOMER,Clim0,346.80000000000007,ygiC,Less Stable
+EG11171-MONOMER,Clim0,283.3,tsaD,Less Stable
+EG11177-MONOMER,Clim0,312.2000000000001,truB,Less Stable
+EG11178-MONOMER,Clim0,322.6,rbfA,Less Stable
+EG11179-MONOMER,Clim0,348.9,rimP,Less Stable
+EG11180-MONOMER,Clim0,720.0000000000001,mscL,More Stable
+EG11182-MONOMER,Clim0,649.5,yhfA,More Stable
+EG11183-MONOMER,Clim0,330.7,damX,Less Stable
+EG11188-MONOMER,Clim0,332.9,htrL,Less Stable
+EG11191-MONOMER,Clim0,329.7,slmA,Less Stable
+EG11192-MONOMER,Clim0,341.1,yicC,Less Stable
+EG11201-MONOMER,Clim0,83.80000000000435,yigA,Less Stable
+EG11202-MONOMER,Clim0,345.00000000000006,yigB,Less Stable
+EG11212-MONOMER,Clim0,534.6,nsrR,Less Stable
+EG11217-MONOMER,Clim0,720.0000000000001,creA,More Stable
+EG11238-MONOMER,Clim0,720.0000000000001,ybhB,More Stable
+EG11241-MONOMER,Clim0,618.4,ycaC,More Stable
+EG11244-MONOMER,Clim0,720.0000000000001,yggE,More Stable
+EG11246-MONOMER,Clim0,335.99999999999994,uspE,Less Stable
+EG11252-MONOMER,Clim0,350.7,mukE,Less Stable
+EG11254-MONOMER,Clim0,297.5,rlmH,Less Stable
+EG11256-MONOMER,Clim0,297.9,iraP,Less Stable
+EG11259-MONOMER,Clim0,720.0000000000001,rnr,More Stable
+EG11261-MONOMER,Clim0,288.0,nfsA,Less Stable
+EG11268-MONOMER,Clim0,354.8,fmt,Less Stable
+EG11281-MONOMER,Clim0,336.8,mutL,Less Stable
+EG11285-MONOMER,Clim0,351.6000000000001,glrR,Less Stable
+EG11288-MONOMER,Clim0,347.9,mak,Less Stable
+EG11291-MONOMER,Clim0,306.5999999999999,loiP,Less Stable
+EG11292-MONOMER,Clim0,686.6000000000001,yghA,More Stable
+EG11293-MONOMER,Clim0,707.7,lolB,More Stable
+EG11294-MONOMER,Clim0,628.6999999999999,ispE,More Stable
+EG11295-MONOMER,Clim0,720.0000000000001,wzzE,More Stable
+EG11298-MONOMER,Clim0,337.7,yhdE,Less Stable
+EG11309-MONOMER,Clim0,331.6000000000001,pdxI,Less Stable
+EG11311-MONOMER,Clim0,220.40000000000003,dusB,Less Stable
+EG11320-MONOMER,Clim0,276.1,nrdR,Less Stable
+EG11323-MONOMER,Clim0,311.1000000000001,ygfB,Less Stable
+EG11333-MONOMER,Clim0,331.19999999999993,ubiI,Less Stable
+EG11338-MONOMER,Clim0,236.39999999999995,msyB,Less Stable
+EG11344-MONOMER,Clim0,625.2,mnmA,More Stable
+EG11345-MONOMER,Clim0,720.0000000000001,hflD,More Stable
+EG11354-MONOMER,Clim0,720.0000000000001,emrA,More Stable
+EG11355-MONOMER,Clim0,107.00000000000853,fliA,Less Stable
+EG11361-MONOMER,Clim0,681.1,asmA,More Stable
+EG11376-MONOMER,Clim0,671.1000000000001,ftsP,More Stable
+EG11383-MONOMER,Clim0,648.3,elbB,More Stable
+EG11390-MONOMER,Clim0,309.8,uspA,Less Stable
+EG11391-MONOMER,Clim0,323.4,osmY,Less Stable
+EG11394-MONOMER,Clim0,358.20000000000005,fabR,Less Stable
+EG11396-MONOMER,Clim0,675.8,ubiD,More Stable
+EG11412-MONOMER,Clim0,497.8,holA,Less Stable
+EG11413-MONOMER,Clim0,647.7,holC,More Stable
+EG11423-MONOMER,Clim0,690.7,waaU,More Stable
+EG11430-MONOMER,Clim0,315.2,roxA,Less Stable
+EG11433-MONOMER,Clim0,317.4,msrA,Less Stable
+EG11436-MONOMER,Clim0,659.6,ahr,More Stable
+EG11437-MONOMER,Clim0,331.4,plsX,Less Stable
+EG11438-MONOMER,Clim0,310.49999999999994,yceF,Less Stable
+EG11441-MONOMER,Clim0,310.3,prlC,Less Stable
+EG11447-MONOMER,Clim0,451.20000000000005,csrA,Less Stable
+EG11449-MONOMER,Clim0,340.6,hdfR,Less Stable
+EG11470-MONOMER,Clim0,292.7,yigL,Less Stable
+EG11472-MONOMER,Clim0,292.3,rmuC,Less Stable
+EG11474-MONOMER,Clim0,290.4,ubiJ,Less Stable
+EG11488-MONOMER,Clim0,720.0000000000001,mliC,More Stable
+EG11494-MONOMER,Clim0,720.0000000000001,mltG,More Stable
+EG11497-MONOMER,Clim0,293.7,prmA,Less Stable
+EG11503-MONOMER,Clim0,352.90000000000003,trmO,Less Stable
+EG11506-MONOMER,Clim0,330.8,ftsH,Less Stable
+EG11507-MONOMER,Clim0,351.9,rlmE,Less Stable
+EG11511-MONOMER,Clim0,349.70000000000005,mog,Less Stable
+EG11517-MONOMER,Clim0,323.4,glpX,Less Stable
+EG11529-MONOMER,Clim0,321.1000000000001,ftsN,Less Stable
+EG11536-MONOMER,Clim0,319.7,yidE,Less Stable
+EG11537-MONOMER,Clim0,578.7,yceH,Less Stable
+EG11545-MONOMER,Clim0,15.900000000000594,flgL,Less Stable
+EG11549-MONOMER,Clim0,584.4,pepT,Less Stable
+EG11554-MONOMER,Clim0,356.3999999999999,stpA,Less Stable
+EG11569-MONOMER,Clim0,720.0000000000001,lptD,More Stable
+EG11570-MONOMER,Clim0,358.4,djlA,Less Stable
+EG11580-MONOMER,Clim0,350.6,ybiB,Less Stable
+EG11581-MONOMER,Clim0,301.40000000000003,hcxB,Less Stable
+EG11595-MONOMER,Clim0,37.10000000000138,moaA,Less Stable
+EG11597-MONOMER,Clim0,285.4,moaD,Less Stable
+EG11598-MONOMER,Clim0,346.50000000000006,moaE,Less Stable
+EG11600-MONOMER,Clim0,344.6,sseA,Less Stable
+EG11603-MONOMER,Clim0,639.6,ygiF,More Stable
+EG11613-MONOMER,Clim0,644.5000000000001,eptA,More Stable
+EG11619-MONOMER,Clim0,686.6000000000001,mfd,More Stable
+EG11620-MONOMER,Clim0,348.1,rnb,Less Stable
+EG11644-MONOMER,Clim0,313.1,ydeI,Less Stable
+EG11649-MONOMER,Clim0,720.0000000000001,yafC,More Stable
+EG11650-MONOMER,Clim0,97.30000000002369,yafD,Less Stable
+EG11652-MONOMER,Clim0,354.50000000000006,degS,Less Stable
+EG11656-MONOMER,Clim0,218.20000000000002,fliH,Less Stable
+EG11659-MONOMER,Clim0,720.0000000000001,yedD,More Stable
+EG11660-MONOMER,Clim0,266.20000000000005,yedE,Less Stable
+EG11662-MONOMER,Clim0,323.20000000000005,yedK,Less Stable
+EG11663-MONOMER,Clim0,277.9,slyD,Less Stable
+EG11666-MONOMER,Clim0,297.4,moaC,Less Stable
+EG11676-MONOMER,Clim0,611.2999999999998,hslV,More Stable
+EG11681-MONOMER,Clim0,285.3,hpf,Less Stable
+EG11682-MONOMER,Clim0,310.99999999999994,ptsN,Less Stable
+EG11684-MONOMER,Clim0,354.3,yicH,Less Stable
+EG11685-MONOMER,Clim0,720.0000000000001,yicI,More Stable
+EG11690-MONOMER,Clim0,304.4,yicN,Less Stable
+EG11702-MONOMER,Clim0,305.20000000000005,nudC,Less Stable
+EG11703-MONOMER,Clim0,720.0000000000001,acrA,More Stable
+EG11712-MONOMER,Clim0,282.5,yidQ,Less Stable
+EG11713-MONOMER,Clim0,355.2,yidR,Less Stable
+EG11722-MONOMER,Clim0,201.80000000000004,yieE,Less Stable
+EG11724-MONOMER,Clim0,720.0000000000001,adeP,More Stable
+EG11730-MONOMER,Clim0,318.7,viaA,Less Stable
+EG11731-MONOMER,Clim0,345.5,ravA,Less Stable
+EG11736-MONOMER,Clim0,720.0000000000001,gmhB,More Stable
+EG11738-MONOMER,Clim0,183.3,rsd,Less Stable
+EG11740-MONOMER,Clim0,678.7000000000002,nfrA,More Stable
+EG11743-MONOMER,Clim0,558.6,yddB,Less Stable
+EG11744-MONOMER,Clim0,353.8,pqqL,Less Stable
+EG11757-MONOMER,Clim0,326.70000000000005,tsaE,Less Stable
+EG11758-MONOMER,Clim0,604.5,nnr,More Stable
+EG11759-MONOMER,Clim0,346.2,yciK,Less Stable
+EG11762-MONOMER,Clim0,331.1,yibF,Less Stable
+EG11768-MONOMER,Clim0,352.2,selU,Less Stable
+EG11776-MONOMER,Clim0,344.70000000000005,ybfF,Less Stable
+EG11782-MONOMER,Clim0,720.0000000000001,smpB,More Stable
+EG11786-MONOMER,Clim0,334.1,yfiF,Less Stable
+EG11794-MONOMER,Clim0,355.8,rlmM,Less Stable
+EG11796-MONOMER,Clim0,352.6000000000001,lplA,Less Stable
+EG11802-MONOMER,Clim0,342.2,hybD,Less Stable
+EG11806-MONOMER,Clim0,269.2,yebE,Less Stable
+EG11807-MONOMER,Clim0,265.8,yebF,Less Stable
+EG11811-MONOMER,Clim0,354.40000000000003,aidB,Less Stable
+EG11820-MONOMER,Clim0,638.9,yceI,More Stable
+EG11829-MONOMER,Clim0,354.1,mobA,Less Stable
+EG11831-MONOMER,Clim0,322.8,srkA,Less Stable
+EG11837-MONOMER,Clim0,348.1,bipA,Less Stable
+EG11838-MONOMER,Clim0,720.0000000000001,yihL,More Stable
+EG11843-MONOMER,Clim0,720.0000000000001,yihQ,More Stable
+EG11846-MONOMER,Clim0,517.8,yihT,Less Stable
+EG11848-MONOMER,Clim0,357.0,yihV,Less Stable
+EG11850-MONOMER,Clim0,567.5999999999999,yihX,Less Stable
+EG11852-MONOMER,Clim0,328.6000000000001,dtd,Less Stable
+EG11859-MONOMER,Clim0,287.7,fdhD,Less Stable
+EG11870-MONOMER,Clim0,543.3999999999999,yiiM,Less Stable
+EG11876-MONOMER,Clim0,296.9,yiiS,Less Stable
+EG11878-MONOMER,Clim0,300.4,zapB,Less Stable
+EG11879-MONOMER,Clim0,720.0000000000001,rraA,More Stable
+EG11881-MONOMER,Clim0,356.3,hslU,Less Stable
+EG11884-MONOMER,Clim0,311.3,tehB,Less Stable
+EG11885-MONOMER,Clim0,720.0000000000001,opgG,More Stable
+EG11891-MONOMER,Clim0,324.1,yeeA,Less Stable
+EG11892-MONOMER,Clim0,234.10000000000002,sbmC,Less Stable
+EG11899-MONOMER,Clim0,227.70000000000005,recT,Less Stable
+EG11905-MONOMER,Clim0,234.20000000000002,fsaB,Less Stable
+EG11914-MONOMER,Clim0,720.0000000000001,eptC,More Stable
+EG11915-MONOMER,Clim0,677.7999999999998,nfi,More Stable
+EG11916-MONOMER,Clim0,720.0000000000001,yjaG,More Stable
+EG11919-MONOMER,Clim0,720.0000000000001,yjbB,More Stable
+EG11921-MONOMER,Clim0,246.70000000000002,rluF,Less Stable
+EG11928-MONOMER,Clim0,662.7,yjbJ,More Stable
+EG11932-MONOMER,Clim0,325.90000000000003,dusA,Less Stable
+EG11935-MONOMER,Clim0,284.6000000000001,yjbQ,Less Stable
+EG11939-MONOMER,Clim0,720.0000000000001,ghxP,More Stable
+EG11951-MONOMER,Clim0,62.60000000002136,yjcO,Less Stable
+EG11964-MONOMER,Clim0,594.9,yibL,Less Stable
+EG11967-MONOMER,Clim0,23.100000000004226,flgK,Less Stable
+EG12005-MONOMER,Clim0,703.4000000000001,yehS,More Stable
+EG12006-MONOMER,Clim0,720.0000000000001,btsR,More Stable
+EG12007-MONOMER,Clim0,322.4,btsS,Less Stable
+EG12008-MONOMER,Clim0,231.90000000000003,mlrA,Less Stable
+EG12013-MONOMER,Clim0,720.0000000000001,bglX,More Stable
+EG12015-MONOMER,Clim0,71.70000000002986,pbpG,Less Stable
+EG12019-MONOMER,Clim0,311.50000000000006,yohF,Less Stable
+EG12025-MONOMER,Clim0,348.50000000000006,sanA,Less Stable
+EG12026-MONOMER,Clim0,720.0000000000001,yeiG,More Stable
+EG12033-MONOMER,Clim0,265.50000000000006,psuG,Less Stable
+EG12035-MONOMER,Clim0,325.4,yeiP,Less Stable
+EG12043-MONOMER,Clim0,309.8,yejL,Less Stable
+EG12048-MONOMER,Clim0,624.5,yejK,More Stable
+EG12094-MONOMER,Clim0,338.40000000000003,sgrR,Less Stable
+EG12097-MONOMER,Clim0,306.5,yfiH,Less Stable
+EG12098-MONOMER,Clim0,350.00000000000006,rluD,Less Stable
+EG12099-MONOMER,Clim0,286.5,efp,Less Stable
+EG12104-MONOMER,Clim0,339.50000000000006,yeiR,Less Stable
+EG12111-MONOMER,Clim0,720.0000000000001,nlpD,More Stable
+EG12114-MONOMER,Clim0,350.1,prfC,Less Stable
+EG12117-MONOMER,Clim0,720.0000000000001,ompX,More Stable
+EG12120-MONOMER,Clim0,315.2,rssA,Less Stable
+EG12121-MONOMER,Clim0,260.4,rssB,Less Stable
+EG12123-MONOMER,Clim0,282.1,lrhA,Less Stable
+EG12133-MONOMER,Clim0,613.5,ucpA,More Stable
+EG12137-MONOMER,Clim0,643.2,nlpE,More Stable
+EG12146-MONOMER,Clim0,689.8,rapZ,More Stable
+EG12158-MONOMER,Clim0,563.3000000000001,rdgC,Less Stable
+EG12159-MONOMER,Clim0,301.20000000000005,ppnP,Less Stable
+EG12163-MONOMER,Clim0,720.0000000000001,rsmB,More Stable
+EG12165-MONOMER,Clim0,325.5,mukF,Less Stable
+EG12166-MONOMER,Clim0,323.90000000000003,elyC,Less Stable
+EG12167-MONOMER,Clim0,327.4,cmoM,Less Stable
+EG12172-MONOMER,Clim0,314.70000000000005,hinT,Less Stable
+EG12181-MONOMER,Clim0,301.7,grxD,Less Stable
+EG12182-MONOMER,Clim0,720.0000000000001,yajG,More Stable
+EG12188-MONOMER,Clim0,346.6000000000001,ptsP,Less Stable
+EG12193-MONOMER,Clim0,720.0000000000001,cbpA,More Stable
+EG12197-MONOMER,Clim0,720.0000000000001,seqA,More Stable
+EG12198-MONOMER,Clim0,270.80000000000007,chbG,Less Stable
+EG12200-MONOMER,Clim0,307.49999999999994,yegD,Less Stable
+EG12202-MONOMER,Clim0,720.0000000000001,treR,More Stable
+EG12211-MONOMER,Clim0,714.8000000000001,panZ,More Stable
+EG12213-MONOMER,Clim0,698.0,yhhM,More Stable
+EG12221-MONOMER,Clim0,296.3,acpT,Less Stable
+EG12224-MONOMER,Clim0,720.0000000000001,yhiI,More Stable
+EG12229-MONOMER,Clim0,720.0000000000001,yhiN,More Stable
+EG12233-MONOMER,Clim0,667.2,rsmJ,More Stable
+EG12234-MONOMER,Clim0,642.7,rlmJ,More Stable
+EG12248-MONOMER,Clim0,244.50000000000003,yhjD,Less Stable
+EG12251-MONOMER,Clim0,342.90000000000003,yhjG,Less Stable
+EG12254-MONOMER,Clim0,589.8999999999999,yhjJ,Less Stable
+EG12257-MONOMER,Clim0,670.8,bcsC,More Stable
+EG12258-MONOMER,Clim0,720.0000000000001,bcsZ,More Stable
+EG12259-MONOMER,Clim0,643.4000000000001,bcsB,More Stable
+EG12267-MONOMER,Clim0,290.4,eptB,Less Stable
+EG12273-MONOMER,Clim0,720.0000000000001,yiaF,More Stable
+EG12283-MONOMER,Clim0,554.1,yiaO,Less Stable
+EG12285-MONOMER,Clim0,310.3,sgbH,Less Stable
+EG12295-MONOMER,Clim0,656.5,yibN,More Stable
+EG12297-MONOMER,Clim0,346.70000000000005,envC,Less Stable
+EG12310-MONOMER,Clim0,623.4000000000001,pepB,More Stable
+EG12312-MONOMER,Clim0,289.8,coaE,Less Stable
+EG12313-MONOMER,Clim0,720.0000000000001,zapD,More Stable
+EG12318-MONOMER,Clim0,358.6,cueO,Less Stable
+EG12319-MONOMER,Clim0,359.0,can,Less Stable
+EG12334-MONOMER,Clim0,264.5,btuF,Less Stable
+EG12336-MONOMER,Clim0,333.20000000000005,yaeH,Less Stable
+EG12344-MONOMER,Clim0,720.0000000000001,pspF,More Stable
+EG12345-MONOMER,Clim0,646.7000000000002,ydfG,More Stable
+EG12365-MONOMER,Clim0,330.1,prkB,Less Stable
+EG12366-MONOMER,Clim0,603.4,rsmE,More Stable
+EG12371-MONOMER,Clim0,354.1,nlpI,Less Stable
+EG12372-MONOMER,Clim0,352.40000000000003,ygdG,Less Stable
+EG12373-MONOMER,Clim0,676.0000000000001,ppnN,More Stable
+EG12378-MONOMER,Clim0,345.00000000000006,yecD,Less Stable
+EG12385-MONOMER,Clim0,668.0,rcsD,More Stable
+EG12394-MONOMER,Clim0,241.30000000000004,msrB,Less Stable
+EG12399-MONOMER,Clim0,602.2,dhaM,More Stable
+EG12404-MONOMER,Clim0,720.0000000000001,ychN,More Stable
+EG12431-MONOMER,Clim0,242.0,puuR,Less Stable
+EG12433-MONOMER,Clim0,347.5,rluB,Less Stable
+EG12434-MONOMER,Clim0,350.2,ygiM,Less Stable
+EG12436-MONOMER,Clim0,253.90000000000003,rseP,Less Stable
+EG12440-MONOMER,Clim0,720.0000000000001,mpl,More Stable
+EG12443-MONOMER,Clim0,324.6000000000001,yggL,Less Stable
+EG12448-MONOMER,Clim0,687.6,ybcH,More Stable
+EG12449-MONOMER,Clim0,344.50000000000006,prmB,Less Stable
+EG12454-MONOMER,Clim0,296.1,ybaK,Less Stable
+EG12600-MONOMER,Clim0,301.3,yjjX,Less Stable
+EG12605-MONOMER,Clim0,226.60000000000002,yacL,Less Stable
+EG12633-MONOMER,Clim0,347.2,nudF,Less Stable
+EG12656-MONOMER,Clim0,285.8,mdaB,Less Stable
+EG12657-MONOMER,Clim0,320.8,ygiN,Less Stable
+EG12666-MONOMER,Clim0,720.0000000000001,lpxH,More Stable
+EG12691-MONOMER,Clim0,720.0000000000001,lapB,More Stable
+EG12692-MONOMER,Clim0,316.7,hcxA,Less Stable
+EG12702-MONOMER,Clim0,585.3,ycaK,Less Stable
+EG12703-MONOMER,Clim0,248.69999999999996,yccJ,Less Stable
+EG12705-MONOMER,Clim0,306.5,yggN,Less Stable
+EG12709-MONOMER,Clim0,355.3,yedI,Less Stable
+EG12712-MONOMER,Clim0,243.00000000000003,luxS,Less Stable
+EG12717-MONOMER,Clim0,720.0000000000001,mug,More Stable
+EG12794-MONOMER,Clim0,343.70000000000005,yhbY,Less Stable
+EG12799-MONOMER,Clim0,720.0000000000001,mlaD,More Stable
+EG12851-MONOMER,Clim0,277.9,ybeL,Less Stable
+EG12854-MONOMER,Clim0,528.2000000000002,cpoB,Less Stable
+EG12855-MONOMER,Clim0,344.3,matP,Less Stable
+EG12859-MONOMER,Clim0,720.0000000000001,opgD,More Stable
+EG12867-MONOMER,Clim0,223.60000000000002,ampH,Less Stable
+EG12870-MONOMER,Clim0,285.00000000000006,ycjF,Less Stable
+EG12875-MONOMER,Clim0,699.0,ybhC,More Stable
+EG12876-MONOMER,Clim0,720.0000000000001,tusE,More Stable
+EG13217-MONOMER,Clim0,111.2000000000672,ybaE,Less Stable
+EG20249-MONOMER,Clim0,231.5,uxuR,Less Stable
+EG20253-MONOMER,Clim0,315.9,xylR,Less Stable
+EG50001-MONOMER,Clim0,720.0000000000001,rplU,More Stable
+EG50002-MONOMER,Clim0,574.8000000000001,rpmA,Less Stable
+ENOLASE-MONOMER,Clim0,720.0000000000001,eno,More Stable
+ENOYL-ACP-REDUCT-NADH-MONOMER,Clim0,354.0,fabI,Less Stable
+ENTB-MONOMER,Clim0,199.1,entB,Less Stable
+ENVZ-MONOMER,Clim0,720.0000000000001,envZ,More Stable
+ERYTH4PDEHYDROG-MONOMER,Clim0,304.79999999999995,epd,Less Stable
+ERYTHRON4PDEHYDROG-MONOMER,Clim0,720.0000000000001,pdxB,More Stable
+EUTB-MONOMER,Clim0,666.4000000000001,eutB,More Stable
+EUTC-MONOMER,Clim0,325.7,eutC,Less Stable
+EXUT-MONOMER,Clim0,356.00000000000006,exuT,Less Stable
+FABA-MONOMER,Clim0,337.5,fabA,Less Stable
+FABB-MONOMER,Clim0,645.6,fabB,More Stable
+FABH-MONOMER,Clim0,321.5,fabH,Less Stable
+FABZ-MONOMER,Clim0,675.0,fabZ,More Stable
+FADA-MONOMER,Clim0,300.20000000000005,fadA,Less Stable
+FERREDOXIN-MONOMER,Clim0,395.2,fdx,Less Stable
+FGAMSYN-MONOMER,Clim0,358.5,purL,Less Stable
+FLAVODOXIN1-MONOMER,Clim0,318.40000000000003,fldA,Less Stable
+FLAVONADPREDUCT-MONOMER,Clim0,337.1000000000001,fpr,Less Stable
+FLGG-FLAGELLAR-MOTOR-ROD-PROTEIN,Clim0,305.7,flgG,Less Stable
+FLGH-FLAGELLAR-L-RING,Clim0,278.4,flgH,Less Stable
+FLIF-FLAGELLAR-MS-RING,Clim0,284.00000000000006,fliF,Less Stable
+FLIG-FLAGELLAR-SWITCH-PROTEIN,Clim0,227.1,fliG,Less Stable
+FLIM-FLAGELLAR-C-RING-SWITCH,Clim0,237.5,fliM,Less Stable
+FLIN-FLAGELLAR-C-RING-SWITCH,Clim0,253.8,fliN,Less Stable
+FMNREDUCT-MONOMER,Clim0,346.80000000000007,fre,Less Stable
+FOLC-MONOMER,Clim0,305.7,folC,Less Stable
+FOLD-MONOMER,Clim0,720.0000000000001,folD,More Stable
+FORMYLTHFDEFORMYL-MONOMER,Clim0,631.7,purU,More Stable
+FPPSYN-MONOMER,Clim0,351.00000000000006,ispA,Less Stable
+FRUA-MONOMER,Clim0,720.0000000000001,fruA,More Stable
+FRUB-MONOMER,Clim0,720.0000000000001,fruB,More Stable
+FRUCBISALD-CLASSI-MONOMER,Clim0,720.0000000000001,fbaB,More Stable
+FRUCTBISALD-CLASSII-MONOMER,Clim0,340.49999999999994,fbaA,Less Stable
+FTSE-MONOMER,Clim0,331.50000000000006,ftsE,Less Stable
+FTSX-MONOMER,Clim0,720.0000000000001,ftsX,More Stable
+FUCPALDOL-MONOMER,Clim0,286.6000000000001,fucA,Less Stable
+FUM-FE-S,Clim0,345.4,frdB,Less Stable
+FUM-FLAVO,Clim0,720.0000000000001,frdA,More Stable
+FUM-MEMB1,Clim0,333.1,frdC,Less Stable
+FUMA-MONOMER,Clim0,263.2,fumA,Less Stable
+FUMB-MONOMER,Clim0,339.0,fumB,Less Stable
+FUMC-MONOMER,Clim0,354.2,fumC,Less Stable
+G361-MONOMER,Clim0,72.30000000001472,flgE,Less Stable
+G495-MONOMER,Clim0,353.7,bglA,Less Stable
+G6093-MONOMER,Clim0,669.5,bamA,More Stable
+G6096-MONOMER,Clim0,346.80000000000007,tilS,Less Stable
+G6098-MONOMER,Clim0,530.6,yaeQ,Less Stable
+G6103-MONOMER,Clim0,313.5,yafV,Less Stable
+G6104-MONOMER,Clim0,580.6,ivy,Less Stable
+G6106-MONOMER,Clim0,353.1000000000001,gmhA,Less Stable
+G6107-MONOMER,Clim0,720.0000000000001,yafJ,More Stable
+G6158-MONOMER,Clim0,720.0000000000001,yagU,More Stable
+G6173-MONOMER,Clim0,212.60000000000002,rclB,Less Stable
+G6174-MONOMER,Clim0,626.5,rclA,More Stable
+G6175-MONOMER,Clim0,307.40000000000003,rclR,Less Stable
+G6176-MONOMER,Clim0,280.1,ykgE,Less Stable
+G6177-MONOMER,Clim0,208.30000000000004,ykgF,Less Stable
+G6178-MONOMER,Clim0,224.90000000000003,ykgG,Less Stable
+G6189-MONOMER,Clim0,597.2,yahJ,Less Stable
+G6190-MONOMER,Clim0,351.8,yahK,Less Stable
+G6194-MONOMER,Clim0,286.5,yahO,Less Stable
+G6196-MONOMER,Clim0,247.6,prpB,Less Stable
+G6198-MONOMER,Clim0,99.60000000003605,prpC,Less Stable
+G6199-MONOMER,Clim0,252.3,prpD,Less Stable
+G6201-MONOMER,Clim0,92.70000000004438,mhpR,Less Stable
+G6207-MONOMER,Clim0,193.9,yaiL,Less Stable
+G6209-MONOMER,Clim0,331.0,frmR,Less Stable
+G6227-MONOMER,Clim0,669.9,yaiW,More Stable
+G6230-MONOMER,Clim0,259.6,yaiI,Less Stable
+G6236-MONOMER,Clim0,302.3,yajO,Less Stable
+G6240-MONOMER,Clim0,644.7,yajQ,More Stable
+G6242-MONOMER,Clim0,720.0000000000001,ppiD,More Stable
+G6244-MONOMER,Clim0,317.4,fadM,Less Stable
+G6245-MONOMER,Clim0,321.8,queC,Less Stable
+G6247-MONOMER,Clim0,305.6,decR,Less Stable
+G6250-MONOMER,Clim0,331.8,ybaY,Less Stable
+G6255-MONOMER,Clim0,333.30000000000007,mscK,Less Stable
+G6265-MONOMER,Clim0,359.40000000000003,qmcA,Less Stable
+G6267-MONOMER,Clim0,333.5,fetB,Less Stable
+G6269-MONOMER,Clim0,720.0000000000001,ybbO,More Stable
+G6276-MONOMER,Clim0,338.5,allR,Less Stable
+G6281-MONOMER,Clim0,73.80000000004281,allB,Less Stable
+G6284-MONOMER,Clim0,649.8,allE,More Stable
+G6285-MONOMER,Clim0,231.79999999999998,allC,Less Stable
+G6302-MONOMER,Clim0,229.8,ybcM,Less Stable
+G6312-MONOMER,Clim0,576.9,borD,Less Stable
+G6318-MONOMER,Clim0,720.0000000000001,cusS,More Stable
+G6319-MONOMER,Clim0,337.1000000000001,cusR,Less Stable
+G6323-MONOMER,Clim0,720.0000000000001,ybdG,More Stable
+G6324-MONOMER,Clim0,310.0,ybdF,Less Stable
+G6326-MONOMER,Clim0,570.0000000000001,ybdK,Less Stable
+G6329-MONOMER,Clim0,233.8,ybdL,Less Stable
+G6358-MONOMER,Clim0,351.2,rihA,Less Stable
+G6359-MONOMER,Clim0,680.9999999999999,gltI,More Stable
+G6402-MONOMER,Clim0,327.2,ybhK,Less Stable
+G6407-MONOMER,Clim0,297.4,ybhP,Less Stable
+G6412-MONOMER,Clim0,670.9,ybhG,More Stable
+G6414-MONOMER,Clim0,720.0000000000001,fiu,More Stable
+G6418-MONOMER,Clim0,609.7,opgE,More Stable
+G6420-MONOMER,Clim0,301.7,mntR,Less Stable
+G6422-MONOMER,Clim0,345.4,ldtB,Less Stable
+G6423-MONOMER,Clim0,334.20000000000005,ybiT,Less Stable
+G6425-MONOMER,Clim0,720.0000000000001,ybiV,More Stable
+G6435-MONOMER,Clim0,263.3,rimO,Less Stable
+G6438-MONOMER,Clim0,558.2000000000002,gstB,Less Stable
+G6445-MONOMER,Clim0,720.0000000000001,ybjL,More Stable
+G6450-MONOMER,Clim0,720.0000000000001,ybjP,More Stable
+G6451-MONOMER,Clim0,329.3,ybjQ,Less Stable
+G6452-MONOMER,Clim0,674.5,amiD,More Stable
+G6453-MONOMER,Clim0,596.9,ybjS,Less Stable
+G6454-MONOMER,Clim0,720.0000000000001,ybjT,More Stable
+G6465-MONOMER,Clim0,340.7,lolA,Less Stable
+G6468-MONOMER,Clim0,307.9,ycaO,Less Stable
+G6473-MONOMER,Clim0,234.90000000000006,ycbJ,Less Stable
+G6475-MONOMER,Clim0,592.6,gloC,Less Stable
+G6487-MONOMER,Clim0,608.7000000000003,ycbX,More Stable
+G6488-MONOMER,Clim0,627.0000000000001,rlmL,More Stable
+G6491-MONOMER,Clim0,720.0000000000001,pqiB,More Stable
+G6493-MONOMER,Clim0,359.49999999999994,ycbZ,Less Stable
+G6496-MONOMER,Clim0,720.0000000000001,yccF,More Stable
+G6499-MONOMER,Clim0,593.0,yccU,Less Stable
+G6501-MONOMER,Clim0,679.0000000000001,rlmI,More Stable
+G6527-MONOMER,Clim0,720.0000000000001,efeO,More Stable
+G6539-MONOMER,Clim0,338.40000000000003,ghrA,Less Stable
+G6540-MONOMER,Clim0,299.6,ycdX,Less Stable
+G6541-MONOMER,Clim0,720.0000000000001,ycdY,More Stable
+G6550-MONOMER,Clim0,353.5,ymdB,Less Stable
+G6551-MONOMER,Clim0,322.6,clsC,Less Stable
+G6560-MONOMER,Clim0,352.8,yceM,Less Stable
+G6565-MONOMER,Clim0,654.7,lpoB,More Stable
+G6567-MONOMER,Clim0,447.4,nagZ,Less Stable
+G6568-MONOMER,Clim0,279.2,ycfP,Less Stable
+G6576-MONOMER,Clim0,299.0,nagK,Less Stable
+G6580-MONOMER,Clim0,318.2,nudJ,Less Stable
+G6602-MONOMER,Clim0,181.0,bluR,Less Stable
+G6614-MONOMER,Clim0,720.0000000000001,ycgJ,More Stable
+G6615-MONOMER,Clim0,319.29999999999995,pliG,Less Stable
+G6616-MONOMER,Clim0,275.4,ycgL,Less Stable
+G6617-MONOMER,Clim0,671.8,ycgM,More Stable
+G6619-MONOMER,Clim0,282.70000000000005,hlyE,Less Stable
+G6621-MONOMER,Clim0,299.9,ldcA,Less Stable
+G6622-MONOMER,Clim0,118.30000000000001,emtA,Less Stable
+G6623-MONOMER,Clim0,72.70000000003702,ycgR,Less Stable
+G6627-MONOMER,Clim0,341.8999999999999,dhaK,Less Stable
+G6628-MONOMER,Clim0,258.5,dhaR,Less Stable
+G6635-MONOMER,Clim0,720.0000000000001,yciO,More Stable
+G6638-MONOMER,Clim0,330.4,yciT,Less Stable
+G6640-MONOMER,Clim0,74.80000000004571,yciW,Less Stable
+G6646-MONOMER,Clim0,173.0,puuE,Less Stable
+G6658-MONOMER,Clim0,324.6000000000001,ycjW,Less Stable
+G6659-MONOMER,Clim0,650.4000000000001,ycjX,More Stable
+G6660-MONOMER,Clim0,645.6,tpx,More Stable
+G6661-MONOMER,Clim0,558.7999999999998,ycjG,Less Stable
+G6663-MONOMER,Clim0,674.2000000000002,ycjY,More Stable
+G6665-MONOMER,Clim0,604.9,mppA,More Stable
+G6674-MONOMER,Clim0,687.5,zntB,More Stable
+G6675-MONOMER,Clim0,98.00000000001376,ttcA,Less Stable
+G6699-MONOMER,Clim0,345.00000000000006,uspF,Less Stable
+G6702-MONOMER,Clim0,328.40000000000003,hslJ,Less Stable
+G6703-MONOMER,Clim0,648.0,ydbH,More Stable
+G6704-MONOMER,Clim0,720.0000000000001,ynbE,More Stable
+G6718-MONOMER,Clim0,202.0,paaJ,Less Stable
+G6719-MONOMER,Clim0,41.50000000000907,paaK,Less Stable
+G6720-MONOMER,Clim0,303.90000000000003,paaX,Less Stable
+G6721-MONOMER,Clim0,698.1000000000001,paaY,More Stable
+G6732-MONOMER,Clim0,720.0000000000001,hrpA,More Stable
+G6738-MONOMER,Clim0,210.10000000000002,ydcJ,Less Stable
+G6742-MONOMER,Clim0,619.8,ydcL,More Stable
+G6745-MONOMER,Clim0,316.40000000000003,sutR,Less Stable
+G6750-MONOMER,Clim0,325.1,ydcR,Less Stable
+G6759-MONOMER,Clim0,346.3,mnaT,Less Stable
+G6760-MONOMER,Clim0,331.70000000000005,curA,Less Stable
+G6763-MONOMER,Clim0,720.0000000000001,yncE,More Stable
+G6769-MONOMER,Clim0,249.20000000000002,yddH,Less Stable
+G6784-MONOMER,Clim0,189.6,dosC,Less Stable
+G6788-MONOMER,Clim0,720.0000000000001,ydeN,More Stable
+G6798-MONOMER,Clim0,93.30000000004954,lsrK,Less Stable
+G6804-MONOMER,Clim0,306.1,lsrF,Less Stable
+G6805-MONOMER,Clim0,219.5,lsrG,Less Stable
+G6806-MONOMER,Clim0,598.4000000000001,tam,Less Stable
+G6814-MONOMER,Clim0,612.1,rspR,More Stable
+G6823-MONOMER,Clim0,350.90000000000003,gnsB,Less Stable
+G6838-MONOMER,Clim0,207.30000000000004,rspB,Less Stable
+G6839-MONOMER,Clim0,627.5000000000001,rspA,More Stable
+G6841-MONOMER,Clim0,304.4,ynfB,Less Stable
+G6853-MONOMER,Clim0,718.3000000000002,ynfL,More Stable
+G6856-MONOMER,Clim0,264.3,ydgD,Less Stable
+G6860-MONOMER,Clim0,343.9,ydgH,Less Stable
+G6862-MONOMER,Clim0,340.3,folM,Less Stable
+G6865-MONOMER,Clim0,359.19999999999993,ydgA,Less Stable
+G6867-MONOMER,Clim0,720.0000000000001,uidR,More Stable
+G6868-MONOMER,Clim0,332.19999999999993,ydgJ,Less Stable
+G6875-MONOMER,Clim0,341.8,rsxG,Less Stable
+G6880-MONOMER,Clim0,341.70000000000005,anmK,Less Stable
+G6881-MONOMER,Clim0,324.6000000000001,slyB,Less Stable
+G6882-MONOMER,Clim0,311.4,slyA,Less Stable
+G6884-MONOMER,Clim0,672.6000000000001,ydhJ,More Stable
+G6886-MONOMER,Clim0,601.9000000000001,sodC,More Stable
+G6887-MONOMER,Clim0,342.5,ydhF,Less Stable
+G6892-MONOMER,Clim0,326.1,mepH,Less Stable
+G6895-MONOMER,Clim0,288.59999999999997,ydhR,Less Stable
+G6908-MONOMER,Clim0,322.1,sufC,Less Stable
+G6913-MONOMER,Clim0,345.90000000000003,ydiJ,Less Stable
+G6930-MONOMER,Clim0,312.6,yniA,Less Stable
+G6931-MONOMER,Clim0,720.0000000000001,yniB,More Stable
+G6932-MONOMER,Clim0,720.0000000000001,hxpB,More Stable
+G6946-MONOMER,Clim0,720.0000000000001,ydjY,More Stable
+G6948-MONOMER,Clim0,720.0000000000001,ynjA,More Stable
+G6949-MONOMER,Clim0,720.0000000000001,ynjB,More Stable
+G6952-MONOMER,Clim0,720.0000000000001,ynjE,More Stable
+G6957-MONOMER,Clim0,357.7,ydjF,Less Stable
+G6958-MONOMER,Clim0,338.1000000000001,ydjG,Less Stable
+G6959-MONOMER,Clim0,304.6,ydjH,Less Stable
+G6961-MONOMER,Clim0,279.00000000000006,ydjJ,Less Stable
+G6964-MONOMER,Clim0,13.900000000000038,yeaC,Less Stable
+G6966-MONOMER,Clim0,720.0000000000001,yeaD,More Stable
+G6967-MONOMER,Clim0,336.8,yeaE,Less Stable
+G6968-MONOMER,Clim0,720.0000000000001,mipA,More Stable
+G6969-MONOMER,Clim0,204.90000000000003,yeaG,Less Stable
+G6973-MONOMER,Clim0,293.7,yeaK,Less Stable
+G6985-MONOMER,Clim0,56.90000000001872,dmlR,Less Stable
+G6986-MONOMER,Clim0,265.2,dmlA,Less Stable
+G6990-MONOMER,Clim0,642.5,yeaY,More Stable
+G6991-MONOMER,Clim0,343.70000000000005,tsaB,Less Stable
+G6993-MONOMER,Clim0,720.0000000000001,yoaB,More Stable
+G6997-MONOMER,Clim0,720.0000000000001,yoaE,More Stable
+G7003-MONOMER,Clim0,354.6,kdgR,Less Stable
+G7005-MONOMER,Clim0,322.99999999999994,msrC,Less Stable
+G7008-MONOMER,Clim0,347.5,rsmF,Less Stable
+G7020-MONOMER,Clim0,284.70000000000005,cmoA,Less Stable
+G7021-MONOMER,Clim0,720.0000000000001,cmoB,More Stable
+G7024-MONOMER,Clim0,584.1,cutC,Less Stable
+G7025-MONOMER,Clim0,217.3,yecM,Less Stable
+G7039-MONOMER,Clim0,720.0000000000001,tcyJ,More Stable
+G7048-MONOMER,Clim0,315.3,yedP,Less Stable
+G7055-MONOMER,Clim0,311.50000000000006,hchA,Less Stable
+G7059-MONOMER,Clim0,334.8,msrP,Less Stable
+G7061-MONOMER,Clim0,720.0000000000001,zinT,More Stable
+G7063-MONOMER,Clim0,69.8000000000023,mtfA,Less Stable
+G7068-MONOMER,Clim0,347.5,yeeN,Less Stable
+G7080-MONOMER,Clim0,265.50000000000006,flu,Less Stable
+G7089-MONOMER,Clim0,301.1,yeeZ,Less Stable
+G7090-MONOMER,Clim0,336.6,wzzB,Less Stable
+G7108-MONOMER,Clim0,720.0000000000001,yegH,More Stable
+G7117-MONOMER,Clim0,349.90000000000003,yegP,Less Stable
+G7122-MONOMER,Clim0,337.2,yegR,Less Stable
+G7123-MONOMER,Clim0,344.1,yegS,Less Stable
+G7132-MONOMER,Clim0,287.6000000000001,yegV,Less Stable
+G7139-MONOMER,Clim0,322.5,rcnB,Less Stable
+G7145-MONOMER,Clim0,68.50000000002,preT,Less Stable
+G7147-MONOMER,Clim0,202.6,mepS,Less Stable
+G7156-MONOMER,Clim0,720.0000000000001,yfaT,More Stable
+G7160-MONOMER,Clim0,237.9,rhmD,Less Stable
+G7165-MONOMER,Clim0,295.9,ais,Less Stable
+G7166-MONOMER,Clim0,286.6000000000001,arnB,Less Stable
+G7167-MONOMER,Clim0,696.3,arnC,More Stable
+G7170-MONOMER,Clim0,720.0000000000001,arnT,More Stable
+G7173-MONOMER,Clim0,604.9,elaB,More Stable
+G7175-MONOMER,Clim0,338.3,rbn,Less Stable
+G7185-MONOMER,Clim0,720.0000000000001,yfbR,More Stable
+G7187-MONOMER,Clim0,603.9,hxpA,More Stable
+G7188-MONOMER,Clim0,720.0000000000001,yfbU,More Stable
+G7191-MONOMER,Clim0,271.6,yfcD,Less Stable
+G7192-MONOMER,Clim0,328.8,yfcE,Less Stable
+G7193-MONOMER,Clim0,354.1,yfcF,Less Stable
+G7194-MONOMER,Clim0,290.6,yfcG,Less Stable
+G7196-MONOMER,Clim0,351.8,yfcH,Less Stable
+G7199-MONOMER,Clim0,329.1,mnmC,Less Stable
+G7212-MONOMER,Clim0,717.9000000000001,fadJ,More Stable
+G7213-MONOMER,Clim0,720.0000000000001,fadI,More Stable
+G7216-MONOMER,Clim0,720.0000000000001,mlaA,More Stable
+G7218-MONOMER,Clim0,332.0,intS,Less Stable
+G7220-MONOMER,Clim0,720.0000000000001,yfdH,More Stable
+G7250-MONOMER,Clim0,241.30000000000004,fryB,Less Stable
+G7255-MONOMER,Clim0,51.700000000016345,insL3,Less Stable
+G7262-MONOMER,Clim0,720.0000000000001,murR,More Stable
+G7265-MONOMER,Clim0,622.7,yfeW,More Stable
+G7266-MONOMER,Clim0,511.29999999999995,yfeX,Less Stable
+G7267-MONOMER,Clim0,720.0000000000001,yfeY,More Stable
+G7269-MONOMER,Clim0,334.70000000000005,ypeA,Less Stable
+G7271-MONOMER,Clim0,358.4,eutL,Less Stable
+G7287-MONOMER,Clim0,349.90000000000003,eutM,Less Stable
+G7290-MONOMER,Clim0,250.90000000000006,eutQ,Less Stable
+G7295-MONOMER,Clim0,351.6000000000001,ypfG,Less Stable
+G7297-MONOMER,Clim0,720.0000000000001,tmcA,More Stable
+G7298-MONOMER,Clim0,311.50000000000006,ypfJ,Less Stable
+G7312-MONOMER,Clim0,307.3,yfgD,Less Stable
+G7313-MONOMER,Clim0,341.70000000000005,hda,Less Stable
+G7319-MONOMER,Clim0,333.1,der,Less Stable
+G7320-MONOMER,Clim0,720.0000000000001,bamB,More Stable
+G7321-MONOMER,Clim0,282.2,yfgM,Less Stable
+G7323-MONOMER,Clim0,720.0000000000001,yfhM,More Stable
+G7327-MONOMER,Clim0,324.7,trmJ,Less Stable
+G7342-MONOMER,Clim0,612.6000000000001,yphF,More Stable
+G7343-MONOMER,Clim0,297.6,yphG,Less Stable
+G7345-MONOMER,Clim0,648.3,glrK,More Stable
+G7348-MONOMER,Clim0,621.8000000000001,rseB,More Stable
+G7352-MONOMER,Clim0,720.0000000000001,bamD,More Stable
+G7356-MONOMER,Clim0,570.6,yfjD,Less Stable
+G7409-MONOMER,Clim0,335.4,pncC,Less Stable
+G7416-MONOMER,Clim0,319.90000000000003,ygbI,Less Stable
+G7422-MONOMER,Clim0,720.0000000000001,truD,More Stable
+G7423-MONOMER,Clim0,635.3000000000001,ispD,More Stable
+G7431-MONOMER,Clim0,720.0000000000001,queD,More Stable
+G7434-MONOMER,Clim0,720.0000000000001,ygcP,More Stable
+G7442-MONOMER,Clim0,241.70000000000002,ygcE,Less Stable
+G7443-MONOMER,Clim0,259.8,queE,Less Stable
+G7448-MONOMER,Clim0,720.0000000000001,yqcA,More Stable
+G7449-MONOMER,Clim0,356.6,truC,Less Stable
+G7452-MONOMER,Clim0,332.5,queF,Less Stable
+G7453-MONOMER,Clim0,315.3,ygdI,Less Stable
+G7455-MONOMER,Clim0,310.99999999999994,csdE,Less Stable
+G7456-MONOMER,Clim0,346.0,tcdA,Less Stable
+G7457-MONOMER,Clim0,112.60000000001872,mltA,Less Stable
+G7458-MONOMER,Clim0,291.1,amiC,Less Stable
+G7459-MONOMER,Clim0,329.0,rppH,Less Stable
+G7461-MONOMER,Clim0,278.0,ygdR,Less Stable
+G7462-MONOMER,Clim0,354.2,tas,Less Stable
+G7463-MONOMER,Clim0,614.6,kduI,More Stable
+G7464-MONOMER,Clim0,81.30000000001064,yqeF,Less Stable
+G7485-MONOMER,Clim0,112.50000000007228,xdhA,Less Stable
+G7486-MONOMER,Clim0,290.1,xdhB,Less Stable
+G7487-MONOMER,Clim0,87.80000000001824,xdhC,Less Stable
+G7488-MONOMER,Clim0,87.70000000001406,ygeV,Less Stable
+G7489-MONOMER,Clim0,293.30000000000007,ygeW,Less Stable
+G7491-MONOMER,Clim0,313.6,ygeY,Less Stable
+G7504-MONOMER,Clim0,299.7,ghxQ,Less Stable
+G7511-MONOMER,Clim0,326.9,ygfZ,Less Stable
+G7513-MONOMER,Clim0,311.8,yqfB,Less Stable
+G7524-MONOMER,Clim0,322.5,yqgE,Less Stable
+G7525-MONOMER,Clim0,323.90000000000003,yqgF,Less Stable
+G7527-MONOMER,Clim0,342.90000000000003,yggS,Less Stable
+G7530-MONOMER,Clim0,306.1,rdgB,Less Stable
+G7533-MONOMER,Clim0,317.9,mltC,Less Stable
+G7543-MONOMER,Clim0,316.00000000000006,glcG,Less Stable
+G7544-MONOMER,Clim0,73.00000000002731,glcE,Less Stable
+G7545-MONOMER,Clim0,217.20000000000002,glcD,Less Stable
+G7546-MONOMER,Clim0,78.0000000000096,glcC,Less Stable
+G7553-MONOMER,Clim0,337.80000000000007,yghU,Less Stable
+G7558-MONOMER,Clim0,687.0000000000001,gpr,More Stable
+G7559-MONOMER,Clim0,708.6,yqhA,More Stable
+G7564-MONOMER,Clim0,693.6000000000001,yqhD,More Stable
+G7574-MONOMER,Clim0,349.90000000000003,ygiW,Less Stable
+G7575-MONOMER,Clim0,330.7,qseB,Less Stable
+G7579-MONOMER,Clim0,324.0,cpdA,Less Stable
+G7590-MONOMER,Clim0,344.3,hldE,Less Stable
+G7597-MONOMER,Clim0,284.5,ygjH,Less Stable
+G7603-MONOMER,Clim0,352.50000000000006,rlmG,Less Stable
+G7606-MONOMER,Clim0,316.80000000000007,ygjR,Less Stable
+G7612-MONOMER,Clim0,338.5,yqjD,Less Stable
+G7613-MONOMER,Clim0,321.9,yqjE,Less Stable
+G7616-MONOMER,Clim0,720.0000000000001,yqjG,More Stable
+G7619-MONOMER,Clim0,339.50000000000006,yhaJ,Less Stable
+G7630-MONOMER,Clim0,318.6,agaR,Less Stable
+G7641-MONOMER,Clim0,708.1,rsmI,More Stable
+G7642-MONOMER,Clim0,336.8,lpoA,Less Stable
+G7646-MONOMER,Clim0,720.0000000000001,yraR,More Stable
+G7647-MONOMER,Clim0,318.9,yhbO,Less Stable
+G7648-MONOMER,Clim0,720.0000000000001,yhbP,More Stable
+G7650-MONOMER,Clim0,594.7,yhbS,Less Stable
+G7654-MONOMER,Clim0,338.8999999999999,yhbW,Less Stable
+G7658-MONOMER,Clim0,323.20000000000005,mlaB,Less Stable
+G7659-MONOMER,Clim0,317.4,mlaC,Less Stable
+G7662-MONOMER,Clim0,316.40000000000003,kdsD,Less Stable
+G7663-MONOMER,Clim0,259.6,kdsC,Less Stable
+G7664-MONOMER,Clim0,358.8,lptC,Less Stable
+G7680-MONOMER,Clim0,342.8,zapE,Less Stable
+G7682-MONOMER,Clim0,599.7000000000002,degQ,Less Stable
+G7688-MONOMER,Clim0,659.5,aaeR,More Stable
+G7689-MONOMER,Clim0,308.50000000000006,tldD,Less Stable
+G7690-MONOMER,Clim0,720.0000000000001,yhdP,More Stable
+G7696-MONOMER,Clim0,601.3000000000001,yrdA,More Stable
+G7698-MONOMER,Clim0,336.8,tsaC,Less Stable
+G7713-MONOMER,Clim0,359.90000000000003,tusC,Less Stable
+G7716-MONOMER,Clim0,688.6,fkpA,More Stable
+G7717-MONOMER,Clim0,341.8999999999999,kefG,Less Stable
+G7727-MONOMER,Clim0,308.1,frlR,Less Stable
+G7735-MONOMER,Clim0,318.2,yhfZ,Less Stable
+G7739-MONOMER,Clim0,704.9,hofM,More Stable
+G7740-MONOMER,Clim0,314.6,nudE,Less Stable
+G7744-MONOMER,Clim0,231.00000000000006,hslO,Less Stable
+G7751-MONOMER,Clim0,96.20000000006381,rtcB,Less Stable
+G7756-MONOMER,Clim0,318.40000000000003,yhhW,Less Stable
+G7757-MONOMER,Clim0,335.1,yhhX,Less Stable
+G7767-MONOMER,Clim0,678.7000000000002,dcrB,More Stable
+G7790-MONOMER,Clim0,332.3999999999999,dgoR,Less Stable
+G7800-MONOMER,Clim0,689.2,wecF,More Stable
+G7804-MONOMER,Clim0,271.30000000000007,ysgA,Less Stable
+G7832-MONOMER,Clim0,701.1,fxsA,More Stable
+G7834-MONOMER,Clim0,357.3,yjeI,Less Stable
+G7837-MONOMER,Clim0,324.8,blc,Less Stable
+G7840-MONOMER,Clim0,720.0000000000001,mscM,More Stable
+G7841-MONOMER,Clim0,340.49999999999994,rsgA,Less Stable
+G7842-MONOMER,Clim0,720.0000000000001,orn,More Stable
+G7845-MONOMER,Clim0,350.00000000000006,rlmB,Less Stable
+G7852-MONOMER,Clim0,693.9000000000001,bsmA,More Stable
+G7853-MONOMER,Clim0,343.1,yjfP,Less Stable
+G7854-MONOMER,Clim0,638.2000000000002,ulaR,More Stable
+G7858-MONOMER,Clim0,306.3,ulaD,Less Stable
+G7864-MONOMER,Clim0,300.1,ytfB,Less Stable
+G7868-MONOMER,Clim0,350.50000000000006,qorB,Less Stable
+G7871-MONOMER,Clim0,297.1,ytfJ,Less Stable
+G7874-MONOMER,Clim0,720.0000000000001,tamA,More Stable
+G7875-MONOMER,Clim0,358.00000000000006,tamB,Less Stable
+G7876-MONOMER,Clim0,319.0,ytfP,Less Stable
+G7877-MONOMER,Clim0,333.8,ridA,Less Stable
+G7886-MONOMER,Clim0,306.9,yjgM,Less Stable
+G7889-MONOMER,Clim0,720.0000000000001,lptG,More Stable
+G7890-MONOMER,Clim0,323.30000000000007,yjgR,Less Stable
+G7909-MONOMER,Clim0,690.5,yjhU,More Stable
+G7910-MONOMER,Clim0,301.8999999999999,yjhG,Less Stable
+G7911-MONOMER,Clim0,285.6,yjhH,Less Stable
+G7915-MONOMER,Clim0,339.2,sgcQ,Less Stable
+G7916-MONOMER,Clim0,295.9,yjhP,Less Stable
+G7920-MONOMER,Clim0,720.0000000000001,nanM,More Stable
+G7921-MONOMER,Clim0,720.0000000000001,nanC,More Stable
+G7925-MONOMER,Clim0,720.0000000000001,iadA,More Stable
+G7931-MONOMER,Clim0,219.8,yjiL,Less Stable
+G7933-MONOMER,Clim0,720.0000000000001,yjiN,More Stable
+G7936-MONOMER,Clim0,274.99999999999994,yjiR,Less Stable
+G7950-MONOMER,Clim0,694.2,rsmC,More Stable
+GALACTARDEHYDRA-MONOMER,Clim0,193.5,garD,Less Stable
+GALACTOKIN-MONOMER,Clim0,720.0000000000001,galK,More Stable
+GALACTONATE-DEHYDRATASE-MONOMER,Clim0,208.00000000000003,dgoD,Less Stable
+GALACTURIDYLYLTRANS-MONOMER,Clim0,720.0000000000001,galT,More Stable
+GAPDH-A-MONOMER,Clim0,720.0000000000001,gapA,More Stable
+GART-MONOMER,Clim0,720.0000000000001,purN,More Stable
+GARTRANSFORMYL2-MONOMER,Clim0,357.40000000000003,purT,Less Stable
+GCVP-MONOMER,Clim0,296.9,gcvP,Less Stable
+GLNE-MONOMER,Clim0,720.0000000000001,glnE,More Stable
+GLNH-MONOMER,Clim0,706.4,glnH,More Stable
+GLNP-MONOMER,Clim0,720.0000000000001,glnP,More Stable
+GLNQ-MONOMER,Clim0,292.6,glnQ,Less Stable
+GLNS-MONOMER,Clim0,688.5,glnS,More Stable
+GLPT-MONOMER,Clim0,710.0000000000001,glpT,More Stable
+GLTL-MONOMER,Clim0,679.8000000000001,gltL,More Stable
+GLU6PDEHYDROG-MONOMER,Clim0,697.2,zwf,More Stable
+GLUC1PADENYLTRANS-MONOMER,Clim0,720.0000000000001,glgC,More Stable
+GLUC1PURIDYLTRANS-MONOMER,Clim0,342.70000000000005,galU,Less Stable
+GLUCARDEHYDRA-MONOMER,Clim0,315.5,gudD,Less Stable
+GLUCDEHYDROG-MONOMER,Clim0,720.0000000000001,gcd,More Stable
+GLUCOKIN-MONOMER,Clim0,720.0000000000001,glk,More Stable
+GLUCONREDUCT-MONOMER,Clim0,287.1,idnO,Less Stable
+GLUCOSAMINE-6-P-DEAMIN-MONOMER,Clim0,349.90000000000003,nagB,Less Stable
+GLUCOSE-1-PHOSPHAT-MONOMER,Clim0,718.3000000000002,agp,More Stable
+GLURS-MONOMER,Clim0,720.0000000000001,gltX,More Stable
+GLUSYNLARGE-MONOMER,Clim0,293.30000000000007,gltB,Less Stable
+GLUSYNSMALL-MONOMER,Clim0,276.1,gltD,Less Stable
+GLUTAMIDOTRANS-MONOMER,Clim0,318.9,hisH,Less Stable
+GLUTAMINESYN-MONOMER,Clim0,689.8,glnA,More Stable
+GLUTATHIONE-REDUCT-NADPH-MONOMER,Clim0,691.4000000000001,gor,More Stable
+GLUTATHIONE-SYN-MONOMER,Clim0,611.2,gshB,More Stable
+GLUTKIN-MONOMER,Clim0,320.8,proB,Less Stable
+GLUTRACE-MONOMER,Clim0,720.0000000000001,murI,More Stable
+GLUTSEMIALDEHYDROG-MONOMER,Clim0,340.8,proA,Less Stable
+GLY3KIN-MONOMER,Clim0,289.40000000000003,glxK,Less Stable
+GLYC3PDEHYDROGBIOSYN-MONOMER,Clim0,347.9,gpsA,Less Stable
+GLYCDEH-MONOMER,Clim0,344.9,gldA,Less Stable
+GLYCEROL-3-P-ACYLTRANSFER-MONOMER,Clim0,720.0000000000001,plsB,More Stable
+GLYCEROL-KIN-MONOMER,Clim0,323.90000000000003,glpK,Less Stable
+GLYCOGEN-BRANCH-MONOMER,Clim0,720.0000000000001,glgB,More Stable
+GLYCOGENSYN-MONOMER,Clim0,685.7,glgA,More Stable
+GLYCOPHOSPHORYL-MONOMER,Clim0,316.40000000000003,glgP,Less Stable
+GLYCPDIESTER-CYTO-MONOMER,Clim0,329.5,ugpQ,Less Stable
+GLYCPDIESTER-PERI-MONOMER,Clim0,686.4,glpQ,More Stable
+GLYCRIBONUCSYN-MONOMER,Clim0,628.7999999999998,purD,More Stable
+GLYOHMETRANS-MONOMER,Clim0,330.4,glyA,Less Stable
+GLYOXI-MONOMER,Clim0,326.6000000000001,gloA,Less Stable
+GLYOXII-MONOMER,Clim0,285.50000000000006,gloB,Less Stable
+GLYQ-MONOMER,Clim0,720.0000000000001,glyQ,More Stable
+GLYS-MONOMER,Clim0,353.3,glyS,Less Stable
+GMP-REDUCT-MONOMER,Clim0,596.1,guaC,Less Stable
+GMP-SYN-MONOMER,Clim0,356.00000000000006,guaA,Less Stable
+GNTT-MONOMER,Clim0,602.2,gntT,More Stable
+GPMA-MONOMER,Clim0,620.1,gpmA,More Stable
+GPT-MONOMER,Clim0,332.9,gpt,Less Stable
+GRXB-MONOMER,Clim0,334.3,grxB,Less Stable
+GRXC-MONOMER,Clim0,313.7,grxC,Less Stable
+GSAAMINOTRANS-MONOMER,Clim0,680.2,hemL,More Stable
+GSP-MONOMER,Clim0,310.1,gss,Less Stable
+GST-MONOMER,Clim0,341.40000000000003,gstA,Less Stable
+GTP-CYCLOHYDRO-II-MONOMER,Clim0,305.9000000000001,ribA,Less Stable
+GUANYL-KIN-MONOMER,Clim0,532.2,gmk,Less Stable
+H2NEOPTERINALDOL-MONOMER,Clim0,707.2000000000002,folB,More Stable
+H2PTEROATESYNTH-MONOMER,Clim0,720.0000000000001,folP,More Stable
+HEMN-MONOMER,Clim0,253.90000000000003,hemN,Less Stable
+HEMX-MONOMER,Clim0,359.0,hemX,Less Stable
+HISJ-MONOMER,Clim0,720.0000000000001,hisJ,More Stable
+HISM-MONOMER,Clim0,342.6,hisM,Less Stable
+HISP-MONOMER,Clim0,675.0,hisP,More Stable
+HISQ-MONOMER,Clim0,337.40000000000003,hisQ,Less Stable
+HISS-MONOMER,Clim0,628.2000000000002,hisS,More Stable
+HISTCYCLOPRATPPHOS,Clim0,720.0000000000001,hisI,More Stable
+HISTDEHYD-MONOMER,Clim0,358.20000000000005,hisD,Less Stable
+HISTPHOSTRANS-MONOMER,Clim0,322.8,hisC,Less Stable
+HMP-KIN-MONOMER,Clim0,309.1000000000001,yajL,Less Stable
+HMP-P-KIN-MONOMER,Clim0,357.40000000000003,thiD,Less Stable
+HOLO-ACP-SYNTH-MONOMER,Clim0,720.0000000000001,acpS,More Stable
+HOMOCYSMET-MONOMER,Clim0,253.20000000000007,metE,Less Stable
+HOMOSERKIN-MONOMER,Clim0,337.5,thrB,Less Stable
+HYBC-MONOMER,Clim0,262.2,hybC,Less Stable
+HYDG-MONOMER,Clim0,236.69999999999996,zraR,Less Stable
+HYDROPEROXIDI-MONOMER,Clim0,351.00000000000006,katG,Less Stable
+HYDROPEROXIDII-MONOMER,Clim0,345.70000000000005,katE,Less Stable
+HYPOXANPRIBOSYLTRAN-MONOMER,Clim0,287.0,hpt,Less Stable
+ICITDEHASE-KIN-PHOSPHA,Clim0,641.0000000000001,aceK,More Stable
+ILES-MONOMER,Clim0,677.4000000000001,ileS,More Stable
+IMIDPHOSPHADEHYDHISTIDPHOSPHA-MONOMER,Clim0,626.7,hisB,More Stable
+IMP-DEHYDROG-MONOMER,Clim0,345.4,guaB,Less Stable
+INORGPYROPHOSPHAT-MONOMER,Clim0,343.6,ppa,Less Stable
+IPPISOM-MONOMER,Clim0,537.7,idi,Less Stable
+ISOCITDEH-SUBUNIT,Clim0,335.00000000000006,icd,Less Stable
+KDGALDOL-MONOMER,Clim0,307.40000000000003,garL,Less Stable
+KDO-8PSYNTH-MONOMER,Clim0,616.5,kdsA,More Stable
+KDOTRANS-MONOMER,Clim0,633.1,waaA,More Stable
+KDPD-MONOMER,Clim0,720.0000000000001,kdpD,More Stable
+KDPE-MONOMER,Clim0,321.1000000000001,kdpE,Less Stable
+KDPGALDOL-4OH2OXOGLUTARALDOL-MONOMER,Clim0,550.9,eda,Less Stable
+KDUD-MONOMER,Clim0,248.9,kduD,Less Stable
+KEFB-MONOMER,Clim0,720.0000000000001,kefB,More Stable
+KEFC-MONOMER,Clim0,720.0000000000001,kefC,More Stable
+KETOBUTFORMLY-INACT-MONOMER,Clim0,127.30000000000001,tdcE,Less Stable
+KETOLREDUCTOISOM-MONOMER,Clim0,336.1,ilvC,Less Stable
+KUP-MONOMER,Clim0,720.0000000000001,kup,More Stable
+L-GLN-FRUCT-6-P-AMINOTRANS-MONOMER,Clim0,322.5,glmS,Less Stable
+LACTALDDEHYDROG-MONOMER,Clim0,351.70000000000005,aldA,Less Stable
+LACTALDREDUCT-MONOMER,Clim0,338.40000000000003,fucO,Less Stable
+LDC2-MONOMER,Clim0,639.0000000000001,ldcC,More Stable
+LEUS-MONOMER,Clim0,334.0,leuS,Less Stable
+LIPIDADISACCHARIDESYNTH-MONOMER,Clim0,640.7000000000002,lpxB,More Stable
+LIVF-MONOMER,Clim0,720.0000000000001,livF,More Stable
+LIVG-MONOMER,Clim0,719.4,livG,More Stable
+LIVH-MONOMER,Clim0,720.0000000000001,livH,More Stable
+LIVJ-MONOMER,Clim0,687.8,livJ,More Stable
+LIVK-MONOMER,Clim0,713.7,livK,More Stable
+LIVM-MONOMER,Clim0,347.40000000000003,livM,Less Stable
+LTAA-MONOMER,Clim0,352.8,ltaE,Less Stable
+LUMAZINESYN-MONOMER,Clim0,720.0000000000001,ribE,More Stable
+LYSS-MONOMER,Clim0,353.7,lysS,Less Stable
+LYSU-MONOMER,Clim0,342.40000000000003,lysU,Less Stable
+MACA,Clim0,720.0000000000001,macA,More Stable
+MACB,Clim0,720.0000000000001,macB,More Stable
+MALATE-DEHASE-MONOMER,Clim0,339.2,mdh,Less Stable
+MALATE-SYNTHASE,Clim0,190.2,aceB,Less Stable
+MALDEXPHOSPHORYL-MONOMER,Clim0,720.0000000000001,malP,More Stable
+MALE-MONOMER,Clim0,720.0000000000001,malE,More Stable
+MALF-MONOMER,Clim0,720.0000000000001,malF,More Stable
+MALIC-NAD-MONOMER,Clim0,356.2,maeA,Less Stable
+MALIC-NADP-MONOMER,Clim0,356.9,maeB,Less Stable
+MALK-MONOMER,Clim0,720.0000000000001,malK,More Stable
+MALONYL-COA-ACP-TRANSACYL-MONOMER,Clim0,662.6,fabD,More Stable
+MALSYNG-MONOMER,Clim0,331.19999999999993,glcB,Less Stable
+MALTACETYLTRAN-MONOMER,Clim0,228.9,maa,Less Stable
+MALTODEXGLUCOSID-MONOMER,Clim0,231.5,malZ,Less Stable
+MALX-MONOMER,Clim0,245.79999999999998,malX,Less Stable
+MANNONDEHYDRAT-MONOMER,Clim0,307.80000000000007,uxuA,Less Stable
+MANNONOXIDOREDUCT-MONOMER,Clim0,259.2,uxuB,Less Stable
+MANNPDEHYDROG-MONOMER,Clim0,650.0,mtlD,More Stable
+MANNPISOM-MONOMER,Clim0,328.5,manA,Less Stable
+MANX-MONOMER,Clim0,720.0000000000001,manX,More Stable
+MANZ-MONOMER,Clim0,720.0000000000001,manZ,More Stable
+MDLA-MONOMER,Clim0,299.6,mdlA,Less Stable
+MDTA,Clim0,720.0000000000001,mdtA,More Stable
+MEND-MONOMER,Clim0,720.0000000000001,menD,More Stable
+MENF-MONOMER,Clim0,289.29999999999995,menF,Less Stable
+METG-MONOMER,Clim0,332.19999999999993,metG,Less Stable
+METHGLYSYN-MONOMER,Clim0,330.90000000000003,mgsA,Less Stable
+METHYLENETHFREDUCT-MONOMER,Clim0,298.1,metF,Less Stable
+METQ-MONOMER,Clim0,695.7,metQ,More Stable
+MGLA-MONOMER,Clim0,328.30000000000007,mglA,Less Stable
+MGLB-MONOMER,Clim0,651.7,mglB,More Stable
+MGLC-MONOMER,Clim0,719.1,mglC,More Stable
+MGTA-MONOMER,Clim0,720.0000000000001,mgtA,More Stable
+MMUM-MONOMER,Clim0,300.50000000000006,mmuM,Less Stable
+MODA-MONOMER,Clim0,720.0000000000001,modA,More Stable
+MODC-MONOMER,Clim0,346.2,modC,Less Stable
+MODF-MONOMER,Clim0,314.0,modF,Less Stable
+MONOMER-43,Clim0,329.9,ghrB,Less Stable
+MONOMER0-1261,Clim0,325.8,dhaL,Less Stable
+MONOMER0-148,Clim0,707.4,dkgA,More Stable
+MONOMER0-1501,Clim0,359.6000000000001,moaB,Less Stable
+MONOMER0-1701,Clim0,272.69999999999993,gnsA,Less Stable
+MONOMER0-185,Clim0,720.0000000000001,modE,More Stable
+MONOMER0-1981,Clim0,342.1,dapE,Less Stable
+MONOMER0-2001,Clim0,320.3,dapD,Less Stable
+MONOMER0-282,Clim0,720.0000000000001,phoE,More Stable
+MONOMER0-341,Clim0,720.0000000000001,pldA,More Stable
+MONOMER0-4382,Clim0,304.0,copA,Less Stable
+MONOMER0-4519,Clim0,355.7,clpB,Less Stable
+MONOMER0-4521,Clim0,720.0000000000001,mrcB,More Stable
+MONOMER0-4524,Clim0,488.7000000000001,mcrB,Less Stable
+MONOMER0-4534,Clim0,287.1,cobB,Less Stable
+MONOMER0-4539,Clim0,343.6,infB,Less Stable
+MONOMER0-561,Clim0,79.7000000000027,glcF,Less Stable
+MONOMER0-82,Clim0,711.4,ynaI,More Stable
+MTLA-MONOMER,Clim0,720.0000000000001,mtlA,More Stable
+MYRISTOYLACYLTRAN-MONOMER,Clim0,655.1000000000001,lpxM,More Stable
+N-ACETYLGLUTPREDUCT-MONOMER,Clim0,341.8,argC,Less Stable
+NACGLCTRANS-MONOMER,Clim0,652.3,murG,More Stable
+NACMURLALAAMI1-MONOMER,Clim0,213.1,amiA,Less Stable
+NAD-SYNTH-MONOMER,Clim0,663.6,nadE,More Stable
+NADH-DHII-MONOMER,Clim0,706.9000000000001,ndh,More Stable
+NAG1P-URIDYLTRANS-MONOMER,Clim0,353.90000000000003,glmU,Less Stable
+NAG6PDEACET-MONOMER,Clim0,685.9,nagA,More Stable
+NAGE-MONOMER,Clim0,353.00000000000006,nagE,Less Stable
+NANE-MONOMER,Clim0,303.6,nanE,Less Stable
+NANK-MONOMER,Clim0,300.3,nanK,Less Stable
+NANT-MONOMER,Clim0,229.2,nanT,Less Stable
+NAPA-MONOMER,Clim0,271.2,napA,Less Stable
+NAPHTHOATE-SYN-MONOMER,Clim0,332.79999999999995,menB,Less Stable
+NARL-MONOMER,Clim0,301.8999999999999,narL,Less Stable
+NARQ-MONOMER,Clim0,720.0000000000001,narQ,More Stable
+NARX-MONOMER,Clim0,326.50000000000006,narX,Less Stable
+NARY-MONOMER,Clim0,332.19999999999993,narY,Less Stable
+NARZ-MONOMER,Clim0,690.1000000000001,narZ,More Stable
+NHAB-MONOMER,Clim0,720.0000000000001,nhaB,More Stable
+NICONUCADENYLYLTRAN-MONOMER,Clim0,297.0,nadD,Less Stable
+NICOTINAMID-MONOMER,Clim0,607.3,pncA,More Stable
+NICOTINATEPRIBOSYLTRANS-MONOMER,Clim0,242.3,pncB,Less Stable
+NRDA-MONOMER,Clim0,294.8,nrdA,Less Stable
+NRDB-MONOMER,Clim0,341.8999999999999,nrdB,Less Stable
+NRDE-MONOMER,Clim0,182.39999999999998,nrdE,Less Stable
+NUCLEOSIDE-DIP-KIN-MONOMER,Clim0,338.70000000000005,ndk,Less Stable
+NUOA-MONOMER,Clim0,720.0000000000001,nuoA,More Stable
+NUOB-MONOMER,Clim0,358.5,nuoB,Less Stable
+NUOC-MONOMER,Clim0,685.6,nuoC,More Stable
+NUOE-MONOMER,Clim0,287.40000000000003,nuoE,Less Stable
+NUOF-MONOMER,Clim0,337.6,nuoF,Less Stable
+NUOG-MONOMER,Clim0,343.4,nuoG,Less Stable
+NUOH-MONOMER,Clim0,720.0000000000001,nuoH,More Stable
+NUOI-MONOMER,Clim0,720.0000000000001,nuoI,More Stable
+NUOM-MONOMER,Clim0,720.0000000000001,nuoM,More Stable
+NUPC-MONOMER,Clim0,720.0000000000001,nupC,More Stable
+O-SUCCHOMOSERLYASE-MONOMER,Clim0,298.9,metB,Less Stable
+OCTAPRENYL-METHOXYPHENOL-OH-MONOMER,Clim0,265.3,ubiH,Less Stable
+OCTAPRENYL-METHYL-METHOXY-BENZOQ-OH-MON,Clim0,261.1,ubiF,Less Stable
+OHMETHYLBILANESYN-MONOMER,Clim0,328.9,hemC,Less Stable
+OMPR-MONOMER,Clim0,350.90000000000003,ompR,Less Stable
+OPPA-MONOMER,Clim0,720.0000000000001,oppA,More Stable
+OPPB-MONOMER,Clim0,720.0000000000001,oppB,More Stable
+OPPC-MONOMER,Clim0,329.0,oppC,Less Stable
+OPPD-MONOMER,Clim0,329.2,oppD,Less Stable
+OPPF-MONOMER,Clim0,615.9,oppF,More Stable
+OPPSYN-MONOMER,Clim0,325.1,ispB,Less Stable
+ORNDECARBOX-BIO-MONOMER,Clim0,310.99999999999994,speC,Less Stable
+OROTPDECARB-MONOMER,Clim0,576.1,pyrF,Less Stable
+PABASYN-COMPI-MONOMER,Clim0,323.1,pabB,Less Stable
+PANTOATE-BETA-ALANINE-LIG-MONOMER,Clim0,330.2,panC,Less Stable
+PANTOTHENATE-KIN-MONOMER,Clim0,342.6,coaA,Less Stable
+PD00194,Clim0,311.70000000000005,argR,Less Stable
+PD00200,Clim0,328.1,ilvY,Less Stable
+PD00208,Clim0,205.9,melR,Less Stable
+PD00219,Clim0,352.2,purR,Less Stable
+PD00232,Clim0,337.6,cysB,Less Stable
+PD00237,Clim0,36.60000000000127,malT,Less Stable
+PD00242,Clim0,44.80000000001715,araC,Less Stable
+PD00257,Clim0,350.29999999999995,crp,Less Stable
+PD00260,Clim0,258.6,fur,Less Stable
+PD00261,Clim0,284.3999999999999,galS,Less Stable
+PD00266,Clim0,680.7,nagC,More Stable
+PD00283,Clim0,720.0000000000001,srlR,More Stable
+PD00288,Clim0,562.3,hns,Less Stable
+PD00339,Clim0,660.7000000000002,gcvA,More Stable
+PD00347,Clim0,720.0000000000001,ihfA,More Stable
+PD00348,Clim0,258.20000000000005,ihfB,Less Stable
+PD00353,Clim0,645.2,lrp,More Stable
+PD00361,Clim0,315.0,malI,Less Stable
+PD00369,Clim0,720.0000000000001,mtlR,More Stable
+PD00413,Clim0,350.7,tyrR,Less Stable
+PD00423,Clim0,297.69999999999993,trpR,Less Stable
+PD00521,Clim0,338.1000000000001,cra,Less Stable
+PD00763,Clim0,348.50000000000006,lacI,Less Stable
+PD01103,Clim0,708.9000000000001,mngR,More Stable
+PD01343,Clim0,358.8,wrbA,Less Stable
+PD01520,Clim0,595.1000000000001,fadR,Less Stable
+PD01896,Clim0,355.1,mlc,Less Stable
+PD03028,Clim0,261.30000000000007,galR,Less Stable
+PD03254,Clim0,356.6,ebgR,Less Stable
+PD03585,Clim0,720.0000000000001,gntR,More Stable
+PD03695,Clim0,99.4000000000766,cspA,Less Stable
+PD04028,Clim0,623.8000000000001,cytR,More Stable
+PD04099,Clim0,325.90000000000003,iclR,Less Stable
+PD04413,Clim0,345.3,nadR,Less Stable
+PD04418,Clim0,679.7000000000002,rob,More Stable
+PDXA-MONOMER,Clim0,332.3999999999999,pdxA,Less Stable
+PDXH-MONOMER,Clim0,333.20000000000005,pdxH,Less Stable
+PDXJ-MONOMER,Clim0,329.8,pdxJ,Less Stable
+PDXK-MONOMER,Clim0,304.0,pdxK,Less Stable
+PDXY-MONOMER,Clim0,299.9,pdxY,Less Stable
+PEPCARBOX-MONOMER,Clim0,346.9,ppc,Less Stable
+PEPSYNTH-MONOMER,Clim0,346.50000000000006,ppsA,Less Stable
+PFLACTENZ-MONOMER,Clim0,329.0,pflA,Less Stable
+PGK,Clim0,720.0000000000001,pgk,More Stable
+PGLUCISOM,Clim0,359.7,pgi,Less Stable
+PGLYCDEHYDROG-MONOMER,Clim0,339.0,serA,Less Stable
+PHENDEHYD-MONOMER,Clim0,313.7,feaB,Less Stable
+PHES-MONOMER,Clim0,720.0000000000001,pheS,More Stable
+PHET-MONOMER,Clim0,720.0000000000001,pheT,More Stable
+PHOB-MONOMER,Clim0,319.8,phoB,Less Stable
+PHOP-MONOMER,Clim0,302.20000000000005,phoP,Less Stable
+PHOQ-MONOMER,Clim0,356.1,phoQ,Less Stable
+PHOR-MONOMER,Clim0,720.0000000000001,phoR,More Stable
+PHOSACETYLTRANS-MONOMER,Clim0,336.8,pta,Less Stable
+PHOSGLUCOSAMINEMUT-MONOMER,Clim0,720.0000000000001,glmM,More Stable
+PHOSPHASERSYN-MONOMER,Clim0,338.20000000000005,pssA,Less Stable
+PHOSPHOGLUCMUT-MONOMER,Clim0,583.2,pgm,Less Stable
+PITA-MONOMER,Clim0,720.0000000000001,pitA,More Stable
+PKI-MONOMER,Clim0,692.1,pykF,More Stable
+PKII-MONOMER,Clim0,359.40000000000003,pykA,Less Stable
+PNTA-MONOMER,Clim0,720.0000000000001,pntA,More Stable
+PNTB-MONOMER,Clim0,720.0000000000001,pntB,More Stable
+PNUC-MONOMER,Clim0,710.8000000000001,pnuC,More Stable
+PORPHOBILSYNTH-MONOMER,Clim0,325.90000000000003,hemB,Less Stable
+POTA-MONOMER,Clim0,714.4000000000001,potA,More Stable
+POTD-MONOMER,Clim0,720.0000000000001,potD,More Stable
+POTF-MONOMER,Clim0,720.0000000000001,potF,More Stable
+POTG-MONOMER,Clim0,355.1,potG,Less Stable
+PPK-MONOMER,Clim0,720.0000000000001,ppk,More Stable
+PRAI-IGPS,Clim0,298.1,trpC,Less Stable
+PRIBFAICARPISOM-MONOMER,Clim0,343.00000000000006,hisA,Less Stable
+PROP-MONOMER,Clim0,276.9,proP,Less Stable
+PROS-MONOMER,Clim0,654.6000000000001,proS,More Stable
+PROTEIN-CHEA,Clim0,78.3000000000137,cheA,Less Stable
+PROTEIN-NRI,Clim0,290.80000000000007,glnG,Less Stable
+PROTEIN-NRII,Clim0,316.2,glnL,Less Stable
+PROTEIN-PII,Clim0,334.1,glnB,Less Stable
+PROTOHEME-FERROCHELAT-MONOMER,Clim0,632.6000000000001,hemH,More Stable
+PROTOPORGENOXI-MONOMER,Clim0,344.00000000000006,hemG,Less Stable
+PRPPAMIDOTRANS-MONOMER,Clim0,240.6,purF,Less Stable
+PRPPSYN-MONOMER,Clim0,720.0000000000001,prs,More Stable
+PSD-MONOMER,Clim0,720.0000000000001,psd,More Stable
+PSERPHOSPHA-MONOMER,Clim0,304.0,serB,Less Stable
+PSERTRANSAM-MONOMER,Clim0,342.8,serC,Less Stable
+PSTB-MONOMER,Clim0,549.4,pstB,Less Stable
+PSTS-MONOMER,Clim0,703.5000000000001,pstS,More Stable
+PTSG-MONOMER,Clim0,720.0000000000001,ptsG,More Stable
+PTSH-MONOMER,Clim0,720.0000000000001,ptsH,More Stable
+PTSI-MONOMER,Clim0,348.7,ptsI,Less Stable
+PURE-MONOMER,Clim0,328.20000000000005,purE,Less Stable
+PURK-MONOMER,Clim0,563.5,purK,Less Stable
+PUTP-MONOMER,Clim0,331.1,putP,Less Stable
+PYRROLINECARBREDUCT-MONOMER,Clim0,637.9000000000001,proC,More Stable
+PYRUVOXID-MONOMER,Clim0,335.4,poxB,Less Stable
+QOR-MONOMER,Clim0,358.6,qorA,Less Stable
+QUINOPRIBOTRANS-MONOMER,Clim0,349.6,nadC,Less Stable
+RBSA-MONOMER,Clim0,676.9000000000001,rbsA,More Stable
+RBSB-MONOMER,Clim0,554.6,rbsB,Less Stable
+RBSC-MONOMER,Clim0,720.0000000000001,rbsC,More Stable
+RCSB-MONOMER,Clim0,261.1,rcsB,Less Stable
+RCSC-MONOMER,Clim0,720.0000000000001,rcsC,More Stable
+RCSF-MONOMER,Clim0,720.0000000000001,rcsF,More Stable
+RED-THIOREDOXIN-MONOMER,Clim0,313.20000000000005,trxA,Less Stable
+RELA-MONOMER,Clim0,292.2,relA,Less Stable
+RFFTRANS-MONOMER,Clim0,720.0000000000001,wecE,More Stable
+RIB5PISOMA-MONOMER,Clim0,321.4,rpiA,Less Stable
+RIB5PISOMB-MONOMER,Clim0,335.70000000000005,rpiB,Less Stable
+RIBF-MONOMER,Clim0,338.20000000000005,ribF,Less Stable
+RIBOFLAVIN-SYN-MONOMER,Clim0,720.0000000000001,ribC,More Stable
+RIBOFLAVINSYNDEAM-MONOMER,Clim0,608.9,ribD,More Stable
+RIBOKIN-MONOMER,Clim0,339.4,rbsK,Less Stable
+RIBULOKIN-MONOMER,Clim0,241.50000000000003,araB,Less Stable
+RIBULP3EPIM-MONOMER,Clim0,325.6,rpe,Less Stable
+RPOE-MONOMER,Clim0,351.1000000000001,rpoE,Less Stable
+RPON-MONOMER,Clim0,285.00000000000006,rpoN,Less Stable
+RSTA-MONOMER,Clim0,302.00000000000006,rstA,Less Stable
+SAICARSYN-MONOMER,Clim0,358.5,purC,Less Stable
+SAPA-MONOMER,Clim0,353.1000000000001,sapA,Less Stable
+SAPD-MONOMER,Clim0,331.0,sapD,Less Stable
+SAPF-MONOMER,Clim0,346.70000000000005,sapF,Less Stable
+SARCOX-MONOMER,Clim0,329.1,solA,Less Stable
+SBMA-MONOMER,Clim0,298.4,sbmA,Less Stable
+SBP-MONOMER,Clim0,720.0000000000001,sbp,More Stable
+SDH-FE-S,Clim0,713.0000000000001,sdhB,More Stable
+SDH-FLAVO,Clim0,693.2000000000002,sdhA,More Stable
+SDH-MEMB2,Clim0,718.3999999999999,sdhD,More Stable
+SECA,Clim0,356.7,secA,Less Stable
+SECB,Clim0,670.8,secB,More Stable
+SECD,Clim0,720.0000000000001,secD,More Stable
+SECF,Clim0,340.4,secF,Less Stable
+SECY,Clim0,302.20000000000005,secY,Less Stable
+SERINE-O-ACETTRAN-MONOMER,Clim0,329.6000000000001,cysE,Less Stable
+SERS-MONOMER,Clim0,691.6,serS,More Stable
+SFUA-MONOMER,Clim0,659.4,thiB,More Stable
+SFUC-MONOMER,Clim0,356.1,thiQ,Less Stable
+SGCA-MONOMER,Clim0,279.2,sgcA,Less Stable
+SGCB-MONOMER,Clim0,656.7,sgcX,More Stable
+SGCC-MONOMER,Clim0,720.0000000000001,sgcC,More Stable
+SIROHEMESYN-MONOMER,Clim0,328.00000000000006,cysG,Less Stable
+SMALLILVN-MONOMER,Clim0,218.00000000000003,ilvN,Less Stable
+SPERMACTRAN-MONOMER,Clim0,310.4,speG,Less Stable
+SPERMIDINESYN-MONOMER,Clim0,574.9,speE,Less Stable
+SPOT-MONOMER,Clim0,720.0000000000001,spoT,More Stable
+SUCCCOASYN-ALPHA,Clim0,325.7,sucD,Less Stable
+SUCCCOASYN-BETA,Clim0,347.1,sucC,Less Stable
+SUCCSEMIALDDEHYDROG-MONOMER,Clim0,326.70000000000005,gabD,Less Stable
+SUPEROX-DISMUTFE-MONOMER,Clim0,357.50000000000006,sodB,Less Stable
+SUPEROX-DISMUTMN-MONOMER,Clim0,306.9,sodA,Less Stable
+TAP-MONOMER,Clim0,180.80000000000004,tap,Less Stable
+TAR-MONOMER,Clim0,242.0,tar,Less Stable
+TATA,Clim0,320.20000000000005,tatA,Less Stable
+TAUA-MONOMER,Clim0,720.0000000000001,tauA,More Stable
+TDK-MONOMER,Clim0,298.9,tdk,Less Stable
+THII-MONOMER,Clim0,277.5,thiI,Less Stable
+THIOESTERI-MONOMER,Clim0,664.0,tesA,More Stable
+THIOESTERII-MONOMER,Clim0,641.4000000000001,tesB,More Stable
+THREDEHYDSYN-MONOMER,Clim0,275.80000000000007,ilvA,Less Stable
+THREODEHYD-MONOMER,Clim0,262.1,tdh,Less Stable
+THRESYN-MONOMER,Clim0,714.0,thrC,More Stable
+THRS-MONOMER,Clim0,677.2,thrS,More Stable
+THYMIDYLATESYN-MONOMER,Clim0,335.70000000000005,thyA,Less Stable
+TORA-MONOMER,Clim0,720.0000000000001,torA,More Stable
+TORR-MONOMER,Clim0,307.80000000000007,torR,Less Stable
+TPI-MONOMER,Clim0,355.1,tpiA,Less Stable
+TRANSALDOLA-MONOMER,Clim0,357.3,talA,Less Stable
+TRANSALDOLB-MONOMER,Clim0,348.3,talB,Less Stable
+TRANSKETOII-MONOMER,Clim0,337.7,tktB,Less Stable
+TRE6PHYDRO-MONOMER,Clim0,143.30000000000004,treC,Less Stable
+TREB-MONOMER,Clim0,253.50000000000006,treB,Less Stable
+TREHALAPERI-MONOMER,Clim0,674.6,treA,More Stable
+TRG-MONOMER,Clim0,265.2,trg,Less Stable
+TRKA-MONOMER,Clim0,691.6,trkA,More Stable
+TRKH-MONOMER,Clim0,720.0000000000001,trkH,More Stable
+TRPS-MONOMER,Clim0,322.90000000000003,trpS,Less Stable
+TRYPSYN-APROTEIN,Clim0,348.9,trpA,Less Stable
+TRYPTOPHAN-MONOMER,Clim0,302.6,tnaA,Less Stable
+TSA-REDUCT-MONOMER,Clim0,328.20000000000005,garR,Less Stable
+TSR-MONOMER,Clim0,271.69999999999993,tsr,Less Stable
+TYRB-MONOMER,Clim0,295.1000000000001,tyrB,Less Stable
+TYRS-MONOMER,Clim0,720.0000000000001,tyrS,More Stable
+UBIX-MONOMER,Clim0,671.2,ubiX,More Stable
+UDHA-MONOMER,Clim0,628.9,sthA,More Stable
+UDK-MONOMER,Clim0,304.4,udk,Less Stable
+UDP-NACMUR-ALA-LIG-MONOMER,Clim0,335.4,murC,Less Stable
+UDP-NACMURALA-GLU-LIG-MONOMER,Clim0,720.0000000000001,murD,More Stable
+UDP-NACMURALGLDAPAALIG-MONOMER,Clim0,589.8000000000001,murF,Less Stable
+UDP-NACMURALGLDAPLIG-MONOMER,Clim0,347.79999999999995,murE,Less Stable
+UDPGLUCEPIM-MONOMER,Clim0,337.5,galE,Less Stable
+UDPHYDROXYMYRGLUCOSAMNACETYLTRANS-MONO,Clim0,720.0000000000001,lpxD,More Stable
+UDPMANNACADEHYDROG-MONOMER,Clim0,595.9,wecC,Less Stable
+UDPNACETYLGLUCOSAMACYLTRANS-MONOMER,Clim0,347.5,lpxA,Less Stable
+UDPNACETYLGLUCOSAMENOLPYRTRANS-MONOMER,Clim0,591.0,murA,Less Stable
+UDPNACETYLMURAMATEDEHYDROG-MONOMER,Clim0,289.8,murB,Less Stable
+UGPB-MONOMER,Clim0,720.0000000000001,ugpB,More Stable
+UGPC-MONOMER,Clim0,720.0000000000001,ugpC,More Stable
+UHPB-MONOMER,Clim0,287.1,uhpB,Less Stable
+UHPT-MONOMER,Clim0,104.60000000004945,uhpT,Less Stable
+UMPKI-MONOMER,Clim0,623.5000000000001,pyrH,More Stable
+URACIL-PRIBOSYLTRANS-MONOMER,Clim0,351.6000000000001,upp,Less Stable
+UROGENIIISYN-MONOMER,Clim0,267.0,hemD,Less Stable
+URPHOS-MONOMER,Clim0,720.0000000000001,udp,More Stable
+USHA-MONOMER,Clim0,720.0000000000001,ushA,More Stable
+UUP-MONOMER,Clim0,348.9,uup,Less Stable
+UXAC-MONOMER,Clim0,356.7,uxaC,Less Stable
+VALS-MONOMER,Clim0,347.79999999999995,valS,Less Stable
+XYLF-MONOMER,Clim0,324.6000000000001,xylF,Less Stable
+XYLG-MONOMER,Clim0,442.4,xylG,Less Stable
+XYLH-MONOMER,Clim0,303.4,xylH,Less Stable
+XYLISOM-MONOMER,Clim0,290.3,xylA,Less Stable
+XYLULOKIN-MONOMER,Clim0,352.0,xylB,Less Stable
+YADG-MONOMER,Clim0,696.6,yadG,More Stable
+YADQ-MONOMER,Clim0,720.0000000000001,clcA,More Stable
+YBAL-MONOMER,Clim0,720.0000000000001,ybaL,More Stable
+YBBA-MONOMER,Clim0,330.7,ybbA,Less Stable
+YBBP-MONOMER,Clim0,720.0000000000001,ybbP,More Stable
+YBHF-MONOMER,Clim0,711.0000000000001,ybhF,More Stable
+YCFU-MONOMER,Clim0,720.0000000000001,lolC,More Stable
+YCFW-MONOMER,Clim0,720.0000000000001,lolE,More Stable
+YDCS-MONOMER,Clim0,720.0000000000001,ydcS,More Stable
+YDCT-MONOMER,Clim0,611.8000000000002,ydcT,More Stable
+YDDA-MONOMER,Clim0,317.2,yddA,Less Stable
+YDDS-MONOMER,Clim0,286.4,ddpA,Less Stable
+YDEX-MONOMER,Clim0,282.2,lsrA,Less Stable
+YEHX-MONOMER,Clim0,297.4,yehX,Less Stable
+YEJA-MONOMER,Clim0,720.0000000000001,yejA,More Stable
+YEJB-MONOMER,Clim0,720.0000000000001,yejB,More Stable
+YEJF-MONOMER,Clim0,720.0000000000001,yejF,More Stable
+YGIS-MONOMER,Clim0,357.8,ygiS,Less Stable
+YHBG-MONOMER,Clim0,671.2,lptB,More Stable
+YHBN-MONOMER,Clim0,337.9,lptA,Less Stable
+YICJ-MONOMER,Clim0,255.40000000000003,yicJ,Less Stable
+YIDC,Clim0,720.0000000000001,yidC,More Stable
+YJCE-MONOMER,Clim0,335.9,yjcE,Less Stable
+YJCG-MONOMER,Clim0,720.0000000000001,actP,More Stable
+YJCH-MONOMER,Clim0,350.6,yjcH,Less Stable
+YJCW-MONOMER,Clim0,720.0000000000001,alsA,More Stable
+YJCX-MONOMER,Clim0,548.7999999999998,alsB,Less Stable
+YJJK-MONOMER,Clim0,336.40000000000003,ettA,Less Stable
+YLIB-MONOMER,Clim0,720.0000000000001,gsiB,More Stable
+YLIC-MONOMER,Clim0,686.5,gsiC,More Stable
+YNEA-MONOMER,Clim0,347.40000000000003,lsrB,Less Stable
+YNJD-MONOMER,Clim0,645.1000000000001,ynjD,More Stable
+YRAO-MONOMER,Clim0,333.6999999999999,diaA,Less Stable
+YRBF-MONOMER,Clim0,720.0000000000001,mlaF,More Stable
+YTFQ-MONOMER,Clim0,718.3000000000002,ytfQ,More Stable
+YTFR-MONOMER,Clim0,640.3,ytfR,More Stable
+ZNUA-MONOMER,Clim0,332.70000000000005,znuA,Less Stable
+EG10765-MONOMER,Clim0 (protease substrate),221.1,priC,More Stable
+ISOCIT-LYASE-MONOMER,Clim0 (protease substrate),287.0,aceA,More Stable
+EG10506-MONOMER,Clim0,333.30000000000007,infC,More Stable
+OROPRIBTRANS-MONOMER,Clim0,318.6,pyrE,More Stable
+PGPPHOSPHAB-MONOMER,Clim0,720.0000000000001,pgpB,More Stable
+PPENTOMUT-MONOMER,Clim0,280.7,deoB,More Stable
