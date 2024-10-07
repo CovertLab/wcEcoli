@@ -19,7 +19,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		n_total_gens = self.ap.n_generation
 
-		selected_variant_indexes = [0, 1, 6, 7]
+		selected_variant_indexes = self.ap.get_variants()
 
 		n_variants = len(selected_variant_indexes)
 
