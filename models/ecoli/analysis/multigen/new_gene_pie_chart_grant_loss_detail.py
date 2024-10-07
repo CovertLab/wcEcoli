@@ -24,21 +24,41 @@ from wholecell.utils import units
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
+
+		# RIBOSOMES
 		data_desc = "_loss_ribo_detail" # TODO: CHANGE
 		plot_suffix = data_desc
 		data = { # TODO: CHANGE
-			"New Gene": np.array([ 0, 3367, 3778]),
-			"RNAP Subunits": np.array([204, 45, 79]),
-			"Ribosomal Proteins": np.array([3114, 720, 1162]),
+			"New Gene": np.array([ 0, 2838, 3211]),
+			"RNAP Subunits": np.array([193, 100, 34]),
+			"Ribosomal Proteins": np.array([2997, 1594, 594]),
 			"rRNA": np.array([0, 0, 0]),
-			"Other": np.array([13955, 3582, 5751])
+			"Other": np.array([13655, 7503, 3000])
 			}
-		ylab = "Ribosome Counts" # TODO: CHANGE
+		ylab = "Active Ribosome Counts" # TODO: CHANGE
 		species = (
 			"Wildtype (no GFP)",
-			"Normal GFP Degradation",
-			"Rapid GFP Degradation"
+			"Lower GFP Production", # Variant 6
+			"Higher GFP Production" # Variant 16
 			)
+
+		# # RNAPs
+		# data_desc = "_loss_rnap_detail" # TODO: CHANGE
+		# plot_suffix = data_desc
+		# data = { # TODO: CHANGE
+		# 	"New Gene": np.array([ 0, 12, 19]),
+		# 	"RNAP Subunits": np.array([7, 5, 2]),
+		# 	"Ribosomal Proteins": np.array([65, 41, 21]),
+		# 	"rRNA": np.array([301, 185, 89]),
+		# 	"Other": np.array([393, 249, 133])
+		# 	}
+		# ylab = "Active RNA Polymerase Counts" # TODO: CHANGE
+		# species = (
+		# 	"Wildtype (no GFP)",
+		# 	"Lower GFP Production", # Variant 6
+		# 	"Higher GFP Production" # Variant 16
+		# 	)
+
 		colors = [
 			(66 / 255, 170 / 255, 154 / 255),
 			(136/255, 205/255, 240/255),
@@ -77,7 +97,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# 	ax.bar_label(rects, labels = [" -" + str(percent_loss) + "%"], label_type='edge', color=text_color, fontsize=14)
 		# ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
 		# 		  loc='lower left', fontsize='small')
-
 		exportFigure(plt, plotOutDir, plotOutFileName + "_bar" + plot_suffix, metadata)
 		plt.close("all")
 
