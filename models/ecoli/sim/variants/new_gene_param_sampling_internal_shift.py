@@ -1,3 +1,4 @@
+### TODO: update this description and expected variant indices once we decide on a sampling scheme
 """
 Compare the impacts of increasing expression level and
 increasing or decreasing the translational efficiency of new genes, with the
@@ -32,15 +33,15 @@ Modifies (after shift):
 Expected variant indices (int, positive, dependent on sim_data.ordered_conditions
 and should be the same order as rows in condition_defs.tsv):
 	0: minimal media, control (knockout new gene expression)
-	1: minimal media, sampled new gene expression
-	10: with amino acids, control (knockout new gene expression)
-	11: with amino acids, sampled new gene expression
-	20: acetate, control (knockout new gene expression)
-	21: acetate, sampled new gene expression
-	30: succinate, , control (knockout new gene expression)
-	31: succinate, sampled new gene expression
-	40: minimal media (anaerobic), control (knockout new gene expression)
-	41: minimal media (anaerobic), sampled new gene expression
+	1-999: minimal media, sampled new gene expression
+	1000: with amino acids, control (knockout new gene expression)
+	1001-1999: with amino acids, sampled new gene expression
+	2000: acetate, control (knockout new gene expression)
+	2001-2999: acetate, sampled new gene expression
+	3000: succinate, , control (knockout new gene expression)
+	3001-3999: succinate, sampled new gene expression
+	4000: minimal media (anaerobic), control (knockout new gene expression)
+	4001-4999: minimal media (anaerobic), sampled new gene expression
 
 New gene expression factor:
 	x > 0: multiply new gene expression by a factor of 10^(x-1)
@@ -55,9 +56,6 @@ CONTROL_OUTPUT = dict(
 	shortName = "control",
 	desc = "Control simulation"
 	)
-
-# NOTE: The version of these global variables on the master branch will
-# be used for Jenkins testing
 
 # NOTE: If these values are greater than the number of generations you are
 # running, you will not see their effects.
@@ -147,7 +145,7 @@ def determine_new_gene_ids_and_indices(sim_data):
 
 	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
 
-
+# This is the only function that should have to be different from new_gene_internal_shift variant
 def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	"""
 	Maps variant index to new gene expression factor and translation effieincy
@@ -233,13 +231,23 @@ def new_gene_param_sampling_internal_shift(sim_data, index):
 	transcribed.
 	"""
 	# Set media condition
-	condition_index = index // 10
+	condition_index = index // 1000
 	condition(sim_data, condition_index)
 
 	# Map variant index to expression factor and tranlsation efficiency value
-	index_remainder = index - condition_index * 10
+	index_remainder = index - condition_index * 1000
 	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
 		index_remainder)
+
+	# For the purposes of evaluating what params are being sampled
+	print("Overall index: ", index)
+	print("Condition index: ", condition_index)
+	print("Index remainder: ", index_remainder)
+	print("Expression factor: ", expression_factor)
+	print("Translation efficiency: ", trl_eff_value)
+
+	import ipdb
+	ipdb.set_trace()
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
