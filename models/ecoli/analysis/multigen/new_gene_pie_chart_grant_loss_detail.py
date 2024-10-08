@@ -25,39 +25,39 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 
-		# RIBOSOMES
-		data_desc = "_loss_ribo_detail" # TODO: CHANGE
-		plot_suffix = data_desc
-		data = { # TODO: CHANGE
-			"New Gene": np.array([ 0, 2838, 3211]),
-			"RNAP Subunits": np.array([193, 100, 34]),
-			"Ribosomal Proteins": np.array([2997, 1594, 594]),
-			"rRNA": np.array([0, 0, 0]),
-			"Other": np.array([13655, 7503, 3000])
-			}
-		ylab = "Active Ribosome Counts" # TODO: CHANGE
-		species = (
-			"Wildtype (no GFP)",
-			"Lower GFP Production", # Variant 6
-			"Higher GFP Production" # Variant 16
-			)
-
-		# # RNAPs
-		# data_desc = "_loss_rnap_detail" # TODO: CHANGE
+		# # RIBOSOMES
+		# data_desc = "_loss_ribo_detail" # TODO: CHANGE
 		# plot_suffix = data_desc
 		# data = { # TODO: CHANGE
-		# 	"New Gene": np.array([ 0, 12, 19]),
-		# 	"RNAP Subunits": np.array([7, 5, 2]),
-		# 	"Ribosomal Proteins": np.array([65, 41, 21]),
-		# 	"rRNA": np.array([301, 185, 89]),
-		# 	"Other": np.array([393, 249, 133])
+		# 	"New Gene": np.array([ 0, 2838, 3211]),
+		# 	"RNAP Subunits": np.array([193, 100, 34]),
+		# 	"Ribosomal Proteins": np.array([2997, 1594, 594]),
+		# 	"rRNA": np.array([0, 0, 0]),
+		# 	"Other": np.array([13655, 7503, 3000])
 		# 	}
-		# ylab = "Active RNA Polymerase Counts" # TODO: CHANGE
+		# ylab = "Active Ribosome Counts" # TODO: CHANGE
 		# species = (
-		# 	"Wildtype (no GFP)",
+		# 	"Wildtype (No GFP)",
 		# 	"Lower GFP Production", # Variant 6
 		# 	"Higher GFP Production" # Variant 16
 		# 	)
+
+		# RNAPs
+		data_desc = "_loss_rnap_detail" # TODO: CHANGE
+		plot_suffix = data_desc
+		data = { # TODO: CHANGE
+			"New Gene": np.array([ 0, 12, 19]),
+			"RNAP Subunits": np.array([7, 5, 2]),
+			"Ribosomal Proteins": np.array([65, 41, 21]),
+			"rRNA": np.array([301, 185, 89]),
+			"Other": np.array([393, 249, 133])
+			}
+		ylab = "Active RNA Polymerase Counts" # TODO: CHANGE
+		species = (
+			"Wildtype No GFP)",
+			"Lower GFP Production", # Variant 6
+			"Higher GFP Production" # Variant 16
+			)
 
 		colors = [
 			(66 / 255, 170 / 255, 154 / 255),
@@ -81,7 +81,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# mpl.rcParams['axes.spines.left'] = False
 		# mpl.rcParams['axes.spines.bottom'] = False
 
-		fig, ax = plt.subplots()
+		fig, ax = plt.subplots(figsize=(8,6))
 		width = 0.5
 		counter = 0
 		bottom = np.zeros(3)
@@ -90,8 +90,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			p = ax.bar(species, allocation, width, label=category, bottom=bottom, color = colors[counter])
 			bottom += allocation
 			counter += 1
-		plt.ylabel(ylab)
-		ax.legend(loc="upper center")
+		plt.ylabel(ylab, fontsize=16)
+		plt.yticks(fontsize=14)
+		plt.xticks(fontsize=14)
+		ax.legend(fontsize=14)
 			# if i == 0:
 			# 	text_color = colors[0]
 			# 	ax.bar_label(rects, labels = [" -" + str(percent_loss) + "%"], label_type='edge', color=text_color, fontsize=14)
