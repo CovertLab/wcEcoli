@@ -37,9 +37,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# 	}
 		# ylab = "Active Ribosome Counts" # TODO: CHANGE
 		# species = (
-		# 	"Wildtype (No GFP)",
-		# 	"Lower GFP Production", # Variant 6
-		# 	"Higher GFP Production" # Variant 16
+		# 	"Wildtype\n(No GFP)",
+		# 	"Lower\nGFP Production", # Variant 6
+		# 	"Higher\nGFP Production" # Variant 16
 		# 	)
 
 		# RNAPs
@@ -54,9 +54,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			}
 		ylab = "Active RNA Polymerase Counts" # TODO: CHANGE
 		species = (
-			"Wildtype No GFP)",
-			"Lower GFP Production", # Variant 6
-			"Higher GFP Production" # Variant 16
+			"Wildtype\n(No GFP)",
+			"Lower\nGFP Production", # Variant 6
+			"Higher\nGFP Production" # Variant 16
 			)
 
 		colors = [
@@ -81,7 +81,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# mpl.rcParams['axes.spines.left'] = False
 		# mpl.rcParams['axes.spines.bottom'] = False
 
-		fig, ax = plt.subplots(figsize=(8,6))
+		fig, ax = plt.subplots(figsize=(7,6))
 		width = 0.5
 		counter = 0
 		bottom = np.zeros(3)
@@ -90,15 +90,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			p = ax.bar(species, allocation, width, label=category, bottom=bottom, color = colors[counter])
 			bottom += allocation
 			counter += 1
-		plt.ylabel(ylab, fontsize=16)
-		plt.yticks(fontsize=14)
-		plt.xticks(fontsize=14)
-		ax.legend(fontsize=14)
+		plt.ylabel(ylab, fontsize=18)
+		plt.yticks(fontsize=16)
+		plt.xticks(fontsize=18)
+		ax.legend(fontsize=18)
 			# if i == 0:
 			# 	text_color = colors[0]
 			# 	ax.bar_label(rects, labels = [" -" + str(percent_loss) + "%"], label_type='edge', color=text_color, fontsize=14)
 		# ax.legend(ncols=len(labels), bbox_to_anchor=(0, 1),
 		# 		  loc='lower left', fontsize='small')
+		if ylab == "Active RNA Polymerase Counts":
+			plt.ylim(0, 1200)
 		exportFigure(plt, plotOutDir, plotOutFileName + "_bar" + plot_suffix, metadata)
 		plt.close("all")
 
