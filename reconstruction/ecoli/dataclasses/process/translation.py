@@ -300,7 +300,7 @@ class Translation(object):
 
 		# Use measured degradation rates if available, then C-lim rates, then N end rule
 		if USE_NEW_DEG_RATES == 6:
-			name = "CLClim0NE"
+			name = "CLClim1NE"
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
