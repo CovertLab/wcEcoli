@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 2
+USE_NEW_DEG_RATES  = 6
 SAVE_DATA = 1
 
 class Translation(object):
@@ -300,7 +300,7 @@ class Translation(object):
 
 		# Use measured degradation rates if available, then C-lim rates, then N end rule
 		if USE_NEW_DEG_RATES == 6:
-			name = "CLClimNE"
+			name = "CLClim0NE"
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
