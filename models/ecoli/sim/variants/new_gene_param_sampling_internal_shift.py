@@ -157,6 +157,9 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	"""
 	# Determine factor for new gene expression and value for new
 	# gene translation efficiency
+
+
+
 	if index == 0:
 		expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
 		# Note: this value should not matter since gene is knocked out
@@ -236,6 +239,7 @@ def new_gene_param_sampling_internal_shift(sim_data, index):
 
 	# Map variant index to expression factor and tranlsation efficiency value
 	index_remainder = index - condition_index * 1000
+	np.random.seed(index_remainder)
 	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
 		index_remainder)
 
@@ -246,8 +250,8 @@ def new_gene_param_sampling_internal_shift(sim_data, index):
 	print("Expression factor: ", expression_factor)
 	print("Translation efficiency: ", trl_eff_value)
 
-	import ipdb
-	ipdb.set_trace()
+	#import ipdb
+	#ipdb.set_trace()
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})

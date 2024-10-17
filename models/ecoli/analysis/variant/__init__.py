@@ -23,6 +23,7 @@ ACTIVE = [
 	"new_gene_counts.py",
 	"new_gene_protein_mass_fraction_histogram.py",
 	"new_gene_translation_efficiency_heatmaps.py",
+	"new_gene_param_sample_plot.py"
 	"param_sensitivity.py",
 	"ppgpp_conc.py",
 	"ppgpp_concentration_histogram.py",
