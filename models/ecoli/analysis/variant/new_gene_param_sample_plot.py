@@ -1,28 +1,22 @@
 """
-Common code for Variant analysis plots.
+plotting parameters from new_gene_param_sample variant
 """
-
-import pickle
-import os
 
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
-from wholecell.io.tablereader import TableReader
+from wholecell.analysis.analysis_tools import exportFigure
+
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		with open(simDataFile, 'rb') as f:
-			sim_data = pickle.load(f)
-		with open(validationDataFile, 'rb') as f:
-			validation_data = pickle.load(f)
 
 		variants = self.ap.get_variants()
+
+
 
 		NEW_GENE_EXPRESSION_FACTOR_CONTROL = 0
 		NEW_GENE_EXPRESSION_FACTOR_MIN = 7
@@ -36,10 +30,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.ylabel("Translation Efficiency")
 
 		for variant in variants:
-			# Load modified variant sim_data
-			## Consider calculating variant difference and only loading
-			## sim_data once above for better performance.
 
+				if variant >1:
+					continue
 				np.random.seed(variant)
 				if variant == 0:
 					expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
@@ -47,7 +40,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				else:
 					expression_factor = np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX)
 					trl_eff_value = 10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
-				plt.plot(expression_factor, trl_eff_value)
+
+				plt.scatter(expression_factor, trl_eff_value)
 
 
 
