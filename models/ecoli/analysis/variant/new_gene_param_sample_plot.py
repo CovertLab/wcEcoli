@@ -31,8 +31,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for variant in variants:
 
-				if variant >1:
-					continue
+				#if variant >1:
+					#continue
 				np.random.seed(variant)
 				if variant == 0:
 					expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
