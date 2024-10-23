@@ -25,7 +25,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 1
+IGNORE_FIRST_N_GENS = 8
 
 exclude_timeout_cells = 0
 
