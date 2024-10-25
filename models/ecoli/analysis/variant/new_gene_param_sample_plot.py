@@ -28,6 +28,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.figure()
 		plt.xlabel("Expression Factor")
 		plt.ylabel("Translation Efficiency")
+		plt.xscale('log')
+		plt.yscale('log')
 
 		for variant in variants:
 

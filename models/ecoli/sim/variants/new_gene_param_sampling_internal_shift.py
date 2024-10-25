@@ -165,7 +165,7 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 		# Note: this value should not matter since gene is knocked out
 		trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL
 	else:
-		expression_factor = np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX)
+		expression_factor = 10 ** np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX)
 		trl_eff_value = 10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN, NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
 
 	return expression_factor, trl_eff_value

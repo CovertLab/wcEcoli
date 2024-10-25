@@ -140,6 +140,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		plt.figure()
+
 		plt.xlabel("Protein Counts")
 		plt.ylabel("Doubling Time")
 
