@@ -25,7 +25,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 8
+IGNORE_FIRST_N_GENS = 16
 
 exclude_timeout_cells = 0
 
@@ -75,15 +75,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		generations = {}
 		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
 		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
+		n_total_gens = self.ap.n_generation
 
 
 		min_variant = min(variants)
 
 		for variant in variants:
-			if variant >= MAX_VARIANT:
-					continue
-
-			all_cells = self.ap.get_cells(variant=[variant],
+			
+			all_cells = self.ap.get_cells(variant=[variant], generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
 											  only_successful=True)
 
 
@@ -100,7 +99,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Doubling times
 			dt = read_stacked_columns(all_cells, 'Main', 'time',
 										  fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times.append(dt[exclude_timeout_cell_mask])
+			doubling_times.append(np.mean(dt[exclude_timeout_cell_mask]))
 			if variant == min_variant:
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')
@@ -128,7 +127,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'MonomerCounts', 'monomerCounts',
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			avg_ng_monomer.append(avg_new_gene_monomer_counts[exclude_timeout_cell_mask])
+			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
 
 
 
@@ -143,9 +142,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plt.xlabel("Protein Counts")
 		plt.ylabel("Doubling Time")
-
-		#import ipdb
-		#ipdb.set_trace()
 		plt.scatter(avg_ng_monomer,doubling_times)
 
 
