@@ -1,0 +1,2432 @@
+Protein ID,Gene names ,notes,assignment,half life (hrs)
+sp|P0A9P6|DEAD_ECOLI,deaD,consistent,C-lim3_1,1.64230466
+sp|P0A9X9|CSPA_ECOLI,cspA,consistent,C-lim3_1,1.793323179
+sp|P0ADG1|ILVM_ECOLI,ilvM,consistent,C-lim3_1,1.244371944
+sp|P24216|FLID_ECOLI,fliD,consistent,C-lim3_1,1.485760873
+sp|P32053|INTA_ECOLI,intA,consistent,C-lim3_1,1.313600322
+sp|P00805|ASPG2_ECOLI,ansB,consistent,C-lim6_1,5.647693529
+sp|P0AD53|YGAC_ECOLI,ygaC,consistent,C-lim6_1,2.190578258
+sp|P0AFR2|DAUA_ECOLI,dauA,consistent,C-lim6_1,7.051521876
+sp|P0AGM7|URAA_ECOLI,uraA,consistent,C-lim6_1,5.246462307
+sp|P13445|RPOS_ECOLI,rpoS,consistent,C-lim6_1,1.026539679
+sp|P18390|YJJA_ECOLI,yjjA,consistent,C-lim6_1,3.898233195
+sp|P37028|BTUF_ECOLI,btuF,consistent,C-lim6_1,6.708843956
+sp|P39180|AG43_ECOLI,flu,consistent,C-lim6_1,5.374751706
+sp|P39279|YJEJ_ECOLI,yjeJ,consistent,C-lim6_1,5.941998987
+sp|P51025|SFGH1_ECOLI,frmB,consistent,C-lim6_1,7.970569339
+sp|P75800|YLIE_ECOLI,yliE,consistent,C-lim6_1,6.037502028
+sp|P75817|RLMC_ECOLI,rlmC,consistent,C-lim6_1,5.920567293
+sp|P76231|YEAC_ECOLI,yeaC,consistent,C-lim6_1,0.35220306
+sp|P77150|PDXY_ECOLI,pdxY,consistent,C-lim6_1,6.300639353
+sp|P02943|LAMB_ECOLI,lamB,consistent,C-lim6_1,7.994634771
+sp|P32162|YIIS_ECOLI,yiiS,consistent,C-lim6_1,6.304661976
+sp|P02916|MALF_ECOLI,malF,consistent,C-lim6_1,7.289179041
+sp|Q47129|FEAR_ECOLI,feaR,consistent,C-lim6_1,0.723959455
+sp|P0ACW6|YDCH_ECOLI,ydcH,consistent,C-lim6_1,1.939350988
+sp|P0ADN6|YIFL_ECOLI,yifL,consistent,C-lim6_2,6.090988656
+sp|P0ADW8|YHEV_ECOLI,yheV,consistent,C-lim6_2,5.039024093
+sp|P16691|PHNO_ECOLI,phnO,consistent,C-lim6_2,2.72885163
+sp|P21829|YBHA_ECOLI,ybhA,consistent,C-lim6_2,4.539498637
+sp|P31224|ACRB_ECOLI,acrB,consistent,C-lim6_2,7.667086652
+sp|P31697|FIMC_ECOLI,fimC,consistent,C-lim6_2,6.01157675
+sp|P37665|YIAD_ECOLI,yiaD,consistent,C-lim6_2,5.531531651
+sp|P46118|HEXR_ECOLI,hexR,consistent,C-lim6_2,5.74236006
+sp|P75791|YBIU_ECOLI,ybiU,consistent,C-lim6_2,5.080022393
+sp|P75801|YLIF_ECOLI,yliF,consistent,C-lim6_2,6.792508975
+sp|P0ACL7|LLDR_ECOLI,lldR,consistent,C-lim6_2,3.244785591
+sp|P17410|CHBR_ECOLI,chbR,consistent,C-lim6_2,2.031199373
+sp|P69908|DCEA_ECOLI,gadA,consistent,C-lim6_2,6.979069553
+sp|P76621|CSID_ECOLI,csiD,consistent,C-lim6_2,1.342676576
+sp|P77268|DDPD_ECOLI,ddpD,consistent,C-lim6_2,3.79051305
+sp|P77302|YDAM_ECOLI,ydaM,consistent,C-lim6_2,1.917561169
+sp|P77432|LSRK_ECOLI,lsrK,consistent,C-lim6_2,3.129400821
+sp|P77671|ALLB_ECOLI,allB,consistent,C-lim6_2,3.068968706
+sp|P0AAS9|YBDD_ECOLI,ybdD,consistent,C-lim6_2,1.811866111
+sp|P0ACG8|HSLR_ECOLI,hslR,consistent,C-lim6_2,6.739659324
+sp|P77187|YAHF_ECOLI,yahF,consistent,C-lim6_2,5.2771934
+sp|P0AAQ6|YBAA_ECOLI,ybaA,consistent,C-lim6_2,3.137860346
+sp|P00350|6PGD_ECOLI,gnd,consistent,C-lim12_1,10.20104469
+sp|P00363|FRDA_ECOLI,frdA,consistent,C-lim12_1,13.51876497
+sp|P00370|DHE4_ECOLI,gdhA,consistent,C-lim12_1,7.653326357
+sp|P00393|DHNA_ECOLI,ndh,consistent,C-lim12_1,11.84947285
+sp|P00448|SODM_ECOLI,sodA,consistent,C-lim12_1,12.44764594
+sp|P00452|RIR1_ECOLI,nrdA,consistent,C-lim12_1,10.41981552
+sp|P00547|KHSE_ECOLI,thrB,consistent,C-lim12_1,8.647705717
+sp|P00579|RPOD_ECOLI,rpoD,consistent,C-lim12_1,8.398512747
+sp|P00582|DPO1_ECOLI,polA,consistent,C-lim12_1,12.60980946
+sp|P00811|AMPC_ECOLI,ampC,consistent,C-lim12_1,10.49236978
+sp|P00861|DCDA_ECOLI,lysA,consistent,C-lim12_1,8.697177924
+sp|P00864|CAPP_ECOLI,ppc,consistent,C-lim12_1,11.04482765
+sp|P00895|TRPE_ECOLI,trpE,consistent,C-lim12_1,9.72249166
+sp|P00904|TRPGD_ECOLI,trpGD,consistent,C-lim12_1,11.82377557
+sp|P00909|TRPC_ECOLI,trpC,consistent,C-lim12_1,7.720782219
+sp|P00914|PHR_ECOLI,phrB,consistent,C-lim12_1,11.54102291
+sp|P00926|SDHD_ECOLI,dsdA,consistent,C-lim12_1,11.37932164
+sp|P00935|METB_ECOLI,metB,consistent,C-lim12_1,10.32243815
+sp|P00944|XYLA_ECOLI,xylA,consistent,C-lim12_1,9.207537622
+sp|P00956|SYI_ECOLI,ileS,consistent,C-lim12_1,11.78830258
+sp|P00957|SYA_ECOLI,alaS,consistent,C-lim12_1,11.17120419
+sp|P00959|SYM_ECOLI,metG,consistent,C-lim12_1,9.817605173
+sp|P00961|SYGB_ECOLI,glyS,consistent,C-lim12_1,11.75398365
+sp|P00968|CARB_ECOLI,carB,consistent,C-lim12_1,10.71280216
+sp|P02358|RS6_ECOLI,rpsF,consistent,C-lim12_1,12.70987651
+sp|P02359|RS7_ECOLI,rpsG,consistent,C-lim12_1,12.12363342
+sp|P02918|PBPA_ECOLI,mrcA,consistent,C-lim12_1,10.84018033
+sp|P02919|PBPB_ECOLI,mrcB,consistent,C-lim12_1,13.29581153
+sp|P02924|ARAF_ECOLI,araF,consistent,C-lim12_1,13.64087777
+sp|P02925|RBSB_ECOLI,rbsB,consistent,C-lim12_1,9.645434236
+sp|P02929|TONB_ECOLI,tonB,consistent,C-lim12_1,5.88343144
+sp|P02931|OMPF_ECOLI,ompF,consistent,C-lim12_1,11.15937334
+sp|P03007|DPO3E_ECOLI,dnaQ,consistent,C-lim12_1,3.406678331
+sp|P03018|UVRD_ECOLI,uvrD,consistent,C-lim12_1,8.803844071
+sp|P03024|GALR_ECOLI,galR,consistent,C-lim12_1,7.15029088
+sp|P03813|YGEA_ECOLI,ygeA,consistent,C-lim12_1,7.107542485
+sp|P03817|MIOC_ECOLI,mioC,consistent,C-lim12_1,10.67814079
+sp|P03819|KEFC_ECOLI,kefC,consistent,C-lim12_1,13.26148765
+sp|P03841|MALM_ECOLI,malM,consistent,C-lim12_1,11.62935946
+sp|P04036|DAPB_ECOLI,dapB,consistent,C-lim12_1,12.45921212
+sp|P04079|GUAA_ECOLI,guaA,consistent,C-lim12_1,9.811779153
+sp|P04335|FRSA_ECOLI,frsA,consistent,C-lim12_1,5.394102246
+sp|P04391|OTC1_ECOLI,argI,consistent,C-lim12_1,8.736082288
+sp|P04693|TYRB_ECOLI,tyrB,consistent,C-lim12_1,8.08831357
+sp|P04816|LIVK_ECOLI,livK,consistent,C-lim12_1,12.07525041
+sp|P04825|AMPN_ECOLI,pepN,consistent,C-lim12_1,10.86595901
+sp|P04846|NLPA_ECOLI,nlpA,consistent,C-lim12_1,11.67949605
+sp|P04949|FLIC_ECOLI,fliC,consistent,C-lim12_1,1.371947819
+sp|P04951|KDSB_ECOLI,kdsB,consistent,C-lim12_1,11.10181697
+sp|P04968|ILVA_ECOLI,ilvA,consistent,C-lim12_1,8.854736427
+sp|P04982|RBSD_ECOLI,rbsD,consistent,C-lim12_1,10.92630096
+sp|P04993|RECD_ECOLI,recD,consistent,C-lim12_1,7.180221636
+sp|P04995|EX1_ECOLI,sbcB,consistent,C-lim12_1,10.99878464
+sp|P05041|PABB_ECOLI,pabB,consistent,C-lim12_1,11.45342142
+sp|P05042|FUMC_ECOLI,fumC,consistent,C-lim12_1,10.04072035
+sp|P05055|PNP_ECOLI,pnp,consistent,C-lim12_1,11.57104751
+sp|P05194|AROD_ECOLI,aroD,consistent,C-lim12_1,10.04020324
+sp|P05458|PTRA_ECOLI,ptrA,consistent,C-lim12_1,11.80883435
+sp|P05719|T1SK_ECOLI,hsdS,consistent,C-lim12_1,11.36090276
+sp|P05791|ILVD_ECOLI,ilvD,consistent,C-lim12_1,10.74309228
+sp|P05793|ILVC_ECOLI,ilvC,consistent,C-lim12_1,10.53247513
+sp|P05825|FEPA_ECOLI,fepA,consistent,C-lim12_1,15.98945429
+sp|P05852|TSAD_ECOLI,tsaD,consistent,C-lim12_1,8.923574336
+sp|P06149|DLD_ECOLI,dld,consistent,C-lim12_1,10.18000044
+sp|P06282|CDH_ECOLI,cdh,consistent,C-lim12_1,13.05701358
+sp|P06709|BIRA_ECOLI,birA,consistent,C-lim12_1,7.846792374
+sp|P06710|DPO3X_ECOLI,dnaX,consistent,C-lim12_1,6.967477854
+sp|P06715|GSHR_ECOLI,gor,consistent,C-lim12_1,11.95498486
+sp|P06720|AGAL_ECOLI,melA,consistent,C-lim12_1,8.902353456
+sp|P06721|METC_ECOLI,metC,consistent,C-lim12_1,9.786707221
+sp|P06722|MUTH_ECOLI,mutH,consistent,C-lim12_1,9.053649025
+sp|P06959|ODP2_ECOLI,aceF,consistent,C-lim12_1,11.05854933
+sp|P06961|CCA_ECOLI,cca,consistent,C-lim12_1,8.853334765
+sp|P06971|FHUA_ECOLI,fhuA,consistent,C-lim12_1,15.1111726
+sp|P06986|HIS8_ECOLI,hisC,consistent,C-lim12_1,10.7744548
+sp|P06988|HISX_ECOLI,hisD,consistent,C-lim12_1,11.52811051
+sp|P06993|MALT_ECOLI,malT,consistent,C-lim12_1,1.502937136
+sp|P06996|OMPC_ECOLI,ompC,consistent,C-lim12_1,13.04137382
+sp|P06999|PFKB_ECOLI,pfkB,consistent,C-lim12_1,11.46867004
+sp|P07012|RF2_ECOLI,prfB,consistent,C-lim12_1,8.636015002
+sp|P07017|MCP2_ECOLI,tar,consistent,C-lim12_1,5.998702096
+sp|P07018|MCP4_ECOLI,tap,consistent,C-lim12_1,4.635124506
+sp|P07023|TYRA_ECOLI,tyrA,consistent,C-lim12_1,7.946643372
+sp|P07109|HISP_ECOLI,hisP,consistent,C-lim12_1,11.79938684
+sp|P07118|SYV_ECOLI,valS,consistent,C-lim12_1,10.69332952
+sp|P07363|CHEA_ECOLI,cheA,consistent,C-lim12_1,2.278962341
+sp|P07395|SYFB_ECOLI,pheT,consistent,C-lim12_1,12.92977739
+sp|P07604|TYRR_ECOLI,tyrR,consistent,C-lim12_1,8.608150376
+sp|P07623|METAS_ECOLI,metAS,consistent,C-lim12_1,5.287351351
+sp|P07639|AROB_ECOLI,aroB,consistent,C-lim12_1,9.098796147
+sp|P07654|PSTA_ECOLI,pstA,consistent,C-lim12_1,13.00841469
+sp|P07813|SYL_ECOLI,leuS,consistent,C-lim12_1,11.27622193
+sp|P08142|ILVB_ECOLI,ilvB,consistent,C-lim12_1,5.715260974
+sp|P08192|FOLC_ECOLI,folC,consistent,C-lim12_1,10.30393087
+sp|P08200|IDH_ECOLI,icd,consistent,C-lim12_1,10.52425154
+sp|P08202|ARAA_ECOLI,araA,consistent,C-lim12_1,10.50522384
+sp|P08244|PYRF_ECOLI,pyrF,consistent,C-lim12_1,9.82620781
+sp|P08245|YCIH_ECOLI,yciH,consistent,C-lim12_1,5.650664351
+sp|P08331|CPDB_ECOLI,cpdB,consistent,C-lim12_1,14.43605293
+sp|P08373|MURB_ECOLI,murB,consistent,C-lim12_1,10.06152637
+sp|P08506|DACC_ECOLI,dacC,consistent,C-lim12_1,12.74568011
+sp|P08622|DNAJ_ECOLI,dnaJ,consistent,C-lim12_1,9.806762162
+sp|P08839|PT1_ECOLI,ptsI,consistent,C-lim12_1,10.89548664
+sp|P08956|T1RK_ECOLI,hsdR,consistent,C-lim12_1,7.466217532
+sp|P08957|T1MK_ECOLI,hsdM,consistent,C-lim12_1,10.29943802
+sp|P08997|MASY_ECOLI,aceB,consistent,C-lim12_1,4.405454682
+sp|P09053|AVTA_ECOLI,avtA,consistent,C-lim12_1,7.371193378
+sp|P09127|HEMX_ECOLI,hemX,consistent,C-lim12_1,12.41354363
+sp|P09151|LEU1_ECOLI,leuA,consistent,C-lim12_1,4.61540553
+sp|P09158|SPEE_ECOLI,speE,consistent,C-lim12_1,9.682280393
+sp|P09323|PTW3C_ECOLI,nagE,consistent,C-lim12_1,12.96355575
+sp|P09373|PFLB_ECOLI,pflB,consistent,C-lim12_1,4.392001427
+sp|P09394|GLPQ_ECOLI,glpQ,consistent,C-lim12_1,11.53710547
+sp|P09424|MTLD_ECOLI,mtlD,consistent,C-lim12_1,11.68580157
+sp|P09551|ARGT_ECOLI,argT,consistent,C-lim12_1,11.6606942
+sp|P09832|GLTD_ECOLI,gltD,consistent,C-lim12_1,8.028582447
+sp|P0A6A0|UBIB_ECOLI,ubiB,consistent,C-lim12_1,13.26731382
+sp|P0A6A6|LEUC_ECOLI,leuC,consistent,C-lim12_1,4.111676099
+sp|P0A6B4|ALR1_ECOLI,alr,consistent,C-lim12_1,12.39363586
+sp|P0A6B7|ISCS_ECOLI,iscS,consistent,C-lim12_1,4.073338265
+sp|P0A6C1|END4_ECOLI,nfo,consistent,C-lim12_1,4.403818535
+sp|P0A6C5|ARGA_ECOLI,argA,consistent,C-lim12_1,5.387229072
+sp|P0A6D0|ARGR_ECOLI,argR,consistent,C-lim12_1,11.93729759
+sp|P0A6D3|AROA_ECOLI,aroA,consistent,C-lim12_1,11.75268074
+sp|P0A6E4|ASSY_ECOLI,argG,consistent,C-lim12_1,10.40213609
+sp|P0A6E9|BIOD2_ECOLI,bioD,consistent,C-lim12_1,5.154749838
+sp|P0A6F3|GLPK_ECOLI,glpK,consistent,C-lim12_1,10.69601097
+sp|P0A6F9|CH10_ECOLI,groS,consistent,C-lim12_1,11.50560487
+sp|P0A6G3|PNCC_ECOLI,pncC,consistent,C-lim12_1,12.33322174
+sp|P0A6G7|CLPP_ECOLI,clpP,consistent,C-lim12_1,11.28929417
+sp|P0A6H1|CLPX_ECOLI,clpX,consistent,C-lim12_1,2.499725889
+sp|P0A6H5|HSLU_ECOLI,hslU,consistent,C-lim12_1,10.62652143
+sp|P0A6H8|CLSA_ECOLI,clsA,consistent,C-lim12_1,14.04349863
+sp|P0A6I0|KCY_ECOLI,cmk,consistent,C-lim12_1,9.998590364
+sp|P0A6I3|COAA_ECOLI,coaA,consistent,C-lim12_1,8.944778604
+sp|P0A6I9|COAE_ECOLI,coaE,consistent,C-lim12_1,10.07326705
+sp|P0A6J5|DADA_ECOLI,dadA,consistent,C-lim12_1,3.096108672
+sp|P0A6J8|DDLA_ECOLI,ddlA,consistent,C-lim12_1,10.93954753
+sp|P0A6K6|DEOB_ECOLI,deoB,consistent,C-lim12_1,9.218811113
+sp|P0A6L4|NANA_ECOLI,nanA,consistent,C-lim12_1,6.832236086
+sp|P0A6L7|UXAB_ECOLI,uxaB,consistent,C-lim12_1,9.04113974
+sp|P0A6M4|DTD_ECOLI,dtd,consistent,C-lim12_1,10.62125192
+sp|P0A6M8|EFG_ECOLI,fusA,consistent,C-lim12_1,11.62963837
+sp|P0A6N4|EFP_ECOLI,efp,consistent,C-lim12_1,8.695233703
+sp|P0A6N8|EFPL_ECOLI,yeiP,consistent,C-lim12_1,11.80060479
+sp|P0A6Q3|FABA_ECOLI,fabA,consistent,C-lim12_1,12.61007425
+sp|P0A6Q6|FABZ_ECOLI,fabZ,consistent,C-lim12_1,11.33586837
+sp|P0A6R0|FABH_ECOLI,fabH,consistent,C-lim12_1,10.44304642
+sp|P0A6S0|FLGH_ECOLI,flgH,consistent,C-lim12_1,8.311391094
+sp|P0A6T1|G6PI_ECOLI,pgi,consistent,C-lim12_1,11.88243043
+sp|P0A6T5|GCH1_ECOLI,folE,consistent,C-lim12_1,5.438765993
+sp|P0A6U3|MNMG_ECOLI,mnmG,consistent,C-lim12_1,4.060661183
+sp|P0A6W0|GLSA2_ECOLI,glsA2,consistent,C-lim12_1,13.22559594
+sp|P0A6W5|GREA_ECOLI,greA,consistent,C-lim12_1,6.533856276
+sp|P0A6W9|GSH1_ECOLI,gshA,consistent,C-lim12_1,9.555144012
+sp|P0A6X1|HEM1_ECOLI,hemA,consistent,C-lim12_1,3.23394185
+sp|P0A6Y5|HSLO_ECOLI,hslO,consistent,C-lim12_1,7.699988131
+sp|P0A6Y8|DNAK_ECOLI,dnaK,consistent,C-lim12_1,10.44905205
+sp|P0A6Z3|HTPG_ECOLI,htpG,consistent,C-lim12_1,10.58760581
+sp|P0A707|IF3_ECOLI,infC,consistent,C-lim12_1,10.99185002
+sp|P0A715|KDSA_ECOLI,kdsA,consistent,C-lim12_1,11.10434757
+sp|P0A717|KPRS_ECOLI,prs,consistent,C-lim12_1,14.06500503
+sp|P0A720|KTHY_ECOLI,tmk,consistent,C-lim12_1,9.934934669
+sp|P0A722|LPXA_ECOLI,lpxA,consistent,C-lim12_1,10.94091852
+sp|P0A725|LPXC_ECOLI,lpxC,consistent,C-lim12_1,1.335069378
+sp|P0A729|YCEF_ECOLI,yceF,consistent,C-lim12_1,8.829758658
+sp|P0A734|MINE_ECOLI,minE,consistent,C-lim12_1,6.409714275
+sp|P0A738|MOAC_ECOLI,moaC,consistent,C-lim12_1,8.630103599
+sp|P0A742|MSCL_ECOLI,mscL,consistent,C-lim12_1,13.73305447
+sp|P0A746|MSRB_ECOLI,msrB,consistent,C-lim12_1,5.998651851
+sp|P0A752|NADD_ECOLI,nadD,consistent,C-lim12_1,12.71576023
+sp|P0A759|NAGB_ECOLI,nagB,consistent,C-lim12_1,11.97128353
+sp|P0A761|NANE_ECOLI,nanE,consistent,C-lim12_1,11.31285971
+sp|P0A780|NUSB_ECOLI,nusB,consistent,C-lim12_1,10.85267848
+sp|P0A784|ORN_ECOLI,orn,consistent,C-lim12_1,14.36224497
+sp|P0A786|PYRB_ECOLI,pyrB,consistent,C-lim12_1,11.70125695
+sp|P0A794|PDXJ_ECOLI,pdxJ,consistent,C-lim12_1,12.11365036
+sp|P0A796|PFKA_ECOLI,pfkA,consistent,C-lim12_1,10.80053478
+sp|P0A799|PGK_ECOLI,pgk,consistent,C-lim12_1,13.5266539
+sp|P0A7A2|GPMB_ECOLI,gpmB,consistent,C-lim12_1,7.171978081
+sp|P0A7A5|PIMT_ECOLI,pcm,consistent,C-lim12_1,9.337468346
+sp|P0A7A9|IPYR_ECOLI,ppa,consistent,C-lim12_1,11.0791146
+sp|P0A7B5|PROB_ECOLI,proB,consistent,C-lim12_1,9.159577114
+sp|P0A7C2|LEXA_ECOLI,lexA,consistent,C-lim12_1,4.771359921
+sp|P0A7D1|PTH_ECOLI,pth,consistent,C-lim12_1,11.12870193
+sp|P0A7D4|PURA_ECOLI,purA,consistent,C-lim12_1,11.45528054
+sp|P0A7D7|PUR7_ECOLI,purC,consistent,C-lim12_1,11.2751756
+sp|P0A7E1|PYRD_ECOLI,pyrD,consistent,C-lim12_1,13.42562592
+sp|P0A7E5|PYRG_ECOLI,pyrG,consistent,C-lim12_1,13.12303838
+sp|P0A7F6|SPED_ECOLI,speD,consistent,C-lim12_1,9.430479226
+sp|P0A7F9|QUEA_ECOLI,queA,consistent,C-lim12_1,7.583717901
+sp|P0A7G2|RBFA_ECOLI,rbfA,consistent,C-lim12_1,10.98715037
+sp|P0A7H0|RECF_ECOLI,recF,consistent,C-lim12_1,10.09656388
+sp|P0A7I7|RIBA_ECOLI,ribA,consistent,C-lim12_1,9.312001435
+sp|P0A7J0|RIBB_ECOLI,ribB,consistent,C-lim12_1,1.442476896
+sp|P0A7J3|RL10_ECOLI,rplJ,consistent,C-lim12_1,12.93871181
+sp|P0A7K2|RL7_ECOLI,rplL,consistent,C-lim12_1,12.95274758
+sp|P0A7L0|RL1_ECOLI,rplA,consistent,C-lim12_1,10.70179438
+sp|P0A7M2|RL28_ECOLI,rpmB,consistent,C-lim12_1,8.713327587
+sp|P0A7R1|RL9_ECOLI,rplI,consistent,C-lim12_1,9.244711254
+sp|P0A7R5|RS10_ECOLI,rpsJ,consistent,C-lim12_1,10.94915311
+sp|P0A7S9|RS13_ECOLI,rpsM,consistent,C-lim12_1,9.022440081
+sp|P0A7T7|RS18_ECOLI,rpsR,consistent,C-lim12_1,9.776694809
+sp|P0A7V3|RS3_ECOLI,rpsC,consistent,C-lim12_1,12.61344769
+sp|P0A7W1|RS5_ECOLI,rpsE,consistent,C-lim12_1,12.12336298
+sp|P0A7W7|RS8_ECOLI,rpsH,consistent,C-lim12_1,11.08383606
+sp|P0A7X3|RS9_ECOLI,rpsI,consistent,C-lim12_1,12.99992964
+sp|P0A7X6|RIMM_ECOLI,rimM,consistent,C-lim12_1,8.502756389
+sp|P0A7Y0|RNC_ECOLI,rnc,consistent,C-lim12_1,8.846634776
+sp|P0A800|RPOZ_ECOLI,rpoZ,consistent,C-lim12_1,5.543664909
+sp|P0A805|RRF_ECOLI,frr,consistent,C-lim12_1,8.789524887
+sp|P0A814|RUVC_ECOLI,ruvC,consistent,C-lim12_1,6.736503171
+sp|P0A817|METK_ECOLI,metK,consistent,C-lim12_1,7.143407708
+sp|P0A821|SELA_ECOLI,selA,consistent,C-lim12_1,12.41095807
+sp|P0A823|SFSA_ECOLI,sfsA,consistent,C-lim12_1,11.39208822
+sp|P0A830|DCTA_ECOLI,dctA,consistent,C-lim12_1,11.14647513
+sp|P0A832|SSRP_ECOLI,smpB,consistent,C-lim12_1,13.5004078
+sp|P0A836|SUCC_ECOLI,sucC,consistent,C-lim12_1,11.71445165
+sp|P0A840|SURE_ECOLI,surE,consistent,C-lim12_1,8.705964033
+sp|P0A843|TATE_ECOLI,tatE,consistent,C-lim12_1,1.538679758
+sp|P0A847|TGT_ECOLI,tgt,consistent,C-lim12_1,11.16870054
+sp|P0A853|TNAA_ECOLI,tnaA,consistent,C-lim12_1,9.589900657
+sp|P0A855|TOLB_ECOLI,tolB,consistent,C-lim12_1,11.61252196
+sp|P0A858|TPIS_ECOLI,tpiA,consistent,C-lim12_1,10.79595668
+sp|P0A862|TPX_ECOLI,tpx,consistent,C-lim12_1,11.61758145
+sp|P0A867|TALA_ECOLI,talA,consistent,C-lim12_1,11.70667701
+sp|P0A870|TALB_ECOLI,talB,consistent,C-lim12_1,12.02177613
+sp|P0A873|TRMD_ECOLI,trmD,consistent,C-lim12_1,9.394322618
+sp|P0A879|TRPB_ECOLI,trpB,consistent,C-lim12_1,9.8838844
+sp|P0A881|TRPR_ECOLI,trpR,consistent,C-lim12_1,8.991665161
+sp|P0A884|TYSY_ECOLI,thyA,consistent,C-lim12_1,10.41941888
+sp|P0A887|UBIE_ECOLI,ubiE,consistent,C-lim12_1,8.223284162
+sp|P0A894|RAPZ_ECOLI,rapZ,consistent,C-lim12_1,12.07195117
+sp|P0A8A0|YEBC_ECOLI,yebC,consistent,C-lim12_1,7.580109565
+sp|P0A8A4|PSRP_ECOLI,ppsR,consistent,C-lim12_1,10.9355459
+sp|P0A8A8|RIMP_ECOLI,rimP,consistent,C-lim12_1,11.28470725
+sp|P0A8B5|YBAB_ECOLI,ybaB,consistent,C-lim12_1,7.636351325
+sp|P0A8C4|YGFB_ECOLI,ygfB,consistent,C-lim12_1,9.091148109
+sp|P0A8E1|YCFP_ECOLI,ycfP,consistent,C-lim12_1,8.809116369
+sp|P0A8E5|YACL_ECOLI,yacL,consistent,C-lim12_1,6.345996572
+sp|P0A8F0|UPP_ECOLI,upp,consistent,C-lim12_1,11.86877798
+sp|P0A8F4|URK_ECOLI,udk,consistent,C-lim12_1,9.66117316
+sp|P0A8G3|UXAC_ECOLI,uxaC,consistent,C-lim12_1,12.59960394
+sp|P0A8G6|NQOR_ECOLI,wrbA,consistent,C-lim12_1,11.88256913
+sp|P0A8H6|YIHI_ECOLI,yihI,consistent,C-lim12_1,8.531949889
+sp|P0A8I3|YAAA_ECOLI,yaaA,consistent,C-lim12_1,6.590117286
+sp|P0A8I5|TRMB_ECOLI,trmB,consistent,C-lim12_1,8.304602769
+sp|P0A8I8|RLMH_ECOLI,rlmH,consistent,C-lim12_1,10.76148486
+sp|P0A8K1|PSD_ECOLI,psd,consistent,C-lim12_1,13.27977991
+sp|P0A8L1|SYS_ECOLI,serS,consistent,C-lim12_1,11.92688595
+sp|P0A8M0|SYN_ECOLI,asnS,consistent,C-lim12_1,11.58967824
+sp|P0A8M3|SYT_ECOLI,thrS,consistent,C-lim12_1,11.90591065
+sp|P0A8M6|YEEX_ECOLI,yeeX,consistent,C-lim12_1,10.8767215
+sp|P0A8N3|SYK1_ECOLI,lysS,consistent,C-lim12_1,10.86403178
+sp|P0A8N5|SYK2_ECOLI,lysU,consistent,C-lim12_1,9.967270203
+sp|P0A8P3|FETP_ECOLI,yggX,consistent,C-lim12_1,9.647908431
+sp|P0A8P8|XERD_ECOLI,xerD,consistent,C-lim12_1,4.54880742
+sp|P0A8R7|YCJF_ECOLI,ycjF,consistent,C-lim12_1,11.25621944
+sp|P0A8R9|HDFR_ECOLI,hdfR,consistent,C-lim12_1,10.04806005
+sp|P0A8S1|ARGP_ECOLI,argP,consistent,C-lim12_1,11.74307849
+sp|P0A8T1|PRMA_ECOLI,prmA,consistent,C-lim12_1,9.749741715
+sp|P0A8T7|RPOC_ECOLI,rpoC,consistent,C-lim12_1,7.850961283
+sp|P0A8U2|YAFD_ECOLI,yafD,consistent,C-lim12_1,3.530305609
+sp|P0A8V6|FADR_ECOLI,fadR,consistent,C-lim12_1,10.58663451
+sp|P0A8W5|YQGE_ECOLI,yqgE,consistent,C-lim12_1,8.440941518
+sp|P0A8Y3|YIHX_ECOLI,yihX,consistent,C-lim12_1,9.71088749
+sp|P0A8Y5|YIDA_ECOLI,yidA,consistent,C-lim12_1,10.114113
+sp|P0A8Z0|YCIA_ECOLI,yciA,consistent,C-lim12_1,11.2956931
+sp|P0A903|BAMC_ECOLI,bamC,consistent,C-lim12_1,11.14846408
+sp|P0A905|SLYB_ECOLI,slyB,consistent,C-lim12_1,9.614938261
+sp|P0A910|OMPA_ECOLI,ompA,consistent,C-lim12_1,14.1170478
+sp|P0A912|PAL_ECOLI,pal,consistent,C-lim12_1,11.45564318
+sp|P0A917|OMPX_ECOLI,ompX,consistent,C-lim12_1,15.01106091
+sp|P0A921|PA1_ECOLI,pldA,consistent,C-lim12_1,14.40852586
+sp|P0A927|TSX_ECOLI,tsx,consistent,C-lim12_1,14.86590352
+sp|P0A935|MLTA_ECOLI,mltA,consistent,C-lim12_1,4.499829146
+sp|P0A940|BAMA_ECOLI,bamA,consistent,C-lim12_1,11.81302623
+sp|P0A959|ALAA_ECOLI,alaA,consistent,C-lim12_1,9.76115731
+sp|P0A962|ASPG1_ECOLI,ansA,consistent,C-lim12_1,12.86562514
+sp|P0A964|CHEW_ECOLI,cheW,consistent,C-lim12_1,4.794154819
+sp|P0A972|CSPE_ECOLI,cspE,consistent,C-lim12_1,3.002156075
+sp|P0A9A6|FTSZ_ECOLI,ftsZ,consistent,C-lim12_1,2.86265872
+sp|P0A9B2|G3P1_ECOLI,gapA,consistent,C-lim12_1,12.33511121
+sp|P0A9B6|E4PD_ECOLI,epd,consistent,C-lim12_1,8.936743714
+sp|P0A9C5|GLN1B_ECOLI,glnA,consistent,C-lim12_1,11.70661316
+sp|P0A9C9|GLPX_ECOLI,glpX,consistent,C-lim12_1,10.27612225
+sp|P0A9D4|CYSE_ECOLI,cysE,consistent,C-lim12_1,10.25125484
+sp|P0A9D8|DAPD_ECOLI,dapD,consistent,C-lim12_1,9.635398906
+sp|P0A9E0|ARAC_ECOLI,araC,consistent,C-lim12_1,1.845404785
+sp|P0A9E5|FNR_ECOLI,fnr,consistent,C-lim12_1,2.244274542
+sp|P0A9F9|METR_ECOLI,metR,consistent,C-lim12_1,1.319183369
+sp|P0A9H1|MUG_ECOLI,mug,consistent,C-lim12_1,12.8857436
+sp|P0A9H5|BTUR_ECOLI,btuR,consistent,C-lim12_1,9.987031555
+sp|P0A9H7|CFA_ECOLI,cfa,consistent,C-lim12_1,1.055171293
+sp|P0A9J0|RNG_ECOLI,rng,consistent,C-lim12_1,8.973523824
+sp|P0A9J6|RBSK_ECOLI,rbsK,consistent,C-lim12_1,12.21511598
+sp|P0A9K3|PHOL_ECOLI,ybeZ,consistent,C-lim12_1,7.909301433
+sp|P0A9K7|PHOU_ECOLI,phoU,consistent,C-lim12_1,9.926670653
+sp|P0A9K9|SLYD_ECOLI,slyD,consistent,C-lim12_1,8.405548329
+sp|P0A9L5|PPIC_ECOLI,ppiC,consistent,C-lim12_1,9.350186551
+sp|P0A9M2|HPRT_ECOLI,hpt,consistent,C-lim12_1,9.707212429
+sp|P0A9M5|XGPT_ECOLI,gpt,consistent,C-lim12_1,10.50493691
+sp|P0A9M8|PTA_ECOLI,pta,consistent,C-lim12_1,11.18739222
+sp|P0A9N4|PFLA_ECOLI,pflA,consistent,C-lim12_1,9.969042468
+sp|P0A9P4|TRXB_ECOLI,trxB,consistent,C-lim12_1,11.392601
+sp|P0A9P9|IDNO_ECOLI,idnO,consistent,C-lim12_1,7.924006206
+sp|P0A9Q1|ARCA_ECOLI,arcA,consistent,C-lim12_1,10.67411725
+sp|P0A9Q7|ADHE_ECOLI,adhE,consistent,C-lim12_1,9.750604764
+sp|P0A9Q9|DHAS_ECOLI,asd,consistent,C-lim12_1,10.02723766
+sp|P0A9R4|FER_ECOLI,fdx,consistent,C-lim12_1,6.645843921
+sp|P0A9R7|FTSE_ECOLI,ftsE,consistent,C-lim12_1,10.29609718
+sp|P0A9S1|FUCO_ECOLI,fucO,consistent,C-lim12_1,10.79202726
+sp|P0A9T0|SERA_ECOLI,serA,consistent,C-lim12_1,12.40503445
+sp|P0A9W0|ULAR_ECOLI,ulaR,consistent,C-lim12_1,11.81731401
+sp|P0A9W3|ETTA_ECOLI,ettA,consistent,C-lim12_1,10.73568385
+sp|P0A9W6|IBAG_ECOLI,ibaG,consistent,C-lim12_1,8.063518492
+sp|P0A9W9|YRDA_ECOLI,yrdA,consistent,C-lim12_1,11.46915095
+sp|P0A9X1|ZNUC_ECOLI,znuC,consistent,C-lim12_1,7.871740746
+sp|P0A9X4|MREB_ECOLI,mreB,consistent,C-lim12_1,12.61503601
+sp|P0A9Y6|CSPC_ECOLI,cspC,consistent,C-lim12_1,6.472560625
+sp|P0A9Z1|GLNB_ECOLI,glnB,consistent,C-lim12_1,11.26323426
+sp|P0AA25|THIO_ECOLI,trxA,consistent,C-lim12_1,9.741958823
+sp|P0AA41|TRUC_ECOLI,truC,consistent,C-lim12_1,11.93135263
+sp|P0AA57|YOBA_ECOLI,yobA,consistent,C-lim12_1,10.17007616
+sp|P0AA84|CLSB_ECOLI,clsB,consistent,C-lim12_1,7.286314603
+sp|P0AA86|DSBE_ECOLI,dsbE,consistent,C-lim12_1,14.19325091
+sp|P0AA97|YAEQ_ECOLI,yaeQ,consistent,C-lim12_1,9.938460694
+sp|P0AAB4|UBID_ECOLI,ubiD,consistent,C-lim12_1,11.57922161
+sp|P0AAB8|USPD_ECOLI,uspD,consistent,C-lim12_1,9.974751498
+sp|P0AAC0|USPE_ECOLI,uspE,consistent,C-lim12_1,10.17056656
+sp|P0AAC8|ISCA_ECOLI,iscA,consistent,C-lim12_1,2.332437824
+sp|P0AAG0|DPPD_ECOLI,dppD,consistent,C-lim12_1,12.67802237
+sp|P0AAG8|MGLA_ECOLI,mglA,consistent,C-lim12_1,12.12953649
+sp|P0AAH0|PSTB_ECOLI,pstB,consistent,C-lim12_1,9.515926319
+sp|P0AAH4|SAPD_ECOLI,sapD,consistent,C-lim12_1,11.23661957
+sp|P0AAI3|FTSH_ECOLI,ftsH,consistent,C-lim12_1,11.20757642
+sp|P0AAI9|FABD_ECOLI,fabD,consistent,C-lim12_1,11.58668254
+sp|P0AAN3|HYPB_ECOLI,hypB,consistent,C-lim12_1,6.736628238
+sp|P0AAN9|IRAP_ECOLI,iraP,consistent,C-lim12_1,8.590285224
+sp|P0AAP3|FRMR_ECOLI,frmR,consistent,C-lim12_1,9.593410879
+sp|P0AAS7|YBCJ_ECOLI,ybcJ,consistent,C-lim12_1,4.765048283
+sp|P0AAT2|YBDF_ECOLI,ybdF,consistent,C-lim12_1,11.37347963
+sp|P0AAT4|YBDG_ECOLI,ybdG,consistent,C-lim12_1,14.05444529
+sp|P0AAT9|YBEL_ECOLI,ybeL,consistent,C-lim12_1,8.617793004
+sp|P0AAV4|YBGJ_ECOLI,ybgJ,consistent,C-lim12_1,11.56104863
+sp|P0AAX8|YBIS_ECOLI,ldtB,consistent,C-lim12_1,11.84810509
+sp|P0AAZ7|YCAR_ECOLI,ycaR,consistent,C-lim12_1,9.926472284
+sp|P0AB12|YCCF_ECOLI,yccF,consistent,C-lim12_1,13.23509749
+sp|P0AB14|YCCJ_ECOLI,yccJ,consistent,C-lim12_1,6.404420478
+sp|P0AB26|YCEB_ECOLI,yceB,consistent,C-lim12_1,12.9080918
+sp|P0AB28|YCED_ECOLI,yceD,consistent,C-lim12_1,7.499959602
+sp|P0AB38|LPOB_ECOLI,lpoB,consistent,C-lim12_1,11.55302415
+sp|P0AB43|YCGL_ECOLI,ycgL,consistent,C-lim12_1,8.422741246
+sp|P0AB46|YMGD_ECOLI,ymgD,consistent,C-lim12_1,6.835898682
+sp|P0AB58|LAPB_ECOLI,lapB,consistent,C-lim12_1,12.9261362
+sp|P0AB67|PNTB_ECOLI,pntB,consistent,C-lim12_1,15.44069316
+sp|P0AB71|ALF_ECOLI,fbaA,consistent,C-lim12_1,9.952292968
+sp|P0AB80|ILVE_ECOLI,ilvE,consistent,C-lim12_1,10.95703401
+sp|P0AB83|END3_ECOLI,nth,consistent,C-lim12_1,11.07660795
+sp|P0AB89|PUR8_ECOLI,purB,consistent,C-lim12_1,11.13872558
+sp|P0AB91|AROG_ECOLI,aroG,consistent,C-lim12_1,10.50036938
+sp|P0AB96|ARSC_ECOLI,arsC,consistent,C-lim12_1,9.76898688
+sp|P0AB98|ATP6_ECOLI,atpB,consistent,C-lim12_1,12.6700242
+sp|P0ABA0|ATPF_ECOLI,atpF,consistent,C-lim12_1,12.9699609
+sp|P0ABA4|ATPD_ECOLI,atpH,consistent,C-lim12_1,12.63374683
+sp|P0ABA6|ATPG_ECOLI,atpG,consistent,C-lim12_1,12.47253595
+sp|P0ABB8|ATMA_ECOLI,mgtA,consistent,C-lim12_1,15.24234491
+sp|P0ABC3|HFLC_ECOLI,hflC,consistent,C-lim12_1,12.28372376
+sp|P0ABC7|HFLK_ECOLI,hflK,consistent,C-lim12_1,13.78839395
+sp|P0ABC9|BETT_ECOLI,betT,consistent,C-lim12_1,13.0144712
+sp|P0ABD5|ACCA_ECOLI,accA,consistent,C-lim12_1,13.20351641
+sp|P0ABF1|PCNB_ECOLI,pcnB,consistent,C-lim12_1,6.873988724
+sp|P0ABF4|EUTM_ECOLI,eutM,consistent,C-lim12_1,12.51061286
+sp|P0ABF6|CDD_ECOLI,cdd,consistent,C-lim12_1,11.26757866
+sp|P0ABH0|FTSA_ECOLI,ftsA,consistent,C-lim12_1,10.4158558
+sp|P0ABH7|CISY_ECOLI,gltA,consistent,C-lim12_1,11.02376977
+sp|P0ABH9|CLPA_ECOLI,clpA,consistent,C-lim12_1,1.344273326
+sp|P0ABI4|CORA_ECOLI,corA,consistent,C-lim12_1,11.87776957
+sp|P0ABI8|CYOB_ECOLI,cyoB,consistent,C-lim12_1,14.67105149
+sp|P0ABJ9|CYDA_ECOLI,cydA,consistent,C-lim12_1,14.34814017
+sp|P0ABP8|DEOD_ECOLI,deoD,consistent,C-lim12_1,13.56598165
+sp|P0ABQ2|GARR_ECOLI,garR,consistent,C-lim12_1,10.28275639
+sp|P0ABQ4|DYR_ECOLI,folA,consistent,C-lim12_1,12.60439262
+sp|P0ABS5|DNAG_ECOLI,dnaG,consistent,C-lim12_1,12.32229345
+sp|P0ABT2|DPS_ECOLI,dps,consistent,C-lim12_1,4.489130275
+sp|P0ABT5|DUSB_ECOLI,dusB,consistent,C-lim12_1,7.295836725
+sp|P0ABU0|MENB_ECOLI,menB,consistent,C-lim12_1,10.20682116
+sp|P0ABU2|YCHF_ECOLI,ychF,consistent,C-lim12_1,9.47418575
+sp|P0ABU5|ELBB_ECOLI,elbB,consistent,C-lim12_1,11.11500756
+sp|P0ABU9|TOLQ_ECOLI,tolQ,consistent,C-lim12_1,12.89428241
+sp|P0ABV2|EXBD_ECOLI,exbD,consistent,C-lim12_1,2.409060946
+sp|P0ABV6|TOLR_ECOLI,tolR,consistent,C-lim12_1,12.43280034
+sp|P0ABX8|FLIL_ECOLI,fliL,consistent,C-lim12_1,3.162956471
+sp|P0ABZ4|KDSC_ECOLI,kdsC,consistent,C-lim12_1,12.61174455
+sp|P0ABZ6|SURA_ECOLI,surA,consistent,C-lim12_1,12.32475888
+sp|P0AC28|5FCL_ECOLI,ygfA,consistent,C-lim12_1,8.797600558
+sp|P0AC33|FUMA_ECOLI,fumA,consistent,C-lim12_1,8.650588459
+sp|P0AC38|ASPA_ECOLI,aspA,consistent,C-lim12_1,7.022297747
+sp|P0AC41|SDHA_ECOLI,sdhA,consistent,C-lim12_1,12.56320412
+sp|P0AC53|G6PD_ECOLI,zwf,consistent,C-lim12_1,12.72893682
+sp|P0AC59|GLRX2_ECOLI,grxB,consistent,C-lim12_1,13.01121218
+sp|P0AC69|GLRX4_ECOLI,grxD,consistent,C-lim12_1,7.0310118
+sp|P0AC75|KDTA_ECOLI,waaA,consistent,C-lim12_1,11.87250639
+sp|P0AC86|PHSG_ECOLI,glgP,consistent,C-lim12_1,10.52144772
+sp|P0AC92|GNSA_ECOLI,gnsA,consistent,C-lim12_1,11.01292174
+sp|P0ACA1|YIBF_ECOLI,yibF,consistent,C-lim12_1,11.30300267
+sp|P0ACA3|SSPA_ECOLI,sspA,consistent,C-lim12_1,11.33586679
+sp|P0ACA7|GSTB_ECOLI,gstB,consistent,C-lim12_1,9.68419438
+sp|P0ACB4|HEMG_ECOLI,hemG,consistent,C-lim12_1,9.892007775
+sp|P0ACB7|HEMY_ECOLI,hemY,consistent,C-lim12_1,13.81892579
+sp|P0ACD4|ISCU_ECOLI,iscU,consistent,C-lim12_1,2.528796761
+sp|P0ACF0|DBHA_ECOLI,hupA,consistent,C-lim12_1,10.16240536
+sp|P0ACH8|MELR_ECOLI,melR,consistent,C-lim12_1,4.22976925
+sp|P0ACI0|ROB_ECOLI,rob,consistent,C-lim12_1,11.41074242
+sp|P0ACI3|XYLR_ECOLI,xylR,consistent,C-lim12_1,9.357231574
+sp|P0ACJ0|LRP_ECOLI,lrp,consistent,C-lim12_1,10.88851792
+sp|P0ACJ8|CRP_ECOLI,crp,consistent,C-lim12_1,10.49293921
+sp|P0ACK2|AGAR_ECOLI,agaR,consistent,C-lim12_1,10.30389541
+sp|P0ACK8|FUCR_ECOLI,fucR,consistent,C-lim12_1,1.578091663
+sp|P0ACL5|GLCC_ECOLI,glcC,consistent,C-lim12_1,2.461958779
+sp|P0ACM2|RSPR_ECOLI,rspR,consistent,C-lim12_1,10.65984496
+sp|P0ACN4|ALLR_ECOLI,allR,consistent,C-lim12_1,11.67709855
+sp|P0ACP1|CRA_ECOLI,cra,consistent,C-lim12_1,10.57094985
+sp|P0ACP7|PURR_ECOLI,purR,consistent,C-lim12_1,11.23539573
+sp|P0ACQ4|OXYR_ECOLI,oxyR,consistent,C-lim12_1,11.14532111
+sp|P0ACR7|YFER_ECOLI,yfeR,consistent,C-lim12_1,13.648391
+sp|P0ACR9|MPRA_ECOLI,mprA,consistent,C-lim12_1,11.39963723
+sp|P0ACS9|ACRR_ECOLI,acrR,consistent,C-lim12_1,11.21840738
+sp|P0ACU2|RUTR_ECOLI,rutR,consistent,C-lim12_1,13.43564672
+sp|P0ACU5|FABR_ECOLI,fabR,consistent,C-lim12_1,12.66195449
+sp|P0ACV6|MPAA_ECOLI,mpaA,consistent,C-lim12_1,9.413363075
+sp|P0ACY3|YEAG_ECOLI,yeaG,consistent,C-lim12_1,5.093602457
+sp|P0ACZ8|CUSR_ECOLI,cusR,consistent,C-lim12_1,9.206565486
+sp|P0AD01|DCUR_ECOLI,dcuR,consistent,C-lim12_1,5.074669806
+sp|P0AD10|YECJ_ECOLI,yecJ,consistent,C-lim12_1,8.429374477
+sp|P0AD12|YEEZ_ECOLI,yeeZ,consistent,C-lim12_1,9.630932672
+sp|P0AD24|YEJL_ECOLI,yejL,consistent,C-lim12_1,10.60354076
+sp|P0AD27|YEJM_ECOLI,yejM,consistent,C-lim12_1,13.001108
+sp|P0AD44|YFHG_ECOLI,yfhG,consistent,C-lim12_1,13.54562882
+sp|P0AD49|YFIA_ECOLI,raiA,consistent,C-lim12_1,2.768123855
+sp|P0AD57|ISPB_ECOLI,ispB,consistent,C-lim12_1,10.16932572
+sp|P0AD59|IVY_ECOLI,ivy,consistent,C-lim12_1,10.5217896
+sp|P0AD65|MRDA_ECOLI,mrdA,consistent,C-lim12_1,12.3510073
+sp|P0AD68|FTSI_ECOLI,ftsI,consistent,C-lim12_1,2.992415022
+sp|P0AD70|AMPH_ECOLI,ampH,consistent,C-lim12_1,6.61114248
+sp|P0AD96|LIVJ_ECOLI,livJ,consistent,C-lim12_1,11.4882947
+sp|P0ADA5|YAJG_ECOLI,yajG,consistent,C-lim12_1,12.67688049
+sp|P0ADB1|OSME_ECOLI,osmE,consistent,C-lim12_1,11.59606596
+sp|P0ADC3|LOLC_ECOLI,lolC,consistent,C-lim12_1,12.69863697
+sp|P0ADC6|LPTG_ECOLI,lptG,consistent,C-lim12_1,12.61468418
+sp|P0ADE6|YGAU_ECOLI,kbp,consistent,C-lim12_1,10.59744007
+sp|P0ADE8|YGFZ_ECOLI,ygfZ,consistent,C-lim12_1,9.804357313
+sp|P0ADF8|ILVN_ECOLI,ilvN,consistent,C-lim12_1,5.031674217
+sp|P0ADG7|IMDH_ECOLI,guaB,consistent,C-lim12_1,12.59008296
+sp|P0ADI4|ENTB_ECOLI,entB,consistent,C-lim12_1,6.252323164
+sp|P0ADI7|YECD_ECOLI,yecD,consistent,C-lim12_1,11.60275335
+sp|P0ADK0|YIAF_ECOLI,yiaF,consistent,C-lim12_1,14.56909734
+sp|P0ADK6|YIBA_ECOLI,yibA,consistent,C-lim12_1,5.295995713
+sp|P0ADM4|YIDQ_ECOLI,yidQ,consistent,C-lim12_1,9.81228845
+sp|P0ADM8|YIEE_ECOLI,yieE,consistent,C-lim12_1,7.067709297
+sp|P0ADN0|VIAA_ECOLI,viaA,consistent,C-lim12_1,8.735403382
+sp|P0ADP0|YIGB_ECOLI,yigB,consistent,C-lim12_1,11.10203897
+sp|P0ADP9|YIHD_ECOLI,yihD,consistent,C-lim12_1,8.605138219
+sp|P0ADQ7|YGAM_ECOLI,ygaM,consistent,C-lim12_1,11.18441018
+sp|P0ADR8|PPNN_ECOLI,ppnN,consistent,C-lim12_1,11.4854627
+sp|P0ADS9|YGGN_ECOLI,yggN,consistent,C-lim12_1,9.096705351
+sp|P0ADT2|YGIB_ECOLI,ygiB,consistent,C-lim12_1,6.282729329
+sp|P0ADT5|YGIC_ECOLI,ygiC,consistent,C-lim12_1,10.06327446
+sp|P0ADT8|YGIM_ECOLI,ygiM,consistent,C-lim12_1,11.17321419
+sp|P0ADU5|YGIW_ECOLI,ygiW,consistent,C-lim12_1,7.571566
+sp|P0ADV7|MLAC_ECOLI,mlaC,consistent,C-lim12_1,8.660365114
+sp|P0ADV9|LPTC_ECOLI,lptC,consistent,C-lim12_1,12.51144211
+sp|P0ADX9|RSMD_ECOLI,rsmD,consistent,C-lim12_1,11.15320725
+sp|P0AE01|TRMJ_ECOLI,trmJ,consistent,C-lim12_1,9.965154717
+sp|P0AE06|ACRA_ECOLI,acrA,consistent,C-lim12_1,12.25222461
+sp|P0AE08|AHPC_ECOLI,ahpC,consistent,C-lim12_1,8.096206519
+sp|P0AE39|YPDB_ECOLI,ypdB,consistent,C-lim12_1,9.299650807
+sp|P0AE45|YTFL_ECOLI,ytfL,consistent,C-lim12_1,9.002539996
+sp|P0AE67|CHEY_ECOLI,cheY,consistent,C-lim12_1,6.065910911
+sp|P0AE78|CORC_ECOLI,corC,consistent,C-lim12_1,10.45365599
+sp|P0AE82|CPXA_ECOLI,cpxA,consistent,C-lim12_1,11.15988971
+sp|P0AEA8|CYSG_ECOLI,cysG,consistent,C-lim12_1,10.13076556
+sp|P0AEB5|YNAI_ECOLI,ynaI,consistent,C-lim12_1,11.94328262
+sp|P0AEC0|YOAE_ECOLI,yoaE,consistent,C-lim12_1,12.97300248
+sp|P0AEC3|ARCB_ECOLI,arcB,consistent,C-lim12_1,11.03183647
+sp|P0AEC5|BARA_ECOLI,barA,consistent,C-lim12_1,11.60743306
+sp|P0AED0|USPA_ECOLI,uspA,consistent,C-lim12_1,11.8670557
+sp|P0AED5|UVRY_ECOLI,uvrY,consistent,C-lim12_1,4.159480393
+sp|P0AEE3|DEGS_ECOLI,degS,consistent,C-lim12_1,12.12115991
+sp|P0AEE5|DGAL_ECOLI,mglB,consistent,C-lim12_1,11.62315745
+sp|P0AEF8|DPPB_ECOLI,dppB,consistent,C-lim12_1,14.11153701
+sp|P0AEG1|DPPC_ECOLI,dppC,consistent,C-lim12_1,14.05043599
+sp|P0AEG6|DSBC_ECOLI,dsbC,consistent,C-lim12_1,11.89530221
+sp|P0AEH1|RSEP_ECOLI,rseP,consistent,C-lim12_1,7.712170723
+sp|P0AEH3|ELAA_ECOLI,elaA,consistent,C-lim12_1,7.623378489
+sp|P0AEH5|ELAB_ECOLI,elaB,consistent,C-lim12_1,10.44816427
+sp|P0AEI1|MIAB_ECOLI,miaB,consistent,C-lim12_1,2.775042191
+sp|P0AEI6|NUDJ_ECOLI,nudJ,consistent,C-lim12_1,12.94602202
+sp|P0AEJ6|EUTB_ECOLI,eutB,consistent,C-lim12_1,11.69197338
+sp|P0AEK4|FABI_ECOLI,fabI,consistent,C-lim12_1,11.90062602
+sp|P0AEM0|FKBX_ECOLI,fkpB,consistent,C-lim12_1,10.34975998
+sp|P0AEN1|FRE_ECOLI,fre,consistent,C-lim12_1,10.04612572
+sp|P0AEP3|GALU_ECOLI,galU,consistent,C-lim12_1,11.57555989
+sp|P0AEQ1|GLCG_ECOLI,glcG,consistent,C-lim12_1,9.795095949
+sp|P0AEQ3|GLNH_ECOLI,glnH,consistent,C-lim12_1,12.69775555
+sp|P0AES0|GSP_ECOLI,gss,consistent,C-lim12_1,10.87949721
+sp|P0AES2|GUDD_ECOLI,gudD,consistent,C-lim12_1,9.111538492
+sp|P0AES4|GYRA_ECOLI,gyrA,consistent,C-lim12_1,8.477297445
+sp|P0AES6|GYRB_ECOLI,gyrB,consistent,C-lim12_1,10.35823849
+sp|P0AET8|HDHA_ECOLI,hdhA,consistent,C-lim12_1,10.98903689
+sp|P0AEU0|HISJ_ECOLI,hisJ,consistent,C-lim12_1,13.1983047
+sp|P0AEU3|HISM_ECOLI,hisM,consistent,C-lim12_1,12.19653932
+sp|P0AEU7|SKP_ECOLI,skp,consistent,C-lim12_1,10.4071866
+sp|P0AEV1|RSSB_ECOLI,rssB,consistent,C-lim12_1,9.058120647
+sp|P0AEW4|CPDA_ECOLI,cpdA,consistent,C-lim12_1,12.56374979
+sp|P0AEW9|K1PF_ECOLI,fruK,consistent,C-lim12_1,12.77094823
+sp|P0AEY1|MARC_ECOLI,marC,consistent,C-lim12_1,11.47978319
+sp|P0AEY3|MAZG_ECOLI,mazG,consistent,C-lim12_1,6.557527782
+sp|P0AEY5|MDAB_ECOLI,mdaB,consistent,C-lim12_1,7.127409904
+sp|P0AEZ1|METF_ECOLI,metF,consistent,C-lim12_1,8.772575466
+sp|P0AEZ9|MOAB_ECOLI,moaB,consistent,C-lim12_1,11.30068378
+sp|P0AF03|MOG_ECOLI,mog,consistent,C-lim12_1,9.898092614
+sp|P0AF08|APBC_ECOLI,mrp,consistent,C-lim12_1,10.47036793
+sp|P0AF12|MTNN_ECOLI,mtnN,consistent,C-lim12_1,13.61169391
+sp|P0AF24|NAGD_ECOLI,nagD,consistent,C-lim12_1,12.39425834
+sp|P0AF28|NARL_ECOLI,narL,consistent,C-lim12_1,10.99279796
+sp|P0AF36|ZAPB_ECOLI,zapB,consistent,C-lim12_1,9.391093819
+sp|P0AF50|YJBR_ECOLI,yjbR,consistent,C-lim12_1,8.144006192
+sp|P0AF63|NSRR_ECOLI,nsrR,consistent,C-lim12_1,9.123866552
+sp|P0AF70|YJEI_ECOLI,yjeI,consistent,C-lim12_1,11.23353417
+sp|P0AF93|RIDA_ECOLI,ridA,consistent,C-lim12_1,11.56199042
+sp|P0AF96|TABA_ECOLI,tabA,consistent,C-lim12_1,8.271865886
+sp|P0AFA2|NARX_ECOLI,narX,consistent,C-lim12_1,11.12493979
+sp|P0AFB1|NLPI_ECOLI,nlpI,consistent,C-lim12_1,11.60658466
+sp|P0AFB5|NTRB_ECOLI,glnL,consistent,C-lim12_1,11.09595186
+sp|P0AFB8|NTRC_ECOLI,glnG,consistent,C-lim12_1,8.056748361
+sp|P0AFC3|NUOA_ECOLI,nuoA,consistent,C-lim12_1,13.31293084
+sp|P0AFD4|NUOH_ECOLI,nuoH,consistent,C-lim12_1,15.17156837
+sp|P0AFF6|NUSA_ECOLI,nusA,consistent,C-lim12_1,11.94276902
+sp|P0AFG3|ODO1_ECOLI,sucA,consistent,C-lim12_1,8.697792888
+sp|P0AFG8|ODP1_ECOLI,aceE,consistent,C-lim12_1,12.51801731
+sp|P0AFH0|OGT_ECOLI,ogt,consistent,C-lim12_1,10.79503593
+sp|P0AFI2|PARC_ECOLI,parC,consistent,C-lim12_1,6.212815035
+sp|P0AFI9|PERM_ECOLI,perM,consistent,C-lim12_1,12.58348388
+sp|P0AFJ5|PHOB_ECOLI,phoB,consistent,C-lim12_1,8.89472772
+sp|P0AFJ7|PITA_ECOLI,pitA,consistent,C-lim12_1,15.06501889
+sp|P0AFK0|PMBA_ECOLI,pmbA,consistent,C-lim12_1,9.607454793
+sp|P0AFL3|PPIA_ECOLI,ppiA,consistent,C-lim12_1,9.279275167
+sp|P0AFL6|PPX_ECOLI,ppx,consistent,C-lim12_1,6.915357158
+sp|P0AFM6|PSPA_ECOLI,pspA,consistent,C-lim12_1,9.455950458
+sp|P0AFP9|YBHR_ECOLI,ybhR,consistent,C-lim12_1,13.02090145
+sp|P0AFR0|RSSA_ECOLI,rssA,consistent,C-lim12_1,11.3987275
+sp|P0AFS3|FOLM_ECOLI,folM,consistent,C-lim12_1,12.22863644
+sp|P0AFW0|RFAH_ECOLI,rfaH,consistent,C-lim12_1,7.417063549
+sp|P0AFW4|RNK_ECOLI,rnk,consistent,C-lim12_1,2.082443536
+sp|P0AFW8|ROF_ECOLI,rof,consistent,C-lim12_1,3.774228664
+sp|P0AFX0|HPF_ECOLI,hpf,consistent,C-lim12_1,8.51298711
+sp|P0AFX4|RSD_ECOLI,rsd,consistent,C-lim12_1,5.198494272
+sp|P0AFX9|RSEB_ECOLI,rseB,consistent,C-lim12_1,10.49788211
+sp|P0AFY2|SANA_ECOLI,sanA,consistent,C-lim12_1,11.46919551
+sp|P0AFY6|SBMA_ECOLI,sbmA,consistent,C-lim12_1,12.28582627
+sp|P0AFZ1|SSEB_ECOLI,sseB,consistent,C-lim12_1,6.946811845
+sp|P0AFZ3|SSPB_ECOLI,sspB,consistent,C-lim12_1,7.673210755
+sp|P0AG03|UBIX_ECOLI,ubiX,consistent,C-lim12_1,12.24232432
+sp|P0AG16|PUR1_ECOLI,purF,consistent,C-lim12_1,5.822803314
+sp|P0AG18|PURE_ECOLI,purE,consistent,C-lim12_1,10.03703989
+sp|P0AG20|RELA_ECOLI,relA,consistent,C-lim12_1,8.346246606
+sp|P0AG27|YIBN_ECOLI,yibN,consistent,C-lim12_1,11.91325519
+sp|P0AG30|RHO_ECOLI,rho,consistent,C-lim12_1,11.65891772
+sp|P0AG44|RL17_ECOLI,rplQ,consistent,C-lim12_1,13.43305095
+sp|P0AG48|RL21_ECOLI,rplU,consistent,C-lim12_1,12.55282757
+sp|P0AG63|RS17_ECOLI,rpsQ,consistent,C-lim12_1,12.69196964
+sp|P0AG67|RS1_ECOLI,rpsA,consistent,C-lim12_1,10.29194109
+sp|P0AG76|SBCD_ECOLI,sbcD,consistent,C-lim12_1,10.1240376
+sp|P0AG80|UGPB_ECOLI,ugpB,consistent,C-lim12_1,13.41484771
+sp|P0AG82|PSTS_ECOLI,pstS,consistent,C-lim12_1,12.0240643
+sp|P0AG86|SECB_ECOLI,secB,consistent,C-lim12_1,12.00650689
+sp|P0AG90|SECD_ECOLI,secD,consistent,C-lim12_1,14.01881192
+sp|P0AGB0|SERB_ECOLI,serB,consistent,C-lim12_1,10.93618122
+sp|P0AGD1|SODC_ECOLI,sodC,consistent,C-lim12_1,11.30212609
+sp|P0AGD3|SODF_ECOLI,sodB,consistent,C-lim12_1,11.84066544
+sp|P0AGE9|SUCD_ECOLI,sucD,consistent,C-lim12_1,10.73487997
+sp|P0AGJ5|YFIF_ECOLI,yfiF,consistent,C-lim12_1,11.02496997
+sp|P0AGK1|UBIA_ECOLI,ubiA,consistent,C-lim12_1,2.612752514
+sp|P0AGK8|ISCR_ECOLI,iscR,consistent,C-lim12_1,2.443550413
+sp|P0AGL2|TDCF_ECOLI,tdcF,consistent,C-lim12_1,11.02557544
+sp|P0C018|RL18_ECOLI,rplR,consistent,C-lim12_1,10.25636816
+sp|P0C054|IBPA_ECOLI,ibpA,consistent,C-lim12_1,2.082622205
+sp|P0C077|RELE_ECOLI,relE,consistent,C-lim12_1,6.806886284
+sp|P0C093|SLMA_ECOLI,slmA,consistent,C-lim12_1,10.75452341
+sp|P0C0K3|SRKA_ECOLI,srkA,consistent,C-lim12_1,11.17859518
+sp|P0C0L2|OSMC_ECOLI,osmC,consistent,C-lim12_1,12.29102732
+sp|P0C0V0|DEGP_ECOLI,degP,consistent,C-lim12_1,11.15678544
+sp|P0C960|EMTA_ECOLI,emtA,consistent,C-lim12_1,6.613284589
+sp|P0CE48|EFTU2_ECOLI,tufB,consistent,C-lim12_1,10.01817641
+sp|P0CF93|INSL3_ECOLI,insL3,consistent,C-lim12_1,2.947741133
+sp|P0DMC7|RCSB_ECOLI,rcsB,consistent,C-lim12_1,7.576462187
+sp|P10121|FTSY_ECOLI,ftsY,consistent,C-lim12_1,12.3421798
+sp|P10346|GLNQ_ECOLI,glnQ,consistent,C-lim12_1,12.48204572
+sp|P10384|FADL_ECOLI,fadL,consistent,C-lim12_1,11.1043571
+sp|P10441|LPXB_ECOLI,lpxB,consistent,C-lim12_1,11.1380116
+sp|P10443|DPO3A_ECOLI,dnaE,consistent,C-lim12_1,8.326944334
+sp|P11446|ARGC_ECOLI,argC,consistent,C-lim12_1,9.876630019
+sp|P11447|ARLY_ECOLI,argH,consistent,C-lim12_1,10.61028653
+sp|P11458|NADA_ECOLI,nadA,consistent,C-lim12_1,2.114207305
+sp|P11557|DAMX_ECOLI,damX,consistent,C-lim12_1,9.33061872
+sp|P11663|FUME_ECOLI,fumE,consistent,C-lim12_1,4.54669804
+sp|P11875|SYR_ECOLI,argS,consistent,C-lim12_1,10.31966231
+sp|P12008|AROC_ECOLI,aroC,consistent,C-lim12_1,12.60769254
+sp|P12281|MOEA_ECOLI,moeA,consistent,C-lim12_1,11.4235389
+sp|P12758|UDP_ECOLI,udp,consistent,C-lim12_1,15.17486048
+sp|P12996|BIOB_ECOLI,bioB,consistent,C-lim12_1,1.8098311
+sp|P12998|BIOF_ECOLI,bioF,consistent,C-lim12_1,9.203393831
+sp|P13029|KATG_ECOLI,katG,consistent,C-lim12_1,12.33309264
+sp|P13035|GLPD_ECOLI,glpD,consistent,C-lim12_1,5.381366175
+sp|P13656|CHIA_ECOLI,chiA,consistent,C-lim12_1,12.25746767
+sp|P14294|TOP3_ECOLI,topB,consistent,C-lim12_1,3.675188494
+sp|P14375|ZRAR_ECOLI,zraR,consistent,C-lim12_1,7.514285705
+sp|P14407|FUMB_ECOLI,fumB,consistent,C-lim12_1,10.61370745
+sp|P15005|MCRB_ECOLI,mcrB,consistent,C-lim12_1,8.381653467
+sp|P15032|RECE_ECOLI,recE,consistent,C-lim12_1,7.109304216
+sp|P15042|DNLJ_ECOLI,ligA,consistent,C-lim12_1,10.00642376
+sp|P15067|GLGX_ECOLI,glgX,consistent,C-lim12_1,10.88033832
+sp|P15254|PUR4_ECOLI,purL,consistent,C-lim12_1,10.84983863
+sp|P15288|PEPD_ECOLI,pepD,consistent,C-lim12_1,11.3938003
+sp|P15373|PRLF_ECOLI,prlF,consistent,C-lim12_1,5.958325958
+sp|P15639|PUR9_ECOLI,purH,consistent,C-lim12_1,9.907124624
+sp|P15723|DGTP_ECOLI,dgt,consistent,C-lim12_1,11.96113535
+sp|P15977|MALQ_ECOLI,malQ,consistent,C-lim12_1,14.46539918
+sp|P15993|AROP_ECOLI,aroP,consistent,C-lim12_1,11.91968492
+sp|P16384|MIAA_ECOLI,miaA,consistent,C-lim12_1,9.263961841
+sp|P16456|SELD_ECOLI,selD,consistent,C-lim12_1,8.946936406
+sp|P16525|TUS_ECOLI,tus,consistent,C-lim12_1,11.77411502
+sp|P16659|SYP_ECOLI,proS,consistent,C-lim12_1,11.31251111
+sp|P16681|PHNB_ECOLI,phnB,consistent,C-lim12_1,10.11144917
+sp|P16700|CYSP_ECOLI,cysP,consistent,C-lim12_1,10.27910182
+sp|P17109|MEND_ECOLI,menD,consistent,C-lim12_1,13.4726616
+sp|P17169|GLMS_ECOLI,glmS,consistent,C-lim12_1,10.33308862
+sp|P17445|BETB_ECOLI,betB,consistent,C-lim12_1,11.22861835
+sp|P17854|CYSH_ECOLI,cysH,consistent,C-lim12_1,4.255932431
+sp|P17888|PRIA_ECOLI,priA,consistent,C-lim12_1,10.42752031
+sp|P17952|MURC_ECOLI,murC,consistent,C-lim12_1,10.2556868
+sp|P18133|PNCB_ECOLI,pncB,consistent,C-lim12_1,5.808641642
+sp|P18196|MINC_ECOLI,minC,consistent,C-lim12_1,10.43852104
+sp|P18335|ARGD_ECOLI,argD,consistent,C-lim12_1,9.385821616
+sp|P18811|MALI_ECOLI,malI,consistent,C-lim12_1,8.766162067
+sp|P19323|FHLA_ECOLI,fhlA,consistent,C-lim12_1,7.810045536
+sp|P19624|PDXA_ECOLI,pdxA,consistent,C-lim12_1,10.23743485
+sp|P19636|EUTC_ECOLI,eutC,consistent,C-lim12_1,9.059045886
+sp|P19642|PTOCB_ECOLI,malX,consistent,C-lim12_1,2.711017385
+sp|P19926|AGP_ECOLI,agp,consistent,C-lim12_1,13.18449647
+sp|P20083|PARE_ECOLI,parE,consistent,C-lim12_1,7.722439292
+sp|P20605|FIC_ECOLI,fic,consistent,C-lim12_1,11.47033328
+sp|P20966|PTFBC_ECOLI,fruA,consistent,C-lim12_1,13.88026931
+sp|P21165|PEPQ_ECOLI,pepQ,consistent,C-lim12_1,11.15178897
+sp|P21179|CATE_ECOLI,katE,consistent,C-lim12_1,10.94646501
+sp|P21362|YCIF_ECOLI,yciF,consistent,C-lim12_1,11.46498542
+sp|P21363|YCIE_ECOLI,yciE,consistent,C-lim12_1,11.53135674
+sp|P21367|YCAC_ECOLI,ycaC,consistent,C-lim12_1,11.67312672
+sp|P21369|PNCA_ECOLI,pncA,consistent,C-lim12_1,10.82549408
+sp|P21513|RNE_ECOLI,rne,consistent,C-lim12_1,10.54712695
+sp|P21517|MALZ_ECOLI,malZ,consistent,C-lim12_1,7.845471427
+sp|P21599|KPYK2_ECOLI,pykA,consistent,C-lim12_1,12.00397382
+sp|P21866|KDPE_ECOLI,kdpE,consistent,C-lim12_1,10.46528447
+sp|P21888|SYC_ECOLI,cysS,consistent,C-lim12_1,9.937698104
+sp|P22106|ASNB_ECOLI,asnB,consistent,C-lim12_1,8.528313749
+sp|P22188|MURE_ECOLI,murE,consistent,C-lim12_1,9.33148451
+sp|P22255|CYSQ_ECOLI,cysQ,consistent,C-lim12_1,10.65280975
+sp|P22256|GABT_ECOLI,gabT,consistent,C-lim12_1,10.16773025
+sp|P22259|PCKA_ECOLI,pckA,consistent,C-lim12_1,10.97774471
+sp|P22523|MUKB_ECOLI,mukB,consistent,C-lim12_1,8.309895924
+sp|P22729|LIVM_ECOLI,livM,consistent,C-lim12_1,11.51405358
+sp|P23200|MGLC_ECOLI,mglC,consistent,C-lim12_1,12.13027851
+sp|P23256|MALY_ECOLI,malY,consistent,C-lim12_1,11.60479916
+sp|P23305|YIGA_ECOLI,yigA,consistent,C-lim12_1,3.060266336
+sp|P23331|KITH_ECOLI,tdk,consistent,C-lim12_1,10.70027287
+sp|P23367|MUTL_ECOLI,mutL,consistent,C-lim12_1,9.728312278
+sp|P23522|GARL_ECOLI,garL,consistent,C-lim12_1,10.43378442
+sp|P23538|PPSA_ECOLI,ppsA,consistent,C-lim12_1,10.79488539
+sp|P23827|ECOT_ECOLI,eco,consistent,C-lim12_1,9.917475085
+sp|P23836|PHOP_ECOLI,phoP,consistent,C-lim12_1,9.414197924
+sp|P23837|PHOQ_ECOLI,phoQ,consistent,C-lim12_1,11.09599553
+sp|P23843|OPPA_ECOLI,oppA,consistent,C-lim12_1,14.03079133
+sp|P23845|CYSN_ECOLI,cysN,consistent,C-lim12_1,2.240064621
+sp|P23847|DPPA_ECOLI,dppA,consistent,C-lim12_1,15.64924368
+sp|P23865|PRC_ECOLI,prc,consistent,C-lim12_1,11.69091033
+sp|P23869|PPIB_ECOLI,ppiB,consistent,C-lim12_1,10.54486395
+sp|P23874|HIPA_ECOLI,hipA,consistent,C-lim12_1,10.90472346
+sp|P23883|PUUC_ECOLI,puuC,consistent,C-lim12_1,3.695768849
+sp|P23893|GSA_ECOLI,hemL,consistent,C-lim12_1,12.24068295
+sp|P23894|HTPX_ECOLI,htpX,consistent,C-lim12_1,9.967964044
+sp|P23909|MUTS_ECOLI,mutS,consistent,C-lim12_1,10.17862261
+sp|P23930|LNT_ECOLI,lnt,consistent,C-lim12_1,13.47600313
+sp|P24171|DCP_ECOLI,dcp,consistent,C-lim12_1,10.1754766
+sp|P24178|YFFB_ECOLI,yffB,consistent,C-lim12_1,10.67491214
+sp|P24182|ACCC_ECOLI,accC,consistent,C-lim12_1,11.68044088
+sp|P24193|HYPE_ECOLI,hypE,consistent,C-lim12_1,9.715759796
+sp|P24202|MRR_ECOLI,mrr,consistent,C-lim12_1,10.52740606
+sp|P24203|YJIA_ECOLI,yjiA,consistent,C-lim12_1,8.772277681
+sp|P24228|DACB_ECOLI,dacB,consistent,C-lim12_1,13.17662275
+sp|P24232|HMP_ECOLI,hmp,consistent,C-lim12_1,6.277172908
+sp|P24242|ASCG_ECOLI,ascG,consistent,C-lim12_1,8.475705627
+sp|P24251|CRL_ECOLI,crl,consistent,C-lim12_1,4.537967544
+sp|P24255|RP54_ECOLI,rpoN,consistent,C-lim12_1,8.401197936
+sp|P24554|RADA_ECOLI,radA,consistent,C-lim12_1,9.818562701
+sp|P25516|ACNA_ECOLI,acnA,consistent,C-lim12_1,10.34844633
+sp|P25519|HFLX_ECOLI,hflX,consistent,C-lim12_1,6.336358953
+sp|P25534|UBIH_ECOLI,ubiH,consistent,C-lim12_1,6.980169315
+sp|P25536|YHDE_ECOLI,yhdE,consistent,C-lim12_1,9.157116869
+sp|P25539|RIBD_ECOLI,ribD,consistent,C-lim12_1,10.41427586
+sp|P25552|GPPA_ECOLI,gppA,consistent,C-lim12_1,9.835288135
+sp|P25665|METE_ECOLI,metE,consistent,C-lim12_1,7.140865536
+sp|P25666|HTRL_ECOLI,htrL,consistent,C-lim12_1,11.073782
+sp|P25741|RFAP_ECOLI,rfaP,consistent,C-lim12_1,11.74428879
+sp|P25742|RFAQ_ECOLI,rfaQ,consistent,C-lim12_1,12.00133112
+sp|P25745|MNMA_ECOLI,mnmA,consistent,C-lim12_1,11.63253145
+sp|P25747|YEIB_ECOLI,yeiB,consistent,C-lim12_1,11.2187647
+sp|P26365|AMIB_ECOLI,amiB,consistent,C-lim12_1,5.905490659
+sp|P26612|AMY2_ECOLI,amyA,consistent,C-lim12_1,12.54637969
+sp|P26616|MAO1_ECOLI,maeA,consistent,C-lim12_1,10.94390747
+sp|P26648|FTSP_ECOLI,ftsP,consistent,C-lim12_1,11.22717939
+sp|P27128|RFAI_ECOLI,rfaI,consistent,C-lim12_1,11.14315831
+sp|P27129|RFAJ_ECOLI,rfaJ,consistent,C-lim12_1,10.56640662
+sp|P27238|YFED_ECOLI,yfeD,consistent,C-lim12_1,8.385371757
+sp|P27240|RFAY_ECOLI,rfaY,consistent,C-lim12_1,10.60118706
+sp|P27241|RFAZ_ECOLI,rfaZ,consistent,C-lim12_1,2.046282884
+sp|P27247|PLSX_ECOLI,plsX,consistent,C-lim12_1,12.15108429
+sp|P27248|GCST_ECOLI,gcvT,consistent,C-lim12_1,10.91688945
+sp|P27278|NADR_ECOLI,nadR,consistent,C-lim12_1,11.54182631
+sp|P27431|ROXA_ECOLI,roxA,consistent,C-lim12_1,10.8672576
+sp|P27434|RODZ_ECOLI,rodZ,consistent,C-lim12_1,11.72273652
+sp|P27550|ACSA_ECOLI,acs,consistent,C-lim12_1,7.988282837
+sp|P27830|RMLB2_ECOLI,rffG,consistent,C-lim12_1,12.99682068
+sp|P27836|WECG_ECOLI,wecG,consistent,C-lim12_1,13.40376576
+sp|P27848|YIGL_ECOLI,yigL,consistent,C-lim12_1,9.349590227
+sp|P27859|TATD_ECOLI,tatD,consistent,C-lim12_1,9.058159566
+sp|P27896|NARQ_ECOLI,narQ,consistent,C-lim12_1,12.75478688
+sp|P28248|DCD_ECOLI,dcd,consistent,C-lim12_1,7.801589973
+sp|P28305|PABC_ECOLI,pabC,consistent,C-lim12_1,11.54704326
+sp|P28306|MLTG_ECOLI,mltG,consistent,C-lim12_1,13.83550382
+sp|P28630|HOLA_ECOLI,holA,consistent,C-lim12_1,9.137490207
+sp|P28634|TRMO_ECOLI,trmO,consistent,C-lim12_1,9.753159377
+sp|P28635|METQ_ECOLI,metQ,consistent,C-lim12_1,11.97977221
+sp|P28903|NRDD_ECOLI,nrdD,consistent,C-lim12_1,3.125410855
+sp|P28904|TREC_ECOLI,treC,consistent,C-lim12_1,3.445722608
+sp|P29012|ALR2_ECOLI,dadX,consistent,C-lim12_1,10.41473662
+sp|P29131|FTSN_ECOLI,ftsN,consistent,C-lim12_1,9.724597531
+sp|P29217|YCEH_ECOLI,yceH,consistent,C-lim12_1,10.07513018
+sp|P29680|DCUP_ECOLI,hemE,consistent,C-lim12_1,9.293396964
+sp|P29744|FLGL_ECOLI,flgL,consistent,C-lim12_1,0.670962123
+sp|P29745|PEPT_ECOLI,pepT,consistent,C-lim12_1,10.15646531
+sp|P30011|NADC_ECOLI,nadC,consistent,C-lim12_1,8.818527952
+sp|P30125|LEU3_ECOLI,leuB,consistent,C-lim12_1,9.896586784
+sp|P30126|LEUD_ECOLI,leuD,consistent,C-lim12_1,3.953004674
+sp|P30136|THIC_ECOLI,thiC,consistent,C-lim12_1,2.996904899
+sp|P30137|THIE_ECOLI,thiE,consistent,C-lim12_1,7.307784222
+sp|P30139|THIG_ECOLI,thiG,consistent,C-lim12_1,2.428021076
+sp|P30745|MOAA_ECOLI,moaA,consistent,C-lim12_1,2.30357248
+sp|P30748|MOAD_ECOLI,moaD,consistent,C-lim12_1,9.936311524
+sp|P30749|MOAE_ECOLI,moaE,consistent,C-lim12_1,8.554553358
+sp|P30843|BASR_ECOLI,basR,consistent,C-lim12_1,9.758363773
+sp|P30844|BASS_ECOLI,basS,consistent,C-lim12_1,11.94142108
+sp|P30845|EPTA_ECOLI,eptA,consistent,C-lim12_1,11.83671093
+sp|P30860|ARTJ_ECOLI,artJ,consistent,C-lim12_1,10.15966953
+sp|P30871|3PASE_ECOLI,ygiF,consistent,C-lim12_1,11.42330474
+sp|P31060|MODF_ECOLI,modF,consistent,C-lim12_1,9.539380431
+sp|P31064|YEDE_ECOLI,yedE,consistent,C-lim12_1,7.793478265
+sp|P31119|AAS_ECOLI,aas,consistent,C-lim12_1,13.92649017
+sp|P31142|THTM_ECOLI,sseA,consistent,C-lim12_1,9.96683918
+sp|P31433|YICH_ECOLI,yicH,consistent,C-lim12_1,12.12458343
+sp|P31435|YICJ_ECOLI,yicJ,consistent,C-lim12_1,9.402799318
+sp|P31441|ADEC_ECOLI,ade,consistent,C-lim12_1,4.326424143
+sp|P31455|YIDR_ECOLI,yidR,consistent,C-lim12_1,12.1407202
+sp|P31548|THIQ_ECOLI,thiQ,consistent,C-lim12_1,11.22644781
+sp|P31550|THIB_ECOLI,thiB,consistent,C-lim12_1,11.6182766
+sp|P31600|NFRA_ECOLI,nfrA,consistent,C-lim12_1,11.36855508
+sp|P31658|HCHA_ECOLI,hchA,consistent,C-lim12_1,10.79427593
+sp|P31802|NARP_ECOLI,narP,consistent,C-lim12_1,6.416423838
+sp|P31808|YCIK_ECOLI,yciK,consistent,C-lim12_1,10.71952775
+sp|P31826|YDDA_ECOLI,yddA,consistent,C-lim12_1,12.24577518
+sp|P31827|YDDB_ECOLI,yddB,consistent,C-lim12_1,9.928145416
+sp|P31828|PQQL_ECOLI,pqqL,consistent,C-lim12_1,10.81004466
+sp|P32131|HEMN_ECOLI,hemN,consistent,C-lim12_1,6.639069315
+sp|P32134|YIHM_ECOLI,yihM,consistent,C-lim12_1,4.559915818
+sp|P32141|SQUT_ECOLI,yihT,consistent,C-lim12_1,9.661047901
+sp|P32144|YIHW_ECOLI,yihW,consistent,C-lim12_1,11.2936993
+sp|P32157|YIIM_ECOLI,yiiM,consistent,C-lim12_1,9.219602676
+sp|P32177|FDHD_ECOLI,fdhD,consistent,C-lim12_1,9.228909892
+sp|P32662|GPH_ECOLI,gph,consistent,C-lim12_1,9.056766113
+sp|P32664|NUDC_ECOLI,nudC,consistent,C-lim12_1,11.55568655
+sp|P32669|FSAB_ECOLI,fsaB,consistent,C-lim12_1,9.935833011
+sp|P32684|RLUF_ECOLI,rluF,consistent,C-lim12_1,6.590251973
+sp|P32695|DUSA_ECOLI,dusA,consistent,C-lim12_1,10.81754701
+sp|P32703|YJCE_ECOLI,yjcE,consistent,C-lim12_1,12.59025287
+sp|P32705|ACTP_ECOLI,actP,consistent,C-lim12_1,13.94979189
+sp|P33011|YEEA_ECOLI,yeeA,consistent,C-lim12_1,11.72507005
+sp|P33025|PSUG_ECOLI,psuG,consistent,C-lim12_1,6.90036959
+sp|P33030|YEIR_ECOLI,yeiR,consistent,C-lim12_1,9.664512549
+sp|P33219|YEBF_ECOLI,yebF,consistent,C-lim12_1,6.343783321
+sp|P33221|PURT_ECOLI,purT,consistent,C-lim12_1,10.66277944
+sp|P33228|RECT_ECOLI,recT,consistent,C-lim12_1,7.789362855
+sp|P33232|LLDD_ECOLI,lldD,consistent,C-lim12_1,5.646472912
+sp|P33235|FLGK_ECOLI,flgK,consistent,C-lim12_1,1.035283868
+sp|P33360|YEHX_ECOLI,yehX,consistent,C-lim12_1,8.425743528
+sp|P33362|YEHZ_ECOLI,yehZ,consistent,C-lim12_1,11.18585827
+sp|P33363|BGLX_ECOLI,bglX,consistent,C-lim12_1,15.02848721
+sp|P33570|TKT2_ECOLI,tktB,consistent,C-lim12_1,11.26588008
+sp|P33599|NUOCD_ECOLI,nuoC,consistent,C-lim12_1,11.4356733
+sp|P33634|YFIE_ECOLI,yfiE,consistent,C-lim12_1,8.313587826
+sp|P33643|RLUD_ECOLI,rluD,consistent,C-lim12_1,10.91224615
+sp|P33650|FEOB_ECOLI,feoB,consistent,C-lim12_1,1.716712116
+sp|P33667|SELU_ECOLI,selU,consistent,C-lim12_1,11.3027664
+sp|P33916|YEJF_ECOLI,yejF,consistent,C-lim12_1,13.63749528
+sp|P33919|RADD_ECOLI,radD,consistent,C-lim12_1,8.078637151
+sp|P35340|AHPF_ECOLI,ahpF,consistent,C-lim12_1,7.539011258
+sp|P36548|AMIA_ECOLI,amiA,consistent,C-lim12_1,5.143056505
+sp|P36561|COBS_ECOLI,cobS,consistent,C-lim12_1,13.65882087
+sp|P36562|COBT_ECOLI,cobT,consistent,C-lim12_1,8.144908448
+sp|P36683|ACNB_ECOLI,acnB,consistent,C-lim12_1,7.341885294
+sp|P36767|RDGC_ECOLI,rdgC,consistent,C-lim12_1,10.10175727
+sp|P36879|YADG_ECOLI,yadG,consistent,C-lim12_1,12.97904718
+sp|P36929|RSMB_ECOLI,rsmB,consistent,C-lim12_1,12.86894624
+sp|P36930|GATR_ECOLI,gatR,consistent,C-lim12_1,13.8697861
+sp|P36938|PGM_ECOLI,pgm,consistent,C-lim12_1,9.777739077
+sp|P36979|RLMN_ECOLI,rlmN,consistent,C-lim12_1,2.459176838
+sp|P37005|LAST_ECOLI,lasT,consistent,C-lim12_1,7.941840594
+sp|P37051|PURU_ECOLI,purU,consistent,C-lim12_1,11.07540289
+sp|P37147|FXSA_ECOLI,fxsA,consistent,C-lim12_1,12.93052277
+sp|P37313|DPPF_ECOLI,dppF,consistent,C-lim12_1,11.77836594
+sp|P37326|INTS_ECOLI,intS,consistent,C-lim12_1,10.51478456
+sp|P37330|MASZ_ECOLI,glcB,consistent,C-lim12_1,9.529171547
+sp|P37338|CSIR_ECOLI,csiR,consistent,C-lim12_1,5.377999339
+sp|P37348|YECE_ECOLI,yecE,consistent,C-lim12_1,8.694241608
+sp|P37351|RPIB_ECOLI,rpiB,consistent,C-lim12_1,10.2507016
+sp|P37387|XYLF_ECOLI,xylF,consistent,C-lim12_1,9.259926317
+sp|P37440|UCPA_ECOLI,ucpA,consistent,C-lim12_1,11.03453496
+sp|P37590|PMRD_ECOLI,pmrD,consistent,C-lim12_1,8.657243909
+sp|P37610|TAUD_ECOLI,tauD,consistent,C-lim12_1,5.701469915
+sp|P37615|YHHM_ECOLI,yhhM,consistent,C-lim12_1,12.08069261
+sp|P37623|ACPT_ECOLI,acpT,consistent,C-lim12_1,8.33495089
+sp|P37626|YHII_ECOLI,yhiI,consistent,C-lim12_1,13.70351713
+sp|P37634|RLMJ_ECOLI,rlmJ,consistent,C-lim12_1,10.89018327
+sp|P37642|YHJD_ECOLI,yhjD,consistent,C-lim12_1,8.190577475
+sp|P37645|YHJG_ECOLI,yhjG,consistent,C-lim12_1,11.69227698
+sp|P37647|KDGK_ECOLI,kdgK,consistent,C-lim12_1,11.26550671
+sp|P37648|YHJJ_ECOLI,yhjJ,consistent,C-lim12_1,10.39927079
+sp|P37650|BCSC_ECOLI,bcsC,consistent,C-lim12_1,11.97467211
+sp|P37652|BCSB_ECOLI,bcsB,consistent,C-lim12_1,11.56393095
+sp|P37659|BCSG_ECOLI,bcsG,consistent,C-lim12_1,8.670826336
+sp|P37661|EPTB_ECOLI,eptB,consistent,C-lim12_1,8.045777524
+sp|P37666|GHRB_ECOLI,ghrB,consistent,C-lim12_1,9.139019895
+sp|P37685|ALDB_ECOLI,aldB,consistent,C-lim12_1,7.882777417
+sp|P37690|ENVC_ECOLI,envC,consistent,C-lim12_1,11.6613867
+sp|P37765|RLUB_ECOLI,rluB,consistent,C-lim12_1,11.9157956
+sp|P37766|YDIF_ECOLI,ydiF,consistent,C-lim12_1,11.48603249
+sp|P37767|YFHH_ECOLI,yfhH,consistent,C-lim12_1,6.409895807
+sp|P37769|KDUD_ECOLI,kduD,consistent,C-lim12_1,7.497556748
+sp|P37794|CHBG_ECOLI,chbG,consistent,C-lim12_1,8.25966606
+sp|P37902|GLTI_ECOLI,gltI,consistent,C-lim12_1,11.50571691
+sp|P37903|USPF_ECOLI,uspF,consistent,C-lim12_1,11.04324534
+sp|P38038|CYSJ_ECOLI,cysJ,consistent,C-lim12_1,9.081853615
+sp|P38489|NFSB_ECOLI,nfsB,consistent,C-lim12_1,6.195045835
+sp|P38506|XNI_ECOLI,ygdG,consistent,C-lim12_1,11.33056542
+sp|P38684|TORR_ECOLI,torR,consistent,C-lim12_1,9.670466769
+sp|P39099|DEGQ_ECOLI,degQ,consistent,C-lim12_1,10.21587664
+sp|P39161|UXUR_ECOLI,uxuR,consistent,C-lim12_1,5.960007562
+sp|P39172|ZNUA_ECOLI,znuA,consistent,C-lim12_1,10.63549501
+sp|P39173|YEAD_ECOLI,yeaD,consistent,C-lim12_1,14.11943226
+sp|P39176|ERFK_ECOLI,erfK,consistent,C-lim12_1,10.13388774
+sp|P39187|YTFJ_ECOLI,ytfJ,consistent,C-lim12_1,8.460798219
+sp|P39280|EPMB_ECOLI,epmB,consistent,C-lim12_1,4.472642663
+sp|P39285|MSCM_ECOLI,mscM,consistent,C-lim12_1,14.08842441
+sp|P39286|RSGA_ECOLI,rsgA,consistent,C-lim12_1,10.37001332
+sp|P39297|BSMA_ECOLI,bsmA,consistent,C-lim12_1,12.58975287
+sp|P39304|ULAD_ECOLI,ulaD,consistent,C-lim12_1,6.859291992
+sp|P39310|YTFB_ECOLI,ytfB,consistent,C-lim12_1,9.439574975
+sp|P39321|TAMB_ECOLI,tamB,consistent,C-lim12_1,12.54795593
+sp|P39325|YTFQ_ECOLI,ytfQ,consistent,C-lim12_1,13.17364648
+sp|P39337|YJGM_ECOLI,yjgM,consistent,C-lim12_1,6.950706518
+sp|P39342|YJGR_ECOLI,yjgR,consistent,C-lim12_1,10.33897746
+sp|P39353|YJHC_ECOLI,yjhC,consistent,C-lim12_1,12.36544761
+sp|P39377|IADA_ECOLI,iadA,consistent,C-lim12_1,13.26016194
+sp|P39382|YJIK_ECOLI,yjiK,consistent,C-lim12_1,10.24541593
+sp|P39384|YJIM_ECOLI,yjiM,consistent,C-lim12_1,2.570852122
+sp|P39389|YJIR_ECOLI,yjiR,consistent,C-lim12_1,8.114779841
+sp|P39401|OPGB_ECOLI,mdoB,consistent,C-lim12_1,4.520433964
+sp|P39406|RSMC_ECOLI,rsmC,consistent,C-lim12_1,11.84436696
+sp|P39410|YJJJ_ECOLI,yjjJ,consistent,C-lim12_1,11.16430187
+sp|P39452|RIR3_ECOLI,nrdE,consistent,C-lim12_1,3.907837005
+sp|P39831|YDFG_ECOLI,ydfG,consistent,C-lim12_1,11.39287302
+sp|P40120|OPGD_ECOLI,opgD,consistent,C-lim12_1,13.36967929
+sp|P41407|AZOR_ECOLI,azoR,consistent,C-lim12_1,6.072265363
+sp|P41409|RIHA_ECOLI,rihA,consistent,C-lim12_1,11.02196978
+sp|P42588|PAT_ECOLI,patA,consistent,C-lim12_1,1.373400334
+sp|P42593|FADH_ECOLI,fadH,consistent,C-lim12_1,11.10467882
+sp|P42599|YGJR_ECOLI,ygjR,consistent,C-lim12_1,10.47390443
+sp|P42604|UXAA_ECOLI,uxaA,consistent,C-lim12_1,4.919089685
+sp|P42632|TDCE_ECOLI,tdcE,consistent,C-lim12_1,4.433513303
+sp|P42641|OBG_ECOLI,obgE,consistent,C-lim12_1,5.861370991
+sp|P42909|PTPB1_ECOLI,agaB,consistent,C-lim12_1,7.190042979
+sp|P43337|NUDL_ECOLI,nudL,consistent,C-lim12_1,8.259115862
+sp|P43340|YCAK_ECOLI,ycaK,consistent,C-lim12_1,10.40790354
+sp|P43341|LPXH_ECOLI,lpxH,consistent,C-lim12_1,13.42322486
+sp|P43671|PQIB_ECOLI,pqiB,consistent,C-lim12_1,13.4991026
+sp|P43672|UUP_ECOLI,uup,consistent,C-lim12_1,11.48209526
+sp|P45425|NANK_ECOLI,nanK,consistent,C-lim12_1,9.319332401
+sp|P45464|LPOA_ECOLI,lpoA,consistent,C-lim12_1,11.93320125
+sp|P45523|FKBA_ECOLI,fkpA,consistent,C-lim12_1,11.92938333
+sp|P45544|FRLR_ECOLI,frlR,consistent,C-lim12_1,9.797177764
+sp|P45577|PROQ_ECOLI,proQ,consistent,C-lim12_1,7.204296177
+sp|P45578|LUXS_ECOLI,luxS,consistent,C-lim12_1,7.543961053
+sp|P45579|HCXA_ECOLI,hcxA,consistent,C-lim12_1,10.26950538
+sp|P45748|TSAC_ECOLI,tsaC,consistent,C-lim12_1,9.345449469
+sp|P45799|NUDE_ECOLI,nudE,consistent,C-lim12_1,10.57070652
+sp|P45955|CPOB_ECOLI,cpoB,consistent,C-lim12_1,10.1092581
+sp|P46022|MTGA_ECOLI,mtgA,consistent,C-lim12_1,11.65412643
+sp|P46125|YEDI_ECOLI,yedI,consistent,C-lim12_1,11.1753778
+sp|P46130|YBHC_ECOLI,ybhC,consistent,C-lim12_1,12.3185572
+sp|P46474|YHDP_ECOLI,yhdP,consistent,C-lim12_1,13.13575272
+sp|P46849|RTCA_ECOLI,rtcA,consistent,C-lim12_1,12.5139316
+sp|P46850|RTCB_ECOLI,rtcB,consistent,C-lim12_1,3.224007185
+sp|P46854|AAAT_ECOLI,aaaT,consistent,C-lim12_1,10.99916705
+sp|P46889|FTSK_ECOLI,ftsK,consistent,C-lim12_1,1.96176554
+sp|P50456|MLC_ECOLI,mlc,consistent,C-lim12_1,10.01460357
+sp|P50457|PUUE_ECOLI,puuE,consistent,C-lim12_1,4.645691989
+sp|P51981|AEEP_ECOLI,ycjG,consistent,C-lim12_1,9.350973752
+sp|P52007|YECM_ECOLI,yecM,consistent,C-lim12_1,5.457985983
+sp|P52062|YGGW_ECOLI,yggW,consistent,C-lim12_1,9.250125897
+sp|P52076|QSEB_ECOLI,qseB,consistent,C-lim12_1,12.13794063
+sp|P52097|TILS_ECOLI,tilS,consistent,C-lim12_1,11.6171871
+sp|P52108|RSTA_ECOLI,rstA,consistent,C-lim12_1,7.753889409
+sp|P52598|YGBI_ECOLI,ygbI,consistent,C-lim12_1,9.264872165
+sp|P52643|LDHD_ECOLI,ldhA,consistent,C-lim12_1,11.39346516
+sp|P52645|YDBH_ECOLI,ydbH,consistent,C-lim12_1,10.89667977
+sp|P52647|NIFJ_ECOLI,ydbK,consistent,C-lim12_1,5.248815184
+sp|P55135|RLMD_ECOLI,rlmD,consistent,C-lim12_1,9.178743135
+sp|P56258|WECF_ECOLI,wecF,consistent,C-lim12_1,12.12404044
+sp|P60340|TRUB_ECOLI,truB,consistent,C-lim12_1,10.0140072
+sp|P60390|RSMH_ECOLI,rsmH,consistent,C-lim12_1,9.694979339
+sp|P60438|RL3_ECOLI,rplC,consistent,C-lim12_1,12.59190377
+sp|P60584|CAIA_ECOLI,caiA,consistent,C-lim12_1,8.440993277
+sp|P60595|HIS5_ECOLI,hisH,consistent,C-lim12_1,11.00222658
+sp|P60651|SPEB_ECOLI,speB,consistent,C-lim12_1,12.12237164
+sp|P60664|HIS6_ECOLI,hisF,consistent,C-lim12_1,9.63452503
+sp|P60716|LIPA_ECOLI,lipA,consistent,C-lim12_1,2.613776857
+sp|P60723|RL4_ECOLI,rplD,consistent,C-lim12_1,11.78485266
+sp|P60757|HIS1_ECOLI,hisG,consistent,C-lim12_1,7.794096172
+sp|P60785|LEPA_ECOLI,lepA,consistent,C-lim12_1,10.74173632
+sp|P60906|SYH_ECOLI,hisS,consistent,C-lim12_1,10.95363288
+sp|P61316|LOLA_ECOLI,lolA,consistent,C-lim12_1,9.358692601
+sp|P61320|LOLB_ECOLI,lolB,consistent,C-lim12_1,12.43600208
+sp|P61517|CAN_ECOLI,can,consistent,C-lim12_1,9.238084997
+sp|P61889|MDH_ECOLI,mdh,consistent,C-lim12_1,10.20827794
+sp|P62399|RL5_ECOLI,rplE,consistent,C-lim12_1,10.72366452
+sp|P62620|ISPG_ECOLI,ispG,consistent,C-lim12_1,8.238346556
+sp|P62623|ISPH_ECOLI,ispH,consistent,C-lim12_1,5.344264838
+sp|P62672|APAG_ECOLI,apaG,consistent,C-lim12_1,3.33553487
+sp|P62707|GPMA_ECOLI,gpmA,consistent,C-lim12_1,10.57332268
+sp|P62768|YAEH_ECOLI,yaeH,consistent,C-lim12_1,8.714386732
+sp|P63020|NFUA_ECOLI,nfuA,consistent,C-lim12_1,5.149408883
+sp|P63183|KUP_ECOLI,kup,consistent,C-lim12_1,15.1318265
+sp|P63284|CLPB_ECOLI,clpB,consistent,C-lim12_1,11.89943119
+sp|P63389|YHES_ECOLI,yheS,consistent,C-lim12_1,6.536425507
+sp|P63417|YHBS_ECOLI,yhbS,consistent,C-lim12_1,10.46279786
+sp|P63883|AMIC_ECOLI,amiC,consistent,C-lim12_1,9.753501469
+sp|P64423|ZNTB_ECOLI,zntB,consistent,C-lim12_1,11.68841664
+sp|P64451|YDCL_ECOLI,ydcL,consistent,C-lim12_1,10.96612826
+sp|P64463|YDFZ_ECOLI,ydfZ,consistent,C-lim12_1,5.690105707
+sp|P64483|YEAK_ECOLI,yeaK,consistent,C-lim12_1,8.750945998
+sp|P64534|RCNB_ECOLI,rcnB,consistent,C-lim12_1,9.274046542
+sp|P64540|YFCL_ECOLI,yfcL,consistent,C-lim12_1,5.044311727
+sp|P64554|QUEE_ECOLI,queE,consistent,C-lim12_1,7.271149949
+sp|P64581|YQJD_ECOLI,yqjD,consistent,C-lim12_1,10.16592408
+sp|P64585|YQJE_ECOLI,yqjE,consistent,C-lim12_1,11.68763793
+sp|P64596|YRAP_ECOLI,yraP,consistent,C-lim12_1,11.7282367
+sp|P64612|ZAPE_ECOLI,zapE,consistent,C-lim12_1,10.66209471
+sp|P64616|YHCO_ECOLI,yhcO,consistent,C-lim12_1,9.533089638
+sp|P65294|YGDR_ECOLI,ygdR,consistent,C-lim12_1,8.118193597
+sp|P65870|QUED_ECOLI,queD,consistent,C-lim12_1,13.27857678
+sp|P66817|DIAA_ECOLI,diaA,consistent,C-lim12_1,11.1178242
+sp|P67080|PLPHP_ECOLI,yggS,consistent,C-lim12_1,9.502516215
+sp|P67244|YQHA_ECOLI,yqhA,consistent,C-lim12_1,13.0968087
+sp|P67553|YNFC_ECOLI,ynfC,consistent,C-lim12_1,3.210530319
+sp|P67762|YHBP_ECOLI,yhbP,consistent,C-lim12_1,14.41205815
+sp|P67826|CUTC_ECOLI,cutC,consistent,C-lim12_1,9.792656972
+sp|P67910|HLDD_ECOLI,rfaD,consistent,C-lim12_1,11.54363399
+sp|P68066|GRCA_ECOLI,grcA,consistent,C-lim12_1,3.132032602
+sp|P68699|ATPL_ECOLI,atpE,consistent,C-lim12_1,12.61365015
+sp|P68767|AMPA_ECOLI,pepA,consistent,C-lim12_1,12.42726815
+sp|P68919|RL25_ECOLI,rplY,consistent,C-lim12_1,9.515802186
+sp|P69222|IF1_ECOLI,infA,consistent,C-lim12_1,8.841727709
+sp|P69346|YEFM_ECOLI,yefM,consistent,C-lim12_1,3.063721858
+sp|P69425|TATB_ECOLI,tatB,consistent,C-lim12_1,7.788381108
+sp|P69428|TATA_ECOLI,tatA,consistent,C-lim12_1,9.604561944
+sp|P69451|LCFA_ECOLI,fadD,consistent,C-lim12_1,6.916658258
+sp|P69783|PTGA_ECOLI,crr,consistent,C-lim12_1,11.78133367
+sp|P69797|PTNAB_ECOLI,manX,consistent,C-lim12_1,13.61256114
+sp|P69811|PTFAH_ECOLI,fruB,consistent,C-lim12_1,13.10597696
+sp|P69822|ULAB_ECOLI,ulaB,consistent,C-lim12_1,5.291031484
+sp|P69874|POTA_ECOLI,potA,consistent,C-lim12_1,12.12932114
+sp|P69913|CSRA_ECOLI,csrA,consistent,C-lim12_1,8.63464183
+sp|P69922|FUCI_ECOLI,fucI,consistent,C-lim12_1,10.24050816
+sp|P69931|HDA_ECOLI,hda,consistent,C-lim12_1,10.84396923
+sp|P75691|YAHK_ECOLI,yahK,consistent,C-lim12_1,11.60033447
+sp|P75694|YAHO_ECOLI,yahO,consistent,C-lim12_1,6.22096723
+sp|P75767|GNGF_ECOLI,ybhK,consistent,C-lim12_1,11.46879727
+sp|P75777|YBHG_ECOLI,ybhG,consistent,C-lim12_1,12.55843089
+sp|P75792|SUPH_ECOLI,ybiV,consistent,C-lim12_1,12.43166404
+sp|P75796|GSIA_ECOLI,gsiA,consistent,C-lim12_1,6.414348254
+sp|P75797|GSIB_ECOLI,gsiB,consistent,C-lim12_1,13.63048982
+sp|P75798|GSIC_ECOLI,gsiC,consistent,C-lim12_1,12.24845514
+sp|P75809|YBJI_ECOLI,ybjI,consistent,C-lim12_1,7.010771206
+sp|P75818|YBJP_ECOLI,ybjP,consistent,C-lim12_1,13.60740404
+sp|P75823|LTAE_ECOLI,ltaE,consistent,C-lim12_1,11.11171034
+sp|P75830|MACA_ECOLI,macA,consistent,C-lim12_1,12.61083545
+sp|P75831|MACB_ECOLI,macB,consistent,C-lim12_1,12.60259587
+sp|P75838|YCAO_ECOLI,ycaO,consistent,C-lim12_1,10.53553446
+sp|P75849|GLO22_ECOLI,gloC,consistent,C-lim12_1,10.5070036
+sp|P75863|YCBX_ECOLI,ycbX,consistent,C-lim12_1,10.67112566
+sp|P75876|RLMI_ECOLI,rlmI,consistent,C-lim12_1,11.37420862
+sp|P75913|GHRA_ECOLI,ghrA,consistent,C-lim12_1,11.28124834
+sp|P75931|YCEM_ECOLI,yceM,consistent,C-lim12_1,11.22027851
+sp|P75946|YCFL_ECOLI,ycfL,consistent,C-lim12_1,9.910914907
+sp|P75952|COMR_ECOLI,comR,consistent,C-lim12_1,5.015767513
+sp|P75954|YCFS_ECOLI,ycfS,consistent,C-lim12_1,4.616314856
+sp|P75968|YMFE_ECOLI,ymfE,consistent,C-lim12_1,11.18403167
+sp|P75974|COHE_ECOLI,cohE,consistent,C-lim12_1,10.28885686
+sp|P75989|BLUR_ECOLI,bluR,consistent,C-lim12_1,4.666723391
+sp|P76004|YCGM_ECOLI,ycgM,consistent,C-lim12_1,11.22193255
+sp|P76008|LDCA_ECOLI,ldcA,consistent,C-lim12_1,10.14194621
+sp|P76010|YCGR_ECOLI,ycgR,consistent,C-lim12_1,3.250259708
+sp|P76014|DHAL_ECOLI,dhaL,consistent,C-lim12_1,9.916528731
+sp|P76015|DHAK_ECOLI,dhaK,consistent,C-lim12_1,10.94728965
+sp|P76027|OPPD_ECOLI,oppD,consistent,C-lim12_1,12.69381256
+sp|P76035|YCIW_ECOLI,yciW,consistent,C-lim12_1,2.025182927
+sp|P76055|TTCA_ECOLI,ttcA,consistent,C-lim12_1,3.095931145
+sp|P76086|PAAX_ECOLI,paaX,consistent,C-lim12_1,8.486464091
+sp|P76104|YDCP_ECOLI,ydcP,consistent,C-lim12_1,3.373601555
+sp|P76108|YDCS_ECOLI,ydcS,consistent,C-lim12_1,14.02747397
+sp|P76112|MNAT_ECOLI,mnaT,consistent,C-lim12_1,10.16781792
+sp|P76113|CURA_ECOLI,curA,consistent,C-lim12_1,11.04050013
+sp|P76115|YNCD_ECOLI,yncD,consistent,C-lim12_1,14.31500509
+sp|P76116|YNCE_ECOLI,yncE,consistent,C-lim12_1,12.97245664
+sp|P76128|DDPA_ECOLI,ddpA,consistent,C-lim12_1,8.287923489
+sp|P76145|TAM_ECOLI,tam,consistent,C-lim12_1,11.20863983
+sp|P76149|SAD_ECOLI,sad,consistent,C-lim12_1,8.381598072
+sp|P76194|SUFE_ECOLI,sufE,consistent,C-lim12_1,9.64284473
+sp|P76208|YNIB_ECOLI,yniB,consistent,C-lim12_1,14.07337476
+sp|P76217|ASTD_ECOLI,astD,consistent,C-lim12_1,10.11534521
+sp|P76222|YNJA_ECOLI,ynjA,consistent,C-lim12_1,12.46639912
+sp|P76234|YEAE_ECOLI,yeaE,consistent,C-lim12_1,9.628238782
+sp|P76251|DMLA_ECOLI,dmlA,consistent,C-lim12_1,8.355395197
+sp|P76290|CMOA_ECOLI,cmoA,consistent,C-lim12_1,7.334946632
+sp|P76341|HIUH_ECOLI,hiuH,consistent,C-lim12_1,9.346940787
+sp|P76342|MSRP_ECOLI,msrP,consistent,C-lim12_1,8.664741852
+sp|P76346|MTFA_ECOLI,mtfA,consistent,C-lim12_1,2.275229388
+sp|P76372|WZZB_ECOLI,wzzB,consistent,C-lim12_1,11.99746167
+sp|P76397|MDTA_ECOLI,mdtA,consistent,C-lim12_1,12.51057182
+sp|P76402|YEGP_ECOLI,yegP,consistent,C-lim12_1,11.7114357
+sp|P76403|YEGQ_ECOLI,yegQ,consistent,C-lim12_1,6.177702317
+sp|P76406|YEGR_ECOLI,yegR,consistent,C-lim12_1,11.37619369
+sp|P76407|YEGS_ECOLI,yegS,consistent,C-lim12_1,9.474917915
+sp|P76446|RTN_ECOLI,rtn,consistent,C-lim12_1,10.63119131
+sp|P76469|RHMA_ECOLI,rhmA,consistent,C-lim12_1,7.283035428
+sp|P76472|ARND_ECOLI,arnD,consistent,C-lim12_1,7.363910814
+sp|P76502|SIXA_ECOLI,sixA,consistent,C-lim12_1,1.858995071
+sp|P76503|FADI_ECOLI,fadI,consistent,C-lim12_1,13.56495584
+sp|P76506|MLAA_ECOLI,mlaA,consistent,C-lim12_1,14.29122396
+sp|P76513|YFDQ_ECOLI,yfdQ,consistent,C-lim12_1,10.43592201
+sp|P76558|MAO2_ECOLI,maeB,consistent,C-lim12_1,10.86914559
+sp|P76576|YFGM_ECOLI,yfgM,consistent,C-lim12_1,11.01990742
+sp|P76641|GUAD_ECOLI,guaD,consistent,C-lim12_1,10.4347986
+sp|P76658|HLDE_ECOLI,hldE,consistent,C-lim12_1,11.03982517
+sp|P77148|YDHS_ECOLI,ydhS,consistent,C-lim12_1,9.221399342
+sp|P77182|MNMC_ECOLI,mnmC,consistent,C-lim12_1,10.0917061
+sp|P77202|DSBG_ECOLI,dsbG,consistent,C-lim12_1,12.24405285
+sp|P77212|RCLA_ECOLI,rclA,consistent,C-lim12_1,11.1755895
+sp|P77213|GCS2_ECOLI,ybdK,consistent,C-lim12_1,9.7067515
+sp|P77252|YKGE_ECOLI,ykgE,consistent,C-lim12_1,8.168911325
+sp|P77258|NEMA_ECOLI,nemA,consistent,C-lim12_1,3.566968231
+sp|P77348|MPPA_ECOLI,mppA,consistent,C-lim12_1,10.25551815
+sp|P77364|GLXK2_ECOLI,glxK,consistent,C-lim12_1,11.28533551
+sp|P77395|YBBN_ECOLI,ybbN,consistent,C-lim12_1,11.37933771
+sp|P77398|ARNA_ECOLI,arnA,consistent,C-lim12_1,11.31321479
+sp|P77399|FADJ_ECOLI,fadJ,consistent,C-lim12_1,12.06756648
+sp|P77425|ALLC_ECOLI,allC,consistent,C-lim12_1,8.233907986
+sp|P77434|ALAC_ECOLI,alaC,consistent,C-lim12_1,8.622919869
+sp|P77444|SUFS_ECOLI,sufS,consistent,C-lim12_1,8.826277246
+sp|P77485|CUSS_ECOLI,cusS,consistent,C-lim12_1,13.28845521
+sp|P77488|DXS_ECOLI,dxs,consistent,C-lim12_1,11.69795088
+sp|P77493|YDJH_ECOLI,ydjH,consistent,C-lim12_1,10.31299765
+sp|P77499|SUFC_ECOLI,sufC,consistent,C-lim12_1,10.49651182
+sp|P77522|SUFB_ECOLI,sufB,consistent,C-lim12_1,5.593316977
+sp|P77529|YDJN_ECOLI,ydjN,consistent,C-lim12_1,12.77946878
+sp|P77552|YDHQ_ECOLI,ydhQ,consistent,C-lim12_1,2.903191177
+sp|P77554|YAHJ_ECOLI,yahJ,consistent,C-lim12_1,10.39021172
+sp|P77559|YNFL_ECOLI,ynfL,consistent,C-lim12_1,11.98856061
+sp|P77561|YDEP_ECOLI,ydeP,consistent,C-lim12_1,3.914192632
+sp|P77569|MHPR_ECOLI,mhpR,consistent,C-lim12_1,3.995749217
+sp|P77570|ANMK_ECOLI,anmK,consistent,C-lim12_1,10.10027802
+sp|P77581|ASTC_ECOLI,astC,consistent,C-lim12_1,7.454236929
+sp|P77619|YFEW_ECOLI,yfeW,consistent,C-lim12_1,11.28392345
+sp|P77625|HXPA_ECOLI,hxpA,consistent,C-lim12_1,10.36868777
+sp|P77626|SUTR_ECOLI,sutR,consistent,C-lim12_1,10.48699415
+sp|P77634|YBCM_ECOLI,ybcM,consistent,C-lim12_1,7.371830163
+sp|P77649|YDIU_ECOLI,ydiU,consistent,C-lim12_1,9.042037048
+sp|P77674|ABDH_ECOLI,prr,consistent,C-lim12_1,8.752304948
+sp|P77689|SUFD_ECOLI,sufD,consistent,C-lim12_1,5.864589992
+sp|P77690|ARNB_ECOLI,arnB,consistent,C-lim12_1,10.01581172
+sp|P77694|ECPD_ECOLI,ecpD,consistent,C-lim12_1,10.49010115
+sp|P77712|FADM_ECOLI,fadM,consistent,C-lim12_1,8.316140018
+sp|P77718|THII_ECOLI,thiI,consistent,C-lim12_1,7.710269454
+sp|P77730|YDCR_ECOLI,ydcR,consistent,C-lim12_1,11.01369858
+sp|P77735|YAJO_ECOLI,yajO,consistent,C-lim12_1,9.30750161
+sp|P77737|OPPF_ECOLI,oppF,consistent,C-lim12_1,10.37417815
+sp|P77739|YNIA_ECOLI,yniA,consistent,C-lim12_1,9.966191751
+sp|P77791|MAA_ECOLI,maa,consistent,C-lim12_1,6.607676198
+sp|P77804|YDGA_ECOLI,ydgA,consistent,C-lim12_1,12.66499909
+sp|P77808|CINAL_ECOLI,yfaY,consistent,C-lim12_1,10.66508322
+sp|Q46851|GPR_ECOLI,gpr,consistent,C-lim12_1,12.35206933
+sp|Q46856|YQHD_ECOLI,yqhD,consistent,C-lim12_1,12.21319899
+sp|Q46857|DKGA_ECOLI,dkgA,consistent,C-lim12_1,13.01994378
+sp|Q46858|YQHG_ECOLI,yqhG,consistent,C-lim12_1,11.43817668
+sp|Q46863|YGIS_ECOLI,ygiS,consistent,C-lim12_1,11.46685605
+sp|Q46893|ISPD_ECOLI,ispD,consistent,C-lim12_1,11.44296238
+sp|Q46920|QUEF_ECOLI,queF,consistent,C-lim12_1,9.539183611
+sp|Q46927|TCDA_ECOLI,tcdA,consistent,C-lim12_1,10.14794335
+sp|Q46938|KDUI_ECOLI,kduI,consistent,C-lim12_1,10.72104995
+sp|Q46939|YQEF_ECOLI,yqeF,consistent,C-lim12_1,3.848671267
+sp|Q46948|YAJL_ECOLI,yajL,consistent,C-lim12_1,9.863553075
+sp|Q47146|FADE_ECOLI,fadE,consistent,C-lim12_1,3.256754004
+sp|Q47147|YAFJ_ECOLI,yafJ,consistent,C-lim12_1,13.72296293
+sp|Q47622|SAPA_ECOLI,sapA,consistent,C-lim12_1,11.07283114
+sp|Q47689|MMUP_ECOLI,mmuP,consistent,C-lim12_1,7.376535023
+sp|Q59385|COPA_ECOLI,copA,consistent,C-lim12_1,10.03950384
+sp|Q6BF17|DGOD_ECOLI,dgoD,consistent,C-lim12_1,6.407808931
+sp|P00722|BGAL_ECOLI,lacZ,consistent,C-lim12_1,10.58627365
+sp|P03030|LYSR_ECOLI,lysR,consistent,C-lim12_1,11.81151939
+sp|P0AAF3|ARAG_ECOLI,araG,consistent,C-lim12_1,6.52303038
+sp|P0AAS3|YBBJ_ECOLI,ybbJ,consistent,C-lim12_1,11.77848366
+sp|P0ABX2|FLGC_ECOLI,flgC,consistent,C-lim12_1,2.164113184
+sp|P0AFZ7|TRKH_ECOLI,trkH,consistent,C-lim12_1,14.01235758
+sp|P0C7L2|PAAJ_ECOLI,paaJ,consistent,C-lim12_1,5.174135034
+sp|P23524|GLXK1_ECOLI,garK,consistent,C-lim12_1,9.530167642
+sp|P23857|PSPE_ECOLI,pspE,consistent,C-lim12_1,3.699262583
+sp|P25738|MSYB_ECOLI,msyB,consistent,C-lim12_1,7.523713101
+sp|P31551|CAID_ECOLI,caiD,consistent,C-lim12_1,9.068009025
+sp|P32677|YIJO_ECOLI,yijO,consistent,C-lim12_1,8.524653841
+sp|P34209|YDCF_ECOLI,ydcF,consistent,C-lim12_1,11.85061712
+sp|P42589|YGJH_ECOLI,ygjH,consistent,C-lim12_1,9.144772567
+sp|P45537|YHFK_ECOLI,yhfK,consistent,C-lim12_1,13.65716664
+sp|P46890|YBAE_ECOLI,ybaE,consistent,C-lim12_1,4.723024714
+sp|P76142|LSRB_ECOLI,lsrB,consistent,C-lim12_1,10.16664781
+sp|P76373|UDG_ECOLI,ugd,consistent,C-lim12_1,6.765435461
+sp|P77335|HLYE_ECOLI,hlyE,consistent,C-lim12_1,7.455173811
+sp|P77726|YAJR_ECOLI,yajR,consistent,C-lim12_1,12.56728154
+sp|Q46802|YGEV_ECOLI,ygeV,consistent,C-lim12_1,3.077758858
+sp|Q46807|ARCL_ECOLI,yqeA,consistent,C-lim12_1,7.311826416
+sp|P05804|BGLR_ECOLI,uidA,consistent,C-lim12_1,9.821248681
+sp|P07000|PLDB_ECOLI,pldB,consistent,C-lim12_1,12.5642295
+sp|P08194|GLPT_ECOLI,glpT,consistent,C-lim12_1,12.71722799
+sp|P08204|ARAB_ECOLI,araB,consistent,C-lim12_1,6.441102302
+sp|P0A9T8|YBBA_ECOLI,ybbA,consistent,C-lim12_1,12.43864041
+sp|P0AA78|EXUT_ECOLI,exuT,consistent,C-lim12_1,9.942843708
+sp|P0AB87|FUCA_ECOLI,fucA,consistent,C-lim12_1,7.924341552
+sp|P0AEM4|FLGM_ECOLI,flgM,consistent,C-lim12_1,0.994511478
+sp|P0AEP9|GLCD_ECOLI,glcD,consistent,C-lim12_1,5.770617162
+sp|P0AF54|YJCH_ECOLI,yjcH,consistent,C-lim12_1,9.30503412
+sp|P0AFU0|YEJB_ECOLI,yejB,consistent,C-lim12_1,15.11542726
+sp|P0AGI4|XYLH_ECOLI,xylH,consistent,C-lim12_1,9.482135662
+sp|P0AGM0|YHHT_ECOLI,yhhT,consistent,C-lim12_1,11.79222254
+sp|P0C8K0|KBAZ_ECOLI,kbaZ,consistent,C-lim12_1,5.944070742
+sp|P11071|ACEK_ECOLI,aceK,consistent,C-lim12_1,10.82871876
+sp|P11551|FUCP_ECOLI,fucP,consistent,C-lim12_1,4.622531113
+sp|P17411|CHBF_ECOLI,chbF,consistent,C-lim12_1,10.22267772
+sp|P21189|DPO2_ECOLI,polB,consistent,C-lim12_1,8.78639011
+sp|P25906|PDXI_ECOLI,pdxI,consistent,C-lim12_1,11.33671944
+sp|P29013|YCGB_ECOLI,ycgB,consistent,C-lim12_1,2.287631876
+sp|P31130|YDEI_ECOLI,ydeI,consistent,C-lim12_1,7.780767513
+sp|P31660|PRPC_ECOLI,prpC,consistent,C-lim12_1,4.285190339
+sp|P37672|DLGD_ECOLI,dlgD,consistent,C-lim12_1,10.75087426
+sp|P37677|LYXK_ECOLI,lyx,consistent,C-lim12_1,8.063277081
+sp|P39363|SGCA_ECOLI,sgcA,consistent,C-lim12_1,6.805563636
+sp|P39367|YJHP_ECOLI,yjhP,consistent,C-lim12_1,10.70686526
+sp|P45771|YRDD_ECOLI,yrdD,consistent,C-lim12_1,8.741544166
+sp|P64461|LSRG_ECOLI,lsrG,consistent,C-lim12_1,4.11596692
+sp|P65807|YGEY_ECOLI,ygeY,consistent,C-lim12_1,9.477885043
+sp|P68191|SRA_ECOLI,sra,consistent,C-lim12_1,2.197202101
+sp|P76085|PAAK_ECOLI,paaK,consistent,C-lim12_1,1.308721885
+sp|P76097|YDCJ_ECOLI,ydcJ,consistent,C-lim12_1,5.100736359
+sp|P76235|YEAH_ECOLI,yeaH,consistent,C-lim12_1,2.27461334
+sp|P76473|ARNT_ECOLI,arnT,consistent,C-lim12_1,13.99693056
+sp|P76555|EUTQ_ECOLI,eutQ,consistent,C-lim12_1,6.213428196
+sp|P76559|YPFG_ECOLI,ypfG,consistent,C-lim12_1,11.81655181
+sp|P77215|RHMD_ECOLI,rhmD,consistent,C-lim12_1,8.269025645
+sp|P77257|LSRA_ECOLI,lsrA,consistent,C-lim12_1,6.176737805
+sp|P77526|YFCG_ECOLI,yfcG,consistent,C-lim12_1,10.26023478
+sp|P77541|PRPB_ECOLI,prpB,consistent,C-lim12_1,6.23684787
+sp|P77672|LSRC_ECOLI,lsrC,consistent,C-lim12_1,8.414110851
+sp|P77743|PRPR_ECOLI,prpR,consistent,C-lim12_1,6.190573207
+sp|P77795|YDCT_ECOLI,ydcT,consistent,C-lim12_1,10.21305968
+sp|Q46799|XDHA_ECOLI,xdhA,consistent,C-lim12_1,4.527568941
+sp|Q46801|XDHC_ECOLI,xdhC,consistent,C-lim12_1,3.736543904
+sp|P0AFW2|RMF_ECOLI,rmf,consistent,C-lim12_1,0.102755865
+sp|P11289|YFIL_ECOLI,yfiL,consistent,C-lim12_1,8.716447499
+sp|P31678|OTSB_ECOLI,otsB,consistent,C-lim12_1,6.273855747
+sp|P37327|YFDC_ECOLI,yfdC,consistent,C-lim12_1,12.90320386
+sp|P39360|YJHI_ECOLI,yjhI,consistent,C-lim12_1,2.76483475
+sp|P39370|NANS_ECOLI,nanS,consistent,C-lim12_1,9.360963319
+sp|P52005|TORY_ECOLI,torY,consistent,C-lim12_1,8.878444036
+sp|P76114|MCBR_ECOLI,mcbR,consistent,C-lim12_1,13.42048091
+sp|P76196|YDIL_ECOLI,ydiL,consistent,C-lim12_1,5.559715894
+sp|Q46888|LTND_ECOLI,ltnD,consistent,C-lim12_1,2.73193901
+sp|Q46915|GUDX_ECOLI,gudX,consistent,C-lim12_1,8.524287194
+sp|P0AA76|DGOT_ECOLI,dgoT,consistent,C-lim12_1,7.594286437
+sp|P0AER5|GLTK_ECOLI,gltK,consistent,C-lim12_1,13.89571635
+sp|P31135|POTH_ECOLI,potH,consistent,C-lim12_1,13.18552209
+sp|P00509|AAT_ECOLI,aspC,consistent,C-lim12_2,10.30876933
+sp|P00550|PTM3C_ECOLI,mtlA,consistent,C-lim12_2,12.71786544
+sp|P00561|AK1H_ECOLI,thrA,consistent,C-lim12_2,13.77414811
+sp|P00562|AK2H_ECOLI,metL,consistent,C-lim12_2,9.779395731
+sp|P00887|AROH_ECOLI,aroH,consistent,C-lim12_2,10.71151163
+sp|P00888|AROF_ECOLI,aroF,consistent,C-lim12_2,4.241195212
+sp|P00893|ILVI_ECOLI,ilvI,consistent,C-lim12_2,11.34868071
+sp|P00894|ILVH_ECOLI,ilvH,consistent,C-lim12_2,10.91296643
+sp|P00934|THRC_ECOLI,thrC,consistent,C-lim12_2,12.54318121
+sp|P00936|CYAA_ECOLI,cyaA,consistent,C-lim12_2,1.81448317
+sp|P00946|MANA_ECOLI,manA,consistent,C-lim12_2,11.00251466
+sp|P00962|SYQ_ECOLI,glnS,consistent,C-lim12_2,11.49487701
+sp|P00963|ASNA_ECOLI,asnA,consistent,C-lim12_2,5.545865314
+sp|P02413|RL15_ECOLI,rplO,consistent,C-lim12_2,9.41285796
+sp|P02930|TOLC_ECOLI,tolC,consistent,C-lim12_2,12.9234416
+sp|P02932|PHOE_ECOLI,phoE,consistent,C-lim12_2,13.41078437
+sp|P03004|DNAA_ECOLI,dnaA,consistent,C-lim12_2,5.355862075
+sp|P03023|LACI_ECOLI,lacI,consistent,C-lim12_2,8.91715439
+sp|P04425|GSHB_ECOLI,gshB,consistent,C-lim12_2,10.56025721
+sp|P04805|SYE_ECOLI,gltX,consistent,C-lim12_2,13.20234119
+sp|P04994|EX7L_ECOLI,xseA,consistent,C-lim12_2,11.43135362
+sp|P05637|APAH_ECOLI,apaH,consistent,C-lim12_2,7.188304374
+sp|P05704|MCP3_ECOLI,trg,consistent,C-lim12_2,6.533981466
+sp|P06129|BTUB_ECOLI,btuB,consistent,C-lim12_2,12.45525855
+sp|P06612|TOP1_ECOLI,topA,consistent,C-lim12_2,10.839099
+sp|P06616|ERA_ECOLI,era,consistent,C-lim12_2,6.51531482
+sp|P06846|EBGR_ECOLI,ebgR,consistent,C-lim12_2,9.906069205
+sp|P06966|DICA_ECOLI,dicA,consistent,C-lim12_2,8.153224185
+sp|P06974|FLIM_ECOLI,fliM,consistent,C-lim12_2,7.478913527
+sp|P06987|HIS7_ECOLI,hisB,consistent,C-lim12_2,11.41119465
+sp|P06992|RSMA_ECOLI,rsmA,consistent,C-lim12_2,13.59151209
+sp|P07001|PNTA_ECOLI,pntA,consistent,C-lim12_2,14.86413601
+sp|P07004|PROA_ECOLI,proA,consistent,C-lim12_2,11.27042986
+sp|P07014|SDHB_ECOLI,sdhB,consistent,C-lim12_2,12.11335123
+sp|P07024|USHA_ECOLI,ushA,consistent,C-lim12_2,13.10894549
+sp|P07102|PPA_ECOLI,appA,consistent,C-lim12_2,12.05733601
+sp|P07117|PUTP_ECOLI,putP,consistent,C-lim12_2,10.50932879
+sp|P07330|CHEB_ECOLI,cheB,consistent,C-lim12_2,5.796280835
+sp|P07762|GLGB_ECOLI,glgB,consistent,C-lim12_2,13.53628976
+sp|P07913|TDH_ECOLI,tdh,consistent,C-lim12_2,10.96401647
+sp|P08178|PUR5_ECOLI,purM,consistent,C-lim12_2,11.38299562
+sp|P08191|FIMH_ECOLI,fimH,consistent,C-lim12_2,13.02934066
+sp|P08312|SYFA_ECOLI,pheS,consistent,C-lim12_2,13.12394089
+sp|P08337|MUTT_ECOLI,mutT,consistent,C-lim12_2,9.252554135
+sp|P08390|USG_ECOLI,usg,consistent,C-lim12_2,10.01681432
+sp|P08395|SPPA_ECOLI,sppA,consistent,C-lim12_2,10.34173061
+sp|P08400|PHOR_ECOLI,phoR,consistent,C-lim12_2,13.44807795
+sp|P09029|PURK_ECOLI,purK,consistent,C-lim12_2,9.942611629
+sp|P09030|EX3_ECOLI,xthA,consistent,C-lim12_2,11.44549918
+sp|P09099|XYLB_ECOLI,xylB,consistent,C-lim12_2,10.9192327
+sp|P09147|GALE_ECOLI,galE,consistent,C-lim12_2,12.10384667
+sp|P09155|RND_ECOLI,rnd,consistent,C-lim12_2,10.48450914
+sp|P09169|OMPT_ECOLI,ompT,consistent,C-lim12_2,11.63045125
+sp|P09372|GRPE_ECOLI,grpE,consistent,C-lim12_2,9.385235619
+sp|P09546|PUTA_ECOLI,putA,consistent,C-lim12_2,4.291740197
+sp|P09549|DEDD_ECOLI,dedD,consistent,C-lim12_2,7.077286302
+sp|P09831|GLTB_ECOLI,gltB,consistent,C-lim12_2,8.852890463
+sp|P09833|MODC_ECOLI,modC,consistent,C-lim12_2,11.92106999
+sp|P09980|REP_ECOLI,rep,consistent,C-lim12_2,6.984221207
+sp|P0A698|UVRA_ECOLI,uvrA,consistent,C-lim12_2,12.49167042
+sp|P0A6A3|ACKA_ECOLI,ackA,consistent,C-lim12_2,12.47541989
+sp|P0A6A8|ACP_ECOLI,acpP,consistent,C-lim12_2,9.557875896
+sp|P0A6D7|AROK_ECOLI,aroK,consistent,C-lim12_2,5.468873676
+sp|P0A6E1|AROL_ECOLI,aroL,consistent,C-lim12_2,7.67504508
+sp|P0A6E6|ATPE_ECOLI,atpC,consistent,C-lim12_2,11.63040105
+sp|P0A6F1|CARA_ECOLI,carA,consistent,C-lim12_2,9.894411213
+sp|P0A6F5|CH60_ECOLI,groL,consistent,C-lim12_2,12.7832837
+sp|P0A6K1|DAPF_ECOLI,dapF,consistent,C-lim12_2,10.10173722
+sp|P0A6K3|DEF_ECOLI,def,consistent,C-lim12_2,6.580506739
+sp|P0A6L2|DAPA_ECOLI,dapA,consistent,C-lim12_2,11.53341483
+sp|P0A6L9|HSCB_ECOLI,hscB,consistent,C-lim12_2,10.56693435
+sp|P0A6P1|EFTS_ECOLI,tsf,consistent,C-lim12_2,11.76687866
+sp|P0A6P5|DER_ECOLI,der,consistent,C-lim12_2,10.78195958
+sp|P0A6P7|ENGB_ECOLI,engB,consistent,C-lim12_2,11.51647522
+sp|P0A6P9|ENO_ECOLI,eno,consistent,C-lim12_2,12.83840048
+sp|P0A6S3|FLGI_ECOLI,flgI,consistent,C-lim12_2,9.472423057
+sp|P0A6S7|GPDA_ECOLI,gpsA,consistent,C-lim12_2,12.0944111
+sp|P0A6T3|GAL1_ECOLI,galK,consistent,C-lim12_2,14.11723031
+sp|P0A6U5|RSMG_ECOLI,rsmG,consistent,C-lim12_2,11.6000456
+sp|P0A6U8|GLGA_ECOLI,glgA,consistent,C-lim12_2,11.7758556
+sp|P0A6V1|GLGC_ECOLI,glgC,consistent,C-lim12_2,12.33617657
+sp|P0A6W3|MRAY_ECOLI,mraY,consistent,C-lim12_2,12.40942708
+sp|P0A6X3|HFQ_ECOLI,hfq,consistent,C-lim12_2,13.05406125
+sp|P0A6Y1|IHFB_ECOLI,ihfB,consistent,C-lim12_2,6.312865343
+sp|P0A6Z1|HSCA_ECOLI,hscA,consistent,C-lim12_2,7.812009759
+sp|P0A705|IF2_ECOLI,infB,consistent,C-lim12_2,9.880107426
+sp|P0A731|MGSA_ECOLI,mgsA,consistent,C-lim12_2,9.830154432
+sp|P0A744|MSRA_ECOLI,msrA,consistent,C-lim12_2,8.624942942
+sp|P0A749|MURA_ECOLI,murA,consistent,C-lim12_2,10.18638155
+sp|P0A763|NDK_ECOLI,ndk,consistent,C-lim12_2,9.340471362
+sp|P0A7A7|PLSB_ECOLI,plsB,consistent,C-lim12_2,13.05722945
+sp|P0A7B8|HSLV_ECOLI,hslV,consistent,C-lim12_2,11.17724427
+sp|P0A7E9|PYRH_ECOLI,pyrH,consistent,C-lim12_2,11.64991513
+sp|P0A7F3|PYRI_ECOLI,pyrI,consistent,C-lim12_2,9.123473318
+sp|P0A7H6|RECR_ECOLI,recR,consistent,C-lim12_2,9.267262355
+sp|P0A7I0|RF1_ECOLI,prfA,consistent,C-lim12_2,10.57083079
+sp|P0A7K6|RL19_ECOLI,rplS,consistent,C-lim12_2,10.03375526
+sp|P0A7L3|RL20_ECOLI,rplT,consistent,C-lim12_2,11.41547694
+sp|P0A7L8|RL27_ECOLI,rpmA,consistent,C-lim12_2,10.24555181
+sp|P0A7R9|RS11_ECOLI,rpsK,consistent,C-lim12_2,13.8344933
+sp|P0A7S3|RS12_ECOLI,rpsL,consistent,C-lim12_2,12.60165941
+sp|P0A7U3|RS19_ECOLI,rpsS,consistent,C-lim12_2,9.707604562
+sp|P0A7U7|RS20_ECOLI,rpsT,consistent,C-lim12_2,11.21805017
+sp|P0A7V0|RS2_ECOLI,rpsB,consistent,C-lim12_2,9.910605481
+sp|P0A7V8|RS4_ECOLI,rpsD,consistent,C-lim12_2,10.53863057
+sp|P0A7Z0|RPIA_ECOLI,rpiA,consistent,C-lim12_2,9.502315389
+sp|P0A7Z4|RPOA_ECOLI,rpoA,consistent,C-lim12_2,11.58513736
+sp|P0A812|RUVB_ECOLI,ruvB,consistent,C-lim12_2,6.498562203
+sp|P0A850|TIG_ECOLI,tig,consistent,C-lim12_2,11.03670101
+sp|P0A877|TRPA_ECOLI,trpA,consistent,C-lim12_2,9.026685382
+sp|P0A8A2|YEEN_ECOLI,yeeN,consistent,C-lim12_2,9.785226614
+sp|P0A8D0|NRDR_ECOLI,nrdR,consistent,C-lim12_2,9.342992183
+sp|P0A8D6|YMDB_ECOLI,ymdB,consistent,C-lim12_2,10.08493445
+sp|P0A8E7|YAJQ_ECOLI,yajQ,consistent,C-lim12_2,10.92347453
+sp|P0A8F8|UVRB_ECOLI,uvrB,consistent,C-lim12_2,6.355509403
+sp|P0A8G0|UVRC_ECOLI,uvrC,consistent,C-lim12_2,8.003859464
+sp|P0A8I1|YQGF_ECOLI,yqgF,consistent,C-lim12_2,10.38587192
+sp|P0A8J8|RHLB_ECOLI,rhlB,consistent,C-lim12_2,10.40877836
+sp|P0A8Q0|FRDC_ECOLI,frdC,consistent,C-lim12_2,11.19177386
+sp|P0A8R0|RRAA_ECOLI,rraA,consistent,C-lim12_2,13.50681811
+sp|P0A8V0|RBN_ECOLI,rbn,consistent,C-lim12_2,10.47428276
+sp|P0A8V2|RPOB_ECOLI,rpoB,consistent,C-lim12_2,11.19353799
+sp|P0A8W0|NANR_ECOLI,nanR,consistent,C-lim12_2,6.670118896
+sp|P0A8W2|SLYA_ECOLI,slyA,consistent,C-lim12_2,11.39998686
+sp|P0A8W8|YFBU_ECOLI,yfbU,consistent,C-lim12_2,12.25452977
+sp|P0A915|OMPW_ECOLI,ompW,consistent,C-lim12_2,13.69397258
+sp|P0A924|PGPB_ECOLI,pgpB,consistent,C-lim12_2,15.59625181
+sp|P0A948|RIMJ_ECOLI,rimJ,consistent,C-lim12_2,9.285499926
+sp|P0A951|ATDA_ECOLI,speG,consistent,C-lim12_2,11.11246523
+sp|P0A953|FABB_ECOLI,fabB,consistent,C-lim12_2,11.33147861
+sp|P0A955|ALKH_ECOLI,eda,consistent,C-lim12_2,9.882343721
+sp|P0A988|DPO3B_ECOLI,dnaN,consistent,C-lim12_2,11.53681913
+sp|P0A991|ALF1_ECOLI,fbaB,consistent,C-lim12_2,13.39682085
+sp|P0A993|F16PA_ECOLI,fbp,consistent,C-lim12_2,9.011733251
+sp|P0A9A9|FUR_ECOLI,fur,consistent,C-lim12_2,9.761701158
+sp|P0A9C3|GALM_ECOLI,galM,consistent,C-lim12_2,13.34629195
+sp|P0A9F3|CYSB_ECOLI,cysB,consistent,C-lim12_2,10.81969411
+sp|P0A9F6|GCVA_ECOLI,gcvA,consistent,C-lim12_2,11.39092108
+sp|P0A9G6|ACEA_ECOLI,aceA,consistent,C-lim12_2,8.439045705
+sp|P0A9G8|MODE_ECOLI,modE,consistent,C-lim12_2,12.94557873
+sp|P0A9J8|PHEA_ECOLI,pheA,consistent,C-lim12_2,11.31606439
+sp|P0A9L3|FKBB_ECOLI,fklB,consistent,C-lim12_2,10.87284063
+sp|P0A9M0|LON_ECOLI,lon,consistent,C-lim12_2,11.42779481
+sp|P0A9P0|DLDH_ECOLI,lpd,consistent,C-lim12_2,13.40590957
+sp|P0A9Q5|ACCD_ECOLI,accD,consistent,C-lim12_2,11.49976723
+sp|P0A9S5|GLDA_ECOLI,gldA,consistent,C-lim12_2,12.14882113
+sp|P0A9S7|LIVG_ECOLI,livG,consistent,C-lim12_2,12.06802214
+sp|P0A9T4|TAS_ECOLI,tas,consistent,C-lim12_2,11.04035804
+sp|P0A9U3|YBIT_ECOLI,ybiT,consistent,C-lim12_2,10.17431583
+sp|P0A9U6|PUUR_ECOLI,puuR,consistent,C-lim12_2,5.604561325
+sp|P0A9V1|LPTB_ECOLI,lptB,consistent,C-lim12_2,11.65239719
+sp|P0AA10|RL13_ECOLI,rplM,consistent,C-lim12_2,12.71429478
+sp|P0AA16|OMPR_ECOLI,ompR,consistent,C-lim12_2,10.42806284
+sp|P0AA39|RLUC_ECOLI,rluC,consistent,C-lim12_2,10.33268754
+sp|P0AA43|RSUA_ECOLI,rsuA,consistent,C-lim12_2,9.045845311
+sp|P0AAA1|YAGU_ECOLI,yagU,consistent,C-lim12_2,14.69246533
+sp|P0AAE0|CYCA_ECOLI,cycA,consistent,C-lim12_2,8.584001318
+sp|P0AAG3|GLTL_ECOLI,gltL,consistent,C-lim12_2,11.51231817
+sp|P0AAI5|FABF_ECOLI,fabF,consistent,C-lim12_2,12.41606114
+sp|P0AAZ4|RARA_ECOLI,rarA,consistent,C-lim12_2,9.943459658
+sp|P0AB24|EFEO_ECOLI,efeO,consistent,C-lim12_2,13.46291607
+sp|P0AB52|YCHN_ECOLI,ychN,consistent,C-lim12_2,13.83246967
+sp|P0AB85|APBE_ECOLI,apbE,consistent,C-lim12_2,12.44077614
+sp|P0ABB0|ATPA_ECOLI,atpA,consistent,C-lim12_2,12.04322939
+sp|P0ABB4|ATPB_ECOLI,atpD,consistent,C-lim12_2,12.46772769
+sp|P0ABD3|BFR_ECOLI,bfr,consistent,C-lim12_2,12.49397606
+sp|P0ABM9|CCMH_ECOLI,ccmH,consistent,C-lim12_2,9.462667361
+sp|P0ABS1|DKSA_ECOLI,dksA,consistent,C-lim12_2,5.410910396
+sp|P0ABX5|FLGG_ECOLI,flgG,consistent,C-lim12_2,7.761323295
+sp|P0ABZ1|FLIG_ECOLI,fliG,consistent,C-lim12_2,6.013571945
+sp|P0AC02|BAMD_ECOLI,bamD,consistent,C-lim12_2,12.48031777
+sp|P0AC16|FOLB_ECOLI,folB,consistent,C-lim12_2,12.68265427
+sp|P0AC47|FRDB_ECOLI,frdB,consistent,C-lim12_2,12.47516735
+sp|P0AC81|LGUL_ECOLI,gloA,consistent,C-lim12_2,9.106246261
+sp|P0AC84|GLO2_ECOLI,gloB,consistent,C-lim12_2,7.907826153
+sp|P0ACB0|DNAB_ECOLI,dnaB,consistent,C-lim12_2,9.565863622
+sp|P0ACB2|HEM2_ECOLI,hemB,consistent,C-lim12_2,10.81986551
+sp|P0ACC3|ERPA_ECOLI,erpA,consistent,C-lim12_2,4.102573228
+sp|P0ACC7|GLMU_ECOLI,glmU,consistent,C-lim12_2,12.28470994
+sp|P0ACE7|HINT_ECOLI,hinT,consistent,C-lim12_2,10.09096743
+sp|P0ACF4|DBHB_ECOLI,hupB,consistent,C-lim12_2,7.637755157
+sp|P0ACF8|HNS_ECOLI,hns,consistent,C-lim12_2,9.522849771
+sp|P0ACG1|STPA_ECOLI,stpA,consistent,C-lim12_2,8.435811657
+sp|P0ACK5|DEOR_ECOLI,deoR,consistent,C-lim12_2,10.40688592
+sp|P0ACL0|GLPR_ECOLI,glpR,consistent,C-lim12_2,10.75184781
+sp|P0ACL2|EXUR_ECOLI,exuR,consistent,C-lim12_2,5.213768856
+sp|P0ACL9|PDHR_ECOLI,pdhR,consistent,C-lim12_2,10.05824429
+sp|P0ACM5|YEGW_ECOLI,yegW,consistent,C-lim12_2,8.72849162
+sp|P0ACN7|CYTR_ECOLI,cytR,consistent,C-lim12_2,11.08690789
+sp|P0ACR2|YDHB_ECOLI,ydhB,consistent,C-lim12_2,10.53144249
+sp|P0ACS7|RPIR_ECOLI,rpiR,consistent,C-lim12_2,15.39080913
+sp|P0AD05|YECA_ECOLI,yecA,consistent,C-lim12_2,10.20145465
+sp|P0AD14|BTSS_ECOLI,btsS,consistent,C-lim12_2,11.49091539
+sp|P0AD42|PGPC_ECOLI,pgpC,consistent,C-lim12_2,9.281189116
+sp|P0AD61|KPYK1_ECOLI,pykF,consistent,C-lim12_2,11.69435133
+sp|P0ADC1|LPTE_ECOLI,lptE,consistent,C-lim12_2,13.24625591
+sp|P0ADE4|TAMA_ECOLI,tamA,consistent,C-lim12_2,13.22670216
+sp|P0ADG4|SUHB_ECOLI,suhB,consistent,C-lim12_2,12.53731412
+sp|P0ADP7|UBIJ_ECOLI,ubiJ,consistent,C-lim12_2,7.816877269
+sp|P0ADQ2|YIID_ECOLI,yiiD,consistent,C-lim12_2,10.04264159
+sp|P0ADR6|RLMM_ECOLI,rlmM,consistent,C-lim12_2,10.50568841
+sp|P0ADS6|YGGE_ECOLI,yggE,consistent,C-lim12_2,13.15564994
+sp|P0ADU2|YGIN_ECOLI,ygiN,consistent,C-lim12_2,10.63223364
+sp|P0ADV1|LPTA_ECOLI,lptA,consistent,C-lim12_2,10.75101488
+sp|P0ADY1|PPID_ECOLI,ppiD,consistent,C-lim12_2,13.50777983
+sp|P0ADZ0|RL23_ECOLI,rplW,consistent,C-lim12_2,10.66608061
+sp|P0ADZ4|RS15_ECOLI,rpsO,consistent,C-lim12_2,13.13480817
+sp|P0ADZ7|YAJC_ECOLI,yajC,consistent,C-lim12_2,11.86899125
+sp|P0AE12|AMN_ECOLI,amn,consistent,C-lim12_2,10.8461827
+sp|P0AE18|MAP1_ECOLI,map,consistent,C-lim12_2,10.84951595
+sp|P0AE34|ARTQ_ECOLI,artQ,consistent,C-lim12_2,11.99718796
+sp|P0AE48|YTFP_ECOLI,ytfP,consistent,C-lim12_2,9.087054599
+sp|P0AE52|BCP_ECOLI,bcp,consistent,C-lim12_2,8.147690923
+sp|P0AE88|CPXR_ECOLI,cpxR,consistent,C-lim12_2,11.92508462
+sp|P0AEB7|YOAB_ECOLI,yoaB,consistent,C-lim12_2,13.75020265
+sp|P0AEC8|DCUS_ECOLI,dcuS,consistent,C-lim12_2,12.3105357
+sp|P0AED7|DAPE_ECOLI,dapE,consistent,C-lim12_2,9.900041113
+sp|P0AED9|DCM_ECOLI,dcm,consistent,C-lim12_2,6.64373385
+sp|P0AEE1|DCRB_ECOLI,dcrB,consistent,C-lim12_2,12.01624742
+sp|P0AEE8|DMA_ECOLI,dam,consistent,C-lim12_2,10.29341227
+sp|P0AEF0|DNAC_ECOLI,dnaC,consistent,C-lim12_2,5.548390172
+sp|P0AEI4|RIMO_ECOLI,rimO,consistent,C-lim12_2,7.831676011
+sp|P0AEM6|FLIA_ECOLI,fliA,consistent,C-lim12_2,3.641641906
+sp|P0AEN4|FTSL_ECOLI,ftsL,consistent,C-lim12_2,8.674957333
+sp|P0AEN8|FUCM_ECOLI,fucU,consistent,C-lim12_2,13.76577364
+sp|P0AEZ3|MIND_ECOLI,minD,consistent,C-lim12_2,10.6629754
+sp|P0AF10|MTLR_ECOLI,mtlR,consistent,C-lim12_2,13.46115849
+sp|P0AF18|NAGA_ECOLI,nagA,consistent,C-lim12_2,11.60176111
+sp|P0AF20|NAGC_ECOLI,nagC,consistent,C-lim12_2,12.55714514
+sp|P0AF48|YJBQ_ECOLI,yjbQ,consistent,C-lim12_2,12.95703627
+sp|P0AF67|TSAE_ECOLI,tsaE,consistent,C-lim12_2,10.31038575
+sp|P0AFA7|NHAB_ECOLI,nhaB,consistent,C-lim12_2,14.24955818
+sp|P0AFC0|NUDB_ECOLI,nudB,consistent,C-lim12_2,4.965543974
+sp|P0AFC7|NUOB_ECOLI,nuoB,consistent,C-lim12_2,12.27312004
+sp|P0AFD1|NUOE_ECOLI,nuoE,consistent,C-lim12_2,9.883332731
+sp|P0AFD6|NUOI_ECOLI,nuoI,consistent,C-lim12_2,12.93660746
+sp|P0AFG0|NUSG_ECOLI,nusG,consistent,C-lim12_2,10.16777539
+sp|P0AFG6|ODO2_ECOLI,sucB,consistent,C-lim12_2,11.79173156
+sp|P0AFI5|PBP7_ECOLI,pbpG,consistent,C-lim12_2,5.893569455
+sp|P0AFI7|PDXH_ECOLI,pdxH,consistent,C-lim12_2,11.954084
+sp|P0AFJ1|PHNA_ECOLI,phnA,consistent,C-lim12_2,10.54515766
+sp|P0AFK9|POTD_ECOLI,potD,consistent,C-lim12_2,14.09180825
+sp|P0AFP4|YBBO_ECOLI,ybbO,consistent,C-lim12_2,14.84020392
+sp|P0AFP6|GCH1L_ECOLI,ybgI,consistent,C-lim12_2,10.52556461
+sp|P0AFR4|YCIO_ECOLI,yciO,consistent,C-lim12_2,13.03850538
+sp|P0AFT2|YECS_ECOLI,yecS,consistent,C-lim12_2,15.92893766
+sp|P0AFV4|MEPS_ECOLI,mepS,consistent,C-lim12_2,8.812895254
+sp|P0AFY8|SEQA_ECOLI,seqA,consistent,C-lim12_2,13.01662671
+sp|P0AG07|RPE_ECOLI,rpe,consistent,C-lim12_2,11.96436139
+sp|P0AG14|SOHB_ECOLI,sohB,consistent,C-lim12_2,11.53317528
+sp|P0AG40|RIBF_ECOLI,ribF,consistent,C-lim12_2,10.88980465
+sp|P0AG51|RL30_ECOLI,rpmD,consistent,C-lim12_2,9.91635668
+sp|P0AG55|RL6_ECOLI,rplF,consistent,C-lim12_2,11.89511931
+sp|P0AG59|RS14_ECOLI,rpsN,consistent,C-lim12_2,8.9781345
+sp|P0AG71|RMUC_ECOLI,rmuC,consistent,C-lim12_2,7.823927022
+sp|P0AG99|SECG_ECOLI,secG,consistent,C-lim12_2,6.325402235
+sp|P0AGA6|UHPA_ECOLI,uhpA,consistent,C-lim12_2,9.130837682
+sp|P0AGB6|RPOE_ECOLI,rpoE,consistent,C-lim12_2,12.61900408
+sp|P0AGD7|SRP54_ECOLI,ffh,consistent,C-lim12_2,8.790201689
+sp|P0AGE0|SSB_ECOLI,ssb,consistent,C-lim12_2,8.567371869
+sp|P0AGE4|SSTT_ECOLI,sstT,consistent,C-lim12_2,12.49642001
+sp|P0AGE6|CHRR_ECOLI,chrR,consistent,C-lim12_2,11.22431067
+sp|P0AGF2|CSDE_ECOLI,csdE,consistent,C-lim12_2,9.548590416
+sp|P0AGG0|THIL_ECOLI,thiL,consistent,C-lim12_2,10.94199728
+sp|P0AGG2|TESB_ECOLI,tesB,consistent,C-lim12_2,10.74839228
+sp|P0AGG4|THIO2_ECOLI,trxC,consistent,C-lim12_2,6.12038792
+sp|P0AGG8|TLDD_ECOLI,tldD,consistent,C-lim12_2,8.698589201
+sp|P0AGI8|TRKA_ECOLI,trkA,consistent,C-lim12_2,11.73525609
+sp|P0AGJ2|TRMH_ECOLI,trmH,consistent,C-lim12_2,11.73980916
+sp|P0AGK4|YHBY_ECOLI,yhbY,consistent,C-lim12_2,10.28628844
+sp|P0C066|MLTC_ECOLI,mltC,consistent,C-lim12_2,10.69520835
+sp|P0C0R7|RLME_ECOLI,rlmE,consistent,C-lim12_2,12.43313028
+sp|P0C0S1|MSCS_ECOLI,mscS,consistent,C-lim12_2,12.82466523
+sp|P0C0U4|RIMK_ECOLI,rimK,consistent,C-lim12_2,11.08212329
+sp|P0CB39|EPTC_ECOLI,eptC,consistent,C-lim12_2,13.59785085
+sp|P0DM85|CRFC_ECOLI,crfC,consistent,C-lim12_2,6.496787108
+sp|P10371|HIS4_ECOLI,hisA,consistent,C-lim12_2,10.97599359
+sp|P10408|SECA_ECOLI,secA,consistent,C-lim12_2,11.0602472
+sp|P10902|NADB_ECOLI,nadB,consistent,C-lim12_2,8.804981636
+sp|P10907|UGPC_ECOLI,ugpC,consistent,C-lim12_2,12.67163552
+sp|P10908|UGPQ_ECOLI,ugpQ,consistent,C-lim12_2,9.68459347
+sp|P11880|MURF_ECOLI,murF,consistent,C-lim12_2,10.03166575
+sp|P12282|MOEB_ECOLI,moeB,consistent,C-lim12_2,12.02821821
+sp|P12994|YBHB_ECOLI,ybhB,consistent,C-lim12_2,14.82485865
+sp|P12995|BIOA_ECOLI,bioA,consistent,C-lim12_2,11.84175375
+sp|P13009|METH_ECOLI,metH,consistent,C-lim12_2,8.266903648
+sp|P13016|AMPD_ECOLI,ampD,consistent,C-lim12_2,8.970172293
+sp|P13458|SBCC_ECOLI,sbcC,consistent,C-lim12_2,10.67983133
+sp|P13482|TREA_ECOLI,treA,consistent,C-lim12_2,11.91057064
+sp|P14081|SELB_ECOLI,selB,consistent,C-lim12_2,9.631556696
+sp|P14900|MURD_ECOLI,murD,consistent,C-lim12_2,12.206565
+sp|P15034|AMPP_ECOLI,pepP,consistent,C-lim12_2,13.47611339
+sp|P15038|HELD_ECOLI,helD,consistent,C-lim12_2,9.179629766
+sp|P15070|FLIN_ECOLI,fliN,consistent,C-lim12_2,8.034006361
+sp|P15078|CSTA_ECOLI,cstA,consistent,C-lim12_2,11.95123667
+sp|P15640|PUR2_ECOLI,purD,consistent,C-lim12_2,10.58075799
+sp|P15877|DHG_ECOLI,gcd,consistent,C-lim12_2,14.29520223
+sp|P16095|SDHL_ECOLI,sdaA,consistent,C-lim12_2,3.552334203
+sp|P16528|ICLR_ECOLI,iclR,consistent,C-lim12_2,10.59827416
+sp|P16692|PHNP_ECOLI,phnP,consistent,C-lim12_2,9.568920811
+sp|P16703|CYSM_ECOLI,cysM,consistent,C-lim12_2,10.43589733
+sp|P16926|MREC_ECOLI,mreC,consistent,C-lim12_2,10.31731884
+sp|P17117|NFSA_ECOLI,nfsA,consistent,C-lim12_2,9.876101413
+sp|P17443|MURG_ECOLI,murG,consistent,C-lim12_2,11.53386587
+sp|P17802|MUTY_ECOLI,mutY,consistent,C-lim12_2,7.687873804
+sp|P17846|CYSI_ECOLI,cysI,consistent,C-lim12_2,6.34225089
+sp|P17993|UBIG_ECOLI,ubiG,consistent,C-lim12_2,6.735740074
+sp|P18843|NADE_ECOLI,nadE,consistent,C-lim12_2,11.08726808
+sp|P19934|TOLA_ECOLI,tolA,consistent,C-lim12_2,12.84332877
+sp|P20099|BISC_ECOLI,bisC,consistent,C-lim12_2,7.876662656
+sp|P21151|FADA_ECOLI,fadA,consistent,C-lim12_2,10.35782609
+sp|P21156|CYSD_ECOLI,cysD,consistent,C-lim12_2,2.985276012
+sp|P21169|DCOR_ECOLI,speC,consistent,C-lim12_2,9.2691778
+sp|P21170|SPEA_ECOLI,speA,consistent,C-lim12_2,10.08300404
+sp|P21177|FADB_ECOLI,fadB,consistent,C-lim12_2,8.086670329
+sp|P21499|RNR_ECOLI,rnr,consistent,C-lim12_2,12.15722883
+sp|P21507|SRMB_ECOLI,srmB,consistent,C-lim12_2,9.652280764
+sp|P21645|LPXD_ECOLI,lpxD,consistent,C-lim12_2,13.22436013
+sp|P21865|KDPD_ECOLI,kdpD,consistent,C-lim12_2,12.81514007
+sp|P21893|RECJ_ECOLI,recJ,consistent,C-lim12_2,4.591851037
+sp|P22186|MRAZ_ECOLI,mraZ,consistent,C-lim12_2,12.26410763
+sp|P22333|ADD_ECOLI,add,consistent,C-lim12_2,10.80172116
+sp|P22524|MUKE_ECOLI,mukE,consistent,C-lim12_2,11.49553494
+sp|P22525|YCBB_ECOLI,ycbB,consistent,C-lim12_2,12.96856963
+sp|P22731|LIVF_ECOLI,livF,consistent,C-lim12_2,12.81399813
+sp|P22939|ISPA_ECOLI,ispA,consistent,C-lim12_2,12.11730115
+sp|P23830|PSS_ECOLI,pssA,consistent,C-lim12_2,9.934629921
+sp|P23839|YICC_ECOLI,yicC,consistent,C-lim12_2,9.760434741
+sp|P23842|YFEA_ECOLI,yfeA,consistent,C-lim12_2,13.75789439
+sp|P23882|FMT_ECOLI,fmt,consistent,C-lim12_2,9.124981484
+sp|P24186|FOLD_ECOLI,folD,consistent,C-lim12_2,12.80462398
+sp|P24192|HYPD_ECOLI,hypD,consistent,C-lim12_2,5.835867731
+sp|P24205|LPXM_ECOLI,lpxM,consistent,C-lim12_2,10.98550591
+sp|P24215|UXUA_ECOLI,uxuA,consistent,C-lim12_2,9.487175999
+sp|P24230|RECG_ECOLI,recG,consistent,C-lim12_2,10.86667876
+sp|P24240|ASCB_ECOLI,ascB,consistent,C-lim12_2,5.16441924
+sp|P25397|TEHB_ECOLI,tehB,consistent,C-lim12_2,9.282980806
+sp|P25437|FRMA_ECOLI,frmA,consistent,C-lim12_2,10.82427204
+sp|P25524|CODA_ECOLI,codA,consistent,C-lim12_2,14.5693796
+sp|P25526|GABD_ECOLI,gabD,consistent,C-lim12_2,9.949549082
+sp|P25535|UBII_ECOLI,ubiI,consistent,C-lim12_2,7.444419368
+sp|P25553|ALDA_ECOLI,aldA,consistent,C-lim12_2,10.30146893
+sp|P25748|GALS_ECOLI,galS,consistent,C-lim12_2,9.464293058
+sp|P25798|FLIF_ECOLI,fliF,consistent,C-lim12_2,7.452606133
+sp|P25888|RHLE_ECOLI,rhlE,consistent,C-lim12_2,15.35165003
+sp|P25894|LOIP_ECOLI,loiP,consistent,C-lim12_2,9.686116971
+sp|P26602|UBIC_ECOLI,ubiC,consistent,C-lim12_2,7.43023229
+sp|P26646|ACUI_ECOLI,acuI,consistent,C-lim12_2,10.64589519
+sp|P27127|RFAB_ECOLI,rfaB,consistent,C-lim12_2,11.3871738
+sp|P27242|WAAU_ECOLI,waaU,consistent,C-lim12_2,11.8706979
+sp|P27245|MARR_ECOLI,marR,consistent,C-lim12_2,13.16110584
+sp|P27249|GLND_ECOLI,glnD,consistent,C-lim12_2,8.801569097
+sp|P27250|AHR_ECOLI,ahr,consistent,C-lim12_2,11.98393252
+sp|P27296|DING_ECOLI,dinG,consistent,C-lim12_2,10.58026315
+sp|P27298|OPDA_ECOLI,prlC,consistent,C-lim12_2,9.365801804
+sp|P27302|TKT1_ECOLI,tktA,consistent,C-lim12_2,10.03811468
+sp|P27303|EMRA_ECOLI,emrA,consistent,C-lim12_2,14.71877847
+sp|P27306|STHA_ECOLI,sthA,consistent,C-lim12_2,10.91634708
+sp|P27833|WECE_ECOLI,wecE,consistent,C-lim12_2,13.34551702
+sp|P28224|MLIC_ECOLI,mliC,consistent,C-lim12_2,13.77402461
+sp|P28249|ASMA_ECOLI,asmA,consistent,C-lim12_2,11.68057692
+sp|P28304|QOR1_ECOLI,qorA,consistent,C-lim12_2,9.922136132
+sp|P28861|FENR_ECOLI,fpr,consistent,C-lim12_2,10.9062622
+sp|P30128|GREB_ECOLI,greB,consistent,C-lim12_2,8.515710972
+sp|P30140|THIH_ECOLI,thiH,consistent,C-lim12_2,1.072574698
+sp|P30177|YBIB_ECOLI,ybiB,consistent,C-lim12_2,10.5840816
+sp|P30178|HCXB_ECOLI,hcxB,consistent,C-lim12_2,8.636457333
+sp|P30750|METN_ECOLI,metN,consistent,C-lim12_2,9.735510361
+sp|P30859|ARTI_ECOLI,artI,consistent,C-lim12_2,11.60630686
+sp|P30864|YAFC_ECOLI,yafC,consistent,C-lim12_2,13.00971438
+sp|P30870|GLNE_ECOLI,glnE,consistent,C-lim12_2,13.50308098
+sp|P30958|MFD_ECOLI,mfd,consistent,C-lim12_2,11.80798628
+sp|P31068|FLIH_ECOLI,fliH,consistent,C-lim12_2,5.522636614
+sp|P31120|GLMM_ECOLI,glmM,consistent,C-lim12_2,12.68218338
+sp|P31133|POTF_ECOLI,potF,consistent,C-lim12_2,13.14087547
+sp|P31134|POTG_ECOLI,potG,consistent,C-lim12_2,11.43739362
+sp|P31460|DGOR_ECOLI,dgoR,consistent,C-lim12_2,10.31982415
+sp|P31473|RAVA_ECOLI,ravA,consistent,C-lim12_2,11.78359107
+sp|P31554|LPTD_ECOLI,lptD,consistent,C-lim12_2,13.45838113
+sp|P31677|OTSA_ECOLI,otsA,consistent,C-lim12_2,6.102953825
+sp|P31680|DJLA_ECOLI,djlA,consistent,C-lim12_2,11.64314542
+sp|P31979|NUOF_ECOLI,nuoF,consistent,C-lim12_2,10.28649053
+sp|P32099|LPLA_ECOLI,lplA,consistent,C-lim12_2,11.36037806
+sp|P32132|TYPA_ECOLI,bipA,consistent,C-lim12_2,10.32460119
+sp|P32160|YIIQ_ECOLI,yiiQ,consistent,C-lim12_2,8.472613179
+sp|P32718|ALSK_ECOLI,alsK,consistent,C-lim12_2,9.284517389
+sp|P33012|SBMC_ECOLI,sbmC,consistent,C-lim12_2,5.815928512
+sp|P33136|OPGG_ECOLI,opgG,consistent,C-lim12_2,12.64654564
+sp|P33195|GCSP_ECOLI,gcvP,consistent,C-lim12_2,8.951832994
+sp|P33355|YEHS_ECOLI,yehS,consistent,C-lim12_2,12.45422605
+sp|P33602|NUOG_ECOLI,nuoG,consistent,C-lim12_2,10.44631909
+sp|P33644|POLOX_ECOLI,yfiH,consistent,C-lim12_2,8.762276863
+sp|P33937|NAPA_ECOLI,napA,consistent,C-lim12_2,9.433366486
+sp|P36553|HEM6_ECOLI,hemF,consistent,C-lim12_2,10.24675791
+sp|P36566|CMOM_ECOLI,cmoM,consistent,C-lim12_2,10.84220198
+sp|P36649|CUEO_ECOLI,cueO,consistent,C-lim12_2,12.149429
+sp|P36655|DSBD_ECOLI,dsbD,consistent,C-lim12_2,13.87860201
+sp|P36672|PTTBC_ECOLI,treB,consistent,C-lim12_2,6.950247391
+sp|P36771|LRHA_ECOLI,lrhA,consistent,C-lim12_2,7.90805798
+sp|P36999|RLMA_ECOLI,rlmA,consistent,C-lim12_2,11.37629568
+sp|P37095|PEPB_ECOLI,pepB,consistent,C-lim12_2,10.65185712
+sp|P37177|PT1P_ECOLI,ptsP,consistent,C-lim12_2,10.81038534
+sp|P37182|HYBD_ECOLI,hybD,consistent,C-lim12_2,11.75831333
+sp|P37329|MODA_ECOLI,modA,consistent,C-lim12_2,12.92572364
+sp|P37339|LHGO_ECOLI,lhgO,consistent,C-lim12_2,9.622028139
+sp|P37344|PSPF_ECOLI,pspF,consistent,C-lim12_2,13.26747265
+sp|P37349|DHAM_ECOLI,dhaM,consistent,C-lim12_2,10.73021561
+sp|P37353|MENE_ECOLI,menE,consistent,C-lim12_2,12.26648296
+sp|P37613|PANZ_ECOLI,panZ,consistent,C-lim12_2,11.95847138
+sp|P37617|ZNTA_ECOLI,zntA,consistent,C-lim12_2,7.428264217
+sp|P37624|RBBA_ECOLI,rbbA,consistent,C-lim12_2,13.69452526
+sp|P37631|YHIN_ECOLI,yhiN,consistent,C-lim12_2,13.62375755
+sp|P37649|YHJK_ECOLI,yhjK,consistent,C-lim12_2,13.14684396
+sp|P37671|YIAJ_ECOLI,yiaJ,consistent,C-lim12_2,13.42994315
+sp|P37676|YIAO_ECOLI,yiaO,consistent,C-lim12_2,9.447446763
+sp|P37678|SGBH_ECOLI,sgbH,consistent,C-lim12_2,9.620526285
+sp|P37682|YIAU_ECOLI,yiaU,consistent,C-lim12_2,12.29649171
+sp|P37689|GPMI_ECOLI,gpmI,consistent,C-lim12_2,11.16852953
+sp|P37773|MPL_ECOLI,mpl,consistent,C-lim12_2,12.2381343
+sp|P37774|YECC_ECOLI,yecC,consistent,C-lim12_2,10.95290454
+sp|P38051|MENF_ECOLI,menF,consistent,C-lim12_2,10.65138991
+sp|P38104|RSPA_ECOLI,rspA,consistent,C-lim12_2,11.69358211
+sp|P38521|YGGL_ECOLI,yggL,consistent,C-lim12_2,9.985579663
+sp|P39177|USPG_ECOLI,uspG,consistent,C-lim12_2,13.30601928
+sp|P39199|PRMB_ECOLI,prmB,consistent,C-lim12_2,10.16830213
+sp|P39265|ALSB_ECOLI,alsB,consistent,C-lim12_2,9.459205728
+sp|P39298|YJFP_ECOLI,yjfP,consistent,C-lim12_2,11.28182222
+sp|P39315|QOR2_ECOLI,qorB,consistent,C-lim12_2,10.33766131
+sp|P39358|YJHG_ECOLI,yjhG,consistent,C-lim12_2,8.907788159
+sp|P39359|YJHH_ECOLI,yjhH,consistent,C-lim12_2,9.493590923
+sp|P39371|NANM_ECOLI,nanM,consistent,C-lim12_2,13.49809049
+sp|P39407|YJJU_ECOLI,yjjU,consistent,C-lim12_2,5.011136694
+sp|P39411|NCPP_ECOLI,yjjX,consistent,C-lim12_2,8.484850648
+sp|P39829|GARD_ECOLI,garD,consistent,C-lim12_2,3.580120523
+sp|P39835|GNTT_ECOLI,gntT,consistent,C-lim12_2,10.50650654
+sp|P39838|RCSD_ECOLI,rcsD,consistent,C-lim12_2,11.19733742
+sp|P40191|PDXK_ECOLI,pdxK,consistent,C-lim12_2,10.5231773
+sp|P40710|NLPE_ECOLI,nlpE,consistent,C-lim12_2,10.89702274
+sp|P40719|QSEC_ECOLI,qseC,consistent,C-lim12_2,15.72018088
+sp|P40874|MTOX_ECOLI,solA,consistent,C-lim12_2,7.995793154
+sp|P42596|RLMG_ECOLI,rlmG,consistent,C-lim12_2,12.92204907
+sp|P42624|YHAK_ECOLI,yhaK,consistent,C-lim12_2,9.972537104
+sp|P43329|HRPA_ECOLI,hrpA,consistent,C-lim12_2,13.71211504
+sp|P45470|YHBO_ECOLI,yhbO,consistent,C-lim12_2,9.517534465
+sp|P45531|TUSC_ECOLI,tusC,consistent,C-lim12_2,11.64232587
+sp|P45568|DXR_ECOLI,dxr,consistent,C-lim12_2,9.659558099
+sp|P45753|HOFM_ECOLI,hofM,consistent,C-lim12_2,13.01313547
+sp|P45800|IGAA_ECOLI,yrfF,consistent,C-lim12_2,15.17244972
+sp|P46837|YHGF_ECOLI,yhgF,consistent,C-lim12_2,7.779375197
+sp|P46853|YHHX_ECOLI,yhhX,consistent,C-lim12_2,11.87213082
+sp|P51024|YAIL_ECOLI,yaiL,consistent,C-lim12_2,4.184610182
+sp|P52061|IXTPA_ECOLI,rdgB,consistent,C-lim12_2,9.102156435
+sp|P52101|GLRK_ECOLI,glrK,consistent,C-lim12_2,10.94826665
+sp|P52612|FLII_ECOLI,fliI,consistent,C-lim12_2,4.872386682
+sp|P52644|HSLJ_ECOLI,hslJ,consistent,C-lim12_2,11.2133559
+sp|P52697|6PGL_ECOLI,pgl,consistent,C-lim12_2,12.51328413
+sp|P60240|RAPA_ECOLI,rapA,consistent,C-lim12_2,13.65016997
+sp|P60293|MUKF_ECOLI,mukF,consistent,C-lim12_2,9.778420728
+sp|P60422|RL2_ECOLI,rplB,consistent,C-lim12_2,11.72138108
+sp|P60560|GUAC_ECOLI,guaC,consistent,C-lim12_2,9.938876939
+sp|P60624|RL24_ECOLI,rplX,consistent,C-lim12_2,9.26581567
+sp|P60872|YIDE_ECOLI,yidE,consistent,C-lim12_2,12.49824696
+sp|P61175|RL22_ECOLI,rplV,consistent,C-lim12_2,11.32031207
+sp|P61714|RISB_ECOLI,ribE,consistent,C-lim12_2,13.8926115
+sp|P62615|ISPE_ECOLI,ispE,consistent,C-lim12_2,10.92161602
+sp|P63177|RLMB_ECOLI,rlmB,consistent,C-lim12_2,10.47950732
+sp|P63224|GMHA_ECOLI,gmhA,consistent,C-lim12_2,11.29951205
+sp|P63386|MLAF_ECOLI,mlaF,consistent,C-lim12_2,13.73055272
+sp|P64448|YNBE_ECOLI,ynbE,consistent,C-lim12_2,12.99129434
+sp|P64604|MLAD_ECOLI,mlaD,consistent,C-lim12_2,13.46479963
+sp|P64624|YHEO_ECOLI,yheO,consistent,C-lim12_2,7.499229391
+sp|P65292|YGDI_ECOLI,ygdI,consistent,C-lim12_2,10.99218852
+sp|P65367|YQCA_ECOLI,yqcA,consistent,C-lim12_2,13.43851694
+sp|P65556|YFCD_ECOLI,yfcD,consistent,C-lim12_2,7.965859666
+sp|P66948|BEPA_ECOLI,bepA,consistent,C-lim12_2,10.01020466
+sp|P67095|YFCE_ECOLI,yfcE,consistent,C-lim12_2,9.409811206
+sp|P67660|YHAJ_ECOLI,yhaJ,consistent,C-lim12_2,11.69628514
+sp|P67662|AAER_ECOLI,aaeR,consistent,C-lim12_2,11.09034898
+sp|P68567|RSMJ_ECOLI,rsmJ,consistent,C-lim12_2,11.84044781
+sp|P68739|NFI_ECOLI,nfi,consistent,C-lim12_2,11.89829058
+sp|P69441|KAD_ECOLI,adk,consistent,C-lim12_2,11.82502249
+sp|P69490|CCME_ECOLI,ccmE,consistent,C-lim12_2,9.052810584
+sp|P69503|APT_ECOLI,apt,consistent,C-lim12_2,8.367128187
+sp|P69795|PTQB_ECOLI,chbB,consistent,C-lim12_2,6.291462126
+sp|P69853|DMSD_ECOLI,dmsD,consistent,C-lim12_2,12.63686079
+sp|P69924|RIR2_ECOLI,nrdB,consistent,C-lim12_2,9.321737632
+sp|P71298|INTF_ECOLI,intF,consistent,C-lim12_2,3.090876899
+sp|P75713|ALLE_ECOLI,allE,consistent,C-lim12_2,11.65587026
+sp|P75728|UBIF_ECOLI,ubiF,consistent,C-lim12_2,8.0228918
+sp|P75745|YBGK_ECOLI,ybgK,consistent,C-lim12_2,10.72559028
+sp|P75746|YBGL_ECOLI,ybgL,consistent,C-lim12_2,8.120857013
+sp|P75785|OPGE_ECOLI,opgE,consistent,C-lim12_2,10.9394889
+sp|P75820|AMID_ECOLI,amiD,consistent,C-lim12_2,11.51056865
+sp|P75821|YBJS_ECOLI,ybjS,consistent,C-lim12_2,10.63617506
+sp|P75864|RLMKL_ECOLI,rlmL,consistent,C-lim12_2,10.52496048
+sp|P75874|YCCU_ECOLI,yccU,consistent,C-lim12_2,10.44595328
+sp|P75914|YCDX_ECOLI,ycdX,consistent,C-lim12_2,10.35156024
+sp|P75937|FLGE_ECOLI,flgE,consistent,C-lim12_2,4.031297476
+sp|P75938|FLGF_ECOLI,flgF,consistent,C-lim12_2,4.36184057
+sp|P75949|NAGZ_ECOLI,nagZ,consistent,C-lim12_2,8.821765855
+sp|P75957|LOLD_ECOLI,lolD,consistent,C-lim12_2,11.44111448
+sp|P75959|NAGK_ECOLI,nagK,consistent,C-lim12_2,10.16959988
+sp|P75960|NPD_ECOLI,cobB,consistent,C-lim12_2,10.43884355
+sp|P76016|DHAR_ECOLI,dhaR,consistent,C-lim12_2,9.970983885
+sp|P76034|YCIT_ECOLI,yciT,consistent,C-lim12_2,12.23876679
+sp|P76049|YCJY_ECOLI,ycjY,consistent,C-lim12_2,12.34199488
+sp|P76129|DOSP_ECOLI,dosP,consistent,C-lim12_2,6.992721803
+sp|P76143|LSRF_ECOLI,lsrF,consistent,C-lim12_2,8.889924638
+sp|P76177|YDGH_ECOLI,ydgH,consistent,C-lim12_2,10.9196371
+sp|P76185|YDHJ_ECOLI,ydhJ,consistent,C-lim12_2,12.56804226
+sp|P76187|YDHF_ECOLI,ydhF,consistent,C-lim12_2,9.918755057
+sp|P76223|YNJB_ECOLI,ynjB,consistent,C-lim12_2,14.02878448
+sp|P76243|YEAO_ECOLI,yeaO,consistent,C-lim12_2,5.100307589
+sp|P76250|DMLR_ECOLI,dmlR,consistent,C-lim12_2,3.614920132
+sp|P76256|TSAB_ECOLI,tsaB,consistent,C-lim12_2,10.81647718
+sp|P76268|KDGR_ECOLI,kdgR,consistent,C-lim12_2,10.80341832
+sp|P76329|MPGP_ECOLI,yedP,consistent,C-lim12_2,8.682060496
+sp|P76330|YEDQ_ECOLI,yedQ,consistent,C-lim12_2,12.67852489
+sp|P76340|YEDW_ECOLI,yedW,consistent,C-lim12_2,10.94372259
+sp|P76344|ZINT_ECOLI,zinT,consistent,C-lim12_2,13.16280769
+sp|P76389|YEGH_ECOLI,yegH,consistent,C-lim12_2,15.23745403
+sp|P76399|MDTC_ECOLI,mdtC,consistent,C-lim12_2,14.99956783
+sp|P76418|YEGU_ECOLI,yegU,consistent,C-lim12_2,9.915276968
+sp|P76423|THIM_ECOLI,thiM,consistent,C-lim12_2,9.191600373
+sp|P76440|PRET_ECOLI,preT,consistent,C-lim12_2,3.25778501
+sp|P76535|MURQ_ECOLI,murQ,consistent,C-lim12_2,8.546134094
+sp|P76537|YFEY_ECOLI,yfeY,consistent,C-lim12_2,14.89349005
+sp|P76539|YPEA_ECOLI,ypeA,consistent,C-lim12_2,10.15089725
+sp|P76541|EUTL_ECOLI,eutL,consistent,C-lim12_2,11.9635197
+sp|P76569|YFGD_ECOLI,yfgD,consistent,C-lim12_2,7.382783188
+sp|P76578|YFHM_ECOLI,yfhM,consistent,C-lim12_2,13.98100926
+sp|P76594|PKA_ECOLI,pka,consistent,C-lim12_2,12.83996005
+sp|P77171|YDCI_ECOLI,ydcI,consistent,C-lim12_2,4.812303967
+sp|P77173|ZIPA_ECOLI,zipA,consistent,C-lim12_2,11.95411973
+sp|P77256|AKRMG_ECOLI,ydjG,consistent,C-lim12_2,9.462344538
+sp|P77265|MDLA_ECOLI,mdlA,consistent,C-lim12_2,12.234073
+sp|P77280|YDJJ_ECOLI,ydjJ,consistent,C-lim12_2,9.365250553
+sp|P77285|RSXG_ECOLI,rsxG,consistent,C-lim12_2,11.73327287
+sp|P77357|ABGA_ECOLI,abgA,consistent,C-lim12_2,5.728725947
+sp|P77433|YKGG_ECOLI,ykgG,consistent,C-lim12_2,5.548045273
+sp|P77536|YKGF_ECOLI,ykgF,consistent,C-lim12_2,4.201507864
+sp|P77544|YFCF_ECOLI,yfcF,consistent,C-lim12_2,10.76745603
+sp|P77562|YAIW_ECOLI,yaiW,consistent,C-lim12_2,11.54360914
+sp|P77695|GNSB_ECOLI,gnsB,consistent,C-lim12_2,11.72098424
+sp|P77721|YDJF_ECOLI,ydjF,consistent,C-lim12_2,10.15800679
+sp|P77748|YDIJ_ECOLI,ydiJ,consistent,C-lim12_2,11.52254681
+sp|P77756|QUEC_ECOLI,queC,consistent,C-lim12_2,9.363846047
+sp|P77775|YFCH_ECOLI,yfcH,consistent,C-lim12_2,11.12467398
+sp|P77806|YBDL_ECOLI,ybdL,consistent,C-lim12_2,6.433487053
+sp|P78055|FSAA_ECOLI,fsaA,consistent,C-lim12_2,8.760513634
+sp|P78067|YNJE_ECOLI,ynjE,consistent,C-lim12_2,12.86874651
+sp|P80668|FEAB_ECOLI,feaB,consistent,C-lim12_2,8.896738688
+sp|Q46798|YGER_ECOLI,ygeR,consistent,C-lim12_2,9.820887745
+sp|Q46800|XDHB_ECOLI,xdhB,consistent,C-lim12_2,6.326013476
+sp|Q46829|BGLA_ECOLI,bglA,consistent,C-lim12_2,10.04757638
+sp|Q46871|YQJH_ECOLI,yqjH,consistent,C-lim12_2,9.943754112
+sp|Q46906|YGCP_ECOLI,ygcP,consistent,C-lim12_2,13.26469558
+sp|Q47690|MMUM_ECOLI,mmuM,consistent,C-lim12_2,9.801477602
+sp|Q57261|TRUD_ECOLI,truD,consistent,C-lim12_2,13.62326416
+sp|Q93K97|ADPP_ECOLI,nudF,consistent,C-lim12_2,11.58786321
+sp|P0AB06|YCBK_ECOLI,ycbK,consistent,C-lim12_2,7.792176581
+sp|P16431|HYCE_ECOLI,hycE,consistent,C-lim12_2,11.80069012
+sp|P27297|BAX_ECOLI,bax,consistent,C-lim12_2,6.11429944
+sp|P28629|ADIA_ECOLI,adiA,consistent,C-lim12_2,11.58487824
+sp|P31434|XYLS_ECOLI,yicI,consistent,C-lim12_2,13.52717591
+sp|P33231|LLDP_ECOLI,lldP,consistent,C-lim12_2,2.686078349
+sp|P33607|NUOL_ECOLI,nuoL,consistent,C-lim12_2,13.10169096
+sp|P39361|SGCR_ECOLI,sgcR,consistent,C-lim12_2,3.280676757
+sp|P46068|DSDC_ECOLI,dsdC,consistent,C-lim12_2,11.76787583
+sp|P52074|GLCF_ECOLI,glcF,consistent,C-lim12_2,4.300068598
+sp|P62601|TREF_ECOLI,treF,consistent,C-lim12_2,3.97100906
+sp|P76585|YPHG_ECOLI,yphG,consistent,C-lim12_2,9.798095026
+sp|P77269|YPHF_ECOLI,yphF,consistent,C-lim12_2,10.43022755
+sp|P77539|YDJL_ECOLI,ydjL,consistent,C-lim12_2,4.307730487
+sp|Q2MB16|YOBH_ECOLI,yobH,consistent,C-lim12_2,14.97130622
+sp|P06864|BGA2_ECOLI,ebgA,consistent,C-lim12_2,13.763161
+sp|P0AA89|DOSC_ECOLI,dosC,consistent,C-lim12_2,4.750202636
+sp|P0AB03|YCBJ_ECOLI,ycbJ,consistent,C-lim12_2,7.180472355
+sp|P0AE26|ARAH_ECOLI,araH,consistent,C-lim12_2,7.903225494
+sp|P0AER0|GLPF_ECOLI,glpF,consistent,C-lim12_2,6.391587181
+sp|P19318|NARY_ECOLI,narY,consistent,C-lim12_2,10.39764058
+sp|P19319|NARZ_ECOLI,narZ,consistent,C-lim12_2,12.41772557
+sp|P31574|FIXB_ECOLI,fixB,consistent,C-lim12_2,9.174675608
+sp|P32143|SQUV_ECOLI,yihV,consistent,C-lim12_2,8.286214893
+sp|P33224|AIDB_ECOLI,aidB,consistent,C-lim12_2,11.73722626
+sp|P33225|TORA_ECOLI,torA,consistent,C-lim12_2,14.53886384
+sp|P33358|MLRA_ECOLI,mlrA,consistent,C-lim12_2,4.45242349
+sp|P33368|YOHF_ECOLI,yohF,consistent,C-lim12_2,11.17592431
+sp|P39332|YJGH_ECOLI,yjgH,consistent,C-lim12_2,12.29914762
+sp|P39364|SGCQ_ECOLI,sgcQ,consistent,C-lim12_2,8.695449249
+sp|P39366|SGCX_ECOLI,sgcX,consistent,C-lim12_2,11.19684674
+sp|P39383|YJIL_ECOLI,yjiL,consistent,C-lim12_2,6.664791542
+sp|P45543|FRLD_ECOLI,frlD,consistent,C-lim12_2,7.542340341
+sp|P52073|GLCE_ECOLI,glcE,consistent,C-lim12_2,3.618587994
+sp|P55138|YGCE_ECOLI,ygcE,consistent,C-lim12_2,8.963642341
+sp|P69808|PTFB1_ECOLI,fryB,consistent,C-lim12_2,6.047514236
+sp|P75804|YLII_ECOLI,yliI,consistent,C-lim12_2,6.940760952
+sp|P76121|YDDH_ECOLI,yddH,consistent,C-lim12_2,10.4725422
+sp|P76216|ASTB_ECOLI,astB,consistent,C-lim12_2,8.867319472
+sp|P76318|YEDK_ECOLI,yedK,consistent,C-lim12_2,9.778325224
+sp|P77243|PRPD_ECOLI,prpD,consistent,C-lim12_2,9.255534711
+sp|P77588|YDEQ_ECOLI,ydeQ,consistent,C-lim12_2,8.430527915
+sp|P77757|ARNC_ECOLI,arnC,consistent,C-lim12_2,12.00111484
+sp|Q46803|YGEW_ECOLI,ygeW,consistent,C-lim12_2,9.528701863
+sp|Q46822|IDI_ECOLI,idi,consistent,C-lim12_2,9.091149072
+sp|Q46891|OTNI_ECOLI,otnI,consistent,C-lim12_2,6.66480734
+sp|Q47706|UIDC_ECOLI,uidC,consistent,C-lim12_2,12.94146057
+sp|Q6BEX0|YTFR_ECOLI,ytfR,consistent,C-lim12_2,10.90248906
+sp|P31447|YIDJ_ECOLI,yidJ,consistent,C-lim12_2,7.507463396
+sp|P32176|FDOG_ECOLI,fdoG,consistent,C-lim12_2,11.99420023
+sp|P37758|NARU_ECOLI,narU,consistent,C-lim12_2,14.97884389
+sp|P17334|PTQC_ECOLI,chbC,consistent,C-lim12_2,11.05428647
+sp|Q46810|MOCA_ECOLI,mocA,consistent,C-lim12_2,3.22024818
+sp|P00490|PHSM_ECOLI,malP,"> 6 hrs, 1 replicate",> 6,7.155026472
+sp|P00634|PPB_ECOLI,phoA,"> 6 hrs, 1 replicate",> 6,9.891235126
+sp|P00803|LEP_ECOLI,lepB,"> 3 hrs, inconsistent",> 3,4.7715348185
+sp|P00903|PABA_ECOLI,pabA,"> 6 hrs, 1 replicate",> 6,8.0985502025
+sp|P00954|SYW_ECOLI,trpS,"> 6 hrs, inconsistent",> 6,10.607477615499999
+sp|P00960|SYGA_ECOLI,glyQ,"> 6 hrs, 1 replicate",> 6,6.608479865
+sp|P02942|MCP1_ECOLI,tsr,"> 3 hrs, inconsistent",> 3,5.046329433
+sp|P04395|3MG2_ECOLI,alkA,"< 3 hrs, inconsistent",< 3,2.436145496
+sp|P04983|RBSA_ECOLI,rbsA,"> 6 hrs, inconsistent",> 6,9.697341262
+sp|P05020|PYRC_ECOLI,pyrC,"> 6 hrs, inconsistent",> 6,6.183266564
+sp|P05052|APPY_ECOLI,appY,"> 6 hrs, 1 replicate",> 6,6.143251497
+sp|P05459|PDXB_ECOLI,pdxB,"> 6 hrs, inconsistent",> 6,12.567170130000001
+sp|P05523|FPG_ECOLI,mutM,"> 6 hrs, inconsistent",> 6,10.72656881
+sp|P05827|ILVY_ECOLI,ilvY,"> 6 hrs, inconsistent",> 6,11.368756328
+sp|P06136|FTSQ_ECOLI,ftsQ,"< 3 hrs, inconsistent",< 3,2.337933678
+sp|P06610|BTUE_ECOLI,btuE,"> 3 hrs, inconsistent",> 3,4.855236129
+sp|P06611|BTUD_ECOLI,btuD,"> 3 hrs, 1 replicate",> 3,3.782737648
+sp|P06968|DUT_ECOLI,dut,"> 6 hrs, inconsistent",> 6,13.101907265000001
+sp|P06983|HEM3_ECOLI,hemC,"> 6 hrs, 1 replicate",> 6,7.8457102595
+sp|P06989|HIS2_ECOLI,hisI,"> 6 hrs, 1 replicate",> 6,8.3252979605
+sp|P07003|POXB_ECOLI,poxB,"> 6 hrs, inconsistent",> 6,11.207196983
+sp|P07648|RECC_ECOLI,recC,"> 6 hrs, inconsistent",> 6,13.00298355
+sp|P07649|TRUA_ECOLI,truA,"> 6 hrs, inconsistent",> 6,11.773618415000001
+sp|P07650|TYPH_ECOLI,deoA,"> 6 hrs, 1 replicate",> 6,9.859559255
+sp|P07821|FHUC_ECOLI,fhuC,"> 3 hrs, inconsistent",> 3,9.0543848745
+sp|P07862|DDLB_ECOLI,ddlB,"> 6 hrs, 1 replicate",> 6,7.904231507
+sp|P08179|PUR3_ECOLI,purN,"> 6 hrs, 1 replicate",> 6,8.032688521499999
+sp|P08368|CREB_ECOLI,creB,"> 6 hrs, inconsistent",> 6,11.4657123615
+sp|P08394|RECB_ECOLI,recB,"> 6 hrs, inconsistent",> 6,13.177987635000001
+sp|P08401|CREC_ECOLI,creC,"> 6 hrs, inconsistent",> 6,8.435337674
+sp|P08660|AK3_ECOLI,lysC,"> 6 hrs, inconsistent",> 6,8.440774439
+sp|P09126|HEM4_ECOLI,hemD,"> 6 hrs, inconsistent",> 6,9.447728173
+sp|P09148|GAL7_ECOLI,galT,"> 6 hrs, inconsistent",> 6,12.527423955
+sp|P09184|VSR_ECOLI,vsr,"> 3 hrs, inconsistent",> 3,4.158416932
+sp|P09348|MOTA_ECOLI,motA,"< 3 hrs, inconsistent",< 3,1.4619834434999999
+sp|P09835|UHPB_ECOLI,uhpB,"> 6 hrs, inconsistent",> 6,10.005153806
+sp|P0A6C8|ARGB_ECOLI,argB,"> 6 hrs, inconsistent",> 6,10.3384975735
+sp|P0A6J1|CYSC_ECOLI,cysC,"< 3 hrs, inconsistent",< 3,1.951754483
+sp|P0A6J3|CYSZ_ECOLI,cysZ,"> 6 hrs, 1 replicate",> 6,12.3201592
+sp|P0A6L0|DEOC_ECOLI,deoC,"> 6 hrs, 1 replicate",> 6,6.265961236
+sp|P0A6V8|GLK_ECOLI,glk,"> 6 hrs, 1 replicate",> 6,10.298653611
+sp|P0A6X7|IHFA_ECOLI,ihfA,"> 3 hrs, inconsistent",> 3,5.066443936
+sp|P0A756|KEFG_ECOLI,kefG,"> 6 hrs, inconsistent",> 6,8.838953571
+sp|P0A776|RPPH_ECOLI,rppH,"> 6 hrs, inconsistent",> 6,9.0132421485
+sp|P0A7B1|PPK1_ECOLI,ppk,"> 6 hrs, 1 replicate",> 6,9.706927108
+sp|P0A7B3|NADK_ECOLI,nadK,"> 6 hrs, 1 replicate",> 6,12.08644419
+sp|P0A7C6|PEPE_ECOLI,pepE,"> 6 hrs, 1 replicate",> 6,9.360904962
+sp|P0A7E3|PYRE_ECOLI,pyrE,"> 6 hrs, inconsistent",> 6,9.3038947645
+sp|P0A7G6|RECA_ECOLI,recA,"> 6 hrs, inconsistent",> 6,11.686740785000001
+sp|P0A7I4|RF3_ECOLI,prfC,"> 6 hrs, inconsistent",> 6,9.631299979
+sp|P0A7J7|RL11_ECOLI,rplK,"> 6 hrs, inconsistent",> 6,9.415008319
+sp|P0A7N1|RL31B_ECOLI,ykgM,"> 6 hrs, 1 replicate",> 6,7.696879750999999
+sp|P0A7P5|RL34_ECOLI,rpmH,"> 6 hrs, 1 replicate",> 6,7.6027385375000005
+sp|P0A7Q6|RL36_ECOLI,rpmJ,"> 3 hrs, inconsistent",> 3,6.9624176989999995
+sp|P0A7T3|RS16_ECOLI,rpsP,"> 6 hrs, inconsistent",> 6,6.187366458
+sp|P0A7Y4|RNH_ECOLI,rnhA,"> 6 hrs, 1 replicate",> 6,9.256193529
+sp|P0A7Y8|RNPA_ECOLI,rnpA,"> 6 hrs, 1 replicate",> 6,8.05549245
+sp|P0A809|RUVA_ECOLI,ruvA,"> 6 hrs, inconsistent",> 6,10.3006136215
+sp|P0A825|GLYA_ECOLI,glyA,"> 6 hrs, inconsistent",> 6,10.661097165000001
+sp|P0A898|YBEY_ECOLI,ybeY,"> 3 hrs, inconsistent",> 3,4.77384839
+sp|P0A8B2|YFCN_ECOLI,yfcN,"> 3 hrs, 1 replicate",> 3,3.955222821
+sp|P0A8C1|YBJQ_ECOLI,ybjQ,"> 6 hrs, inconsistent",> 6,10.168924428
+sp|P0A8D3|YAII_ECOLI,yaiI,"> 6 hrs, inconsistent",> 6,8.065020408
+sp|P0A8K5|YAEP_ECOLI,yaeP,"> 6 hrs, 1 replicate",> 6,6.902367101
+sp|P0A8L7|YCIU_ECOLI,yciU,"> 6 hrs, 1 replicate",> 6,7.5564775885
+sp|P0A8N0|MATP_ECOLI,matP,"> 6 hrs, inconsistent",> 6,10.854875997
+sp|P0A8N7|EPMA_ECOLI,epmA,"> 3 hrs, inconsistent",> 3,8.0314134275
+sp|P0A8Q3|FRDD_ECOLI,frdD,"> 6 hrs, 1 replicate",> 6,9.360112399
+sp|P0A8U0|SYDP_ECOLI,syd,"> 3 hrs, inconsistent",> 3,7.583933783
+sp|P0A8U6|METJ_ECOLI,metJ,"> 6 hrs, 1 replicate",> 6,6.086319373
+sp|P0A8X0|YJGA_ECOLI,yjgA,"> 6 hrs, inconsistent",> 6,7.8556627085
+sp|P0A8X2|YCEI_ECOLI,yceI,"> 6 hrs, inconsistent",> 6,10.648480128
+sp|P0A8Y1|YJJG_ECOLI,yjjG,"< 3 hrs, inconsistent",< 3,0.6567169429999999
+sp|P0A8Z3|YBGC_ECOLI,ybgC,"> 6 hrs, inconsistent",> 6,9.588753345
+sp|P0A901|BLC_ECOLI,blc,"> 6 hrs, inconsistent",> 6,10.64761483
+sp|P0A908|MIPA_ECOLI,mipA,"> 6 hrs, inconsistent",> 6,11.99774737
+sp|P0A968|CSPD_ECOLI,cspD,"< 3 hrs, 1 replicate",< 3,0.3326015175
+sp|P0A998|FTNA_ECOLI,ftnA,"> 6 hrs, 1 replicate",> 6,6.86198715
+sp|P0A9D2|GSTA_ECOLI,gstA,"> 6 hrs, inconsistent",> 6,11.6168790585
+sp|P0A9F1|MNTR_ECOLI,mntR,"> 6 hrs, inconsistent",> 6,11.9924541885
+sp|P0A9I3|GCVR_ECOLI,gcvR,"> 6 hrs, inconsistent",> 6,9.429358846500001
+sp|P0A9K1|PHOH_ECOLI,phoH,"< 3 hrs, 1 replicate",< 3,0.20684481
+sp|P0A9L8|P5CR_ECOLI,proC,"> 6 hrs, inconsistent",> 6,8.869382503
+sp|P0A9N0|PTSO_ECOLI,ptsO,"> 3 hrs, 1 replicate",> 3,3.406550295
+sp|P0A9T6|YBAQ_ECOLI,ybaQ,"< 3 hrs, 1 replicate",< 3,0.953961089
+sp|P0A9U1|YBHF_ECOLI,ybhF,"> 6 hrs, inconsistent",> 6,10.32458067
+sp|P0AA04|PTHP_ECOLI,ptsH,"> 6 hrs, inconsistent",> 6,12.367813479999999
+sp|P0AA31|YEDF_ECOLI,yedF,"> 6 hrs, 1 replicate",> 6,6.032392605
+sp|P0AA37|RLUA_ECOLI,rluA,"> 3 hrs, inconsistent",> 3,7.70897499
+sp|P0AA53|QMCA_ECOLI,qmcA,"> 6 hrs, inconsistent",> 6,9.063662748
+sp|P0AA60|YGHB_ECOLI,yghB,"> 6 hrs, 1 replicate",> 6,7.249692511
+sp|P0AA91|YEAY_ECOLI,yeaY,"> 6 hrs, inconsistent",> 6,9.043103246
+sp|P0AA95|YACC_ECOLI,yacC,"> 3 hrs, 1 replicate",> 3,4.108933765
+sp|P0AA99|YAFK_ECOLI,yafK,"< 3 hrs, inconsistent",< 3,0.906265319
+sp|P0AAC4|YBHL_ECOLI,ybhL,inconsistent,> 0,2.7427298515
+sp|P0AAD6|SDAC_ECOLI,sdaC,"> 3 hrs, inconsistent",> 3,5.6155472115
+sp|P0AAF6|ARTP_ECOLI,artP,"> 6 hrs, 1 replicate",> 6,9.154746116
+sp|P0AAG5|MDLB_ECOLI,mdlB,"> 6 hrs, inconsistent",> 6,8.799104425
+sp|P0AAH8|SAPF_ECOLI,sapF,"> 6 hrs, inconsistent",> 6,11.531098046
+sp|P0AAQ2|YAJD_ECOLI,yajD,"< 3 hrs, inconsistent",< 3,1.450828995
+sp|P0AAR3|YBAK_ECOLI,ybaK,"> 6 hrs, inconsistent",> 6,10.313632510000001
+sp|P0AAT6|IOJAP_ECOLI,rsfS,"> 3 hrs, 1 replicate",> 3,3.2931657825
+sp|P0AAW1|YBHP_ECOLI,ybhP,"> 6 hrs, inconsistent",> 6,10.8554775835
+sp|P0AB01|ELYC_ECOLI,elyC,"> 6 hrs, inconsistent",> 6,10.499704112
+sp|P0AB18|TUSE_ECOLI,tusE,"> 6 hrs, inconsistent",> 6,12.809048149999999
+sp|P0AB55|YCII_ECOLI,yciI,"> 6 hrs, 1 replicate",> 6,9.370623073
+sp|P0AB61|YCIN_ECOLI,yciN,"> 6 hrs, inconsistent",> 6,9.622763697
+sp|P0AB65|ACYP_ECOLI,yccX,"> 6 hrs, 1 replicate",> 6,7.339598486
+sp|P0AB74|KBAY_ECOLI,kbaY,"> 3 hrs, inconsistent",> 3,3.199667792
+sp|P0AB77|KBL_ECOLI,kbl,"> 6 hrs, 1 replicate",> 6,10.4019533
+sp|P0ABD8|BCCP_ECOLI,accB,"> 3 hrs, inconsistent",> 3,5.713020164
+sp|P0ABE2|BOLA_ECOLI,bolA,"< 3 hrs, 1 replicate",< 3,2.0034799165
+sp|P0ABE5|C561_ECOLI,cybB,"> 3 hrs, inconsistent",> 3,10.077124219
+sp|P0ABF8|PGSA_ECOLI,pgsA,"> 6 hrs, 1 replicate",> 6,10.708952474
+sp|P0ABG7|RODA_ECOLI,mrdB,"> 6 hrs, 1 replicate",> 6,9.701059634
+sp|P0ABJ1|CYOA_ECOLI,cyoA,"> 6 hrs, 1 replicate",> 6,7.580118035
+sp|P0ABK5|CYSK_ECOLI,cysK,"> 6 hrs, inconsistent",> 6,10.28639196
+sp|P0ABL5|NAPC_ECOLI,napC,"> 3 hrs, inconsistent",> 3,3.9650844
+sp|P0ABN1|KDGL_ECOLI,dgkA,"> 6 hrs, inconsistent",> 6,8.871258496
+sp|P0ABN5|DCUA_ECOLI,dcuA,"> 3 hrs, inconsistent",> 3,8.426135777
+sp|P0ABP6|DEDA_ECOLI,dedA,"> 6 hrs, inconsistent",> 6,9.209072792
+sp|P0ABQ0|COABC_ECOLI,coaBC,"> 6 hrs, inconsistent",> 6,12.514198355000001
+sp|P0ABR5|HCAE_ECOLI,hcaE,"< 3 hrs, inconsistent",< 3,1.999161882
+sp|P0ABU7|EXBB_ECOLI,exbB,"< 3 hrs, inconsistent",< 3,1.798762659
+sp|P0AC13|DHPS_ECOLI,folP,"> 6 hrs, 1 replicate",> 6,9.787698865
+sp|P0AC19|FOLX_ECOLI,folX,"> 6 hrs, inconsistent",> 6,10.021892216
+sp|P0AC23|FOCA_ECOLI,focA,"> 3 hrs, inconsistent",> 3,6.592008885
+sp|P0AC30|FTSX_ECOLI,ftsX,"> 6 hrs, inconsistent",> 6,10.75349713
+sp|P0AC44|DHSD_ECOLI,sdhD,"> 6 hrs, inconsistent",> 6,8.783914744
+sp|P0AC55|GLNK_ECOLI,glnK,"> 3 hrs, inconsistent",> 3,11.479926942
+sp|P0AC62|GLRX3_ECOLI,grxC,"> 6 hrs, 1 replicate",> 6,7.789132005
+sp|P0AC73|EBGC_ECOLI,ebgC,"> 6 hrs, 1 replicate",> 6,8.168841284500001
+sp|P0AC78|WECA_ECOLI,wecA,"> 6 hrs, inconsistent",> 6,11.793233905000001
+sp|P0AC94|GNTP_ECOLI,gntP,"> 6 hrs, 1 replicate",> 6,9.791172956
+sp|P0ACE0|MBHM_ECOLI,hybC,"> 3 hrs, inconsistent",> 3,5.5321388895000005
+sp|P0ACI6|ASNC_ECOLI,asnC,"> 6 hrs, 1 replicate",> 6,6.253170793
+sp|P0ACJ5|DECR_ECOLI,decR,"> 6 hrs, inconsistent",> 6,8.4311276685
+sp|P0ACM9|YIHL_ECOLI,yihL,"> 6 hrs, inconsistent",> 6,10.94889205
+sp|P0ACN2|YTFH_ECOLI,ytfH,"< 3 hrs, inconsistent",< 3,2.4245666144999998
+sp|P0ACP5|GNTR_ECOLI,gntR,"> 6 hrs, 1 replicate",> 6,6.968120771
+sp|P0ACR4|YEIE_ECOLI,yeiE,"> 6 hrs, 1 replicate",> 6,9.6111852505
+sp|P0ACT6|UIDR_ECOLI,uidR,"> 6 hrs, 1 replicate",> 6,6.071165498
+sp|P0ACU0|YBIH_ECOLI,ybiH,"> 6 hrs, 1 replicate",> 6,8.836333424
+sp|P0ACU7|YJDC_ECOLI,yjdC,"> 6 hrs, inconsistent",> 6,10.428991078500001
+sp|P0ACX3|YDHR_ECOLI,ydhR,"> 6 hrs, inconsistent",> 6,8.7864165335
+sp|P0ACX5|FUMD_ECOLI,fumD,"> 3 hrs, inconsistent",> 3,8.280764402
+sp|P0ACY1|YDJA_ECOLI,ydjA,"> 6 hrs, inconsistent",> 6,9.8058895295
+sp|P0ACY9|YEBG_ECOLI,yebG,"< 3 hrs, 1 replicate",< 3,1.117598993
+sp|P0AD33|YFCZ_ECOLI,yfcZ,"> 3 hrs, inconsistent",> 3,4.821502111999999
+sp|P0ADA1|TESA_ECOLI,tesA,"> 6 hrs, inconsistent",> 6,6.639112149500001
+sp|P0ADA3|NLPD_ECOLI,nlpD,"> 6 hrs, inconsistent",> 6,10.32945466
+sp|P0ADK8|YIBL_ECOLI,yibL,"> 6 hrs, inconsistent",> 6,9.914380912
+sp|P0ADL3|YICN_ECOLI,yicN,"> 6 hrs, inconsistent",> 6,10.9391825275
+sp|P0ADN2|YIFE_ECOLI,maoP,"> 3 hrs, 1 replicate",> 3,4.794845924
+sp|P0ADP2|YIGI_ECOLI,yigI,"> 3 hrs, inconsistent",> 3,5.7268721905
+sp|P0ADS2|ZAPA_ECOLI,zapA,"> 6 hrs, 1 replicate",> 6,8.4347340755
+sp|P0ADV5|YHBW_ECOLI,yhbW,"> 3 hrs, inconsistent",> 3,5.298024876
+sp|P0ADW3|YHCB_ECOLI,yhcB,"> 6 hrs, inconsistent",> 6,8.5171945705
+sp|P0ADX1|YHFA_ECOLI,yhfA,"> 6 hrs, inconsistent",> 6,7.620046695500001
+sp|P0ADY3|RL14_ECOLI,rplN,"> 6 hrs, inconsistent",> 6,11.1839249795
+sp|P0ADY7|RL16_ECOLI,rplP,"> 3 hrs, inconsistent",> 3,7.022148881
+sp|P0AE14|AMPE_ECOLI,ampE,"> 6 hrs, inconsistent",> 6,13.088712415
+sp|P0AE22|APHA_ECOLI,aphA,"> 6 hrs, inconsistent",> 6,10.01794233
+sp|P0AE28|AROM_ECOLI,aroM,"< 3 hrs, inconsistent",< 3,2.357963626
+sp|P0AE37|ASTA_ECOLI,astA,"> 6 hrs, inconsistent",> 6,9.682072073
+sp|P0AE70|MAZF_ECOLI,mazF,"> 6 hrs, 1 replicate",> 6,9.244034081
+sp|P0AE91|CREA_ECOLI,creA,"> 6 hrs, inconsistent",> 6,12.13786074
+sp|P0AEB0|CYSW_ECOLI,cysW,"> 6 hrs, 1 replicate",> 6,7.810669797
+sp|P0AEB2|DACA_ECOLI,dacA,"> 6 hrs, inconsistent",> 6,10.0415215
+sp|P0AEG4|DSBA_ECOLI,dsbA,"> 6 hrs, inconsistent",> 6,8.765541221
+sp|P0AEJ4|ENVZ_ECOLI,envZ,"> 6 hrs, 1 replicate",> 6,6.256061304
+sp|P0AEK0|EXOX_ECOLI,exoX,"< 3 hrs, 1 replicate",< 3,1.890140001
+sp|P0AEK2|FABG_ECOLI,fabG,"> 6 hrs, inconsistent",> 6,10.24578933
+sp|P0AEL6|FEPB_ECOLI,fepB,"> 6 hrs, inconsistent",> 6,11.508725048999999
+sp|P0AEM9|FLIY_ECOLI,tcyJ,"> 6 hrs, inconsistent",> 6,11.01962794
+sp|P0AEQ6|GLNP_ECOLI,glnP,"> 6 hrs, 1 replicate",> 6,8.9594835715
+sp|P0AER3|GLTJ_ECOLI,gltJ,"> 6 hrs, 1 replicate",> 6,9.52313253
+sp|P0AEV9|HYCI_ECOLI,hycI,"> 6 hrs, 1 replicate",> 6,8.74125533
+sp|P0AEW6|INGK_ECOLI,gsk,"> 6 hrs, 1 replicate",> 6,7.5727808935
+sp|P0AEX3|KGTP_ECOLI,kgtP,"> 6 hrs, inconsistent",> 6,10.030777243
+sp|P0AEX5|KPPR_ECOLI,prkB,"> 6 hrs, inconsistent",> 6,11.756160532500001
+sp|P0AEX7|LIVH_ECOLI,livH,"> 3 hrs, inconsistent",> 3,7.741228176
+sp|P0AEX9|MALE_ECOLI,malE,"> 6 hrs, 1 replicate",> 6,7.030997152
+sp|P0AF06|MOTB_ECOLI,motB,"< 3 hrs, inconsistent",< 3,0.9519410964999999
+sp|P0AF43|YJBB_ECOLI,yjbB,"> 6 hrs, 1 replicate",> 6,11.42925469
+sp|P0AF52|GHXP_ECOLI,ghxP,"> 6 hrs, inconsistent",> 6,8.491106979
+sp|P0AF56|YJCO_ECOLI,yjcO,"< 3 hrs, inconsistent",< 3,1.096845574
+sp|P0AF59|YJDI_ECOLI,yjdI,"> 3 hrs, inconsistent",> 3,7.9591938555
+sp|P0AF90|RRAB_ECOLI,rraB,"> 6 hrs, inconsistent",> 6,7.085704688
+sp|P0AF98|LPTF_ECOLI,lptF,"> 6 hrs, 1 replicate",> 6,8.269530081500001
+sp|P0AFE4|NUOK_ECOLI,nuoK,"> 6 hrs, 1 replicate",> 6,7.766950878
+sp|P0AFE8|NUOM_ECOLI,nuoM,"> 3 hrs, inconsistent",> 3,6.183956913
+sp|P0AFF0|NUON_ECOLI,nuoN,"> 3 hrs, inconsistent",> 3,6.711446991
+sp|P0AFF2|NUPC_ECOLI,nupC,"> 6 hrs, 1 replicate",> 6,6.339926579
+sp|P0AFF4|NUPG_ECOLI,nupG,"> 6 hrs, inconsistent",> 6,9.030243454
+sp|P0AFH2|OPPB_ECOLI,oppB,"> 6 hrs, inconsistent",> 6,10.80104699
+sp|P0AFH6|OPPC_ECOLI,oppC,"> 6 hrs, inconsistent",> 6,10.836399877
+sp|P0AFH8|OSMY_ECOLI,osmY,"> 6 hrs, inconsistent",> 6,8.259767837
+sp|P0AFK2|PNUC_ECOLI,pnuC,"> 6 hrs, inconsistent",> 6,10.29863203
+sp|P0AFK4|POTB_ECOLI,potB,"> 3 hrs, inconsistent",> 3,5.933230974
+sp|P0AFK6|POTC_ECOLI,potC,"> 3 hrs, inconsistent",> 3,5.339609703
+sp|P0AFM2|PROX_ECOLI,proX,"> 3 hrs, 1 replicate",> 3,4.45689797
+sp|P0AFM9|PSPB_ECOLI,pspB,"> 6 hrs, inconsistent",> 6,11.89108512
+sp|P0AFN2|PSPC_ECOLI,pspC,"> 3 hrs, inconsistent",> 3,4.285192476500001
+sp|P0AFQ7|YCFH_ECOLI,ycfH,"> 6 hrs, inconsistent",> 6,9.885941086
+sp|P0AFS9|MEPM_ECOLI,mepM,"> 6 hrs, 1 replicate",> 6,6.194700377
+sp|P0AFT5|BTSR_ECOLI,btsR,"> 6 hrs, 1 replicate",> 6,8.235645373
+sp|P0AFU4|GLRR_ECOLI,glrR,"> 6 hrs, inconsistent",> 6,9.316533505
+sp|P0AFU8|RISA_ECOLI,ribC,"> 6 hrs, inconsistent",> 6,12.1204034925
+sp|P0AG00|WZZE_ECOLI,wzzE,"> 6 hrs, 1 replicate",> 6,6.640230818
+sp|P0AG24|SPOT_ECOLI,spoT,"> 6 hrs, inconsistent",> 6,12.320797305
+sp|P0AG78|SUBI_ECOLI,sbp,"> 3 hrs, inconsistent",> 3,4.987069416000001
+sp|P0AG84|YGHA_ECOLI,yghA,"> 6 hrs, inconsistent",> 6,9.463847509
+sp|P0AG93|SECF_ECOLI,secF,"> 3 hrs, inconsistent",> 3,4.9779091725
+sp|P0AG96|SECE_ECOLI,secE,"> 6 hrs, 1 replicate",> 6,9.606446927
+sp|P0AGA2|SECY_ECOLI,secY,"> 6 hrs, inconsistent",> 6,9.2714461045
+sp|P0AGC0|UHPT_ECOLI,uhpT,"< 3 hrs, inconsistent",< 3,1.93768121
+sp|P0AGC3|SLT_ECOLI,slt,"> 6 hrs, inconsistent",> 6,8.463471102
+sp|P0AGC7|SMP_ECOLI,ytjB,"> 6 hrs, 1 replicate",> 6,9.07576543
+sp|P0AGH8|PSTC_ECOLI,pstC,"> 3 hrs, inconsistent",> 3,10.695477777
+sp|P0AGI1|RBSC_ECOLI,rbsC,"> 6 hrs, inconsistent",> 6,12.537403165
+sp|P0AGJ7|TRML_ECOLI,trmL,"> 6 hrs, inconsistent",> 6,11.84060021
+sp|P0AGJ9|SYY_ECOLI,tyrS,"> 6 hrs, 1 replicate",> 6,6.576282606
+sp|P0AGL7|RSME_ECOLI,rsmE,"> 6 hrs, inconsistent",> 6,8.53779524
+sp|P0C037|PPNP_ECOLI,ppnP,"> 6 hrs, inconsistent",> 6,9.731783995
+sp|P0C0L7|PROP_ECOLI,proP,"> 3 hrs, inconsistent",> 3,5.1103592540000005
+sp|P0CG19|RNPH_ECOLI,rph,"> 6 hrs, inconsistent",> 6,11.708266221999999
+sp|P0DMC5|RCSC_ECOLI,rcsC,"> 6 hrs, inconsistent",> 6,8.772493260000001
+sp|P10100|RLPA_ECOLI,rlpA,"> 6 hrs, 1 replicate",> 6,8.321801368500001
+sp|P10442|RNH2_ECOLI,rnhB,"< 3 hrs, 1 replicate",< 3,2.052589742
+sp|P11454|ENTF_ECOLI,entF,"> 3 hrs, inconsistent",> 3,5.398180421
+sp|P11553|FUCK_ECOLI,fucK,"< 3 hrs, 1 replicate",< 3,1.2626243135
+sp|P12295|UNG_ECOLI,ung,"> 6 hrs, inconsistent",> 6,11.195047105499999
+sp|P13000|BIOD1_ECOLI,bioD1,"> 6 hrs, 1 replicate",> 6,9.206740111
+sp|P13001|BIOH_ECOLI,bioH,"> 6 hrs, inconsistent",> 6,12.064270436000001
+sp|P13024|FDHE_ECOLI,fdhE,"> 3 hrs, inconsistent",> 3,3.892032135
+sp|P13518|CSRD_ECOLI,csrD,"> 6 hrs, 1 replicate",> 6,6.046520161
+sp|P13669|MNGR_ECOLI,mngR,"> 3 hrs, inconsistent",> 3,6.892306195
+sp|P13738|NHAA_ECOLI,nhaA,"> 6 hrs, 1 replicate",> 6,9.2819456995
+sp|P13857|RIML_ECOLI,rimL,"> 6 hrs, inconsistent",> 6,8.816304121
+sp|P14377|ZRAS_ECOLI,zraS,"> 6 hrs, inconsistent",> 6,13.376841845000001
+sp|P15006|MCRC_ECOLI,mcrC,"> 3 hrs, 1 replicate",> 3,4.492314648
+sp|P15033|RACC_ECOLI,racC,"> 3 hrs, inconsistent",> 3,7.720895694999999
+sp|P15047|ENTA_ECOLI,entA,"> 3 hrs, 1 replicate",> 3,3.451446337
+sp|P15082|SRLR_ECOLI,srlR,"> 6 hrs, inconsistent",> 6,8.9826977255
+sp|P15286|FLK_ECOLI,flk,"> 6 hrs, 1 replicate",> 6,6.558758526
+sp|P15770|AROE_ECOLI,aroE,"> 6 hrs, inconsistent",> 6,8.938037215
+sp|P16676|CYSA_ECOLI,cysA,"< 3 hrs, inconsistent",< 3,2.144743375
+sp|P16701|CYST_ECOLI,cysU,"> 6 hrs, 1 replicate",> 6,7.046539205
+sp|P16869|FHUE_ECOLI,fhuE,"> 3 hrs, 1 replicate",> 3,3.361793531
+sp|P17115|GUTQ_ECOLI,gutQ,"> 6 hrs, inconsistent",> 6,9.869543560499999
+sp|P17315|CIRA_ECOLI,cirA,"> 3 hrs, inconsistent",> 3,5.888982156
+sp|P18392|RSTB_ECOLI,rstB,"> 6 hrs, inconsistent",> 6,9.021148475
+sp|P18956|GGT_ECOLI,ggt,"> 6 hrs, inconsistent",> 6,12.217792955
+sp|P21338|RNI_ECOLI,rna,"> 6 hrs, 1 replicate",> 6,9.794249118
+sp|P21514|YAHA_ECOLI,yahA,"> 6 hrs, inconsistent",> 6,10.370169862000001
+sp|P21693|DBPA_ECOLI,dbpA,"> 3 hrs, inconsistent",> 3,5.704056267
+sp|P21889|SYD_ECOLI,aspS,"> 6 hrs, inconsistent",> 6,12.2001881
+sp|P22564|RIHC_ECOLI,rihC,"> 6 hrs, inconsistent",> 6,9.267738915999999
+sp|P22634|MURI_ECOLI,murI,"> 6 hrs, 1 replicate",> 6,11.2270268
+sp|P23003|TRMA_ECOLI,trmA,"> 6 hrs, inconsistent",> 6,9.242074854
+sp|P23173|TNAB_ECOLI,tnaB,"> 6 hrs, 1 replicate",> 6,10.97815136
+sp|P23721|SERC_ECOLI,serC,"> 6 hrs, inconsistent",> 6,9.143699018
+sp|P23862|PRIC_ECOLI,priC,"> 3 hrs, inconsistent",> 3,3.826408357
+sp|P23871|HEMH_ECOLI,hemH,"> 6 hrs, inconsistent",> 6,8.793730368
+sp|P23872|AES_ECOLI,aes,"> 6 hrs, inconsistent",> 6,8.017349176
+sp|P23886|CYDC_ECOLI,cydC,"> 6 hrs, 1 replicate",> 6,8.6744490085
+sp|P23898|NLPC_ECOLI,nlpC,"< 3 hrs, 1 replicate",< 3,0.626662778
+sp|P23908|ARGE_ECOLI,argE,"> 6 hrs, inconsistent",> 6,10.891850907
+sp|P23917|MAK_ECOLI,mak,"> 6 hrs, inconsistent",> 6,9.791857876
+sp|P24173|RFAC_ECOLI,rfaC,"> 6 hrs, inconsistent",> 6,13.176209
+sp|P24177|ACRD_ECOLI,acrD,"> 6 hrs, inconsistent",> 6,11.983720792
+sp|P24188|YCEA_ECOLI,yceA,"< 3 hrs, inconsistent",< 3,0.3432539235
+sp|P24224|ACPS_ECOLI,acpS,"> 6 hrs, inconsistent",> 6,11.08904947
+sp|P24252|YBGA_ECOLI,ybgA,"> 3 hrs, inconsistent",> 3,5.116055798
+sp|P24555|PTRB_ECOLI,ptrB,"> 6 hrs, inconsistent",> 6,10.8101317345
+sp|P25522|MNME_ECOLI,mnmE,"> 6 hrs, inconsistent",> 6,10.22438092
+sp|P25714|YIDC_ECOLI,yidC,"> 6 hrs, 1 replicate",> 6,10.240275694
+sp|P25718|AMY1_ECOLI,malS,"> 6 hrs, 1 replicate",> 6,9.477426556000001
+sp|P25737|LYSP_ECOLI,lysP,"< 3 hrs, 1 replicate",< 3,2.789859733
+sp|P25740|RFAG_ECOLI,rfaG,"> 6 hrs, inconsistent",> 6,8.447526832000001
+sp|P25746|HFLD_ECOLI,hflD,"> 6 hrs, inconsistent",> 6,10.18566699
+sp|P25889|PREA_ECOLI,preA,"< 3 hrs, 1 replicate",< 3,1.506053724
+sp|P27111|CYNR_ECOLI,cynR,"> 6 hrs, 1 replicate",> 6,6.211342655
+sp|P27126|RFAS_ECOLI,rfaS,"> 6 hrs, inconsistent",> 6,9.408672810999999
+sp|P27300|LPXK_ECOLI,lpxK,"> 6 hrs, 1 replicate",> 6,7.381518934
+sp|P27305|GLUQ_ECOLI,gluQ,"> 3 hrs, 1 replicate",> 3,3.759872499
+sp|P27828|WECB_ECOLI,wecB,"> 6 hrs, inconsistent",> 6,8.714473261
+sp|P27829|WECC_ECOLI,wecC,"> 6 hrs, inconsistent",> 6,7.892235714
+sp|P27832|WECD_ECOLI,wecD,"> 6 hrs, 1 replicate",> 6,11.50805908
+sp|P27837|YIFK_ECOLI,yifK,"> 6 hrs, 1 replicate",> 6,6.941546612
+sp|P27838|CYAY_ECOLI,cyaY,"> 6 hrs, 1 replicate",> 6,8.119653489000001
+sp|P27862|YIGZ_ECOLI,yigZ,"> 6 hrs, 1 replicate",> 6,15.0060667
+sp|P28631|HOLB_ECOLI,holB,"> 6 hrs, 1 replicate",> 6,11.32959787
+sp|P28905|HOLC_ECOLI,holC,"> 6 hrs, inconsistent",> 6,10.795641224
+sp|P29018|CYDD_ECOLI,cydD,"> 6 hrs, 1 replicate",> 6,9.900838054
+sp|P29208|MENC_ECOLI,menC,"> 6 hrs, 1 replicate",> 6,9.633981755
+sp|P30015|LHR_ECOLI,lhr,"> 6 hrs, inconsistent",> 6,9.198361063
+sp|P30138|THIF_ECOLI,thiF,"> 6 hrs, inconsistent",> 6,8.833346564000001
+sp|P30847|BAES_ECOLI,baeS,"> 6 hrs, inconsistent",> 6,11.264765072
+sp|P30850|RNB_ECOLI,rnb,"> 6 hrs, inconsistent",> 6,7.469515512
+sp|P30863|DKGB_ECOLI,dkgB,"> 6 hrs, inconsistent",> 6,10.7131000165
+sp|P31057|PANB_ECOLI,panB,"> 6 hrs, inconsistent",> 6,8.877579876
+sp|P31063|YEDD_ECOLI,yedD,"> 6 hrs, 1 replicate",> 6,8.300410679
+sp|P31069|KCH_ECOLI,kch,"> 6 hrs, 1 replicate",> 6,7.855354923
+sp|P31131|YDEJ_ECOLI,ydeJ,"> 6 hrs, 1 replicate",> 6,8.0583963655
+sp|P31466|ADEP_ECOLI,adeP,"> 6 hrs, inconsistent",> 6,12.708880485
+sp|P31475|YIEP_ECOLI,yieP,"> 6 hrs, 1 replicate",> 6,9.71627415
+sp|P31545|EFEB_ECOLI,efeB,"> 3 hrs, inconsistent",> 3,6.053048078
+sp|P31547|METI_ECOLI,metI,"> 3 hrs, inconsistent",> 3,4.912964514
+sp|P31663|PANC_ECOLI,panC,"> 6 hrs, inconsistent",> 6,11.818571025
+sp|P31806|NNR_ECOLI,nnr,"> 6 hrs, inconsistent",> 6,7.667136449
+sp|P32125|MOBB_ECOLI,mobB,"> 6 hrs, 1 replicate",> 6,9.514234191
+sp|P32138|SQASE_ECOLI,yihQ,"> 6 hrs, inconsistent",> 6,12.573707774999999
+sp|P32173|MOBA_ECOLI,mobA,"> 6 hrs, inconsistent",> 6,7.44542076
+sp|P32680|YJAG_ECOLI,yjaG,"> 6 hrs, 1 replicate",> 6,9.114002716
+sp|P32681|YJAH_ECOLI,yjaH,"> 3 hrs, inconsistent",> 3,4.8303339705
+sp|P32701|YJCC_ECOLI,yjcC,"> 6 hrs, inconsistent",> 6,9.033900445499999
+sp|P32721|ALSA_ECOLI,alsA,"> 6 hrs, 1 replicate",> 6,10.89018358
+sp|P33018|SFGH2_ECOLI,yeiG,"> 6 hrs, inconsistent",> 6,12.974730860000001
+sp|P33029|YEIQ_ECOLI,yeiQ,"< 3 hrs, inconsistent",< 3,0.63158998
+sp|P33218|YEBE_ECOLI,yebE,"> 6 hrs, inconsistent",> 6,9.6808613555
+sp|P33354|YEHR_ECOLI,yehR,"> 6 hrs, 1 replicate",> 6,7.548579164
+sp|P33371|DUSC_ECOLI,dusC,"> 3 hrs, inconsistent",> 3,6.637915366
+sp|P33595|SGRR_ECOLI,sgrR,"> 6 hrs, inconsistent",> 6,11.937057017
+sp|P33913|YEJA_ECOLI,yejA,"> 6 hrs, inconsistent",> 6,8.7228387945
+sp|P33920|NDPA_ECOLI,yejK,"> 6 hrs, inconsistent",> 6,8.819461703
+sp|P33941|YOJI_ECOLI,yojI,"> 3 hrs, inconsistent",> 3,3.751046571
+sp|P36659|CBPA_ECOLI,cbpA,"> 6 hrs, 1 replicate",> 6,9.924638573500001
+sp|P36673|TRER_ECOLI,treR,"> 6 hrs, inconsistent",> 6,12.422631295
+sp|P36680|ZAPD_ECOLI,zapD,"> 6 hrs, 1 replicate",> 6,6.90471524
+sp|P36928|YEGD_ECOLI,yegD,"> 6 hrs, inconsistent",> 6,9.459589424
+sp|P37019|CLCA_ECOLI,clcA,"> 6 hrs, inconsistent",> 6,13.22640527
+sp|P37024|HRPB_ECOLI,hrpB,"> 6 hrs, inconsistent",> 6,9.651317706
+sp|P37025|THPR_ECOLI,thpR,"> 6 hrs, 1 replicate",> 6,6.439948045
+sp|P37047|CDAR_ECOLI,cdaR,"> 6 hrs, inconsistent",> 6,8.042249549
+sp|P37128|NUDK_ECOLI,nudK,"> 3 hrs, inconsistent",> 3,4.575097033
+sp|P37146|RIR4_ECOLI,nrdF,"< 3 hrs, inconsistent",< 3,2.338120752
+sp|P37194|SLP_ECOLI,slp,"> 3 hrs, inconsistent",> 3,7.592508973
+sp|P37197|YHJA_ECOLI,yhjA,"> 6 hrs, 1 replicate",> 6,12.18094532
+sp|P37325|YBCH_ECOLI,ybcH,"> 6 hrs, 1 replicate",> 6,6.7300882385000005
+sp|P37340|MDTK_ECOLI,mdtK,"> 3 hrs, inconsistent",> 3,5.2404042534999995
+sp|P37388|XYLG_ECOLI,xylG,"> 3 hrs, inconsistent",> 3,5.3151492565
+sp|P37595|IAAA_ECOLI,iaaA,"> 6 hrs, inconsistent",> 6,11.177819599
+sp|P37629|YHIL_ECOLI,yhiL,"> 6 hrs, 1 replicate",> 6,6.00474764
+sp|P37641|YHJC_ECOLI,yhjC,"> 3 hrs, inconsistent",> 3,4.30767797
+sp|P37651|GUN_ECOLI,bcsZ,"> 6 hrs, 1 replicate",> 6,6.708655118
+sp|P37653|BCSA_ECOLI,bcsA,"< 3 hrs, inconsistent",< 3,2.432164796
+sp|P37657|BCSE_ECOLI,bcsE,"< 3 hrs, inconsistent",< 3,0.690163587
+sp|P37679|SGBU_ECOLI,sgbU,"< 3 hrs, 1 replicate",< 3,1.604740909
+sp|P37692|RFAF_ECOLI,rfaF,"> 6 hrs, inconsistent",> 6,11.681781631
+sp|P37908|YFJD_ECOLI,yfjD,"> 6 hrs, inconsistent",> 6,7.816810841
+sp|P38105|RSPB_ECOLI,rspB,"> 6 hrs, inconsistent",> 6,8.978602248
+sp|P38134|ETK_ECOLI,etk,"> 3 hrs, inconsistent",> 3,5.3833152405
+sp|P39160|UXUB_ECOLI,uxuB,"> 3 hrs, inconsistent",> 3,4.688608871
+sp|P39196|LPLT_ECOLI,lplT,"> 3 hrs, inconsistent",> 3,4.6789831245
+sp|P39208|IDNK_ECOLI,idnK,"< 3 hrs, inconsistent",< 3,2.3827922005
+sp|P39267|YJCZ_ECOLI,yjcZ,"> 6 hrs, 1 replicate",> 6,7.2221445095
+sp|P39334|BDCR_ECOLI,bdcR,"> 3 hrs, inconsistent",> 3,6.072549153000001
+sp|P39336|YJGL_ECOLI,yjgL,"> 3 hrs, inconsistent",> 3,7.346278556
+sp|P39346|IDND_ECOLI,idnD,"< 3 hrs, inconsistent",< 3,1.353027384
+sp|P39356|YJHU_ECOLI,yjhU,"> 6 hrs, inconsistent",> 6,8.1245176635
+sp|P39357|YJHF_ECOLI,yjhF,"> 3 hrs, inconsistent",> 3,6.561362508
+sp|P39365|SGCC_ECOLI,sgcC,"> 6 hrs, 1 replicate",> 6,8.797660370500001
+sp|P39380|KPTA_ECOLI,kptA,"< 3 hrs, 1 replicate",< 3,1.939804852
+sp|P39385|YJIN_ECOLI,yjiN,"> 6 hrs, inconsistent",> 6,12.25738442
+sp|P39408|YJJV_ECOLI,yjjV,"> 6 hrs, inconsistent",> 6,9.4537987185
+sp|P39451|ADHP_ECOLI,adhP,"< 3 hrs, inconsistent",< 3,0.14779307600000002
+sp|P39830|YBAL_ECOLI,ybaL,"> 6 hrs, 1 replicate",> 6,10.685260228
+sp|P41036|NANT_ECOLI,nanT,"> 3 hrs, inconsistent",> 3,3.8193909305
+sp|P41052|MLTB_ECOLI,mltB,inconsistent,> 0,3.60813986
+sp|P42597|UTPP_ECOLI,ygjP,"< 3 hrs, 1 replicate",< 3,1.639183498
+sp|P42620|YQJG_ECOLI,yqjG,"> 6 hrs, 1 replicate",> 6,13.40760554
+sp|P42904|PTPB2_ECOLI,agaV,"> 6 hrs, 1 replicate",> 6,8.165087532
+sp|P42907|AGAS_ECOLI,agaS,"> 3 hrs, inconsistent",> 3,3.4388445599999997
+sp|P43319|YRAK_ECOLI,yraK,"> 6 hrs, 1 replicate",> 6,6.486779833
+sp|P43533|FLGN_ECOLI,flgN,"> 3 hrs, 1 replicate",> 3,4.097375905
+sp|P45395|KDSD_ECOLI,kdsD,"> 6 hrs, inconsistent",> 6,10.297737478
+sp|P45424|YHCH_ECOLI,yhcH,"> 6 hrs, inconsistent",> 6,7.727972398
+sp|P45469|YRAR_ECOLI,yraR,"> 3 hrs, inconsistent",> 3,4.6753896285
+sp|P45522|KEFB_ECOLI,kefB,"> 6 hrs, 1 replicate",> 6,12.40540106
+sp|P45530|TUSB_ECOLI,tusB,"> 6 hrs, inconsistent",> 6,13.372741210000001
+sp|P45552|YHFZ_ECOLI,yhfZ,"> 3 hrs, inconsistent",> 3,5.587220026000001
+sp|P45565|AIS_ECOLI,ais,"> 6 hrs, 1 replicate",> 6,10.80416429
+sp|P45804|YHGE_ECOLI,yhgE,"> 6 hrs, 1 replicate",> 6,6.232358202
+sp|P46122|YAJI_ECOLI,yajI,"> 6 hrs, 1 replicate",> 6,11.26060421
+sp|P46852|YHHW_ECOLI,yhhW,"> 6 hrs, inconsistent",> 6,8.597511389000001
+sp|P46883|AMO_ECOLI,tynA,"> 6 hrs, 1 replicate",> 6,6.450326713
+sp|P46888|USPC_ECOLI,uspC,"> 6 hrs, inconsistent",> 6,9.8343743955
+sp|P46923|TORZ_ECOLI,torZ,"> 6 hrs, inconsistent",> 6,11.494074356
+sp|P52037|YGFF_ECOLI,ygfF,"> 3 hrs, inconsistent",> 3,5.933669868
+sp|P52060|YGGU_ECOLI,yggU,"> 3 hrs, inconsistent",> 3,5.354624411
+sp|P52094|HISQ_ECOLI,hisQ,"> 6 hrs, inconsistent",> 6,11.513661240000001
+sp|P52095|DCLZ_ECOLI,ldcC,"> 6 hrs, inconsistent",> 6,7.971279130999999
+sp|P52119|RATB_ECOLI,ratB,"> 3 hrs, inconsistent",> 3,5.0170263695
+sp|P55734|YGAP_ECOLI,ygaP,"> 6 hrs, inconsistent",> 6,7.444091076
+sp|P56262|DLHH_ECOLI,ysgA,"> 6 hrs, inconsistent",> 6,8.516400263
+sp|P60472|UPPS_ECOLI,ispU,"> 3 hrs, 1 replicate",> 3,4.023889947
+sp|P60546|KGUA_ECOLI,gmk,"> 6 hrs, inconsistent",> 6,7.188985803
+sp|P60566|FIXA_ECOLI,fixA,"> 3 hrs, inconsistent",> 3,7.628943767000001
+sp|P60720|LIPB_ECOLI,lipB,"> 6 hrs, 1 replicate",> 6,10.461054239
+sp|P60752|MSBA_ECOLI,msbA,"> 6 hrs, inconsistent",> 6,11.410245771
+sp|P60869|YBJL_ECOLI,ybjL,"> 6 hrs, 1 replicate",> 6,7.340061271
+sp|P60932|UPPP_ECOLI,uppP,"> 3 hrs, inconsistent",> 3,9.171232239
+sp|P61887|RMLA2_ECOLI,rffH,"> 6 hrs, inconsistent",> 6,8.1487013585
+sp|P61949|FLAV_ECOLI,fldA,"> 3 hrs, inconsistent",> 3,4.887056543
+sp|P62517|OPGH_ECOLI,mdoH,"> 6 hrs, 1 replicate",> 6,9.8040803615
+sp|P62617|ISPF_ECOLI,ispF,"> 6 hrs, 1 replicate",> 6,9.2176282855
+sp|P63228|GMHBB_ECOLI,gmhB,"> 6 hrs, inconsistent",> 6,13.441430539999999
+sp|P63235|GADC_ECOLI,gadC,"> 3 hrs, inconsistent",> 3,9.9576183375
+sp|P64429|YPFJ_ECOLI,ypfJ,"> 3 hrs, inconsistent",> 3,5.400911037
+sp|P64479|YDIZ_ECOLI,ydiZ,"> 6 hrs, 1 replicate",> 6,10.12349778
+sp|P64503|YEBV_ECOLI,yebV,"< 3 hrs, 1 replicate",< 3,1.833577875
+sp|P64506|YEBY_ECOLI,yebY,"> 6 hrs, 1 replicate",> 6,7.64725682
+sp|P64515|YECN_ECOLI,yecN,"> 3 hrs, inconsistent",> 3,5.431923373
+sp|P64530|RCNR_ECOLI,rcnR,"> 6 hrs, 1 replicate",> 6,7.757098352
+sp|P64545|YFGG_ECOLI,yfgG,"> 3 hrs, inconsistent",> 3,4.5687629285
+sp|P64588|YQJI_ECOLI,yqjI,"> 6 hrs, inconsistent",> 6,8.7608971885
+sp|P64602|MLAB_ECOLI,mlaB,"> 6 hrs, inconsistent",> 6,10.9062497915
+sp|P67087|RSMI_ECOLI,rsmI,"> 6 hrs, inconsistent",> 6,11.80226246
+sp|P67430|NEMR_ECOLI,nemR,"> 6 hrs, 1 replicate",> 6,11.69764753
+sp|P67603|YQFB_ECOLI,yqfB,"> 6 hrs, inconsistent",> 6,8.098957467
+sp|P68187|MALK_ECOLI,malK,"> 3 hrs, 1 replicate",> 3,3.479050575
+sp|P68206|YJBJ_ECOLI,yjbJ,"> 6 hrs, inconsistent",> 6,11.044787896999999
+sp|P68679|RS21_ECOLI,rpsU,"> 6 hrs, 1 replicate",> 6,6.124060662
+sp|P69228|BAER_ECOLI,baeR,"> 6 hrs, inconsistent",> 6,11.7414212295
+sp|P69411|RCSF_ECOLI,rcsF,"> 6 hrs, inconsistent",> 6,9.844551826
+sp|P69776|LPP_ECOLI,lpp,"> 6 hrs, inconsistent",> 6,11.170084603
+sp|P69786|PTGCB_ECOLI,ptsG,"> 6 hrs, inconsistent",> 6,9.497497757
+sp|P69791|PTQA_ECOLI,chbA,"< 3 hrs, 1 replicate",< 3,1.8246007020000001
+sp|P69805|PTND_ECOLI,manZ,"> 6 hrs, inconsistent",> 6,9.035884167499999
+sp|P69820|ULAC_ECOLI,ulaC,"> 6 hrs, 1 replicate",> 6,7.31255201
+sp|P69824|PTMA_ECOLI,cmtB,"> 3 hrs, inconsistent",> 3,4.031969864
+sp|P69829|PTSN_ECOLI,ptsN,"> 3 hrs, inconsistent",> 3,5.8792779930000005
+sp|P69856|NANC_ECOLI,nanC,"> 6 hrs, 1 replicate",> 6,7.654714106
+sp|P69910|DCEB_ECOLI,gadB,"> 6 hrs, 1 replicate",> 6,6.34714225
+sp|P75672|YAFS_ECOLI,yafS,"> 6 hrs, 1 replicate",> 6,11.53931038
+sp|P75687|RCLB_ECOLI,rclB,"> 3 hrs, inconsistent",> 3,3.60226725
+sp|P75736|YBFF_ECOLI,ybfF,"> 6 hrs, inconsistent",> 6,7.348484475
+sp|P75779|YBIX_ECOLI,ybiX,"> 6 hrs, 1 replicate",> 6,6.388026013
+sp|P75780|FIU_ECOLI,fiu,"> 3 hrs, 1 replicate",> 3,3.265606956
+sp|P75782|RLMF_ECOLI,rlmF,"> 6 hrs, 1 replicate",> 6,13.23445507
+sp|P75783|YBIO_ECOLI,ybiO,"< 3 hrs, inconsistent",< 3,1.15082492
+sp|P75799|GSID_ECOLI,gsiD,"> 6 hrs, 1 replicate",> 6,6.535392827
+sp|P75811|RCDA_ECOLI,rcdA,"> 3 hrs, inconsistent",> 3,4.8898636385
+sp|P75822|YBJT_ECOLI,ybjT,"> 6 hrs, inconsistent",> 6,12.13266588
+sp|P75829|YBJX_ECOLI,ybjX,"< 3 hrs, 1 replicate",< 3,0.905967855
+sp|P75853|SSUA_ECOLI,ssuA,"> 6 hrs, 1 replicate",> 6,8.057606765
+sp|P75858|ELFG_ECOLI,elfG,"> 6 hrs, 1 replicate",> 6,9.763748227
+sp|P75867|LONH_ECOLI,ycbZ,"> 6 hrs, inconsistent",> 6,8.222840429
+sp|P75870|YCCS_ECOLI,yccS,"> 3 hrs, 1 replicate",> 3,4.0236609835
+sp|P75915|YCDY_ECOLI,ycdY,"> 6 hrs, 1 replicate",> 6,8.696737195499999
+sp|P75919|CLSC_ECOLI,clsC,"> 6 hrs, 1 replicate",> 6,7.758135518
+sp|P75936|FLGD_ECOLI,flgD,"< 3 hrs, 1 replicate",< 3,0.38843968900000003
+sp|P75958|LOLE_ECOLI,lolE,"> 6 hrs, 1 replicate",> 6,10.52542974
+sp|P75966|RLUE_ECOLI,rluE,"> 6 hrs, inconsistent",> 6,10.99605745
+sp|P76001|YCGJ_ECOLI,ycgJ,"> 6 hrs, 1 replicate",> 6,10.08780107
+sp|P76002|PLIG_ECOLI,pliG,"> 6 hrs, inconsistent",> 6,9.980422625
+sp|P76007|NHAP2_ECOLI,cvrA,"> 6 hrs, 1 replicate",> 6,10.9727445485
+sp|P76042|YCJN_ECOLI,ycjN,"> 6 hrs, 1 replicate",> 6,13.25898092
+sp|P76046|YCJX_ECOLI,ycjX,"> 6 hrs, inconsistent",> 6,8.08340995
+sp|P76062|RACR_ECOLI,racR,"> 3 hrs, inconsistent",> 3,5.478222698
+sp|P76100|YDCK_ECOLI,ydcK,"> 3 hrs, inconsistent",> 3,4.685942144
+sp|P76134|YDEM_ECOLI,ydeM,"< 3 hrs, 1 replicate",< 3,1.638989911
+sp|P76141|LSRR_ECOLI,lsrR,"> 6 hrs, 1 replicate",> 6,7.783695551
+sp|P76170|YNFB_ECOLI,ynfB,"> 3 hrs, inconsistent",> 3,5.1785423365
+sp|P76176|YDGD_ECOLI,ydgD,"> 6 hrs, inconsistent",> 6,9.640787219
+sp|P76190|MEPH_ECOLI,mepH,"> 6 hrs, inconsistent",> 6,9.357734859
+sp|P76193|YNHG_ECOLI,ynhG,"> 6 hrs, inconsistent",> 6,10.37316688
+sp|P76204|YDIV_ECOLI,ydiV,"> 6 hrs, 1 replicate",> 6,8.662979534
+sp|P76215|ASTE_ECOLI,astE,"< 3 hrs, inconsistent",< 3,2.181003622
+sp|P76220|YDJY_ECOLI,ydjY,"> 6 hrs, 1 replicate",> 6,7.028358599
+sp|P76237|YEAJ_ECOLI,yeaJ,"> 3 hrs, inconsistent",> 3,4.4458057454999995
+sp|P76270|MSRC_ECOLI,msrC,"> 6 hrs, inconsistent",> 6,11.781730451000001
+sp|P76272|YEBT_ECOLI,yebT,"> 3 hrs, inconsistent",> 3,6.373702952
+sp|P76273|RSMF_ECOLI,rsmF,"> 6 hrs, inconsistent",> 6,7.525032743
+sp|P76291|CMOB_ECOLI,cmoB,"> 6 hrs, inconsistent",> 6,13.10271174
+sp|P76297|FLHE_ECOLI,flhE,"> 6 hrs, inconsistent",> 6,8.7797722
+sp|P76298|FLHA_ECOLI,flhA,"> 3 hrs, inconsistent",> 3,6.251838317
+sp|P76316|DCYD_ECOLI,dcyD,"> 6 hrs, 1 replicate",> 6,8.731171384
+sp|P76339|YEDV_ECOLI,yedV,"> 6 hrs, 1 replicate",> 6,7.579376241
+sp|P76394|YEGJ_ECOLI,yegJ,"> 6 hrs, 1 replicate",> 6,6.64802202
+sp|P76398|MDTB_ECOLI,mdtB,"> 6 hrs, 1 replicate",> 6,9.2253093695
+sp|P76419|YEGV_ECOLI,yegV,"> 3 hrs, inconsistent",> 3,4.269053470999999
+sp|P76422|THID_ECOLI,thiD,"> 6 hrs, inconsistent",> 6,6.736694269
+sp|P76425|RCNA_ECOLI,rcnA,"> 6 hrs, 1 replicate",> 6,10.796256
+sp|P76461|ATOB_ECOLI,atoB,"> 6 hrs, 1 replicate",> 6,7.095453663
+sp|P76466|YFAT_ECOLI,yfaT,"> 3 hrs, inconsistent",> 3,10.0212561405
+sp|P76486|YFBP_ECOLI,yfbP,"> 6 hrs, 1 replicate",> 6,8.762972591
+sp|P76491|5DNU_ECOLI,yfbR,"> 6 hrs, 1 replicate",> 6,9.183556294
+sp|P76507|YFDI_ECOLI,yfdI,"> 6 hrs, 1 replicate",> 6,6.412705692
+sp|P76536|YFEX_ECOLI,yfeX,"> 6 hrs, inconsistent",> 6,8.521732691499999
+sp|P76561|YPFH_ECOLI,ypfH,"> 3 hrs, inconsistent",> 3,4.949493484
+sp|P76562|TMCA_ECOLI,tmcA,"> 6 hrs, 1 replicate",> 6,8.185077159
+sp|P76577|PBPC_ECOLI,pbpC,"> 3 hrs, inconsistent",> 3,5.945944387
+sp|P76616|YGAQ_ECOLI,ygaQ,"> 3 hrs, inconsistent",> 3,4.926415605
+sp|P76909|YNJD_ECOLI,ynjD,"> 6 hrs, inconsistent",> 6,8.869316778
+sp|P77044|MHPC_ECOLI,mhpC,"< 3 hrs, 1 replicate",< 3,2.1317378115
+sp|P77163|TFAR_ECOLI,tfaR,"< 3 hrs, inconsistent",< 3,1.8273857755
+sp|P77179|RSXE_ECOLI,rsxE,"> 3 hrs, inconsistent",> 3,4.385486361
+sp|P77181|PAAY_ECOLI,paaY,"> 6 hrs, inconsistent",> 6,11.634787115999998
+sp|P77214|CUSF_ECOLI,cusF,"> 3 hrs, inconsistent",> 3,4.692700136
+sp|P77221|YAHG_ECOLI,yahG,"> 3 hrs, inconsistent",> 3,6.1458482725
+sp|P77239|CUSB_ECOLI,cusB,"> 3 hrs, inconsistent",> 3,5.793464055
+sp|P77245|MURR_ECOLI,murR,"> 6 hrs, inconsistent",> 6,10.61388558
+sp|P77247|HXPB_ECOLI,hxpB,"> 6 hrs, inconsistent",> 6,12.1083553335
+sp|P77260|YDFI_ECOLI,ydfI,"> 3 hrs, inconsistent",> 3,4.221560434
+sp|P77263|ECPE_ECOLI,ecpE,"> 3 hrs, inconsistent",> 3,6.5548064785
+sp|P77272|PTYBC_ECOLI,murP,"> 3 hrs, inconsistent",> 3,5.057639399
+sp|P77279|FETA_ECOLI,fetA,"> 6 hrs, 1 replicate",> 6,7.059806232
+sp|P77293|GTRB_ECOLI,yfdH,"> 6 hrs, 1 replicate",> 6,8.684099698
+sp|P77307|FETB_ECOLI,fetB,"> 6 hrs, inconsistent",> 6,9.929417188
+sp|P77309|YNEJ_ECOLI,yneJ,"> 3 hrs, inconsistent",> 3,7.789046757
+sp|P77318|YDEN_ECOLI,ydeN,"> 6 hrs, 1 replicate",> 6,9.331148914
+sp|P77330|BORD_ECOLI,borD,"> 6 hrs, inconsistent",> 6,7.797315244
+sp|P77334|GMR_ECOLI,gmr,"< 3 hrs, inconsistent",< 3,2.001797287
+sp|P77338|MSCK_ECOLI,mscK,"> 6 hrs, inconsistent",> 6,11.092163631
+sp|P77368|YBCL_ECOLI,ybcL,"> 3 hrs, inconsistent",> 3,4.645084922
+sp|P77376|YDGJ_ECOLI,ydgJ,"> 6 hrs, inconsistent",> 6,9.4288503025
+sp|P77379|RCLR_ECOLI,rclR,"> 6 hrs, inconsistent",> 6,10.06281499
+sp|P77473|YLAB_ECOLI,ylaB,"> 3 hrs, inconsistent",> 3,6.215194283
+sp|P77475|YQAB_ECOLI,yqaB,"> 6 hrs, 1 replicate",> 6,6.17894149
+sp|P77495|PRPE_ECOLI,prpE,"< 3 hrs, 1 replicate",< 3,0.401960966
+sp|P77504|YBBP_ECOLI,ybbP,"> 6 hrs, 1 replicate",> 6,9.8469378905
+sp|P77555|ALLD_ECOLI,allD,"> 6 hrs, 1 replicate",> 6,8.062432903
+sp|P77579|PTFC1_ECOLI,fryC,"> 6 hrs, 1 replicate",> 6,6.395996305
+sp|P77580|ACDH_ECOLI,mhpF,"> 3 hrs, inconsistent",> 3,5.129681697
+sp|P77611|RSXC_ECOLI,rsxC,"< 3 hrs, 1 replicate",< 3,1.360021191
+sp|P77615|YCJW_ECOLI,ycjW,"> 6 hrs, inconsistent",> 6,8.123285044
+sp|P77650|HCAD_ECOLI,hcaD,"< 3 hrs, 1 replicate",< 3,2.782131165
+sp|P77667|SUFA_ECOLI,sufA,"> 3 hrs, 1 replicate",> 3,4.33825516
+sp|P77717|YBAY_ECOLI,ybaY,"> 6 hrs, inconsistent",> 6,11.4399438355
+sp|P77754|SPY_ECOLI,spy,"> 3 hrs, inconsistent",> 3,4.779905231
+sp|P77766|RNAAM_ECOLI,yciV,"> 3 hrs, inconsistent",> 3,4.5097547465000005
+sp|P77774|BAMB_ECOLI,bamB,"> 6 hrs, inconsistent",> 6,8.6572309455
+sp|P77788|NUDG_ECOLI,nudG,"> 6 hrs, 1 replicate",> 6,8.629632959
+sp|Q06065|ATOC_ECOLI,atoC,"> 6 hrs, inconsistent",> 6,10.5579452895
+sp|Q06067|ATOS_ECOLI,atoS,"> 3 hrs, inconsistent",> 3,6.532156629
+sp|Q2EET2|YPFN_ECOLI,ypfN,"> 6 hrs, 1 replicate",> 6,6.311983953
+sp|Q2M7R5|YIBT_ECOLI,yibT,"> 3 hrs, 1 replicate",> 3,4.394699812
+sp|Q46791|YGEK_ECOLI,ygeK,"> 6 hrs, inconsistent",> 6,8.4078850945
+sp|Q46811|YGFK_ECOLI,ygfK,"> 3 hrs, inconsistent",> 3,6.061989251
+sp|Q46817|GHXQ_ECOLI,ghxQ,"> 6 hrs, 1 replicate",> 6,9.2606361
+sp|Q46824|YGFX_ECOLI,ygfX,"> 6 hrs, 1 replicate",> 6,6.737269718
+sp|Q46845|YGHU_ECOLI,yghU,"> 6 hrs, inconsistent",> 6,9.7764697305
+sp|Q46855|YQHC_ECOLI,yqhC,"> 3 hrs, 1 replicate",> 3,4.265555438
+sp|Q46864|MQSA_ECOLI,mqsA,"< 3 hrs, 1 replicate",< 3,0.988988646
+sp|Q46868|YQIC_ECOLI,yqiC,"> 6 hrs, 1 replicate",> 6,9.027409926
+sp|Q46896|CAS1_ECOLI,ygbT,"< 3 hrs, inconsistent",< 3,2.24211968
+sp|Q46919|YQCC_ECOLI,yqcC,"> 6 hrs, inconsistent",> 6,11.811690401
+sp|Q46925|CSDA_ECOLI,csdA,"> 6 hrs, inconsistent",> 6,10.7776745855
+sp|Q47083|CBL_ECOLI,cbl,"< 3 hrs, 1 replicate",< 3,1.162971543
+sp|Q47537|TAUA_ECOLI,tauA,"> 6 hrs, inconsistent",> 6,11.38958702
+sp|Q47679|YAFV_ECOLI,yafV,"> 6 hrs, inconsistent",> 6,11.746857366
+sp|Q47710|YQJK_ECOLI,yqjK,"> 6 hrs, 1 replicate",> 6,8.708816916
