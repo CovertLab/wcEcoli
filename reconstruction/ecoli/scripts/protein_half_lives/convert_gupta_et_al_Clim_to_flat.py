@@ -23,12 +23,12 @@ ROUND_N_DECIMALS = 1
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
 
 # Files
-INPUT = os.path.join(FILE_LOCATION, 'protein_half_lives_C_lim_gupta_et_al.tsv')
+INPUT = os.path.join(FILE_LOCATION, 'protein_half_lives_Clim2.tsv')
 RNAS_FILE = os.path.join(
     ROOT_PATH, 'reconstruction', 'ecoli', 'flat', 'rnas.tsv')
 OUTPUT_FLAT_FILE = os.path.join(
     ROOT_PATH, 'reconstruction', 'ecoli', 'flat',
-    'protein_half_lives_C_lim.tsv')
+    'protein_half_lives_Clim2.tsv')
 
 
 def get_symbols_to_monomer_ids():

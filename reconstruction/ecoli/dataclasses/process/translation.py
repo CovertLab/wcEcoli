@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-USE_NEW_DEG_RATES  = 6
+USE_NEW_DEG_RATES  = 12
 SAVE_DATA = 1
 
 class Translation(object):
@@ -140,6 +140,11 @@ class Translation(object):
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
 			for p in raw_data.protein_half_lives_C_lim}
 
+		# get C-limited degredation rates from Gupta et al., 2024 half lifes:
+		Clim2_deg_rates = {
+			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
+			for p in raw_data.protein_half_lives_Clim2}
+
 		deg_rate = np.zeros(n_proteins)
 
 		# save rate constants for each protein
@@ -262,7 +267,7 @@ class Translation(object):
 					NE_protein_ids.append(protein['id'])
 					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
 
-		hi = 5
+
 		# Use measured degradation rates if available, then C-lim rates, then N end rule
 		if USE_NEW_DEG_RATES == 11:
 			name = "TFs_NE_ClimCLMLNE"
@@ -288,6 +293,28 @@ class Translation(object):
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
 					ML_protein_ids.append(protein['id'])
 					ML_rate_constants.append(pulsed_silac_deg_rates[protein['id']])
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					NE_protein_ids.append(protein['id'])
+					NE_rate_contstants.append(n_end_rule_deg_rates[n_end_residue])
+
+		# Use measured degradation rates if available, then C-lim rates, then N end rule
+		if USE_NEW_DEG_RATES == 12:
+			name = "CLClim2NE"
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					CL_protein_ids.append(protein['id'])
+					CL_rate_contstants.append(measured_deg_rates[protein['id']])
+				elif protein['id'] in Clim2_deg_rates:
+					deg_rate[i] = Clim2_deg_rates[protein['id']]
+					Clim_protein_ids.append(protein['id'])
+					Clim_rate_contstants.append(Clim2_deg_rates[protein['id']])
 				else:
 					seq = protein['seq']
 					assert seq[0] == 'M'
@@ -540,6 +567,7 @@ class Translation(object):
 			# Save Clim rate constants
 			Clim_df = pd.DataFrame(list(zip(Clim_protein_ids, Clim_rate_contstants)), columns =['Protein ID', 'Rate Constant'])
 			Clim_df.to_csv(os.path.join(outpth, f"Clim_rate_constants.csv"), index=False)
+
 
 
 
