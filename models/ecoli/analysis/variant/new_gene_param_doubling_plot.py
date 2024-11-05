@@ -4,6 +4,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.colors as mcolors
 
 import pickle
 import os
@@ -25,7 +26,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 16
+IGNORE_FIRST_N_GENS = 1
 
 exclude_timeout_cells = 0
 
@@ -41,6 +42,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		variants = self.ap.get_variants()
+
+		NEW_GENE_EXPRESSION_FACTOR_CONTROL = 0
+		NEW_GENE_EXPRESSION_FACTOR_MIN = 7
+		NEW_GENE_EXPRESSION_FACTOR_MAX = 10
+		NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL = 0
+		NEW_GENE_TRANSLATION_EFFICIENCY_MIN = np.log10(0.01)
+		NEW_GENE_TRANSLATION_EFFICIENCY_MAX = np.log10(10)
 
 
 
@@ -72,16 +80,39 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Data extraction
 		doubling_times = []
 		avg_ng_monomer = []
+		trl_eff_values = []
+		expression_factors = []
+		colors = []
 		generations = {}
 		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
 		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
 		n_total_gens = self.ap.n_generation
 
 
+
+		plt.figure()
+
+		plt.xlabel("Protein Counts")
+		plt.ylabel("Doubling Time")
+
+
+
+
+
 		min_variant = min(variants)
 
 		for variant in variants:
-			
+			np.random.seed(variant)
+			if variant == 0:
+				expression_factors.append(NEW_GENE_EXPRESSION_FACTOR_CONTROL)
+				trl_eff_values.append(NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL)
+			else:
+				expression_factors.append(np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN,
+													  NEW_GENE_EXPRESSION_FACTOR_MAX))
+				trl_eff_values.append(10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
+														NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
+
+
 			all_cells = self.ap.get_cells(variant=[variant], generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
 											  only_successful=True)
 
@@ -129,6 +160,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
 
+			colors.append(trl_eff_values[variant]/10)
+
+			cmap = mcolors.ListedColormap(colors)
+
+			plt.scatter(avg_ng_monomer[variant], doubling_times[variant], c = colors[variant], cmap = 'coolwarm')
+
+
+
+
 
 
 			for i in range(len(new_gene_mRNA_ids)):
@@ -138,13 +178,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
 
-		plt.figure()
+		#plt.figure()
 
-		plt.xlabel("Protein Counts")
-		plt.ylabel("Doubling Time")
-		plt.scatter(avg_ng_monomer,doubling_times)
+		#plt.xlabel("Protein Counts")
+		#plt.ylabel("Doubling Time")
+		#plt.scatter(avg_ng_monomer,doubling_times)
 
-
+		plt.colorbar(orientation='horizontal')
+		#import ipdb
+		#ipdb.set_trace()
 
 
 		plt.tight_layout()
