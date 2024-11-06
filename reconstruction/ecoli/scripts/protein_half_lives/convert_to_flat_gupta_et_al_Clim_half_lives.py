@@ -1,7 +1,8 @@
 """
 Extracts some of protein half-lives under carbon-limited conditions
 from Supplementary Table S1 of Gupta et al., 2024,
-"Global Protein-Turnover Quantification in Escherichia coli Reveals Cytoplasmic Recycling under Nitrogen Limitation"
+"Global Protein-Turnover Quantification in Escherichia coli Reveals Cytoplasmic
+Recycling under Nitrogen Limitation"
 doi: https://doi.org/10.1038/s41467-024-49920-8
 
 """
@@ -25,7 +26,7 @@ ROUND_N_DECIMALS = 1
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
 
 # Files
-INPUT = os.path.join(FILE_LOCATION, 'protein_half_lives_Clim2.tsv')
+INPUT = os.path.join(FILE_LOCATION, 'protein_half_lives_Clim2_pre_convert_to_flat.tsv')
 RNAS_FILE = os.path.join(
     ROOT_PATH, 'reconstruction', 'ecoli', 'flat', 'rnas.tsv')
 OUTPUT_FLAT_FILE = os.path.join(
