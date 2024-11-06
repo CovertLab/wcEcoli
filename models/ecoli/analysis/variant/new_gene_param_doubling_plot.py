@@ -26,7 +26,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 1
+IGNORE_FIRST_N_GENS = 16
 
 exclude_timeout_cells = 0
 
@@ -159,10 +159,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
-
 			colors.append(trl_eff_values[variant]/10)
 
-			plt.scatter(avg_ng_monomer[variant], doubling_times[variant], c = colors[variant], cmap = 'coolwarm')
 
 
 
@@ -182,9 +180,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		#plt.ylabel("Doubling Time")
 		#plt.scatter(avg_ng_monomer,doubling_times)
 
+		plt.scatter(avg_ng_monomer, doubling_times, c=colors,
+					cmap='coolwarm')
+
 		plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
-		import ipdb
-		ipdb.set_trace()
+
 
 
 		plt.tight_layout()
