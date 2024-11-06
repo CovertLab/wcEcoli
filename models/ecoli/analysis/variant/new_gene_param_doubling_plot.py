@@ -162,8 +162,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			colors.append(trl_eff_values[variant]/10)
 
-			cmap = mcolors.ListedColormap(colors)
-
 			plt.scatter(avg_ng_monomer[variant], doubling_times[variant], c = colors[variant], cmap = 'coolwarm')
 
 
@@ -184,9 +182,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		#plt.ylabel("Doubling Time")
 		#plt.scatter(avg_ng_monomer,doubling_times)
 
-		plt.colorbar(orientation='horizontal')
-		#import ipdb
-		#ipdb.set_trace()
+		plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
+		import ipdb
+		ipdb.set_trace()
 
 
 		plt.tight_layout()
