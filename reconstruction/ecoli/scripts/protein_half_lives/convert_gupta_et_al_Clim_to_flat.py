@@ -28,7 +28,7 @@ RNAS_FILE = os.path.join(
     ROOT_PATH, 'reconstruction', 'ecoli', 'flat', 'rnas.tsv')
 OUTPUT_FLAT_FILE = os.path.join(
     ROOT_PATH, 'reconstruction', 'ecoli', 'flat',
-    'protein_half_lives_Clim2.tsv')
+    'protein_half_lives_Clim2_test_corrected.tsv')
 
 
 def get_symbols_to_monomer_ids():
