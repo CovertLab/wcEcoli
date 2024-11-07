@@ -105,7 +105,8 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.uptake_constraints = [np.nan] * len(self.all_external_exchange_molecules)
 
 		# Args for external pathway
-		self.externalPathwayFluxes = [np.nan] * self.n_reactions_external
+
+		self.externalPathwayFluxes = np.zeros(self.n_reactions_external)
 
 	def update(self):
 		# Compile reaction fluxes to those of base reactions
@@ -168,5 +169,6 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			unconstrained_molecules=self.unconstrained_molecules,
 			constrained_molecules=self.constrained_molecules,
 			uptake_constraints=self.uptake_constraints,
-			externalPathwayFluxes=self.externalPathwayFluxes
+
+			externalPathwayFluxes=self.externalPathwayFluxes,
 			)

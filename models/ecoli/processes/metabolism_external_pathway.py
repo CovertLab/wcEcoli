@@ -14,7 +14,6 @@ from wholecell.utils.constants import REQUEST_PRIORITY_METABOLISM
 TIME_UNITS = units.s
 COUNTS_UNITS = units.mmol
 MASS_UNITS = units.g
-TIME_UNITS = units.s
 VOLUME_UNITS = units.L
 CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 CONVERSION_UNITS = MASS_UNITS * TIME_UNITS / VOLUME_UNITS
@@ -52,7 +51,10 @@ class MetabolismExternalPathway(wholecell.processes.process.Process):
             self.molecules = self.bulkMoleculesView(self.molecule_names)
 
             enzyme_names = sum(sim_data.process.metabolism_external_pathway.enzymes.values(), [])
+
+            print('Enzyme ', enzyme_names)
             self.clean_enzyme = sorted([*set(list(filter(lambda item: item is not None, enzyme_names)))])
+            print('Clean enzyme ', self.clean_enzyme)
             self.enzymes = self.bulkMoleculesView(self.clean_enzyme)
 
             self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_METABOLISM)

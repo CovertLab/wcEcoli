@@ -29,15 +29,16 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         # Listeners used
         main_reader = TableReader(os.path.join(simOutDir, 'Main'))
         initial_time = main_reader.readAttribute('initialTime')
-        bulk_molecules_table = TableReader(os.path.join(simOutDir, 'BulkMolecules'))
 
-        # Load data
-        time = main_reader.readColumn('time') - initial_time
-        bulk_molecules = bulk_molecules_table.readColumn('counts')
 
         with open(os.path.join(simOutDir, 'BulkMolecules', 'attributes.json')) as f:
             data = json.load(f, object_pairs_hook=OrderedDict)
             data_b = data['objectNames']
+
+        # Load data
+        time = main_reader.readColumn('time') - initial_time
+        (bulk_molecules, ) = read_bulk_molecule_counts(simOutDir, molecule_names)
+
         # Molecule counts
         plt.figure()
         plt.xlabel("Time (min)")
@@ -46,6 +47,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
         for m in range(len(molecule_names)):
             plt.subplot(int(math.sqrt(len(molecule_names)))+1, int(math.sqrt(len(molecule_names)))+1, m+1)
             molecule_couts = bulk_molecules[:, data_b.index(molecule_names[m])]
+
             plt.plot(time / 60., molecule_couts)
             plt.ylabel('\n'.join(molecule_names[m].split('-')))
 

@@ -1,0 +1,2 @@
+"id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
+"NG003_RNA"	"vioC"	["vioC"]	"mRNA"	[]	"NG003"	["NG-VioC-MONOMER"]	null	[]

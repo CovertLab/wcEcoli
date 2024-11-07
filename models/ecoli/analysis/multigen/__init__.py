@@ -161,5 +161,5 @@ TAGS = {
 		"new_gene_counts.py",
 		"molecules_external_pathway.py",
 		"flux_external_metabolic_pathway.py",
-	],
+	]
 	}

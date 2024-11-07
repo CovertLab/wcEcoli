@@ -40,6 +40,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         with open(os.path.join(simOutDir, 'BulkMolecules', 'attributes.json')) as f:
             data = json.load(f, object_pairs_hook=OrderedDict)
             data_b = data['objectNames']
+        plt.figure()
+
+        # Load data
+        time = read_stacked_columns(cell_paths, 'Main', 'time')
+        bulk_molecules = read_stacked_bulk_molecules(cell_paths, molecule_names)
+
         # Molecule counts
         plt.figure()
         plt.xlabel("Time (min)")
@@ -49,6 +55,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             plt.subplot(int(math.sqrt(len(molecule_names)))+1, int(math.sqrt(len(molecule_names)))+1, m+1)
             molecule_couts = bulk_molecules[:, data_b.index(molecule_names[m])]
             plt.plot(time / 60., molecule_couts)
+            plt.plot(time / 60., bulk_molecules[0][:,m])
             plt.ylabel('\n'.join(molecule_names[m].split('-')))
 
         ### Create Plot ###

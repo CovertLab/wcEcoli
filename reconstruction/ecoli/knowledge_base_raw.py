@@ -241,7 +241,6 @@ class KnowledgeBaseEcoli(object):
 			self.list_of_dict_filenames.append(
 				os.path.join(new_gene_path, 'metabolic_reactions_external.tsv'))
 
-
 			# These files need to be joined to existing files
 			new_gene_shared_files = [
 				'genes',
@@ -249,7 +248,7 @@ class KnowledgeBaseEcoli(object):
 				'proteins',
 				'rna_half_lives',
 				'protein_half_lives_measured',
-				'metabolites'
+				'metabolites',
 				]
 
 			for f in new_gene_shared_files:
@@ -294,6 +293,7 @@ class KnowledgeBaseEcoli(object):
 
 			self.added_data = self.new_gene_added_data
 			self._join_data()
+			print('New version ')
 
 	def _load_tsv(self, dir_name, file_name):
 		path = self
