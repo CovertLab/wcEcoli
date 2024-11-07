@@ -72,6 +72,15 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			(v, (base_rxn_indexes, fba_rxn_indexes)),
 			shape=shape)
 
+		# Add fluxes for the external metabolic pathway reactions, if available
+		if sim_data.process.metabolism_external_pathway.has_external_pathway:
+			self.metabolism_external_pathway = sim.processes["MetabolismExternalPathway"]
+			self.n_reactions_external = len(sim_data.process.metabolism_external_pathway.rxn_ids)
+			self.reactionIDs_external = sim_data.process.metabolism_external_pathway.rxn_ids
+		else:
+			self.n_reactions_external = 0
+			self.reactionIDs_external = []
+
 	# Allocate memory
 	def allocate(self):
 		super(FBAResults, self).allocate()
@@ -95,6 +104,10 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.constrained_molecules = [False] * len(self.all_external_exchange_molecules)
 		self.uptake_constraints = [np.nan] * len(self.all_external_exchange_molecules)
 
+		# Args for external pathway
+
+		self.externalPathwayFluxes = np.zeros(self.n_reactions_external)
+
 	def update(self):
 		# Compile reaction fluxes to those of base reactions
 		self.base_reaction_fluxes = self.reaction_mapping_matrix.dot(
@@ -115,6 +128,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			'importExchange': 'all_external_exchange_molecules',
 			'conc_updates': 'conc_update_molecules',
 			'catalyst_counts': 'catalyst_ids',
+			'externalPathwayFluxes': 'externalPathwayReactions',
 			}
 
 		tableWriter.writeAttributes(
@@ -128,6 +142,7 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			all_external_exchange_molecules=self.all_external_exchange_molecules,
 			conc_update_molecules=self.conc_update_molecules,
 			catalyst_ids=self.metabolism.catalyst_ids,
+			externalPathwayReactions=self.reactionIDs_external,
 			subcolumns=subcolumns,
 			)
 
@@ -154,4 +169,6 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			unconstrained_molecules=self.unconstrained_molecules,
 			constrained_molecules=self.constrained_molecules,
 			uptake_constraints=self.uptake_constraints,
+
+			externalPathwayFluxes=self.externalPathwayFluxes,
 			)

@@ -27,6 +27,7 @@ ACTIVE = [
 	"fbaOptimizationProblem.py",
 	"flagella_expression.py",
 	"flux_bounds.py",
+	"flux_external_metabolic_pathway.py",
 	"glucoseMassYield.py",
 	"growthLimits.py",
 	"inter_rnap_distance.py",
@@ -40,6 +41,7 @@ ACTIVE = [
 	"metabolites.py",
 	"mrnaCounts.py",
 	"mrnaVsProteinCounts.py",
+	"molecules_external_pathway.py",
 	"new_gene_counts.py",
 	"ntpCounts.py",
 	"outer_membrane_expression.py",
@@ -192,5 +194,10 @@ TAGS = {
 		"centralCarbonMetabolismScatter.py",
 		"inter_rnap_distance.py",
 		"proteinCountsValidation.py",
+		],
+	'NEW_GENE': [
+		"new_gene_counts.py",
+		"molecules_external_pathway.py",
+		"flux_external_metabolic_pathway.py",
 		],
 	}
