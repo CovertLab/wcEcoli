@@ -1,0 +1,4 @@
+"id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
+"NG001_RNA"	"gfp1"	["gfp1"]	"mRNA"	[]	"NG001"	["NG-GFP1-MONOMER"]	null	[]
+"NG002_RNA"	"gfp2"	["gfp2"]	"mRNA"	[]	"NG002"	["NG-GFP2-MONOMER"]	null	[]
+"NG003_RNA"	"gfp3"	["gfp3"]	"mRNA"	[]	"NG003"	["NG-GFP3-MONOMER"]	null	[]

@@ -1,0 +1,4 @@
+"id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
+"NG001"	"gfp1"	["gfp1"]	0	716	"+"	["NG001_RNA"]
+"NG002"	"gfp2"	["gfp2"]	717	1433	"+"	["NG002_RNA"]
+"NG003"	"gfp3"	["gfp3"]	1434	2150	"+"	["NG003_RNA"]
