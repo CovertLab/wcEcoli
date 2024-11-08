@@ -132,7 +132,7 @@ class Translation(object):
 		# Get degradation rates from Gupta et al., 2024 carbon-limited half lives
 		Clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
-			for p in raw_data.protein_half_lives_Clim
+			for p in raw_data.protein_half_lives_Clim3
 		}
 
 		deg_rate = np.zeros(len(all_proteins))
