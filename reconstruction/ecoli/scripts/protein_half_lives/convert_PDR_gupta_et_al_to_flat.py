@@ -31,7 +31,7 @@ OUTPUT_FLAT_FILE = os.path.join(
 
 
 
-def get_half_lives(symbols_to_monomer_ids):
+def get_half_lives():
     # type: () -> Dict[str, float]
     """
     Reads protein half-lives in minutes subselected from Gupta et. al. (2024),
