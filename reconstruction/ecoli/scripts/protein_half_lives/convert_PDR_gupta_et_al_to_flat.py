@@ -2,6 +2,8 @@
 Extracts protein half-lives from a subselected set of Supplementary Table S1 of Gupta et. al. (determined by NV and MG),
 "Global Protein-Turnover Quantification in Escherichia coli Reveals Cytoplasmic Recycling under Nitrogen Limitation"
 doi: https://doi.org/10.1101/2022.08.01.502339
+NOTE:
+After the new file is generated, it should also be added to knowledge_base_raw.py
 """
 
 import io
@@ -27,7 +29,7 @@ INPUT = os.path.join(FILE_LOCATION, 'gupta_s1_protein_half_lives_monomer.tsv')
 
 OUTPUT_FLAT_FILE = os.path.join(
     ROOT_PATH, 'reconstruction', 'ecoli', 'flat',
-    'protein_half_lives_Clim3.tsv')
+    'protein_half_lives_ClimX.tsv') # change "X" to the most current update #
 
 
 
