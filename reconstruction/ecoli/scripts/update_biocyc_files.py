@@ -40,7 +40,7 @@ def update_biocyc_files(preview=False):
 
     # Get files from BioCyc webservices
     for file_id in BIOCYC_FILE_IDS:
-        response = requests.get(base_url + file_id)
+        response = requests.get(base_url + file_id, auth=('<USERNAME>', '<PASSWORD>')) # TODO: fill this in when running script, do not commit to GitHub
         response.raise_for_status()
 
         file_id_to_text[file_id] = response.text
