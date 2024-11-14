@@ -89,15 +89,280 @@ def fitSimData_1(raw_data, **kwargs):
 	# and loading sim_data and cell_specs to skip certain functions while doing
 	# development for faster testing and iteration of later functions that
 	# might not need earlier functions to be rerun each time.
+	print('Initialise is run now ....')
 	sim_data, cell_specs = initialize(sim_data, cell_specs, raw_data=raw_data, **kwargs)
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	index_m = np.where(sim_data.process.translation.monomer_data['id'] == 'RPOE-MONOMER[c]')
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ', sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Input adjustment is run now ....')
 	sim_data, cell_specs = input_adjustments(sim_data, cell_specs, **kwargs)
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	index_m = np.where(sim_data.process.translation.monomer_data['id'] == 'RPOE-MONOMER[c]')
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Basal specs is run now ....')
 	sim_data, cell_specs = basal_specs(sim_data, cell_specs, **kwargs)
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	index_m = np.where(sim_data.process.translation.monomer_data['id'] == 'RPOE-MONOMER[c]')
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('TF conditions specs is run now ....')
 	sim_data, cell_specs = tf_condition_specs(sim_data, cell_specs, **kwargs)
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Fit conditions is run now...')
 	sim_data, cell_specs = fit_condition(sim_data, cell_specs, **kwargs)
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Promoter binding is run now ....')
 	sim_data, cell_specs = promoter_binding(sim_data, cell_specs, **kwargs)
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Adjust promoters is run now...')
 	sim_data, cell_specs = adjust_promoters(sim_data, cell_specs, **kwargs)
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Set conditions is run now ..')
 	sim_data, cell_specs = set_conditions(sim_data, cell_specs, **kwargs)
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
+
+	print('Final ajustments is run now...')
 	sim_data, cell_specs = final_adjustments(sim_data, cell_specs, **kwargs)
+	print('RNA synth prob ', sim_data.process.transcription.rna_synth_prob['basal'][index])
+	print('RNA expression prob  ', sim_data.process.transcription.rna_expression['basal'][index])
+	try:
+		print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	except:
+		pass
+	try:
+		print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
+	except:
+		pass
+	try:
+		print('RNA attenuation_basal_prob_adjustments ',
+			  sim_data.process.transcription.attenuation_basal_prob_adjustments)
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation basal prob  ', sim_data.process.transcription_regulation.basal_prob[index])
+	except:
+		pass
+	try:
+		print('RNA transcription_regulation delta prob ', sim_data.process.transcription_regulation.delta_prob)
+	except:
+		pass
+	try:
+		print('translation efficienciency  ', sim_data.process.translation.translation_efficiencies_by_monomer[index_m])
+	except:
+		pass
 
 	if sim_data is None:
 		raise ValueError('sim_data is not specified.  Check that the'
@@ -373,10 +638,22 @@ def set_conditions(sim_data, cell_specs, **kwargs):
 def final_adjustments(sim_data, cell_specs, **kwargs):
 	# Adjust expression for RNA attenuation
 	sim_data.process.transcription.calculate_attenuation(sim_data, cell_specs)
+	print('After attenuation')
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
 
 	# Adjust ppGpp regulated expression after conditions have been fit for physiological constraints
 	sim_data.process.transcription.adjust_polymerizing_ppgpp_expression(sim_data)
+	print('After adjust_polymerizing_ppgpp_expression')
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
 	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
+	print('After adjust_ppgpp_expression_for_tfs')
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
 
 	# Set supply constants for amino acids based on condition supply requirements
 	average_basal_container = create_bulk_container(sim_data, n_seeds=5)
@@ -391,7 +668,10 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 
 	# Set ppGpp reaction parameters
 	sim_data.process.transcription.set_ppgpp_kinetics_parameters(average_basal_container, sim_data.constants)
-
+	print('After set_ppgpp_kinetics_parameters')
+	index = np.where(sim_data.process.transcription.rna_data['id'] == 'EG11897_RNA[c]')
+	print('RNA expression free  ', sim_data.process.transcription.exp_free[index])
+	print('RNA expression ppgpp  ', sim_data.process.transcription.exp_ppgpp[index])
 	return sim_data, cell_specs
 
 def apply_updates(func, args, labels, dest, cpus):
