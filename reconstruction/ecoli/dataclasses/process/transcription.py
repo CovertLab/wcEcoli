@@ -1838,8 +1838,11 @@ class Transcription(object):
 
 		# Calculate the required probability to match expression without ppGpp
 		new_prob = (normalize(self.rna_expression[condition] * factor) + delta_no_ppgpp) / (1 + delta_with_ppgpp)
+		new_prob_copy1 = new_prob.copy()
 		new_prob[new_prob < 0] = old_prob[new_prob < 0]
+		new_prob_copy2 = new_prob.copy()
 		new_prob = normalize(new_prob)
+		new_prob_copy3 = new_prob.copy()
 
 		# Determine adjustments to the current ppGpp expression to scale
 		# to the expected expression
@@ -1847,10 +1850,15 @@ class Transcription(object):
 			adjustment = new_prob / old_prob
 		adjustment[~np.isfinite(adjustment)] = 1
 
+		exp_free_copy = self.exp_free.copy()
+
 		# Scale free and bound expression and renormalize ppGpp regulated expression
 		self.exp_free *= adjustment
 		self.exp_ppgpp *= adjustment
 		self._normalize_ppgpp_expression()
+
+		import ipdb
+		ipdb.set_trace()
 
 	def _normalize_ppgpp_expression(self):
 		"""
