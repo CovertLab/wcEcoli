@@ -2,7 +2,7 @@
 # Database: EcoCyc
 # Version: 29.0
 # Orthologs: true
-# Date and time generated: November 12, 2024, 14:49:22
+# Date and time generated: November 18, 2024, 15:02:16
 "id"	"stoichiometry"	"common_name"	"cofactors"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null	{"MG+2": 1}
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"	{"LIPOIC-ACID": 1, "THIAMINE-PYROPHOSPHATE": 2, "FAD": 3, "MG+2": 2}
@@ -156,8 +156,8 @@
 "CITTRANS-CPLX_RXN"	{"CITTRANS-CPLX": 1, "CITTRANS-MONOMER": -6}	"citrate lyase, citrate-acyl carrier protein transferase component"	{}
 "COADTRI-CPLX_RXN"	{"COADTRI-CPLX": 1, "PANTEPADENYLYLTRAN-MONOMER": -6}	null	{"MG+2": 1}
 "COBU-CPLX_RXN"	{"COBU-CPLX": 1, "COBU-MONOMER": -2}	null	{}
-"CPLX-153_RXN"	{"CPLX-153": 1, "ASCF-MONOMER": -2}	"cryptic &beta;-glucoside specific PTS enzyme II"	{}
-"CPLX-154_RXN"	{"CPLX-154": 1, "BGLF-MONOMER": -2}	"cryptic &beta;-glucoside specific PTS enzyme II / BglG kinase / BglG phosphatase"	{}
+"CPLX-153_RXN"	{"CPLX-153": 1, "ASCF-MONOMER": -2}	"&beta;-glucoside specific PTS enzyme II"	{}
+"CPLX-154_RXN"	{"CPLX-154": 1, "BGLF-MONOMER": -2}	"&beta;-glucoside specific PTS enzyme II / BglG kinase / BglG phosphatase"	{}
 "CPLX-155_RXN"	{"CPLX-155": 1, "CELC-MONOMER": -1, "CELB-MONOMER": -1, "CELA-MONOMER": -1}	"<I>N,N'</I>-diacetylchitobiose-specific PTS enzyme II"	{}
 "CPLX-156_RXN"	{"CPLX-156": 1, "CMTB-MONOMER": -1, "CMTA-MONOMER": -1}	"mannitol-specific PTS enzyme II CmtBA"	{}
 "CPLX-157_RXN"	{"CPLX-157": 1, "PTSG-MONOMER": -2, "CRR-MONOMER": -1}	"glucose-specific PTS enzyme II"	{}
@@ -169,7 +169,7 @@
 "CPLX-167_RXN"	{"CPLX-167": 1, "NAGE-MONOMER": -2}	"N-acetylglucosamine-specific PTS enzyme II"	{}
 "CPLX-168_RXN"	{"CPLX-168": 1, "TREB-MONOMER": -2, "CRR-MONOMER": -1}	"trehalose-specific PTS enzyme II"	{}
 "CPLX-169_RXN"	{"CPLX-169": 1, "G8210-MONOMER": -1, "GUTB-MONOMER": -1, "GUTA-MONOMER": -1}	"sorbitol-specific PTS enzyme II"	{}
-"CPLX-170_RXN"	{"CPLX-170": 1, "AGAB-MONOMER": -1, "AGAC-MONOMER": -1, "AGAD-MONOMER": -1}	"cryptic galactosamine-specific PTS enzyme II"	{}
+"CPLX-170_RXN"	{"CPLX-170": 1, "AGAB-MONOMER": -1, "AGAC-MONOMER": -1, "AGAD-MONOMER": -1}	"galactosamine-specific PTS enzyme II"	{}
 "CPLX-171_RXN"	{"CPLX-171": 1, "G6277-MONOMER": -2}	null	{}
 "CPLX-3942_RXN"	{"CPLX-3942": 1, "G7712-MONOMER": -2, "G7713-MONOMER": -2, "G7714-MONOMER": -2}	"sulfurtransferase complex TusBCD"	{}
 "CPLX-3945_RXN"	{"CPLX-3945": 1, "G6544-MONOMER": -9, "G6543-MONOMER": -9}	null	{}
@@ -211,6 +211,7 @@
 "CPLX0-12207_RXN"	{"CPLX0-12207": 1, "G6289-MONOMER": -1, "G6288-MONOMER": -2, "G6287-MONOMER": -2}	null	{}
 "CPLX0-12216_RXN"	{"CPLX0-12216": 1, "EG12048-MONOMER": -2}	null	{}
 "CPLX0-1221_RXN"	{"CPLX0-1221": 1, "G7740-MONOMER": -2}	"ADP-sugar diphosphatase NudE"	{"MG+2": 1}
+"CPLX0-12269_RXN"	{"CPLX0-12269": 1, "SECA": null, "SECE-G-Y-CPLX": null}	"SecYEG-SecA complex"	{}
 "CPLX0-1241_RXN"	{"CPLX0-1241": 1, "EG11249-MONOMER": -2}	"MazF toxin of the MazF-MazE toxin-antitoxin system that exhibits ribonuclease activity"	{}
 "CPLX0-1242_RXN"	{"CPLX0-1242": 1, "CPLX0-1241": -2, "CPLX0-841": -1}	"MazE-MazF antitoxin/toxin complex / DNA-binding transcriptional repressor"	{}
 "CPLX0-1261_RXN"	{"CPLX0-1261": 1, "TRANSKETOII-MONOMER": null}	"transketolase 2"	{}

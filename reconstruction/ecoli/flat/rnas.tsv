@@ -2,7 +2,7 @@
 # Database: EcoCyc
 # Version: 29.0
 # Orthologs: true
-# Date and time generated: November 12, 2024, 14:52:28
+# Date and time generated: November 18, 2024, 15:02:56
 "id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
 "EG10001_RNA"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	"mRNA"	[]	"EG10001"	["ALARACEBIOSYN-MONOMER"]	null	[]
 "EG10002_RNA"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	"mRNA"	[]	"EG10002"	["MODB-MONOMER"]	null	[]

@@ -2,7 +2,7 @@
 # Database: EcoCyc
 # Version: 29.0
 # Orthologs: true
-# Date and time generated: November 12, 2024, 14:52:47
+# Date and time generated: November 18, 2024, 15:02:58
 "id"	"common_name"	"genes"	"left_end_pos"	"right_end_pos"	"direction"	"evidence"
 "TU-8381"	"spy"	["G6939"]	1825057	1825688	"-"	["EV-EXP-IDA-TRANSCRIPT-LEN-DETERMINATION", "EV-EXP-IDA-BOUNDARIES-DEFINED"]
 "TU-8382"	"ycaC"	["EG11241"]	944931	945557	"-"	["EV-COMP-AINF-SINGLE-DIRECTON"]
@@ -153,7 +153,7 @@
 "TU0-12859"	"yafY-ykfBF-yafX-ykfGH-yafW-ykfI"	["G6126", "G6125", "G6124", "G6123", "G6122", "G0-10432", "G6121", "G6120"]	263328	266553	"-"	["EV-COMP-AINF"]
 "TU0-12860"	"ykfA-yafZ"	["G6128", "G6127"]	267184	268960	"-"	["EV-COMP-AINF"]
 "TU0-12861"	"perR"	["G6129"]	269289	270182	"-"	["EV-COMP-AINF"]
-"TU0-12862"	null	["G6132", "G6131", "G6130"]	270226	272190	"+"	["EV-COMP-AINF"]
+"TU0-12862"	null	["G6131", "G6130"]	270226	272190	"+"	["EV-COMP-AINF"]
 "TU0-12863"	"ykfC"	["G6133"]	272847	273992	"+"	["EV-COMP-AINF"]
 "TU0-12864"	"mmuPM"	["G6136", "G6135"]	275325	277647	"+"	["EV-COMP-AINF"]
 "TU0-12865"	"insA2B2AB2-afuBC"	["G6139", "G6138", "G0-10537", "G6137", "EG12340"]	277756	279875	"-"	["EV-COMP-AINF"]

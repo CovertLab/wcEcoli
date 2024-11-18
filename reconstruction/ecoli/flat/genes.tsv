@@ -2,7 +2,7 @@
 # Database: EcoCyc
 # Version: 29.0
 # Orthologs: true
-# Date and time generated: November 12, 2024, 14:47:03
+# Date and time generated: November 18, 2024, 15:02:21
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "EG10001"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
 "EG10002"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	795862	796551	"+"	["EG10002_RNA"]

@@ -2,7 +2,7 @@
 # Database: EcoCyc
 # Version: 29.0
 # Orthologs: true
-# Date and time generated: November 12, 2024, 14:49:59
+# Date and time generated: November 18, 2024, 15:02:19
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
