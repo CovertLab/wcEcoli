@@ -70,6 +70,7 @@ LIST_OF_DICT_FILENAMES = [
 	"transcription_factors.tsv",
 	# "transcription_units.tsv",  # special cased in the constructor
 	"transcription_units_added.tsv",
+	"transcription_units_modified.tsv",
 	"transcription_units_removed.tsv",
 	"transcriptional_attenuation.tsv",
 	"transcriptional_attenuation_removed.tsv",
@@ -206,9 +207,12 @@ class KnowledgeBaseEcoli(object):
 			else:
 				self.removed_data.update({
 					'transcription_units': 'transcription_units_removed',
-				})
+					})
 				self.added_data.update({
 					'transcription_units': 'transcription_units_added',
+					})
+				self.modified_data.update({
+					'transcription_units': 'transcription_units_modified',
 					})
 
 		if remove_rrff:
