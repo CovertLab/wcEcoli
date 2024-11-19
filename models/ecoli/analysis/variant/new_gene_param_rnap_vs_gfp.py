@@ -26,7 +26,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 16
+IGNORE_FIRST_N_GENS = 1
 
 exclude_timeout_cells = 0
 
@@ -137,12 +137,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				uniqueMoleculeCounts = TableReader(
 					os.path.join(simOutDir, "UniqueMoleculeCounts"))
-				ribosome_index = uniqueMoleculeCounts.readAttribute(
-					"uniqueMoleculeIds").index('active_ribosome')
-
-				ribosome_counts = read_stacked_columns(
-					all_cells, 'UniqueMoleculeCounts',
-					'uniqueMoleculeCounts')[:, ribosome_index]
 
 				active_rnap_index = uniqueMoleculeCounts.readAttribute(
 					"uniqueMoleculeIds").index('active_RNAP')
@@ -172,7 +166,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 			active_rnap_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts')[:, active_rnap_index]
+				'uniqueMoleculeCounts', fun=lambda x: np.mean(x[:,active_rnap_index],axis=0))
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
 			active_rnap.append(np.mean(active_rnap_counts[exclude_timeout_cell_mask]))
