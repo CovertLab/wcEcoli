@@ -178,12 +178,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		#plt.xlabel("Protein Counts")
 		#plt.ylabel("Doubling Time")
-		#plt.scatter(avg_ng_monomer,doubling_times)
+		plt.scatter(avg_ng_monomer,doubling_times)
 
-		plt.scatter(avg_ng_monomer, doubling_times, c=colors,
-					cmap='coolwarm')
+		#plt.scatter(avg_ng_monomer, doubling_times, c=colors,cmap='coolwarm')
 
-		plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
+		#plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
 
 
 
