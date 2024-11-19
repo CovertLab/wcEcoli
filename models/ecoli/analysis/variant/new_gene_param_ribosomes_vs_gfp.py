@@ -165,7 +165,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 			ribosome_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts')[:, ribosome_index]
+				'uniqueMoleculeCounts', fun=lambda x: np.mean(x[:,ribosome_index],axis=0))
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
 			ribosome_count.append(np.mean(ribosome_counts[exclude_timeout_cell_mask]))
