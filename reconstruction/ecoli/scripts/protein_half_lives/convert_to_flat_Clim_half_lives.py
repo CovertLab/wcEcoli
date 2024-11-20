@@ -9,6 +9,13 @@ translation.py within the model.
 NOTE:
 After the new flat file is generated, it must also be added to the list in
 knowledge_base_raw.py in order for it to be used in the model.
+
+NOTE: This script uses the EcoCyc monomer IDs that correspond to the UniProt IDs
+provided in the Gupta et. al. (2024) dataset. The EcoCyc monomer IDs may update
+over time when the model is updated with a new version of EcoCyc, so it is
+important to ensure that the EcoCyc monomer IDs are up-to-date from time to time
+and generating new EcoCyc monomer ID match files as needed by using the script:
+get_current_EcoCyc_monomer_IDs_for_Clim_data.py (in the Gupta_et_al_Clim_data folder).
 """
 
 import io
