@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECT_PDR_COMBO = 0 # select the protein degradation rate combo to use
+SELECT_PDR_COMBO = 2 # select the protein degradation rate combo to use
 
 class Translation(object):
 	""" Translation """
@@ -123,7 +123,7 @@ class Translation(object):
 			for p in raw_data.protein_half_lives_measured
 			}
 
-		# Get degradation rates from Nagar et al., 2022 pulsed-SILAC half lives
+		# Get degradation rates from Nagar et al., 2021 pulsed-SILAC half lives
 		pulsed_silac_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
 			for p in raw_data.protein_half_lives_pulsed_silac
@@ -132,7 +132,7 @@ class Translation(object):
 		# Get degradation rates from Gupta et al., 2024 carbon-limited half lives
 		Clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
-			for p in raw_data.protein_half_lives_Clim3
+			for p in raw_data.protein_half_lives_Clim3a
 		}
 
 		deg_rate = np.zeros(len(all_proteins))
@@ -158,7 +158,7 @@ class Translation(object):
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
 		# Uses measured rates from Macklin et al., 2020 first, followed by
-		# pulsed silac rates from Nagar et al., 2022, and finally N-end rule
+		# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
 		# from Tobias et al., 1991
 		if SELECT_PDR_COMBO == 1:
 			for i, protein in enumerate(all_proteins):
