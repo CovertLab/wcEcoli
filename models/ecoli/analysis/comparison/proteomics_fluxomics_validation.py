@@ -30,6 +30,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# manual/analysisComparison.py can compare any two sim dirs.
 		# sim_data1.operons_on and sim_data2.operons_on indicate operons on/off.
 
+
+		reference_sim_name = os.path.basename(os.path.normpath(reference_sim_dir))
+		input_sim_name = os.path.basename(os.path.normpath(input_sim_dir))
+
+
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
@@ -104,7 +109,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			# Get flux for each reaction at each timestep
 			sim_fluxes = (
 				(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-				* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
+				* (read_stacked_columns(cell_paths, 'FBAResults',
+										'base_reaction_fluxes',
+										ignore_exception=True) / conversion_coeffs)
 				).asNumber(units.mmol / units.g / units.h)
 
 			# Add up all fluxes that contribute to each value in validation data
@@ -152,7 +159,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		plt.figure(figsize=(8, 8.4))
 
-		def plot_protein_counts(ax, val, sim, pearson):
+		def plot_protein_counts(ax, val, sim, pearson, name):
 			ax.plot([0, 6], [0, 6], ls='--', lw=1, c='k', alpha=0.05)
 			ax.scatter(
 				np.log10(val + 1),
@@ -161,7 +168,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				)
 			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.2f}")
 			ax.set_xlabel("log10(Schmidt 2015 protein counts + 1)")
-			ax.set_ylabel("log10(Mean simulated protein counts + 1)")
+			ax.set_ylabel(f"log10(Mean {name} simulation protein counts + 1)")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
@@ -171,10 +178,14 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax1 = plt.subplot(2, 2, 1)
 		ax2 = plt.subplot(2, 2, 2)
-		plot_protein_counts(ax1, val1_monomer_counts, sim1_monomer_counts, protein_pearson1)
-		plot_protein_counts(ax2, val2_monomer_counts, sim2_monomer_counts, protein_pearson2)
+		plot_protein_counts(
+			ax1, val1_monomer_counts, sim1_monomer_counts, protein_pearson1,
+			reference_sim_name)
+		plot_protein_counts(
+			ax2, val2_monomer_counts, sim2_monomer_counts, protein_pearson2,
+			input_sim_name)
 
-		def plot_flux(ax, val, sim, val_std, sim_std, pearson):
+		def plot_flux(ax, val, sim, val_std, sim_std, pearson, name):
 			ax.plot([-15, 25], [-15, 25], ls='--', lw=1, c='k', alpha=0.05)
 			ax.errorbar(
 				val, sim,
@@ -182,7 +193,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				c='#555555', ms=4, fmt="o", ecolor="#cccccc")
 			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.2f}, p = {pearson[1]:.2e}")
 			ax.set_xlabel("Toya 2010 flux [mmol/g/hr]")
-			ax.set_ylabel("Mean simulated flux [mmol/g/hr]")
+			ax.set_ylabel(f"Mean {name} simulation flux [mmol/g/hr]")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
@@ -193,11 +204,17 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax3 = plt.subplot(2, 2, 3)
 		ax4 = plt.subplot(2, 2, 4)
-		plot_flux(ax3, val_flux_mean, sim1_flux_mean, val_flux_std, sim1_flux_std, flux_pearson1)
-		plot_flux(ax4, val_flux_mean, sim2_flux_mean, val_flux_std, sim2_flux_std, flux_pearson2)
+		plot_flux(
+			ax3, val_flux_mean, sim1_flux_mean, val_flux_std, sim1_flux_std,
+			flux_pearson1, reference_sim_name)
+		plot_flux(
+			ax4, val_flux_mean, sim2_flux_mean, val_flux_std, sim2_flux_std,
+			flux_pearson2, input_sim_name)
 
+		out_file_name = \
+			f"{plotOutFileName}_{reference_sim_name}_vs_{input_sim_name}"
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, out_file_name, metadata)
 		plt.close('all')
 
 	def setup(self, inputDir: str) -> Tuple[
