@@ -62,6 +62,7 @@ LIST_OF_DICT_FILENAMES = [
 	"protein_half_lives_pulsed_silac.tsv",
 	"protein_half_lives_Clim.tsv",
 	"protein_half_lives_Clim3.tsv",
+	"protein_half_lives_Clim3a.tsv",
 	"proteins.tsv",
 	"relative_metabolite_concentrations.tsv",
 	"rna_half_lives.tsv",
