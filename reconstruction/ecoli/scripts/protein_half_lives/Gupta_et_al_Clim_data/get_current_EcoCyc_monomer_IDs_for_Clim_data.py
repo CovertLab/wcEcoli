@@ -31,9 +31,9 @@ file_to_convert = '41467_2024_49920_MOESM4_ESM_ST1.xlsx'
 # CHANGE THIS TO THE CURRENT DATE (in the form of DDMMYYYY)
 date = '11202024'
 # CHANGE THIS TO YOUR ECOCYC USERNAME
-username = 'miagrahn@stanford.edu' # typically a user's email address
+username = '' # typically a user's email address
 # CHANGE THIS TO YOUR ECOCYC PASSWORD
-password = 'RvKrA.%yUr'
+password = ''
 
 # END OF USER INPUTS
 
