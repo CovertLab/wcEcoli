@@ -226,7 +226,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		save_file(
 			plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
 
-
 		# Load tables and attributes for proteins
 		monomer_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
@@ -369,7 +368,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Calculate flux in units of mmol/g DCW/h
 		fluxes = (
 			(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-			* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
+			* (read_stacked_columns(cell_paths,
+			'FBAResults', 'base_reaction_fluxes',
+			ignore_exception=True) / conversion_coeffs)
 			).asNumber(units.mmol / units.g / units.h)
 
 		# Calculate derived flux values
@@ -443,8 +444,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ribosomal_monomer_mass = ribosomal_monomer_counts * mw_ribosomal_proteins
 		total_ribosomal_monomer_mass = ribosomal_monomer_mass.sum(axis = 1)
 		total_ribosomal_monomer_mass_fraction = total_ribosomal_monomer_mass / protein_mass_over_time
-
-		# enzyme_monomer_counts = monomer_counts[:, enzyme_proteins_indexes]
 
 		# Calculate derived cell values
 		cell_mass_avg = cell_mass.mean(axis = 0)
