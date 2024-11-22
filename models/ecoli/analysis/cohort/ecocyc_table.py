@@ -226,16 +226,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		save_file(
 			plotOutDir, f'wcm_rnas_{media_id}.tsv', columns, values)
 
-		# Build dictionary for metadata
-		ecocyc_metadata = {
-			'git_hash': metadata['git_hash'],
-			'n_ignored_generations': IGNORE_FIRST_N_GENS,
-			'n_total_generations': metadata['total_gens'],
-			'n_seeds': metadata['total_init_sims'],
-			'n_cells': len(cell_paths),
-			'n_timesteps': len(counts_to_molar),
-			}
-
 		# Load tables and attributes for proteins
 		monomer_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
@@ -296,8 +286,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			r, _ = pearsonr(
 				monomer_counts_avg[protein_val_exists],
 				protein_counts_val[protein_val_exists])
-
-			ecocyc_metadata['protein_validation_r_squared'] = r ** 2
 
 		save_file(
 			plotOutDir, f'wcm_monomers_{media_id}.tsv', columns, values)
@@ -380,7 +368,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Calculate flux in units of mmol/g DCW/h
 		fluxes = (
 			(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-			* (read_stacked_columns(cell_paths, 'FBAResults', 'base_reaction_fluxes', ignore_exception=True) / conversion_coeffs)
+			* (read_stacked_columns(cell_paths,
+			'FBAResults', 'base_reaction_fluxes',
+			ignore_exception=True) / conversion_coeffs)
 			).asNumber(units.mmol / units.g / units.h)
 
 		# Calculate derived flux values
@@ -399,11 +389,178 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		save_file(
 			plotOutDir, f'wcm_metabolic_reactions_{media_id}.tsv', columns, values)
 
+		# Cell level properties for WCM overview page
+		# Load tables and attributes
+		ribosomal_proteins = sim_data.molecule_groups.ribosomal_proteins
+		mw_ribosomal_proteins = (
+			sim_data.getter.get_masses(ribosomal_proteins).asNumber(units.fg / units.count))
+		ribosomal_protein_indexes = [
+			monomer_ids.index(ribosomal_protein) for ribosomal_protein in ribosomal_proteins]
+
+		# Read columns
+		cell_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'cellMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		dry_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'dryMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		protein_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'proteinMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		initial_rna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'rnaMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		doubling_time = read_stacked_columns(
+			cell_paths, 'Main', 'time', fun=lambda x: (x[-1] - x[0]) / 60.,
+			ignore_exception=True)
+		time_step_length = read_stacked_columns(
+			cell_paths, 'Main', 'timeStepSec', ignore_exception=True)
+		cell_volume = read_stacked_columns(
+			cell_paths, 'Mass', 'cellVolume', fun=lambda x: x[0],
+			ignore_exception=True)
+		membrane_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'membrane_mass', fun=lambda x: x[0],
+			ignore_exception=True)
+		dna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'dnaMass', fun=lambda x: x[0],
+			ignore_exception=True)
+		small_molecule_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'smallMoleculeMass', fun=lambda x: x[0],
+			ignore_exception=True)
+
+		rna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'rnaMass', ignore_exception=True)
+		mrna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'mRnaMass', ignore_exception=True)
+		rrna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'rRnaMass', ignore_exception=True)
+		trna_mass = read_stacked_columns(
+			cell_paths, 'Mass', 'tRnaMass', ignore_exception=True)
+
+		protein_mass_over_time = read_stacked_columns(
+			cell_paths, 'Mass', 'proteinMass',
+			remove_first=True, ignore_exception=True).squeeze()
+		ribosomal_monomer_counts = monomer_counts[:, ribosomal_protein_indexes]
+		ribosomal_monomer_mass = ribosomal_monomer_counts * mw_ribosomal_proteins
+		total_ribosomal_monomer_mass = ribosomal_monomer_mass.sum(axis = 1)
+		total_ribosomal_monomer_mass_fraction = total_ribosomal_monomer_mass / protein_mass_over_time
+
+		# Calculate derived cell values
+		cell_mass_avg = cell_mass.mean(axis = 0)
+		cell_mass_std = cell_mass.std(axis = 0)
+		dry_mass_avg = dry_mass.mean(axis = 0)
+		dry_mass_std = dry_mass.std(axis = 0)
+		protein_mass_avg = protein_mass.mean(axis = 0)
+		protein_mass_std = protein_mass.std(axis = 0)
+		initial_rna_mass_avg = initial_rna_mass.mean(axis = 0)
+		initial_rna_mass_std = initial_rna_mass.std(axis = 0)
+		doubling_time_avg = doubling_time.mean(axis = 0)
+		doubling_time_std = doubling_time.std(axis = 0)
+		time_step_length_avg = time_step_length.mean(axis = 0)
+		time_step_length_std = time_step_length.std(axis = 0)
+		cell_volume_avg = cell_volume.mean(axis = 0)
+		cell_volume_std = cell_volume.std(axis = 0)
+		membrane_mass_avg = membrane_mass.mean(axis = 0)
+		membrane_mass_std = membrane_mass.std(axis = 0)
+		dna_mass_avg = dna_mass.mean(axis = 0)
+		dna_mass_std = dna_mass.std(axis = 0)
+		small_molecule_mass_avg = small_molecule_mass.mean(axis = 0)
+		small_molecule_mass_std = small_molecule_mass.std(axis = 0)
+
+		mrna_fraction = mrna_mass / rna_mass
+		mrna_fraction_avg = mrna_fraction.mean(axis = 0)
+		mrna_fraction_std = mrna_fraction.std(axis = 0)
+
+		rrna_fraction = rrna_mass / rna_mass
+		rrna_fraction_avg = rrna_fraction.mean(axis = 0)
+		rrna_fraction_std = rrna_fraction.std(axis = 0)
+
+		trna_fraction = trna_mass / rna_mass
+		trna_fraction_avg = trna_fraction.mean(axis = 0)
+		trna_fraction_std = trna_fraction.std(axis = 0)
+
+		ribosomal_protein_mass_fraction_avg = total_ribosomal_monomer_mass_fraction.mean()
+		ribosomal_protein_mass_fraction_std = total_ribosomal_monomer_mass_fraction.std()
+
+		# Build dictionary for metadata
+		ecocyc_metadata = {
+			'git_hash': metadata['git_hash'], ### TODO: ADD A DOC
+			'git_hash_doc': 'A string',
+			'n_ignored_generations': IGNORE_FIRST_N_GENS,
+			'n_ignored_generations_doc': 'An integer',
+			'n_total_generations': metadata['total_gens'],
+			'n_total_generations_doc': 'An integer',
+			'n_seeds': metadata['total_init_sims'],
+			'n_seeds_doc': 'An integer',
+			'n_cells': len(cell_paths),
+			'n_cells_doc': 'An integer',
+			'n_timesteps': len(counts_to_molar),
+			'n_timesteps_doc': 'An integer',
+			'cell_mass_avg': cell_mass_avg.item(),
+			'cell_mass_avg_doc': 'A floating point number in fg units',
+			'cell_mass_std': cell_mass_std.item(),
+			'cell_mass_std_doc': 'A floating point number in fg units',
+			'dry_mass_avg': dry_mass_avg.item(),
+			'dry_mass_avg_doc': 'A floating point number in fg units',
+			'dry_mass_std': dry_mass_std.item(),
+			'dry_mass_std_doc': 'A floating point number in fg units',
+			'protein_mass_avg': protein_mass_avg.item(),
+			'protein_mass_avg_doc': 'A floating point number in fg units',
+			'protein_mass_std': protein_mass_std.item(),
+			'protein_mass_std_doc': 'A floating point number in fg units',
+			'rna_mass_avg': initial_rna_mass_avg.item(),
+			'rna_mass_avg_doc': 'A floating point number in fg units',
+			'rna_mass_std': initial_rna_mass_std.item(),
+			'rna_mass_std_doc': 'A floating point number in fg units',
+			'doubling_time_avg': doubling_time_avg.item(),
+			'doubling_time_avg_doc': 'A floating point number in min units',
+			'doubling_time_std': doubling_time_std.item(),
+			'doubling_time_std_doc': 'A floating point number in min units',
+			'time_step_length_avg': time_step_length_avg.item(),
+			'time_step_length_avg_doc': 'A floating point number in sec units',
+			'time_step_length_std': time_step_length_std.item(),
+			'time_step_length_std_doc': 'A floating point number in sec units',
+			'mrna_mass_to_total_rna_mass_avg': mrna_fraction_avg.item(),
+			'mrna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
+			'mrna_mass_to_total_rna_mass_std': mrna_fraction_std.item(),
+			'mrna_mass_to_total_rna_mass_std_doc': 'A floating point number',
+			'rrna_mass_to_total_rna_mass_avg': rrna_fraction_avg.item(),
+			'rrna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
+			'rrna_mass_to_total_rna_mass_std': rrna_fraction_std.item(),
+			'rrna_mass_to_total_rna_mass_std_doc': 'A floating point number',
+			'trna_mass_to_total_rna_mass_avg': trna_fraction_avg.item(),
+			'trna_mass_to_total_rna_mass_avg_doc': 'A floating point number',
+			'trna_mass_to_total_rna_mass_std': trna_fraction_std.item(),
+			'trna_mass_to_total_rna_mass_std_doc': 'A floating point number',
+			'cell_volume_avg': cell_volume_avg.item(),
+			'cell_volume_avg_doc': 'A floating point number in fL units',
+			'cell_volume_std': cell_volume_std.item(),
+			'cell_volume_std_doc': 'A floating point number in fL units',
+			'membrane_mass_avg': membrane_mass_avg.item(),
+			'membrane_mass_avg_doc': 'A floating point number in fg units',
+			'membrane_mass_std': membrane_mass_std.item(),
+			'membrane_mass_std_doc': 'A floating point number in fg units',
+			'dna_mass_avg': dna_mass_avg.item(),
+			'dna_mass_avg_doc': 'A floating point number in fg units',
+			'dna_mass_std': dna_mass_std.item(),
+			'dna_mass_std_doc': 'A floating point number in fg units',
+			'small_molecule_mass_avg': small_molecule_mass_avg.item(),
+			'small_molecule_mass_avg_doc': 'A floating point number in fg units',
+			'small_molecule_mass_std': small_molecule_mass_std.item(),
+			'small_molecule_mass_std_doc': 'A floating point number in fg units',
+			'ribosomal_protein_mass_fraction_avg': ribosomal_protein_mass_fraction_avg.item(),
+			'ribosomal_protein_mass_fraction_avg_doc': 'A floating point number',
+			'ribosomal_protein_mass_fraction_std': ribosomal_protein_mass_fraction_std.item(),
+			'ribosomal_protein_mass_fraction_std_doc': 'A floating point number',
+			}
+
+		if media_name == 'minimal':
+			ecocyc_metadata['protein_validation_r_squared'] = r ** 2
+
 		metadata_file = os.path.join(plotOutDir, f'wcm_metadata_{media_id}.json')
 		with open(metadata_file, 'w') as f:
 			print(f'Saving data to {metadata_file}')
 			json.dump(ecocyc_metadata, f, indent=4)
-
 
 if __name__ == '__main__':
 	Plot().cli()
