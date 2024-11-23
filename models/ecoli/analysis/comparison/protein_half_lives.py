@@ -55,38 +55,73 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 					  ap2_dir_name: dict(zip(protein_ids_2, half_lives_2))}
 
 
-		# Calculate positions for each category
-		def calculate_positions(x, y, jitter=0.2):
-			n = len(y)
-			positions = np.linspace(x - jitter, x + jitter, n)
-			np.random.shuffle(positions)
-			return positions
 
 		plt.figure(figsize=(8, 6))
 
+		def plot_distributions(ax, categories):
 
-		for i,category in enumerate(categories):
-			values = categories[category].values()
-			x_positions = calculate_positions(i, values)
-			plt.scatter(values, x_positions, label=category)
+			# Calculate positions for each category
+			def calculate_positions(x, y, jitter=0.2):
+				n = len(y)
+				positions = np.linspace(x - jitter, x + jitter, n)
+				np.random.shuffle(positions)
+				return positions
 
+			for i,category in enumerate(categories):
+				values = categories[category].values()
+				x_positions = calculate_positions(i, values)
+				ax.scatter(values, x_positions, label=category)
 
-		plt.ylabel('ParCa')
-		plt.xlabel('Half life (min)')
-		plt.title('Distribution of protein half lives')
-		plt.yticks(range(len(categories)), categories.keys())
+			ax.set_ylabel('ParCa')
+			ax.set_xlabel('Half life (min)')
+			ax.set_title('Distribution of protein half lives')
+			ax.set_yticks(range(len(categories)), categories.keys())
+
+		def plot_half_lives(ax, categories):
+			category_names = list(categories.keys())
+			category_1_set = set(categories[category_names[0]].items())
+			category_2_set = set(categories[category_names[1]].items())
+			common_proteins = {protein for protein, _ in category_1_set} & {protein for protein, _ in category_2_set}
+			category_1_x_values = []
+			category_2_y_values = []
+			for protein in common_proteins:
+				x_value = categories[category_names[0]][protein]
+				y_value = categories[category_names[1]][protein]
+				category_1_x_values.append(x_value)
+				category_2_y_values.append(y_value)
+
+			ax.scatter(category_1_x_values , category_2_y_values)
+			ax.set_xlabel(category_names[0] + ' protein half lives (min)')
+			ax.set_ylabel(category_names[1] + ' protein half lives (min)')
+			ax.set_title('Protein half lives')
+
+		ax1 = plt.subplot(2, 2, 1)
+		ax2 = plt.subplot(2, 2, 2)
+		plot_distributions(ax1, categories)
+		plot_half_lives(ax2, categories)
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
+		#Find greatest protein half lives, too great IMO
+		category_names = list(categories.keys())
+		sorted_items_category_1 = sorted(categories[category_names[0]].items(), key=lambda x: x[1], reverse=True)
+		sorted_items_category_2 = sorted(categories[category_names[1]].items(), key=lambda x: x[1], reverse=True)
+		# figure out why protein half life assignment of 'EG12298-MONOMER[c]' and 'GLUTCYSLIG-MONOMER[c]' is so high
+		# in pdr_Clim3 and why 'SPOT-MONOMER[c]' and 'ADENYLATECYC-MONOMER[c]' is so high in CLNE
+		# In protein_deg_rates_adjustments, only EG12298-MONOMER[c] is adjusted to fit anerobic conditions.
+		# and in pdr_Clim3 flat file "GLUTCYSLIG-MONOMER" is 573.3 min, not 2382.0000000000005.
+		import ipdb;
+		ipdb.set_trace()
+
 
 	def setup(self, inputDir: str) -> Tuple[
-			AnalysisPaths, SimulationDataEcoli, ValidationDataEcoli]:
-		"""Return objects used for analyzing multiple sims."""
-		ap = AnalysisPaths(inputDir, variant_plot=True)
-		sim_data = self.read_sim_data_file(inputDir)
-		validation_data = self.read_validation_data_file(inputDir)
-		return ap, sim_data, validation_data
+				AnalysisPaths, SimulationDataEcoli, ValidationDataEcoli]:
+			"""Return objects used for analyzing multiple sims."""
+			ap = AnalysisPaths(inputDir, variant_plot=True)
+			sim_data = self.read_sim_data_file(inputDir)
+			validation_data = self.read_validation_data_file(inputDir)
+			return ap, sim_data, validation_data
 
 if __name__ == "__main__":
 	Plot().cli()
