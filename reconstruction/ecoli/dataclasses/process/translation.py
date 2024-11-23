@@ -611,7 +611,7 @@ class Translation(object):
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
 				('deg_rate', 'f8'),
-				('deg_rate_source', 'U{}'.format(max_deg_source_id_length))
+				('deg_rate_source', 'U{}'.format(max_deg_source_id_length)),
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
@@ -630,6 +630,7 @@ class Translation(object):
 			'id': None,
 			'cistron_id': None,
 			'deg_rate': deg_rate_units,
+			'deg_rate_source': None,
 			'length': units.aa,
 			'aa_counts': units.aa,
 			'mw': units.g / units.mol,
