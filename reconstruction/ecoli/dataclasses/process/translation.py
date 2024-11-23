@@ -136,6 +136,7 @@ class Translation(object):
 		}
 
 		deg_rate = np.zeros(len(all_proteins))
+		deg_rate_source_id = []
 
 		# Uses measured rates from Macklin et al., 2020 first, followed by
 		# Carbon limited rates from Gupta et al., 2024, and finally N-end rule
@@ -145,8 +146,10 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id.append('CL_measured_deg_rates_2020')
 				elif protein['id'] in Clim_deg_rates:
 					deg_rate[i] = Clim_deg_rates[protein['id']]
+					deg_rate_source_id.append('Gupta_et_al_MS_2024')
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -156,6 +159,7 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id.append('N_end_rule')
 
 		# Uses measured rates from Macklin et al., 2020 first, followed by
 		# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
@@ -165,8 +169,10 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id.append('CL_measured_deg_rates_2020')
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					deg_rate_source_id.append('Nagar_et_al_ML_2021')
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -176,6 +182,7 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id.append('N_end_rule')
 
 		# Uses measured rates from Macklin et al., 2020 first, followed by the
 		# N-end rule from Tobias et al., 1991
@@ -184,6 +191,7 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id.append('CL_measured_deg_rates_2020')
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -193,6 +201,7 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id.append('N_end_rule')
 
 
 
@@ -200,12 +209,15 @@ class Translation(object):
 			len(protein_id) for protein_id in protein_ids_with_compartments)
 		max_cistron_id_length = max(
 			len(cistron_id) for cistron_id in cistron_ids)
+		max_deg_source_id_length = max(
+			len(source_id) for source_id in deg_rate_source_id)
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
 				('deg_rate', 'f8'),
+				('deg_rate_source', 'U{}'.format(max_deg_source_id_length)),
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
@@ -215,6 +227,7 @@ class Translation(object):
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
 		monomer_data['deg_rate'] = deg_rate
+		monomer_data['deg_rate_source'] = deg_rate_source_id
 		monomer_data['length'] = lengths
 		monomer_data['aa_counts'] = aa_counts
 		monomer_data['mw'] = mws
@@ -223,6 +236,7 @@ class Translation(object):
 			'id': None,
 			'cistron_id': None,
 			'deg_rate': deg_rate_units,
+			'deg_rate_source': None,
 			'length': units.aa,
 			'aa_counts': units.aa,
 			'mw': units.g / units.mol,
