@@ -32,13 +32,20 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			print('Skipping analysis -- not enough sims run.')
 			return
 
-		protein_ids_1 = sim_data1.process.translation.monomer_data['id']
-		protein_ids_2 = sim_data2.process.translation.monomer_data['id']
-		degradation_rates_1 = sim_data1.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s)
-		degradation_rates_2 = sim_data2.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s)
-		half_lives_1 = np.log(2)/degradation_rates_1/60 # in minutes
-		half_lives_2 = np.log(2)/degradation_rates_2/60 # in minutes
-
+		def get_protein_data(sim_data, remove_yibQ):
+			"""remove_yibQ is a boolean"""
+			protein_ids= sim_data.process.translation.monomer_data['id']
+			deg_rate_source = sim_data.process.translation.monomer_data['deg_rate_source']
+			degradation_rates = sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s)
+			half_lives = np.log(2) / degradation_rates / 60  # in minutes
+			if remove_yibQ:
+				indices = [i for i, x in enumerate(protein_ids) if x == "EG12298-MONOMER[c]"]
+				protein_ids_wo_yibQ = np.delete(protein_ids, indices[0])
+				half_lives_wo_yibQ = np.delete(half_lives, indices[0])
+				deg_rate_source_wo_yibQ = np.delete(deg_rate_source, indices[0])
+				return protein_ids_wo_yibQ, half_lives_wo_yibQ, deg_rate_source_wo_yibQ
+			else:
+				return protein_ids, half_lives, deg_rate_source
 
 		def extract_dir(path):
 			dir_parts = path.split('/')
@@ -50,15 +57,24 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ap1_dir_name = extract_dir(ap1._path_data['path'][0])
 		ap2_dir_name = extract_dir(ap2._path_data['path'][0])
+		protein_ids_1, half_lives_1, deg_rate_source_1 = get_protein_data(sim_data1, True)
+		protein_ids_2, half_lives_2, deg_rate_source_2 = get_protein_data(sim_data2, True)
 
-		categories = {ap1_dir_name: dict(zip(protein_ids_1, half_lives_1)),
-					  ap2_dir_name: dict(zip(protein_ids_2, half_lives_2))}
+		# Create a colormap
+		cmap = cm.get_cmap('Set1')
 
+		def color_map(deg_rate_source):
+			source_map = {source: i for i, source in enumerate(set(deg_rate_source))}
+			source_indices = [source_map[source] for source in deg_rate_source]
+			colors = [cmap(i) for i in source_indices]
+			return colors
 
+		protein_data = {ap1_dir_name:[protein_ids_1, half_lives_1, color_map(deg_rate_source_1)],
+						ap2_dir_name: [protein_ids_2, half_lives_2, color_map(deg_rate_source_2)]}
 
 		plt.figure(figsize=(8, 6))
 
-		def plot_distributions(ax, categories):
+		def plot_distributions(ax, protein_data):
 
 			# Calculate positions for each category
 			def calculate_positions(x, y, jitter=0.2):
@@ -67,26 +83,30 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.random.shuffle(positions)
 				return positions
 
-			for i,category in enumerate(categories):
-				values = categories[category].values()
-				x_positions = calculate_positions(i, values)
-				ax.scatter(values, x_positions, label=category)
+			for i,category in enumerate(protein_data):
+				half_lives = protein_data[category][1]
+				y_positions = calculate_positions(i, half_lives)
+				ax.scatter(half_lives, y_positions, c = protein_data[category][2], alpha= 0.3, s = 5)
 
-			ax.set_ylabel('ParCa')
 			ax.set_xlabel('Half life (min)')
+			ax.set_ylabel('ParCa')
+			ax.set_yticks(range(len(protein_data)), protein_data.keys())
 			ax.set_title('Distribution of protein half lives')
-			ax.set_yticks(range(len(categories)), categories.keys())
 
-		def plot_half_lives(ax, categories):
-			category_names = list(categories.keys())
-			category_1_set = set(categories[category_names[0]].items())
-			category_2_set = set(categories[category_names[1]].items())
+		def plot_half_lives(ax, protein_data):
+			category_names = list(protein_data.keys())
+			protein_ids_1 = protein_data[category_names[0]][0]
+			protein_ids_2 = protein_data[category_names[1]][0]
+			category_1_set = set(protein_ids_1)
+			category_2_set = set(protein_ids_2)
 			common_proteins = {protein for protein, _ in category_1_set} & {protein for protein, _ in category_2_set}
 			category_1_x_values = []
 			category_2_y_values = []
 			for protein in common_proteins:
-				x_value = categories[category_names[0]][protein]
-				y_value = categories[category_names[1]][protein]
+				index_1 = [i for i, x in enumerate(protein_ids_1) if x == protein][0]
+				index_2 = [i for i, x in enumerate(protein_ids_2) if x == protein][0]
+				x_value = protein_data[category_names[0]][1][index_1]
+				y_value = protein_data[category_names[1]][1][index_2]
 				category_1_x_values.append(x_value)
 				category_2_y_values.append(y_value)
 
@@ -97,8 +117,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax1 = plt.subplot(2, 2, 1)
 		ax2 = plt.subplot(2, 2, 2)
-		plot_distributions(ax1, categories)
-		plot_half_lives(ax2, categories)
+		plot_distributions(ax1, protein_data)
+		plot_half_lives(ax2, protein_data)
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
