@@ -5,8 +5,9 @@ Template for comparison analysis plots
 from typing import Tuple
 
 from matplotlib import pyplot as plt
+from matplotlib import cm
+import matplotlib.patches as mpatches
 # noinspection PyUnresolvedReferences
-import seaborn as sns
 import numpy as np
 
 from models.ecoli.analysis import comparisonAnalysisPlot
@@ -63,16 +64,20 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Create a colormap
 		cmap = cm.get_cmap('Set1')
 
-		def color_map(deg_rate_source):
-			source_map = {source: i for i, source in enumerate(set(deg_rate_source))}
+		unique_source_1 = set(deg_rate_source_1)
+		unique_source_2 = set(deg_rate_source_2)
+		deg_sources_combined = unique_source_1.union(unique_source_2)
+		source_map = {source: i for i, source in enumerate(deg_sources_combined)}
+
+		def color_map(deg_rate_source, source_map):
 			source_indices = [source_map[source] for source in deg_rate_source]
 			colors = [cmap(i) for i in source_indices]
 			return colors
 
-		protein_data = {ap1_dir_name:[protein_ids_1, half_lives_1, color_map(deg_rate_source_1)],
-						ap2_dir_name: [protein_ids_2, half_lives_2, color_map(deg_rate_source_2)]}
+		protein_data = {ap1_dir_name:[protein_ids_1, half_lives_1, color_map(deg_rate_source_1, source_map)],
+						ap2_dir_name: [protein_ids_2, half_lives_2, color_map(deg_rate_source_2, source_map)]}
 
-		plt.figure(figsize=(8, 6))
+		fig = plt.figure(figsize=(12, 4))
 
 		def plot_distributions(ax, protein_data):
 
@@ -99,7 +104,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			protein_ids_2 = protein_data[category_names[1]][0]
 			category_1_set = set(protein_ids_1)
 			category_2_set = set(protein_ids_2)
-			common_proteins = {protein for protein, _ in category_1_set} & {protein for protein, _ in category_2_set}
+
+			common_proteins = {protein for protein in category_1_set} & {protein for protein in category_2_set}
 			category_1_x_values = []
 			category_2_y_values = []
 			for protein in common_proteins:
@@ -110,15 +116,21 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				category_1_x_values.append(x_value)
 				category_2_y_values.append(y_value)
 
-			ax.scatter(category_1_x_values , category_2_y_values)
+			ax.scatter(category_1_x_values , category_2_y_values, color = '#555555', alpha= 0.3, s = 5)
 			ax.set_xlabel(category_names[0] + ' protein half lives (min)')
 			ax.set_ylabel(category_names[1] + ' protein half lives (min)')
 			ax.set_title('Protein half lives')
 
-		ax1 = plt.subplot(2, 2, 1)
-		ax2 = plt.subplot(2, 2, 2)
+		ax1 = plt.subplot(1, 3, 1)
+		ax2 = plt.subplot(1, 3, 2)
+
 		plot_distributions(ax1, protein_data)
 		plot_half_lives(ax2, protein_data)
+
+		# Create a list of patches to represent each category
+		handles = [mpatches.Patch(color=cmap(i), label=source) for source, i in source_map.items()]
+		fig.legend(handles=handles, bbox_to_anchor=(1, 0.7))
+
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
