@@ -1,7 +1,9 @@
 # Use this file to covert the UniProt IDs in the Gupta et al. (2024) supplementary
 # data files to the current corresponding EcoCyc monomer ID that will be recognized by
 # the model using a UniProt ID conversion. This file specifically avoids assgining
-# multiple monomer IDs to the same gene common name.
+# multiple monomer IDs to the same gene common name. Make sure that the EcoCyc
+# version matchees the version used in the current model, otherwise there might
+# be a mismatch. Note that EcoCyc typically updates once a quarter.
 
 # Note: this file will take a while to run AND requires a number of user inputs.
 
@@ -21,7 +23,7 @@ USER INPUTS
 # (in the 'Gupta_et_al_2024_data_files' folder)
 file_to_convert = '41467_2024_49920_MOESM4_ESM_ST1.xlsx'
 # CHANGE THIS TO THE CURRENT DATE (in the form of DDMMYYYY)
-date = '11202024'
+date = input('Please enter the date in the form of DDMMYYYY, i.e.: "11202024":')
 # CHANGE THIS TO YOUR ECOCYC USERNAME
 username = input('Please enter your EcoCyc username/email:') # typically a user's email address
 # CHANGE THIS TO YOUR ECOCYC PASSWORD
@@ -214,8 +216,6 @@ with io.open(OUTPUT_FILE_PATH, 'wb') as f:
         writer.writerow(
             [f'"{row[0]}"', f'{row[1]}', f'{row[2]}', f'{row[3]}', f'{row[4]}'])
 
-
-#Interest_InputTable.to_csv(OUTPUT_FILE_PATH, sep='\t', index=False)
 print("Done. File saved to: ", OUTPUT_FILE_PATH)
 
 
