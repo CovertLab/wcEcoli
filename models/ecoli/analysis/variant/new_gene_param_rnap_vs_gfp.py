@@ -175,7 +175,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 		plt.scatter(active_rnap, avg_ng_monomer)
-		plt.plot(active_rnap, np.poly1d(np.polyfit(active_rnap, avg_ng_monomer, 1))(active_rnap))
+		#plt.plot(active_rnap, np.poly1d(np.polyfit(active_rnap, avg_ng_monomer, 1))(active_rnap))
 
 
 		plt.tight_layout()

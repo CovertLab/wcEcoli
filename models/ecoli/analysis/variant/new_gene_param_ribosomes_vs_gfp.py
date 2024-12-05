@@ -169,7 +169,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
 		plt.scatter(ribosome_count, avg_ng_monomer)
-		plt.plot(ribosome_count, np.poly1d(np.polyfit(ribosome_count, avg_ng_monomer, 1))(ribosome_count))
+		#plt.plot(ribosome_count, np.poly1d(np.polyfit(ribosome_count, avg_ng_monomer, 1))(ribosome_count))
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
