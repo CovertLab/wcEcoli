@@ -4,7 +4,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
+
 
 import pickle
 import os
@@ -12,8 +12,7 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure,\
 	read_stacked_columns, stacked_cell_threshold_mask
-from wholecell.analysis.plotting_tools import DEFAULT_MATPLOTLIB_COLORS\
-	as COLORS, labeled_indexable_hist, labeled_indexable_scatter
+
 
 FONT_SIZE = 9
 DOUBLING_TIME_BOUNDS_MINUTES = [0, 180]
@@ -37,7 +36,6 @@ if (exclude_timeout_cells==0):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		max_cell_length = 180  # mins
 		# Determine new gene ids
 
 
@@ -82,22 +80,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ng_monomer = []
 		trl_eff_values = []
 		expression_factors = []
-		colors = []
 		generations = {}
 		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
 		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
 		n_total_gens = self.ap.n_generation
 
 
-
 		plt.figure()
-
 		plt.xlabel("Protein Counts")
 		plt.ylabel("Doubling Time")
-
-
-
-
 
 		min_variant = min(variants)
 
@@ -115,7 +106,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			all_cells = self.ap.get_cells(variant=[variant], generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
 											  only_successful=True)
-
 
 			if len(all_cells) == 0:
 					continue
@@ -159,13 +149,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
-			colors.append(trl_eff_values[variant]/10)
-
-
-
-
-
-
 
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts[i][variant] = \
@@ -173,18 +156,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_monomer_counts[i][variant] = \
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
-
-		#plt.figure()
-
-		#plt.xlabel("Protein Counts")
-		#plt.ylabel("Doubling Time")
 		plt.scatter(avg_ng_monomer,doubling_times)
-
-		#plt.scatter(avg_ng_monomer, doubling_times, c=colors,cmap='coolwarm')
-
-		#plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
-
-
+		plt.plot(avg_ng_monomer, np.poly1d(np.polyfit(avg_ng_monomer,doubling_times, 1))(avg_ng_monomer))
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
