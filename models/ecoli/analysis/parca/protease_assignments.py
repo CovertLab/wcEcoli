@@ -35,22 +35,30 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			degradation_rates = sim_data.process.translation.monomer_data['deg_rate'].asNumber(1 / units.s)
 			half_lives = np.log(2) / degradation_rates / 60
 
-			# get gist of protein counts that have proteases assigned
-			protease_categories, protein_counts = np.unique(protease_assignment, return_counts=True)
-
 			# Compare deg rates across protease assignment
 			indices_w_proteases = [i for i, x in enumerate(protease_assignment) if x != 'None']
-			assigned_proteins = protein_ids[indices_w_proteases]
-			assigned_half_lives = half_lives[indices_w_proteases]
+
 			assigned_proteases = protease_assignment[indices_w_proteases]
+
+			# get gist of protein counts that have proteases assigned
+			protease_categories, protein_counts = np.unique(assigned_proteases, return_counts=True)
 
 			# Map categories to unique integers
 			protease_map = {protease: i for i, protease in enumerate(set(assigned_proteases))}
-			protease_indices = [protease_map[protease] for protease in assigned_proteases]
 
 			# Create a colormap
-			cmap = cm.get_cmap('Set1')
-			colors = [cmap(i) for i in protease_indices]
+			cmap = cm.get_cmap('tab20')
+
+			protease_data = {}
+			for protease in np.unique(assigned_proteases):
+				indices_w_protease = [i for i, x in enumerate(protease_assignment) if x == protease]
+				assigned_proteins_p = protein_ids[indices_w_protease]
+				assigned_half_lives_p = half_lives[indices_w_protease]
+				assigned_protease_idx = protease_assignment[indices_w_protease]
+				protease_color_idx = [protease_map[protease] for protease in assigned_protease_idx]
+				i = protease_map[protease]
+				colors = [cmap(i) for i in protease_color_idx]
+				protease_data[protease] = [assigned_proteins_p, assigned_half_lives_p, colors]
 
 
 			def extract_dir(path):
@@ -63,31 +71,46 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 			dir_name = extract_dir(input_dir)
 
-			fig = plt.figure(figsize=(12, 4))
+			fig = plt.figure(figsize=(20, 10))
 
-			def bar_plot(ax, protease_categories, protein_counts)
+			def bar_plot(ax, protease_categories, protein_counts):
+				# Create a bar plot
+				ax.bar(protease_categories, protein_counts)
 
+				# Add labels and title
+				ax.set_xlabel('Protease assignments')
+				ax.tick_params(axis='x', labelrotation=90)
+				ax.set_ylabel('# of proteins')
+				ax.set_title('Proteins with protease assignments')
 
-			def plot_distributions(ax, half_lives, colors, dir_name):
+			def plot_distributions(ax, protease_data):
 
-				# Add jitter to the y-positions
-				x_positions = np.random.randn(len(half_lives)) * 0.2
+				# Calculate positions for each category
+				def calculate_positions(x, y, jitter=0.2):
+					n = len(y)
+					positions = np.linspace(x - jitter, x + jitter, n)
+					np.random.shuffle(positions)
+					return positions
 
-				ax.scatter(half_lives, x_positions, c = colors, alpha= 0.3, s = 5)
+				for i, category in enumerate(protease_data):
+					half_lives = protease_data[category][1]
+					y_positions = calculate_positions(i, half_lives)
+					ax.scatter(half_lives, y_positions, c=protease_data[category][2], alpha=0.6, s=5)
 
-				ax.set_title('Distribution of protein half lives')
 				ax.set_xlabel('Half life (min)')
-				ax.set_ylabel('ParCa: '+ dir_name)
-				ax.set_yticks([0])
-				ax.set_yticklabels([])
-				ax.set_ylim(-2, 2)
+				ax.set_ylabel('Protease assignment')
+				ax.set_yticks(range(len(protease_data)), protease_data.keys())
+				ax.set_title('Distribution of protein half lives')
+
 
 			ax1 = plt.subplot(1, 3, 1)
 			ax2 = plt.subplot(1, 3, 2)
-			plot_distributions(ax2, assigned_half_lives, colors, dir_name)
+
+			bar_plot(ax1, protease_categories, protein_counts)
+			plot_distributions(ax2, protease_data)
 
 			# Create a list of patches to represent each category
-			handles = [mpatches.Patch(color=cmap(i), label=source) for source, i in source_map.items()]
+			handles = [mpatches.Patch(color=cmap(i), label=protease) for protease, i in protease_map.items()]
 			fig.legend(handles=handles, bbox_to_anchor=(1, 0.7))
 
 			plt.tight_layout()
@@ -97,7 +120,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 			import ipdb;
 			ipdb.set_trace()
-			
+
 
 
 if __name__ == "__main__":
