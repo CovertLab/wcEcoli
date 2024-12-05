@@ -26,7 +26,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 1
+IGNORE_FIRST_N_GENS = 16
 
 exclude_timeout_cells = 0
 
@@ -82,22 +82,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ng_monomer = []
 		trl_eff_values = []
 		expression_factors = []
-		colors = []
 		active_rnap = []
 		generations = {}
 		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
 		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
 		n_total_gens = self.ap.n_generation
 
-
-
 		plt.figure()
 
 		plt.xlabel("RNAP")
 		plt.ylabel("Protein Counts")
-
-
-
+		plt.ylim(0, 1.2e6)
 
 		min_variant = min(variants)
 
@@ -170,12 +165,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
 			active_rnap.append(np.mean(active_rnap_counts[exclude_timeout_cell_mask]))
-			colors.append(trl_eff_values[variant]/10)
-
-
-
-
-
 
 
 			for i in range(len(new_gene_mRNA_ids)):
@@ -184,15 +173,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_monomer_counts[i][variant] = \
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
-		import ipdb
-		ipdb.set_trace()
 
 		plt.scatter(active_rnap, avg_ng_monomer)
-
-		#plt.scatter(avg_ng_monomer, doubling_times, c=colors, cmap='coolwarm')
-
-		#plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
-
+		plt.plot(active_rnap, np.poly1d(np.polyfit(active_rnap, avg_ng_monomer, 1))(active_rnap))
 
 
 		plt.tight_layout()

@@ -37,7 +37,6 @@ if (exclude_timeout_cells==0):
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		max_cell_length = 180  # mins
 		# Determine new gene ids
 
 
@@ -49,9 +48,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL = 0
 		NEW_GENE_TRANSLATION_EFFICIENCY_MIN = np.log10(0.01)
 		NEW_GENE_TRANSLATION_EFFICIENCY_MAX = np.log10(10)
-
-
-
 
 
 		with open(simDataFile, 'rb') as f:
@@ -82,7 +78,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ng_monomer = []
 		trl_eff_values = []
 		expression_factors = []
-		colors = []
 		ribosome_count = []
 		generations = {}
 		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
@@ -90,14 +85,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		n_total_gens = self.ap.n_generation
 
 
-
 		plt.figure()
 
 		plt.xlabel("Number of Ribosomes")
 		plt.ylabel("Protein Counts")
-
-
-
+		plt.ylim(0, 1.2e6)
 
 		min_variant = min(variants)
 
@@ -169,13 +161,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
 			ribosome_count.append(np.mean(ribosome_counts[exclude_timeout_cell_mask]))
-			colors.append(trl_eff_values[variant]/10)
-
-
-
-
-
-
 
 			for i in range(len(new_gene_mRNA_ids)):
 				new_gene_mRNA_counts[i][variant] = \
@@ -183,16 +168,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_monomer_counts[i][variant] = \
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
 
-		import ipdb
-		ipdb.set_trace()
-
 		plt.scatter(ribosome_count, avg_ng_monomer)
-
-		#plt.scatter(avg_ng_monomer, doubling_times, c=colors, cmap='coolwarm')
-
-		#plt.colorbar(orientation='horizontal', label= 'translational efficiency / 10')
-
-
+		plt.plot(ribosome_count, np.poly1d(np.polyfit(ribosome_count, avg_ng_monomer, 1))(ribosome_count))
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
