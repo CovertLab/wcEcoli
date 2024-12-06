@@ -11,16 +11,16 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import numpy as np
 
-from models.ecoli.analysis import multigenAnalysisPlot
+from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
-START_GEN = 0
+START_GEN = 16
 END_GEN = 24
 
-VARIANT_1 = 0
-VARIANT_2 = 1
+VARIANT_1 = 10
+VARIANT_2 = 12
 
 VARIANT_1_SEED = 0
 VARIANT_2_SEED = 0
@@ -28,7 +28,7 @@ VARIANT_2_SEED = 0
 LINE_COLOR = (66/255, 170/255, 154/255)
 LINE_COLOR2 = (152/255, 78/255, 163/255)
 
-class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
+class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def get_mRNA_ids_from_monomer_ids(self, sim_data, target_monomer_ids):
 		"""
 		Map monomer ids back to the mRNA ids that they were translated from.
@@ -117,11 +117,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		cell_paths = self.ap.get_cells(
-			variant=VARIANT_1, generation=np.arange(START_GEN, END_GEN),
-			seed=VARIANT_1_SEED)
+			variant=np.array([VARIANT_1]), generation=np.arange(START_GEN, END_GEN),
+			seed=np.array([VARIANT_1_SEED]))
 		cell_paths2 = self.ap.get_cells(
-			variant=VARIANT_2, generation=np.arange(START_GEN, END_GEN),
-			seed=VARIANT_2_SEED)
+			variant=np.array([VARIANT_2]), generation=np.arange(START_GEN, END_GEN),
+			seed=np.array([VARIANT_2_SEED]))
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
@@ -204,7 +204,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths2, 'RNACounts', 'mRNA_counts', ignore_exception=True)
 		new_gene_mRNA_counts2 = all_mRNA_stacked_counts2[:,new_gene_mRNA_indexes]
 
-		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
+		plot_suffixes = ["", "_standard_axes_y"]
 		standard_xlim = (0,400)
 		total_plots = 5 # TODO Modularize and get rid of this magic number
 
@@ -253,11 +253,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			mass = read_stacked_columns(
 				cell_paths, "Mass", "cellMass", ignore_exception=True)
-			plt.plot(time / 60., mass, color=LINE_COLOR, label = "Vairant " + VARIANT_1)
+			plt.plot(time / 60., mass, color=LINE_COLOR, label = "Variant " + str(VARIANT_1))
 
 			mass2 = read_stacked_columns(
 				cell_paths2, "Mass", "cellMass", ignore_exception=True)
-			plt.plot(time2 / 60., mass2, color=LINE_COLOR2, label = "Vairant " + VARIANT_2)
+			plt.plot(time2 / 60., mass2, color=LINE_COLOR2, label = "Variant " + str(VARIANT_2))
 
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.ylim(0,4000)
@@ -322,6 +322,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 			exportFigure(
 				plt, plotOutDir, plotOutFileName + plot_suffix + "_"
+				+ "VAR_" + str(VARIANT_1) + "_SEED_" + str(VARIANT_1_SEED) + "_"
+				+ "VAR_" + str(VARIANT_2) + "_SEED_" + str(VARIANT_2_SEED) + "_GENS_"
 				+ str(START_GEN) + "_" + str(END_GEN), metadata)
 			plt.close("all")
 
