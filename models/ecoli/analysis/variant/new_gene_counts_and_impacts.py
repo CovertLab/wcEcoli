@@ -353,7 +353,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Total RNAP Counts", fontsize="small")
-			plt.title("Total RNAP Counts")
 			plot_num += 1
 
 			# Total Ribosome Counts
@@ -395,7 +394,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Total Ribosome Counts", fontsize="small")
-			plt.title("Total Ribosome Counts")
+		
 			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
