@@ -10,6 +10,7 @@ from matplotlib import cm
 import matplotlib.patches as mpatches
 
 # noinspection PyUnresolvedReferences
+import csv
 import numpy as np
 
 from models.ecoli.analysis import parcaAnalysisPlot
@@ -96,6 +97,21 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			plt.tight_layout()
 			exportFigure(plt, plot_out_dir, plot_out_filename, metadata)
 			plt.close('all')
+
+
+			# Write data to table
+			with open(os.path.join(plot_out_dir, plot_out_filename + '.tsv'), 'w') as f:
+				writer = csv.writer(f, delimiter='\t')
+				writer.writerow([
+					'monomer_id', 'degradation_rate(1/s)', 'half_life_(min)', 'degradation_rate_source'
+				])
+
+				for i, monomer in enumerate(protein_ids):
+					writer.writerow([
+						protein_ids[i][:-3], degradation_rates[i], half_lives[i],
+						deg_rate_source[i]
+					])
+
 
 
 if __name__ == "__main__":
