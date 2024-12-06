@@ -155,10 +155,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
 				new_gene_monomer_counts[i][variant] = \
 					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
-			if variant == 6 or variant == 88:
-				plt.scatter(avg_ng_monomer(variant),doubling_times(variant))
+			#if variant == 6 or variant == 88:
+				#plt.scatter(avg_ng_monomer(variant),doubling_times(variant))
 
-			
+		import ipdb
+		ipdb.set_trace()
+
 		plt.scatter(avg_ng_monomer,doubling_times)
 		plt.plot(avg_ng_monomer, np.poly1d(np.polyfit(avg_ng_monomer,doubling_times, 1))(avg_ng_monomer))
 
