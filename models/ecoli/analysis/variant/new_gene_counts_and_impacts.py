@@ -19,8 +19,8 @@ from wholecell.io.tablereader import TableReader
 START_GEN = 16
 END_GEN = 24
 
-VARIANT_1 = 10
-VARIANT_2 = 12
+VARIANT_1 = 6
+VARIANT_2 = 88
 
 VARIANT_1_SEED = 0
 VARIANT_2_SEED = 0
@@ -394,7 +394,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Total Ribosome Counts", fontsize="small")
-		
+
 			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
