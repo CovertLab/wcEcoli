@@ -206,7 +206,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y"]
 		standard_xlim = (0,400)
-		total_plots = 5 # TODO Modularize and get rid of this magic number
+		total_plots = 7 # TODO Modularize and get rid of this magic number
 
 		mpl.rcParams['axes.spines.right'] = False
 		mpl.rcParams['axes.spines.top'] = False
@@ -216,7 +216,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plot_suffix = plot_suffixes[i]
 
 			# Plotting
-			plt.figure(figsize = (8.5, 11))
+			plt.figure(figsize = (8.5, 14))
 			plot_num = 1
 
 			# Growth Rate
@@ -317,6 +317,85 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("ppGpp Concentration ($\mu$M)", fontsize="small")
+			plot_num += 1
+
+			# Total RNAP Counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# Inactive
+			rnap_id = [sim_data.molecule_ids.full_RNAP]
+			(inactive_rnap_counts,) = read_stacked_bulk_molecules(
+				cell_paths, (rnap_id,), ignore_exception=True)
+			(inactive_rnap_counts2,) = read_stacked_bulk_molecules(
+				cell_paths2, (rnap_id,), ignore_exception=True)
+			# Active
+			uniqueMoleculeCounts = TableReader(
+				os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			active_rnap_index = uniqueMoleculeCounts.readAttribute(
+				"uniqueMoleculeIds").index('active_RNAP')
+			active_rnap_counts = read_stacked_columns(
+				cell_paths, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				ignore_exception=True)[:, active_rnap_index]
+			active_rnap_counts2 = read_stacked_columns(
+				cell_paths2, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				ignore_exception=True)[:, active_rnap_index]
+			# Total
+			total_rnap_counts = inactive_rnap_counts + active_rnap_counts
+			total_rnap_counts2 = inactive_rnap_counts2 + active_rnap_counts2
+			plt.plot(time / 60., total_rnap_counts, color=LINE_COLOR)
+			plt.plot(time2 / 60., total_rnap_counts2, color=LINE_COLOR2)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((0,10000))
+			else:
+				plt.ylim(bottom=0)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Total RNAP Counts", fontsize="small")
+			plt.title("Total RNAP Counts")
+			plot_num += 1
+
+			# Total Ribosome Counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# Inactive
+			complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
+			complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
+			(complex_counts_30s, complex_counts_50s) = read_stacked_bulk_molecules(
+				cell_paths, (complex_id_30s, complex_id_50s), ignore_exception=True)
+			inactive_ribosome_counts = np.minimum(
+				complex_counts_30s, complex_counts_50s)
+
+			(complex_counts_30s2, complex_counts_50s2) = read_stacked_bulk_molecules(
+				cell_paths2, (complex_id_30s, complex_id_50s), ignore_exception=True)
+			inactive_ribosome_counts2 = np.minimum(
+				complex_counts_30s2, complex_counts_50s2)
+
+			# Active
+			unique_molecule_counts_table = TableReader(
+				os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			ribosome_index = unique_molecule_counts_table.readAttribute(
+				"uniqueMoleculeIds").index('active_ribosome')
+			active_ribosome_counts = read_stacked_columns(
+				cell_paths, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
+			active_ribosome_counts2 = read_stacked_columns(
+				cell_paths2, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
+			# Total
+			total_ribosome_counts = active_ribosome_counts + inactive_ribosome_counts
+			total_ribosome_counts2 = active_ribosome_counts2 + inactive_ribosome_counts2
+			plt.plot(time / 60., total_ribosome_counts, color=LINE_COLOR)
+			plt.plot(time2 / 60., total_ribosome_counts2, color=LINE_COLOR2)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((0,40000))
+			else:
+				plt.ylim(bottom=0)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Total Ribosome Counts", fontsize="small")
+			plt.title("Total Ribosome Counts")
 			plot_num += 1
 
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
