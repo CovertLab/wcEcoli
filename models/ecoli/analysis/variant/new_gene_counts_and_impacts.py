@@ -19,8 +19,8 @@ from wholecell.io.tablereader import TableReader
 START_GEN = 16
 END_GEN = 24
 
-VARIANT_1 = 6
-VARIANT_2 = 145
+VARIANT_1 = 7
+VARIANT_2 = 114
 
 VARIANT_1_SEED = 0
 VARIANT_2_SEED = 0
