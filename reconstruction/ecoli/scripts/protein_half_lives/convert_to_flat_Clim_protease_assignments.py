@@ -33,7 +33,7 @@ USER INPUTS
 # Note: this file should have a column named "Protein ID" (formatted exactly as
 # it is in the original file: 41467_2024_49920_MOESM4_ESM_ST1.xlsx)
 # and a column named "half_life (units.min)"
-protease_assignment_file = 'protease_assignments_test_file.xlsx'
+protease_assignment_file = 'priority_proteases_10182024.xlsx'
 
 # SPECIFY THE ECOCYC COMPARISON FILE (in the Clim_EcoCyc_monomer_ID_matches folder)
 # Note: if a new EcoCyc update has been released, use
@@ -44,7 +44,7 @@ EcoCyc_file = \
 # SPECIFY THE OUTPUT FILE NAME (to be placed in the flat file list)
 # Note: this file name needs to be added to the list in "knowledge_base_raw.py"
 # to be used in the model
-OUTPUT_FILE_NAME = 'protease_assignments_Clim0_TEST.tsv' # e.g. 'protease_assignments_Clim#.tsv'
+OUTPUT_FILE_NAME = 'priority_protease_assignments_0.tsv' # e.g. 'protease_assignments_Clim#.tsv'
 
 """
 END OF USER INPUTS
