@@ -25,10 +25,11 @@ interest_proteins = np.array([
 	#'MONOMER0-2678[c]',
 	#'EG10037-MONOMER[c]',
 	#'NG-GFP-MONOMER[c]',
-	'TRYPSYN-APROTEIN[c]',
-	'TRYPSYN-BPROTEIN[c]',
+	#'TRYPSYN-APROTEIN[c]',
+	#'TRYPSYN-BPROTEIN[c]',
 	#"ANTHRANSYNCOMPI-MONOMER[c]",
 	#'PD00519[c]',
+	'EG10542',
 ])
 
 # if you know how many variants you have and want to specify which you would

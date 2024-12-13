@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
 
-from models.ecoli.analysis import multigenAnalysisPlot
+from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -22,22 +22,10 @@ interest_proteins = np.array([
 	# 'G7634-MONOMER[i]',
 	#'EG11854-MONOMER[c]',
 	#'G6606-MONOMER[c]',
-	'PD03938[c]', # metR
-	'RPOS-MONOMER[c]', # rpoS
-	'EG11783-MONOMER[c]', # intA
-	'PD03831[c]', # dnaA
-	#'EG12197-MONOMER[c]', # seqA
-	'EG11734-MONOMER[c]', # phoH
-	# could not find DiaA in the sim data, yikes
-
-	# TODO: why does this not match the most recent ecoCyc name?
-
-	#'EG11676-MONOMER[c]', # HslV
-	#'EG10158-MONOMER[c]', # ClpP
-	#'EG10542-MONOMER[c]', # lon
+	'EG10542-MONOMER[c]',
 ])
 
-class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
+class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -46,10 +34,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		cell_paths = self.ap.get_cells()
-		variant = self.ap.get_variants()
-		seed = 2 #self.ap.get_seeds()
-		sim_dir = cell_paths[2]
+		variant = 0
+		seed = 1
+		sim_dir = cell_paths[0] # /Users/miagrahn/wcEcoli/out/CLClim3dNE/wildtype_000000/000002/generation_000000/000000
 		print(sim_dir)
+		#sim_dir = '/Users/miagrahn/wcEcoli/out/CLClim3dNE/wildtype_000000/000001'
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
 		# Determine new gene ids
@@ -63,6 +52,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for protein in interest_proteins:
 			monomer_idx = np.where(monomer_sim_data['id'] == protein)
 			monomer_idx = monomer_idx[0][0]
+
 			monomer_data_idxs.append(monomer_idx)
 		ip_monomer_data = monomer_sim_data[monomer_data_idxs]
 		ip_monomer_ids = ip_monomer_data['id']
@@ -119,11 +109,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=2)
 		if len(cistron_monomer_ids) == 1:
 			plt.plot(time / 60., ip_monomer_counts,
-					 label = cistron_monomer_ids[0], alpha=0.5)
+					 label = cistron_monomer_ids[0])
 		else:
 			for m in range(len(cistron_monomer_ids)):
 				plt.plot(time / 60., ip_monomer_counts[:,m],
-						 label = cistron_monomer_ids[m], alpha=0.5)
+						 label = cistron_monomer_ids[m])
 
 		plt.xlabel("Time (min)")
 		plt.ylabel("Protein Counts")
@@ -137,11 +127,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=2)
 		if len(cistron_ids) == 1:
 			plt.plot(time / 60., ip_mRNA_counts,
-					 label=cistron_ids[0], alpha=0.5)
+					 label=cistron_ids[0])
 		else:
 			for r in range(len(cistron_ids)):
 				plt.plot(time / 60., ip_mRNA_counts[:,r],
-						 label = cistron_ids[r], alpha=0.5)
+						 label = cistron_ids[r])
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
 		plt.title(f"mRNA Counts for Proteins of Interest in variant {variant},"
@@ -149,7 +139,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.legend()
 
 		plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
-		exportFigure(plt, plotOutDir, plotOutFileName + '_lowvars2_variant_' +
+		exportFigure(plt, plotOutDir, plotOutFileName + '_variant_' +
 					 str(variant) + '_seed_' + str(seed), metadata)
 		plt.close("all")
 
