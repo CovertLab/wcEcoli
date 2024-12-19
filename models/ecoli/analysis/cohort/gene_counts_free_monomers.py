@@ -6,7 +6,7 @@ doubling times are different across different seeds (so they will not line up
 nicely)
 """
 
-# todo: add descriptions for each function, add averaging functionality, figure out what seedOutDir must be to handle seeds that start at any seed, check that plot out names are ok with the code style
+# todo: add descriptions for each function, check that plot out names are ok with the code style
 
 import pickle
 import os
@@ -22,15 +22,15 @@ from wholecell.io.tablereader import TableReader
 
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	# 'ACRD-MONOMER[i]',
-	# 'CYNX-MONOMER[i]',
-	# 'B0270-MONOMER[i]',
-	# 'G7634-MONOMER[i]',
-	'EG11854-MONOMER[c]',
+	#'ACRD-MONOMER[i]',
+	#'CYNX-MONOMER[i]',
+	#'B0270-MONOMER[i]',
+	'G7634-MONOMER[i]',
+	#'EG11854-MONOMER[c]',
 	#'G6606-MONOMER[c]',
 	#'EG10542-MONOMER[c]',
-	'PD03938[c]', # metR
-	'RPOS-MONOMER[c]', # rpoS
+	#'PD03938[c]', # metR
+	#'RPOS-MONOMER[c]', # rpoS
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -137,6 +137,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						 + str(seed) + '_geneIDs_' + str(gene_list), metadata)
 			plt.close("all")
 
+		# function to match gene symbols to monomer ids
 		def get_gene_symbols_for_monomer_ids():
 			# code adapted from convert_to_flat.py
 			RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
@@ -159,7 +160,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 				return monomer_ids_to_gene_symbols
 
-		# function to obtain common names for the proteins of interest
+		# function to obtain common names for proteins of interest
 		def get_common_names(protein_id):
 			"""
 			Get the common names for each protein id
@@ -172,7 +173,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return gene_symbol
 
 
-		# make a plot for the counts of each seed:
+		# make a plot for the counts of each seed
 		def plot_counts_per_protein(simOutDir, protein, cistron,):
 			# get the common name for the protein
 			common_name = get_common_names(protein[0])
@@ -218,7 +219,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# get the average counts for each generation across all seeds:
 			average_monomer_cts = []
 			average_mRNA_cts = []
-			for seed in seeds:
+			for seed in range(len(seeds)): # range(len(seeds)) gets seed idx
 				seed_dts = dts_values[seed]
 				seed_time = time_values[seed]
 				seed_monomer = monomer_values[seed]
@@ -235,9 +236,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						time_range = ((seed_time >= ((seed_dts[gen-1]) * 60.))
 									  & (seed_time <= ((seed_dts[gen]) * 60.)))
 
-					# get the average monomer and mRNA counts for each generation:
+					# get the avg. monomer and mRNA counts for each generation:
 					time_idxs = np.where(time_range)
-					all_gen_monomer_cts.append(np.mean(seed_monomer[time_idxs[0]]))
+					all_gen_monomer_cts.append(
+						np.mean(seed_monomer[time_idxs[0]]))
 					all_gen_mRNA_cts.append(np.mean(seed_mRNA[time_idxs[0]]))
 
 				average_monomer_cts.append(all_gen_monomer_cts)
@@ -251,7 +253,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			avg_time_points = []
 			for i in range(len(average_generation_durations)):
 				if i == 0:
-					avg_time_points.append(average_generation_durations[i] / 2.)
+					avg_time_points.append(
+						average_generation_durations[i] / 2.)
 				else:
 					summed_time = np.sum(average_generation_durations[:i])
 					avg_time_points.append(
@@ -286,12 +289,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Plot specs for the mRNA counts graph
 			plt.xlabel("Time (min)"); plt.ylabel("Cistron Counts")
-			plt.title(f"mRNA Counts for {cistron[0]} (common name: {common_name})")
+			plt.title(f"mRNA Counts for {cistron[0]} "
+					  f"(common name: {common_name})")
 			plt.legend()
 
 			# generate a table below the plots:
-			columns = ('avg. cycle duration', 'avg. monomer counts', 'avg. mRNA counts')
-			rows = ['Generation %d' % p for p in (1, 2, 3, 4, 5, 6, 7, 8)] + ['Overall Average']
+			columns = ('avg. cycle duration', 'avg. monomer counts',
+					   'avg. mRNA counts')
+			rows = ['Generation %d' % p for p in
+					(1, 2, 3, 4, 5, 6, 7, 8)] + ['Overall Average']
 
 			# add the overall average to each:
 			avg_generation_durations_all = np.mean(average_generation_durations)
@@ -299,12 +305,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			avg_mRNA_cts_all = np.mean(avg_mRNA_cts)
 
 			# add the overall average to the end of the arrays:
-			avg_generation_durations = np.append(average_generation_durations, avg_generation_durations_all)
+			avg_generation_durations = np.append(average_generation_durations,
+												 avg_generation_durations_all)
 			avg_monomer_cts = np.append(avg_monomer_cts, avg_monomer_cts_all)
 			avg_mRNA_cts = np.append(avg_mRNA_cts, avg_mRNA_cts_all)
 
 			# create the data for the table:
-			table_data = np.array([avg_generation_durations, avg_monomer_cts, avg_mRNA_cts]).T
+			table_data = np.array([avg_generation_durations,
+								   avg_monomer_cts, avg_mRNA_cts]).T
 
 			# create the table:
 			plt.table(cellText=table_data,rowLabels=rows, colLabels=columns,
@@ -326,11 +334,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sim_dir = cell_paths[0] # this can be arbitrary, just needs to exist
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
-		# Determine gene ids
+		# load data needed to determine gene/cistron ids
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		mRNA_cistron_sim_data = sim_data.process.transcription.cistron_data.struct_array
-		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+		monomer_sim_data = (
+			sim_data.process.translation.monomer_data.struct_array)
 
 		# extract info about the protein(s) from the monomer data:
 		monomer_data_idxs = []
@@ -338,67 +346,41 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			monomer_idx = np.where(monomer_sim_data['id'] == protein)
 			monomer_idx = monomer_idx[0][0]
 			monomer_data_idxs.append(monomer_idx)
+		# ip_monomer_data includes helpful info: ip_monomer_data.dtype.names
 		ip_monomer_data = monomer_sim_data[monomer_data_idxs]
-		ip_monomer_ids = ip_monomer_data['id']
-		ip_cistron_ids = ip_monomer_data['cistron_id']
-		print('ip_cistron_ids:' ); print(ip_cistron_ids)
+		monomer_ids = ip_monomer_data['id']
+		cistron_ids = ip_monomer_data['cistron_id']
 
-		# extract info about the protein(s) from the mRNA/cistron data:
-		mRNA_data_idxs = []
-		for cistron in ip_cistron_ids:
-			mRNA_idx = np.where(mRNA_cistron_sim_data['id'] == cistron)
-			mRNA_idx = mRNA_idx[0][0]
-			mRNA_data_idxs.append(mRNA_idx)
-		ip_mRNA_data = mRNA_cistron_sim_data[mRNA_data_idxs]
-		# todo: check if this section is even nessessary, bc I am not sure any of it is used
-		ip_gene_ids = np.array(ip_mRNA_data['gene_id'])
-		cistron_ids = ip_cistron_ids
-		print('cistron_ids: ');
-		print(cistron_ids)
-
-
+		# create a dictionary to map cistron ids to monomer ids
 		cistron_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
 										   monomer_sim_data['id']))
-		cistron_monomer_ids = [cistron_monomer_id_dict.get(mRNA_id)
-							   for mRNA_id in cistron_ids]
-
 
 		# iterate through the seeds to generate graphs for each seed and
 		# consolidates average counts and all on one graph
 		for seed in seeds:
-			# cell paths for the seed:
+			# Generate all the cell paths for the seed:
 			cell_paths = (
 				self.ap.get_cells(seed=[seed])) # seed needs to be in brackets
-
 			# Extract data for the seed
 			time, ip_monomer_counts, ip_mRNA_counts = (
 				extract_data(simOutDir, cistron_ids, cell_paths,
-							 cistron_monomer_ids))
-
+							 monomer_ids))
 			# Plot the counts for the seed
-			plot_counts_per_seed(seed, cell_paths, cistron_monomer_ids, time,
+			plot_counts_per_seed(seed, cell_paths, monomer_ids, time,
 								 ip_monomer_counts, ip_mRNA_counts)
-
 
 		# Now, plot for each individual protein across all seeds
 		for protein in interest_proteins:
-
 			# get the the cistron id for the protein
 			cistron_id = \
-				[key for key, v in cistron_monomer_id_dict.items() if v == protein]
+				[key for key,
+				v in cistron_monomer_id_dict.items() if v == protein]
 			protein_id = [protein]  # fomrat the protein id for extract_data
-			print("cistron_id: ")
-			print(cistron_id)
 
 			# plot the counts for the protein
-			print("plotting for protein: ")
-			print(protein)
-			print("cistron_monomer_ids: ")
-			print(cistron_monomer_ids)
-			print("cistron_ids: ")
-			print(cistron_ids)
+			print("plotting for protein: "); print(protein)
+			print("cistron_id: "); print(cistron_id)
 			plot_counts_per_protein(simOutDir, protein_id, cistron_id)
-
 
 
 if __name__ == '__main__':
