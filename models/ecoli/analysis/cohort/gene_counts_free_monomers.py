@@ -6,6 +6,8 @@ doubling times are different across different seeds (so they will not line up
 nicely)
 """
 
+# todo: add descriptions for each function, add averaging functionality, figure out what seedOutDir must be to handle seeds that start at any seed, check that plot out names are ok with the code style
+
 import pickle
 import os
 from matplotlib import pyplot as plt
