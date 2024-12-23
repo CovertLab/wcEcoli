@@ -25,11 +25,13 @@ interest_proteins = np.array([
 	#"EG10159-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpX"
     #"G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
 	#"EG10156-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpA"
-	'EG10542-MONOMER[c]', # lon
+	#'EG10542-MONOMER[c]', # lon
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
 	#'EG10542-MONOMER[c]', # rpoS
-	#"EG11969-MONOMER[c]", # supposedly in a complex but I cannot see a difference
+	#"EG11969-MONOMER[c]", # monomer in a complex
+	#"ACYLCOASYN-MONOMER[c]", # monomer in a complex
+	"RIB5PISOMA-MONOMER[c]", # monomer in a complex
 
 ])
 
@@ -165,6 +167,109 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						 + str(seed) + '_geneIDs_' + str(gene_list), metadata)
 			plt.close("all")
 
+		# function to plot all types of counts for each protein per seed
+		def plot_count_type_per_seed_comparison(seed, cell_paths, monomer_ids,
+												time,
+												total_monomer_counts,
+												free_monomer_counts,
+												complexed_monomer_counts):
+
+			# Plotting
+			plt.figure(figsize=(8.5, 14))
+
+			# Get doubling times for the cells with this seed index
+			dts, dt_duration = extract_doubling_times(cell_paths)
+
+			# Total Monomer Counts Plot
+			plt.subplot(3, 1, 1)
+
+			# plot the doubling times
+			for x in dts:
+				plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=1,
+							alpha=0.5)
+
+			# plot the data
+			gene_list = []
+			if len(monomer_ids) == 1:
+				common_name = get_common_names(monomer_ids[0])
+				name = monomer_ids[0] + ' (' + common_name + ')'
+				gene_list.append(common_name)
+				plt.plot(time / 60., total_monomer_counts,
+						 label=name)
+			else:
+				for m in range(len(monomer_ids)):
+					common_name = get_common_names(monomer_ids[m])
+					name = monomer_ids[m] + ' (' + common_name + ')'
+					gene_list.append(common_name)
+					plt.plot(time / 60., total_monomer_counts[:, m],
+							 label=name, alpha=0.9)
+
+			plt.xlabel("Time (min)");
+			plt.ylabel("Total Monomer Counts")
+			plt.title(f"Total Monomer Counts in Seed {seed}")
+			plt.legend()
+
+			# Free Monomer Counts Plot
+			plt.subplot(3, 1, 2)
+
+			# plot the doubling times
+			for x in dts:
+				plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=1,
+							alpha=0.5)
+
+			# plot the data
+			if len(monomer_ids) == 1:
+				common_name = get_common_names(monomer_ids[0])
+				name = monomer_ids[0] + ' (' + common_name + ')'
+				plt.plot(time / 60., free_monomer_counts,
+						 label=name, alpha=0.5)
+			else:
+				for m in range(len(monomer_ids)):
+					common_name = get_common_names(monomer_ids[m])
+					name = monomer_ids[m] + ' (' + common_name + ')'
+					plt.plot(time / 60., free_monomer_counts[:, m],
+							 label=name, alpha=0.5)
+
+			plt.xlabel("Time (min)")
+			plt.ylabel("Free Monomer Counts")
+			plt.title(f"Free Monomer Counts in Seed {seed}")
+			plt.legend()
+
+			# Complexed Monomer Counts Plot
+			plt.subplot(3, 1, 3)
+
+			# plot the doubling times
+			for x in dts:
+				plt.axvline(x=x, color='#bcbd22', linestyle='--', linewidth=1,
+							alpha=0.5)
+
+			# plot the data
+			if len(monomer_ids) == 1:
+				common_name = get_common_names(monomer_ids[0])
+				name = monomer_ids[0] + ' (' + common_name + ')'
+				plt.plot(time / 60., complexed_monomer_counts,
+						 label=name)
+
+			else:
+				for m in range(len(monomer_ids)):
+					common_name = get_common_names(monomer_ids[m])
+					name = monomer_ids[m] + ' (' + common_name + ')'
+					plt.plot(time / 60., complexed_monomer_counts[:, m],
+							 label=name, alpha=0.9)
+
+			plt.xlabel("Time (min)")
+			plt.ylabel("Complexed Monomer Counts")
+			plt.title(f"Predicted Counts for Monomers within Complexes"
+					  f" in Seed {seed}")
+			plt.legend()
+
+			plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
+			plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
+			exportFigure(plt, plotOutPath, plotOutFileName +
+						 '_cohortPlot_compareCounts_seed_'
+						 + str(seed) + '_geneIDs_' + str(gene_list), metadata)
+			plt.close("all")
+
 		# function to match gene symbols to monomer ids
 		def get_gene_symbols_for_monomer_ids():
 			# code adapted from convert_to_flat.py
@@ -206,7 +311,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# get the common name for the protein
 			common_name = get_common_names(protein[0])
-			print("common_name: "); print(common_name)
 
 			# build these for the average value table:
 			time_values = []
@@ -279,8 +383,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# average the monomer and mRNA counts across all seeds:
 			avg_monomer_cts = np.mean(average_monomer_cts, axis=0)
 			avg_mRNA_cts = np.mean(average_mRNA_cts, axis=0)
-			print("avg_monomer_cts: "); print(avg_monomer_cts)
-			print("avg_mRNA_cts: "); print(avg_mRNA_cts)
+
 			# plot at the middle of each average generation duration:
 			avg_time_points = []
 			for i in range(len(average_generation_durations)):
@@ -301,7 +404,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plt.title(f"Predicted Counts of {protein[0]} ({common_name}) "
 					  f"Monomers within Complexes")
 			plt.legend()
-			print("#1")
+
 			# mRNA Counts Plot
 			plt.subplot(2, 1, 2)
 			# loop through the seeds:
@@ -347,7 +450,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# create the data for the table:
 			table_data = np.array([avg_generation_durations,
 								   avg_monomer_cts, avg_mRNA_cts]).T
-			print(table_data)
 			# create the table:
 			plt.table(cellText=table_data,rowLabels=rows, colLabels=columns,
                       loc='bottom', bbox=[0.1, -0.75, 1, 0.5])
@@ -358,6 +460,104 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						 '_cohortPlot_geneID_' + common_name, metadata)
 			plt.close("all")
 
+		# Plot type of counts for each protein across all seeds
+		def plot_counts_per_protein_comparison(simOutDir, protein, cistron):
+
+			# get the common name for the protein
+			common_name = get_common_names(protein[0])
+
+			# Plotting
+			plt.figure(figsize=(8.5, 14))
+			colors = ['darkorange', 'lightseagreen', 'blueviolet',
+					  'olive','hotpink',]
+
+			# Total Counts Plot
+			plt.subplot(3, 1, 1)
+
+			# loop through the seeds:
+			for seed in seeds:
+				# cell paths for the seed:
+				cell_paths = (
+					self.ap.get_cells(seed=[seed], only_successful=True))
+				# Extract data for the seed
+				(time, total_monomer_counts, free_monomer_counts,
+				 complexed_monomer_counts, mRNA_counts) = (
+					extract_data(simOutDir, cell_paths, cistron, protein))
+				c = colors[seed]
+
+				# plot the data
+				plt.plot(time / 60., total_monomer_counts,
+						 label=f'seed {seed}', alpha=0.9,
+						 linestyle=':', color=c)
+
+
+			# Plot specs for the total monomer counts graph
+			plt.xlabel("Time (min)");
+			plt.ylabel("Total Monomer Counts")
+			plt.title(f"Total Monomer Counts of {protein[0]} ({common_name})")
+			plt.legend()
+
+			# Free Monomer Counts Plot
+			plt.subplot(3, 1, 2)
+
+			# loop through the seeds:
+			for seed in seeds:
+				# cell paths for the seed:
+				cell_paths = (
+					self.ap.get_cells(seed=[seed], only_successful=True))
+				# Extract data for the seed
+				(time, total_monomer_counts, free_monomer_counts,
+				 complexed_monomer_counts, mRNA_counts) = (
+					extract_data(simOutDir, cell_paths, cistron, protein))
+				c = colors[seed]
+
+				# plot the data
+				plt.plot(time / 60., free_monomer_counts,
+						 label=f'seed {seed}', alpha=0.8,
+						 linestyle='--', color=c)
+
+			# Plot specs for the free monomer counts graph
+			plt.xlabel("Time (min)");
+			plt.ylabel("Free Monomer Counts")
+			plt.title(f"Free Monomer Counts of {protein[0]} ({common_name})")
+			plt.legend()
+
+			# Complexed Monomer Counts Plot
+			plt.subplot(3, 1, 3)
+
+			# loop through the seeds:
+			for seed in seeds:
+				# cell paths for the seed:
+				cell_paths = (
+					self.ap.get_cells(seed=[seed], only_successful=True))
+				# Extract data for the seed
+				(time, total_monomer_counts, free_monomer_counts,
+				 complexed_monomer_counts, mRNA_counts) = (
+					extract_data(simOutDir, cell_paths, cistron, protein))
+				c = colors[seed]
+
+				# plot the data
+				plt.plot(time / 60., total_monomer_counts,
+						 alpha=1, linestyle=':', color=c, linewidth=0.5)
+				plt.plot(time / 60., complexed_monomer_counts,
+						 label=f'seed {seed}', alpha=0.9, color=c,
+						 linewidth=1)
+				plt.plot(time / 60., free_monomer_counts,
+						 alpha=0.5, linestyle='--', color=c)
+
+			# Plot specs for the complexed monomer counts graph
+			plt.xlabel("Time (min)");
+			plt.ylabel("Complexed Monomer Counts")
+			plt.title(f"Predicted Counts of {protein[0]} ({common_name}) "
+					  f"Monomers within Complexes")
+			plt.legend()
+
+			# export plot:
+			plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
+			exportFigure(plt, plotOutDir, plotOutFileName +
+						 '_cohortPlot_compareCounts_geneID_' + common_name,
+						 metadata)
+			plt.close("all")
 
 
 		# extract data paths
@@ -405,6 +605,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 								 time, total_monomer_counts, free_monomer_counts,
 								 complexed_monomer_counts , mRNA_counts)
 
+			# Plot comparisons each type of count per seed
+			plot_count_type_per_seed_comparison(seed, cell_paths, monomer_ids,
+												time, total_monomer_counts,
+												free_monomer_counts,
+												complexed_monomer_counts)
+
 		# Now, plot for each individual protein across all seeds
 		for protein in interest_proteins:
 			# get the the cistron id for the protein
@@ -417,6 +623,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("plotting for protein: "); print(protein)
 			print("cistron_id: "); print(cistron_id[0])
 			plot_counts_per_protein(simOutDir, protein_id, cistron_id)
+			plot_counts_per_protein_comparison(simOutDir, protein_id, cistron_id)
 
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ interest_proteins = np.array([
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
 	#'EG10542-MONOMER[c]', # rpoS
-	#"EG11969-MONOMER[c]", # supposedly in a complex but I cannot see a difference
+	#"EG11969-MONOMER[c]",
 
 ])
 
