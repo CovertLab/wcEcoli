@@ -22,10 +22,10 @@ from wholecell.io.tablereader import TableReader
 
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	"EG10158-MONOMER[c]", # ATP-dependent Clp protease proteolytic subunit
+	#"EG10158-MONOMER[c]", # ATP-dependent Clp protease proteolytic subunit
 	"EG10159-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpX"
-    "G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
-	"EG10156-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpA"
+    #"G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
+	#"EG10156-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpA"
 	#'EG10542-MONOMER[c]', # lon
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
@@ -59,12 +59,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Load the time data
 			time = read_stacked_columns(cell_paths, 'Main',
 										'time', ignore_exception=True)
-			# Get the protein counts for each gene/protein
+			# Get the total counts for each protein
 			monomer_counts = (
 				read_stacked_columns(cell_paths, 'MonomerCounts',
 									 'monomerCounts',
 									 ignore_exception=True))[:, monomer_indexes]
-			# Get the mRNA counts for each gene/protein
+			# Get the mRNA counts for each gene
 			mRNA_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True)[:, mRNA_indexes]
