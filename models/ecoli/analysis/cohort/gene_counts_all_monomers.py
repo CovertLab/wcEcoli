@@ -382,8 +382,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				extract_data(simOutDir, cell_paths, cistron_ids,
 							 monomer_ids))
 			# Plot the counts for the seed
-			plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids, time,
-								 monomer_counts, mRNA_counts)
+			plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids,
+								 time, monomer_counts, mRNA_counts)
 
 		# Now, plot for each individual protein across all seeds
 		for protein in interest_proteins:
