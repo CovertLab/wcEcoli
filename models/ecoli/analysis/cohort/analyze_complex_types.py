@@ -23,9 +23,9 @@ IGNORE_FIRST_N_GENS = 2
 COMPLEX_THRESHOLD = .9
 
 # path to tables:
-monomers_in_multiple_complexes_table_path = '~/wcEcoli/out/CLClim3dNE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsmonomers_in_multiple_protein_complexes.tsv'
-monomers_in_one_complex_path = '~/wcEcoli/out/CLClim3dNE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsMonomers_in_one_complex.tsv'
-monomers_in_zero_complexes_path = '~/wcEcoli/out/CLClim3dNE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsMonomers_not_in_complex.tsv'
+monomers_in_multiple_complexes_table_path = '~/wcEcoli/out/CLClim3NE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsmonomers_in_multiple_protein_complexes.tsv'
+monomers_in_one_complex_path = '~/wcEcoli/out/CLClim3NE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsMonomers_in_one_complex.tsv'
+monomers_in_zero_complexes_path = '~/wcEcoli/out/CLClim3NE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsMonomers_not_in_complex.tsv'
 
 # read in the tables
 monomers_in_multiple_complexes = pd.read_csv(monomers_in_multiple_complexes_table_path, sep='\t')
@@ -196,7 +196,33 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		complex_threshold_0, free_threshold_0, below_threshold_0 = (
 			self.determine_complex_fraction(simDataFile,
 											monomers_in_zero_complexes))
-		hi = 5
+
+		# save the tables:
+		save_path = os.path.join(plotOutDir, 'complex_classifications_preParca')
+		monomers_in_multiple_complexes_path = os.path.join(save_path, 'monomers_in_multiple_complexes.csv')
+		monomers_in_one_complex_path = os.path.join(save_path, 'monomers_in_one_complex.csv')
+		monomers_in_zero_complexes_path = os.path.join(save_path, 'monomers_in_zero_complexes.csv')
+		if not os.path.exists(save_path):
+			os.makedirs(save_path)
+			if not os.path.exists(monomers_in_multiple_complexes_path):
+				os.makedirs(monomers_in_multiple_complexes_path)
+			if not os.path.exists(monomers_in_one_complex_path):
+				os.makedirs(monomers_in_one_complex_path)
+			if not os.path.exists(monomers_in_zero_complexes_path):
+				os.makedirs(monomers_in_zero_complexes_path)
+
+		# save the tables:
+		complex_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, 'complex_threshold_m.csv'))
+		free_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, 'free_threshold_m.csv'))
+		below_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, 'below_threshold_m.csv'))
+		complex_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, 'complex_threshold_1.csv'))
+		free_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, 'free_threshold_1.csv'))
+		below_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, 'below_threshold_1.csv'))
+		complex_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, 'complex_threshold_0.csv'))
+		free_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, 'free_threshold_0.csv'))
+		below_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, 'below_threshold_0.csv'))
+
+
 
 if __name__ == '__main__':
 	Plot().cli()
