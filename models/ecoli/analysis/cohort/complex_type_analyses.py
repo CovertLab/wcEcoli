@@ -46,6 +46,7 @@ def generate_data(complexes_table):
 
 	monomers = []
 	monomer_stoichiometry = []
+	monomer_number = []
 	for row in stoichiometry:
 		current_monomers = []
 		current_stoichiometry = []
@@ -54,6 +55,7 @@ def generate_data(complexes_table):
 			current_stoichiometry.append(row[key])
 		monomers.append(current_monomers)
 		monomer_stoichiometry.append(current_stoichiometry)
+		monomer_number.append(len(current_monomers))
 
 	hi = 5
 
