@@ -143,6 +143,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		merged_table = pd.merge(full_counts_table, table, left_on='Monomer ID',
 			right_on='monomer_id', how='inner')
 		merged_table = merged_table.drop(columns=['monomer_id'])
+		print('merged table length:', len(merged_table))
 
 		# Generate a new table for the proteins that have a complex fraction value above the threshold:
 		complex_threshold = merged_table[merged_table['Complex Fraction'] > COMPLEX_THRESHOLD]
@@ -154,13 +155,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		free_threshold = free_threshold.reset_index(drop=True)
 		print('# of proteins with free fractions above the threshold:', len(free_threshold))
 
-		# todo: delete this later
 		# Generate a new table for the proteins that have a complex fraction value below the threshold:
 		complex_below_threshold = merged_table[merged_table['Complex Fraction'] <= COMPLEX_THRESHOLD]
 		complex_below_threshold = complex_below_threshold.reset_index(drop=True)
 		print('# of proteins with complex fractions below the threshold:', len(complex_below_threshold))
 
-		# todo: delete this later
 		# Generate a new table for the proteins that have a free fraction value below the threshold:
 		free_below_threshold = merged_table[merged_table['Free Fraction'] <= COMPLEX_THRESHOLD]
 		free_below_threshold = free_below_threshold.reset_index(drop=True)
@@ -170,6 +169,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		below_threshold = merged_table[(merged_table['Complex Fraction'] <= COMPLEX_THRESHOLD) & (merged_table['Free Fraction'] <= COMPLEX_THRESHOLD)]
 		below_threshold = below_threshold.reset_index(drop=True)
 		print('# of proteins with both fractions below the threshold:', len(below_threshold))
+
+		# figure out which monomers from the merged_table do not show up in the free_threshold, complex_threshold, or below_threshold tables:
+		free_threshold_ids_set = set(free_threshold['Monomer ID'])
+		complex_threshold_ids_set = set(complex_threshold['Monomer ID'])
+		below_threshold_ids_set = set(below_threshold['Monomer ID'])
+		all_threshold_ids = free_threshold_ids_set | complex_threshold_ids_set | below_threshold_ids_set
+
+		# Find missing IDs that are not in the tables of interest:
+		missing_ids = [id for id in merged_table['Monomer ID'] if id not in all_threshold_ids]
+		print('missing ids:', missing_ids)
+		print('number of missing ids:', len(missing_ids))
 
 		return complex_threshold, free_threshold, below_threshold
 
