@@ -64,27 +64,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		all_cells = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens),
 			only_successful=True)
-		sim_dir = all_cells[0]  # this can be arbitrary, just needs to exist
-		simOutDir = os.path.join(sim_dir, 'simOut')
-
-		monomer_counts_reader = TableReader(os.path.join(simOutDir,
-														 'MonomerCounts'))
-		monomer_idx_dict = {monomer: i for i, monomer in enumerate(
-			monomer_counts_reader.readAttribute('monomerIds'))}
-		monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-						   monomer_id in self.all_monomer_ids]
 
 		# Get the average total protein counts for each monomer:
 		total_counts = (
 			read_stacked_columns(all_cells, 'MonomerCounts',
 								 'monomerCounts', ignore_exception=True))
 		avg_total_counts = np.mean(total_counts, axis=0)
-
-		total_monomer_counts = (
-				read_stacked_columns(all_cells, 'MonomerCounts',
-									 'monomerCounts',
-									 ignore_exception=True))[:, monomer_indexes]
-		avg_total_monomer_counts = np.mean(total_monomer_counts, axis=0)
 
 		# Get the average free protein counts for each monomer:
 		(free_counts,) = read_stacked_bulk_molecules(
@@ -96,12 +81,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		#
 		hi = 5
-		import ipdb;
-		ipdb.set_trace()
 
-		return self.all_monomer_ids, avg_total_counts, avg_free_counts, avg_complex_counts
 
-	def determine_complex_fraction(self, simDataFile):
+		return avg_total_counts, avg_free_counts, avg_complex_counts
+
+	def determine_fraction_table(self, simDataFile):
 		"""
 		Determines the fraction of proteins in complex form for each monomer
 		Args:
@@ -110,29 +94,109 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			complex_fraction: fraction of proteins in complex form for each monomer
 		"""
 		# Obtain counts data:
-		monomer_ids, avg_total_counts, avg_free_counts, avg_complex_counts = self.generate_data(
+		avg_total_counts, avg_free_counts, avg_complex_counts = self.generate_data(
 			simDataFile)
+		# Remove the last three characters from each value:
+		monomer_ids = [id[:-3] for id in self.all_monomer_ids]
+
+		# Calculate the faction in complex and in free from:
+		# todo: not sure if this is needed, it might automatically classify as none if the denominator is 0. double check this!
+		complex_fraction = np.zeros(len(monomer_ids))
+		free_fraction = np.zeros(len(monomer_ids))
+		for i in range(len(monomer_ids)):
+			if avg_total_counts[i] == 0:
+				complex_fraction[i] = None
+				free_fraction[i] = None
+				print('Monomer ID:', monomer_ids[i], 'has no total counts')
+			else:
+				complex_fraction[i] = avg_complex_counts[i] / avg_total_counts[i]
+				free_fraction[i] = avg_free_counts[i] / avg_total_counts[i]
 
 
+		# make a table of the monomers and their counts and their fractions:
+		monomer_counts = pd.DataFrame({'Monomer ID': monomer_ids,
+									   'Total Counts': avg_total_counts,
+									   'Free Counts': avg_free_counts,
+									   'Free Fraction': free_fraction,
+									   'Complex Counts': avg_complex_counts,
+									   'Complex Fraction': complex_fraction})
 
-		# Using the threshold, determine which monomers are considered in complex form:
-		complex_fraction = avg_complex_counts / avg_total_counts
+		return monomer_counts
 
+	def determine_complex_fraction(self, simDataFile, table):
+		"""
+		Determines how many proteins have a fraction of proteins in complex form above the threshold and under it
+		Args:
+			simDataFile:
+			table:
 
+		Returns:
 
-		return complex_fraction
+		"""
+		# print the original table length:
+		print('original table length:', len(table))
+
+		# Obtain the fraction table:
+		full_counts_table = self.determine_fraction_table(simDataFile)
+
+		# merge the two tables:
+		merged_table = pd.merge(full_counts_table, table, left_on='Monomer ID',
+			right_on='monomer_id', how='inner')
+		merged_table = merged_table.drop(columns=['monomer_id'])
+
+		# Generate a new table for the proteins that have a complex fraction value above the threshold:
+		complex_threshold = merged_table[merged_table['Complex Fraction'] > COMPLEX_THRESHOLD]
+		complex_threshold = complex_threshold.reset_index(drop=True)
+		print('# of proteins with complex fractions above the threshold:', len(complex_threshold))
+
+		# Generate a new table for the proteins that have a free fraction value above the threshold:
+		free_threshold = merged_table[merged_table['Free Fraction'] > COMPLEX_THRESHOLD]
+		free_threshold = free_threshold.reset_index(drop=True)
+		print('# of proteins with free fractions above the threshold:', len(free_threshold))
+
+		# todo: delete this later
+		# Generate a new table for the proteins that have a complex fraction value below the threshold:
+		complex_below_threshold = merged_table[merged_table['Complex Fraction'] <= COMPLEX_THRESHOLD]
+		complex_below_threshold = complex_below_threshold.reset_index(drop=True)
+		print('# of proteins with complex fractions below the threshold:', len(complex_below_threshold))
+
+		# todo: delete this later
+		# Generate a new table for the proteins that have a free fraction value below the threshold:
+		free_below_threshold = merged_table[merged_table['Free Fraction'] <= COMPLEX_THRESHOLD]
+		free_below_threshold = free_below_threshold.reset_index(drop=True)
+		print('# of proteins with free fractions below the threshold:', len(free_below_threshold))
+
+		# Generate a new table for the proteins that have both fractions under the threshold:
+		below_threshold = merged_table[(merged_table['Complex Fraction'] <= COMPLEX_THRESHOLD) & (merged_table['Free Fraction'] <= COMPLEX_THRESHOLD)]
+		below_threshold = below_threshold.reset_index(drop=True)
+		print('# of proteins with both fractions below the threshold:', len(below_threshold))
+
+		return complex_threshold, free_threshold, below_threshold
 
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# Get the paths for all cells:
 
-		cell_paths = self.ap.get_cells()
 		self.n_total_gens = self.ap.n_generation
 
+		# todo: there might be some slight mismatches becuase of different ecocyc update versions?
+		# generate data for monomers in multiple complexes:
+		print('Table of interest: monomers in multiple complexes')
+		complex_threshold_m, free_threshold_m, below_threshold_m = (
+			self.determine_complex_fraction(simDataFile,
+											monomers_in_multiple_complexes))
+
+		# generate data for monomers in multiple complexes:
+		print('Table of interest: monomers in one complex')
+		complex_threshold_1, free_threshold_1, below_threshold_1 = (
+			self.determine_complex_fraction(simDataFile,
+											monomers_in_one_complex))
+
+		# generate data for monomers in multiple complexes:
+		print('Table of interest: monomers in no complexes')
+		complex_threshold_0, free_threshold_0, below_threshold_0 = (
+			self.determine_complex_fraction(simDataFile,
+											monomers_in_zero_complexes))
 		hi = 5
-		monomer_ids, avg_total_counts, avg_free_counts, avg_complex_counts = self.generate_data(simDataFile)
-
-
-
 
 if __name__ == '__main__':
 	Plot().cli()
