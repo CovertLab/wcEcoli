@@ -31,8 +31,13 @@ interest_proteins = np.array([
 	#'EG10542-MONOMER[c]', # rpoS
 	#"EG11969-MONOMER[c]", # monomer in a complex
 	#"ACYLCOASYN-MONOMER[c]", # monomer in a complex
-	"RIB5PISOMA-MONOMER[c]", # monomer in a complex
-
+	#"RIB5PISOMA-MONOMER[c]", # monomer in a complex
+	#'PD00413[c]', # monomer that is supposed to be a free monomer
+	#'ANTHRANSYNCOMPI-MONOMER[c]', # monomer that is not supposed to be in a complex
+	#'EG10243-MONOMER[c]', # monomer that is supposed to be 95% complex
+	#"EG10871-MONOMER[c]", # monomer that is supposed to be 97% complex
+	#"EG11171-MONOMER[c]",
+	"BASR-MONOMER[c]", #
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -60,7 +65,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Load the time data
 			time = read_stacked_columns(cell_paths, 'Main',
 										'time', ignore_exception=True)
-			# Get the total  counts for each protein
+			# Get the total counts for each protein
 			total_monomer_counts = (
 				read_stacked_columns(cell_paths, 'MonomerCounts',
 									 'monomerCounts',
@@ -84,7 +89,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return (time, total_monomer_counts, free_monomer_counts,
 					complexed_monomer_counts, mRNA_counts)
 
-		# todo: make a plot with the predicted amount in complex
 		# function to extract doubling times for a seed:
 		def extract_doubling_times(cell_paths):
 			# Get doubling times for the cells with this seed index
