@@ -1,17 +1,17 @@
-### TODO: update this description and expected variant indices once we decide on a sampling scheme
 """
 Compare the impacts of increasing expression level and
-increasing or decreasing the translational efficiency of new genes, with the
-option to induce and/or knock out new gene expression after a particular
-generation. This variant assumes that new genes are present but not expressed in
-the wildtype simulation (new genes are knocked out by default).
+increasing or decreasing the translational efficiency of new genes,
+sampling these parameters, with the option to induce and/or knock out new gene
+expression after a particular generation. This variant assumes that new genes
+are present but not expressed in the wildtype simulation (new genes are knocked
+out by default).
 
 - From generations [0, `NEW_GENE_INDUCTION_GEN`), the new genes will be
 	transcribed and translated based upon the default parameters in wildtype
 	simulation (i.e. from the flat files).
 - From generations [`NEW_GENE_INDUCTION_GEN`, `NEW_GENE_KNOCKOUT_GEN`),
 	the new genes will be transcribed and translated using the expression
-	factor and translation efficiency value from the variant index.
+	factor and translation efficiency value sampled from the variant index.
 - From generations [`NEW_GENE_KNOCKOUT_GEN`, `FINAL_SHIFT_GEN`), new
 	gene expression probabilities will be set to 0 corresponding to new
 	gene knockout.
@@ -69,10 +69,7 @@ if NEW_GENE_KNOCKOUT_GEN != -1:
 		"New genes are knocked out by default, so induction should happen"
 		" before knockout.")
 
-# The variant index will be split into an index for each of these lists
-# which are written to simulation metadata for later use in analysis scripts
-
-### TODO: Write these to simulation metadata?
+# TODO: Write these to simulation metadata for later use in anaylsis scripts
 NEW_GENE_EXPRESSION_FACTOR_CONTROL = 0
 NEW_GENE_EXPRESSION_FACTOR_MIN = 7
 NEW_GENE_EXPRESSION_FACTOR_MAX = 10
@@ -102,7 +99,6 @@ def condition(sim_data, condition_index):
 	sim_data.external_state.current_timeline_id = condition_label
 	sim_data.external_state.saved_timelines[condition_label] = [(
 		0, sim_data.conditions[condition_label]["nutrients"])]
-
 
 def determine_new_gene_ids_and_indices(sim_data):
 	"""
@@ -145,10 +141,9 @@ def determine_new_gene_ids_and_indices(sim_data):
 
 	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
 
-# This is the only function that should have to be different from new_gene_internal_shift variant
 def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	"""
-	Maps variant index to new gene expression factor and translation effieincy
+	Maps variant index to sampled new gene expression factor and translation efficiency
 
 	Returns:
 		expression_factor: will multiply new gene expression by
@@ -157,8 +152,6 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	"""
 	# Determine factor for new gene expression and value for new
 	# gene translation efficiency
-
-
 
 	if index == 0:
 		expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
@@ -169,7 +162,6 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 		trl_eff_value = 10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN, NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
 
 	return expression_factor, trl_eff_value
-
 
 def induce_new_genes(sim_data, index):
 	"""
@@ -193,7 +185,6 @@ def induce_new_genes(sim_data, index):
 		sim_data.adjust_new_gene_final_expression([gene_index], [expression_factor])
 		sim_data.process.translation.translation_efficiencies_by_monomer[
 			monomer_index] = trl_eff_value
-
 
 def knockout_induced_new_gene_expression(sim_data, index):
 	"""
@@ -221,7 +212,6 @@ def knockout_induced_new_gene_expression(sim_data, index):
 		sim_data.process.translation.translation_efficiencies_by_monomer[
 			monomer_index] = trl_eff_value
 
-
 def new_gene_param_sampling_internal_shift(sim_data, index):
 	"""
 	Apply variant. Specifies that from NEW_GENE_INDUCTION_GEN to
@@ -239,11 +229,11 @@ def new_gene_param_sampling_internal_shift(sim_data, index):
 
 	# Map variant index to expression factor and tranlsation efficiency value
 	index_remainder = index - condition_index * 1000
-	np.random.seed(index_remainder)
+	np.random.seed(index_remainder) # Use the index to set the random number seed for reproducibility
 	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
 		index_remainder)
 
-	# For the purposes of evaluating what params are being sampled
+	# For the purposes of evaluating what params are being sampled (TODO: remove later)
 	print("Overall index: ", index)
 	print("Condition index: ", condition_index)
 	print("Index remainder: ", index_remainder)
