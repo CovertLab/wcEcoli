@@ -49,8 +49,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		half_life_mask = monomers_to_complexes['total_monomer_half_life_(min)'] <= half_life_threshold
 		complex_mask = monomers_to_complexes['complex_id'].notnull()
 		protease_mask = monomers_to_complexes['monomer_protease_assignment'].notnull()
-		always_monomers_df = monomers_to_complexes[half_life_mask][~complex_mask][protease_mask].copy(deep = True)
-		as_complex_df = monomers_to_complexes[half_life_mask][complex_mask][protease_mask].copy(deep = True)
+		always_monomers_df = monomers_to_complexes[half_life_mask][~complex_mask][protease_mask]
+		as_complex_df = monomers_to_complexes[half_life_mask][complex_mask][protease_mask]
 
 		as_monomers_id_set = set(always_monomers_df['monomer_id'].to_list())
 		free_monomer_id_usually_complexed_set = set(as_complex_df['monomer_id'].to_list())
@@ -98,32 +98,39 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			only_successful=True)
 
 		# Get the average total momomer counts per cell
+		avg_total_counts = read_stacked_columns(all_cells, 'MonomerCounts',
+												'monomerCounts',
+												fun= lambda x: np.mean(x[:, total_monomer_indeces], axis=0),
+												ignore_exception=True)
 
-		avg_total_counts = read_stacked_columns(all_cells, 'MonomerCounts', 'monomerCounts',fun= lambda x: np.mean(x[:, total_monomer_indeces], axis=0))
 		avg_total_counts_df = pd.DataFrame(avg_total_counts, columns=list(total_counts_ids_to_check))
 
-		# Get the average free monomer and complex counts:
+		# Get the average free monomer and complex counts per cell
 		(detailed_counts,) = read_stacked_bulk_molecules(
 			all_cells, total_bulk_ids_to_check, ignore_exception=True)
 
-		cell_ids = stacked_cell_identification(all_cells, 'Main', 'time')
+		cell_ids = stacked_cell_identification(all_cells, 'Main', 'time', ignore_exception=True)
 
 		detailed_counts_df = pd.DataFrame(detailed_counts, columns = list(total_bulk_ids_to_check))
 		detailed_counts_df['cell_id'] = cell_ids
 		avg_detailed_counts_df = detailed_counts_df.groupby('cell_id').mean()
 
+		#isolate monomers that function in monomer form, sanity check, these should be the same
+		free_functional_monomers_df = avg_detailed_counts_df[list(as_monomers_id_set)]
+		total_functional_monomers_df = avg_total_counts_df[list(as_monomers_id_set)]
+
+		#isolate total cell counts of monomers that only function in complexes
+		monomers_comp_of_interest = free_monomer_id_usually_complexed_set.union(other_free_monomer_id_usually_complexed_set)
+		total_monomers_us_comp_df = avg_total_counts_df[list(monomers_comp_of_interest)]
+		total_monomers_us_comp_df.columns = ['total_' + col for col in total_monomers_us_comp_df.columns]
+
+		#isolate the detailed free monomer and complex monomer counts per cell
+		free_mon_and_comps_df = avg_detailed_counts_df[list(total_bulk_ids_to_check)]
+
+		total_and_detailed_complex_counts_df = pd.concat([total_monomers_us_comp_df, free_mon_and_comps_df], axis=1)
 
 		import ipdb;
 		ipdb.set_trace()
-
-
-
-
-
-
-
-
-
 
 
 
