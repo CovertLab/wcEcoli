@@ -1,0 +1,2 @@
+"id"	"stoichiometry"	"direction"	"catalyzed_by"	"substrate"	"kcat"	"km"
+"RXN-24414"	{"GLN[c]": -2, "ATP[c]": -2, "FMN[c]": -2, "OXYGEN-MOLECULE[c]": -1, "IND[c]": 1, "AMP[c]": 2, "FMNH2[c]": 2, "PPI[c]": 2, "WATER[c]": 2}	"L2R"	["NG-MONOMER-124584[c]"]	["GLN[c]"]	5.4	0.0157
