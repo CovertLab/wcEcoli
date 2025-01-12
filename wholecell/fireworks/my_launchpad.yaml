@@ -1,0 +1,17 @@
+authsource: admin
+host: mongodb+srv://kierensharma:Kieren1568@fireworks.c6rbgfm.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
+logdir: null
+mongoclient_kwargs: {}
+name: null
+password: null
+port: null
+ssl: false
+ssl_ca_certs: /user/home/co18263/.pyenv/versions/wcEcoli3/lib/python3.11/site-packages/certifi/cacert.pem
+ssl_certfile: null
+ssl_keyfile: null
+ssl_pem_passphrase: null
+strm_lvl: INFO
+uri_mode: true
+user_indices: []
+username: null
+wf_user_indices: []
