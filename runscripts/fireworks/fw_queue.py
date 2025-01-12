@@ -341,7 +341,7 @@ def log_info(message):
 		print(message)
 
 
-OUT_DIRECTORY = '/user/work/ig13470/out/'
+OUT_DIRECTORY = '/user/work/co18263/out/'
 CACHED_SIM_DATA_DIRECTORY = os.path.join(filepath.ROOT_PATH, "cached")
 SUBMISSION_TIME = filepath.timestamp()
 
