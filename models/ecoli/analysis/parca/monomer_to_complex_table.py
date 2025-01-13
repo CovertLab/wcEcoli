@@ -58,8 +58,11 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			monomer_complex_dict = {}
 
 			for complexId in complex_ids:
+				#account for number of the given monomer per complex
 				subunitIds = sim_data_process.get_monomers(complexId)["subunitIds"]
-				for subunitId in subunitIds:
+				subunit_stoic = sim_data_process.get_monomers(complexId)["subunitStoich"]
+				for i, subunitId in enumerate(subunitIds):
+					monomers_per_complex = subunit_stoic[i]
 					if subunitId not in monomer_id_to_index:
 						if subunitId in monomerToTranslationMonomer:
 							# couple monomers have different ID in ids_translation
@@ -74,9 +77,9 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 						if subunitId in monomersInvolvedInComplexes:
 							monomersInvolvedInManyComplexes.append(subunitId)
 						if subunitId not in monomer_complex_dict:
-							monomer_complex_dict[subunitId] = [complexId]
+							monomer_complex_dict[subunitId] = [(complexId, monomers_per_complex)]
 						else:
-							monomer_complex_dict[subunitId].append(complexId)
+							monomer_complex_dict[subunitId].append((complexId, monomers_per_complex))
 						monomersInvolvedInComplexes.append(subunitId)
 
 			return monomer_complex_dict
@@ -111,6 +114,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		cl_eq_comp_dict = merge_dicts_repeat_vals(cl_monomers_comp_dict, eq_monomers_comp_dict)
 		total_comp_dict = merge_dicts_repeat_vals(cl_eq_comp_dict, two_comp_monomers_comp_dict)
 
+
 		# Remove any duplicate complexes in the values
 		clean_comp_dict = {}
 		for monomer, complex_list in total_comp_dict.items():
@@ -122,7 +126,8 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		# Add monomers that do not form complexes to the dictionary
 		for monomer in monomers_not_in_complex_set:
-			clean_comp_dict[monomer] = [None]
+			clean_comp_dict[monomer] = [(None, None)]
+
 
 		def write_table_for_monomers_in_complexes(clean_comp_dict, monomer_id_to_index, protease, half_lives,
 												  deg_rate_source):
@@ -131,7 +136,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 					  'w') as f:
 				writer = csv.writer(f, delimiter='\t')
 				writer.writerow(
-					['monomer_id', 'complex_id', 'monomer_protease_assignment', 'total_monomer_half_life_(min)',
+					['monomer_id', 'complex_id', 'monomers_per_complex', 'monomer_protease_assignment', 'total_monomer_half_life_(min)',
 					 'deg_rate_source'])
 
 				for monomer, complex_list in clean_comp_dict.items():
@@ -139,16 +144,13 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 					protease_assign = protease[monomer_index]
 					half_life = half_lives[monomer_index]
 					source = deg_rate_source[monomer_index]
-					for complex in complex_list:
-						if complex:
-							complex = complex[:-3]
+					for complex, monomer_number in complex_list:
 						writer.writerow([
-							monomer[:-3], complex, protease_assign, half_life, source
+							monomer, complex, monomer_number, protease_assign, half_life, source
 						])
 
 		write_table_for_monomers_in_complexes(clean_comp_dict, monomer_id_to_index, protease, half_lives,
 											  deg_rate_source)
-
 
 if __name__ == "__main__":
 	Plot().cli()
