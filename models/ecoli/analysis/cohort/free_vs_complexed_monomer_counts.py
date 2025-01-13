@@ -46,6 +46,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_complex_dict = monomers_to_complexes.groupby('monomer_id')['complex_id'].agg(list).to_dict()
 		complex_monomer_dict = monomers_to_complexes.groupby('complex_id')['monomer_id'].agg(list).to_dict()
 
+		# Select monomers based on their function as free monomer or if they function in a complex
+		# And their short half life and only if they have a protease assigned
 		half_life_mask = monomers_to_complexes['total_monomer_half_life_(min)'] <= half_life_threshold
 		complex_mask = monomers_to_complexes['complex_id'].notnull()
 		protease_mask = monomers_to_complexes['monomer_protease_assignment'].notnull()
@@ -56,29 +58,36 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		free_monomer_id_usually_complexed_set = set(as_complex_df['monomer_id'].to_list())
 		complexes_ids_set = set(as_complex_df['complex_id'].to_list())
 
-		# given these complexes have short half lives, extract all other monomers they may be associated with
+		# Given these complexes have short half lives, extract all other monomers they may be associated with
 		monomers_associated_to_complexes = []
 		for complex_id in complexes_ids_set:
 			monomer_list = complex_monomer_dict[complex_id]
 			monomers_associated_to_complexes.extend(monomer_list)
 		monomers_associated_to_complexes_set = set(monomers_associated_to_complexes)
 
-		#check if these monomers are also in additional complexes that have longer half lives
+		# Check if these monomers are also in additional complexes that have longer half lives
 		comp_monomers_associated_to_short_comp = []
 		for monomer_id in monomers_associated_to_complexes_set:
 			complex_list = monomer_complex_dict[monomer_id]
 			comp_monomers_associated_to_short_comp.extend(complex_list)
 		comp_monomers_associated_to_short_comp_set = set(comp_monomers_associated_to_short_comp)
 
-		# filter these additional monomers and complexes by limiting to those assigned to proteases
+		# Filter these additional monomers and complexes by limiting to those assigned to proteases
 		check_other_monomers_df = monomers_to_complexes[monomers_to_complexes['monomer_id'].isin(monomers_associated_to_complexes_set)][protease_mask]
 		check_other_complexes_df = monomers_to_complexes[monomers_to_complexes['complex_id'].isin(comp_monomers_associated_to_short_comp_set)][protease_mask]
 		other_free_monomer_id_usually_complexed_set = set(check_other_monomers_df['monomer_id'].to_list())
 		other_complexes_ids_set = set(check_other_complexes_df['complex_id'].to_list())
 
-		total_counts_ids_to_check = as_monomers_id_set.union(free_monomer_id_usually_complexed_set,
-															 other_free_monomer_id_usually_complexed_set)
 
+		# Monomers of interest that only function in complexes
+		monomers_comp_of_interest = free_monomer_id_usually_complexed_set.union(
+			other_free_monomer_id_usually_complexed_set)
+
+		# All monomers of interest
+		total_counts_ids_to_check = as_monomers_id_set.union(free_monomer_id_usually_complexed_set,
+											 other_free_monomer_id_usually_complexed_set)
+
+		# Ids of all monomers and complexes
 		total_bulk_ids_to_check = as_monomers_id_set.union(free_monomer_id_usually_complexed_set,
 														   complexes_ids_set,
 														   other_free_monomer_id_usually_complexed_set,
@@ -115,19 +124,63 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		detailed_counts_df['cell_id'] = cell_ids
 		avg_detailed_counts_df = detailed_counts_df.groupby('cell_id').mean()
 
-		#isolate monomers that function in monomer form, sanity check, these should be the same
+		# Isolate monomers that function in monomer form, sanity check, these two dfs should be the same
 		free_functional_monomers_df = avg_detailed_counts_df[list(as_monomers_id_set)]
 		total_functional_monomers_df = avg_total_counts_df[list(as_monomers_id_set)]
 
-		#isolate total cell counts of monomers that only function in complexes
-		monomers_comp_of_interest = free_monomer_id_usually_complexed_set.union(other_free_monomer_id_usually_complexed_set)
+		# Isolate total cell counts of monomers that only function in complexes
 		total_monomers_us_comp_df = avg_total_counts_df[list(monomers_comp_of_interest)]
 		total_monomers_us_comp_df.columns = ['total_' + col for col in total_monomers_us_comp_df.columns]
 
-		#isolate the detailed free monomer and complex monomer counts per cell
+		# Isolate the detailed free monomer and complex monomer counts per cell
 		free_mon_and_comps_df = avg_detailed_counts_df[list(total_bulk_ids_to_check)]
 
 		total_and_detailed_complex_counts_df = pd.concat([total_monomers_us_comp_df, free_mon_and_comps_df], axis=1)
+
+		# Dictionary of total monomer corresponding to free monomer and complexed monomer ids
+		total_monomer_dict = {'total_' + name: [name] for name in monomers_comp_of_interest}
+		for total_monomer, monomer_id_list in total_monomer_dict.items():
+			monomer_id = monomer_id_list[0]
+			list_complexes = monomer_complex_dict[monomer_id]
+			total_monomer_dict[total_monomer].extend(list_complexes)
+
+		# Divide free monomers and complexed monomers assigned as complexes by the total monomer counts
+		monomer_distribution_df = total_and_detailed_complex_counts_df.copy()
+
+		for total_monomer, existing_monomer_forms in total_monomer_dict.items():
+			for form in existing_monomer_forms:
+				monomer_distribution_df[form] = monomer_distribution_df[form] / monomer_distribution_df[total_monomer]
+
+
+		def plot_bar_graphs_per_monomer(df, total_monomer_dict, figsize=(10, 5)):
+			num_groups = len(total_monomer_dict)
+			cols = 4  # Number of columns for the grid
+			rows = (num_groups + cols - 1) // cols  # Calculate the number of rows
+
+			fig, axes = plt.subplots(nrows=rows, ncols = cols, figsize = figsize, sharex = False)
+			for i, (group_name, columns) in enumerate(total_monomer_dict.items()):
+				row = i // cols
+				col = i % cols
+				ax = axes[row, col]  # Get the current subplot axis
+
+				means = df[columns].mean(axis=0)  # Calculate the mean across rows for each column
+				errors = df[columns].std(axis=0) / np.sqrt(len(df))  # Calculate standard error
+				means.plot.bar(ax=ax, yerr=errors, capsize=4, legend=False)
+				ax.set_title(group_name[:-3], fontsize=10)
+				ax.set_ylabel('Fraction of total monomer')
+				ax.set_xticklabels(columns, rotation=45, ha='right')
+			# Remove any empty subplots
+			for i in range(num_groups, rows * cols):
+				fig.delaxes(axes.flat[i])
+
+			plt.tight_layout()
+
+
+		plot_bar_graphs_per_monomer(monomer_distribution_df, total_monomer_dict, figsize=(10, 20))
+		exportFigure(plt, plotOutDir, plotOutFileName + '_complexed_monomer_distribution', metadata)
+		plt.close('all')
+
+
 
 		import ipdb;
 		ipdb.set_trace()
