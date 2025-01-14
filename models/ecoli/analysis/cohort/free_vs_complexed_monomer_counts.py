@@ -119,49 +119,67 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		detailed_counts_df = pd.DataFrame(detailed_counts, columns = list(total_bulk_ids_to_check))
 
-		# Isolate monomers that function in monomer form, sanity check, these two dfs should be the same
-		free_functional_monomers_df = detailed_counts_df[list(as_monomers_id_set)]
-		total_functional_monomers_df = total_counts_df[list(as_monomers_id_set)]
+		def isolate_total_and_distributed_monomers(total_counts_df, detailed_counts_df, monomer_set, monomer_forms_set):
+			total_monomers_df = total_counts_df[list(monomer_set)]
+			total_monomers_df.columns = ['total_' + col for col in total_monomers_df.columns]
+			free_monomers_df = detailed_counts_df[list(monomer_forms_set)]
+			total_and_free_monomer_counts_df = pd.concat([total_monomers_df, free_monomers_df], axis=1)
+			return total_and_free_monomer_counts_df
 
-		# Isolate total counts of monomers that only function in complexes
-		total_monomers_us_comp_df = total_counts_df[list(monomers_comp_of_interest)]
-		total_monomers_us_comp_df.columns = ['total_' + col for col in total_monomers_us_comp_df.columns]
+		def build_monomer_distribution_dict(monomer_set, monomer_complex_dict):
+			# Dictionary of total monomer corresponding to free monomer ids
+			total_monomer_dict = {'total_' + name: [name] for name in monomer_set}
+			for total_monomer, monomer_id_list in total_monomer_dict.items():
+				monomer_id = monomer_id_list[0]
+				list_complexes = monomer_complex_dict[monomer_id]
+				if all(isinstance(item, str) for item in list_complexes):
+					total_monomer_dict[total_monomer].extend(list_complexes)
+			return total_monomer_dict
 
-		# Isolate the detailed free monomer and complex monomer counts per cell
-		free_mon_and_comps_df = detailed_counts_df[list(total_bulk_ids_to_check)]
+		def get_monomer_stoich(monomers_to_complexes, monomer_id, form):
+			stoich = monomers_to_complexes[(monomers_to_complexes['monomer_id'] == monomer_id)
+										   & (monomers_to_complexes['complex_id'] == form)][
+				'monomers_per_complex'].values[0]
+			return stoich
 
-		total_and_detailed_complex_counts_df = pd.concat([total_monomers_us_comp_df, free_mon_and_comps_df], axis=1)
+		def find_monomer_distribution(total_counts_df, detailed_counts_df,
+									  monomer_set, monomer_forms_set,
+									  monomer_complex_dict, monomers_to_complexes):
+			monomer_distribution_df = isolate_total_and_distributed_monomers(total_counts_df, detailed_counts_df,
+																			 monomer_set, monomer_forms_set)
+			total_monomer_dict = build_monomer_distribution_dict(monomer_set, monomer_complex_dict)
+			for total_monomer, existing_monomer_forms in total_monomer_dict.items():
+				monomer_id = existing_monomer_forms[0]
+				monomer_distribution_df[monomer_id] = monomer_distribution_df[monomer_id] / monomer_distribution_df[
+					total_monomer]
+				if len(existing_monomer_forms) >1:
+					for form in existing_monomer_forms[1:]:
+						stoich = get_monomer_stoich(monomers_to_complexes, monomer_id, form)
+						monomer_complex_name = form + '_' + monomer_id
+						monomer_distribution_df[monomer_complex_name] = (monomer_distribution_df[form] * stoich) / monomer_distribution_df[
+																			total_monomer]
+			# Edit dicitionary of monomers to complexes by adding monomer name at the end of each complex
+			for total_monomer, forms in total_monomer_dict.items():
+				if len(forms) > 1:
+					for i in range(1, len(forms)):
+						forms[i] = forms[i] + '_' + forms[0]
+			return monomer_distribution_df, total_monomer_dict
 
-		# Dictionary of total monomer corresponding to free monomer and complexed monomer ids
-		total_monomer_dict = {'total_' + name: [name] for name in monomers_comp_of_interest}
-		for total_monomer, monomer_id_list in total_monomer_dict.items():
-			monomer_id = monomer_id_list[0]
-			list_complexes = monomer_complex_dict[monomer_id]
-			total_monomer_dict[total_monomer].extend(list_complexes)
+		monomer_complex_distribution_df, total_monomer_complex_id_dict = find_monomer_distribution(total_counts_df, detailed_counts_df,
+															monomers_comp_of_interest, total_bulk_ids_to_check,
+															monomer_complex_dict,monomers_to_complexes)
 
-		# Divide free monomers and complexed monomers assigned as complexes by the total monomer counts
-		monomer_distribution_df = total_and_detailed_complex_counts_df.copy()
+		monomer_without_complex_distribution_df, total_monomer_free_id_dict = find_monomer_distribution(total_counts_df, detailed_counts_df,
+																	as_monomers_id_set, as_monomers_id_set,
+																	monomer_complex_dict, monomers_to_complexes)
 
-		for total_monomer, existing_monomer_forms in total_monomer_dict.items():
-			monomer_id = existing_monomer_forms[0]
-			monomer_distribution_df[monomer_id] = monomer_distribution_df[monomer_id]/monomer_distribution_df[total_monomer]
-			for form in existing_monomer_forms[1:]:
-				stoich = monomers_to_complexes[(monomers_to_complexes['monomer_id']==monomer_id)
-											   & (monomers_to_complexes['complex_id']==form)]['monomers_per_complex'].values[0]
-				monomer_complex_name = form +'_'+ monomer_id
-				monomer_distribution_df[monomer_complex_name] = (monomer_distribution_df[form]* stoich)/ monomer_distribution_df[
-			total_monomer]
 
 		cell_ids = stacked_cell_identification(all_cells, 'Main', 'time', ignore_exception=True)
-		monomer_distribution_df['cell_id'] = cell_ids
+		monomer_complex_distribution_df['cell_id'] = cell_ids
+		monomer_without_complex_distribution_df['cell_id'] = cell_ids
 
-		avg_ratios_df = monomer_distribution_df.groupby('cell_id').mean()
-
-		# Edit dicitionary of monomers to complexes by adding monomer name at the end of each complex
-		for total_monomer, forms in total_monomer_dict.items():
-			if len(forms) > 1:
-				for i in range(1, len(forms)):
-					forms[i] = forms[i] + '_' + forms[0]
+		avg_ratios_complex_df = monomer_complex_distribution_df.groupby('cell_id').mean()
+		avg_ratios_without_complex_df = monomer_without_complex_distribution_df.groupby('cell_id').mean()
 
 		def plot_bar_graphs_per_monomer(df, total_monomer_dict, figsize=(10, 40)):
 			num_groups = len(total_monomer_dict)
@@ -169,7 +187,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			rows = (num_groups + cols - 1) // cols  # Calculate the number of rows
 
 			fig, axes = plt.subplots(nrows=rows, ncols = cols, figsize = figsize, sharex = False)
-			for i, (group_name, columns) in enumerate(total_monomer_dict.items()):
+			for i, (group_name, columns) in enumerate(sorted(total_monomer_dict.items())):
 				row = i // cols
 				col = i % cols
 				ax = axes[row, col]  # Get the current subplot axis
@@ -187,13 +205,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			plt.tight_layout()
 
-
-		plot_bar_graphs_per_monomer(avg_ratios_df, total_monomer_dict, figsize=(10, 20))
+		plot_bar_graphs_per_monomer(avg_ratios_complex_df, total_monomer_complex_id_dict, figsize=(10, 20))
 		exportFigure(plt, plotOutDir, plotOutFileName + '_complexed_monomer_distribution', metadata)
+
+		plot_bar_graphs_per_monomer(avg_ratios_without_complex_df, total_monomer_free_id_dict, figsize=(10, 20))
+		exportFigure(plt, plotOutDir, plotOutFileName + '_free_monomer_distribution', metadata)
+
 		plt.close('all')
 
-		import ipdb;
-		ipdb.set_trace()
 
 
 if __name__ == '__main__':
