@@ -179,6 +179,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_without_complex_distribution_df['cell_id'] = cell_ids
 
 		avg_ratios_complex_df = monomer_complex_distribution_df.groupby('cell_id').mean()
+		# These should add up to 1
 		avg_ratios_without_complex_df = monomer_without_complex_distribution_df.groupby('cell_id').mean()
 
 		def plot_bar_graphs_per_monomer(df, total_monomer_dict, figsize=(10, 40)):
@@ -205,14 +206,82 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			plt.tight_layout()
 
+		avg_ratios_complex_per_cell_df =  avg_ratios_complex_df.mean()
+
+		def write_table_for_monomers_in_complexes(total_monomer_complex_id_dict, avg_ratios_complex_per_cell_df):
+			# Write data to table
+			columns = ['monomer_id', 'complex_id', 'ratio_monomer_in_complex']
+			fraction_df = pd.DataFrame(columns = columns)
+			with open(os.path.join(plotOutDir, plotOutFileName + '_short_half_life_monomer_to_complex_distribution.tsv'),
+					  'w') as f:
+				writer = csv.writer(f, delimiter='\t')
+				writer.writerow(
+					columns)
+
+				for monomer, complex_list in total_monomer_complex_id_dict.items():
+					for complex in complex_list:
+						fraction = avg_ratios_complex_per_cell_df[complex]
+						writer.writerow([
+							monomer, complex, fraction
+						])
+						new_row_df = pd.DataFrame(data = {'monomer_id': monomer, 'complex_id': complex, 'ratio_monomer_in_complex': fraction}, index = [0])
+						fraction_df = pd.concat([fraction_df, new_row_df], ignore_index = True)
+				return fraction_df
+
+
 		plot_bar_graphs_per_monomer(avg_ratios_complex_df, total_monomer_complex_id_dict, figsize=(10, 20))
 		exportFigure(plt, plotOutDir, plotOutFileName + '_complexed_monomer_distribution', metadata)
 
 		plot_bar_graphs_per_monomer(avg_ratios_without_complex_df, total_monomer_free_id_dict, figsize=(10, 20))
 		exportFigure(plt, plotOutDir, plotOutFileName + '_free_monomer_distribution', metadata)
 
-		plt.close('all')
+		ratio_complex_df = write_table_for_monomers_in_complexes(total_monomer_complex_id_dict, avg_ratios_complex_per_cell_df)
 
+		# Search for monomers with low complexation
+		low_complexation_mask = ((ratio_complex_df['ratio_monomer_in_complex'] < COMPLEX_THRESHOLD) \
+								& (ratio_complex_df['ratio_monomer_in_complex'] > (1-COMPLEX_THRESHOLD)))
+
+		monomer_complex_short_list = ratio_complex_df[low_complexation_mask]['monomer_id'].unique()
+
+		def plot_monomer_complex_dynamics(monomer_complex_distribution_df,
+										  total_monomer_complex_id_dict,
+										  monomer_complex_short_list, figsize=(10, 10)):
+			# Protein Counts Plot
+			num_groups = len(monomer_complex_short_list)
+			cols = 4  # Number of columns for the grid
+			rows = (num_groups + cols - 1) // cols  # Calculate the number of rows
+
+			fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=figsize, sharex=False)
+
+			cmap = cm.get_cmap('Set1')
+
+			for i, total_monomer in enumerate(monomer_complex_short_list):
+				complexes = total_monomer_complex_id_dict[total_monomer]
+				colors = [cmap(c_i) for c_i in range(len(complexes))]
+				row = i // cols
+				col = i % cols
+				ax = axes[row, col]  # Get the current subplot axis
+				for n, complex in enumerate(complexes):
+					monomer_comp_ratio = monomer_complex_distribution_df[complex]
+					total_monomer_counts = monomer_complex_distribution_df[total_monomer]
+					total_monomers_in_complex = monomer_comp_ratio*total_monomer_counts
+					ax.plot(total_monomers_in_complex.index/60, total_monomers_in_complex,
+							color = colors[n], label = complex)
+					ax.set_xlabel("Time (min)");
+					ax.set_ylabel("Monomer Counts")
+					ax.set_title(total_monomer)
+					ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+					# Remove any empty subplots
+			for i in range(num_groups, rows * cols):
+				fig.delaxes(axes.flat[i])
+
+			plt.tight_layout()
+
+		plot_monomer_complex_dynamics(monomer_complex_distribution_df,
+									  total_monomer_complex_id_dict,
+									  monomer_complex_short_list, figsize=(40, 10))
+		exportFigure(plt, plotOutDir, plotOutFileName + '_dynamics_monomer_shortlist', metadata)
+		plt.close('all')
 
 
 if __name__ == '__main__':
