@@ -209,6 +209,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# save the tables:
 		save_path = os.path.join(plotOutDir, 'complex_classifications_preParca')
+		# todo: check if there should be a .csv at the end of each of these:
 		monomers_in_multiple_complexes_path = os.path.join(save_path, 'monomers_in_multiple_complexes.csv')
 		monomers_in_one_complex_path = os.path.join(save_path, 'monomers_in_one_complex.csv')
 		monomers_in_zero_complexes_path = os.path.join(save_path, 'monomers_in_zero_complexes.csv')

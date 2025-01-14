@@ -117,15 +117,29 @@ def generate_homogeneous_monomer_table(full_complexes_table):
 	duplicates = monomers_in_homogeneous_complexes['monomer_id'].duplicated()
 	print(monomers_in_homogeneous_complexes[duplicates])
 
-	hi = 2
 	return monomers_in_homogeneous_complexes
 
 # todo: generate a table of monomers in heterogeneous compelexes
+# todo: generate a table of monomers in homogeneous compelexes
 # todo: generate a table of monomers in both homogeneous and heterogeneous complexes
 # todo: generate a table of monomers in heterogeneous compelexes only
+# todo: generate a table of monomers in homogeneous compelexes only
 # todo: add the added, change the modified, and remove the removed monomers from the starting table
 # todo: ask nora where exactly the random complexed free monomers are stored?
 
 full_complexes_table = generate_full_stoichiometry_table(complexes)
 monomers_in_homogeneous_complexes = generate_homogeneous_monomer_table(full_complexes_table)
+
+
+# save the tables as csv files
+
+outpath = os.path.join('~/wcEcoli/out/', 'complex_classification_tables')
+outpath = os.path.expanduser('~/wcEcoli/out/complex_classification_tables')
+if not os.path.exists(outpath):
+	os.makedirs(outpath)
+	print('Directory created:', outpath)
+full_complexes_table.to_csv(os.path.join(outpath, 'all_complexes.csv'))
+monomers_in_homogeneous_complexes.to_csv(os.path.join(outpath, 'monomers_in_homogeneous_complexes.csv'))
+
+
 

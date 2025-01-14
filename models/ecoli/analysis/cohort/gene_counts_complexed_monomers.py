@@ -26,7 +26,7 @@ interest_proteins = np.array([
     #"G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
 	#"EG10156-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpA"
 	#'EG10542-MONOMER[c]', # lon
-	#'PD03938[c]', # metR
+	'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
 	#'EG10542-MONOMER[c]', # rpoS
 	#"EG11969-MONOMER[c]", # monomer in a complex
@@ -37,7 +37,7 @@ interest_proteins = np.array([
 	#'EG10243-MONOMER[c]', # monomer that is supposed to be 95% complex
 	#"EG10871-MONOMER[c]", # monomer that is supposed to be 97% complex
 	#"EG11171-MONOMER[c]",
-	"BASR-MONOMER[c]", #
+	#"BASR-MONOMER[c]", #
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
