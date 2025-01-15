@@ -44,8 +44,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 
+
 		# function to extract data from the simOut directory
 		def extract_data(simOutDir, cell_paths, cistron_ids, monomer_ids):
+			"""
+
+			Args:
+				simOutDir:
+				cell_paths:
+				cistron_ids:
+				monomer_ids:
+
+			Returns:
+
+			"""
 			# Extract monomer indexes for each protein of interest
 			monomer_counts_reader = TableReader(os.path.join(simOutDir,
 														 'MonomerCounts'))

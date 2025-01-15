@@ -20,9 +20,9 @@ from wholecell.io.tablereader import TableReader
 # decide which generations to ignore, if any.
 IGNORE_FIRST_N_GENS = 2
 # decide what the threshold for molecules in complex/free monomer form is:
-COMPLEX_THRESHOLD = .9
+THRESHOLD = .9
 
-# path to tables:
+# path to tables made in the ____ file:
 monomers_in_multiple_complexes_table_path = '~/wcEcoli/out/CLClim3NE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsmonomers_in_multiple_protein_complexes.tsv'
 monomers_in_one_complex_path = '~/wcEcoli/out/CLClim3NE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsMonomers_in_one_complex.tsv'
 monomers_in_zero_complexes_path = '~/wcEcoli/out/CLClim3NE/wildtype_000000/plotOut/free_vs_complexed_monomer_countsMonomers_not_in_complex.tsv'
@@ -146,27 +146,27 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		print('merged table length:', len(merged_table))
 
 		# Generate a new table for the proteins that have a complex fraction value above the threshold:
-		complex_threshold = merged_table[merged_table['Complex Fraction'] > COMPLEX_THRESHOLD]
+		complex_threshold = merged_table[merged_table['Complex Fraction'] > THRESHOLD]
 		complex_threshold = complex_threshold.reset_index(drop=True)
 		print('# of proteins with complex fractions above the threshold:', len(complex_threshold))
 
 		# Generate a new table for the proteins that have a free fraction value above the threshold:
-		free_threshold = merged_table[merged_table['Free Fraction'] > COMPLEX_THRESHOLD]
+		free_threshold = merged_table[merged_table['Free Fraction'] > THRESHOLD]
 		free_threshold = free_threshold.reset_index(drop=True)
 		print('# of proteins with free fractions above the threshold:', len(free_threshold))
 
 		# Generate a new table for the proteins that have a complex fraction value below the threshold:
-		complex_below_threshold = merged_table[merged_table['Complex Fraction'] <= COMPLEX_THRESHOLD]
+		complex_below_threshold = merged_table[merged_table['Complex Fraction'] <= THRESHOLD]
 		complex_below_threshold = complex_below_threshold.reset_index(drop=True)
 		print('# of proteins with complex fractions below the threshold:', len(complex_below_threshold))
 
 		# Generate a new table for the proteins that have a free fraction value below the threshold:
-		free_below_threshold = merged_table[merged_table['Free Fraction'] <= COMPLEX_THRESHOLD]
+		free_below_threshold = merged_table[merged_table['Free Fraction'] <= THRESHOLD]
 		free_below_threshold = free_below_threshold.reset_index(drop=True)
 		print('# of proteins with free fractions below the threshold:', len(free_below_threshold))
 
 		# Generate a new table for the proteins that have both fractions under the threshold:
-		below_threshold = merged_table[(merged_table['Complex Fraction'] <= COMPLEX_THRESHOLD) & (merged_table['Free Fraction'] <= COMPLEX_THRESHOLD)]
+		below_threshold = merged_table[(merged_table['Complex Fraction'] <= THRESHOLD) & (merged_table['Free Fraction'] <= THRESHOLD)]
 		below_threshold = below_threshold.reset_index(drop=True)
 		print('# of proteins with both fractions below the threshold:', len(below_threshold))
 
@@ -209,10 +209,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# save the tables:
 		save_path = os.path.join(plotOutDir, 'complex_classifications_preParca')
-		# todo: check if there should be a .csv at the end of each of these:
-		monomers_in_multiple_complexes_path = os.path.join(save_path, 'monomers_in_multiple_complexes.csv')
-		monomers_in_one_complex_path = os.path.join(save_path, 'monomers_in_one_complex.csv')
-		monomers_in_zero_complexes_path = os.path.join(save_path, 'monomers_in_zero_complexes.csv')
+		monomers_in_multiple_complexes_path = os.path.join(save_path, 'monomers_in_multiple_complexes')
+		monomers_in_one_complex_path = os.path.join(save_path, 'monomers_in_one_complex')
+		monomers_in_zero_complexes_path = os.path.join(save_path, 'monomers_in_zero_complexes')
 		if not os.path.exists(save_path):
 			os.makedirs(save_path)
 			if not os.path.exists(monomers_in_multiple_complexes_path):
@@ -222,16 +221,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if not os.path.exists(monomers_in_zero_complexes_path):
 				os.makedirs(monomers_in_zero_complexes_path)
 
+		# name the tables:
+		complex_threshold_name = 'above_complex_threshold_' + str(THRESHOLD) + '.csv'
+		free_threshold_name = 'above_free_threshold_' + str(THRESHOLD) + '.csv'
+		below_threshold_name = 'both_below_threshold_' + str(THRESHOLD) + '.csv'
 		# save the tables:
-		complex_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, 'complex_threshold_m.csv'))
-		free_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, 'free_threshold_m.csv'))
-		below_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, 'below_threshold_m.csv'))
-		complex_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, 'complex_threshold_1.csv'))
-		free_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, 'free_threshold_1.csv'))
-		below_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, 'below_threshold_1.csv'))
-		complex_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, 'complex_threshold_0.csv'))
-		free_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, 'free_threshold_0.csv'))
-		below_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, 'below_threshold_0.csv'))
+		complex_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, complex_threshold_name))
+		free_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, free_threshold_name))
+		below_threshold_m.to_csv(os.path.join(monomers_in_multiple_complexes_path, below_threshold_name))
+		complex_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, complex_threshold_name))
+		free_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, free_threshold_name))
+		below_threshold_1.to_csv(os.path.join(monomers_in_one_complex_path, below_threshold_name))
+		complex_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, complex_threshold_name))
+		free_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, free_threshold_name))
+		below_threshold_0.to_csv(os.path.join(monomers_in_zero_complexes_path, below_threshold_name))
 
 
 
