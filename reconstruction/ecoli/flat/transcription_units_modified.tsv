@@ -1,0 +1,4 @@
+"id"	"common_name"	"genes"	"left_end_pos"	"right_end_pos"	"direction"	"evidence"	"_comments"
+"TU0-12903"	"yaiO"	["G6210"]	380069	380842	"-"	["EV-COMP-AINF"]	"Removed gene fragment G6211 from TU yaiO, because gene fragments are not currently supported in the model."
+"TU0-13236"	"stfR-tfaR"	["G6696", "G6695"]	1429049	1432986	"+"	["EV-COMP-AINF"]	"Removed gene fragment G6694 from TU stfR-tfaR, because gene fragments are not currently supported in the model."
+"TU0-13893"	"yhcF"	["G7673"]	3366926	3367642	"+"	["EV-COMP-AINF"]	"Removed gene fragment G0-10562 from TU yhcF, because gene fragments are not currently supported in the model."
