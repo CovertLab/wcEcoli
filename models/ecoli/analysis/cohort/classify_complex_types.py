@@ -1,26 +1,18 @@
 """
 Template for cohort analysis plots
 """
-
-import pickle
+# todo: update description, add more functions, update the function descriptions
 import os
 import pandas as pd
-import ast
-from matplotlib import pyplot as plt
+import json
 # noinspection PyUnresolvedReferences
 import numpy as np
-
-from models.ecoli.analysis import cohortAnalysisPlot
-from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
-from wholecell.io.tablereader import TableReader
 
 # path to the complexes file:
 complexes_path = '~/wcEcoli/reconstruction/ecoli/flat/complexation_reactions.tsv'
 
 # read in the complexes file
-complexes = pd.read_csv(complexes_path, skiprows=4, sep='\t')
-import json
+complexes = pd.read_csv(complexes_path, skiprows=5, sep='\t')
 
 # clean up the stoichiometry column to be parsed correctly
 complexes['stoichiometry'] = complexes['stoichiometry'].str.replace(r'[^\x00-\x7F]+', '', regex=True)
@@ -130,9 +122,7 @@ def generate_homogeneous_monomer_table(full_complexes_table):
 full_complexes_table = generate_full_stoichiometry_table(complexes)
 monomers_in_homogeneous_complexes = generate_homogeneous_monomer_table(full_complexes_table)
 
-
 # save the tables as csv files
-
 outpath = os.path.join('~/wcEcoli/out/', 'complex_classification_tables')
 outpath = os.path.expanduser('~/wcEcoli/out/complex_classification_tables')
 if not os.path.exists(outpath):
@@ -140,6 +130,3 @@ if not os.path.exists(outpath):
 	print('Directory created:', outpath)
 full_complexes_table.to_csv(os.path.join(outpath, 'all_complexes.csv'))
 monomers_in_homogeneous_complexes.to_csv(os.path.join(outpath, 'monomers_in_homogeneous_complexes.csv'))
-
-
-
