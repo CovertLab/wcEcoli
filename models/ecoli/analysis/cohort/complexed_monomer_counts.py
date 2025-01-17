@@ -12,8 +12,6 @@ and see total_monomer_counts.py for a similar plot that plots the total
 counts for monomers.
 """
 
-# todo: add descriptions for each function, update description above,  check that plot out names are ok with the code style, rearrange the order of the functions vairables
-
 import pickle
 import os
 from matplotlib import pyplot as plt
@@ -28,17 +26,12 @@ from wholecell.io.tablereader import TableReader
 
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	#"EG10158-MONOMER[c]", # ATP-dependent Clp protease proteolytic subunit
-	#"EG10159-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpX"
-    #"G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
-	#"EG10156-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpA"
-	#'EG10542-MONOMER[c]', # lon
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
 	#"BASR-MONOMER[c]", # basR
 	#"EG11171-MONOMER[c]", #tsaD
 	#"EG11734-MONOMER[c]", # phoH
-	#"EG10871-MONOMER[c]", #rplJ
+	"EG10871-MONOMER[c]", #rplJ
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -46,14 +39,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				validationDataFile, metadata):
 		def extract_data(simOutDir, cell_paths, monomer_ids, cistron_ids):
 			"""
+			Extracts the time, complexed monomer counts, and mRNA counts data for
+			a given set of cells (typically within a seed) for the protein(s)
+			of interest.
 
 			Args:
-				simOutDir:
-				cell_paths:
-				cistron_ids:
-				monomer_ids:
+				simOutDir: output directory for the simulation
+				cell_paths: paths to the cells of interest
+				monomer_ids: ids for the proteins of interest
+				cistron_ids: ids for the genes of interest
 
-			Returns:
+			Returns: The time, total monomer counts, and mRNA counts for the
+			proteins of interest.
 
 			"""
 			# Extract monomer indexes for each protein of interest
@@ -99,31 +96,53 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return (time, total_monomer_counts, free_monomer_counts,
 					complexed_monomer_counts, mRNA_counts)
 
-		# function to extract doubling times for a seed:
 		def extract_doubling_times(cell_paths):
+			"""
+			Extracts doubling time data for a given set of cells.
+			Args:
+				cell_paths: paths to cells within a seed.
+
+			Returns: the doubling time for each generation within the seed and
+			the end time for each generation.
+
+			"""
 			# Get doubling times for the cells with this seed index
 			dt = read_stacked_columns(
 				cell_paths, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 
-			# determine the end time for each generation
-			dts = np.zeros(len(dt))
+			# Determine the end time for each generation
+			generation_ends = np.zeros(len(dt))
 			for i in range(len(dt)):
 				if i == 0:
 					gt = dt[i]
-					dts[i] = gt
+					generation_ends[i] = gt
 				else:
-					gt = dt[i] + dts[i - 1]
-					dts[i] = gt
+					gt = dt[i] + generation_ends[i - 1]
+					generation_ends[i] = gt
 
-			return dts, dt
+			return generation_ends, dt
 
-		# function to plot the counts per seed:
 		def plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids,
-								 time, total_monomer_counts, free_monomer_counts,
-								 complexed_monomer_counts , mRNA_counts,):
+								 time, complexed_monomer_counts , mRNA_counts,):
+			"""
+			Plots the complexed monomer counts and mRNA counts for a given seed.
 
-			# Plotting
+			Args:
+				seed: the seed index being plotted
+				cell_paths: paths to the cells within the seed
+				monomer_ids: monomer ids for the proteins of interest
+				cistron_ids: cistron ids for the proteins of interest
+				time: the total time duration for the seed
+				complexed_monomer_counts: complexed monomer counts for proteins
+				of interest over the seed duration
+				mRNA_counts: mRNA counts for the proteins of interest over the
+				seed duration
+
+			Returns: A plot export for the complexed monomer counts and mRNA
+			counts in the particular seed.
+
+			"""
 			plt.figure(figsize=(8.5, 11))
 
 			# Get doubling times for the cells with this seed index
@@ -182,13 +201,26 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plt.close("all")
 
 		# function to plot all types of counts for each protein per seed
-		def plot_count_type_per_seed_comparison(seed, cell_paths, monomer_ids,
-												time,
-												total_monomer_counts,
-												free_monomer_counts,
-												complexed_monomer_counts):
+		def plot_all_count_types_per_seed(seed, cell_paths, monomer_ids, time,
+										  total_monomer_counts, free_monomer_counts,
+										  complexed_monomer_counts):
+			"""
+			Plots the total, free, and complexed monomer counts for a given seed.
+			Args:
+				seed: current seed to be plotted within the cohort
+				cell_paths: paths to cells within the selected seed
+				monomer_ids: monomer IDs for the proteins of interest
+				time: time steps spanning the cells within the seed
+				total_monomer_counts: total monomer counts at each timestep
+				free_monomer_counts: free monomer counts at each timestep
+				complexed_monomer_counts: predicted counts of monomers within
+				complexes at each timestep (calculated by subtracting the free
+				monomer counts from the total).
 
-			# Plotting
+			Returns: A plot export for the total, free, and predicted
+			complexed monomer counts for each protein in the seed
+
+			"""
 			plt.figure(figsize=(8.5, 14))
 
 			# Get doubling times for the cells with this seed index
@@ -616,11 +648,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 							 cistron_ids))
 			# Plot the counts for the seed
 			plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids,
-								 time, total_monomer_counts, free_monomer_counts,
-								 complexed_monomer_counts , mRNA_counts)
+								 time, complexed_monomer_counts , mRNA_counts)
 
 			# Plot comparisons each type of count per seed
-			plot_count_type_per_seed_comparison(seed, cell_paths, monomer_ids,
+			plot_all_count_types_per_seed(seed, cell_paths, monomer_ids,
 												time, total_monomer_counts,
 												free_monomer_counts,
 												complexed_monomer_counts)
