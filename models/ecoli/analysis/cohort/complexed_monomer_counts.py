@@ -31,7 +31,8 @@ interest_proteins = np.array([
 	#"BASR-MONOMER[c]", # basR
 	#"EG11171-MONOMER[c]", #tsaD
 	#"EG11734-MONOMER[c]", # phoH
-	"EG10871-MONOMER[c]", #rplJ
+	#"EG10871-MONOMER[c]", #rplJ
+	"EG11534-MONOMER[c]", # ibpA
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -318,7 +319,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# function to match gene symbols to monomer ids
 		def get_gene_symbols_for_monomer_ids():
-			# code adapted from convert_to_flat.py
+			"""
+			Extracts the gene symbols for each monomer id in the model.
+
+			Returns: a dictionary mapping monomer ids to gene symbols.
+			Code adapted from convert_to_flat.py.
+			"""
 			RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
 									 'flat', 'rnas.tsv')
 			with (io.open(RNAS_FILE, 'rb') as f):
@@ -342,19 +348,30 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# function to obtain common names for proteins of interest
 		def get_common_names(protein_id):
 			"""
-			Get the common names for each protein id
+			Obtains the common names for each protein of interest
 			Args:
-				protein_id: the id for the proteins of interest
-			Returns: the common name for the protein id
+				protein_id: the name of the protein(s) of interest
+
+			Returns: the common name for the protein(s) of interest
 			"""
 			protein = protein_id[:-3]
 			gene_symbol = get_gene_symbols_for_monomer_ids()[protein]
 			return gene_symbol
 
-
-		# make a plot for the counts of each seed
 		def plot_counts_per_protein(simOutDir, protein, cistron):
+			"""
+			Plot the complexed monomer counts and mRNA counts for a given protein
+			across all seeds in one plot. Also includes a rough average of the
+			counts per generation on the plot and a table with these values
+			averaged across all seeds for each generation.
+			Args:
+				simOutDir: directory for the simulation data
+				protein: protein ID for the protein of interest
+				cistron: cistron ID for the protein of interest
 
+			Returns: A plot of the complexed protein counts and mRNA counts for the
+			protein of interest across all seeds in the simulation.
+			"""
 			# get the common name for the protein
 			common_name = get_common_names(protein[0])
 
@@ -365,7 +382,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			monomer_values = []
 			mRNA_values = []
 
-			# Plotting
 			plt.figure(figsize=(8.5, 11))
 
 			# Protein Counts Plot
@@ -506,9 +522,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						 '_cohortPlot_geneID_' + common_name, metadata)
 			plt.close("all")
 
-		# Plot type of counts for each protein across all seeds
-		def plot_counts_per_protein_comparison(simOutDir, protein, cistron):
+		def plot_all_count_types_per_protein(simOutDir, protein, cistron):
+			"""
+			Plots the total, free, and complexed monomer counts for a given
+			protein. Allows one to compare the make up of the total monomer
+			counts between free and complexed forms.
+			Args:
+				simOutDir: directory for the simulation data
+				protein: protein of interest
+				cistron: corresponding cistron for the protein of interest
 
+			Returns: A plot with the total, free, and predicted complexed
+			monomer counts for a protein for all seeds in one graph.
+
+			"""
 			# get the common name for the protein
 			common_name = get_common_names(protein[0])
 
@@ -605,6 +632,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						 metadata)
 			plt.close("all")
 
+		""" run section """
 
 		# extract data paths
 		cell_paths = self.ap.get_cells(only_successful=True)
@@ -635,8 +663,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cistron_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
 										   monomer_sim_data['id']))
 
-		# iterate through the seeds to generate graphs for each seed and
-		# consolidates average counts and all on one graph
+		# iterate through the seeds to generate graphs for each seed
 		for seed in seeds:
 			# Generate all the cell paths for the seed:
 			cell_paths = (
@@ -668,7 +695,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("plotting for protein: "); print(protein)
 			print("cistron_id: "); print(cistron_id[0])
 			plot_counts_per_protein(simOutDir, protein_id, cistron_id)
-			plot_counts_per_protein_comparison(simOutDir, protein_id, cistron_id)
+			plot_all_count_types_per_protein(simOutDir, protein_id, cistron_id)
 
 
 if __name__ == '__main__':
