@@ -36,66 +36,66 @@ interest_proteins = np.array([
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
+	def extract_data(self, simOutDir, cell_paths, monomer_ids, cistron_ids):
+		"""
+		Extracts the time, complexed monomer counts, and mRNA counts data for
+		a given set of cells (typically within a seed) for the protein(s)
+		of interest.
+
+		Args:
+			simOutDir: output directory for the simulation
+			cell_paths: paths to the cells of interest
+			monomer_ids: ids for the proteins of interest
+			cistron_ids: ids for the genes of interest
+
+		Returns: The time, total monomer counts, and mRNA counts for the
+		proteins of interest.
+
+		"""
+		# Extract monomer indexes for each protein of interest
+		monomer_counts_reader = TableReader(os.path.join(simOutDir,
+														 'MonomerCounts'))
+		monomer_idx_dict = {monomer: i for i, monomer in enumerate(
+			monomer_counts_reader.readAttribute('monomerIds'))}
+		monomer_indexes = [monomer_idx_dict.get(monomer_id) for
+						   monomer_id in monomer_ids]
+
+		# Extract mRNA indexes for each gene of interest
+		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
+													  'RNACounts'))
+		mRNA_idx_dict = {rna: i for i, rna in enumerate(
+			mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+		mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
+						cistron_ids]
+
+		# Load the time data
+		time = read_stacked_columns(cell_paths, 'Main',
+									'time', ignore_exception=True)
+		# Get the total counts for each protein
+		total_monomer_counts = (
+								   read_stacked_columns(cell_paths, 'MonomerCounts',
+														'monomerCounts',
+														ignore_exception=True))[:, monomer_indexes]
+		# Get the free monomer counts for each protein
+		(free_monomer_counts,) = read_stacked_bulk_molecules(
+			cell_paths, monomer_ids, ignore_exception=True)
+		# Get the mRNA counts for each gene/protein
+		mRNA_counts = read_stacked_columns(
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
+			ignore_exception=True)[:, mRNA_indexes]
+
+		# reshape free_monomer_counts if there is only one protein:
+		if len(monomer_ids) == 1:
+			free_monomer_counts = free_monomer_counts.reshape(-1, 1)
+
+		# calculate the predicted counts for the proteins in complexes
+		complexed_monomer_counts = (
+				total_monomer_counts - free_monomer_counts)
+
+		return (time, total_monomer_counts, free_monomer_counts,
+				complexed_monomer_counts, mRNA_counts)
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		def extract_data(simOutDir, cell_paths, monomer_ids, cistron_ids):
-			"""
-			Extracts the time, complexed monomer counts, and mRNA counts data for
-			a given set of cells (typically within a seed) for the protein(s)
-			of interest.
-
-			Args:
-				simOutDir: output directory for the simulation
-				cell_paths: paths to the cells of interest
-				monomer_ids: ids for the proteins of interest
-				cistron_ids: ids for the genes of interest
-
-			Returns: The time, total monomer counts, and mRNA counts for the
-			proteins of interest.
-
-			"""
-			# Extract monomer indexes for each protein of interest
-			monomer_counts_reader = TableReader(os.path.join(simOutDir,
-														 'MonomerCounts'))
-			monomer_idx_dict = {monomer: i for i, monomer in enumerate(
-				monomer_counts_reader.readAttribute('monomerIds'))}
-			monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-									monomer_id in monomer_ids]
-
-			# Extract mRNA indexes for each gene of interest
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-														  'RNACounts'))
-			mRNA_idx_dict = {rna: i for i, rna in enumerate(
-				mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
-			mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
-									 cistron_ids]
-
-			# Load the time data
-			time = read_stacked_columns(cell_paths, 'Main',
-										'time', ignore_exception=True)
-			# Get the total counts for each protein
-			total_monomer_counts = (
-				read_stacked_columns(cell_paths, 'MonomerCounts',
-									 'monomerCounts',
-									 ignore_exception=True))[:, monomer_indexes]
-			# Get the free monomer counts for each protein
-			(free_monomer_counts,) = read_stacked_bulk_molecules(
-				cell_paths, monomer_ids, ignore_exception=True)
-			# Get the mRNA counts for each gene/protein
-			mRNA_counts = read_stacked_columns(
-				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-				ignore_exception=True)[:, mRNA_indexes]
-
-			# reshape free_monomer_counts if there is only one protein:
-			if len(monomer_ids) == 1:
-				free_monomer_counts = free_monomer_counts.reshape(-1, 1)
-
-			# calculate the predicted counts for the proteins in complexes
-			complexed_monomer_counts = (
-					total_monomer_counts - free_monomer_counts)
-
-			return (time, total_monomer_counts, free_monomer_counts,
-					complexed_monomer_counts, mRNA_counts)
 
 		def extract_doubling_times(cell_paths):
 			"""
@@ -397,7 +397,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, protein, cistron))
+					self.extract_data(simOutDir, cell_paths, protein, cistron))
 
 				# save the data for the average value table:
 				dts_values.append(dts)
@@ -477,7 +477,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, protein, cistron))
+					self.extract_data(simOutDir, cell_paths, protein, cistron))
 				# plot the data
 				plt.plot(time / 60., mRNA_counts,
 						 label=f'seed {seed}', alpha=0.5)
@@ -555,7 +555,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, protein, cistron))
+					self.extract_data(simOutDir, cell_paths, protein, cistron))
 				c = colors[seed]
 
 				# plot the data
@@ -581,7 +581,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, protein, cistron))
+					self.extract_data(simOutDir, cell_paths, protein, cistron))
 				c = colors[seed]
 
 				# plot the data
@@ -606,7 +606,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, protein, cistron))
+					self.extract_data(simOutDir, cell_paths, protein, cistron))
 				c = colors[seed]
 
 				# plot the data
@@ -671,7 +671,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
-				extract_data(simOutDir, cell_paths, monomer_ids,
+				self.extract_data(simOutDir, cell_paths, monomer_ids,
 							 cistron_ids))
 			# Plot the counts for the seed
 			plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids,
