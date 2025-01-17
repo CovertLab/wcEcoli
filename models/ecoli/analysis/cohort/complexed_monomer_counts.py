@@ -1,8 +1,15 @@
 """
-Plot mRNA and protein counts for genes across multiple seeds and generations
+Plot mRNA and complexed monomer counts across seeds and generations. The
+predicted # of monomers in complexes at a given point in time is calculated by
+subtracting the free monomer counts from the total monomer counts.
 
-NOTE: the proteins in complexes are predicted by subtracting free monomers from
-total monomers.
+NOTE: it is tough to do this plot with out splitting up the seeds because the
+doubling times are different across different seeds (so they will not line up
+nicely).
+
+See free_monomer_counts.py for a similar plot that plots free monomer counts,
+and see total_monomer_counts.py for a similar plot that plots the total
+counts for monomers.
 """
 
 # todo: add descriptions for each function, update description above,  check that plot out names are ok with the code style, rearrange the order of the functions vairables
@@ -26,27 +33,18 @@ interest_proteins = np.array([
     #"G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
 	#"EG10156-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpA"
 	#'EG10542-MONOMER[c]', # lon
-	'PD03938[c]', # metR
+	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
-	#'EG10542-MONOMER[c]', # rpoS
-	#"EG11969-MONOMER[c]", # monomer in a complex
-	#"ACYLCOASYN-MONOMER[c]", # monomer in a complex
-	#"RIB5PISOMA-MONOMER[c]", # monomer in a complex
-	#'PD00413[c]', # monomer that is supposed to be a free monomer
-	#'ANTHRANSYNCOMPI-MONOMER[c]', # monomer that is not supposed to be in a complex
-	#'EG10243-MONOMER[c]', # monomer that is supposed to be 95% complex
-	#"EG10871-MONOMER[c]", # monomer that is supposed to be 97% complex
-	#"EG11171-MONOMER[c]",
-	#"BASR-MONOMER[c]", #
+	#"BASR-MONOMER[c]", # basR
+	#"EG11171-MONOMER[c]", #tsaD
+	#"EG11734-MONOMER[c]", # phoH
+	#"EG10871-MONOMER[c]", #rplJ
 ])
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-
-
-		# function to extract data from the simOut directory
-		def extract_data(simOutDir, cell_paths, cistron_ids, monomer_ids):
+		def extract_data(simOutDir, cell_paths, monomer_ids, cistron_ids):
 			"""
 
 			Args:
@@ -351,7 +349,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, cistron, protein))
+					extract_data(simOutDir, cell_paths, protein, cistron))
 
 				# save the data for the average value table:
 				dts_values.append(dts)
@@ -431,7 +429,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, cistron, protein))
+					extract_data(simOutDir, cell_paths, protein, cistron))
 				# plot the data
 				plt.plot(time / 60., mRNA_counts,
 						 label=f'seed {seed}', alpha=0.5)
@@ -498,7 +496,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, cistron, protein))
+					extract_data(simOutDir, cell_paths, protein, cistron))
 				c = colors[seed]
 
 				# plot the data
@@ -524,7 +522,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, cistron, protein))
+					extract_data(simOutDir, cell_paths, protein, cistron))
 				c = colors[seed]
 
 				# plot the data
@@ -549,7 +547,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# Extract data for the seed
 				(time, total_monomer_counts, free_monomer_counts,
 				 complexed_monomer_counts, mRNA_counts) = (
-					extract_data(simOutDir, cell_paths, cistron, protein))
+					extract_data(simOutDir, cell_paths, protein, cistron))
 				c = colors[seed]
 
 				# plot the data
@@ -614,8 +612,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
-				extract_data(simOutDir, cell_paths, cistron_ids,
-							 monomer_ids))
+				extract_data(simOutDir, cell_paths, monomer_ids,
+							 cistron_ids))
 			# Plot the counts for the seed
 			plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids,
 								 time, total_monomer_counts, free_monomer_counts,
