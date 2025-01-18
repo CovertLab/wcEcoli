@@ -27,6 +27,7 @@ monomerToTranslationMonomer = {
 	}
 
 class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
+
 	def do_plot(self, input_dir, plot_out_dir, plot_out_filename, sim_data_file, validation_data_file, metadata):
 		with open(sim_data_file, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -91,6 +92,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		two_comp_monomers_comp_dict = find_monomers_mult_complex(
 			ids_two_comp_sys_complexes, sim_two_comp)
 
+
 		# Some monomers are listed in more than one complex-associated dictionary
 		def merge_dicts_repeat_vals(dict1, dict2):
 			"""
@@ -113,7 +115,6 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 
 		cl_eq_comp_dict = merge_dicts_repeat_vals(cl_monomers_comp_dict, eq_monomers_comp_dict)
 		total_comp_dict = merge_dicts_repeat_vals(cl_eq_comp_dict, two_comp_monomers_comp_dict)
-
 
 		# Remove any duplicate complexes in the values
 		clean_comp_dict = {}
