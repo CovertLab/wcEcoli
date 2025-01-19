@@ -72,9 +72,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 									'time', ignore_exception=True)
 		# Get the total counts for each protein
 		monomer_counts = (
-							 read_stacked_columns(cell_paths, 'MonomerCounts',
+							 read_stacked_columns(cell_paths,
+												  'MonomerCounts',
 												  'monomerCounts',
-												  ignore_exception=True))[:, monomer_indexes]
+												  ignore_exception=True)
+						 )[:, monomer_indexes]
 		# Get the mRNA counts for each gene
 		mRNA_counts = read_stacked_columns(
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
