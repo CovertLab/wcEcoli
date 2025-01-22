@@ -22,13 +22,16 @@ from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import (
 IGNORE_FIRST_N_GENS = 16
 
 COLOR_BY = "same"  # ["same", "expression_factor", "translation_efficiency"]
+INTERACTIVE_PLOT = True
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
-		# Determine new gene ids
-		variants = self.ap.get_variants()
 
+		variants = self.ap.get_variants()
+		variants_to_plot = variants.copy()
+
+		# Determine new gene ids
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 		mRNA_sim_data = sim_data.process.transcription.cistron_data.struct_array
@@ -46,8 +49,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if len(new_gene_monomer_ids) == 0:
 			print("This plot is intended to be run on simulations where the "
 				  "new gene option was enabled, but no new gene proteins "
-				  "were "
-				  "found.")
+				  "were found.")
 			return
 		assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
 			'number of new gene monomers and mRNAs should be equal'
@@ -63,6 +65,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		min_variant = min(variants)
 
 		for variant in variants:
+
+			all_cells = self.ap.get_cells(
+				variant=[variant],
+				generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
+				only_successful=True)
+
+			if len(all_cells) == 0:
+				variants_to_plot.remove(variant)
+				continue
+
+			# Get new gene parameters for this variant index
 			np.random.seed(variant)
 			if variant == 0:
 				expression_factors.append(NEW_GENE_EXPRESSION_FACTOR_CONTROL)
@@ -74,14 +87,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				trl_eff_values.append(
 					10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
 					NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
-
-			all_cells = self.ap.get_cells(
-				variant=[variant],
-				generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
-				only_successful=True)
-
-			if len(all_cells) == 0:
-					continue
 
 			# Doubling times
 			dt = read_stacked_columns(
@@ -128,6 +133,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + "_" + COLOR_BY, metadata)
 		plt.close('all')
+
+		if INTERACTIVE_PLOT:
+			import plotly.express as px
+
+			fig = px.scatter(
+				x=avg_ng_monomer,
+				y=doubling_times,
+				hover_name=variants_to_plot,
+				labels={'x': 'New Gene Protein Counts', 'y': 'Doubling Time'},
+				hover_data={
+					'Expression Factor': expression_factors,
+					'Translation Efficiency': trl_eff_values
+				}
+			)
+
+			fig.write_html(os.path.join(
+				plotOutDir, plotOutFileName + "_" + COLOR_BY + ".html"))
+			fig.show()
 
 if __name__ == "__main__":
 	Plot().cli()
