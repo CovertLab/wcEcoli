@@ -14,9 +14,9 @@ from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import (
-	NEW_GENE_EXPRESSION_FACTOR_CONTROL, NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX,
-	NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL, NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
-	NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
+	NEW_GENE_EXPRESSION_FACTOR_CONTROL, NEW_GENE_EXPRESSION_FACTOR_MIN,
+	NEW_GENE_EXPRESSION_FACTOR_MAX, NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL,
+	NEW_GENE_TRANSLATION_EFFICIENCY_MIN, NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
@@ -68,10 +68,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				expression_factors.append(NEW_GENE_EXPRESSION_FACTOR_CONTROL)
 				trl_eff_values.append(NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL)
 			else:
-				expression_factors.append(np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN,
-													  NEW_GENE_EXPRESSION_FACTOR_MAX))
-				trl_eff_values.append(10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
-														NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
+				expression_factors.append(
+					np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN,
+					NEW_GENE_EXPRESSION_FACTOR_MAX))
+				trl_eff_values.append(
+					10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
+					NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
 
 			all_cells = self.ap.get_cells(
 				variant=[variant],
@@ -105,22 +107,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts))
 
 			if COLOR_BY == "translation_efficiency":
-				colors.append(trl_eff_values[variant]/10)
+				colors.append(trl_eff_values[variant] / 10)
 			elif COLOR_BY == "expression_factor":
 				colors.append(expression_factors[variant] / 10)
 
 		plt.figure()
-		plt.xlabel("Protein Counts")
+		plt.xlabel("New Gene Protein Counts")
 		plt.ylabel("Doubling Time")
 
 		if COLOR_BY != "same":
 			plt.scatter(avg_ng_monomer, doubling_times, c=colors, cmap='coolwarm')
-			plt.colorbar(orientation='horizontal', label='expression factor / 10')
+			plt.colorbar(orientation='horizontal', label=f'{COLOR_BY} / 10')
 		else:
 			plt.scatter(avg_ng_monomer, doubling_times)
 
-		plt.plot(avg_ng_monomer,
-				 np.poly1d(np.polyfit(avg_ng_monomer, doubling_times, 1))(avg_ng_monomer))
+		plt.plot(
+			avg_ng_monomer,
+			np.poly1d(np.polyfit(avg_ng_monomer, doubling_times, 1))(avg_ng_monomer))
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + "_" + COLOR_BY, metadata)
