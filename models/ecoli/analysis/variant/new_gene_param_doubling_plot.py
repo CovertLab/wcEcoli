@@ -10,13 +10,14 @@ from matplotlib import pyplot as plt
 
 import pickle
 import os
-from wholecell.io.tablereader import TableReader
+
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import (
 	NEW_GENE_EXPRESSION_FACTOR_CONTROL, NEW_GENE_EXPRESSION_FACTOR_MIN,
 	NEW_GENE_EXPRESSION_FACTOR_MAX, NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL,
 	NEW_GENE_TRANSLATION_EFFICIENCY_MIN, NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.io.tablereader import TableReader
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
@@ -29,7 +30,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				validationDataFile, metadata):
 
 		variants = self.ap.get_variants()
-		variants_to_plot = variants.copy()
 
 		# Determine new gene ids
 		with open(simDataFile, 'rb') as f:
@@ -55,16 +55,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'number of new gene monomers and mRNAs should be equal'
 
 		# Data extraction
-		doubling_times = []
-		avg_ng_monomer = []
-		trl_eff_values = []
-		expression_factors = []
-		colors = []
+		plot_variant_mask = np.full(len(variants), True)
+		doubling_times = np.zeros(len(variants))
+		avg_ng_monomer = np.zeros(len(variants))
+		trl_eff_values = np.zeros(len(variants))
+		expression_factors = np.zeros(len(variants))
+		colors = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
 
-		for variant in variants:
+		for i, variant in enumerate(variants):
 
 			all_cells = self.ap.get_cells(
 				variant=[variant],
@@ -72,27 +73,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				only_successful=True)
 
 			if len(all_cells) == 0:
-				variants_to_plot.remove(variant)
+				plot_variant_mask[i] = False
 				continue
 
 			# Get new gene parameters for this variant index
 			np.random.seed(variant)
 			if variant == 0:
-				expression_factors.append(NEW_GENE_EXPRESSION_FACTOR_CONTROL)
-				trl_eff_values.append(NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL)
+				expression_factors[i] = NEW_GENE_EXPRESSION_FACTOR_CONTROL
+				trl_eff_values[i] = NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL
 			else:
-				expression_factors.append(
-					np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN,
-					NEW_GENE_EXPRESSION_FACTOR_MAX))
-				trl_eff_values.append(
-					10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
+				expression_factors[i] = np.random.uniform(
+					NEW_GENE_EXPRESSION_FACTOR_MIN,
+					NEW_GENE_EXPRESSION_FACTOR_MAX)
+				trl_eff_values[i] = (
+					10 ** np.random.uniform(
+					NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
 					NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
 
 			# Doubling times
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times.append(np.mean(dt))
+			doubling_times[i] = np.mean(dt)
 			if variant == min_variant:
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')
@@ -109,26 +111,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'MonomerCounts', 'monomerCounts',
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts))
+			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
 			if COLOR_BY == "translation_efficiency":
-				colors.append(trl_eff_values[variant] / 10)
+				colors[i] = trl_eff_values[variant] / 10
 			elif COLOR_BY == "expression_factor":
-				colors.append(expression_factors[variant] / 10)
+				colors[i] = expression_factors[variant] / 10
 
 		plt.figure()
 		plt.xlabel("New Gene Protein Counts")
 		plt.ylabel("Doubling Time")
 
 		if COLOR_BY != "same":
-			plt.scatter(avg_ng_monomer, doubling_times, c=colors, cmap='coolwarm')
+			plt.scatter(
+				avg_ng_monomer[plot_variant_mask],
+				doubling_times[plot_variant_mask], c=colors, cmap='coolwarm')
 			plt.colorbar(orientation='horizontal', label=f'{COLOR_BY} / 10')
 		else:
-			plt.scatter(avg_ng_monomer, doubling_times)
+			plt.scatter(
+				avg_ng_monomer[plot_variant_mask],
+				doubling_times[plot_variant_mask])
 
 		plt.plot(
-			avg_ng_monomer,
-			np.poly1d(np.polyfit(avg_ng_monomer, doubling_times, 1))(avg_ng_monomer))
+			avg_ng_monomer[plot_variant_mask],
+			np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
+			doubling_times[plot_variant_mask], 1))(
+			avg_ng_monomer[plot_variant_mask]))
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName + "_" + COLOR_BY, metadata)
@@ -138,15 +146,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			import plotly.express as px
 
 			fig = px.scatter(
-				x=avg_ng_monomer,
-				y=doubling_times,
-				hover_name=variants_to_plot,
+				x=avg_ng_monomer[plot_variant_mask],
+				y=doubling_times[plot_variant_mask],
+				hover_name=np.array(variants)[plot_variant_mask],
 				labels={'x': 'New Gene Protein Counts', 'y': 'Doubling Time'},
 				hover_data={
-					'Expression Factor': expression_factors,
-					'Translation Efficiency': trl_eff_values
-				}
-			)
+					'Expression Factor': expression_factors[plot_variant_mask],
+					'Translation Efficiency': trl_eff_values[plot_variant_mask]})
 
 			fig.write_html(os.path.join(
 				plotOutDir, plotOutFileName + "_" + COLOR_BY + ".html"))
