@@ -1,56 +1,33 @@
 """
-
+Plot a scatterplot of the average new gene protein counts vs. doubling time,
+with the option to color the points by expression factor or translation
+efficiency. This plot is intended to be run on simulations where the new gene
+option was enabled.
 """
 
 import numpy as np
 from matplotlib import pyplot as plt
 
-
 import pickle
 import os
 from wholecell.io.tablereader import TableReader
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure,\
-	read_stacked_columns, stacked_cell_threshold_mask
-
-
-FONT_SIZE = 9
-DOUBLING_TIME_BOUNDS_MINUTES = [0, 180]
-N_BINS = 36
-
-MAX_VARIANT = 10 # do not include any variant >= this index
-MAX_CELL_INDEX = 8 # do not include any generation >= this index
-
-# Set True to plot completion rate
-PLOT_COMPLETION_RATES = True
+from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import (
+	NEW_GENE_EXPRESSION_FACTOR_CONTROL, NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX,
+	NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL, NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
+	NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
 
-exclude_timeout_cells = 0
-
-MAX_CELL_LENGTH = 180
-if (exclude_timeout_cells==0):
-	MAX_CELL_LENGTH += 1000000
+COLOR_BY = "same"  # ["same", "expression_factor", "translation_efficiency"]
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 		# Determine new gene ids
-
-
 		variants = self.ap.get_variants()
-
-		NEW_GENE_EXPRESSION_FACTOR_CONTROL = 0
-		NEW_GENE_EXPRESSION_FACTOR_MIN = 7
-		NEW_GENE_EXPRESSION_FACTOR_MAX = 10
-		NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL = 0
-		NEW_GENE_TRANSLATION_EFFICIENCY_MIN = np.log10(0.01)
-		NEW_GENE_TRANSLATION_EFFICIENCY_MAX = np.log10(10)
-
-
-
-
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -80,15 +57,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ng_monomer = []
 		trl_eff_values = []
 		expression_factors = []
-		generations = {}
-		new_gene_mRNA_counts = [{} for id_ in new_gene_mRNA_ids]
-		new_gene_monomer_counts = [{} for id_ in new_gene_monomer_ids]
+		colors = []
 		n_total_gens = self.ap.n_generation
-
-
-		plt.figure()
-		plt.xlabel("Protein Counts")
-		plt.ylabel("Doubling Time")
 
 		min_variant = min(variants)
 
@@ -103,35 +73,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				trl_eff_values.append(10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
 														NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
 
-
-			all_cells = self.ap.get_cells(variant=[variant], generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
-											  only_successful=True)
+			all_cells = self.ap.get_cells(
+				variant=[variant],
+				generation= np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
+				only_successful=True)
 
 			if len(all_cells) == 0:
 					continue
 
-			exclude_timeout_cell_mask = stacked_cell_threshold_mask(
-				all_cells, 'Main', 'time', MAX_CELL_LENGTH,
-				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			all_cells_gens = np.array([int(os.path.basename(os.path.dirname(
-					cell_path))[-6:]) for cell_path in all_cells])
-			generations[variant] = all_cells_gens
-
 			# Doubling times
-			dt = read_stacked_columns(all_cells, 'Main', 'time',
-										  fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times.append(np.mean(dt[exclude_timeout_cell_mask]))
+			dt = read_stacked_columns(
+				all_cells, 'Main', 'time',
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			doubling_times.append(np.mean(dt))
 			if variant == min_variant:
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')
-
-				# Extract mRNA indexes for each new gene
-				mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-															  'RNACounts'))
-				mRNA_idx_dict = {rna[:-3]: i for i, rna in
-					enumerate(mRNA_counts_reader.readAttribute('mRNA_ids'))}
-				new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id)
-										 for mRNA_id in new_gene_mRNA_ids]
 
 				# Extract protein indexes for each new gene
 				monomer_counts_reader = TableReader(os.path.join(
@@ -141,31 +98,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id)
 					for monomer_id in new_gene_monomer_ids]
 
-			avg_new_gene_mRNA_counts = read_stacked_columns(all_cells,
-				'RNACounts', 'mRNA_counts',
-				fun=lambda x: np.mean(x[:,new_gene_mRNA_indexes],axis=0))
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
 				'MonomerCounts', 'monomerCounts',
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
-			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts[exclude_timeout_cell_mask]))
+			avg_ng_monomer.append(np.mean(avg_new_gene_monomer_counts))
 
-			for i in range(len(new_gene_mRNA_ids)):
-				new_gene_mRNA_counts[i][variant] = \
-					np.log10(avg_new_gene_mRNA_counts[:,i] + 1)
-				new_gene_monomer_counts[i][variant] = \
-					np.log10(avg_new_gene_monomer_counts[:,i] + 1)
-			#if variant == 6 or variant == 88:
-				#plt.scatter(avg_ng_monomer(variant),doubling_times(variant))
+			if COLOR_BY == "translation_efficiency":
+				colors.append(trl_eff_values[variant]/10)
+			elif COLOR_BY == "expression_factor":
+				colors.append(expression_factors[variant] / 10)
 
-		import ipdb
-		ipdb.set_trace()
+		plt.figure()
+		plt.xlabel("Protein Counts")
+		plt.ylabel("Doubling Time")
 
-		plt.scatter(avg_ng_monomer,doubling_times)
-		plt.plot(avg_ng_monomer, np.poly1d(np.polyfit(avg_ng_monomer,doubling_times, 1))(avg_ng_monomer))
+		if COLOR_BY != "same":
+			plt.scatter(avg_ng_monomer, doubling_times, c=colors, cmap='coolwarm')
+			plt.colorbar(orientation='horizontal', label='expression factor / 10')
+		else:
+			plt.scatter(avg_ng_monomer, doubling_times)
+
+		plt.plot(avg_ng_monomer,
+				 np.poly1d(np.polyfit(avg_ng_monomer, doubling_times, 1))(avg_ng_monomer))
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName + "_" + COLOR_BY, metadata)
 		plt.close('all')
 
 if __name__ == "__main__":
