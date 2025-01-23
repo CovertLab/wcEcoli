@@ -273,14 +273,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if plot_suffix == "":
 				plt.plot(time / 60., new_gene_mRNA_counts, color=LINE_COLOR)
 				plt.plot(time2 / 60., new_gene_mRNA_counts2, color=LINE_COLOR2)
+				plt.ylabel("gfp mRNA Counts", fontsize="small")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.plot(time / 60., np.log10(new_gene_mRNA_counts + 1), color=LINE_COLOR)
 				plt.plot(time2 / 60., np.log10(new_gene_mRNA_counts2 + 1), color=LINE_COLOR2)
 				plt.ylim((-1,4.5))
+				plt.ylabel("Log(gfp mRNA Counts + 1)", fontsize="small")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Log(gfp mRNA Counts + 1)", fontsize="small")
 			plot_num += 1
 
 			# Protein Counts
@@ -288,14 +289,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if plot_suffix == "":
 				plt.plot(time / 60., new_gene_monomer_counts, color=LINE_COLOR)
 				plt.plot(time2 / 60., new_gene_monomer_counts2, color=LINE_COLOR2)
+				plt.ylabel("GFP Counts", fontsize="small")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 				plt.plot(time / 60., np.log10(new_gene_monomer_counts + 1), color=LINE_COLOR)
 				plt.plot(time2 / 60., np.log10(new_gene_monomer_counts2 + 1), color=LINE_COLOR2)
 				plt.ylim((-1,7.5))
+				plt.ylabel("Log(GFP Counts + 1)", fontsize="small")
 			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
-			plt.ylabel("Log(GFP Counts + 1)", fontsize="small")
+
 			plot_num += 1
 
 			# ppGpp
