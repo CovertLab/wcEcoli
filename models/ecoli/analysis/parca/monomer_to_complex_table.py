@@ -1,5 +1,7 @@
 """
-Template for parca analysis plots
+This script generates a tsv file where every monomer in the model is reported along with which complexes it is found in,
+the counts of the specified monomers per complex, monomer protease assignment, free monomer half life specified in
+given parca and the source of this degradation rate.
 """
 
 import pickle
@@ -133,7 +135,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 		def write_table_for_monomers_in_complexes(clean_comp_dict, monomer_id_to_index, protease, half_lives,
 												  deg_rate_source):
 			# Write data to table
-			with open(os.path.join(plot_out_dir, plot_out_filename + '_monomer_to_complex_assignment.tsv'),
+			with open(os.path.join(plot_out_dir, plot_out_filename + '.tsv'),
 					  'w') as f:
 				writer = csv.writer(f, delimiter='\t')
 				writer.writerow(

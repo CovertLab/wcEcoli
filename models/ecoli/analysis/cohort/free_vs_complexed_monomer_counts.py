@@ -30,7 +30,7 @@ IGNORE_FIRST_N_GENS = 2
 half_life_threshold = 180
 # Path to table with monomer to complex info
 # Must first run analysis/parca/monomer_to_complex_table.py to generate table
-monomers_to_complexes_path = 'out/pdr_CLClim3aNE_protease_assignment/kb_plot_out/monomer_to_complex_table_monomer_to_complex_assignment.tsv'
+monomers_to_complexes_path = 'out/pdr_CLClim3aNE_protease_assignment/kb_plot_out/monomer_to_complex_table.tsv'
 # List monomer ids for which dynamic monomer and mRNA counts are of interest
 monomer_complex_short_list = ['PD03938[c]']
 
