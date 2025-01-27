@@ -48,7 +48,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			monomer_ids: ids for the proteins of interest
 			cistron_ids: ids for the genes of interest
 
-		Returns: The time, total monomer counts, and mRNA counts for the
+		Returns: The time, compelexed monomer counts, and mRNA counts for the
 		proteins of interest.
 
 		"""

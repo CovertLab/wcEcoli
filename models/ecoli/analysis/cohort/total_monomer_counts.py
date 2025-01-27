@@ -48,8 +48,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             cistron_ids: ids for the genes of interest
 
         Returns: The time, total monomer counts, and mRNA counts for the
-         proteins of interest.
-
+        proteins of interest.
         """
 		# Extract monomer indexes for each protein of interest
 		monomer_counts_reader = TableReader(os.path.join(simOutDir,
@@ -92,7 +91,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         Returns: the doubling time for each generation within the seed and
         the end time for each generation.
-
         """
 		dt = read_stacked_columns(
 			cell_paths, 'Main', 'time',
@@ -124,15 +122,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             time: the total time duration for the seed
             monomer_counts: total monomer counts for proteins of interest
             over the seed duration
-            mRNA_counts:  mRNA counts for the proteins of interest over the
-            seed duration
+            mRNA_counts: mRNA counts for the proteins of interest over the seed
             plotOutDir: output directory for the plot
             plotOutFileName: name of the plot file
             metadata: metadata for the simulation
 
         Returns: A plot export for the total monomer counts and mRNA counts
         in the particular seed.
-
         """
 		plt.figure(figsize=(8.5, 11))
 
