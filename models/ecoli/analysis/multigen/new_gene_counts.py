@@ -59,15 +59,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
 								 new_gene_mRNA_ids]
 
-		# Extract protein indexes for each new gene
-		monomer_counts_reader = TableReader(
-			os.path.join(simOutDir, "MonomerCounts"))
-		monomer_idx_dict = {monomer: i for i, monomer in
-							enumerate(monomer_counts_reader.readAttribute(
-								'monomerIds'))}
-		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-									monomer_id in new_gene_monomer_ids]
-
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(new_gene_monomer_counts,) = read_stacked_bulk_molecules(
