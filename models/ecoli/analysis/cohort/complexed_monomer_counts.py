@@ -24,6 +24,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
+""" USER INPUTS """
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
 	#'PD03938[c]', # metR
@@ -39,6 +40,8 @@ interest_proteins = np.array([
 # Specifiy generations to be skipped if desired:
 SKIP_GENERATIONS = 0 # 0 -> no generations are skipped
 PLOT_AVERAGES = 0 # 0 -> no, 1 -> yes (if SKIP_GENERATIONS = 0)
+
+""" END USER INPUTS """
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def extract_data(self, simOutDir, cell_paths, monomer_ids, cistron_ids):
