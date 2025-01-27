@@ -28,16 +28,17 @@ from wholecell.io.tablereader import TableReader
 interest_proteins = np.array([
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
-	#"BASR-MONOMER[c]", # basR
-	#"EG11171-MONOMER[c]", #tsaD
+	"BASR-MONOMER[c]", # basR
+	"EG11171-MONOMER[c]", #tsaD
 	#"EG11734-MONOMER[c]", # phoH
 	#"EG10871-MONOMER[c]", #rplJ
 	#"EG11534-MONOMER[c]", # ibpA
-	"G6463-MONOMER[c]", # ClpS
+	#"G6463-MONOMER[c]", # ClpS
 ])
 
 # Specifiy generations to be skipped if desired:
-SKIP_GENERATIONS = 2
+SKIP_GENERATIONS = 0 # 0 -> no generations are skipped
+PLOT_AVERAGES = 0 # 0 -> no, 1 -> yes (if SKIP_GENERATIONS = 0)
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def extract_data(self, simOutDir, cell_paths, monomer_ids, cistron_ids):
@@ -300,8 +301,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.xlabel("Time (min)")
 		plt.ylabel("Free Monomer Counts")
-		plt.title(f"Free Monomer Counts in Seed {seed}, starting with generation"
-				  f" {SKIP_GENERATIONS}")
+		plt.title(f"Free Monomer Counts in Seed {seed}, starting with "
+				  f"generation {SKIP_GENERATIONS}")
 		plt.legend()
 
 		# Complexed Monomer Counts Plot
@@ -485,6 +486,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				avg_time_points.append(
 					summed_time + ((average_generation_durations[i]) / 2.))
 
+		if SKIP_GENERATIONS == 0:
+			if PLOT_AVERAGES == 1:
+				# plot the average values:
+				plt.scatter(avg_time_points, avg_monomer_cts,
+						 label='average', color='black', marker='.')
+
 		# Plot specs for the monomer counts graph
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
@@ -498,7 +505,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], generation=generations, only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations,
+								  only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -506,6 +514,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# plot the data
 			plt.plot(time / 60., mRNA_counts,
 					 label=f'seed {seed}', alpha=0.5)
+
+		if SKIP_GENERATIONS == 0:
+			if PLOT_AVERAGES == 1:
+				# plot the average values:
+				plt.scatter(avg_time_points, avg_mRNA_cts,
+						 label='average', color='black', marker='.')
 
 		# Plot specs for the mRNA counts graph
 		plt.xlabel("Time (min)");
@@ -735,8 +749,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# plot the counts for the protein
 			print("plotting for protein: "); print(protein)
 			print("cistron_id: "); print(cistron_id[0])
-			self.plot_counts_per_protein(simOutDir, protein_id, cistron_id, seeds,
-										 generations,
+			self.plot_counts_per_protein(simOutDir, protein_id, cistron_id,
+										 seeds, generations,
 										 plotOutDir, plotOutFileName, metadata)
 			self.plot_all_count_types_per_protein(simOutDir, protein_id,
 												  cistron_id, seeds,
