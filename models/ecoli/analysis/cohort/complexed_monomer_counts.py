@@ -29,11 +29,15 @@ interest_proteins = np.array([
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
 	#"BASR-MONOMER[c]", # basR
-	"EG11171-MONOMER[c]", #tsaD
+	#"EG11171-MONOMER[c]", #tsaD
 	#"EG11734-MONOMER[c]", # phoH
 	#"EG10871-MONOMER[c]", #rplJ
 	#"EG11534-MONOMER[c]", # ibpA
+	"G6463-MONOMER[c]", # ClpS
 ])
+
+# Specifiy generations to be skipped if desired:
+SKIP_GENERATIONS = 2
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def extract_data(self, simOutDir, cell_paths, monomer_ids, cistron_ids):
@@ -97,16 +101,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return (time, total_monomer_counts, free_monomer_counts,
 				complexed_monomer_counts, mRNA_counts)
 
-	def extract_doubling_times(self, cell_paths):
+	def extract_doubling_times(self, seed):
 		"""
 		Extracts doubling time data for a given set of cells.
 		Args:
-			cell_paths: paths to cells within a seed.
+			seed: seed of interest.
 
 		Returns: the doubling time for each generation within the seed and
 		the end time for each generation.
 
 		"""
+		# redefine cell_paths to be the first seed
+		cell_paths = self.ap.get_cells(seed=[seed])
+
 		# Get doubling times for the cells with this seed index
 		dt = read_stacked_columns(
 			cell_paths, 'Main', 'time',
@@ -121,6 +128,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			else:
 				gt = dt[i] + generation_ends[i - 1]
 				generation_ends[i] = gt
+
+		dt = dt[SKIP_GENERATIONS:]
+		generation_ends = generation_ends[SKIP_GENERATIONS:]
 
 		return generation_ends, dt
 
@@ -151,7 +161,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.figure(figsize=(8.5, 11))
 
 		# Get doubling times for the cells with this seed index
-		dts, dt_duration = self.extract_doubling_times(cell_paths)
+		dts, dt_duration = self.extract_doubling_times(seed)
 
 		# Protein Counts Plot
 		plt.subplot(2, 1, 1)
@@ -176,7 +186,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
 		plt.title(f"Predicted Counts of Monomers within"
-				  f" Complexes in Seed {seed}")
+				  f" Complexes in Seed {seed}, starting with generation"
+				  f" {SKIP_GENERATIONS}")
 		plt.legend()
 
 		# mRNA Counts Plot
@@ -196,16 +207,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						 label=name, alpha=0.5)
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
-		plt.title(f"mRNA Counts for Proteins of Interest in Seed {seed}")
+		plt.title(f"mRNA Counts for Proteins of Interest in Seed {seed}, "
+				  f"starting with generation {SKIP_GENERATIONS}")
 		plt.legend()
 
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
-		exportFigure(plt, plotOutPath, plotOutFileName + '_cohortPlot_seed_'
+		exportFigure(plt, plotOutPath, plotOutFileName + f'_cohortPlot_'
+					f'startGen_{SKIP_GENERATIONS}_seed_'
 					 + str(seed) + '_geneIDs_' + str(gene_list), metadata)
 		plt.close("all")
 
-	# function to plot all types of counts for each protein per seed
 	def plot_all_count_types_per_seed(self, seed, cell_paths, monomer_ids, time,
 									  total_monomer_counts, free_monomer_counts,
 									  complexed_monomer_counts, plotOutDir,
@@ -233,7 +245,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.figure(figsize=(8.5, 14))
 
 		# Get doubling times for the cells with this seed index
-		dts, dt_duration = self.extract_doubling_times(cell_paths)
+		dts, dt_duration = self.extract_doubling_times(seed)
 
 		# Total Monomer Counts Plot
 		plt.subplot(3, 1, 1)
@@ -261,7 +273,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.xlabel("Time (min)");
 		plt.ylabel("Total Monomer Counts")
-		plt.title(f"Total Monomer Counts in Seed {seed}")
+		plt.title(f"Total Monomer Counts in Seed {seed}, starting with "
+				  f"generation {SKIP_GENERATIONS}")
 		plt.legend()
 
 		# Free Monomer Counts Plot
@@ -287,7 +300,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.xlabel("Time (min)")
 		plt.ylabel("Free Monomer Counts")
-		plt.title(f"Free Monomer Counts in Seed {seed}")
+		plt.title(f"Free Monomer Counts in Seed {seed}, starting with generation"
+				  f" {SKIP_GENERATIONS}")
 		plt.legend()
 
 		# Complexed Monomer Counts Plot
@@ -304,7 +318,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			name = monomer_ids[0] + ' (' + common_name + ')'
 			plt.plot(time / 60., complexed_monomer_counts,
 					 label=name)
-
 		else:
 			for m in range(len(monomer_ids)):
 				common_name = self.get_common_name(monomer_ids[m])
@@ -315,14 +328,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.xlabel("Time (min)")
 		plt.ylabel("Complexed Monomer Counts")
 		plt.title(f"Predicted Counts for Monomers within Complexes"
-				  f" in Seed {seed}")
+				  f" in Seed {seed}, starting with generation {SKIP_GENERATIONS}")
 		plt.legend()
 
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
 		exportFigure(plt, plotOutPath, plotOutFileName +
-					 '_cohortPlot_compareCounts_seed_'
-					 + str(seed) + '_geneIDs_' + str(gene_list), metadata)
+					 f'_cohortPlot_compareCounts_startGen_{SKIP_GENERATIONS}'
+					 f'_seed_'+str(seed)+'_geneIDs_'+str(gene_list), metadata)
 		plt.close("all")
 
 	# function to match gene symbols to monomer ids
@@ -366,7 +379,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return gene_symbol
 
 	def plot_counts_per_protein(self, simOutDir, protein, cistron, seeds,
-								plotOutDir, plotOutFileName, metadata):
+								generations, plotOutDir, plotOutFileName,
+								metadata):
 		"""
         Plot the complexed monomer counts and mRNA counts for a given protein
         across all seeds in one plot. Also includes a rough average of the
@@ -377,6 +391,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             protein: protein ID for the protein of interest
             cistron: cistron ID for the protein of interest
             seeds: seeds in the simulation
+            generations: generations in the simulation to plot
 			plotOutDir: directory for the plot output
 			plotOutFileName: name for the plot output
 			metadata: metadata for the simulation
@@ -403,9 +418,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations,
+								  only_successful=True))
 			# Extract doubling time for the seed
-			dts, dt_durations = self.extract_doubling_times(cell_paths)
+			dts, dt_durations = self.extract_doubling_times(seed)
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -469,14 +485,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				avg_time_points.append(
 					summed_time + ((average_generation_durations[i]) / 2.))
 
-		# plot the average counts for the protein across all seeds
-		plt.scatter(avg_time_points, avg_monomer_cts,
-					label='average', color='black', marker='.')
-
 		# Plot specs for the monomer counts graph
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
-		plt.title(f"Predicted Counts of {protein[0]} ({common_name}) "
+		plt.title(f"Predicted Counts for {protein[0]} ({common_name}) "
 				  f"Monomers within Complexes")
 		plt.legend()
 
@@ -486,7 +498,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations, only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -494,10 +506,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# plot the data
 			plt.plot(time / 60., mRNA_counts,
 					 label=f'seed {seed}', alpha=0.5)
-
-		# plot the average counts for the protein across all seeds
-		plt.scatter(avg_time_points, avg_mRNA_cts, label='average',
-					color='black', marker='.')
 
 		# Plot specs for the mRNA counts graph
 		plt.xlabel("Time (min)");
@@ -509,8 +517,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# generate a table below the plots:
 		columns = ('avg. cycle duration', 'avg. monomer counts',
 				   'avg. mRNA counts')
-		rows = ['Generation %d' % p for p in
-				(1, 2, 3, 4, 5, 6, 7, 8)] + ['Overall Average']
+		rows = (['Generation %d' % p for p in
+				tuple(range(SKIP_GENERATIONS, (generations[-1] + 1 )))] +
+				['Overall Average'])
 
 		# add the overall average to each:
 		avg_generation_durations_all = np.mean(average_generation_durations)
@@ -533,15 +542,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# export plot:
 		plt.subplots_adjust(hspace=0.2, top=0.95, bottom=0.25)
 		exportFigure(plt, plotOutDir, plotOutFileName +
-					 '_cohortPlot_geneID_' + common_name, metadata)
+					 f'_cohortPlot_startGen_{SKIP_GENERATIONS}'
+					 f'_geneID_' + common_name, metadata)
 		plt.close("all")
 
-
-	h = 5
-
 	def plot_all_count_types_per_protein(self, simOutDir, protein, cistron,
-										 seeds, plotOutDir, plotOutFileName,
-										 metadata):
+										 seeds, generations, plotOutDir,
+										 plotOutFileName, metadata):
 		"""
 		Plots the total, free, and complexed monomer counts for a given
 		protein. Allows one to compare the make up of the total monomer
@@ -551,6 +558,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			protein: protein of interest
 			cistron: corresponding cistron for the protein of interest
 			seeds: seeds in the simulation
+			generations: generations to plot per seed
 			plotOutDir: directory for the plot output
 			plotOutFileName: name for the plot output
 			metadata: metadata for the simulation
@@ -574,7 +582,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations,
+								  only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -589,7 +598,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plot specs for the total monomer counts graph
 		plt.xlabel("Time (min)");
 		plt.ylabel("Total Monomer Counts")
-		plt.title(f"Total Monomer Counts of {protein[0]} ({common_name})")
+		plt.title(f"Total Monomer Counts for {protein[0]} ({common_name})")
 		plt.legend()
 
 		# Free Monomer Counts Plot
@@ -599,7 +608,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations,
+								  only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -614,7 +624,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plot specs for the free monomer counts graph
 		plt.xlabel("Time (min)");
 		plt.ylabel("Free Monomer Counts")
-		plt.title(f"Free Monomer Counts of {protein[0]} ({common_name})")
+		plt.title(f"Free Monomer Counts for {protein[0]} ({common_name})")
 		plt.legend()
 
 		# Complexed Monomer Counts Plot
@@ -624,7 +634,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations,
+								  only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -643,14 +654,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plot specs for the complexed monomer counts graph
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
-		plt.title(f"Predicted Counts of {protein[0]} ({common_name}) "
+		plt.title(f"Predicted Counts for {protein[0]} ({common_name}) "
 				  f"Monomers within Complexes")
 		plt.legend()
 
 		# export plot:
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		exportFigure(plt, plotOutDir, plotOutFileName +
-					 '_cohortPlot_compareCounts_geneID_' + common_name,
+					 f'_cohortPlot_compareCounts_startGen_{SKIP_GENERATIONS}'
+					 f'_geneID_' + common_name,
 					 metadata)
 		plt.close("all")
 
@@ -658,8 +670,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				validationDataFile, metadata):
 
 		# extract data paths
-		cell_paths = self.ap.get_cells(only_successful=True)
 		seeds = self.ap.get_seeds()
+		generations = self.ap.get_generations()[SKIP_GENERATIONS:]
+		cell_paths = self.ap.get_cells(generation=generations,
+									   only_successful=True)
 
 		# get the simOut directory
 		sim_dir = cell_paths[0] # this can be arbitrary, just needs to exist
@@ -690,7 +704,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# Generate all the cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], only_successful=True))
+				self.ap.get_cells(seed=[seed], generation=generations,
+								  only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -721,9 +736,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print("plotting for protein: "); print(protein)
 			print("cistron_id: "); print(cistron_id[0])
 			self.plot_counts_per_protein(simOutDir, protein_id, cistron_id, seeds,
+										 generations,
 										 plotOutDir, plotOutFileName, metadata)
 			self.plot_all_count_types_per_protein(simOutDir, protein_id,
-												  cistron_id, seeds, plotOutDir,
+												  cistron_id, seeds,
+												  generations, plotOutDir,
 												  plotOutFileName, metadata)
 
 if __name__ == '__main__':
