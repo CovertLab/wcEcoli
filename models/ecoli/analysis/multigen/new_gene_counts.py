@@ -1,5 +1,8 @@
 """
 Plot mRNA and protein counts for new genes across multiple generations
+
+Use --variant-range and  --seed-range to specify the range of variants to go
+through in the plot.
 """
 
 import pickle
