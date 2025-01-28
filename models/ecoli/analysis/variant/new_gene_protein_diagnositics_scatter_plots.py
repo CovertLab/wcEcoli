@@ -152,14 +152,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	def get_LogData(self, protein_idxs, interest_protein_counts, index_vals=[]):
 		"""
-		Coverts normal protein count data to their log values.
+		Covert monomer count data to a log10 scale
 		Args:
-			protein_idxs: an array of the indices for proteins of interest
-			interest_protein_counts: the full data structure  of protein counts
-			(usually size variants by # of proteins), filtered or unfiltered
-			index_vals: provide if the protein idxs are not in sequential order
+			protein_idxs: an array of the indices for proteins to be plotted
+             (this should be smaller than interest_protein_counts if the data
+              has been filtered)
+            interest_protein_counts: the full data structure of all proteins
+            and their respective counts (no filter applied)
+            (usually size variants by # of proteins), either filtered or not
+            index_vals: if the protein idxs are not in sequential order (usually
+            happens after filtering the data), include a list of the original
+            indices for each protein in this variable.
 
-		Returns: the log value of the average protein counts
+		Returns: the log value of the total average counts for each protein
 		"""
 		# Initialize the array to store the log values of the protein counts:
 		avg_log_interest_proteins = np.zeros((
@@ -179,22 +184,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def filter_data(self, nonfiltered_protein_counts,
 					nonfiltered_monomer_idx_dict, filter_num=0):
 		"""
-		Filter the data to extract all proteins with 0 PCs in at least variant
+		Filters the data to extract all proteins at least a specified number of
+		protein counts in both variants.
 		Args:
-			nonfiltered_protein_counts: array of PCs for all proteins
-			nonfiltered_monomer_idx_dict: dictionary that maps id to index
-			filter_num: the minimum number of PCs a protein must have in both
+			nonfiltered_protein_counts: array of counts for all proteins
+			nonfiltered_monomer_idx_dict: dictionary that maps ID to index
+			filter_num: the minimum number of counts a protein must have in both
 			variants to avoid being discarded from the new filtered data
 			(by default this is set to zero).
 
-		Returns: an array of PCs, ids, and indexes for the remaining proteins
-		that successfully pass the user defined filter (or the default set to 0)
+		Returns: arrays of counts, IDs, and indexes for all proteins that
+        successfully pass the user defined filter (or the default set to 0)
 		"""
 		# Extract all proteins with non-zero protein counts in both variants:
-		nonzero_p_counts_var0_idxs = np.nonzero(nonfiltered_protein_counts[0])
-		nonzero_p_counts_var1_idxs = np.nonzero(nonfiltered_protein_counts[1])
-		shared_nonzero_PCs_idxs = np.intersect1d(nonzero_p_counts_var0_idxs,
-												 nonzero_p_counts_var1_idxs)
+		nonzero_counts_var0_idxs = np.nonzero(nonfiltered_protein_counts[0])
+		nonzero_counts_var1_idxs = np.nonzero(nonfiltered_protein_counts[1])
+		shared_nonzero_PCs_idxs = np.intersect1d(nonzero_counts_var0_idxs,
+												 nonzero_counts_var1_idxs)
 		nonzero_PCs = nonfiltered_protein_counts[:, shared_nonzero_PCs_idxs]
 		nonzero_idxs = shared_nonzero_PCs_idxs
 		nonzero_ids = self.get_ids(nonfiltered_monomer_idx_dict,
@@ -384,7 +390,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.filter_data(protein_counts, monomer_idx_dict_PreFilter,
 								 FILTER))
 
-			# Plot 5a:
+			# Plot filtered data:
 			if plot_comparisons_with_filtered_data == 1:
 				# plot the filtered data:
 				self.generate_plot(experimental_var, F_PCs, F_PCs, 1)
@@ -397,6 +403,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 				# plot the log scale version of the filtered data:
 				F_PC_LogData = self.get_LogData(F_PC_idxs, F_PCs)
+				# can do (F_PC_idxs, total_monomer_counts, F_PC_idxs) too
 				self.generate_plot(experimental_var, F_PC_LogData, F_PC_LogData,
 								   1)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
