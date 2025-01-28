@@ -247,8 +247,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		Returns: the transposed and reshaped data
 		"""
-		data = np.transpose(np.array(data));
-		data = data.reshape(-1, 1)
+		data = np.transpose(np.array(data)); data = data.reshape(-1, 1)
 		return data
 
 
@@ -268,7 +267,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# define/initialize commonly used variables:
 		self.n_total_gens = self.ap.n_generation
-		startGen = IGNORE_FIRST_N_GENS + 1  # bc python numbering starts at 0
+		startGen = IGNORE_FIRST_N_GENS # note python numbering starts at 0
 		self.all_monomer_ids = []
 		total_protein_counts = self.generate_data(simDataFile)
 		monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
