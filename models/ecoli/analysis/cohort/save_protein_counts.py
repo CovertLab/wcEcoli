@@ -86,20 +86,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Extract monomer count data for each protein:
 		self.all_monomer_ids = monomer_sim_data['id']
-		all_cells = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS,
-														   self.n_total_gens),
-									  only_successful=True)
+		all_cells = self.ap.get_cells(
+			generation=np.arange(IGNORE_FIRST_N_GENS,self.n_total_gens),
+			only_successful=True)
 
-		# Calculate the average total monomer counts for each generation
-		# (within each seed):
-		average_total_counts = (
-			read_stacked_columns(all_cells, 'MonomerCounts',
-								 'monomerCounts',
-								 fun=lambda x: np.mean(x[:], axis=0)))
+		# Calculate the average total monomer counts across all cells:
+		total_protein_counts = (read_stacked_columns(
+			all_cells, 'MonomerCounts',
+			'monomerCounts')).mean(axis=0)
 
-		# Average together over all cells (all generations between all seeds):
-		avg_total_monomer_counts = np.mean(average_total_counts, axis=0)
-		total_protein_counts = np.array(avg_total_monomer_counts)
+		# Make into a np.array:
+		total_protein_counts = np.array(total_protein_counts)
 
 		return total_protein_counts
 
