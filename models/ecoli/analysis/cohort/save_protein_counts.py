@@ -124,9 +124,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		schmidt_counts = validation_data.protein.schmidt2015Data["glucoseCounts"]
 
 		# Get the simulation cell directories:
-		all_cells = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS,
-														   self.n_total_gens),
-									  only_successful=True)
+		all_cells = self.ap.get_cells(
+			generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens),
+			only_successful=True)
 
 		# Initialize lists to store data for overlapping protein counts:
 		sim_schmidt_counts_multigen = []
@@ -144,9 +144,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_schmidt_counts, val_schmidt_counts, schmidt_overlap_ids = (
 				get_simulated_validation_counts(
 				schmidt_counts, monomer_counts, schmidt_ids, sim_monomer_ids))
-			sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids \
-				= get_simulated_validation_counts(
-				wisniewski_counts, monomer_counts, wisniewski_ids, sim_monomer_ids)
+			sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = (
+				get_simulated_validation_counts(
+					wisniewski_counts, monomer_counts, wisniewski_ids,
+					sim_monomer_ids))
 
 			# Append the protein counts for the current cell:
 			sim_schmidt_counts_multigen.append(sim_schmidt_counts)
