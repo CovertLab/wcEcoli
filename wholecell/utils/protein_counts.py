@@ -23,8 +23,8 @@ def get_simulated_validation_counts(
 
 	Returns:
 		The simulated counts of the monomers that appear in the
-		validation data, and the validation counts of the monomers in the same
-		order.
+		validation data, the validation counts of the monomers in the same
+		order, & the IDs of the monomers that overlap between the two datasets.
 	"""
 
 	avg_sim_counts = monomer_counts.mean(axis=0)
