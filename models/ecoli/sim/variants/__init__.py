@@ -15,6 +15,7 @@ variants = [
 	'metabolism_secretion_penalty',
 	'new_gene_internal_shift',
 	'new_gene_param_sampling_internal_shift',
+	'new_gene_param_sampling_internal_shift_narrow',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',
