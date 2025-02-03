@@ -61,6 +61,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
+		variant_name = metadata["variant"]
 
 		for i, variant in enumerate(variants):
 
@@ -74,19 +75,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				continue
 
 			# Get new gene parameters for this variant index
-			np.random.seed(variant)
-			if variant == 0:
-				expression_factors[i] = NEW_GENE_EXPRESSION_FACTOR_CONTROL
-				trl_eff_values[i] = NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL
-			else:
-				expression_factors[i] = np.random.uniform(
-					NEW_GENE_EXPRESSION_FACTOR_MIN,
-					NEW_GENE_EXPRESSION_FACTOR_MAX)
-				trl_eff_values[i] = (
-					10 ** np.random.uniform(
-					NEW_GENE_TRANSLATION_EFFICIENCY_MIN,
-					NEW_GENE_TRANSLATION_EFFICIENCY_MAX))
+			condition_index = variant // 1000
+			index_remainder = variant - condition_index * 1000
 
+			if variant_name == "new_gene_param_sampling_internal_shift":
+				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import get_sampled_new_gene_expression_factor_and_translation_efficiency
+				np.random.seed(index_remainder)
+				expression_factors[i], trl_eff_values[i] = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+					index_remainder)
+
+			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
+				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift_narrow import get_sampled_new_gene_expression_factor_and_translation_efficiency
+				expression_factors[i], trl_eff_values[i] = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+					index_remainder)
+
+			else:
+				print(variant_name + " is not a valid variant name for this plot")
+				return
+			
 			if variant == min_variant:
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')

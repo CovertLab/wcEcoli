@@ -25,14 +25,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.xscale('log')
 		plt.yscale('log')
 
+		variant_name = metadata["variant"]
+
 		for variant in variants:
-			np.random.seed(variant)
-			if variant == 0:
-				expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
-				trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL
+
+			condition_index = variant // 1000
+			index_remainder = variant - condition_index * 1000
+
+			if variant_name == "new_gene_param_sampling_internal_shift":
+				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import get_sampled_new_gene_expression_factor_and_translation_efficiency
+				np.random.seed(index_remainder)
+				expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+					index_remainder)
+
+			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
+				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift_narrow import get_sampled_new_gene_expression_factor_and_translation_efficiency
+				expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
+					index_remainder)
+
 			else:
-				expression_factor = np.random.uniform(NEW_GENE_EXPRESSION_FACTOR_MIN, NEW_GENE_EXPRESSION_FACTOR_MAX)
-				trl_eff_value = 10 ** np.random.uniform(NEW_GENE_TRANSLATION_EFFICIENCY_MIN,NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
+				print(variant_name + " is not a valid variant name for this plot")
+				return
 
 			plt.scatter(expression_factor, trl_eff_value)
 
