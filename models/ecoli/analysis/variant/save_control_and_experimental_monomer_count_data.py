@@ -7,15 +7,12 @@ least two variants (one control and at least one experimental variant).
 import pickle
 import os
 import csv
-from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-from wholecell.utils.protein_counts import get_simulated_validation_counts
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
-											   read_bulk_molecule_counts, read_stacked_bulk_molecules,
-											   read_stacked_columns, stacked_cell_threshold_mask)
-from wholecell.io.tablereader import TableReader
+	read_bulk_molecule_counts, read_stacked_bulk_molecules,
+	read_stacked_columns, stacked_cell_threshold_mask)
 
 """ USER INPUTS """
 

@@ -31,10 +31,12 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
 		monomer_counts = monomer_counts_reader.readColumn("monomerCounts")
 
-		sim_wisniewski_counts, val_wisniewski_counts = get_simulated_validation_counts(
-			wisniewski_counts, monomer_counts, wisniewski_ids, sim_monomer_ids)
-		sim_schmidt_counts, val_schmidt_counts = get_simulated_validation_counts(
-			schmidt_counts, monomer_counts, schmidt_ids, sim_monomer_ids)
+		sim_wisniewski_counts, val_wisniewski_counts, overlapping_ids_list = (
+			get_simulated_validation_counts(wisniewski_counts, monomer_counts,
+											wisniewski_ids, sim_monomer_ids))
+		sim_schmidt_counts, val_schmidt_counts, overlapping_ids_list = (
+			get_simulated_validation_counts(schmidt_counts, monomer_counts,
+											schmidt_ids, sim_monomer_ids))
 
 		# noinspection PyTypeChecker
 		fig, ax = plt.subplots(2, sharey=True, figsize=(8.5, 11))
