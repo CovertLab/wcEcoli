@@ -92,7 +92,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			else:
 				print(variant_name + " is not a valid variant name for this plot")
 				return
-			
+
 			if variant == min_variant:
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')

@@ -156,63 +156,63 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	params_to_use = {
 		1: {
 			"expression_factor": 8.8611,
-			"translation_efficiency": 0.3364,
+			"translation_efficiency": 0.3364
 		},
 		2: {
 			"expression_factor": 7.666,
-			"translation_efficiency": 4.0945,
+			"translation_efficiency": 4.0945
 		},
 		3: {
 			"expression_factor": 8.4991,
-			"translation_efficiency": 0.0586,
+			"translation_efficiency": 0.0586
 		},
 		4: {
 			"expression_factor": 8.1236,
-			"translation_efficiency": 7.1145,
+			"translation_efficiency": 7.1145
 		},
 		5: {
 			"expression_factor": 7.7455,
-			"translation_efficiency": 0.2238,
+			"translation_efficiency": 0.2238
 		},
 		6: {
 			"expression_factor": 9.8335,
-			"translation_efficiency": 0.2468,
+			"translation_efficiency": 0.2468
 		},
 		7: {
 			"expression_factor": 7.884,
-			"translation_efficiency": 0.3906,
+			"translation_efficiency": 0.3906
 		},
 		8: {
 			"expression_factor": 9.0669,
-			"translation_efficiency": 0.2644,
+			"translation_efficiency": 0.2644
 		},
 		9: {
 			"expression_factor": 9.5002,
-			"translation_efficiency": 0.0934,
+			"translation_efficiency": 0.0934
 		},
 		10: {
 			"expression_factor": 8.8191,
-			"translation_efficiency": 0.9387,
+			"translation_efficiency": 0.9387
 		},
 		11: {
 			"expression_factor": 8.0709,
-			"translation_efficiency": 0.0832,
+			"translation_efficiency": 0.0832
 		},
 		12: {
 			"expression_factor": 9.8462,
-			"translation_efficiency": 1.7019,
+			"translation_efficiency": 1.7019
 		},
 		13: {
 			"expression_factor": 7.3452,
-			"translation_efficiency": 0.6717,
+			"translation_efficiency": 0.6717
 		},
 		14: {
 			"expression_factor": 8.4838,
-			"translation_efficiency": 0.0483,
+			"translation_efficiency": 0.0483
 		},
 		15: {
 			"expression_factor": 7.6066,
-			"translation_efficiency": 2.2576,
+			"translation_efficiency": 2.2576
 		}
 	# pull out the number from the html file and then run the new simulation
 	}
@@ -222,7 +222,7 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 		# Note: this value should not matter since gene is knocked out
 		trl_eff_value = NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL
 	else:
-		expression_factor = params_to_use[index]["expression_factor"]
+		expression_factor = 10 ** params_to_use[index]["expression_factor"]
 		trl_eff_value = params_to_use[index]["translation_efficiency"]
 
 	return expression_factor, trl_eff_value
@@ -304,8 +304,8 @@ def new_gene_param_sampling_internal_shift_narrow(sim_data, index):
 	print("Expression factor: ", expression_factor)
 	print("Translation efficiency: ", trl_eff_value)
 
-	#import ipdb
-	#ipdb.set_trace()
+	# import ipdb
+	# ipdb.set_trace()
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})

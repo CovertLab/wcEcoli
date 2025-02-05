@@ -20,7 +20,7 @@ from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 1
+IGNORE_FIRST_N_GENS = 16
 
 COLOR_BY = "same"  # ["same", "expression_factor", "translation_efficiency"]
 INTERACTIVE_PLOT = True
@@ -67,7 +67,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		variant_name = metadata["variant"]
 
 		for i, variant in enumerate(variants):
-			print(variant)
 
 			all_cells = self.ap.get_cells(
 				variant=[variant],
