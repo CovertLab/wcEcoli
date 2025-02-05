@@ -13,7 +13,7 @@ import csv
 import numpy as np
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
+	read_bulk_molecule_counts, read_stacked_bulk_molecules,read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.protein_counts import get_simulated_validation_counts
 
@@ -91,9 +91,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			only_successful=True)
 
 		# Calculate the average total monomer counts across all cells:
-		total_protein_counts = (read_stacked_columns(
-			all_cells, 'MonomerCounts',
-			'monomerCounts')).mean(axis=0)
+		total_protein_counts = (read_stacked_columns(all_cells,
+			'MonomerCounts', 'monomerCounts')).mean(axis=0)
 
 		# Make into a np.array:
 		total_protein_counts = np.array(total_protein_counts)
@@ -145,9 +144,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				get_simulated_validation_counts(
 				schmidt_counts, monomer_counts, schmidt_ids, sim_monomer_ids))
 			sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = (
-				get_simulated_validation_counts(
-					wisniewski_counts, monomer_counts, wisniewski_ids,
-					sim_monomer_ids))
+				get_simulated_validation_counts(wisniewski_counts,
+					monomer_counts, wisniewski_ids, sim_monomer_ids))
 
 			# Append the protein counts for the current cell:
 			sim_schmidt_counts_multigen.append(sim_schmidt_counts)
@@ -173,8 +171,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         Returns: the corresponding id for each respective protein index
         """
 		inv_monomer_idx_dict = {idx: i for i, idx in monomer_idx_dict.items()}
-		protein_ids = \
-			[inv_monomer_idx_dict.get(monomer_id) for monomer_id in protein_idxs]
+		protein_ids = [inv_monomer_idx_dict.get(monomer_id) for
+					   monomer_id in protein_idxs]
 
 		return protein_ids
 
@@ -357,8 +355,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			val_schmidt_counts = self.transpose_and_reshape(val_schmidt_counts)
 			values = np.concatenate((ids, sim_schmidt_counts,
 									 val_schmidt_counts), axis=1)
-			col_labels = \
-				["Monomer ID", "Simulated Counts", "Schmidt Validation Counts"]
+			col_labels = ["Monomer ID", "Simulated Counts",
+						  "Schmidt Validation Counts"]
 			save_file(validation_pth,f'Schmidt_Comparison_startGen_'
 									 f'{startGen}.csv', col_labels, values)
 
