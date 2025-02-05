@@ -105,19 +105,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Extract counts for proteins in each variant:
 		for var_idx in range(len(self.variant_pair)):
 			variant = self.variant_pair[var_idx]
-			all_cells = (
-				self.ap.get_cells(variant=[variant],
-								  generation=np.arange(IGNORE_FIRST_N_GENS,
-													   self.n_total_gens),
-								  only_successful=True))
+			all_cells = (self.ap.get_cells(variant=[variant],
+				generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens),
+				only_successful=True))
 
-			# Get the average total monomer counts in each cell generation:
-			average_total_counts = (
-				read_stacked_columns(all_cells,'MonomerCounts',
-									 'monomerCounts',
-									 fun=lambda x: np.mean(x[:], axis=0)))
-			# Average together over all generations and seeds:
-			avg_total_monomer_counts = np.mean(average_total_counts, axis=0)
+			# Get the average total monomer counts over all generations:
+			avg_total_monomer_counts = (read_stacked_columns(
+									all_cells, 'MonomerCounts',
+									'monomerCounts')).mean(axis=0)
 
 			# Define the average total monomer counts for all proteins:
 			self.total_protein_counts[var_idx] = avg_total_monomer_counts
