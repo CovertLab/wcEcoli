@@ -88,9 +88,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         the end time for each generation (within the total time spanned by all
         cell generations).
         """
-		# determine the doubling times for each cell
-		dts = read_stacked_columns(
-			cell_paths, 'Main', 'time',
+		# determine the doubling times within the total time
+		dts = read_stacked_columns(cell_paths, 'Main', 'time',
 			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 
 		# determine the end time of each cell generation
