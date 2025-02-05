@@ -69,23 +69,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						   monomer_id in monomer_ids]
 
 		# Extract mRNA indexes for each gene of interest
-		mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-													  'RNACounts'))
+		mRNA_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 		mRNA_idx_dict = {rna: i for i, rna in enumerate(
 			mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
-		mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
-						cistron_ids]
+		mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in cistron_ids]
 
 		# Load the time data
-		time = read_stacked_columns(cell_paths, 'Main',
-									'time', ignore_exception=True)
+		time = read_stacked_columns(cell_paths, 'Main', 'time',
+									ignore_exception=True)
 		# Get the total counts for each protein
-		total_monomer_counts = (
-								   read_stacked_columns(cell_paths,
-														'MonomerCounts',
-														'monomerCounts',
-														ignore_exception=True)
-							   )[:, monomer_indexes]
+		total_monomer_counts = (read_stacked_columns(
+			cell_paths,'MonomerCounts','monomerCounts',
+			ignore_exception=True))[:, monomer_indexes]
 		# Get the free monomer counts for each protein
 		(free_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, monomer_ids, ignore_exception=True)
@@ -99,8 +94,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			free_monomer_counts = free_monomer_counts.reshape(-1, 1)
 
 		# calculate the predicted counts for the proteins in complexes
-		complexed_monomer_counts = (
-				total_monomer_counts - free_monomer_counts)
+		complexed_monomer_counts = (total_monomer_counts - free_monomer_counts)
 
 		return (time, total_monomer_counts, free_monomer_counts,
 				complexed_monomer_counts, mRNA_counts)
@@ -112,31 +106,30 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			seed: seed of interest.
 
 		Returns: the doubling time for each generation within the seed and
-		the end time for each generation.
-
+        the end time for each generation (within the total time spanned by all
+        cell generations).
 		"""
-		# redefine cell_paths to be the first seed
-		cell_paths = self.ap.get_cells(seed=[seed])
+		# redefine cell_paths to be the seed of interest
+ 		cell_paths = self.ap.get_cells(seed=[seed])
 
-		# Get doubling times for the cells with this seed index
-		dt = read_stacked_columns(
-			cell_paths, 'Main', 'time',
+		# Get doubling times for the cells within the total time duration
+		dts = read_stacked_columns(cell_paths, 'Main', 'time',
 			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 
-		# Determine the end time for each generation
-		generation_ends = np.zeros(len(dt))
-		for i in range(len(dt)):
+		# determine the end time of each cell generation
+		generation_ends = np.zeros(len(dts))
+		for i in range(len(dts)):
 			if i == 0:
-				gt = dt[i]
+				gt = dts[i]
 				generation_ends[i] = gt
 			else:
-				gt = dt[i] + generation_ends[i - 1]
+				gt = dts[i] + generation_ends[i - 1]
 				generation_ends[i] = gt
 
-		dt = dt[SKIP_GENERATIONS:]
+		dts = dts[SKIP_GENERATIONS:]
 		generation_ends = generation_ends[SKIP_GENERATIONS:]
 
-		return generation_ends, dt
+		return generation_ends, dts
 
 	def plot_counts_per_seed(self, seed, cell_paths, monomer_ids, cistron_ids,
 							 time, complexed_monomer_counts, mRNA_counts,
@@ -177,8 +170,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			common_name = self.get_common_name(monomer_ids[0])
 			name = monomer_ids[0] + ' (' + common_name + ')'
 			gene_list.append(common_name)
-			plt.plot(time / 60., complexed_monomer_counts,
-					 label=name)
+			plt.plot(time / 60., complexed_monomer_counts, label=name)
 		else:
 			for m in range(len(monomer_ids)):
 				common_name = self.get_common_name(monomer_ids[m])
@@ -189,9 +181,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
-		plt.title(f"Predicted Counts of Monomers within"
-				  f" Complexes in Seed {seed}, starting with generation"
-				  f" {SKIP_GENERATIONS}")
+		plt.title(f"Predicted Counts of Monomers within Complexes in Seed "
+				  f"{seed}, starting with generation {SKIP_GENERATIONS}")
 		plt.legend()
 
 		# mRNA Counts Plot
@@ -201,20 +192,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if len(cistron_ids) == 1:
 			common_name = self.get_common_name(monomer_ids[0])
 			name = cistron_ids[0] + ' (' + common_name + ')'
-			plt.plot(time / 60., mRNA_counts,
-					 label=name)
+			plt.plot(time / 60., mRNA_counts, label=name)
 		else:
 			for r in range(len(cistron_ids)):
 				common_name = self.get_common_name(monomer_ids[r])
 				name = cistron_ids[r] + ' (' + common_name + ')'
 				plt.plot(time / 60., mRNA_counts[:, r],
 						 label=name, alpha=0.5)
+
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
 		plt.title(f"mRNA Counts for Proteins of Interest in Seed {seed}, "
 				  f"starting with generation {SKIP_GENERATIONS}")
 		plt.legend()
 
+		# export plot:
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
 		exportFigure(plt, plotOutPath, plotOutFileName + f'_cohortPlot_'
@@ -265,8 +257,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			common_name = self.get_common_name(monomer_ids[0])
 			name = monomer_ids[0] + ' (' + common_name + ')'
 			gene_list.append(common_name)
-			plt.plot(time / 60., total_monomer_counts,
-					 label=name)
+			plt.plot(time / 60., total_monomer_counts, label=name)
 		else:
 			for m in range(len(monomer_ids)):
 				common_name = self.get_common_name(monomer_ids[m])
@@ -320,8 +311,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if len(monomer_ids) == 1:
 			common_name = self.get_common_name(monomer_ids[0])
 			name = monomer_ids[0] + ' (' + common_name + ')'
-			plt.plot(time / 60., complexed_monomer_counts,
-					 label=name)
+			plt.plot(time / 60., complexed_monomer_counts, label=name)
 		else:
 			for m in range(len(monomer_ids)):
 				common_name = self.get_common_name(monomer_ids[m])
@@ -331,10 +321,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.xlabel("Time (min)")
 		plt.ylabel("Complexed Monomer Counts")
-		plt.title(f"Predicted Counts for Monomers within Complexes"
-				  f" in Seed {seed}, starting with generation {SKIP_GENERATIONS}")
+		plt.title(f"Predicted Counts for Monomers within Complexes in Seed"
+				  f" {seed}, starting with generation {SKIP_GENERATIONS}")
 		plt.legend()
 
+		# export plot:
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
 		exportFigure(plt, plotOutPath, plotOutFileName +
@@ -380,6 +371,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         """
 		protein = protein_id[:-3]
 		gene_symbol = self.get_gene_symbols_for_monomer_ids()[protein]
+
 		return gene_symbol
 
 	def plot_counts_per_protein(self, simOutDir, protein, cistron, seeds,
@@ -508,8 +500,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for seed in seeds:
 			# cell paths for the seed:
 			cell_paths = (
-				self.ap.get_cells(seed=[seed], generation=generations,
-								  only_successful=True))
+				self.ap.get_cells(
+					seed=[seed], generation=generations, only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
@@ -522,7 +514,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if PLOT_AVERAGES == 1:
 				# plot the average values:
 				plt.scatter(avg_time_points, avg_mRNA_cts,
-						 label='average', color='black', marker='.')
+					label='average', color='black', marker='.')
 
 		# Plot specs for the mRNA counts graph
 		plt.xlabel("Time (min)");
@@ -534,9 +526,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# generate a table below the plots:
 		columns = ('avg. cycle duration', 'avg. monomer counts',
 				   'avg. mRNA counts')
-		rows = (['Generation %d' % p for p in
-				tuple(range(SKIP_GENERATIONS, (generations[-1] + 1 )))] +
-				['Overall Average'])
+		rows = (['Generation %d' % p for p in tuple(range(SKIP_GENERATIONS,
+				(generations[-1] + 1 )))] + ['avg. of Averages'])
 
 		# add the overall average to each:
 		avg_generation_durations_all = np.mean(average_generation_durations)
@@ -558,9 +549,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# export plot:
 		plt.subplots_adjust(hspace=0.2, top=0.95, bottom=0.25)
-		exportFigure(plt, plotOutDir, plotOutFileName +
-					 f'_cohortPlot_startGen_{SKIP_GENERATIONS}'
-					 f'_geneID_' + common_name, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName + f'_cohortPlot_startGen'
+					f'_{SKIP_GENERATIONS}_geneID_' + common_name, metadata)
 		plt.close("all")
 
 	def plot_all_count_types_per_protein(self, simOutDir, protein, cistron,
@@ -609,8 +599,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# plot the data
 			plt.plot(time / 60., total_monomer_counts,
-					 label=f'seed {seed}', alpha=0.9,
-					 linestyle=':', color=c)
+					 label=f'seed {seed}', alpha=0.9, linestyle=':', color=c)
 
 		# Plot specs for the total monomer counts graph
 		plt.xlabel("Time (min)");
@@ -635,8 +624,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# plot the data
 			plt.plot(time / 60., free_monomer_counts,
-					 label=f'seed {seed}', alpha=0.8,
-					 linestyle='--', color=c)
+					 label=f'seed {seed}', alpha=0.8, linestyle='--', color=c)
 
 		# Plot specs for the free monomer counts graph
 		plt.xlabel("Time (min)");
@@ -679,8 +667,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		exportFigure(plt, plotOutDir, plotOutFileName +
 					 f'_cohortPlot_compareCounts_startGen_{SKIP_GENERATIONS}'
-					 f'_geneID_' + common_name,
-					 metadata)
+					 f'_geneID_' + common_name, metadata)
 		plt.close("all")
 
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
@@ -720,45 +707,39 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# iterate through the seeds to generate graphs for each seed
 		for seed in seeds:
 			# Generate all the cell paths for the seed:
-			cell_paths = (
-				self.ap.get_cells(seed=[seed], generation=generations,
-								  only_successful=True))
+			cell_paths = (self.ap.get_cells(
+				seed=[seed], generation=generations, only_successful=True))
 			# Extract data for the seed
 			(time, total_monomer_counts, free_monomer_counts,
 			 complexed_monomer_counts, mRNA_counts) = (
-				self.extract_data(simOutDir, cell_paths, monomer_ids,
-							 cistron_ids))
+				self.extract_data(simOutDir, cell_paths, monomer_ids, cistron_ids))
 			# Plot the counts for the seed
-			self.plot_counts_per_seed(seed, cell_paths, monomer_ids, cistron_ids,
-								 time, complexed_monomer_counts , mRNA_counts,
-									  plotOutDir, plotOutFileName, metadata)
+			self.plot_counts_per_seed(seed, cell_paths, monomer_ids,
+				cistron_ids, time, complexed_monomer_counts , mRNA_counts,
+				plotOutDir, plotOutFileName, metadata)
 
 			# Plot comparisons each type of count per seed
-			self.plot_all_count_types_per_seed(seed, cell_paths, monomer_ids,
-												time, total_monomer_counts,
-												free_monomer_counts,
-												complexed_monomer_counts,
-											   plotOutDir, plotOutFileName,
-											   metadata)
+			self.plot_all_count_types_per_seed(
+				seed, cell_paths, monomer_ids, time, total_monomer_counts,
+				free_monomer_counts, complexed_monomer_counts,
+				plotOutDir, plotOutFileName, metadata)
 
 		# Now, plot for each individual protein across all seeds
 		for protein in interest_proteins:
 			# get the the cistron id for the protein
-			cistron_id = \
-				[key for key,
-				v in cistron_monomer_id_dict.items() if v == protein]
-			protein_id = [protein]  # fomrat the protein id for extract_data
+			cistron_id = [
+				key for key, v in cistron_monomer_id_dict.items() if v == protein]
+			protein_id = [protein]  # fomrat the protein id for extract_data()
 
 			# plot the counts for the protein
 			print("plotting for protein: "); print(protein)
 			print("cistron_id: "); print(cistron_id[0])
-			self.plot_counts_per_protein(simOutDir, protein_id, cistron_id,
-										 seeds, generations,
-										 plotOutDir, plotOutFileName, metadata)
-			self.plot_all_count_types_per_protein(simOutDir, protein_id,
-												  cistron_id, seeds,
-												  generations, plotOutDir,
-												  plotOutFileName, metadata)
+			self.plot_counts_per_protein(
+				simOutDir, protein_id, cistron_id, seeds, generations,
+				plotOutDir, plotOutFileName, metadata)
+			self.plot_all_count_types_per_protein(
+				simOutDir, protein_id, cistron_id, seeds, generations,
+				plotOutDir, plotOutFileName, metadata)
 
 if __name__ == '__main__':
 	Plot().cli()
