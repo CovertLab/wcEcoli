@@ -11,6 +11,8 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
+""" USER INPUTS """
+
 # Add the proteins to be plotted here (there can be multiple):
 interest_proteins = np.array([
 	#'PD03938[c]', # metR
@@ -18,6 +20,8 @@ interest_proteins = np.array([
 	'EG11676-MONOMER[c]', # HslV
 	'EG10158-MONOMER[c]', # ClpP
 ])
+
+""" END USER INPUTS """
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
@@ -61,8 +65,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						cistron_ids]
 
 		# Load data
-		time = read_stacked_columns(cell_paths, 'Main', 'time',
-									ignore_exception=True)
+		time = read_stacked_columns(
+			cell_paths, 'Main', 'time', ignore_exception=True)
 		(monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, monomer_ids, ignore_exception=True)
 		mRNA_counts = read_stacked_columns(
@@ -72,10 +76,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Generate plots:
 		plt.figure(figsize = (8.5, 11))
 
-		# Get doubling times from cells with this variant index
+		# Extract doubling times from cells within this variant index
 		dt = read_stacked_columns(
 			cell_paths, 'Main', 'time',
 			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+		# Extract the end time of each generation
 		dts = np.zeros(len(dt))
 		for i in range(len(dt)):
 			if i == 0:
@@ -114,12 +119,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for r in range(len(cistron_ids)):
 				plt.plot(time / 60., mRNA_counts[:,r],
 						 label = cistron_ids[r], alpha=0.5)
+
 		plt.xlabel("Time (min)")
 		plt.ylabel("Cistron Counts")
-		plt.title(f"mRNA counts for proteins of interest in variant {variant[0]},"
-				  f" seed {seed[0]}")
+		plt.title(f"mRNA counts for proteins of interest in variant "
+				  f"{variant[0]}, seed {seed[0]}")
 		plt.legend()
 
+		# export plot
 		plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
 		exportFigure(plt, plotOutDir, plotOutFileName + '_multigenPlot_variant_'
 					 + str(variant[0]) + '_seed_' + str(seed[0]) + '_geneIDs_' +
