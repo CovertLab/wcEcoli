@@ -71,7 +71,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		new_gene_mRNA_ids = mRNA_sim_data[
 			mRNA_sim_data['is_new_gene']]['id'].tolist()
 		self.new_gene_monomer_ids = [mRNA_monomer_id_dict.get(mRNA_id)
-								for mRNA_id in new_gene_mRNA_ids]
+									for mRNA_id in new_gene_mRNA_ids]
 
 		# Extract data for all genes and the native genes (lacking new genes):
 		self.all_monomer_ids = monomer_sim_data['id']
@@ -92,26 +92,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for var_idx in range(len(self.variant_pair)):
 			variant = self.variant_pair[var_idx]
 			all_cells = (
-				self.ap.get_cells(variant=[variant],
-								  generation=np.arange(IGNORE_FIRST_N_GENS,
-													   self.n_total_gens),
-								  only_successful=True))
+				self.ap.get_cells(
+					variant=[variant], generation=np.arange(IGNORE_FIRST_N_GENS,
+					self.n_total_gens), only_successful=True))
 
-			# Get the average total monomer counts in each cell generation:
+			# Get the average total monomer counts over all cell durations:
 			average_total_counts = (
 				read_stacked_columns(all_cells,'MonomerCounts',
-									 'monomerCounts',
-									 fun=lambda x: np.mean(x[:], axis=0)))
-			# Average together over all generations and seeds:
-			avg_total_monomer_counts = np.mean(average_total_counts, axis=0)
+				'monomerCounts')).mean(axis=0)
 
 			# Define the average total monomer counts for all proteins:
-			self.total_protein_counts[var_idx] = avg_total_monomer_counts
+			self.total_protein_counts[var_idx] = average_total_counts
 
 			# Extract the protein counts for the original/native proteins:
 			old_gene_idxs = [monomer_idx_dict.get(monomer_id)
 							 for monomer_id in self.original_monomer_ids]
-			avg_native_monomer_counts = avg_total_monomer_counts[old_gene_idxs]
+			avg_native_monomer_counts = average_total_counts[old_gene_idxs]
 			protein_counts[var_idx] = avg_native_monomer_counts
 
 		# Return the protein counts for all proteins and the original proteins:
@@ -134,6 +130,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		protein_idxs = [monomer_idx_dict.get(monomer_id)
 						for monomer_id in monomer_names]
 		protein_idxs = np.array(protein_idxs)
+
 		return protein_idxs
 
 	def get_ids(self, monomer_idx_dict, protein_idxs):
@@ -179,6 +176,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					index = index_vals[idx]
 				avg_log_interest_proteins[variant][idx] = \
 					np.log10(interest_protein_counts[variant][index] + 1)
+
 		return avg_log_interest_proteins
 
 	def filter_data(self, nonfiltered_protein_counts,
@@ -209,6 +207,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if filter_num == 0:
 			pass # if no filter, then return the data as is.
 		else:
+			# if there is a filter, reassign the variables accordingly:
 			var0_filter_PCs_idxs = np.nonzero(nonzero_PCs[0] > filter_num)
 			var1_filter_PCs_idxs = np.nonzero(nonzero_PCs[1] > filter_num)
 			shared_filtered_PC_idxs = np.intersect1d(var0_filter_PCs_idxs,
@@ -261,10 +260,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Calculate the linear fit: between the two variants:
 			m, b = np.polyfit(var0_x, var1_y, 1)
-			plt.plot(yxvals, m * yxvals + b,
-					 linewidth=.5, color='#bcbd22')
-			legstr = ("linear fit: y = "+ str(round(m, 3))
-					  +"x + "+ str(round(b, 3)))
+			plt.plot(yxvals, m * yxvals + b, linewidth=.5, color='#bcbd22')
+			legstr = ("linear fit: y = "+str(round(m, 3))+"x + "+str(round(b, 3)))
 
 			# Plot an y=x line:
 			plt.plot(yxvals, yxvals, linewidth=.5, linestyle="dashed",
@@ -273,8 +270,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Plot the linear fit where the y-intercept is forced to be zero:
 			x = ori_var0_x[:, np.newaxis]  # make a length array
 			slope, _, _, _ = np.linalg.lstsq(x, ori_var1_y)
-			plt.plot(yxvals, slope * yxvals,
-					 linewidth=.8, color='#FFA500')
+			plt.plot(yxvals, slope * yxvals,linewidth=.8, color='#FFA500')
 			otherstr = "y = " + str(round(slope[0], 3)) + "x + 0"
 
 			# Format the graph:
@@ -300,8 +296,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# create a linear fit:
 			m, b = np.polyfit(ori_var0_x, ori_var1_y, 1)
-			plt.plot(yxvals, m * yxvals + b,
-					linewidth=.5, color='#bcbd22')
+			plt.plot(yxvals, m * yxvals + b,linewidth=.5,color='#bcbd22')
 			legstr = ("linear fit: y = " + str(round(m, 3)) +
 						  "x + " + str(round(b, 3)))
 
@@ -312,8 +307,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Plot the linear fit where the y-intercept is forced to be zero:
 			x = ori_var0_x[:, np.newaxis]  # make a length array
 			slope, _, _, _ = np.linalg.lstsq(x, ori_var1_y)
-			plt.plot(yxvals, slope * yxvals,
-					 linewidth=.8, color='#FFA500')
+			plt.plot(yxvals, slope * yxvals,linewidth=.8, color='#FFA500')
 			otherstr = "y = " + str(round(slope[0], 3)) + "x + 0"
 
 			# format the plot:
@@ -386,19 +380,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 			# Manditory Data Filtration
-			F_PCs, F_PC_ids, F_PC_idxs = (
-				self.filter_data(protein_counts, monomer_idx_dict_PreFilter,
-								 FILTER))
+			F_PCs, F_PC_ids, F_PC_idxs = (self.filter_data(protein_counts,
+										monomer_idx_dict_PreFilter, FILTER))
 
 			# Plot filtered data:
 			if plot_comparisons_with_filtered_data == 1:
 				# plot the filtered data:
 				self.generate_plot(experimental_var, F_PCs, F_PCs, 1)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-							 str(len(F_PCs[0])) +
-							 '_filtered_total_monomer_count_comparison_with_'
-							 'Variant' + str(experimental_var) + '_Filter_' +
-							 str(FILTER), metadata)
+							 str(len(F_PCs[0])) + '_filtered_total_monomer_'
+							 'count_comparison_with_Variant'+str(experimental_var)
+							 + '_Filter_' + str(FILTER), metadata)
 				plt.close('all')
 
 				# plot the log scale version of the filtered data:
@@ -407,10 +399,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				self.generate_plot(experimental_var, F_PC_LogData, F_PC_LogData,
 								   1)
 				exportFigure(plt, plotOutDir, plotOutFileName + '_' +
-							 str(len(F_PCs[0])) +
-							 '_filtered_total_monomer_count_comparison_with_'
-							 'Variant' + str(experimental_var) + '_Filter_' +
-							 str(FILTER) + '_LogScale', metadata)
+							 str(len(F_PCs[0])) +'_filtered_total_monomer_count'
+							 '_comparison_with_Variant' + str(experimental_var)
+							 + '_Filter_' + str(FILTER) + '_LogScale', metadata)
 				plt.close('all')
 
 if __name__ == "__main__":
