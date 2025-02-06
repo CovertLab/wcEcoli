@@ -22,16 +22,22 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
+""" USER INPUTS """
+
 # List the proteins you would like to have plotted here:
 interest_proteins = np.array([
 	#"EG10159-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpX"
-	'EG10542-MONOMER[c]', # lon
+	#'EG10542-MONOMER[c]', # lon
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
-	#'EG11171-MONOMER[c]', # tsaD, has interesting behavior
-	#"BASR-MONOMER[c]", # basR, also interesting behavior
-
+	'EG11171-MONOMER[c]', # tsaD, has interesting behavior
+	"BASR-MONOMER[c]", # basR, also interesting behavior
 ])
+
+# Indicate if the average value for each generation should be plotted:
+PLOT_AVERAGES = 0 # 0 -> no, 1 -> yes
+
+""" END USER INPUTS """
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
@@ -324,8 +330,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					summed_time + ((average_generation_durations[i]) / 2.))
 
 		# plot the average counts for the protein across all seeds
-		plt.scatter(avg_time_points, avg_monomer_cts,
-					label='average', color='black', marker='.')
+		if PLOT_AVERAGES == 1:
+			plt.scatter(avg_time_points, avg_monomer_cts,
+						label='average', color='black', marker='.')
 
 		# Plot specs for the monomer counts graph
 		plt.xlabel("Time (min)");
@@ -348,8 +355,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					 label=f'seed {seed}', alpha=0.5)
 
 		# plot the average counts for the protein across all seeds
-		plt.scatter(avg_time_points, avg_mRNA_cts, label='average',
-					color='black', marker='.')
+		if PLOT_AVERAGES == 1:
+			plt.scatter(avg_time_points, avg_mRNA_cts, label='average',
+						color='black', marker='.')
 
 		# Plot specs for the mRNA counts graph
 		plt.xlabel("Time (min)");
@@ -361,8 +369,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# generate a table below the plots:
 		columns = ('avg. cycle duration', 'avg. monomer counts',
 				   'avg. mRNA counts')
+		gens = np.arange(1, len(average_generation_durations) + 1)
 		rows = ['Generation %d' % p for p in
-				(1, 2, 3, 4, 5, 6, 7, 8)] + ['avg. of Averages']
+				gens] + ['avg. of Averages']
 
 		# add the overall average to each:
 		avg_generation_durations_all = np.mean(average_generation_durations)
