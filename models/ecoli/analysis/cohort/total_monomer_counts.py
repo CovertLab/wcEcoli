@@ -370,8 +370,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		columns = ('avg. cycle duration', 'avg. monomer counts',
 				   'avg. mRNA counts')
 		gens = np.arange(1, len(average_generation_durations) + 1)
-		rows = ['Generation %d' % p for p in
-				gens] + ['avg. of Averages']
+		rows = ['Generation %d' % p for p in gens] + ['avg. of Averages']
 
 		# add the overall average to each:
 		avg_generation_durations_all = np.mean(average_generation_durations)
