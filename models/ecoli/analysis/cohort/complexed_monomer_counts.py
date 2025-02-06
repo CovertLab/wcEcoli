@@ -29,10 +29,10 @@ from wholecell.io.tablereader import TableReader
 interest_proteins = np.array([
 	#'PD03938[c]', # metR
 	#'RPOS-MONOMER[c]', # rpoS
-	"BASR-MONOMER[c]", # basR
-	"EG11171-MONOMER[c]", #tsaD
+	#"BASR-MONOMER[c]", # basR
+	#"EG11171-MONOMER[c]", #tsaD
 	#"EG11734-MONOMER[c]", # phoH
-	#"EG10871-MONOMER[c]", #rplJ
+	"EG10871-MONOMER[c]", #rplJ
 	#"EG11534-MONOMER[c]", # ibpA
 	#"G6463-MONOMER[c]", # ClpS
 ])
@@ -110,10 +110,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         cell generations).
 		"""
 		# redefine cell_paths to be the seed of interest
- 		cell_paths = self.ap.get_cells(seed=[seed])
+		cell_paths = self.ap.get_cells(seed=[seed])
 
 		# Get doubling times for the cells within the total time duration
-		dts = read_stacked_columns(cell_paths, 'Main', 'time',
+		dts = read_stacked_columns(
+			cell_paths, 'Main', 'time',
 			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 
 		# determine the end time of each cell generation
@@ -580,7 +581,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plotting
 		plt.figure(figsize=(8.5, 14))
 		colors = ['darkorange', 'lightseagreen', 'blueviolet',
-				  'olive', 'hotpink', ]
+				  'olive', 'hotpink', ] # have as many colors as there are seeds
 
 		# Total Counts Plot
 		plt.subplot(3, 1, 1)
