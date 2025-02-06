@@ -76,13 +76,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# iterate through the seeds and plot the data for each:
 		for seed in range(len(seeds)):
 			# obtain the control variant data and plot it:
-			cseed_dir = self.ap.get_cells(variant=[control_var], seed=[seed],
-										 only_successful=True)
-			ctime = read_stacked_columns(cseed_dir, 'Main', 'time',
-										ignore_exception=True)
+			cseed_dir = self.ap.get_cells(
+				variant=[control_var], seed=[seed], only_successful=True)
+			ctime = read_stacked_columns(
+				cseed_dir, 'Main', 'time', ignore_exception=True)
 			(c_monomer_counts,) = read_stacked_bulk_molecules(
 				cseed_dir, self.monomer_id, ignore_exception=True)
-			print("Finished plotting control variant seed " + str(seed))
+			print("Plotting control variant seed " + str(seed))
 
 			# Plot the experimental variants:
 			if len(self.monomer_id) == 1:
@@ -92,27 +92,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 label=name, color="#FF796C", linewidth=.5)
 				var_num = 0
 				for variant in experimental_vars:
-					seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
-												 only_successful=True)
+					print("Plotting variant "+str(variant)+", seed "+str(seed))
+					seed_dir = self.ap.get_cells(
+						variant=[variant], seed=[seed], only_successful=True)
 					# Load data for the seed
 					time = read_stacked_columns(seed_dir, 'Main',
-												'time',
-												ignore_exception=True)
+						'time', ignore_exception=True)
 					(monomer_counts,) = read_stacked_bulk_molecules(
-						seed_dir, self.monomer_id,
-						ignore_exception=True)
+						seed_dir, self.monomer_id, ignore_exception=True)
 					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
 					ax[0].plot(time / 60., monomer_counts, label=name,
-							 color=colors[0][var_num], linestyle=LS[seed],
-							   linewidth=.5)
+						color=colors[0][var_num],linestyle=LS[seed],linewidth=.5)
 					var_num = var_num + 1
-					print("Finished plotting variant " + str(variant) +
-						  ", seed " + str(seed))
+
 				# plot specs
-				ax[0].set_title(f"Free Monomer Counts for "
-								f"{self.monomer_id[0]} in\nthe control"
-								f" variant and {len(experimental_vars)} "
-								f"experimental variant(s)")
+				ax[0].set_title(
+					f"Free Monomer Counts for {self.monomer_id[0]} in\nthe "
+					f"control variant and {len(experimental_vars)} experimental"
+					f" variant(s)")
 
 		# format the protein counts plot
 		ax[0].set_xlabel("Time (min)")
@@ -122,10 +119,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Generate the mRNA Counts Plot
 		for seed in range(len(seeds)):
-			cseed_dir = self.ap.get_cells(variant=[control_var], seed=[seed],
-										  only_successful=True)
-			ctime = read_stacked_columns(cseed_dir, 'Main', 'time',
-										 ignore_exception=True)
+			cseed_dir = self.ap.get_cells(
+				variant=[control_var], seed=[seed], only_successful=True)
+			ctime = read_stacked_columns(
+				cseed_dir, 'Main', 'time',  ignore_exception=True)
 			c_mRNA_counts = read_stacked_columns(
 				cseed_dir, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True)[:, self.mRNA_index]
@@ -135,22 +132,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						 label=name, color="#FF796C", linewidth=.5)
 				var_num = 0
 				for variant in experimental_vars:
-					seed_dir = self.ap.get_cells(variant=[variant], seed=[seed],
-												 only_successful=True)
+					seed_dir = self.ap.get_cells(
+						variant=[variant], seed=[seed], only_successful=True)
 					# Load data for the seed
-					time = read_stacked_columns(seed_dir, 'Main', 'time',
-												ignore_exception=True)
-					mRNA_counts = read_stacked_columns(
-						seed_dir, 'RNACounts', 'mRNA_cistron_counts',
+					time = read_stacked_columns(seed_dir, 'Main',
+						'time', ignore_exception=True)
+					mRNA_counts = read_stacked_columns(seed_dir,
+						'RNACounts', 'mRNA_cistron_counts',
 						ignore_exception=True)[:, self.mRNA_index]
 					name = 'seed ' + str(seed) + ' exp  var ' + str(variant)
 					ax[1].plot(time / 60., mRNA_counts, label=name,
-							 color=colors[0][var_num], linestyle=LS[seed], linewidth=.5)
+						color=colors[0][var_num],linestyle=LS[seed],linewidth=.5)
 					var_num = var_num + 1
+
 				# plot specs
-				ax[1].set_title(f"mRNA Counts for {self.cistron_id[0]} in the \n "
-						  f"control variant"
-						  f" and {len(experimental_vars)} experimental variant(s)")
+				ax[1].set_title(f"mRNA Counts for {self.cistron_id[0]} in the "
+					f"\ncontrol variant and {len(experimental_vars)} "
+					f"experimental variant(s)")
 
 		# format the mRNA counts plot:
 		ax[1].set_xlabel("Time (min)")
@@ -184,12 +182,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Extract mRNA indexes for the protein (which is not always the
 			# same as the monomer index):
-			mRNA_counts_reader = TableReader(os.path.join(simOutDir,
-														  'RNACounts'))
+			mRNA_counts_reader = TableReader(os.path.join(simOutDir,'RNACounts'))
 			mRNA_idx_dict = {rna: i for i, rna in enumerate(
 				mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
-			self.mRNA_index = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
-							   self.cistron_id]
+			self.mRNA_index = [
+				mRNA_idx_dict.get(mRNA_id) for mRNA_id in self.cistron_id]
 
 			# get the data for each variant:
 			all_variants = self.ap.get_variants()
@@ -208,12 +205,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# export the plot:
 			if EXPERIMENTAL_VARS == 0:
 				exportFigure(plt, plotOutDir, plotOutFileName +
-							 f'_variantPlot_geneID_{str(protein)}',
-							 metadata)
+							 f'_variantPlot_geneID_{str(protein)}', metadata)
 			else:
-				exportFigure(plt, plotOutDir, plotOutFileName +
-						 f'_variantPlot_geneID_{str(protein)}_variants_'
-						 f'{EXPERIMENTAL_VARS}', metadata)
+				exportFigure(plt, plotOutDir, plotOutFileName + f'_variantPlot'
+					f'_geneID_{str(protein)}_variants_{EXPERIMENTAL_VARS}', metadata)
 			plt.close("all")
 
 if __name__ == '__main__':
