@@ -21,6 +21,7 @@ ACTIVE = [
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
 	"free_monomer_counts.py",
+	"total_monomer_counts.py",
 	"new_gene_counts.py",
 	"new_gene_protein_diagnostics_scatter_plots.py",
 	"new_gene_protein_mass_fraction_histogram.py",
