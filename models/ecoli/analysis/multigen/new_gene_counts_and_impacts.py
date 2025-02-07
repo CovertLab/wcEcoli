@@ -17,7 +17,7 @@ from numpy import inf
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.sim.variants.new_gene_internal_shift import determine_new_gene_ids_and_indices
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_bulk_molecules, read_stacked_columns)
+	read_stacked_bulk_molecules, read_stacked_columns, read_bulk_molecule_counts)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
@@ -313,6 +313,32 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel("Log(Protein Counts + 1)", fontsize="small")
 			plt.title("New Gene Protein Counts")
 			plot_num += 1
+
+			# Amino acid concentrations
+			aa_ids_of_interest = ['HIS[c]', 'THR[c]', 'TRP[c]']
+			targets = np.array(
+				[sim_data.process.metabolism.conc_dict[key].asNumber(units.mmol / units.L) for key
+					in aa_ids_of_interest])
+			aa_counts = read_stacked_bulk_molecules(
+				cell_paths, aa_ids_of_interest, remove_first=True, ignore_exception=True)[0]
+
+			counts_to_molar = read_stacked_columns(
+				cell_paths, 'EnzymeKinetics', 'countsToMolar',
+				remove_first=True, ignore_exception=True)
+			aa_conc = aa_counts * counts_to_molar
+
+			for ii, aa in enumerate(aa_ids_of_interest):
+				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+				plt.plot(time_no_first / 60., aa_conc[:, aa_ids_of_interest.index(aa)], color=LINE_COLOR)
+				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+					plt.ylim((0, 0.1))
+				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+					plt.xlim(standard_xlim)
+				plt.axhline(targets[ii], color='r', linestyle='--')
+				plt.xlabel("Time (min)")
+				plt.ylabel("Concentration (mmol/L)", fontsize='x-small')
+				plt.title("Amino Acid Concentration: " + aa)
+				plot_num += 1
 
 			# ppGpp
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
