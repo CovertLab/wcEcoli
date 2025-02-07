@@ -32,7 +32,8 @@ interest_proteins = np.array([
 	'RPOS-MONOMER[c]', # rpoS
 	#'EG11171-MONOMER[c]', # tsaD, has interesting behavior
 	#"BASR-MONOMER[c]", # basR, also interesting behavior
-	#'NG-GFP-MONOMER[c]',
+	'NG-GFP-MONOMER[c]',
+	'TRYPSYN-APROTEIN[c]',
 ])
 
 # Indicate if the average value for each generation should be plotted:

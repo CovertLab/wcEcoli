@@ -18,7 +18,7 @@ from wholecell.io.tablereader import TableReader
 """ USER INPUTS """
 
 # Indicate the number of generations to be ignored at the start of each seed:
-IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
+IGNORE_FIRST_N_GENS = 14 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # Set this value to 1 to create this comparison graph, 0 otherwise:
 plot_protein_count_comparisons = 1

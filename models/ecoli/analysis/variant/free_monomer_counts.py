@@ -34,15 +34,14 @@ interest_proteins = np.array([
 	'NG-GFP-MONOMER[c]',
 	'TRYPSYN-APROTEIN[c]',
 	'TRYPSYN-BPROTEIN[c]',
-	#'TRYPSYN-APROTEIN[c]',
-	#'TRYPSYN-BPROTEIN[c]',
+	"RPOS-MONOMER[c]",
 	#"ANTHRANSYNCOMPI-MONOMER[c]",
 	#'PD00519[c]',
 ])
 
 # If you know how many variants you have and want to specify which you would
 # like to plot specifically, you can do so here. Otherwise, leave this as 0.
-EXPERIMENTAL_VARS = 0
+EXPERIMENTAL_VARS = [16, 17, 18, 19, 20]
 # example input for selecting specific variants (typically used in sherlock):
 # experimental_vars = [16, 17, 18, 19, 20] # don't include the control (0) here
 
