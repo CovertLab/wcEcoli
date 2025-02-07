@@ -370,10 +370,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         Returns: the common name for the protein(s) of interest
         """
-		protein = protein_id[:-3]
-		gene_symbol = self.get_gene_symbols_for_monomer_ids()[protein]
+		if protein_id == 'NG-GFP-MONOMER[c]':
+			return 'GFP'
 
-		return gene_symbol
+		else:
+			protein = protein_id[:-3]  # subtract the compartment
+			common_name = self.get_gene_symbols_for_monomer_ids()[protein]
+
+		return common_name
 
 	def plot_counts_per_protein(self, simOutDir, protein, cistron, seeds,
 								generations, plotOutDir, plotOutFileName,
