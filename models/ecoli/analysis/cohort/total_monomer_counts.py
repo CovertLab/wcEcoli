@@ -29,9 +29,10 @@ interest_proteins = np.array([
 	#"EG10159-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpX"
 	#'EG10542-MONOMER[c]', # lon
 	#'PD03938[c]', # metR
-	#'RPOS-MONOMER[c]', # rpoS
-	'EG11171-MONOMER[c]', # tsaD, has interesting behavior
-	"BASR-MONOMER[c]", # basR, also interesting behavior
+	'RPOS-MONOMER[c]', # rpoS
+	#'EG11171-MONOMER[c]', # tsaD, has interesting behavior
+	#"BASR-MONOMER[c]", # basR, also interesting behavior
+	#'NG-GFP-MONOMER[c]',
 ])
 
 # Indicate if the average value for each generation should be plotted:
@@ -221,8 +222,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             protein_id: the name of the protein(s) of interest
         Returns: the common name for the protein(s) of interest
         """
-		protein = protein_id[:-3]  # subtract the compartment
-		common_name = self.get_gene_symbols_for_monomer_ids()[protein]
+		if protein_id == 'NG-GFP-MONOMER[c]':
+			return 'GFP'
+
+		else:
+			protein = protein_id[:-3]  # subtract the compartment
+			common_name = self.get_gene_symbols_for_monomer_ids()[protein]
 
 		return common_name
 
