@@ -30,7 +30,7 @@ plot_protein_count_comparisons_log_scale = 1
 # through to be plotted. For example, with a filter of 1, only proteins with
 # average total monomer counts above 1 in both the control and experimental
 # variant will be plotted. Can be equal to 0 or greater.
-FILTER = 0
+FILTER = 30
 
 # Set this number equal to 1 to create comparison plots with the filtered data:
 plot_comparisons_with_filtered_data = 1
