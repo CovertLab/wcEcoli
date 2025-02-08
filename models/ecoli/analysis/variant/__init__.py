@@ -5,7 +5,8 @@ ACTIVE = [
 	"aa_synthesis_sensitivity.py",
 	"aa_uptake_sensitivity.py",
 	"active_ribosome_counts_histogram.py",
-	"adder_sizer.py",
+	"adder_sizer.py"
+	"avg_ppgpp_conc_vs_doubling_time.py",
 	"cell_growth.py",
 	"doubling_time_histogram.py",
 	"doubling_time_histogram_downsample.py",
