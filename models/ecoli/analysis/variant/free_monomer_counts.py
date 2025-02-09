@@ -28,15 +28,6 @@ from wholecell.io.tablereader import TableReader
 # Indicate the proteins to be visualized here (can be multiple):
 interest_proteins = np.array([
 	#'EG11854-MONOMER[c]',
-	#'G6606-MONOMER[c]',
-	#'MONOMER0-2678[c]',
-	#'EG10037-MONOMER[c]',
-	'NG-GFP-MONOMER[c]',
-	'TRYPSYN-APROTEIN[c]',
-	'TRYPSYN-BPROTEIN[c]',
-	"RPOS-MONOMER[c]",
-	#"ANTHRANSYNCOMPI-MONOMER[c]",
-	#'PD00519[c]',
 ])
 
 # If you know how many variants you have and want to specify which you would

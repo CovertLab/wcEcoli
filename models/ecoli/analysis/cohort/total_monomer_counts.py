@@ -26,14 +26,7 @@ from wholecell.io.tablereader import TableReader
 
 # List the proteins you would like to have plotted here:
 interest_proteins = np.array([
-	#"EG10159-MONOMER[c]", #"ATP-dependent Clp protease ATP-binding subunit ClpX"
-	#'EG10542-MONOMER[c]', # lon
-	#'PD03938[c]', # metR
-	'RPOS-MONOMER[c]', # rpoS
-	#'EG11171-MONOMER[c]', # tsaD, has interesting behavior
-	#"BASR-MONOMER[c]", # basR, also interesting behavior
-	'NG-GFP-MONOMER[c]',
-	'TRYPSYN-APROTEIN[c]',
+	#'EG11854-MONOMER[c]',
 ])
 
 # Indicate if the average value for each generation should be plotted:

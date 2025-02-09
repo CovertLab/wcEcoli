@@ -26,10 +26,7 @@ from wholecell.io.tablereader import TableReader
 
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	"EG10158-MONOMER[c]", # ATP-dependent Clp protease proteolytic subunit
-	"EG10159-MONOMER[c]", # "ATP-dependent Clp protease ATP-binding subunit ClpX"
-	"G6463-MONOMER[c]", # "specificity factor for ClpA-ClpP chaperone-protease complex"
-	"EG10156-MONOMER[c]",  # "ATP-dependent Clp protease ATP-binding subunit ClpA"
+	#'EG11854-MONOMER[c]',
 ])
 
 # Indicate if the average value for each generation should be plotted:
