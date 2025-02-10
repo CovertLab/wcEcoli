@@ -28,13 +28,16 @@ from wholecell.io.tablereader import TableReader
 # Indicate the proteins to be visualized here (can be multiple):
 interest_proteins = np.array([
 	#'EG11854-MONOMER[c]',
+	'TRYPSYN-APROTEIN[c]',
+	'TRYPSYN-BPROTEIN[c]',
+	"NG-GFP-MONOMER[c]",
 
 
 ])
 
 # If you know how many variants you have and want to specify which you would
 # like to plot specifically, you can do so here. Otherwise, leave this as 0.
-EXPERIMENTAL_VARS = 0
+EXPERIMENTAL_VARS = [1, 15, 16, 17]
 # example input for selecting specific variants (typically used in sherlock):
 # experimental_vars = [16, 17, 18, 19, 20] # don't include the control (0) here
 
