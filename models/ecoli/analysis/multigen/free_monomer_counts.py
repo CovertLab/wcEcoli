@@ -16,7 +16,7 @@ from wholecell.io.tablereader import TableReader
 # Add the proteins to be plotted here (there can be multiple):
 interest_proteins = np.array([
 	# 'EG11854-MONOMER[c]',
-	# 'NG-GFP-MONOMER[c]',
+	'NG-GFP-MONOMER[c]',
 ])
 
 """ END USER INPUTS """

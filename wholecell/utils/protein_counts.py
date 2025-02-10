@@ -40,7 +40,7 @@ def get_simulated_validation_counts(
 		val_id: i for i, val_id in enumerate(val_ids_lst)
 		if val_id in overlapping_ids_set}
 
-	overlapping_ids_list = list(overlapping_ids_set)
+	overlapping_ids_list = np.array(list(overlapping_ids_set))
 	sim_filtered_idx = np.array([
 		sim_id_to_index_map[monomer_id] for monomer_id in overlapping_ids_list
 		])

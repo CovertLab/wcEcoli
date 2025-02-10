@@ -27,7 +27,7 @@ from wholecell.io.tablereader import TableReader
 """ USER INPUTS """
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	# 'EG11854-MONOMER[c]',
+	'EG11854-MONOMER[c]',
 ])
 
 # Specifiy generations to be skipped if desired:

@@ -19,7 +19,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 #Indicate which generation(s) to skip within each seed (sometimes this number
 # should be greater than 0 because the first few generations may not be
 # representative of the true dynamics occuring in the cell).
-IGNORE_FIRST_N_GENS = 14 # use 14 for Sherlock runs with 24 gens
+IGNORE_FIRST_N_GENS = 1 # use 14 for Sherlock runs with 24 gens, 1 for local
 
 # Set this number to the desired filter threshold in which the data must pass
 # through to be plotted. For example, with a filter of 1, only proteins with

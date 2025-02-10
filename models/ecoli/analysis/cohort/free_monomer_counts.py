@@ -26,7 +26,7 @@ from wholecell.io.tablereader import TableReader
 
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	#'EG11854-MONOMER[c]',
+	'EG11854-MONOMER[c]',
 ])
 
 # Indicate if the average value for each generation should be plotted:
