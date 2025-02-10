@@ -60,11 +60,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Specify color options and line styles for the plot:
 		colors = [["deepskyblue", "yellowgreen", "mediumpurple", "deeppink",
-				   "darkturquoise"],
-				  ["turquoise","lightcoral", "gold", "darkorange", "indigo"],
-				  ["darkred", "darkgreen", "darkblue", "darkviolet",
-				   "cornflowerblue"],["darkcyan"],["darkmagenta"],["darkorange"],
-				  ["green"],["blue"],["pink"],["orange"],]
+				   "darkturquoise", "turquoise","lightcoral", "gold",
+				   "darkorange", "indigo", "darkred", "darkgreen", "darkblue",
+				   "darkviolet", "cornflowerblue", "darkcyan", "darkmagenta",
+				   "darkorange", "green", "blue", "pink", "orange"],]
 		LS = ['-', ':', '-.', '--']
 
 		# Generate Protein Counts Plot
