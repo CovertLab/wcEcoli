@@ -63,7 +63,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				   "darkturquoise"],
 				  ["turquoise","lightcoral", "gold", "darkorange", "indigo"],
 				  ["darkred", "darkgreen", "darkblue", "darkviolet",
-				   "cornflowerblue"],]
+				   "cornflowerblue"],["darkcyan"],["darkmagenta"],["darkorange"],
+				  ["green"],["blue"],["pink"],["orange"],]
 		LS = ['-', ':', '-.', '--']
 
 		# Generate Protein Counts Plot
