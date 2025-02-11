@@ -115,8 +115,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# calculate the rnap concentration
 			counts_to_molar = read_stacked_columns(
 				all_cells, 'EnzymeKinetics', 'countsToMolar',
-				remove_first=True, ignore_exception=True)
+				remove_first=True, ignore_exception=True).squeeze()
 			avg_rnap_conc[i] = np.mean(active_rnap_counts * counts_to_molar)
+
+
 
 			# get average concentration of ppgpp
 			avg_ppgpp_concentration = read_stacked_columns(

@@ -110,7 +110,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# calculate the ribosome concentration
 			counts_to_molar = read_stacked_columns(
 				all_cells, 'EnzymeKinetics', 'countsToMolar',
-				remove_first=True, ignore_exception=True)
+				remove_first=True, ignore_exception=True).squeeze()
 			avg_ribosome_conc[i] = np.mean(active_ribosome_counts * counts_to_molar)
 
 			# get average concentration of ppgpp
