@@ -27,8 +27,10 @@ from wholecell.io.tablereader import TableReader
 # List the proteins you would like to have plotted here:
 interest_proteins = np.array([
 	#'EG11854-MONOMER[c]',
-	'TRYPSYN-APROTEIN[c]',
-	'TRYPSYN-BPROTEIN[c]',
+	#'TRYPSYN-APROTEIN[c]',
+	#'TRYPSYN-BPROTEIN[c]',
+	'LEUD-MONOMER[c]',
+	'3-ISOPROPYLMALDEHYDROG-MONOMER[c]',
 	#"NG-GFP-MONOMER[c]",
 ])
 

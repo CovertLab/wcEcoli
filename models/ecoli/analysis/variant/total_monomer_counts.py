@@ -28,8 +28,10 @@ from wholecell.io.tablereader import TableReader
 # Indicate the proteins to be visualized here (can be multiple):
 interest_proteins = np.array([
 	#'EG11854-MONOMER[c]',
-	'TRYPSYN-APROTEIN[c]',
-	'TRYPSYN-BPROTEIN[c]',
+	#'TRYPSYN-APROTEIN[c]',
+	#'TRYPSYN-BPROTEIN[c]',
+	'LEUD-MONOMER[c]',
+	'3-ISOPROPYLMALDEHYDROG-MONOMER[c]',
 	#"NG-GFP-MONOMER[c]",
 
 
