@@ -17,7 +17,7 @@ from wholecell.io.tablereader import TableReader
 
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 1
+IGNORE_FIRST_N_GENS = 16
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,

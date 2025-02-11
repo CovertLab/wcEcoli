@@ -7,6 +7,9 @@ ACTIVE = [
 	"active_ribosome_counts_histogram.py",
 	"adder_sizer.py"
 	"avg_ppgpp_conc_vs_doubling_time.py",
+	"avg_ppgpp_conc_vs_cell_mass.py",
+	"avg_ppgpp_conc_vs_avg_ribosome_count_conc.py",
+	"avg_ppgpp_conc_vs_avg_rnap_count_conc.py",
 	"cell_growth.py",
 	"doubling_time_histogram.py",
 	"doubling_time_histogram_downsample.py",
