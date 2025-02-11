@@ -155,68 +155,48 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 
 	params_to_use = {
 		1: {
-			"expression_factor": 9.822,
-			"translation_efficiency": 0.1131
+			"expression_factor": 7.669873237,
+			"translation_efficiency": 1.1126
 		},
 		2: {
-			"expression_factor": 9.3094,
-			"translation_efficiency": 0.0339
+			"expression_factor": 7.858161465,
+			"translation_efficiency": 8.2454
 		},
 		3: {
-			"expression_factor": 8.8365,
-			"translation_efficiency": 0.0321
+			"expression_factor": 7.923804858,
+			"translation_efficiency": 1.0934
 		},
 		4: {
-			"expression_factor": 7.3482,
-			"translation_efficiency": 0.9449
+			"expression_factor": 7.752770871,
+			"translation_efficiency": 0.1236
 		},
 		5: {
-			"expression_factor": 7.0525,
-			"translation_efficiency": 4.7285
+			"expression_factor": 7.228924868,
+			"translation_efficiency": 3.6294
 		},
 		6: {
-			"expression_factor": 7.4596,
-			"translation_efficiency": 0.0278
+			"expression_factor": 8.483804937,
+			"translation_efficiency": 0.2859
 		},
 		7: {
-			"expression_factor": 7.3404,
-			"translation_efficiency": 8.3839
+			"expression_factor": 9.576667802,
+			"translation_efficiency": 0.5564
 		},
 		8: {
-			"expression_factor": 8.928,
-			"translation_efficiency": 0.4129
+			"expression_factor": 8.223061084,
+			"translation_efficiency": 0.129
 		},
 		9: {
-			"expression_factor": 7.3340,
-			"translation_efficiency": 0.0429
+			"expression_factor": 7.146174642,
+			"translation_efficiency": 0.3786
 		},
 		10: {
-			"expression_factor": 7.1157,
-			"translation_efficiency": 2.1893
+			"expression_factor": 8.541830031,
+			"translation_efficiency": 3.5183
 		},
 		11: {
-			"expression_factor": 7.4549,
-			"translation_efficiency": 4.0386
-		},
-		12: {
-			"expression_factor": 8.2963,
-			"translation_efficiency": 0.0333
-		},
-		13: {
-			"expression_factor": 8.984,
-			"translation_efficiency": 0.0962
-		},
-		14: {
-			"expression_factor": 7.6559,
-			"translation_efficiency": 0.0124
-		},
-		15: {
-			"expression_factor": 7.9630,
-			"translation_efficiency": 1.8504
-		},
-		16: {
-			"expression_factor": 8.9570,
-			"translation_efficiency": 5.7992
+			"expression_factor": 8.277164232,
+			"translation_efficiency": 4.2576
 		}
 	# pull out the number from the html file and then run the new simulation
 	}
