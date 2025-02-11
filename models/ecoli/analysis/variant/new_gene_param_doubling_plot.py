@@ -153,7 +153,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				hover_name=np.array(variants)[plot_variant_mask],
 				labels={'x': 'New Gene Protein Counts', 'y': 'Doubling Time'},
 				hover_data={
-					'Expression Factor': expression_factors[plot_variant_mask],
+					'Expression Factor': np.log10(expression_factors[plot_variant_mask]),
 					'Translation Efficiency': trl_eff_values[plot_variant_mask]})
 
 			fig.write_html(os.path.join(
