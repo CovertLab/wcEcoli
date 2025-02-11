@@ -30,7 +30,7 @@ interest_proteins = np.array([
 	#'TRYPSYN-APROTEIN[c]',
 	#'TRYPSYN-BPROTEIN[c]',
 	'LEUD-MONOMER[c]',
-	'3-ISOPROPYLMALDEHYDROG-MONOMER[c]',
+	#'3-ISOPROPYLMALDEHYDROG-MONOMER[c]',
 	#"NG-GFP-MONOMER[c]",
 ])
 
