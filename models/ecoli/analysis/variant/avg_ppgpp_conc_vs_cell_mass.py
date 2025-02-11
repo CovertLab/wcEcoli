@@ -1,5 +1,5 @@
 """
-Plot a scatterplot of the average ppgpps concentration vs. doubling time.
+Plot a scatterplot of the average ppgpps concentration vs. cell mass.
 This plot is intended to be run on simulations where
 the new gene option was enabled.
 """
@@ -59,7 +59,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plot_variant_mask = np.full(len(variants), True)
 		trl_eff_values = np.zeros(len(variants))
 		expression_factors = np.zeros(len(variants))
-		doubling_times = np.zeros(len(variants))
+		avg_cell_mass = np.zeros(len(variants))
 		ppgpp_concentration = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 		variant_name = metadata["variant"]
@@ -95,12 +95,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				print(variant_name + " is not a valid variant name for this plot")
 				return
 
-			# get doubling time
-			dt = read_stacked_columns(
-				all_cells, 'Main', 'time',
-				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times[i] = np.mean(dt)
-
+			# get cellMass
+			mean_cell_mass = read_stacked_columns(
+				all_cells, 'Mass', 'cellMass',
+				remove_first=True,
+				fun=np.mean).reshape(-1)
+			avg_cell_mass[i] = np.mean(mean_cell_mass)
 
 			avg_ppgpp_concentration = read_stacked_columns(
 				all_cells, 'GrowthLimits', 'ppgpp_conc',
@@ -109,14 +109,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		plt.figure()
 		plt.xlabel("ppgpp Concentration")
-		plt.ylabel("Doubling Time (min)")
+		plt.ylabel("Average cell Mass")
 		plt.scatter(
 			ppgpp_concentration[plot_variant_mask],
-			doubling_times[plot_variant_mask])
+			avg_cell_mass[plot_variant_mask])
 		plt.plot(
 			ppgpp_concentration[plot_variant_mask],
 			np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
-								 doubling_times[plot_variant_mask], 1))(
+								 avg_cell_mass[plot_variant_mask], 1))(
 				ppgpp_concentration[plot_variant_mask]))
 
 		plt.tight_layout()
