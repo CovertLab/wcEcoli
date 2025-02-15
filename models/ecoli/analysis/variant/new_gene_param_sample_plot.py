@@ -26,6 +26,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.yscale('log')
 
 		variant_name = metadata["variant"]
+		params_to_use = metadata["params_to_use"]
 
 		for variant in variants:
 
@@ -39,9 +40,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					index_remainder)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
-				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift_narrow import get_sampled_new_gene_expression_factor_and_translation_efficiency
-				expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
-					index_remainder)
+				if i == 0:
+					expression_factors[i]= 0
+					trl_eff_values[i] = 0
+				else:
+					expression_factors[i] = params_to_use[i]["expression_factor"]
+					trl_eff_values[i] = params_to_use[i]["trl_eff_value"]
 
 			else:
 				print(variant_name + " is not a valid variant name for this plot")

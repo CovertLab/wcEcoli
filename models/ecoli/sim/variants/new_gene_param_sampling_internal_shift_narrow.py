@@ -77,6 +77,42 @@ NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL = 0
 NEW_GENE_TRANSLATION_EFFICIENCY_MIN = np.log10(0.01)
 NEW_GENE_TRANSLATION_EFFICIENCY_MAX = np.log10(10)
 
+NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE = {
+		1: {
+			"expression_factor": 9.8801,
+			"translation_efficiency": 2.5062
+		},
+		2: {
+			"expression_factor": 9.3140,
+			"translation_efficiency": 0.11
+		},
+		3: {
+			"expression_factor": 9.6786,
+			"translation_efficiency": 0.4613
+		},
+		4: {
+			"expression_factor": 8.3080,
+			"translation_efficiency": 0.1127
+		},
+		5: {
+			"expression_factor": 9.5045,
+			"translation_efficiency": 0.162
+		},
+		6: {
+			"expression_factor": 8.3742,
+			"translation_efficiency": 0.4137
+		},
+		7: {
+			"expression_factor": 7.0311,
+			"translation_efficiency": 1.0087
+		},
+		8: {
+			"expression_factor": 8.6524,
+			"translation_efficiency": 2.6079
+		}
+	# pull out the number from the html file and then run the new simulation
+	}
+
 def condition(sim_data, condition_index):
 	"""
 	Condition variant for simulations in different environmental conditions
@@ -141,7 +177,7 @@ def determine_new_gene_ids_and_indices(sim_data):
 
 	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
 
-def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
+def get_sampled_new_gene_expression_factor_and_translation_efficiency(index, params_to_use):
 	"""
 	Maps variant index to sampled new gene expression factor and translation efficiency
 
@@ -152,7 +188,7 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 	"""
 	# Determine factor for new gene expression and value for new
 	# gene translation efficiency
-
+	"""
 	params_to_use = {
 		1: {
 			"expression_factor": 7.669873237,
@@ -200,7 +236,7 @@ def get_sampled_new_gene_expression_factor_and_translation_efficiency(index):
 		}
 	# pull out the number from the html file and then run the new simulation
 	}
-
+	"""
 	if index == 0:
 		expression_factor = NEW_GENE_EXPRESSION_FACTOR_CONTROL
 		# Note: this value should not matter since gene is knocked out
@@ -218,7 +254,7 @@ def induce_new_genes(sim_data, index):
 	"""
 	# Map variant index to expression factor and translation efficiency value
 	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
-		index)
+		index, NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE)
 
 	# Determine ids and indices of new genes
 	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
@@ -244,7 +280,7 @@ def knockout_induced_new_gene_expression(sim_data, index):
 	"""
 	# Map variant index to expression factor and tranlsation efficiency value
 	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
-		index)
+		index, NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE)
 
 	# Determine ids and indices of new genes
 	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
@@ -279,7 +315,7 @@ def new_gene_param_sampling_internal_shift_narrow(sim_data, index):
 	index_remainder = index - condition_index * 1000
 	np.random.seed(index_remainder) # Use the index to set the random number seed for reproducibility
 	expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
-		index_remainder)
+		index_remainder, NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE)
 
 	# For the purposes of evaluating what params are being sampled (TODO: remove later)
 	print("Overall index: ", index)
@@ -288,8 +324,8 @@ def new_gene_param_sampling_internal_shift_narrow(sim_data, index):
 	print("Expression factor: ", expression_factor)
 	print("Translation efficiency: ", trl_eff_value)
 
-	# import ipdb
-	# ipdb.set_trace()
+	import ipdb
+	ipdb.set_trace()
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})

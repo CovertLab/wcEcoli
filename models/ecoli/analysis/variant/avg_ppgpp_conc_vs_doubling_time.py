@@ -62,7 +62,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		doubling_times = np.zeros(len(variants))
 		ppgpp_concentration = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
+
 		variant_name = metadata["variant"]
+		params_to_use = metadata["params_to_use"]
 
 		# Loop through all variant indexes
 		for i, variant in enumerate(variants):
@@ -87,9 +89,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					index_remainder)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
-				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift_narrow import get_sampled_new_gene_expression_factor_and_translation_efficiency
-				expression_factors[i], trl_eff_values[i] = get_sampled_new_gene_expression_factor_and_translation_efficiency(
-					index_remainder)
+				if i == 0:
+					expression_factors[i]= 0
+					trl_eff_values[i] = 0
+				else:
+					expression_factors[i] = params_to_use[i]["expression_factor"]
+					trl_eff_values[i] = params_to_use[i]["trl_eff_value"]
 
 			else:
 				print(variant_name + " is not a valid variant name for this plot")

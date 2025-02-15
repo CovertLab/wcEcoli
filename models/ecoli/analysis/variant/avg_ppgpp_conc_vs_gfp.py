@@ -1,5 +1,5 @@
 """
-Plot a scatterplot of the average ppgpps concentration vs. average ribosome count.
+Plot a scatterplot of the average ppgpps concentration vs. doubling time.
 This plot is intended to be run on simulations where
 the new gene option was enabled.
 """
@@ -11,9 +11,14 @@ import pickle
 import os
 
 from models.ecoli.analysis import variantAnalysisPlot
+from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import (
+	NEW_GENE_EXPRESSION_FACTOR_CONTROL, NEW_GENE_EXPRESSION_FACTOR_MIN,
+	NEW_GENE_EXPRESSION_FACTOR_MAX, NEW_GENE_TRANSLATION_EFFICIENCY_CONTROL,
+	NEW_GENE_TRANSLATION_EFFICIENCY_MIN, NEW_GENE_TRANSLATION_EFFICIENCY_MAX)
 from wholecell.analysis.analysis_tools import (
 	exportFigure, read_stacked_columns, stacked_cell_threshold_mask)
 from wholecell.io.tablereader import TableReader
+
 
 
 # Remove first N gens from plot
@@ -24,7 +29,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				validationDataFile, metadata):
 
 		variants = self.ap.get_variants()
-		min_variant = min(variants)
+
 
 		# Determine new gene ids
 		with open(simDataFile, 'rb') as f:
@@ -54,12 +59,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plot_variant_mask = np.full(len(variants), True)
 		trl_eff_values = np.zeros(len(variants))
 		expression_factors = np.zeros(len(variants))
-		avg_ribosome_count = np.zeros(len(variants))
-		avg_ribosome_conc = np.zeros(len(variants))
+		avg_ng_monomer = np.zeros(len(variants))
 		ppgpp_concentration = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 
 		variant_name = metadata["variant"]
+		min_variant = min(variants)
 		params_to_use = metadata["params_to_use"]
 
 		# Loop through all variant indexes
@@ -96,64 +101,45 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				print(variant_name + " is not a valid variant name for this plot")
 				return
 
+
 			if variant == min_variant:
 				sim_dir = all_cells[0]
 				simOutDir = os.path.join(sim_dir, 'simOut')
 
-				uniqueMoleculeCounts = TableReader(
-					os.path.join(simOutDir, "UniqueMoleculeCounts"))
-				ribosome_index = uniqueMoleculeCounts.readAttribute(
-					"uniqueMoleculeIds").index('active_ribosome')
+				monomer_counts_reader = TableReader(os.path.join(
+					simOutDir, "MonomerCounts"))
+				monomer_idx_dict = {monomer: i for i, monomer in
+					enumerate(monomer_counts_reader.readAttribute('monomerIds'))}
+				new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id)
+					for monomer_id in new_gene_monomer_ids]
 
-			# get average ribosome count
-			active_ribosome_counts = read_stacked_columns(
-				all_cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
-				remove_first=True,
-				ignore_exception=True)[:,ribosome_index]
-			avg_ribosome_count[i] = np.mean(active_ribosome_counts)
+			# get new gene counts
+			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
+				'MonomerCounts', 'monomerCounts',
+				fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
+			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
-			# calculate the ribosome concentration
-			counts_to_molar = read_stacked_columns(
-				all_cells, 'EnzymeKinetics', 'countsToMolar',
-				remove_first=True, ignore_exception=True).squeeze()
-			avg_ribosome_conc[i] = np.mean(active_ribosome_counts * counts_to_molar)
-
-			# get average concentration of ppgpp
+			# get ppgpp concentration
 			avg_ppgpp_concentration = read_stacked_columns(
 				all_cells, 'GrowthLimits', 'ppgpp_conc',
 				remove_first=True, fun=lambda x: np.mean(x)).squeeze()
 			ppgpp_concentration[i] = np.mean(avg_ppgpp_concentration)
 
-
-		# ppgpp concentration vs average ribosome counts plot
-		plt.subplot(2, 1, 1)
+		plt.figure()
 		plt.xlabel("ppgpp Concentration")
-		plt.ylabel("Average ribosome counts")
+		plt.ylabel("new protein counts")
 		plt.scatter(
 			ppgpp_concentration[plot_variant_mask],
-			avg_ribosome_count[plot_variant_mask])
+			avg_ng_monomer[plot_variant_mask])
 		plt.plot(
 			ppgpp_concentration[plot_variant_mask],
 			np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
-								 avg_ribosome_count[plot_variant_mask], 1))(
+								 avg_ng_monomer[plot_variant_mask], 1))(
 				ppgpp_concentration[plot_variant_mask]))
 
-		# ppgpp concentration vs average ribosome concentration plot
-		plt.subplot(2, 1, 2)
-		plt.xlabel("ppgpp Concentration")
-		plt.ylabel("Average ribosome concentration")
-		plt.scatter(
-			ppgpp_concentration[plot_variant_mask],
-			avg_ribosome_conc[plot_variant_mask])
-		plt.plot(
-			ppgpp_concentration[plot_variant_mask],
-			np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
-								 avg_ribosome_conc[plot_variant_mask], 1))(
-				ppgpp_concentration[plot_variant_mask]))
-
-		plt.subplots_adjust(hspace = 0.5, top = 0.95, bottom = 0.05)
+		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-		plt.close("all")
+		plt.close('all')
 
 if __name__ == "__main__":
 	Plot().cli()
