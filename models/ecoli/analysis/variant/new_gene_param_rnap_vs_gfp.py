@@ -86,12 +86,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					index_remainder)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
-				if i == 0:
+				if variant == 0:
 					expression_factors[i]= 0
 					trl_eff_values[i] = 0
 				else:
-					expression_factors[i] = params_to_use[i]["expression_factor"]
-					trl_eff_values[i] = params_to_use[i]["trl_eff_value"]
+					expression_factors[i] = float(params_to_use[str(variant)]["expression_factor"])
+					trl_eff_values[i] = float(params_to_use[str(variant)]["translation_efficiency"])
 
 			else:
 				print(variant_name + " is not a valid variant name for this plot")

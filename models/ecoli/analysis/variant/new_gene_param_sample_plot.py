@@ -33,19 +33,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			condition_index = variant // 1000
 			index_remainder = variant - condition_index * 1000
 
-			if variant_name == "new_gene_param_sampling_internal_shift":
+			if variant_name == "new_gene_param_sampling_internal_shift_narrow":
 				from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import get_sampled_new_gene_expression_factor_and_translation_efficiency
 				np.random.seed(index_remainder)
 				expression_factor, trl_eff_value = get_sampled_new_gene_expression_factor_and_translation_efficiency(
 					index_remainder)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
-				if i == 0:
-					expression_factors[i]= 0
-					trl_eff_values[i] = 0
+				if variant == 0:
+					expression_factor= 0
+					trl_eff_value = 0
 				else:
-					expression_factors[i] = params_to_use[i]["expression_factor"]
-					trl_eff_values[i] = params_to_use[i]["trl_eff_value"]
+					expression_factor = float(params_to_use[str(variant)]["expression_factor"])
+					trl_eff_value = float(params_to_use[str(variant)]["translation_efficiency"])
 
 			else:
 				print(variant_name + " is not a valid variant name for this plot")
