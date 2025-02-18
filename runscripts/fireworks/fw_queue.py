@@ -228,6 +228,7 @@ from fireworks import FiretaskBase, Firework, LaunchPad, Workflow, ScriptTask
 from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSION_FACTORS,
 	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN)
+from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift_narrow import (NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE)
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
@@ -494,6 +495,14 @@ class WorkflowBuilder:
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
 				"new_gene_induction_gen": NEW_GENE_INDUCTION_GEN,
 				"new_gene_knockout_gen": NEW_GENE_KNOCKOUT_GEN,})
+
+		# TODO: add narrow dictionary to metadata: test and come back to check it
+
+		elif VARIANT == 'new_gene_param_sampling_internal_shift_narrow':
+			self.metadata.update({
+				"params_to_use": NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE
+    		})
+
 
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)

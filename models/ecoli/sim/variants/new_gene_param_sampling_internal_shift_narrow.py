@@ -113,6 +113,7 @@ NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE = {
 	# pull out the number from the html file and then run the new simulation
 	}
 
+
 def condition(sim_data, condition_index):
 	"""
 	Condition variant for simulations in different environmental conditions
@@ -275,8 +276,8 @@ def new_gene_param_sampling_internal_shift_narrow(sim_data, index):
 	print("Expression factor: ", expression_factor)
 	print("Translation efficiency: ", trl_eff_value)
 
-	# import ipdb
-	# ipdb.set_trace()
+	import ipdb
+	ipdb.set_trace()
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})

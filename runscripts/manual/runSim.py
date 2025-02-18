@@ -25,6 +25,7 @@ from typing import Tuple
 from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSION_FACTORS,
 	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN)
+from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift_narrow import NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
@@ -112,6 +113,12 @@ class RunSimulation(scriptBase.ScriptBase):
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
 				new_gene_induction_gen=NEW_GENE_INDUCTION_GEN,
 				new_gene_knockout_gen=NEW_GENE_KNOCKOUT_GEN,)
+
+		# TODO: add parameters from narrow variant
+		elif variant_type == 'new_gene_param_sampling_internal_shift_narrow':
+			metadata.update({
+				"params_to_use": NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE
+			})
 
 		metadata_dir = fp.makedirs(args.sim_path, constants.METADATA_DIR)
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)

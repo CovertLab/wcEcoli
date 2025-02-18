@@ -24,6 +24,10 @@ from wholecell.io.tablereader import TableReader
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
 
+
+COLOR_BY = "same"  # ["same", "expression_factor", "translation_efficiency"]
+INTERACTIVE_PLOT = True
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
@@ -142,6 +146,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
+
+		if INTERACTIVE_PLOT:
+			import plotly.express as px
+
+			fig = px.scatter(
+				x=ppgpp_concentration[plot_variant_mask],
+				y=avg_ng_monomer[plot_variant_mask],
+				hover_name=np.array(variants)[plot_variant_mask],
+				labels={'x': 'ppgpp Concentration', 'y': 'new protein counts'},
+				hover_data={
+					'Expression Factor': np.log10(expression_factors[plot_variant_mask]),
+					'Translation Efficiency': trl_eff_values[plot_variant_mask]})
+
+			fig.write_html(os.path.join(
+				plotOutDir, plotOutFileName + "_" + COLOR_BY + ".html"))
+			fig.show()
 
 if __name__ == "__main__":
 	Plot().cli()
