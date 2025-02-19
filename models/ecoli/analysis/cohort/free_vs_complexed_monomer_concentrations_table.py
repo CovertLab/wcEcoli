@@ -28,11 +28,38 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 IGNORE_FIRST_N_GENS = 2
 # Path to table with monomer to complex info
 # Must first run analysis/parca/monomer_to_complex_table.py to generate table
-monomers_to_complexes_path = 'out/pdr_CLClim3aNE_protease_assignment/kb_plot_out/monomer_to_complex_table_monomer_to_complex_assignment.tsv'
+monomers_to_complexes_path = '/Users/miagrahn/wcEcoli/out/pdr_update_files/monomer_to_complex_table_monomer_to_complex_assignment.tsv'
 # List monomer ids for which dynamic monomer and mRNA counts are of interest
-monomer_short_list = ['PD03938[c]', 'G6890-MONOMER[c]', 'G6737-MONOMER[c]',
-					  'RPOD-MONOMER[c]', 'PD02936[c]', 'RED-THIOREDOXIN2-MONOMER[c]',
-					  'EG10542-MONOMER[c]']
+#monomer_short_list = ['PD03938[c]', 'G6890-MONOMER[c]', 'G6737-MONOMER[c]',
+					  #'RPOD-MONOMER[c]', 'PD02936[c]', 'RED-THIOREDOXIN2-MONOMER[c]',
+					  #'EG10542-MONOMER[c]']
+
+monomer_short_list = [
+    "EG10156-MONOMER[c]", "MDLB-MONOMER[i]", "EG10927-MONOMER[c]", "EG10618-MONOMER[c]",
+    "AERGLYC3PDEHYDROG-MONOMER[i]", "EG10823-MONOMER[c]", "EG10690-MONOMER[c]", "EG10159-MONOMER[c]",
+    "EG11415-MONOMER[m]", "DIOHBUTANONEPSYN-MONOMER[c]", "G6894-MONOMER[m]", "EG11783-MONOMER[c]",
+    "PUTA-MONOMER[c]", "G6523-MONOMER[c]", "L-LACTDEHYDROGFMN-MONOMER[i]", "EG10236-MONOMER[c]",
+    "G7596-MONOMER[c]", "ACYLCOADEHYDROG-MONOMER[c]", "EG10230-MONOMER[c]", "EG10651-MONOMER[c]",
+    "EG10347-MONOMER[c]", "ZNUC-MONOMER[i]", "EG10241-MONOMER[c]", "RPOC-MONOMER[c]",
+    "YHES-MONOMER[i]", "PD00214[c]", "RPOS-MONOMER[c]", "RPOB-MONOMER[c]", "G6569-MONOMER[c]",
+    "PD03270[c]", "EG11064-MONOMER[c]", "EG11734-MONOMER[c]", "G7656-MONOMER[c]",
+    "CYSD-MONOMER[c]", "EG10625-MONOMER[c]", "EG10686-MONOMER[c]", "EG10900-MONOMER[c]",
+    "EG11440-MONOMER[c]", "G7715-MONOMER[c]", "G7214-MONOMER[c]", "G6890-MONOMER[c]",
+    "PD03938[c]", "G6737-MONOMER[c]", "RPOD-MONOMER[c]", "PD02936[c]",
+    "RED-THIOREDOXIN2-MONOMER[c]", "UHPA-MONOMER[c]", "EG12402-MONOMER[c]", "G6472-MONOMER[c]",
+    "EG11830-MONOMER[c]", "EG11249-MONOMER[c]", "EG12352-MONOMER[c]", "EG11534-MONOMER[c]",
+    "EG10426-MONOMER[c]", "EG10534-MONOMER[c]", "G7532-MONOMER[c]", "EG10844-MONOMER[c]",
+    "EG11100-MONOMER[c]", "MONOMER0-741[c]", "G7395-MONOMER[c]", "EG50003-MONOMER[c]",
+    "EG11874-MONOMER[c]", "EG12866-MONOMER[c]", "GLND-MONOMER[i]", "EG10776-MONOMER[c]",
+    "G7326-MONOMER[c]", "EG10687-MONOMER[c]", "EG12308-MONOMER[c]", "G7057-MONOMER[c]",
+    "EG11187-MONOMER[c]", "EG12332-MONOMER[c]", "EG10598-MONOMER[c]", "EG11410-MONOMER[c]",
+    "EG11784-MONOMER[c]", "EG12386-MONOMER[c]", "EG10975-MONOMER[c]", "THI-P-KIN-MONOMER[c]",
+    "EG12690-MONOMER[c]", "PD03831[c]", "AROK-MONOMER[c]", "G7263-MONOMER[c]", "EG12289-MONOMER[c]"]
+
+
+
+
+# todo mia - put in new stuff and run it
 
 """ END USER INPUTS """
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -54,6 +81,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Dictionary of total monomer corresponding to free monomer ids
 			total_monomer_dict = {name: [name] for name in monomer_set}
 			for monomer_id, monomer_id_list in total_monomer_dict.items():
+				print(monomer_id)
 				list_complexes = monomer_complex_dict[monomer_id]
 				if all(isinstance(item, str) for item in list_complexes):
 					total_monomer_dict[monomer_id].extend(list_complexes)
