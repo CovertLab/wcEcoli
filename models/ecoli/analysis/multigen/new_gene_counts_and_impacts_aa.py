@@ -80,9 +80,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for index in target_RNA_indexes[i]:
 				target_RNA_ids.add(RNA_ids[index])
 
-		import ipdb
-		ipdb.set_trace()
-
 		return target_RNA_ids
 
 	def get_mRNA_indexes_from_monomer_ids(self, sim_data, all_cells, target_monomer_ids, index_type):
@@ -172,10 +169,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# TODO: make a option for this plot that you could run without new genes
 
+		other_gene_mRNA_ids = {}
+		other_gene_mRNA_indexes = {}
+		for monomer in OTHER_MONOMERS_OF_INTEREST:
+			other_gene_mRNA_ids[monomer] = list(self.get_mRNA_ids_from_monomer_ids(
+				sim_data, [monomer]))
+			other_gene_mRNA_indexes[monomer] = self.get_mRNA_indexes_from_monomer_ids(
+				sim_data, cell_paths, [monomer], 'mRNA')
+
 		# determine cistron ids from otehr_monomers_of_interest
 		other_gene_cistron_ids = [
 			monomer_to_mRNA_id_dict.get(monomer_id) for monomer_id
 			in OTHER_MONOMERS_OF_INTEREST]
+		new_gene_cistron_ids = [
+			monomer_to_mRNA_id_dict.get(monomer_id) for monomer_id in new_gene_monomer_ids]
 		# Extract cistron indexes for each gene of interest
 		cistron_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 		cistron_idx_dict = {cistron: i for i, cistron in enumerate(
@@ -366,6 +373,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.title("New Gene Protein Counts")
 			plot_num += 1
 
+			# New Gene RNA Synthesis Probability
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			new_gene_target_rna_synth_prob = read_stacked_columns(
+				cell_paths, 'RnaSynthProb', 'target_rna_synth_prob',
+				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
+			new_gene_actual_rna_synth_prob = read_stacked_columns(
+				cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
+				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
+			plt.plot(time_no_first / 60., new_gene_target_rna_synth_prob,
+					 label="Target")
+			plt.plot(time_no_first / 60., new_gene_actual_rna_synth_prob,
+					 label="Actual")
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((-0.1,0.5))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("RNA Synthesis Probability", fontsize='x-small')
+			plt.title("New Gene RNA Synthesis Probability")
+			plt.legend()
+			plot_num += 1
+
 			# Amino acid concentrations
 			aa_ids_of_interest = ['HIS[c]', 'THR[c]', 'TRP[c]']
 			targets = np.array(
@@ -394,6 +423,31 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# Other genes of interest
 			for ii, gene in enumerate(OTHER_GENE_COMMON_NAMES):
+				# RNA Synthesis Probability
+				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+				for r in range(len(other_gene_mRNA_ids[OTHER_MONOMERS_OF_INTEREST[ii]])):
+					other_gene_target_rna_synth_prob = read_stacked_columns(
+						cell_paths, 'RnaSynthProb', 'target_rna_synth_prob',
+						ignore_exception=True, remove_first=True)[:, other_gene_mRNA_indexes[OTHER_MONOMERS_OF_INTEREST[ii]][r]]
+					other_gene_actual_rna_synth_prob = read_stacked_columns(
+						cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
+						ignore_exception=True, remove_first=True)[:, other_gene_mRNA_indexes[OTHER_MONOMERS_OF_INTEREST[ii]][r]]
+
+					plt.plot(time_no_first / 60., other_gene_target_rna_synth_prob,
+							 label=other_gene_mRNA_ids[OTHER_MONOMERS_OF_INTEREST[ii]][r] + ": Target")
+					plt.plot(time_no_first / 60., other_gene_actual_rna_synth_prob,
+							 label=other_gene_mRNA_ids[OTHER_MONOMERS_OF_INTEREST[ii]][r] + ": Actual")
+				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+					plt.ylim((-0.1,0.5))
+				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+					plt.xlim(standard_xlim)
+				plt.xlabel("Time (min)")
+				plt.ylabel("RNA Synthesis Probability", fontsize='x-small')
+				plt.title("RNA Synthesis Probability: " + gene)
+				plt.legend()
+				plot_num += 1
+
+				# Cistron counts
 				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 				plt.plot(time / 60., other_gene_cistron_counts[:, ii], color=LINE_COLOR)
 				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
@@ -405,6 +459,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.title("Cistron Counts: " + gene)
 				plot_num += 1
 
+				# Protein counts
 				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 				plt.plot(time / 60., other_gene_monomer_counts[:,ii], color=LINE_COLOR)
 				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
