@@ -433,10 +433,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
 						ignore_exception=True, remove_first=True)[:, other_gene_mRNA_indexes[OTHER_MONOMERS_OF_INTEREST[ii]][r]]
 
-					plt.plot(time_no_first / 60., other_gene_target_rna_synth_prob,
-							 label=other_gene_mRNA_ids[OTHER_MONOMERS_OF_INTEREST[ii]][r] + ": Target")
 					plt.plot(time_no_first / 60., other_gene_actual_rna_synth_prob,
 							 label=other_gene_mRNA_ids[OTHER_MONOMERS_OF_INTEREST[ii]][r] + ": Actual")
+					plt.plot(time_no_first / 60., other_gene_target_rna_synth_prob,
+							 label=other_gene_mRNA_ids[OTHER_MONOMERS_OF_INTEREST[ii]][r] + ": Target")
 				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
 					plt.ylim((-0.1,0.5))
 				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
@@ -444,7 +444,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlabel("Time (min)")
 				plt.ylabel("RNA Synthesis Probability", fontsize='x-small')
 				plt.title("RNA Synthesis Probability: " + gene)
-				plt.legend()
+				plt.legend(loc='lower right')
 				plot_num += 1
 
 				# Cistron counts
