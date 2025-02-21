@@ -242,6 +242,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts', ignore_exception=True)
 		other_gene_cistron_counts = all_mRNA_cistron_stacked_counts[:,other_gene_cistron_indexes]
 
+		rna_synth_prob_max_p = read_stacked_columns(
+			cell_paths, 'RnaSynthProb', 'max_p',
+			ignore_exception=True, remove_first=True)
+
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2000)
 		total_plots = 50 # TODO Modularize and get rid of this magic number
@@ -395,6 +399,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.legend()
 			plot_num += 1
 
+			# New gene is_overcrowded RnaSynthProb
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			new_gene_is_overcrowded_rna_synth_prob = read_stacked_columns(
+				cell_paths, 'RnaSynthProb', 'tu_is_overcrowded',
+				ignore_exception=True, remove_first=True)[:, new_gene_RNA_indexes]
+			plt.plot(time_no_first / 60., new_gene_is_overcrowded_rna_synth_prob, color=LINE_COLOR)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((-0.1,0.5))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Is Overcrowded RNASynthProb", fontsize='x-small')
+			plt.title("New Gene Overcrowding RNASynthProb")
+			plot_num += 1
+
 			# Amino acid concentrations
 			all_aa_ids = sim_data.molecule_groups.amino_acids
 			# aa_ids_of_interest = ['HIS[c]', 'THR[c]', 'TRP[c]']
@@ -422,6 +441,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.ylabel("Concentration (mmol/L)", fontsize='x-small')
 				plt.title("Amino Acid Concentration: " + aa)
 				plot_num += 1
+
+			# Plot max RNASynthProb
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			plt.plot(time_no_first / 60., rna_synth_prob_max_p, color=LINE_COLOR)
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
+				plt.ylim((0, 1))
+			if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				plt.xlim(standard_xlim)
+			plt.xlabel("Time (min)")
+			plt.ylabel("Max RNA Synth Prob", fontsize='x-small')
+			plt.title("Max RNA Synth Prob")
+			plot_num += 1
 
 			# Other genes of interest
 			for ii, gene in enumerate(OTHER_GENE_COMMON_NAMES):
