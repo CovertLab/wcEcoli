@@ -244,7 +244,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = ["", "_standard_axes_y", "_standard_axes_both"]
 		standard_xlim = (0,2000)
-		total_plots = 24 # TODO Modularize and get rid of this magic number
+		total_plots = 50 # TODO Modularize and get rid of this magic number
 
 		for i in range(len(plot_suffixes)):
 
@@ -253,7 +253,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# Plotting
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
-			plt.figure(figsize = (8.5, 45))
+			plt.figure(figsize = (8.5, 100))
 			plot_num = 1
 			ax1 = plt.subplot(total_plots, 1, plot_num)
 
@@ -396,7 +396,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plot_num += 1
 
 			# Amino acid concentrations
-			aa_ids_of_interest = ['HIS[c]', 'THR[c]', 'TRP[c]']
+			all_aa_ids = sim_data.molecule_groups.amino_acids
+			# aa_ids_of_interest = ['HIS[c]', 'THR[c]', 'TRP[c]']
+			aa_ids_of_interest = all_aa_ids
 			targets = np.array(
 				[sim_data.process.metabolism.conc_dict[key].asNumber(units.mmol / units.L) for key
 					in aa_ids_of_interest])
