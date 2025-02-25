@@ -16,14 +16,14 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 	read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
-START_GEN = 16
+START_GEN = 0
 END_GEN = 24
 
-VARIANT_1 = 4
+VARIANT_1 = 3
 VARIANT_2 = 6
 
-VARIANT_1_SEED = 9
-VARIANT_2_SEED = 9
+VARIANT_1_SEED = 0
+VARIANT_2_SEED = 0
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 LINE_COLOR2 = (152/255, 78/255, 163/255)
