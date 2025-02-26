@@ -30,8 +30,8 @@ END_GEN = 24
 VARIANT_1 = 3
 VARIANT_2 = 6
 
-VARIANT_1_SEED = 1
-VARIANT_2_SEED = 1
+VARIANT_1_SEED = 0
+VARIANT_2_SEED = 0
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 LINE_COLOR_2 = (55/255, 224/255, 179/255)
@@ -130,7 +130,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_ppgpp_concentration2_2)
 		avg_ppgpp_concentration_2[split_2_2:] = np.mean(avg_ppgpp_concentration2_3)
 
-		plt.figure(figsize=(8.5, 2))
+		plt.figure(figsize=(8.5, 2.2))
 		plt.plot(time_no_first1 / 60., ppGpp_concentration, color=LINE_COLOR,
 				 label = "Variant " + str(VARIANT_1))
 		plt.plot(time_no_first2 / 60., ppGpp_concentration2, color=LINE_COLOR2,
