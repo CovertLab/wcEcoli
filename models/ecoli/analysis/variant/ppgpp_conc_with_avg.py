@@ -139,8 +139,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ppgpp_concentration1_1 = read_stacked_columns(
 			cell_paths1_1, 'GrowthLimits', 'ppgpp_conc',
 			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
-		print(len(avg_ppgpp_concentration1_1))
-
 		avg_ppgpp_concentration1_2 = read_stacked_columns(
 			cell_paths1_2, 'GrowthLimits', 'ppgpp_conc',
 			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
@@ -161,12 +159,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.plot(time_no_first1 / 60., ppGpp_concentration, color=LINE_COLOR)
 		plt.plot(time_no_first2 / 60., ppGpp_concentration2, color=LINE_COLOR2)
 
-		plt.plot(time_no_first1_1 / 60., avg_ppgpp_concentration1_1, color=LINE_COLOR)
-		plt.plot(time_no_first1_2 / 60., avg_ppgpp_concentration1_2, color=LINE_COLOR)
-		plt.plot(time_no_first1_3 / 60., avg_ppgpp_concentration1_3, color=LINE_COLOR)
-		plt.plot(time_no_first2_1 / 60., avg_ppgpp_concentration2_1, color=LINE_COLOR)
-		plt.plot(time_no_first2_2 / 60., avg_ppgpp_concentration2_2, color=LINE_COLOR)
-		plt.plot(time_no_first2_3 / 60., avg_ppgpp_concentration2_3, color=LINE_COLOR)
+		plt.plot(time_no_first1_1 / 60., [np.mean(avg_ppgpp_concentration1_1)]*len(time_no_first1_1), color=LINE_COLOR)
+		plt.plot(time_no_first1_2 / 60., [np.mean(avg_ppgpp_concentration1_2)]*len(time_no_first1_2), color=LINE_COLOR)
+		plt.plot(time_no_first1_3 / 60., [np.mean(avg_ppgpp_concentration1_3)]*len(time_no_first1_3), color=LINE_COLOR)
+		plt.plot(time_no_first2_1 / 60., [np.mean(avg_ppgpp_concentration2_1)]*len(time_no_first2_1), color=LINE_COLOR)
+		plt.plot(time_no_first2_2 / 60., [np.mean(avg_ppgpp_concentration2_2)]*len(time_no_first2_2), color=LINE_COLOR)
+		plt.plot(time_no_first2_3 / 60., [np.mean(avg_ppgpp_concentration2_3)]*len(time_no_first2_3), color=LINE_COLOR)
 
 		# end here
 
