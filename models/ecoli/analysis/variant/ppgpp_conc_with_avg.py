@@ -139,6 +139,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ppgpp_concentration1_1 = read_stacked_columns(
 			cell_paths1_1, 'GrowthLimits', 'ppgpp_conc',
 			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
+		print(len(avg_ppgpp_concentration1_1))
+
 		avg_ppgpp_concentration1_2 = read_stacked_columns(
 			cell_paths1_2, 'GrowthLimits', 'ppgpp_conc',
 			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
