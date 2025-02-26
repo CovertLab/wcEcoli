@@ -20,8 +20,6 @@ from wholecell.io.tablereader import TableReader
 MEAN = 'mean'
 STD = 'std'
 MARKERS = ['o', 's']  # Expand for more overlays
-PANEL_WIDTH = 3.8
-PANEL_HEIGHT = 1.7
 
 START_GEN = 0
 GFP_ON = 8
@@ -42,6 +40,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
+
 
 			# start here
 		cell_paths1 = self.ap.get_cells(
@@ -74,59 +73,39 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# simOutDir = os.path.join(sim_dir, 'simOut')
 
 		# Load data
-		# time1 = read_stacked_columns(
-		# 	cell_paths1, 'Main', 'time', ignore_exception=True)
 		time_no_first1 = read_stacked_columns(
 			cell_paths1, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time1_1 = read_stacked_columns(
-		# 	cell_paths1_1, 'Main', 'time', ignore_exception=True)
-		time_no_first1_1 = read_stacked_columns(
-			cell_paths1_1, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time1_2 = read_stacked_columns(
-		# 	cell_paths1_2, 'Main', 'time', ignore_exception=True)
-		time_no_first1_2 = read_stacked_columns(
-			cell_paths1_2, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time1_3 = read_stacked_columns(
-		# 	cell_paths1_3, 'Main', 'time', ignore_exception=True)
-		time_no_first1_3 = read_stacked_columns(
-			cell_paths1_3, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# time_no_first1_1 = read_stacked_columns(
+		# 	cell_paths1_1, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# time_no_first1_2 = read_stacked_columns(
+		# 	cell_paths1_2, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# time_no_first1_3 = read_stacked_columns(
+		# 	cell_paths1_3, 'Main', 'time', remove_first=True, ignore_exception=True)
 
-		# time2 = read_stacked_columns(
-		# 	cell_paths2, 'Main', 'time', ignore_exception=True)
+
 		time_no_first2 = read_stacked_columns(
 			cell_paths2, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time2_1 = read_stacked_columns(
-		# 	cell_paths2_1, 'Main', 'time', ignore_exception=True)
-		time_no_first2_1 = read_stacked_columns(
-			cell_paths2_1, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time2_2 = read_stacked_columns(
-		# 	cell_paths2_2, 'Main', 'time', ignore_exception=True)
-		time_no_first2_2 = read_stacked_columns(
-			cell_paths2_2, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time2_3 = read_stacked_columns(
-		# 	cell_paths2_3, 'Main', 'time', ignore_exception=True)
-		time_no_first2_3 = read_stacked_columns(
-			cell_paths2_3, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# time_no_first2_1 = read_stacked_columns(
+		# 	cell_paths2_1, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# time_no_first2_2 = read_stacked_columns(
+		# 	cell_paths2_2, 'Main', 'time', remove_first=True, ignore_exception=True)
+		# time_no_first2_3 = read_stacked_columns(
+		# 	cell_paths2_3, 'Main', 'time', remove_first=True, ignore_exception=True)
 
-		# time1 = time1 - time1[0]
 		time_no_first1 = time_no_first1 - time_no_first1[0]
-		# time1_1 = time1_1 - time1_1[0]
-		time_no_first1_1 = time_no_first1_1 - time_no_first1_1[0]
-		# time1_2 = time1_2 - time1_2[0]
-		time_no_first1_2 = time_no_first1_2 - time_no_first1_2[0]
-		# time1_3 = time1_3 - time1_3[0]
-		time_no_first1_3 = time_no_first1_3 - time_no_first1_3[0]
+		# time_no_first1_1 = time_no_first1_1 - time_no_first1_1[0]
+		# time_no_first1_2 = time_no_first1_2 - time_no_first1_2[0]
+		# time_no_first1_3 = time_no_first1_3 - time_no_first1_3[0]
 
-		# time2 = time2 - time2[0]
 		time_no_first2 = time_no_first2 - time_no_first2[0]
-		# time2_1 = time2_1 - time2_1[0]
-		time_no_first2_1 = time_no_first2_1 - time_no_first2_1[0]
-		# time2_2 = time2_2 - time2_2[0]
-		time_no_first2_2 = time_no_first2_2 - time_no_first2_2[0]
-		# time2_3 = time2_3 - time2_3[0]
-		time_no_first2_3 = time_no_first2_3 - time_no_first2_3[0]
+		# time_no_first2_1 = time_no_first2_1 - time_no_first2_1[0]
+		# time_no_first2_2 = time_no_first2_2 - time_no_first2_2[0]
+		# time_no_first2_3 = time_no_first2_3 - time_no_first2_3[0]
 
 		# ppGpp
+
+		avg_ppgpp_concentration_1 = np.zeros(len(time_no_first1))
+		avg_ppgpp_concentration_2 = np.zeros(len(time_no_first2))
 
 		ppGpp_concentration = read_stacked_columns(
 			cell_paths1, "GrowthLimits", "ppgpp_conc", remove_first=True,
@@ -156,15 +135,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_paths2_3, 'GrowthLimits', 'ppgpp_conc',
 			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
 
+		split_1_1 = len(time_no_first1) //3
+		split_1_2 = 2 * len(time_no_first1) //3
+		split_2_1 = len(time_no_first2) // 3
+		split_2_2 = 2 * len(time_no_first2) // 3
+
+		avg_ppgpp_concentration_1[: split_1_1] = np.mean(avg_ppgpp_concentration1_1)
+		avg_ppgpp_concentration_1[split_1_1:split_1_2] = np.mean(
+			avg_ppgpp_concentration1_2)
+		avg_ppgpp_concentration_1[split_1_2 :] = np.mean(avg_ppgpp_concentration1_3)
+
+		avg_ppgpp_concentration_2[: split_2_1] = np.mean(avg_ppgpp_concentration1_1)
+		avg_ppgpp_concentration_2[split_2_1:split_2_2] = np.mean(
+			avg_ppgpp_concentration1_2)
+		avg_ppgpp_concentration_2[split_2_2:] = np.mean(avg_ppgpp_concentration1_3)
+
 		plt.plot(time_no_first1 / 60., ppGpp_concentration, color=LINE_COLOR)
 		plt.plot(time_no_first2 / 60., ppGpp_concentration2, color=LINE_COLOR2)
 
-		plt.plot(time_no_first1_1 / 60., [np.mean(avg_ppgpp_concentration1_1)]*len(time_no_first1_1), color=LINE_COLOR)
-		plt.plot(time_no_first1_2 / 60., [np.mean(avg_ppgpp_concentration1_2)]*len(time_no_first1_2), color=LINE_COLOR)
-		plt.plot(time_no_first1_3 / 60., [np.mean(avg_ppgpp_concentration1_3)]*len(time_no_first1_3), color=LINE_COLOR)
-		plt.plot(time_no_first2_1 / 60., [np.mean(avg_ppgpp_concentration2_1)]*len(time_no_first2_1), color=LINE_COLOR)
-		plt.plot(time_no_first2_2 / 60., [np.mean(avg_ppgpp_concentration2_2)]*len(time_no_first2_2), color=LINE_COLOR)
-		plt.plot(time_no_first2_3 / 60., [np.mean(avg_ppgpp_concentration2_3)]*len(time_no_first2_3), color=LINE_COLOR)
+		plt.plot(time_no_first1 / 60., avg_ppgpp_concentration_1, color=LINE_COLOR)
+		plt.plot(time_no_first2 / 60., avg_ppgpp_concentration_2, color=LINE_COLOR2)
 
 		# end here
 
