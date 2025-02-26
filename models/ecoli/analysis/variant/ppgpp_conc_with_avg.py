@@ -34,7 +34,9 @@ VARIANT_1_SEED = 1
 VARIANT_2_SEED = 1
 
 LINE_COLOR = (66/255, 170/255, 154/255)
+LINE_COLOR_2 = (55/255, 224/255, 179/255)
 LINE_COLOR2 = (152/255, 78/255, 163/255)
+LINE_COLOR2_2 = (152/255, 131/255, 201/255)
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -75,35 +77,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Load data
 		time_no_first1 = read_stacked_columns(
 			cell_paths1, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time_no_first1_1 = read_stacked_columns(
-		# 	cell_paths1_1, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time_no_first1_2 = read_stacked_columns(
-		# 	cell_paths1_2, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time_no_first1_3 = read_stacked_columns(
-		# 	cell_paths1_3, 'Main', 'time', remove_first=True, ignore_exception=True)
-
-
 		time_no_first2 = read_stacked_columns(
 			cell_paths2, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time_no_first2_1 = read_stacked_columns(
-		# 	cell_paths2_1, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time_no_first2_2 = read_stacked_columns(
-		# 	cell_paths2_2, 'Main', 'time', remove_first=True, ignore_exception=True)
-		# time_no_first2_3 = read_stacked_columns(
-		# 	cell_paths2_3, 'Main', 'time', remove_first=True, ignore_exception=True)
 
 		time_no_first1 = time_no_first1 - time_no_first1[0]
-		# time_no_first1_1 = time_no_first1_1 - time_no_first1_1[0]
-		# time_no_first1_2 = time_no_first1_2 - time_no_first1_2[0]
-		# time_no_first1_3 = time_no_first1_3 - time_no_first1_3[0]
-
 		time_no_first2 = time_no_first2 - time_no_first2[0]
-		# time_no_first2_1 = time_no_first2_1 - time_no_first2_1[0]
-		# time_no_first2_2 = time_no_first2_2 - time_no_first2_2[0]
-		# time_no_first2_3 = time_no_first2_3 - time_no_first2_3[0]
 
 		# ppGpp
-
 		avg_ppgpp_concentration_1 = np.zeros(len(time_no_first1))
 		avg_ppgpp_concentration_2 = np.zeros(len(time_no_first2))
 
@@ -145,17 +125,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_ppgpp_concentration1_2)
 		avg_ppgpp_concentration_1[split_1_2 :] = np.mean(avg_ppgpp_concentration1_3)
 
-		avg_ppgpp_concentration_2[: split_2_1] = np.mean(avg_ppgpp_concentration1_1)
+		avg_ppgpp_concentration_2[: split_2_1] = np.mean(avg_ppgpp_concentration2_1)
 		avg_ppgpp_concentration_2[split_2_1:split_2_2] = np.mean(
-			avg_ppgpp_concentration1_2)
-		avg_ppgpp_concentration_2[split_2_2:] = np.mean(avg_ppgpp_concentration1_3)
+			avg_ppgpp_concentration2_2)
+		avg_ppgpp_concentration_2[split_2_2:] = np.mean(avg_ppgpp_concentration2_3)
 
-		plt.plot(time_no_first1 / 60., ppGpp_concentration, color=LINE_COLOR)
-		plt.plot(time_no_first2 / 60., ppGpp_concentration2, color=LINE_COLOR2)
+		plt.figure(figsize=(8.5, 2))
+		plt.plot(time_no_first1 / 60., ppGpp_concentration, color=LINE_COLOR,
+				 label = "Variant " + str(VARIANT_1))
+		plt.plot(time_no_first2 / 60., ppGpp_concentration2, color=LINE_COLOR2,
+				 label = "Variant " + str(VARIANT_1))
 
-		plt.plot(time_no_first1 / 60., avg_ppgpp_concentration_1, color=LINE_COLOR)
-		plt.plot(time_no_first2 / 60., avg_ppgpp_concentration_2, color=LINE_COLOR2)
+		plt.plot(time_no_first1 / 60., avg_ppgpp_concentration_1, '--', color=LINE_COLOR_2)
+		plt.plot(time_no_first2 / 60., avg_ppgpp_concentration_2, '--', color=LINE_COLOR2_2)
 
+		plt.xlabel("Time (min)")
+		plt.ylabel("ppGpp Concentration ($\mu$M)", fontsize="small")
 		# end here
 
 
