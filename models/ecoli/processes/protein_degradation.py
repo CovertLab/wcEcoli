@@ -7,6 +7,7 @@ TODO:
 - protein complexes
 - add protease functionality
 """
+# todo: show Nora the above comments
 
 import numpy as np
 
@@ -60,7 +61,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Build Views
 		self.metabolites = self.bulkMoleculesView(metaboliteIds)
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
-		self.proteins = self.bulkMoleculesView(proteinIds)
+		self.proteins = self.bulkMoleculesView(proteinIds) # todo: determine if these are the counts?
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
@@ -71,6 +72,9 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
 			self.proteins.total_counts()
 			)
+		# todo: determine if fmin is finding the minimum for each protein (between either the proteins total counts or the degrdation rate times the proteins total counts)
+		# todo: determine if total_counts() adds up the counts of all proteins or still separates by protein
+		hi = 5
 
 		# Determine the number of hydrolysis reactions
 		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
@@ -82,14 +86,16 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 
 	def evolveState(self):
-
+		# todo: determine if this is where the proteins are actually degraded
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
 		self.metabolites.countsInc(np.dot(
 			self.proteinDegSMatrix,
-			self.proteins.counts()
+			self.proteins.counts() # mia i think this dot product is doing the protein matrix times the proteins counts, and I think counts() might be the number that gets degraded? not the number left?
 			))
-		self.proteins.countsIs(0)
+		self.proteins.countsIs(0) # does this set the counts to zero?
+
+
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()
