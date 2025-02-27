@@ -79,36 +79,76 @@ NEW_GENE_TRANSLATION_EFFICIENCY_MAX = np.log10(10)
 
 NEW_GENE_EXP_TRL_EFF_PARAMS_TO_USE = {
 		1: {
-			"expression_factor": 9.8801,
-			"translation_efficiency": 2.5062
+			"expression_factor": 8.3,
+			"translation_efficiency": 0.1
 		},
 		2: {
-			"expression_factor": 9.3140,
-			"translation_efficiency": 0.11
+			"expression_factor": 8.3,
+			"translation_efficiency": 0.25
 		},
 		3: {
-			"expression_factor": 9.6786,
-			"translation_efficiency": 0.4613
+			"expression_factor": 8.3,
+			"translation_efficiency": 0.40
 		},
 		4: {
-			"expression_factor": 8.3080,
-			"translation_efficiency": 0.1127
+			"expression_factor": 8.3,
+			"translation_efficiency": 0.55
 		},
 		5: {
-			"expression_factor": 9.5045,
-			"translation_efficiency": 0.162
+			"expression_factor": 8.3,
+			"translation_efficiency": 0.70
 		},
 		6: {
-			"expression_factor": 8.3742,
-			"translation_efficiency": 0.4137
+			"expression_factor": 8.3,
+			"translation_efficiency": 0.85
 		},
 		7: {
-			"expression_factor": 7.0311,
-			"translation_efficiency": 1.0087
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.00
 		},
 		8: {
-			"expression_factor": 8.6524,
-			"translation_efficiency": 2.6079
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.15
+		},
+		9: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.30
+		},
+		10: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.45
+		},
+		11: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.60
+		},
+		12: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.75
+		},
+		13: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 1.90
+		},
+		14: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 2.05
+		},
+		15: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 2.20
+		},
+		16: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 2.35
+		},
+		17: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 2.50
+		},
+		18: {
+			"expression_factor": 8.3,
+			"translation_efficiency": 2.65
 		}
 	# pull out the number from the html file and then run the new simulation
 	}
