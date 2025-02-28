@@ -199,11 +199,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Add trendline trace
 		fig.add_trace(
 			go.Scatter(x=x, y=trendline_y, mode='lines',
-					   name=f'{val_name} et al. linear fit: {p}',
+					   name=f'Linear fit: {p}',
 					   line=dict(color='green')))
 		fig.add_trace(
 			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
-					   name=f'{val_name} et al. linear fit (counts > 30): {p_above_30}',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
 					   line=dict(color='pink')))
 
 		# Update layout
