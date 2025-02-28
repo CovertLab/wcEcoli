@@ -187,11 +187,24 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		p = np.poly1d(z)
 		trendline_y = p(x)
 
+		# Compute linear trendline for counts above log10(30):
+		above_30_idx = np.where((x > np.log10(30)) & (y > np.log10(30)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+
 		# Add trendline trace
 		fig.add_trace(
 			go.Scatter(x=x, y=trendline_y, mode='lines',
 					   name=f'{val_name} et al. linear fit: {p}',
 					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'{val_name} et al. linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
 
 		# Update layout
 		fig.update_traces(marker_size=3)
