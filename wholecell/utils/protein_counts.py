@@ -47,4 +47,4 @@ def get_simulated_validation_counts(
 		val_id_to_index_map[monomer_id] for monomer_id in overlapping_ids_list
 		])
 
-	return avg_sim_counts[sim_filtered_idx], validation_counts[val_filtered_idx]
+	return avg_sim_counts[sim_filtered_idx], validation_counts[val_filtered_idx], overlapping_ids_list
