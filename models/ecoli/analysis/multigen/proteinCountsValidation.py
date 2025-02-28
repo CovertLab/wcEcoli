@@ -41,7 +41,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			monomer_counts_reader = TableReader(os.path.join(simOutDir, "MonomerCounts"))
 			monomer_counts = monomer_counts_reader.readColumn("monomerCounts")
 
-			sim_schmidt_counts, val_schmidt_counts = get_simulated_validation_counts(
+			sim_schmidt_counts, val_schmidt_counts, overlapIDs = get_simulated_validation_counts(
 				schmidt_counts, monomer_counts, schmidt_ids, monomer_ids)
 
 			sim_schmidt_counts_multigen.append(sim_schmidt_counts)
