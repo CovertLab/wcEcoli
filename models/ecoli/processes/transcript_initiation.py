@@ -115,6 +115,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			# Get attributes of promoters
 			TU_index, bound_TF = self.promoters.attrs("TU_index", "bound_TF")
 
+			self.basal_prob_orig = self.basal_prob.copy()
+
 			if self.ppgpp_regulation:
 				cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
 				cell_volume = cell_mass / self.cell_density
@@ -134,6 +136,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			# if self.basal_prob[-1] > 0:
 			# 	import ipdb
 			# 	ipdb.set_trace()
+
+			self.basal_prob_updated = basal_prob.copy()
 
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (basal_prob[TU_index] + ppgpp_scale *
@@ -218,6 +222,11 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		target_TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
 		self.writeToListener(
 			"RnaSynthProb", "target_rna_synth_prob", target_TU_synth_probs)
+
+		self.writeToListener(
+			"RnaSynthProb", "basal_prob_orig", self.basal_prob_orig)
+		self.writeToListener(
+			"RnaSynthProb", "basal_prob_updated", self.basal_prob_updated)
 
 		# Calculate RNA polymerases to activate based on probabilities
 		# Note: ideally we should be using the actual TU synthesis probabilities
