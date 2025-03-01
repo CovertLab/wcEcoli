@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECT_PDR_COMBO = 6 # select the protein degradation rate combo to use
+SELECT_PDR_COMBO = 7 # select the protein degradation rate combo to use
 
 class Translation(object):
 	""" Translation """
@@ -407,6 +407,36 @@ class Translation(object):
 				# If measured rates are unavailable, set to 30 mins
 				else:
 					deg_rate[i] = np.log(2) / (1800)
+					deg_rate_source_id[i] = '5_hr'
+					if protein['id'] in protease_dict.keys():
+						protease_assignment[i] = protease_dict[protein['id']][
+							'protease_assignment']
+						ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+						Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+						Unexplained_contribution[i] = protease_dict[protein['id']][
+							'Unexplained_fraction']
+
+		# Uses measured rates from Macklin et al., 2020 first, followed by
+		# a 45 min degradation rate (manually set) for all proteins
+		if SELECT_PDR_COMBO == 7:
+			for i, protein in enumerate(all_proteins):
+				# Use measured degradation rates if available
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
+					if protein['id'] in protease_dict.keys():
+						protease_assignment[i] = protease_dict[protein['id']][
+							'protease_assignment']
+						ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+						Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+						Unexplained_contribution[i] = protease_dict[protein['id']][
+							'Unexplained_fraction']
+
+				# If measured rates are unavailable, set to 45 mins
+				else:
+					deg_rate[i] = np.log(2) / (2700)
 					deg_rate_source_id[i] = '5_hr'
 					if protein['id'] in protease_dict.keys():
 						protease_assignment[i] = protease_dict[protein['id']][
