@@ -27,11 +27,11 @@ GFP_measured = 16
 END_GEN = 24
 
 
-VARIANT_1 = 4
-VARIANT_2 = 6
+VARIANT_1 = 0
+VARIANT_2 = 1
 
-VARIANT_1_SEED = 9
-VARIANT_2_SEED = 9
+VARIANT_1_SEED = 0
+VARIANT_2_SEED = 0
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 LINE_COLOR_2 = (55/255, 224/255, 179/255)
@@ -124,11 +124,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ppgpp_concentration_1[split_1_1:split_1_2] = np.mean(
 			avg_ppgpp_concentration1_2)
 		avg_ppgpp_concentration_1[split_1_2 :] = np.mean(avg_ppgpp_concentration1_3)
+		plt.axvline(x=split_1_1, color='r', linestyle='--', label="GFP turned on")
 
 		avg_ppgpp_concentration_2[: split_2_1] = np.mean(avg_ppgpp_concentration2_1)
 		avg_ppgpp_concentration_2[split_2_1:split_2_2] = np.mean(
 			avg_ppgpp_concentration2_2)
 		avg_ppgpp_concentration_2[split_2_2:] = np.mean(avg_ppgpp_concentration2_3)
+		plt.axvline(x=split_2_1, color='r', linestyle='--')
+
 
 		plt.figure(figsize=(8.5, 2.2))
 		plt.plot(time_no_first1 / 60., ppGpp_concentration, color=LINE_COLOR,
