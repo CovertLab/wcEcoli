@@ -1,6 +1,7 @@
 
 import pickle
 import os
+import matplotlib.pyplot as plt
 import csv
 import numpy as np
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -167,8 +168,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		data = np.transpose(np.array(data)); data = data.reshape(-1, 1)
 		return data
 
-	hi = 5
-	def generate_validation_plot(self, plotOutDir, simulationCounts, validationCounts,
+
+	def generate_validation_plotly(self, plotOutDir, simulationCounts, validationCounts,
 								 overlapIDs, sim_name, val_name):
 		fig = go.Figure()
 		# have the monomer IDs be the overlap text
@@ -226,6 +227,62 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
+	def generate_validation_plot(self, plotOutDir, simulationCounts, validationCounts,
+								 overlapIDs, sim_name, val_name):
+		plt.figure(figsize=(8, 6), dpi=200)
+
+		# Compute log10 values
+		x = self.get_LogData(overlapIDs, validationCounts)
+		y = self.get_LogData(overlapIDs, simulationCounts)
+
+		# Add scatter trace
+		plt.scatter(x=x, y=y, s=5, label="Counts", alpha=0.5, color='lightseagreen')
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30):
+		above_30_idx = np.where((x > np.log10(30)) & (y > np.log10(30)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+
+		# Add trendline trace
+		plt.plot(x, trendline_y,
+					   label=f'Linear fit: {p}',
+					   color='orange')
+		plt.plot(x,trendline_y_above_30,
+					   label=f'Linear fit (counts > 30): {p_above_30}',
+					   color='pink')
+		# add a y=x line
+		plt.plot([0, 6], [0, 6],
+				color="black", linestyle="dashed",
+				 alpha=0.2, label="y=x");
+
+		# Update layout
+
+		plt.title(f"Simulation Protein Counts ({sim_name}) "
+				  f"vs. Validation Protein Counts ({val_name} et al.)")
+		plt.xlabel("log10(Validation Protein Counts)")
+		plt.ylabel(f"log10(Simulation Protein Counts)")
+		plt.xlim(0, 6)
+		plt.ylim(0, 6)
+		plt.gca().set_aspect('equal', adjustable='box')
+
+		plt.legend()
+
+
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_matplotlib.pdf"
+		plt.savefig(os.path.join(plotOutDir, plot_name))
+
+
 
 	def plot_validation_comparison(self, simDataFile, validationDataFile,plotOutDir, sim_name):
 
@@ -235,7 +292,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		 val_wisniewski_counts, wisniewski_overlap_ids) = (
 			self.get_validation_data(simDataFile, validationDataFile))
 
-		# generate interactive validation plots:
+		# generate interactive validation plotlys:
+		self.generate_validation_plotly(plotOutDir, sim_schmidt_counts,
+			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
+		self.generate_validation_plotly(plotOutDir, sim_wisniewski_counts,
+			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
+
+
+		# generate matplotlib validation plots:
 		self.generate_validation_plot(plotOutDir, sim_schmidt_counts,
 			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
 		self.generate_validation_plot(plotOutDir, sim_wisniewski_counts,
@@ -251,6 +315,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sim_name = metadata["description"]
 		self.n_total_gens = self.ap.n_generation
 		self.plot_validation_comparison(simDataFile, validationDataFile, plotOutDir, sim_name)
+
 
 if __name__ == '__main__':
 	Plot().cli()
