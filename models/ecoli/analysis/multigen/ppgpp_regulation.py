@@ -31,18 +31,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			]
 		n_fractions = len(fractions)
 		synthase_cistron_idx_all_cistrons = np.array([
-			np.where(cistron_data['id'] == RELA_RNA)[0][1],
-			np.where(cistron_data['id'] == SPOT_RNA)[0][1],
+			np.where(cistron_data['id'] == RELA_RNA)[0][0],
+			np.where(cistron_data['id'] == SPOT_RNA)[0][0],
 			])
 		mrna_cistron_ids = cistron_data['id'][cistron_data['is_mRNA']]
 		synthase_cistron_idx_mrnas = np.array([
-			np.where(mrna_cistron_ids == RELA_RNA)[0][1],
-			np.where(mrna_cistron_ids == SPOT_RNA)[0][1],
+			np.where(mrna_cistron_ids == RELA_RNA)[0][0],
+			np.where(mrna_cistron_ids == SPOT_RNA)[0][0],
 			])
 		synthase_order = ['relA', 'spoT']
 
 		# Load simulation output
-		cell_paths = self.ap.get_cells()
+		cell_paths = self.ap.get_cells(variant=np.array([3]),seed=np.array([2]))
 		time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze() / 60  # min
 		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar').squeeze()
 		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron')
