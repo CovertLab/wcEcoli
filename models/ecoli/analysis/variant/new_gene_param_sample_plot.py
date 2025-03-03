@@ -26,7 +26,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.yscale('log')
 
 		variant_name = metadata["variant"]
-		params_to_use = metadata["params_to_use"]
 
 		for variant in variants:
 
@@ -40,6 +39,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					index_remainder)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
+				params_to_use = metadata["params_to_use"]
 				if variant == 0:
 					expression_factor= 0
 					trl_eff_value = 0

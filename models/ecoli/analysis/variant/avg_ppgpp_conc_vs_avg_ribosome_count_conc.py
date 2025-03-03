@@ -63,7 +63,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		n_total_gens = self.ap.n_generation
 
 		variant_name = metadata["variant"]
-		params_to_use = metadata["params_to_use"]
 
 		# Loop through all variant indexes
 		for i, variant in enumerate(variants):
@@ -88,6 +87,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					index_remainder)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
+				params_to_use = metadata["params_to_use"]
 				if variant == 0:
 					expression_factors[i]= 0
 					trl_eff_values[i] = 0
