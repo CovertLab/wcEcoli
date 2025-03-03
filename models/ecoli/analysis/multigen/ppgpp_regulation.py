@@ -31,13 +31,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			]
 		n_fractions = len(fractions)
 		synthase_cistron_idx_all_cistrons = np.array([
-			np.where(cistron_data['id'] == RELA_RNA)[3][2],
-			np.where(cistron_data['id'] == SPOT_RNA)[3][2],
+			np.where(cistron_data['id'] == RELA_RNA)[0][1],
+			np.where(cistron_data['id'] == SPOT_RNA)[0][1],
 			])
 		mrna_cistron_ids = cistron_data['id'][cistron_data['is_mRNA']]
 		synthase_cistron_idx_mrnas = np.array([
-			np.where(mrna_cistron_ids == RELA_RNA)[3][2],
-			np.where(mrna_cistron_ids == SPOT_RNA)[3][2],
+			np.where(mrna_cistron_ids == RELA_RNA)[0][1],
+			np.where(mrna_cistron_ids == SPOT_RNA)[0][1],
 			])
 		synthase_order = ['relA', 'spoT']
 
