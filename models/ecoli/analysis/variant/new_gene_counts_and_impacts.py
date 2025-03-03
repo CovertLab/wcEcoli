@@ -19,11 +19,11 @@ from wholecell.io.tablereader import TableReader
 START_GEN = 0
 END_GEN = 24
 
-VARIANT_1 = 3
-VARIANT_2 = 6
+VARIANT_1 = 0
+VARIANT_2 = 0
 
-VARIANT_1_SEED = 7
-VARIANT_2_SEED = 7
+VARIANT_1_SEED = 0
+VARIANT_2_SEED = 1
 
 LINE_COLOR = (66/255, 170/255, 154/255)
 LINE_COLOR2 = (152/255, 78/255, 163/255)
@@ -38,6 +38,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		Returns: set of mRNA ids
 		"""
+
+
 		# Map protein ids to cistron ids
 		monomer_ids = sim_data.process.translation.monomer_data['id']
 		cistron_ids = sim_data.process.translation.monomer_data[
@@ -111,6 +113,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
+
+		#extract params for labeling
+		variant_name = metadata["variant"]
+		params_to_use = metadata["params_to_use"]
+		if variant_name == "new_gene_param_sampling_internal_shift_narrow":
+			custom_legend = []
+			if VARIANT_1 == 0:
+				custom_legend.append("VARIANT_1: expression factor: 0; translation efficiency: 0")
+			else:
+				custom_legend.append(params_to_use[VARIANT_1])
+			if VARIANT_2 == 0:
+				custom_legend.append("VARIANT_2: expression factor: 0; translation efficiency: 0")
+			else:
+				custom_legend.append(params_to_use[VARIANT_2])
+
+		else:
+			print(variant_name + " not in metadata")
+			return
+
+
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 		with open(validationDataFile, 'rb') as f:
@@ -265,7 +287,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				plt.xlim(standard_xlim)
 			plt.xlabel("Time (min)")
 			plt.ylabel("Cell Mass (fg)", fontsize="small")
-			plt.legend()
+			if custom_legend:
+				plt.legend(custom_legend)
+			else:
+				plt.legend()
 			plot_num += 1
 
 			# mRNA Counts
