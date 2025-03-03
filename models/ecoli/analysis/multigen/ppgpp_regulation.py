@@ -19,8 +19,8 @@ SPOT_RNA = 'EG10966_RNA'
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		# define variant and seed
-		VARIANT = 3
-		VARIANT_SEED = 2
+		VARIANT = 0
+		VARIANT_SEED = 0
 		START_GEN = 0
 		END_GEN = 24
 
