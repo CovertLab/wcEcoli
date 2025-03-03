@@ -10,6 +10,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 from wholecell.utils.protein_counts import get_simulated_validation_counts
 import plotly.graph_objects as go
+from sklearn.metrics import r2_score
 
 """ USER INPUTS """
 
@@ -188,8 +189,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		p = np.poly1d(z)
 		trendline_y = p(x)
 
-		# Compute linear trendline for counts above log10(30):
-		above_30_idx = np.where((x > np.log10(30)) & (y > np.log10(30)))
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30+1)) & (y > np.log10(30+1)))
 		x_above_30 = x[above_30_idx]
 		y_above_30 = y[above_30_idx]
 		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
@@ -235,21 +236,27 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		x = self.get_LogData(overlapIDs, validationCounts)
 		y = self.get_LogData(overlapIDs, simulationCounts)
 
+		# Compute linear trendline for counts above log10(30):
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
 		# Add scatter trace
-		plt.scatter(x=x, y=y, s=5, label="Counts", alpha=0.5, color='lightseagreen')
+		plt.scatter(x=x, y=y, s=5, label=f"Counts ($R^2$: {round(r_squared_30_above,3)})",
+					alpha=0.5, color='lightseagreen')
 
 		# Compute linear trendline
 		z = np.polyfit(x, y, 1)
 		p = np.poly1d(z)
 		trendline_y = p(x)
 
-		# Compute linear trendline for counts above log10(30):
-		above_30_idx = np.where((x > np.log10(30)) & (y > np.log10(30)))
-		x_above_30 = x[above_30_idx]
-		y_above_30 = y[above_30_idx]
-		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
-		p_above_30 = np.poly1d(z_above_30)
-		trendline_y_above_30 = p_above_30(x)
+
 
 
 		# Add trendline trace
@@ -264,10 +271,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				color="black", linestyle="dashed",
 				 alpha=0.2, label="y=x");
 
+
 		# Update layout
 
 		plt.title(f"Simulation Protein Counts ({sim_name}) "
-				  f"vs. Validation Protein Counts ({val_name} et al.)")
+				  f"vs.\n Validation Protein Counts ({val_name} et al.)")
 		plt.xlabel("log10(Validation Protein Counts)")
 		plt.ylabel(f"log10(Simulation Protein Counts)")
 		plt.xlim(0, 6)
