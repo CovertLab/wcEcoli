@@ -18,12 +18,6 @@ SPOT_RNA = 'EG10966_RNA'
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		# define variant and seed
-		VARIANT = 0
-		VARIANT_SEED = 0
-		START_GEN = 0
-		END_GEN = 24
-
 		# sim_data values
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -48,9 +42,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		synthase_order = ['relA', 'spoT']
 
 		# Load simulation output
-		cell_paths = self.ap.get_cells(variant=np.array([VARIANT]),
-									   generation=np.arange(START_GEN, END_GEN),
-									   seed=np.array([VARIANT_SEED]))
+		cell_paths = self.ap.get_cells()
 		time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze() / 60  # min
 		counts_to_molar = read_stacked_columns(cell_paths, 'EnzymeKinetics', 'countsToMolar').squeeze()
 		synth_prob_per_cistron = read_stacked_columns(cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron')
