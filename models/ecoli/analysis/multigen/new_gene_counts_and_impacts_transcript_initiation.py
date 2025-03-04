@@ -280,6 +280,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# get rna ids for all rna_idx_where_updated_yes_gfp_greater where counts_rna_idx_where_updated_yes_gfp_greater is greater than 2000
 		rna_ids_where_updated_yes_gfp_greater = [sim_data.process.transcription.rna_data['id'][rna_idx] for rna_idx in rna_idx_where_updated_yes_gfp_greater if counts_rna_idx_where_updated_yes_gfp_greater[rna_idx] > 2000]
 
+		# map these rna_ids back to gene names
+		# TODO: THIS DOESNT WORK
+		gene_names_where_updated_yes_gfp_greater = [sim_data.process.transcription.rna_expression.get_gene_name(rna_id) for rna_id in rna_ids_where_updated_yes_gfp_greater]
+
 
 		import ipdb
 		ipdb.set_trace()
