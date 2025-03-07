@@ -30,7 +30,7 @@ import os.path
 import pickle
 
 
-IGNORE_FIRST_N_GENS = 0
+IGNORE_FIRST_N_GENS = 16
 
 """
 PLOTS_LIST = ["translation_efficiency_vs_doubling_times",
@@ -188,19 +188,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			grid_spec = GridSpec(6, 1)
 			plt.figure(figsize=(5, 15))
 
-			# # translation_efficiency_vs_doubling_times
+			# translation_efficiency_vs_doubling_times
 			ax = plt.subplot(grid_spec[0, 0])
 			ax.scatter(
 				avg_doubling_time[plot_variant_mask],
 				trl_eff_values[plot_variant_mask])
-			ax.plot(
-				avg_doubling_time[plot_variant_mask],
-				np.poly1d(np.polyfit(avg_doubling_time[plot_variant_mask],
-									 trl_eff_values[plot_variant_mask], 1))(
-					avg_doubling_time[plot_variant_mask]))
+			# ax.plot(
+			# 	avg_doubling_time[plot_variant_mask],
+			# 	np.poly1d(np.polyfit(avg_doubling_time[plot_variant_mask],
+			# 						 trl_eff_values[plot_variant_mask], 1))(
+			# 		avg_doubling_time[plot_variant_mask]))
 			ax.set_xlabel("average doubling time")
 			ax.set_ylabel("translation efficiency")
-			self.remove_border(ax=ax, bottom=True)
 
 			# translation_efficiency_vs_cell_mass
 			ax = plt.subplot(grid_spec[1, 0])
@@ -208,77 +207,68 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.scatter(
 				avg_cell_mass[plot_variant_mask],
 				trl_eff_values[plot_variant_mask])
-			ax.plot(
-				avg_cell_mass[plot_variant_mask],
-				np.poly1d(np.polyfit(avg_cell_mass[plot_variant_mask],
-									 trl_eff_values[plot_variant_mask], 1))(
-					avg_cell_mass[plot_variant_mask]))
+			# ax.plot(
+			# 	avg_cell_mass[plot_variant_mask],
+			# 	np.poly1d(np.polyfit(avg_cell_mass[plot_variant_mask],
+			# 						 trl_eff_values[plot_variant_mask], 1))(
+			# 		avg_cell_mass[plot_variant_mask]))
 			ax.set_xlabel("average cell mass")
 			ax.set_xlabel("translation efficiency")
-			self.remove_border(ax=ax, bottom=True)
 
 			# translation_efficiency_vs_ppgpp_concentration 3
 			ax = plt.subplot(grid_spec[2, 0])
 			ax.scatter(
 				ppgpp_concentration[plot_variant_mask],
 				trl_eff_values[plot_variant_mask])
-			ax.plot(
-				ppgpp_concentration[plot_variant_mask],
-				np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
-									 trl_eff_values[plot_variant_mask], 1))(
-					ppgpp_concentration[plot_variant_mask]))
-
+			# ax.plot(
+			# 	ppgpp_concentration[plot_variant_mask],
+			# 	np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
+			# 						 trl_eff_values[plot_variant_mask], 1))(
+			# 		ppgpp_concentration[plot_variant_mask]))
 			ax.set_xlabel("average ppgpp concentration")
 			ax.set_ylabel("translation efficiency")
-			self.remove_border(ax=ax, bottom=True)
 
 			# translation_efficiency_vs_rnap_counts 4
 			ax = plt.subplot(grid_spec[3, 0])
 			ax.scatter(
 				avg_active_rnap[plot_variant_mask],
 				trl_eff_values[plot_variant_mask])
-			ax.plot(
-				avg_active_rnap[plot_variant_mask],
-				np.poly1d(np.polyfit(avg_active_rnap[plot_variant_mask],
-									 trl_eff_values[plot_variant_mask], 1))(
-					avg_active_rnap[plot_variant_mask]))
-
+			# ax.plot(
+			# 	avg_active_rnap[plot_variant_mask],
+			# 	np.poly1d(np.polyfit(avg_active_rnap[plot_variant_mask],
+			# 						 trl_eff_values[plot_variant_mask], 1))(
+			# 		avg_active_rnap[plot_variant_mask]))
 			ax.set_xlabel("average active RNA polymerase")
 			ax.set_ylabel("translation efficiency")
-			self.remove_border(ax=ax, bottom=True)
 
 			# translation_efficiency_vs_ribosome_counts 5
 			ax = plt.subplot(grid_spec[4, 0])
 			ax.scatter(
 				avg_ribosomes_count[plot_variant_mask],
 				trl_eff_values[plot_variant_mask])
-			ax.plot(
-				avg_ribosomes_count[plot_variant_mask],
-				np.poly1d(np.polyfit(avg_ribosomes_count[plot_variant_mask],
-									 trl_eff_values[plot_variant_mask], 1))(
-					avg_ribosomes_count[plot_variant_mask]))
-
+			# ax.plot(
+			# 	avg_ribosomes_count[plot_variant_mask],
+			# 	np.poly1d(np.polyfit(avg_ribosomes_count[plot_variant_mask],
+			# 						 trl_eff_values[plot_variant_mask], 1))(
+			# 		avg_ribosomes_count[plot_variant_mask]))
 			ax.set_xlabel("average active ribosome counts")
 			ax.set_ylabel("translation efficiency")
-			self.remove_border(ax=ax, bottom=True)
 
 			# translation_efficiency_vs_new_gene_monomer_counts 6
 			ax = plt.subplot(grid_spec[5, 0])
 			ax.scatter(
 				avg_ng_monomer[plot_variant_mask],
 				trl_eff_values[plot_variant_mask])
-			ax.plot(
-				avg_ng_monomer[plot_variant_mask],
-				np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
-									 trl_eff_values[plot_variant_mask], 1))(
-					avg_ng_monomer[plot_variant_mask]))
-
+			# ax.plot(
+			# 	avg_ng_monomer[plot_variant_mask],
+			# 	np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
+			# 						 trl_eff_values[plot_variant_mask], 1))(
+			# 		avg_ng_monomer[plot_variant_mask]))
 			ax.set_xlabel("average new gene monomer counts")
 			ax.set_ylabel("translation efficiency")
-			self.remove_border(ax=ax, bottom=True)
 
 			plt.tight_layout()
-			exportFigure(plt, plotOutDir, plotOutFileName + "IGN_FIRST" + str(IGNORE_FIRST_N_GENS) + "GEN", metadata)
+			exportFigure(plt, plotOutDir, plotOutFileName + "_IGN_FIRST_" + str(IGNORE_FIRST_N_GENS) + "_GEN", metadata)
 			plt.close('all')
 
 if __name__ == '__main__':
