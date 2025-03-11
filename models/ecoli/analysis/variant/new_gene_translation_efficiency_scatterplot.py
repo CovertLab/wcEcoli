@@ -193,7 +193,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
 			# Compute min and max
-			min_exp = np.min(expression_factors)
+			min_exp = np.min(expression_factors[1:])
 			max_exp = np.max(expression_factors)
 
 			# # Compute thresholds
