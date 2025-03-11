@@ -11,7 +11,7 @@ from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
 
 
-PROCESS_MAX_TIME_STEP = 2.
+PROCESS_MAX_TIME_STEP = 1.
 SELECT_PDR_COMBO = 9 # select the protein degradation rate combo to use
 
 class Translation(object):
