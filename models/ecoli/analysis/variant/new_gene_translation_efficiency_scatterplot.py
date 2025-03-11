@@ -192,13 +192,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
+			print(expression_factors)
+			print(trl_eff_values)
+
 			# Compute min and max
 			min_exp = np.min(expression_factors[1:])
+			print(min_exp)
 			max_exp = np.max(expression_factors)
+			print(max_exp)
 
-			# # Compute thresholds
-			# threshold_1 = min_exp + (max_exp - min_exp) / 3
-			# threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
+			# Compute thresholds
+			threshold_1 = min_exp + (max_exp - min_exp) / 3
+			print(threshold_1)
+			threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
+			print(threshold_2)
 
 			for p in range(len(variants)):
 				if min_exp + (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp:
