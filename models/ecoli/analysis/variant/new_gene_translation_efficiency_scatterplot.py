@@ -90,24 +90,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"poster_blue": (50 / 255, 116 / 255, 174 / 255),
 			"poster_dark_blue": (27 / 255, 69 / 255, 101 / 255)
 		}
-		colors = [poster_colors["poster_dark_blue"]] * len(variants)
-		# Compute min and max
-		min_exp = np.min(expression_factors)
-		max_exp = np.max(expression_factors)
-
-		# Compute thresholds
-		threshold_1 = min_exp + (max_exp - min_exp) / 3
-		threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
-
-		for p in range(len(variants)):
-			if threshold_1 >= expression_factors[p] >= min_exp:
-				colors[p] = poster_colors["poster_light_blue"]
-			elif threshold_2 >= expression_factors[p] >= threshold_1:
-				colors[p] = poster_colors["poster_blue"]
-			else:
-				colors[p] = poster_colors["poster_dark_blue"]
-
-		colors = np.array(colors)
+		colors = [poster_colors["light_gray"]] * len(variants)
 
 		n_total_gens = self.ap.n_generation
 		variant_name = metadata["variant"]
@@ -208,6 +191,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'MonomerCounts', 'monomerCounts',
 				fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
+
+			# Compute min and max
+			min_exp = np.min(expression_factors)
+			max_exp = np.max(expression_factors)
+
+			# Compute thresholds
+			threshold_1 = min_exp + (max_exp - min_exp) / 3
+			threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
+
+			for p in range(len(variants)):
+				if threshold_1 > expression_factors[p] >= min_exp:
+					colors[p] = poster_colors["poster_light_blue"]
+				elif threshold_2 > expression_factors[p] >= threshold_1:
+					colors[p] = poster_colors["poster_blue"]
+				else:
+					colors[p] = poster_colors["poster_dark_blue"]
+
+			colors = np.array(colors)
 
 		# plotting
 			grid_spec = GridSpec(6, 1)
