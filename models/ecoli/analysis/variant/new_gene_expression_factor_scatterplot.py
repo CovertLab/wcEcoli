@@ -83,28 +83,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ribosomes_count = np.zeros(len(variants))
 		avg_ng_monomer = np.zeros(len(variants))
 
-		# for plot with colors
-		poster_colors = {
-			"light_gray": (0.75, 0.75, 0.75),
-			"poster_light_blue": (158 / 255, 201 / 255, 239 / 255),
-			"poster_blue": (50 / 255, 116 / 255, 174 / 255),
-			"poster_dark_blue": (27 / 255, 69 / 255, 101 / 255)
-		}
-		colors = [poster_colors["poster_dark_blue"]] * len(variants)
-		# Compute min and max
-		min_exp = np.min(expression_factors)
-		max_exp = np.max(expression_factors)
-
-		# Compute thresholds
-		threshold_1 = min_exp + (max_exp - min_exp) / 3
-		threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
-
-		for p in range(len(variants)):
-			if expression_factors[p] <= threshold_2:
-				colors[p] = poster_colors['poster_blue']
-
-			if expression_factors[p] <= threshold_1:
-				colors[p] = poster_colors['poster_light_blue']
 
 		n_total_gens = self.ap.n_generation
 		variant_name = metadata["variant"]
@@ -213,87 +191,81 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# translation_efficiency_vs_doubling_times
 			ax = plt.subplot(grid_spec[0, 0])
 			ax.scatter(
-				trl_eff_values[plot_variant_mask],
 				avg_doubling_time[plot_variant_mask],
-				color = colors[plot_variant_mask])
+				trl_eff_values[plot_variant_mask])
 			# ax.plot(
 			# 	avg_doubling_time[plot_variant_mask],
 			# 	np.poly1d(np.polyfit(avg_doubling_time[plot_variant_mask],
 			# 						 trl_eff_values[plot_variant_mask], 1))(
 			# 		avg_doubling_time[plot_variant_mask]))
-			ax.set_ylabel("average doubling time")
-			ax.set_xlabel("translation efficiency")
+			ax.set_xlabel("average doubling time")
+			ax.set_ylabel("translation efficiency")
 
 			# translation_efficiency_vs_cell_mass
 			ax = plt.subplot(grid_spec[1, 0])
 
 			ax.scatter(
-				trl_eff_values[plot_variant_mask],
 				avg_cell_mass[plot_variant_mask],
-				color = colors[plot_variant_mask])
+				trl_eff_values[plot_variant_mask])
 			# ax.plot(
 			# 	avg_cell_mass[plot_variant_mask],
 			# 	np.poly1d(np.polyfit(avg_cell_mass[plot_variant_mask],
 			# 						 trl_eff_values[plot_variant_mask], 1))(
 			# 		avg_cell_mass[plot_variant_mask]))
-			ax.set_ylabel("average cell mass")
+			ax.set_xlabel("average cell mass")
 			ax.set_xlabel("translation efficiency")
 
 			# translation_efficiency_vs_ppgpp_concentration 3
 			ax = plt.subplot(grid_spec[2, 0])
 			ax.scatter(
-				trl_eff_values[plot_variant_mask],
 				ppgpp_concentration[plot_variant_mask],
-				color = colors[plot_variant_mask])
+				trl_eff_values[plot_variant_mask])
 			# ax.plot(
 			# 	ppgpp_concentration[plot_variant_mask],
 			# 	np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
 			# 						 trl_eff_values[plot_variant_mask], 1))(
 			# 		ppgpp_concentration[plot_variant_mask]))
-			ax.set_ylabel("average ppgpp concentration")
-			ax.set_xlabel("translation efficiency")
+			ax.set_xlabel("average ppgpp concentration")
+			ax.set_ylabel("translation efficiency")
 
 			# translation_efficiency_vs_rnap_counts 4
 			ax = plt.subplot(grid_spec[3, 0])
 			ax.scatter(
-				trl_eff_values[plot_variant_mask],
 				avg_active_rnap[plot_variant_mask],
-				color = colors[plot_variant_mask])
+				trl_eff_values[plot_variant_mask])
 			# ax.plot(
 			# 	avg_active_rnap[plot_variant_mask],
 			# 	np.poly1d(np.polyfit(avg_active_rnap[plot_variant_mask],
 			# 						 trl_eff_values[plot_variant_mask], 1))(
 			# 		avg_active_rnap[plot_variant_mask]))
-			ax.set_ylabel("average active RNA polymerase")
-			ax.set_xlabel("translation efficiency")
+			ax.set_xlabel("average active RNA polymerase")
+			ax.set_ylabel("translation efficiency")
 
 			# translation_efficiency_vs_ribosome_counts 5
 			ax = plt.subplot(grid_spec[4, 0])
 			ax.scatter(
-				trl_eff_values[plot_variant_mask],
 				avg_ribosomes_count[plot_variant_mask],
-				color = colors[plot_variant_mask])
+				trl_eff_values[plot_variant_mask])
 			# ax.plot(
 			# 	avg_ribosomes_count[plot_variant_mask],
 			# 	np.poly1d(np.polyfit(avg_ribosomes_count[plot_variant_mask],
 			# 						 trl_eff_values[plot_variant_mask], 1))(
 			# 		avg_ribosomes_count[plot_variant_mask]))
-			ax.set_ylabel("average active ribosome counts")
-			ax.set_xlabel("translation efficiency")
+			ax.set_xlabel("average active ribosome counts")
+			ax.set_ylabel("translation efficiency")
 
 			# translation_efficiency_vs_new_gene_monomer_counts 6
 			ax = plt.subplot(grid_spec[5, 0])
 			ax.scatter(
-				trl_eff_values[plot_variant_mask],
 				avg_ng_monomer[plot_variant_mask],
-				color = colors[plot_variant_mask])
+				trl_eff_values[plot_variant_mask])
 			# ax.plot(
 			# 	avg_ng_monomer[plot_variant_mask],
 			# 	np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
 			# 						 trl_eff_values[plot_variant_mask], 1))(
 			# 		avg_ng_monomer[plot_variant_mask]))
-			ax.set_ylabel("average new gene monomer counts")
-			ax.set_xlabel("translation efficiency")
+			ax.set_xlabel("average new gene monomer counts")
+			ax.set_ylabel("translation efficiency")
 
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName + "_IGN_FIRST_" + str(IGNORE_FIRST_N_GENS) + "_GEN", metadata)
