@@ -196,14 +196,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			min_exp = np.min(expression_factors)
 			max_exp = np.max(expression_factors)
 
-			# Compute thresholds
-			threshold_1 = min_exp + (max_exp - min_exp) / 3
-			threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
+			# # Compute thresholds
+			# threshold_1 = min_exp + (max_exp - min_exp) / 3
+			# threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
 
 			for p in range(len(variants)):
-				if threshold_1 > expression_factors[p] >= min_exp:
+				if min_exp + (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp:
 					colors[p] = poster_colors["poster_light_blue"]
-				elif threshold_2 > expression_factors[p] >= threshold_1:
+				elif min_exp + 2 * (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp + (max_exp - min_exp) / 3:
 					colors[p] = poster_colors["poster_blue"]
 				else:
 					colors[p] = poster_colors["poster_dark_blue"]
