@@ -100,11 +100,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
 
 		for p in range(len(variants)):
-			if expression_factors[p] <= threshold_2:
-				colors[p] = poster_colors["poster_blue"]
-
 			if expression_factors[p] <= threshold_1:
 				colors[p] = poster_colors["poster_light_blue"]
+			elif expression_factors[p] <= threshold_2:
+				colors[p] = poster_colors["poster_blue"]
+			else:
+				colors[p] = poster_colors["poster_dark_blue"]
 
 		colors = np.array(colors)
 
