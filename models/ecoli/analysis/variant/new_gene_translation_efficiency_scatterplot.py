@@ -151,46 +151,45 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ribosome_index = uniqueMoleculeCounts.readAttribute(
 					"uniqueMoleculeIds").index('active_ribosome')
 
+			# get average doubling time
+			dt = read_stacked_columns(
+				all_cells, 'Main', 'time',
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			avg_doubling_time[i] = np.mean(dt)
 
-		# get average doubling time
-		dt = read_stacked_columns(
-			all_cells, 'Main', 'time',
-			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-		avg_doubling_time[i] = np.mean(dt)
-
-		# get average cell mass
-		mean_cell_mass = read_stacked_columns(
-			all_cells, 'Mass', 'cellMass',
-			remove_first=True,
-			fun=np.mean).reshape(-1)
-		avg_cell_mass[i] = np.mean(mean_cell_mass)
+			# get average cell mass
+			mean_cell_mass = read_stacked_columns(
+				all_cells, 'Mass', 'cellMass',
+				remove_first=True,
+				fun=np.mean).reshape(-1)
+			avg_cell_mass[i] = np.mean(mean_cell_mass)
 
 
-		# get ppgpp concentration
-		avg_ppgpp_concentration = read_stacked_columns(
-			all_cells, 'GrowthLimits', 'ppgpp_conc',
-			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
-		ppgpp_concentration[i] = np.mean(avg_ppgpp_concentration)
+			# get ppgpp concentration
+			avg_ppgpp_concentration = read_stacked_columns(
+				all_cells, 'GrowthLimits', 'ppgpp_conc',
+				remove_first=True, fun=lambda x: np.mean(x)).squeeze()
+			ppgpp_concentration[i] = np.mean(avg_ppgpp_concentration)
 
-		# get average RNA polymerase count
-		active_rnap_counts = read_stacked_columns(
-			all_cells, 'UniqueMoleculeCounts',
-			'uniqueMoleculeCounts',
-			fun=lambda x: np.mean(x[:, active_rnap_index], axis=0))
-		avg_active_rnap[i] = np.mean(active_rnap_counts)
+			# get average RNA polymerase count
+			active_rnap_counts = read_stacked_columns(
+				all_cells, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				fun=lambda x: np.mean(x[:, active_rnap_index], axis=0))
+			avg_active_rnap[i] = np.mean(active_rnap_counts)
 
-		# get average ribosomes count
-		ribosome_counts = read_stacked_columns(
-			all_cells, 'UniqueMoleculeCounts',
-			'uniqueMoleculeCounts',
-			fun=lambda x: np.mean(x[:, ribosome_index], axis=0))
-		avg_ribosomes_count[i] = np.mean(ribosome_counts)
+			# get average ribosomes count
+			ribosome_counts = read_stacked_columns(
+				all_cells, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				fun=lambda x: np.mean(x[:, ribosome_index], axis=0))
+			avg_ribosomes_count[i] = np.mean(ribosome_counts)
 
-		# get average new gene monomer counts
-		avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
-			'MonomerCounts', 'monomerCounts',
-			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
-		avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
+			# get average new gene monomer counts
+			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
+				'MonomerCounts', 'monomerCounts',
+				fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
+			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
 		print(expression_factors)
 		print(trl_eff_values)
