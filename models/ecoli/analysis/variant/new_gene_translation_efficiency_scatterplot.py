@@ -152,163 +152,163 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					"uniqueMoleculeIds").index('active_ribosome')
 
 
-			# get average doubling time
-			dt = read_stacked_columns(
-				all_cells, 'Main', 'time',
-				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			avg_doubling_time[i] = np.mean(dt)
+		# get average doubling time
+		dt = read_stacked_columns(
+			all_cells, 'Main', 'time',
+			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+		avg_doubling_time[i] = np.mean(dt)
 
-			# get average cell mass
-			mean_cell_mass = read_stacked_columns(
-				all_cells, 'Mass', 'cellMass',
-				remove_first=True,
-				fun=np.mean).reshape(-1)
-			avg_cell_mass[i] = np.mean(mean_cell_mass)
+		# get average cell mass
+		mean_cell_mass = read_stacked_columns(
+			all_cells, 'Mass', 'cellMass',
+			remove_first=True,
+			fun=np.mean).reshape(-1)
+		avg_cell_mass[i] = np.mean(mean_cell_mass)
 
 
-			# get ppgpp concentration
-			avg_ppgpp_concentration = read_stacked_columns(
-				all_cells, 'GrowthLimits', 'ppgpp_conc',
-				remove_first=True, fun=lambda x: np.mean(x)).squeeze()
-			ppgpp_concentration[i] = np.mean(avg_ppgpp_concentration)
+		# get ppgpp concentration
+		avg_ppgpp_concentration = read_stacked_columns(
+			all_cells, 'GrowthLimits', 'ppgpp_conc',
+			remove_first=True, fun=lambda x: np.mean(x)).squeeze()
+		ppgpp_concentration[i] = np.mean(avg_ppgpp_concentration)
 
-			# get average RNA polymerase count
-			active_rnap_counts = read_stacked_columns(
-				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts',
-				fun=lambda x: np.mean(x[:, active_rnap_index], axis=0))
-			avg_active_rnap[i] = np.mean(active_rnap_counts)
+		# get average RNA polymerase count
+		active_rnap_counts = read_stacked_columns(
+			all_cells, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts',
+			fun=lambda x: np.mean(x[:, active_rnap_index], axis=0))
+		avg_active_rnap[i] = np.mean(active_rnap_counts)
 
-			# get average ribosomes count
-			ribosome_counts = read_stacked_columns(
-				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts',
-				fun=lambda x: np.mean(x[:, ribosome_index], axis=0))
-			avg_ribosomes_count[i] = np.mean(ribosome_counts)
+		# get average ribosomes count
+		ribosome_counts = read_stacked_columns(
+			all_cells, 'UniqueMoleculeCounts',
+			'uniqueMoleculeCounts',
+			fun=lambda x: np.mean(x[:, ribosome_index], axis=0))
+		avg_ribosomes_count[i] = np.mean(ribosome_counts)
 
-			# get average new gene monomer counts
-			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
-				'MonomerCounts', 'monomerCounts',
-				fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
-			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
+		# get average new gene monomer counts
+		avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
+			'MonomerCounts', 'monomerCounts',
+			fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
+		avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
-			print(expression_factors)
-			print(trl_eff_values)
+		print(expression_factors)
+		print(trl_eff_values)
 
-			# Compute min and max
-			min_exp = np.min(expression_factors[1:])
-			print(min_exp)
-			max_exp = np.max(expression_factors)
-			print(max_exp)
+		# Compute min and max
+		min_exp = np.min(expression_factors[1:])
+		print(min_exp)
+		max_exp = np.max(expression_factors)
+		print(max_exp)
 
-			# Compute thresholds
-			threshold_1 = min_exp + (max_exp - min_exp) / 3
-			print(threshold_1)
-			threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
-			print(threshold_2)
+		# Compute thresholds
+		threshold_1 = min_exp + (max_exp - min_exp) / 3
+		print(threshold_1)
+		threshold_2 = min_exp + 2 * (max_exp - min_exp) / 3
+		print(threshold_2)
 
-			for p in range(len(variants)):
-				if min_exp + (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp:
-					colors[p] = poster_colors["poster_light_blue"]
-				elif min_exp + 2 * (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp + (max_exp - min_exp) / 3:
-					colors[p] = poster_colors["poster_blue"]
-				else:
-					colors[p] = poster_colors["poster_dark_blue"]
+		for p in range(len(variants)):
+			if min_exp + (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp:
+				colors[p] = poster_colors["poster_light_blue"]
+			elif min_exp + 2 * (max_exp - min_exp) / 3 > expression_factors[p] >= min_exp + (
+					max_exp - min_exp) / 3:
+				colors[p] = poster_colors["poster_blue"]
+			else:
+				colors[p] = poster_colors["poster_dark_blue"]
 
-			colors = np.array(colors)
+		colors = np.array(colors)
+	# plotting
+		grid_spec = GridSpec(6, 1)
+		plt.figure(figsize=(5, 15))
 
-		# plotting
-			grid_spec = GridSpec(6, 1)
-			plt.figure(figsize=(5, 15))
+		# translation_efficiency_vs_doubling_times
+		ax = plt.subplot(grid_spec[0, 0])
+		ax.scatter(
+			trl_eff_values[plot_variant_mask],
+			avg_doubling_time[plot_variant_mask],
+			color = colors[plot_variant_mask])
+		# ax.plot(
+		# 	avg_doubling_time[plot_variant_mask],
+		# 	np.poly1d(np.polyfit(avg_doubling_time[plot_variant_mask],
+		# 						 trl_eff_values[plot_variant_mask], 1))(
+		# 		avg_doubling_time[plot_variant_mask]))
+		ax.set_ylabel("average doubling time")
+		ax.set_xlabel("translation efficiency")
 
-			# translation_efficiency_vs_doubling_times
-			ax = plt.subplot(grid_spec[0, 0])
-			ax.scatter(
-				trl_eff_values[plot_variant_mask],
-				avg_doubling_time[plot_variant_mask],
-				color = colors[plot_variant_mask])
-			# ax.plot(
-			# 	avg_doubling_time[plot_variant_mask],
-			# 	np.poly1d(np.polyfit(avg_doubling_time[plot_variant_mask],
-			# 						 trl_eff_values[plot_variant_mask], 1))(
-			# 		avg_doubling_time[plot_variant_mask]))
-			ax.set_ylabel("average doubling time")
-			ax.set_xlabel("translation efficiency")
+		# translation_efficiency_vs_cell_mass
+		ax = plt.subplot(grid_spec[1, 0])
 
-			# translation_efficiency_vs_cell_mass
-			ax = plt.subplot(grid_spec[1, 0])
+		ax.scatter(
+			trl_eff_values[plot_variant_mask],
+			avg_cell_mass[plot_variant_mask],
+			color = colors[plot_variant_mask])
+		# ax.plot(
+		# 	avg_cell_mass[plot_variant_mask],
+		# 	np.poly1d(np.polyfit(avg_cell_mass[plot_variant_mask],
+		# 						 trl_eff_values[plot_variant_mask], 1))(
+		# 		avg_cell_mass[plot_variant_mask]))
+		ax.set_ylabel("average cell mass")
+		ax.set_xlabel("translation efficiency")
 
-			ax.scatter(
-				trl_eff_values[plot_variant_mask],
-				avg_cell_mass[plot_variant_mask],
-				color = colors[plot_variant_mask])
-			# ax.plot(
-			# 	avg_cell_mass[plot_variant_mask],
-			# 	np.poly1d(np.polyfit(avg_cell_mass[plot_variant_mask],
-			# 						 trl_eff_values[plot_variant_mask], 1))(
-			# 		avg_cell_mass[plot_variant_mask]))
-			ax.set_ylabel("average cell mass")
-			ax.set_xlabel("translation efficiency")
+		# translation_efficiency_vs_ppgpp_concentration 3
+		ax = plt.subplot(grid_spec[2, 0])
+		ax.scatter(
+			trl_eff_values[plot_variant_mask],
+			ppgpp_concentration[plot_variant_mask],
+			color = colors[plot_variant_mask])
+		# ax.plot(
+		# 	ppgpp_concentration[plot_variant_mask],
+		# 	np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
+		# 						 trl_eff_values[plot_variant_mask], 1))(
+		# 		ppgpp_concentration[plot_variant_mask]))
+		ax.set_ylabel("average ppgpp concentration")
+		ax.set_xlabel("translation efficiency")
 
-			# translation_efficiency_vs_ppgpp_concentration 3
-			ax = plt.subplot(grid_spec[2, 0])
-			ax.scatter(
-				trl_eff_values[plot_variant_mask],
-				ppgpp_concentration[plot_variant_mask],
-				color = colors[plot_variant_mask])
-			# ax.plot(
-			# 	ppgpp_concentration[plot_variant_mask],
-			# 	np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
-			# 						 trl_eff_values[plot_variant_mask], 1))(
-			# 		ppgpp_concentration[plot_variant_mask]))
-			ax.set_ylabel("average ppgpp concentration")
-			ax.set_xlabel("translation efficiency")
+		# translation_efficiency_vs_rnap_counts 4
+		ax = plt.subplot(grid_spec[3, 0])
+		ax.scatter(
+			trl_eff_values[plot_variant_mask],
+			avg_active_rnap[plot_variant_mask],
+			color = colors[plot_variant_mask])
+		# ax.plot(
+		# 	avg_active_rnap[plot_variant_mask],
+		# 	np.poly1d(np.polyfit(avg_active_rnap[plot_variant_mask],
+		# 						 trl_eff_values[plot_variant_mask], 1))(
+		# 		avg_active_rnap[plot_variant_mask]))
+		ax.set_ylabel("average active RNA polymerase")
+		ax.set_xlabel("translation efficiency")
 
-			# translation_efficiency_vs_rnap_counts 4
-			ax = plt.subplot(grid_spec[3, 0])
-			ax.scatter(
-				trl_eff_values[plot_variant_mask],
-				avg_active_rnap[plot_variant_mask],
-				color = colors[plot_variant_mask])
-			# ax.plot(
-			# 	avg_active_rnap[plot_variant_mask],
-			# 	np.poly1d(np.polyfit(avg_active_rnap[plot_variant_mask],
-			# 						 trl_eff_values[plot_variant_mask], 1))(
-			# 		avg_active_rnap[plot_variant_mask]))
-			ax.set_ylabel("average active RNA polymerase")
-			ax.set_xlabel("translation efficiency")
+		# translation_efficiency_vs_ribosome_counts 5
+		ax = plt.subplot(grid_spec[4, 0])
+		ax.scatter(
+			trl_eff_values[plot_variant_mask],
+			avg_ribosomes_count[plot_variant_mask],
+			color = colors[plot_variant_mask])
+		# ax.plot(
+		# 	avg_ribosomes_count[plot_variant_mask],
+		# 	np.poly1d(np.polyfit(avg_ribosomes_count[plot_variant_mask],
+		# 						 trl_eff_values[plot_variant_mask], 1))(
+		# 		avg_ribosomes_count[plot_variant_mask]))
+		ax.set_ylabel("average active ribosome counts")
+		ax.set_xlabel("translation efficiency")
 
-			# translation_efficiency_vs_ribosome_counts 5
-			ax = plt.subplot(grid_spec[4, 0])
-			ax.scatter(
-				trl_eff_values[plot_variant_mask],
-				avg_ribosomes_count[plot_variant_mask],
-				color = colors[plot_variant_mask])
-			# ax.plot(
-			# 	avg_ribosomes_count[plot_variant_mask],
-			# 	np.poly1d(np.polyfit(avg_ribosomes_count[plot_variant_mask],
-			# 						 trl_eff_values[plot_variant_mask], 1))(
-			# 		avg_ribosomes_count[plot_variant_mask]))
-			ax.set_ylabel("average active ribosome counts")
-			ax.set_xlabel("translation efficiency")
+		# translation_efficiency_vs_new_gene_monomer_counts 6
+		ax = plt.subplot(grid_spec[5, 0])
+		ax.scatter(
+			trl_eff_values[plot_variant_mask],
+			avg_ng_monomer[plot_variant_mask],
+			color = colors[plot_variant_mask])
+		# ax.plot(
+		# 	avg_ng_monomer[plot_variant_mask],
+		# 	np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
+		# 						 trl_eff_values[plot_variant_mask], 1))(
+		# 		avg_ng_monomer[plot_variant_mask]))
+		ax.set_ylabel("average new gene monomer counts")
+		ax.set_xlabel("translation efficiency")
 
-			# translation_efficiency_vs_new_gene_monomer_counts 6
-			ax = plt.subplot(grid_spec[5, 0])
-			ax.scatter(
-				trl_eff_values[plot_variant_mask],
-				avg_ng_monomer[plot_variant_mask],
-				color = colors[plot_variant_mask])
-			# ax.plot(
-			# 	avg_ng_monomer[plot_variant_mask],
-			# 	np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
-			# 						 trl_eff_values[plot_variant_mask], 1))(
-			# 		avg_ng_monomer[plot_variant_mask]))
-			ax.set_ylabel("average new gene monomer counts")
-			ax.set_xlabel("translation efficiency")
-
-			plt.tight_layout()
-			exportFigure(plt, plotOutDir, plotOutFileName + "_IGN_FIRST_" + str(IGNORE_FIRST_N_GENS) + "_GEN", metadata)
-			plt.close('all')
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, plotOutFileName + "_IGN_FIRST_" + str(IGNORE_FIRST_N_GENS) + "_GEN", metadata)
+		plt.close('all')
 
 if __name__ == '__main__':
 	Plot().cli()
