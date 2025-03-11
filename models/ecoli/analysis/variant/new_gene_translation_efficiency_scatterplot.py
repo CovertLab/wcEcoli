@@ -101,10 +101,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		for p in range(len(variants)):
 			if expression_factors[p] <= threshold_2:
-				colors[p] = poster_colors['poster_blue']
+				colors[p] = poster_colors["poster_blue"]
 
 			if expression_factors[p] <= threshold_1:
-				colors[p] = poster_colors['poster_light_blue']
+				colors[p] = poster_colors["poster_light_blue"]
+
+		colors = np.array(colors)
 
 		n_total_gens = self.ap.n_generation
 		variant_name = metadata["variant"]
