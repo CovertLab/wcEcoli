@@ -116,8 +116,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		#extract params for labeling
 		variant_name = metadata["variant"]
-		params_to_use = metadata["params_to_use"]
-		if variant_name == "new_gene_param_sampling_internal_shift_narrow":
+		# TODO edit it so it can extract params for random sampling
+		if variant_name == "new_gene_param_sampling_internal_shift":
+			from models.ecoli.sim.variants.new_gene_param_sampling_internal_shift import \
+				get_sampled_new_gene_expression_factor_and_translation_efficiency
+			custom_legend = [
+				get_sampled_new_gene_expression_factor_and_translation_efficiency(VARIANT_1),
+				get_sampled_new_gene_expression_factor_and_translation_efficiency(VARIANT_2)]
+
+		elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
+			params_to_use = metadata["params_to_use"]
 			custom_legend = []
 			if VARIANT_1 == 0:
 				custom_legend.append("VARIANT_1: expression factor: 0; translation efficiency: 0")
