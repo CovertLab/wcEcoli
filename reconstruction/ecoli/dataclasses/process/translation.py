@@ -510,25 +510,30 @@ class Translation(object):
 							'Unexplained_fraction']
 
 		hi = 5
-		# Uses N end rule only
+		# Uses N end rule only and MANUALLY SET CDSA to 2 mins
 		if SELECT_PDR_COMBO == 10:
-			for i, protein in enumerate(all_proteins):
-				seq = protein['seq']
-				assert seq[0] == 'M'  # All protein sequences should start with methionine
 
-				# Set N-end residue as second amino acid if initial methionine
-				# is cleaved
-				n_end_residue = seq[protein['cleavage_of_initial_methionine']]
-				deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
-				deg_rate_source_id[i] = 'N_end_rule'
-				if protein['id'] in protease_dict.keys():
-					protease_assignment[i] = protease_dict[protein['id']][
-						'protease_assignment']
-					ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
-					Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
-					HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
-					Unexplained_contribution[i] = protease_dict[protein['id']][
-						'Unexplained_fraction']
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] == "CDPDIGLYSYN-MONOMER":
+					deg_rate[i] = np.log(2) / (120) # 2 mins
+					deg_rate_source_id[i] = 'N_end_rule'
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'  # All protein sequences should start with methionine
+
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
+					if protein['id'] in protease_dict.keys():
+						protease_assignment[i] = protease_dict[protein['id']][
+							'protease_assignment']
+						ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+						Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+						Unexplained_contribution[i] = protease_dict[protein['id']][
+							'Unexplained_fraction']
 
 
 		max_protein_id_length = max(
