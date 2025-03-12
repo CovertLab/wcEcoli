@@ -11,8 +11,8 @@ from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
 
 
-PROCESS_MAX_TIME_STEP = 1.
-SELECT_PDR_COMBO = 9 # select the protein degradation rate combo to use
+PROCESS_MAX_TIME_STEP = 2.
+SELECT_PDR_COMBO = 10 # select the protein degradation rate combo to use
 
 class Translation(object):
 	""" Translation """
@@ -508,6 +508,28 @@ class Translation(object):
 						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
 						Unexplained_contribution[i] = protease_dict[protein['id']][
 							'Unexplained_fraction']
+
+		hi = 5
+		# Uses N end rule only
+		if SELECT_PDR_COMBO == 10:
+			for i, protein in enumerate(all_proteins):
+				seq = protein['seq']
+				assert seq[0] == 'M'  # All protein sequences should start with methionine
+
+				# Set N-end residue as second amino acid if initial methionine
+				# is cleaved
+				n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+				deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+				deg_rate_source_id[i] = 'N_end_rule'
+				if protein['id'] in protease_dict.keys():
+					protease_assignment[i] = protease_dict[protein['id']][
+						'protease_assignment']
+					ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+					Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+					HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+					Unexplained_contribution[i] = protease_dict[protein['id']][
+						'Unexplained_fraction']
+
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
