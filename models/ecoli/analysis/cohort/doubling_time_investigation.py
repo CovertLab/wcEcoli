@@ -1,0 +1,134 @@
+"""
+Plots the doubling times for all seeds and all generations (after some
+threshold number of burn-in generations) as a histogram.
+
+Notes
+-----
+More strictly speaking, this is the division time or cell-cycle time, for which
+are only doubling in an average sense.
+
+There are many hard-coded values in here for the bounds and bins.  This is to
+standardize the output across sets of simulations.
+
+"""
+# TODO: update the docstring above
+
+import os
+import pickle
+
+import numpy as np
+from matplotlib import pyplot as plt
+import matplotlib as mpl
+
+from wholecell.analysis.analysis_tools import (exportFigure,
+	read_stacked_columns)
+
+from models.ecoli.analysis import cohortAnalysisPlot
+
+class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
+	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+
+		num_seeds = metadata["init_sims"]
+
+		mpl.rcParams['axes.spines.right'] = False
+		mpl.rcParams['axes.spines.top'] = False
+
+		plt.figure(figsize=(8.5, 10))
+		total_plots = num_seeds
+		plot_num = 1
+
+		all_dts_dict = {}
+		all_dts = np.array([])
+		all_avg_dts = np.array([])
+
+		for seed in range(num_seeds):
+			print("seed: ", seed)
+
+			cell_paths = self.ap.get_cells(seed=[seed])
+
+			if seed == 0:
+				ax1 = plt.subplot(total_plots, 1, plot_num)
+			else:
+				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+
+			time = read_stacked_columns(
+				cell_paths, 'Main', 'time', ignore_exception=True)
+			dt = read_stacked_columns(
+				cell_paths, 'Main', 'time',
+				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+			num_time_steps = read_stacked_columns(
+				cell_paths, 'Main', 'time',
+				fun=lambda x: len(x)).squeeze()
+
+			# Create a new numpy array where each dt[i] is repeated num_time_steps[i] times
+			dt_to_plot = np.repeat(dt, num_time_steps)
+			plt.plot(time / 60., dt_to_plot)
+
+			# Add a line for average doubling time
+			avg_dt = np.mean(dt)
+			plt.axhline(y=avg_dt, color='r', linestyle='--')
+
+			plt.xlabel("Time (min)")
+			plt.ylabel("Doubling Time (min)", fontsize="small")
+			plt.title("Doubling Time")
+
+			all_dts_dict[seed] = dt
+			all_dts = np.append(all_dts, dt)
+			all_avg_dts = np.append(all_avg_dts, avg_dt)
+
+			plot_num += 1
+
+		# save plot
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close("all")
+
+		# Make a boxplot of the dts for each seed
+		plt.figure(figsize=(8.5, 10))
+		plt.boxplot(all_dts_dict.values())
+		plt.xlabel("Seed")
+		plt.ylabel("Doubling Time (min)", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_boxplot", metadata)
+		plt.close("all")
+
+		# Make a histogram of the dts for all seeds
+		plt.figure(figsize=(8.5, 10))
+		plt.hist(all_dts, bins=50, range=(0, 100))
+		avg_dt = np.mean(all_dts)
+		plt.axvline(x=avg_dt, color='r', linestyle='--')
+		plt.xlabel("Doubling Time (min)", fontsize="small")
+		plt.ylabel("Frequency", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_hist", metadata)
+		plt.close("all")
+
+		# Make a scatterplot of seed vs average for that seed for all seeds
+		plt.figure(figsize=(8.5, 10))
+		plt.scatter(range(num_seeds), all_avg_dts)
+		plt.axhline(y=avg_dt, color='r', linestyle='--')
+		plt.xlabel("Seed")
+		plt.ylabel("Average Doubling Time (min)", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_scatter", metadata)
+
+		# Make a histogram where one color shows the distribution of the first 4 values in each seed and the other shows the distribution of the last 4 values in each seed
+		plt.figure(figsize=(8.5, 10))
+		first_four = np.array([all_dts_dict[seed][:4] for seed in all_dts_dict])
+		last_four = np.array([all_dts_dict[seed][-4:] for seed in all_dts_dict])
+		plt.hist(first_four.flatten(), bins=50, range=(0, 100), alpha=0.5, color='b', label='First 4')
+		plt.hist(last_four.flatten(), bins=50, range=(0, 100), alpha=0.5, color='r', label='Last 4')
+
+		avg_first = np.mean(first_four.flatten())
+		avg_last = np.mean(last_four.flatten())
+		plt.axvline(x=avg_first, color='b', linestyle='--')
+		plt.axvline(x=avg_last, color='r', linestyle='--')
+
+		plt.xlabel("Doubling Time (min)", fontsize="small")
+		plt.ylabel("Frequency", fontsize="small")
+		plt.title("Doubling Time")
+		plt.legend()
+		exportFigure(plt, plotOutDir, plotOutFileName + "_hist_first_last", metadata)
+		plt.close("all")
+
+if __name__ == "__main__":
+	Plot().cli()
