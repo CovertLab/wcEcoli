@@ -159,7 +159,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		exportFigure(plt, plotOutDir, plotOutFileName + "_hist_last_8", metadata)
 
 		# Make a histogram of the dts for all seeds for the last 8 generations, but add a line for the average of the last 8 generations for each seed
-		plt.figure(figsize=(8.5, 10))
+		plt.figure(figsize=(8.5, 8.5))
 		plt.hist(all_dts_last_8, bins=25, range=(35, 75))
 		for seed in all_dts_dict:
 			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='black', linestyle='--', label='Seed Average (8 cells)')
