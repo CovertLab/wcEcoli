@@ -150,7 +150,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Make a histogram of the dts for all seeds for the last 8 generations
 		plt.figure(figsize=(8.5, 10))
-		plt.hist(all_dts_last_8, bins=50, range=(0, 100))
+		plt.hist(all_dts_last_8, bins=25, range=(35, 75))
 		avg_dt_last_8 = np.mean(all_dts_last_8)
 		plt.axvline(x=avg_dt_last_8, color='r', linestyle='--')
 		plt.xlabel("Doubling Time (min)", fontsize="small")
@@ -160,7 +160,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Make a histogram of the dts for all seeds for the last 8 generations, but add a line for the average of the last 8 generations for each seed
 		plt.figure(figsize=(8.5, 10))
-		plt.hist(all_dts_last_8, bins=50, range=(0, 100))
+		plt.hist(all_dts_last_8, bins=25, range=(35, 75))
 		for seed in all_dts_dict:
 			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='r', linestyle='--')
 		plt.xlabel("Doubling Time (min)", fontsize="small")
@@ -172,7 +172,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Make a histogram of the dts for all seeds for the last 8 generations, but add a line for the average of the last 8 generations for each seed
 		plt.figure(figsize=(8.5, 10))
 		for seed in all_dts_dict:
-			plt.hist(all_dts_dict[seed][-8:], bins=50, range=(0, 100), alpha=0.5)
+			plt.hist(all_dts_dict[seed][-8:], bins=25, range=(35, 75), alpha=0.5)
 			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='r', linestyle='--')
 		plt.xlabel("Doubling Time (min)", fontsize="small")
 		plt.ylabel("Frequency", fontsize="small")
