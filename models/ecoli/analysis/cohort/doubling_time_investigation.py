@@ -28,7 +28,10 @@ from models.ecoli.analysis import cohortAnalysisPlot
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
-		num_seeds = metadata["init_sims"]
+		if "init_sims" in metadata:
+			num_seeds = metadata['init_sims']
+		else:
+			num_seeds = metadata['total_init_sims']
 
 		mpl.rcParams['axes.spines.right'] = False
 		mpl.rcParams['axes.spines.top'] = False
@@ -40,6 +43,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		all_dts_dict = {}
 		all_dts = np.array([])
 		all_avg_dts = np.array([])
+
+		all_dts_last_8 = np.array([])
+		all_avg_dts_last_8 = np.array([])
 
 		for seed in range(num_seeds):
 			print("seed: ", seed)
@@ -75,6 +81,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			all_dts_dict[seed] = dt
 			all_dts = np.append(all_dts, dt)
 			all_avg_dts = np.append(all_avg_dts, avg_dt)
+
+			all_dts_last_8 = np.append(all_dts_last_8, dt[-8:])
+			all_avg_dts_last_8 = np.append(all_avg_dts_last_8, np.mean(dt[-8:]))
 
 			plot_num += 1
 
@@ -128,6 +137,48 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.title("Doubling Time")
 		plt.legend()
 		exportFigure(plt, plotOutDir, plotOutFileName + "_hist_first_last", metadata)
+		plt.close("all")
+
+		# Make a scatterplot of seed vs dt for the last 8 generations for all seeds
+		plt.figure(figsize=(8.5, 10))
+		plt.scatter(range(num_seeds), all_avg_dts_last_8)
+		plt.axhline(y=np.mean(all_avg_dts_last_8), color='r', linestyle='--')
+		plt.xlabel("Seed")
+		plt.ylabel("Average Doubling Time (min)", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_scatter_last_8", metadata)
+
+		# Make a histogram of the dts for all seeds for the last 8 generations
+		plt.figure(figsize=(8.5, 10))
+		plt.hist(all_dts_last_8, bins=50, range=(0, 100))
+		avg_dt_last_8 = np.mean(all_dts_last_8)
+		plt.axvline(x=avg_dt_last_8, color='r', linestyle='--')
+		plt.xlabel("Doubling Time (min)", fontsize="small")
+		plt.ylabel("Frequency", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_hist_last_8", metadata)
+
+		# Make a histogram of the dts for all seeds for the last 8 generations, but add a line for the average of the last 8 generations for each seed
+		plt.figure(figsize=(8.5, 10))
+		plt.axvline(x=avg_dt_last_8, color='r', linestyle='--')
+		for seed in all_dts_dict:
+			# plt.hist(all_dts_dict[seed][-8:], bins=50, range=(0, 100), alpha=0.5)
+			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='r', linestyle='--')
+		plt.xlabel("Doubling Time (min)", fontsize="small")
+		plt.ylabel("Frequency", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_hist_last_8_with_avg", metadata)
+		plt.close("all")
+
+		# Make a histogram of the dts for all seeds for the last 8 generations, but add a line for the average of the last 8 generations for each seed
+		plt.figure(figsize=(8.5, 10))
+		for seed in all_dts_dict:
+			plt.hist(all_dts_dict[seed][-8:], bins=50, range=(0, 100), alpha=0.5)
+			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='r', linestyle='--')
+		plt.xlabel("Doubling Time (min)", fontsize="small")
+		plt.ylabel("Frequency", fontsize="small")
+		plt.title("Doubling Time")
+		exportFigure(plt, plotOutDir, plotOutFileName + "_sep_hist_last_8_with_avg", metadata)
 		plt.close("all")
 
 if __name__ == "__main__":
