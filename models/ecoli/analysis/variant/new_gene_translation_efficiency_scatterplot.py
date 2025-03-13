@@ -9,6 +9,7 @@ Plot translation efficiency of new gene vs
 """
 
 from matplotlib import pyplot as plt
+from matplotlib.colors import LogNorm
 from matplotlib.gridspec import GridSpec
 import matplotlib as mpl
 import numpy as np
@@ -30,7 +31,7 @@ import os.path
 import pickle
 
 
-IGNORE_FIRST_N_GENS = 16
+IGNORE_FIRST_N_GENS = 0
 
 """
 PLOTS_LIST = ["translation_efficiency_vs_doubling_times",
@@ -90,7 +91,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			"poster_blue": (50 / 255, 116 / 255, 174 / 255),
 			"poster_dark_blue": (27 / 255, 69 / 255, 101 / 255)
 		}
-		colors = [poster_colors["light_gray"]] * len(variants)
 
 		n_total_gens = self.ap.n_generation
 		variant_name = metadata["variant"]
@@ -191,16 +191,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.mean(x[:, new_gene_monomer_indexes],axis=0))
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
-		# Compute min and max
-		min_exp = np.min(expression_factors)
+		# Compute min and max, excluding zeros for log scale
+		min_exp = np.min(expression_factors[expression_factors > 0])
 		max_exp = np.max(expression_factors)
 
-		# Use a colormap for gradient coloring based on expression factors
-		norm = plt.Normalize(min_exp, max_exp)
+		# Use LogNorm for log scale
+		norm = LogNorm(vmin=min_exp, vmax=max_exp)
 		cmap = plt.cm.Blues
 
-		# Update scatter plots to use gradient colors
-		colors = cmap(norm(expression_factors))
+		# Create color array
+		colors = np.empty((len(variants), 4))  # RGBA format
+		colors[expression_factors > 0] = cmap(norm(expression_factors[expression_factors > 0]))
+
+		# Manually set color for zero values (e.g., gray)
+		colors[expression_factors == 0] = (*poster_colors["light_gray"], 1.0)
 
 
 	# plotting
@@ -212,13 +216,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		sc = ax.scatter(
 			trl_eff_values[plot_variant_mask],
 			avg_doubling_time[plot_variant_mask],
-			c=expression_factors[plot_variant_mask])
+			color=colors[plot_variant_mask])
 		# ax.plot(
 		# 	avg_doubling_time[plot_variant_mask],
 		# 	np.poly1d(np.polyfit(avg_doubling_time[plot_variant_mask],
 		# 						 trl_eff_values[plot_variant_mask], 1))(
 		# 		avg_doubling_time[plot_variant_mask]))
-		plt.colorbar(sc, ax=ax, label="Expression factor")
+		plt.colorbar(sc, ax=ax, label="Expression factor (log scale)")
 		ax.set_ylabel("average doubling time")
 		ax.set_xlabel("translation efficiency")
 
@@ -228,7 +232,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.scatter(
 			trl_eff_values[plot_variant_mask],
 			avg_cell_mass[plot_variant_mask],
-			c=expression_factors[plot_variant_mask])
+			color=colors[plot_variant_mask])
 		# ax.plot(
 		# 	avg_cell_mass[plot_variant_mask],
 		# 	np.poly1d(np.polyfit(avg_cell_mass[plot_variant_mask],
@@ -242,7 +246,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.scatter(
 			trl_eff_values[plot_variant_mask],
 			ppgpp_concentration[plot_variant_mask],
-			c=expression_factors[plot_variant_mask])
+			color=colors[plot_variant_mask])
 		# ax.plot(
 		# 	ppgpp_concentration[plot_variant_mask],
 		# 	np.poly1d(np.polyfit(ppgpp_concentration[plot_variant_mask],
@@ -256,7 +260,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.scatter(
 			trl_eff_values[plot_variant_mask],
 			avg_active_rnap[plot_variant_mask],
-			c=expression_factors[plot_variant_mask])
+			color=colors[plot_variant_mask])
 		# ax.plot(
 		# 	avg_active_rnap[plot_variant_mask],
 		# 	np.poly1d(np.polyfit(avg_active_rnap[plot_variant_mask],
@@ -270,7 +274,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.scatter(
 			trl_eff_values[plot_variant_mask],
 			avg_ribosomes_count[plot_variant_mask],
-			c=expression_factors[plot_variant_mask])
+			color=colors[plot_variant_mask])
 		# ax.plot(
 		# 	avg_ribosomes_count[plot_variant_mask],
 		# 	np.poly1d(np.polyfit(avg_ribosomes_count[plot_variant_mask],
@@ -284,7 +288,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.scatter(
 			trl_eff_values[plot_variant_mask],
 			avg_ng_monomer[plot_variant_mask],
-			c=expression_factors[plot_variant_mask])
+			color=colors[plot_variant_mask])
 		# ax.plot(
 		# 	avg_ng_monomer[plot_variant_mask],
 		# 	np.poly1d(np.polyfit(avg_ng_monomer[plot_variant_mask],
