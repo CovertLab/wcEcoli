@@ -118,17 +118,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				expression_factors[i], trl_eff_values[
 					i] = get_sampled_new_gene_expression_factor_and_translation_efficiency(
 					index_remainder)
-				# Apply log scale and normalization to avoid log(0) errors
+				# Apply log scale but exclude the 0 variant
 				if expression_factors[i] > 0:
 					expression_factors[i] = np.log10(expression_factors[i])
-				else:
-					expression_factors[i] = np.log10(
-						expression_factors[i] + 1e-30)  # Small number for normalization
-				if trl_eff_values[i] > 0:
-					trl_eff_values[i] = np.log10(trl_eff_values[i])
-				else:
-					trl_eff_values[i] = np.log10(
-						trl_eff_values[i] + 1e-30)
 
 			elif variant_name == "new_gene_param_sampling_internal_shift_narrow":
 				params_to_use = metadata["params_to_use"]
