@@ -162,12 +162,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.figure(figsize=(8.5, 10))
 		plt.hist(all_dts_last_8, bins=25, range=(35, 75))
 		for seed in all_dts_dict:
-			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='b', linestyle='--', label='Seed Average (8 cells)')
+			plt.axvline(x=np.mean(all_dts_dict[seed][-8:]), color='black', linestyle='--', label='Seed Average (8 cells)')
 		plt.axvline(x=avg_dt_last_8, color='r', linestyle='--', label="Overall Average (128 Cells)")
 		plt.xlabel("Doubling Time (min)", fontsize="small")
 		plt.ylabel("Frequency", fontsize="small")
 		plt.title("Doubling Time")
-		plt.legend()
+		# Get rid of duplicate labels in legend
+		handles, labels = plt.gca().get_legend_handles_labels()
+		by_label = dict(zip(labels, handles))
+		plt.legend(by_label.values(), by_label.keys())
 		exportFigure(plt, plotOutDir, plotOutFileName + "_hist_last_8_with_avg", metadata)
 		plt.close("all")
 
