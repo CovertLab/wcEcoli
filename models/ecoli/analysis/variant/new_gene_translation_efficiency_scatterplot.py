@@ -30,7 +30,7 @@ import os.path
 import pickle
 
 
-IGNORE_FIRST_N_GENS = 0
+IGNORE_FIRST_N_GENS = 16
 
 """
 PLOTS_LIST = ["translation_efficiency_vs_doubling_times",
