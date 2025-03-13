@@ -87,7 +87,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			plot_num += 1
 
-		# save plot
+		plt.subplots_adjust(hspace=0.7, top=0.95, bottom=0.05)
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close("all")
 
