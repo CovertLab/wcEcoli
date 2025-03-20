@@ -61,12 +61,25 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Build Views
 		self.metabolites = self.bulkMoleculesView(metaboliteIds)
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
-		self.proteins = self.bulkMoleculesView(proteinIds) # todo: determine if these are the counts?
+		self.proteins = self.bulkMoleculesView(proteinIds)
+
+		# add complexes:
+		complexIds = np.array(sim_data.process.complexation.ids_complexes)
+		self.complexes = self.bulkMoleculesView(complexIds)
+
+		# find lon complex:
+		lon_complex_idx = np.where(complexIds == 'CPLX0-2881[c]')[0][0]
+		#import ipdb ; ipdb.set_trace()
+		print("Lon Complex index:",lon_complex_idx)
+		print("Lon Complex id:", complexIds[lon_complex_idx])
+
+		# TODO: ask nora how she was able to access the protein complexes per timestep. she has a file where she averages over them, try to figure out where that listener is that is recording itand then how to convert to concenration once you ahve that . add it here as a self.bulkMOlecules View thing here to be able know the complex ids at the start and be able to type self.compelxes in the evolve state and
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
+		#import ipdb; ipdb.set_trace()
 
 	def calculateRequest(self):
-
+		print("protein degradation calcREQUEST started")
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
 		nProteinsToDegrade = np.fmin(
 			self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
@@ -75,6 +88,12 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# todo: determine if fmin is finding the minimum for each protein (between either the proteins total counts or the degrdation rate times the proteins total counts)
 		# todo: determine if total_counts() adds up the counts of all proteins or still separates by protein
 		hi = 5
+		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
+
+		self.writeToListener('monomer_counts', 'protein_deg_CR1__totalCount', self.proteins._totalCount.copy())
+
+		#import ipdb; ipdb.set_trace() # CR1
+
 
 		# Determine the number of hydrolysis reactions
 		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
@@ -83,17 +102,36 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Assuming one N-1 H2O is required per peptide chain length N
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
+		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
+
+		self.writeToListener('monomer_counts', 'protein_deg_CR2__totalCount', self.proteins._totalCount.copy())
+		self.writeToListener('monomer_counts', 'protein_deg_CR2_counts', self.proteins.counts) # todo: ask riley why .copy() doesnt work here
+		#import ipdb; ipdb.set_trace() # CR2
+		print("protein degradation calcREQUEST ended")
+
+
 
 
 	def evolveState(self):
+		print("protein degradation evolveState started")
 		# todo: determine if this is where the proteins are actually degraded
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
 		self.metabolites.countsInc(np.dot(
 			self.proteinDegSMatrix,
-			self.proteins.counts() # mia i think this dot product is doing the protein matrix times the proteins counts, and I think counts() might be the number that gets degraded? not the number left?
+			self.proteins.counts()
 			))
+		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
+		self.writeToListener('monomer_counts', 'protein_deg_ES1_counts', self.proteins.counts)
+
+		#import ipdb; ipdb.set_trace() # ES1
+
 		self.proteins.countsIs(0) # does this set the counts to zero?
+		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
+
+		# import ipdb; ipdb.set_trace() # ES2
+		print("protein degradation evolveState ended")
+
 
 
 

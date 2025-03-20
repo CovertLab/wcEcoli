@@ -262,13 +262,23 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 			)
 
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
-		self.bulkMonomers.countsInc(terminatedProteins)
+		self.bulkMonomers.countsInc(terminatedProteins) # is this where the proteins are updated?
+		# if we want to update degradation of complexes, note that we will need to index to total counts and not bulkmonomers!
+
+		print("didTerminate:", didTerminate)
+		print(self.bulkMonomers._totalCount[3863], self.bulkMonomers.total()[3863], self.bulkMonomers._counts()[3863], self.bulkMonomers._requestedCount[3863], self.bulkMonomers.total_counts()[3863],self.bulkMonomers.counts()[3863])
+		self.writeToListener('monomer_counts', 'peptide_elongate_ES1__totalCount',
+									 self.bulkMonomers._totalCount.copy())
+		self.writeToListener('monomer_counts', 'peptide_elongate_ES1_counts',
+									 self.bulkMonomers.counts)
 
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
 
 		self.ribosome30S.countInc(nTerminated)
 		self.ribosome50S.countInc(nTerminated)
+
+		# import ipdb;ipdb.set_trace() # ES1 # here I want to figure out if terminated proteins means proteins synthesized
 
 		# MODEL SPECIFIC: evolve
 		# TODO: use something other than a class attribute to pass aa diff to metabolism

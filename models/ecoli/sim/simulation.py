@@ -79,6 +79,7 @@ class EcoliSimulation(Simulation):
 			RnaDegradation,
 			Complexation,
 		),
+		# todo: add this here and delete it from the above group to restablish order (Complexation),
 		(
 			TranscriptElongation,
 			PolypeptideElongation,

@@ -46,6 +46,8 @@ class Complexation(wholecell.processes.process.Process):
 
 
 	def calculateRequest(self):
+		print("complexation calcREQUEST started")
+
 		moleculeCounts = self.molecules.total_counts()
 
 		result = self.system.evolve(
@@ -54,8 +56,13 @@ class Complexation(wholecell.processes.process.Process):
 
 		self.molecules.requestIs(np.fmax(moleculeCounts - updatedMoleculeCounts, 0))
 
+		print("complexation calcREQUEST ended")
+
+
 
 	def evolveState(self):
+		print("complexation evolveState started")
+
 		moleculeCounts = self.molecules.counts()
 
 		result = self.system.evolve(
@@ -67,3 +74,4 @@ class Complexation(wholecell.processes.process.Process):
 
 		# Write outputs to listeners
 		self.writeToListener("ComplexationListener", "complexationEvents", events)
+		print("complexation evolveState ended")

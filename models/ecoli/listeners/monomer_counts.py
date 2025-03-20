@@ -98,6 +98,39 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 			)
 
+		self.protein_deg_CR1__totalCount = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+			)
+
+		self.protein_deg_CR2__totalCount = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+
+		self.protein_deg_CR2_counts = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.protein_deg_ES1_counts = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.peptide_elongate_ES1__totalCount = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.peptide_elongate_ES1_counts = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+
+
 	def update(self):
 		# Get current counts of bulk and unique molecules
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
@@ -126,12 +159,26 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 
+		print("self.monomerCounts[3863]:",self.monomerCounts[3863])
+		#import ipdb; ipdb.set_trace() # at this point, self.monomerCounts[x] should equal the counts of the previous time step
 		# Update monomerCounts
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
+		print("self.monomerCounts[3863]:",self.monomerCounts[3863])
+		#import ipdb; ipdb.set_trace() # here, the counts should update to subtract out the monomers set to degrade and add the monomers set to be synthesized
+
+
+
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'monomerCounts': 'monomerIds'}
+			'monomerCounts': 'monomerIds',
+			'protein_deg_CR1__totalCount': 'monomerIds',
+			'protein_deg_CR2__totalCount': 'monomerIds',
+			'protein_deg_CR2_counts' : 'monomerIds',
+			'protein_deg_ES1_counts' : 'monomerIds',
+			'peptide_elongate_ES1__totalCount': 'monomerIds',
+			'peptide_elongate_ES1_counts': 'monomerIds',
+		}
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomer_ids,
@@ -142,4 +189,10 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
+			protein_deg_CR1__totalCount = self.protein_deg_CR1__totalCount,
+			protein_deg_CR2__totalCount=self.protein_deg_CR2__totalCount,
+			protein_deg_CR2_counts = self.protein_deg_CR2_counts,
+			protein_deg_ES1_counts = self.protein_deg_ES1_counts,
+			peptide_elongate_ES1__totalCount=self.peptide_elongate_ES1__totalCount,
+			peptide_elongate_ES1_counts = self.peptide_elongate_ES1_counts
 			)
