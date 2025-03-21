@@ -265,6 +265,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		tu_init_probs_dict = {}
 		tu_init_probs_dict[0] = TU_to_promoter.dot(self.promoter_init_probs)[TU_of_interest_idx].copy()
 
+		# TODO: think about this renormalization with machinery upregulation
+
 		while np.any(self.promoter_init_probs > max_p):
 			self.promoter_init_probs[is_overcrowded] = max_p
 			scale_the_rest_by = (
@@ -279,18 +281,18 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			promoter_init_probs_dict[iter_counter] = self.promoter_init_probs[promoter_idx_of_interest].copy()
 			tu_init_probs_dict[iter_counter] = TU_to_promoter.dot(self.promoter_init_probs)[TU_of_interest_idx].copy()
 
-		if iter_counter > 0:
-			max_p_of_interest = max_p.copy()
-			print("\nNumber of transcript initiation crowding renormalizations: ", iter_counter)
-			print("Scale factor: ", scale_the_rest_by)
-			print("Max p: ", max_p)
-			print("TU Init probs dict: ", tu_init_probs_dict)
-			print("\n")
-			# if tu_init_probs_dict[0][3] > 0: # only if NG001_RNA[c] (gfp) is being transcribed
-			# 	import ipdb
-			# 	ipdb.set_trace()
-		else:
-			print("TU Init probs dict: ", tu_init_probs_dict)
+		# if iter_counter > 0:
+		# 	max_p_of_interest = max_p.copy()
+		# 	print("\nNumber of transcript initiation crowding renormalizations: ", iter_counter)
+		# 	print("Scale factor: ", scale_the_rest_by)
+		# 	print("Max p: ", max_p)
+		# 	print("TU Init probs dict: ", tu_init_probs_dict)
+		# 	print("\n")
+		# 	# if tu_init_probs_dict[0][3] > 0: # only if NG001_RNA[c] (gfp) is being transcribed
+		# 	# 	import ipdb
+		# 	# 	ipdb.set_trace()
+		# else:
+		# 	print("TU Init probs dict: ", tu_init_probs_dict)
 
 		# Compute actual synthesis probabilities of each transcription unit
 		actual_TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)

@@ -125,6 +125,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 			cistron_counts[cistron_indexes] += length > cistron_start_positions
 
+		# TODO: figure this out for ng plus machinery upregulation - can't have normalization happening like this
+
 		# Calculate initiation probabilities for ribosomes based on mRNA counts
 		# and associated mRNA translational efficiencies
 		protein_init_prob = normalize(
@@ -164,6 +166,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Initalize flag to record if the number of ribosomes activated at this
 		# time step needed to be reduced to prevent overcrowding
 		is_n_ribosomes_to_activate_reduced = False
+
+		# TODO: think about this renormalization with machinery upregulation
 
 		# If needed, resolve overcrowding
 		while np.any(protein_init_prob > max_p_per_protein):

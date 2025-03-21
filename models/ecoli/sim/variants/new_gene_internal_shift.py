@@ -20,8 +20,8 @@ Modifies:
 	sim_data.external_state.current_timeline_id
 
 Modifies (after shift):
-	sim_data.process.transcription.rna_synth_prob
-	sim_data.process.transcription.rna_expression
+	sim_data.process.transcription.RNA_synth_prob
+	sim_data.process.transcription.RNA_expression
 	sim_data.process.transcription.exp_free
 	sim_data.process.transcription.exp_ppgpp
 	sim_data.process.transcription.attenuation_basal_prob_adjustments
@@ -49,6 +49,8 @@ New gene translation efficiency value (normalized):
 	y > 0: set new gene translation efficiency to y
 """
 
+import numpy as np
+
 CONTROL_OUTPUT = dict(
 	shortName = "control",
 	desc = "Control simulation"
@@ -56,6 +58,9 @@ CONTROL_OUTPUT = dict(
 
 # NOTE: The version of these global variables on the master branch will
 # be used for Jenkins testing
+
+# Preserve expression of RNAP and ribosome components
+MACHINERY_UPREGULATION = True # TODO: change the naming of this
 
 # NOTE: If these values are greater than the number of generations you are
 # running, you will not see their effects.
@@ -110,7 +115,7 @@ def determine_new_gene_ids_and_indices(sim_data):
 
 	Returns:
 		new_gene_mRNA_ids: ids corresponding to new gene mRNAs
-		new_gene_mRNA_indices: indexes in rna_data table corresponding to new
+		new_gene_mRNA_indices: indexes in RNA_data table corresponding to new
 			gene mRNAs
 		new_gene_monomer_ids: ids corresponding to new gene monomers
 		new_gene_monomer_indices: indexes in monomer_data table corresponding to
@@ -133,8 +138,8 @@ def determine_new_gene_ids_and_indices(sim_data):
 			"were found.")
 	assert len(new_gene_monomer_ids) == len(new_gene_mRNA_ids), \
 		'number of new gene monomers and mRNAs should be equal'
-	rna_data = sim_data.process.transcription.rna_data
-	mRNA_idx_dict = {rna[:-3]: i for i, rna in enumerate(rna_data['id'])}
+	RNA_data = sim_data.process.transcription.rna_data
+	mRNA_idx_dict = {RNA[:-3]: i for i, RNA in enumerate(RNA_data['id'])}
 	new_gene_indices = [
 		mRNA_idx_dict.get(mRNA_id) for mRNA_id in new_gene_mRNA_ids]
 	monomer_idx_dict = {
@@ -144,6 +149,78 @@ def determine_new_gene_ids_and_indices(sim_data):
 
 	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
 
+def determine_RNAP_component_ids_and_indices(sim_data):
+	"""
+	Determines the ids and indices of RNAP components using the RNAP flag in
+	sim_data.
+
+	Returns:
+		RNAP_component_ids: ids corresponding to RNAP components
+		RNAP_component_indices: indexes in monomer_data table corresponding to
+			RNAP components
+	"""
+
+	# TODO: check if cistrons is okay here? what is the exp_free shape? does this change with operons?
+	monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+	mRNA_monomer_id_dict = dict(
+		zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+	RNA_data = sim_data.process.transcription.rna_data
+	mRNA_idx_dict = {RNA[:-3]: i for i, RNA in enumerate(RNA_data['id'])}
+	monomer_idx_dict = {
+		monomer: i for i, monomer in enumerate(monomer_sim_data['id'])}
+
+	RNAP_component_monomer_ids = sim_data.molecule_groups.RNAP_subunits
+	RNAP_component_mRNA_ids = [
+		mRNA_monomer_id_dict.get(monomer_id) for monomer_id in RNAP_component_monomer_ids]
+	RNAP_component_mRNA_indices = [
+		mRNA_idx_dict.get(mRNA_id) for mRNA_id in RNAP_component_mRNA_ids]
+	RNAP_component_monomer_indices = [
+		monomer_idx_dict.get(monomer_id) for monomer_id in RNAP_component_monomer_ids]
+
+	return RNAP_component_mRNA_ids, RNAP_component_mRNA_indices, RNAP_component_monomer_ids, RNAP_component_monomer_indices
+
+def determine_ribosome_component_ids_and_indices(sim_data):
+	"""
+	Determines the ids and indices of ribosome components using the ribosome
+	flag in sim_data.
+
+	Returns:
+		ribosome_component_ids: ids corresponding to ribosome components
+		ribosome_component_indices: indexes in monomer_data table corresponding
+			to ribosome components
+	"""
+
+	monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
+	mRNA_monomer_id_dict = dict(
+		zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+	RNA_data = sim_data.process.transcription.rna_data
+	mRNA_idx_dict = {RNA[:-3]: i for i, RNA in enumerate(RNA_data['id'])}
+	monomer_idx_dict = {
+		monomer: i for i, monomer in enumerate(monomer_sim_data['id'])}
+
+	ribosome_component_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
+	ribosome_component_RNA_ids = [
+		mRNA_monomer_id_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
+	ribosome_component_RNA_indices = [
+		mRNA_idx_dict.get(mRNA_id) for mRNA_id in ribosome_component_RNA_ids]
+	ribosome_component_monomer_indices = [
+		monomer_idx_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
+
+	rRNA_operons = sim_data.molecule_groups.rRNA_operons
+	genes_in_rRNA_operons = []
+	for rRNA_operon in rRNA_operons:
+		genes_in_rRNA_operons.extend(sim_data.molecule_groups.__dict__[rRNA_operon])
+	rRNA_indexes = np.where(sim_data.process.transcription.cistron_tu_mapping_matrix.T.dot(
+		np.isin(sim_data.process.transcription.cistron_data['gene_id'],
+		genes_in_rRNA_operons)))[0]
+	rRNA_indexes = rRNA_indexes.tolist()
+	rRNA_operons_mRNA_cistron_ids = (sim_data.process.transcription.cistron_data['id'][genes_in_rRNA_operons]).tolist()
+
+	assert len(rRNA_indexes) == len(genes_in_rRNA_operons)
+	ribosome_component_RNA_indices.append(rRNA_indexes)
+	ribosome_component_RNA_ids.append(rRNA_operons_mRNA_cistron_ids)
+
+	return ribosome_component_RNA_ids, ribosome_component_RNA_indices, ribosome_component_monomer_ids, ribosome_component_monomer_indices
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
@@ -194,14 +271,28 @@ def induce_new_genes(sim_data, index):
 		new_gene_monomer_indices = determine_new_gene_ids_and_indices(
 		sim_data)
 
+	# Determine ids and indices of RNAP and ribosome components
+	RNAP_component_mRNA_ids, RNAP_component_mRNA_indices, \
+		RNAP_component_monomer_ids, RNAP_component_monomer_indices = determine_RNAP_component_ids_and_indices(sim_data)
+	ribosome_component_RNA_ids, ribosome_component_RNA_indices, \
+		ribosome_component_monomer_ids, ribosome_component_monomer_indices = determine_ribosome_component_ids_and_indices(sim_data)
+
+	indices_to_not_adjust = RNAP_component_mRNA_indices + ribosome_component_RNA_indices
+
 	# Modify expression and translation efficiency for new genes
 	for i in range(len(new_gene_indices)):
 		gene_index = new_gene_indices[i]
 		monomer_index = new_gene_monomer_indices[i]
 
-		sim_data.adjust_new_gene_final_expression([gene_index], [expression_factor])
-		sim_data.process.translation.translation_efficiencies_by_monomer[
-			monomer_index] = trl_eff_value
+		if not MACHINERY_UPREGULATION:
+			sim_data.adjust_new_gene_final_expression([gene_index], [expression_factor])
+			sim_data.process.translation.translation_efficiencies_by_monomer[
+				monomer_index] = trl_eff_value
+		else:
+			sim_data.adjust_new_gene_final_expression_modified_renormalization(
+				[gene_index], [expression_factor], indices_to_not_adjust)
+			sim_data.process.translation.translation_efficiencies_by_monomer[
+				monomer_index] = trl_eff_value
 
 
 def knockout_induced_new_gene_expression(sim_data, index):
