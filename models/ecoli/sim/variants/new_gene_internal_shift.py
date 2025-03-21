@@ -59,8 +59,10 @@ CONTROL_OUTPUT = dict(
 # NOTE: The version of these global variables on the master branch will
 # be used for Jenkins testing
 
-# Preserve expression of RNAP and ribosome components
-MACHINERY_UPREGULATION = True # TODO: change the naming of this
+# Renormalization options
+RNAP_RENORMALIZATION = False # Preserve expression of RNAP subunits
+RIBOSOME_RENORMALIZATION = False # Preserve expression of ribosomal components
+NEW_GENE_RENORMALIZATION = False
 
 # NOTE: If these values are greater than the number of generations you are
 # running, you will not see their effects.
@@ -201,8 +203,15 @@ def determine_ribosome_component_ids_and_indices(sim_data):
 	ribosome_component_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
 	ribosome_component_RNA_ids = [
 		mRNA_monomer_id_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
-	ribosome_component_RNA_indices = [
+	ribosome_component_RNA_cistron_indices = [
 		mRNA_idx_dict.get(mRNA_id) for mRNA_id in ribosome_component_RNA_ids]
+	# map cistron indices to mRNA indices
+	ribosome_component_RNA_indices = []
+	for cistron_index in ribosome_component_RNA_cistron_indices:
+		ribosome_component_RNA_indices.extend(
+			np.where(sim_data.process.transcription.cistron_tu_mapping_matrix.T.dot(
+				np.isin(sim_data.process.transcription.cistron_data['id'],
+				sim_data.process.transcription.cistron_data['id'][cistron_index])))[0])
 	ribosome_component_monomer_indices = [
 		monomer_idx_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
 
@@ -213,12 +222,21 @@ def determine_ribosome_component_ids_and_indices(sim_data):
 	rRNA_indexes = np.where(sim_data.process.transcription.cistron_tu_mapping_matrix.T.dot(
 		np.isin(sim_data.process.transcription.cistron_data['gene_id'],
 		genes_in_rRNA_operons)))[0]
+	rRNA_indexes = np.where(
+		np.isin(sim_data.process.transcription.cistron_data['gene_id'],
+		genes_in_rRNA_operons))[0]
 	rRNA_indexes = rRNA_indexes.tolist()
-	rRNA_operons_mRNA_cistron_ids = (sim_data.process.transcription.cistron_data['id'][genes_in_rRNA_operons]).tolist()
+	rRNA_operons_mRNA_cistron_ids = (sim_data.process.transcription.cistron_data['id'][rRNA_indexes]).tolist()
+
+	import ipdb
+	ipdb.set_trace()
 
 	assert len(rRNA_indexes) == len(genes_in_rRNA_operons)
 	ribosome_component_RNA_indices.append(rRNA_indexes)
 	ribosome_component_RNA_ids.append(rRNA_operons_mRNA_cistron_ids)
+
+	import ipdb
+	ipdb.set_trace()
 
 	return ribosome_component_RNA_ids, ribosome_component_RNA_indices, ribosome_component_monomer_ids, ribosome_component_monomer_indices
 
@@ -271,6 +289,8 @@ def induce_new_genes(sim_data, index):
 		new_gene_monomer_indices = determine_new_gene_ids_and_indices(
 		sim_data)
 
+	print("New gene indices: ", new_gene_indices)
+
 	# Determine ids and indices of RNAP and ribosome components
 	RNAP_component_mRNA_ids, RNAP_component_mRNA_indices, \
 		RNAP_component_monomer_ids, RNAP_component_monomer_indices = determine_RNAP_component_ids_and_indices(sim_data)
@@ -284,15 +304,17 @@ def induce_new_genes(sim_data, index):
 		gene_index = new_gene_indices[i]
 		monomer_index = new_gene_monomer_indices[i]
 
-		if not MACHINERY_UPREGULATION:
+		if RNAP_RENORMALIZATION and RIBOSOME_RENORMALIZATION and NEW_GENE_RENORMALIZATION:
 			sim_data.adjust_new_gene_final_expression([gene_index], [expression_factor])
 			sim_data.process.translation.translation_efficiencies_by_monomer[
 				monomer_index] = trl_eff_value
-		else:
+		elif not RNAP_RENORMALIZATION and not RIBOSOME_RENORMALIZATION and not NEW_GENE_RENORMALIZATION:
 			sim_data.adjust_new_gene_final_expression_modified_renormalization(
-				[gene_index], [expression_factor], indices_to_not_adjust)
-			sim_data.process.translation.translation_efficiencies_by_monomer[
+				[gene_index], [expression_factor], indices_to_not_adjust, NEW_GENE_RENORMALIZATION)
+			sim_data.process.translation.translation_efficiencies_by_monomer[ # TODO: change this to prevent renormalization of new gene, ribosome, and RNAP components
 				monomer_index] = trl_eff_value
+		else:
+			raise Exception("RNAP_RENORMALIZATION, RIBOSOME_RENORMALIZATION, and NEW_GENE_RENORMALIZATION must all be set to True or False")
 
 
 def knockout_induced_new_gene_expression(sim_data, index):
@@ -347,6 +369,12 @@ def new_gene_internal_shift(sim_data, index):
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
 
+	# TODO: CHECK THAT ALL THE INDICES ARE FOR RNA data AND NOT CISTRONS
+
+	# TODO: DELETE AFTER TESTING
+	induce_new_genes(sim_data, condition_index)
+
+
 	# Add the new gene induction to the internal_shift instructions
 	# Note: Must add an entry for each non wildtype gen because sim_data is
 	# reloaded from the file between generations
@@ -368,4 +396,7 @@ def new_gene_internal_shift(sim_data, index):
 			expression_factor) + ". Set translation efficiency of new genes "
 			"to {}".format(trl_eff_value)
 			+ "Simulation of condition {}.".format(sim_data.ordered_conditions[condition_index])
+			+ " Renormalization of RNAP: " + str(RNAP_RENORMALIZATION)
+			+ " Renormalization of ribosome: " + str(RIBOSOME_RENORMALIZATION)
+			+ " Renormalization of new genes: " + str(NEW_GENE_RENORMALIZATION),
 		), sim_data
