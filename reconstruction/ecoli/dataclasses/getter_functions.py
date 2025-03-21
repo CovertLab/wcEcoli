@@ -27,7 +27,7 @@ UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS = {
 	'CCO-CE-BAC': 'm',
 	'CCO-BAC-NUCLEOID': 'c',
 	'CCO-RIBOSOME': 'c',
-	'CCO-MIDDLE': 'c', # TODO: check this with EcoCyc team
+	'CCO-MIDDLE': 'p',
 }
 
 IGNORED_DNA_SITE_TYPES = {
