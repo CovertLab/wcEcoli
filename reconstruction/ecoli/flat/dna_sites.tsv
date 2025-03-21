@@ -1,8 +1,8 @@
 # Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 29.0
+# Version: 29.1
 # Orthologs: true
-# Date and time generated: November 18, 2024, 15:02:18
+# Date and time generated: March 20, 2025, 17:08:02
 "id"	"common_name"	"synonyms"	"type"	"left_end_pos"	"right_end_pos"	"direction"
 "BS-7046"	null	[]	"dna-binding-site"	1825765	1825784	null
 "BS-7048"	null	[]	"dna-binding-site"	3169748	3169760	null
@@ -890,6 +890,21 @@
 "BS0-11002"	null	[]	"dna-binding-site"	2933877	2933891	null
 "BS0-11003"	null	[]	"dna-binding-site"	2933936	2933950	null
 "BS0-11004"	null	[]	"dna-binding-site"	4269358	4269365	null
+"BS0-11006"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11007"	null	[]	"dna-binding-site"	188660	188680	null
+"BS0-11008"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11009"	null	[]	"dna-binding-site"	817993	818024	null
+"BS0-11010"	null	[]	"dna-binding-site"	3658689	3658708	null
+"BS0-11013"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11014"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11015"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11016"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11017"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11019"	null	[]	"dna-binding-site"	754444	754474	null
+"BS0-11020"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11021"	null	[]	"dna-binding-site"	882724	882754	null
+"BS0-11022"	null	[]	"dna-binding-site"	926574	926608	null
+"BS0-11023"	null	[]	"dna-binding-site"	986968	987000	null
 "BS0-1121"	null	[]	"dna-binding-site"	3493838	3493852	null
 "BS0-1122"	null	[]	"dna-binding-site"	963666	963678	null
 "BS0-1123"	null	[]	"dna-binding-site"	963586	963598	null
@@ -3009,7 +3024,7 @@
 "BS0-8908"	null	[]	"dna-binding-site"	3226582	3226598	null
 "BS0-8909"	null	[]	"dna-binding-site"	3252928	3252944	null
 "BS0-8910"	null	[]	"dna-binding-site"	3321211	3321227	null
-"BS0-8911"	null	[]	"dna-binding-site"	3354195	3354211	null
+"BS0-8911"	null	[]	"dna-binding-site"	3354187	3354219	null
 "BS0-8912"	null	[]	"dna-binding-site"	3418272	3418288	null
 "BS0-8913"	null	[]	"dna-binding-site"	3499134	3499150	null
 "BS0-8914"	null	[]	"dna-binding-site"	3609243	3609259	null
