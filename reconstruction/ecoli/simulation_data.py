@@ -400,7 +400,7 @@ class SimulationDataEcoli(object):
 
 
 	def adjust_new_gene_final_expression_modified_renormalization(
-			self, gene_indices, factors, indices_to_not_adjust):
+			self, gene_indices, factors, indices_to_not_adjust, new_gene_renormalization):
 		# TODO: edit this documentation
 		# Goal is to adjust new gene final expression in a way that does not impact rnap or ribosome expression
 		"""
@@ -414,6 +414,8 @@ class SimulationDataEcoli(object):
 			gene_indices: Indices of new genes to adjust
 			factors: Multiplicative factor to adjust by
 			indices_to_not_adjust: Indices of genes to not adjust in renormalization
+			new_gene_renormalization: Indicate whether new genes
+				should be included in renormalization
 		"""
 
 		transcription = self.process.transcription
@@ -458,18 +460,42 @@ class SimulationDataEcoli(object):
 				"Transcriptional regulation of new genes is not currently"
 				" implemented in the model.")
 
+		if not new_gene_renormalization:
+			indices_to_not_adjust.appen(gene_indices)
+		indices_to_not_adjust_mask = np.array([i not in np.array(indices_to_not_adjust) for i in range(len(transcription.exp_free))])
+
+		# TODO: delete later
+		transcription_rna_synth_prob_values_copy = transcription.rna_synth_prob.values().copy()
+		transcription_rna_expression_values_copy = transcription.rna_expression.values().copy()
+		transcription_exp_free_copy = transcription.exp_free.copy()
+		transcription_exp_ppgpp_copy = transcription.exp_ppgpp.copy()
+
+		# Renormalize RNA synthesis probability
+		for synth_prob in transcription.rna_synth_prob.values():
+			fixed_synth_prob_sum = synth_prob[indices_to_not_adjust_mask].sum()
+			remaining_synth_prob_sum = 1.0 - fixed_synth_prob_sum
+			indices_to_adjust_synth_prob_sum = synth_prob[~indices_to_not_adjust_mask].sum()
+			# Adjust the indices so that the sum of their synth_prob is remaining_synth_prob_sum
+			synth_prob[~indices_to_not_adjust_mask] *= remaining_synth_prob_sum / indices_to_adjust_synth_prob_sum
+
+		# Renormalize expression
+		for exp in transcription.rna_expression.values():
+			fixed_exp_sum = exp[indices_to_not_adjust_mask].sum()
+			remaining_exp_sum = 1.0 - fixed_exp_sum
+			indices_to_adjust_exp_sum = exp[~indices_to_not_adjust_mask].sum()
+			exp[~indices_to_not_adjust_mask] *= remaining_exp_sum / indices_to_adjust_exp_sum
+
+		# Renormalize expression free
+		fixed_exp_free_sum = transcription.exp_free[indices_to_not_adjust_mask].sum()
+		remaining_exp_free_sum = 1.0 - fixed_exp_free_sum
+		indices_to_adjust_exp_free_sum = transcription.exp_free[~indices_to_not_adjust_mask].sum()
+		transcription.exp_free[~indices_to_not_adjust_mask] *= remaining_exp_free_sum / indices_to_adjust_exp_free_sum
+
+		# Renormalize expression ppgpp
+		fixed_exp_ppgpp_sum = transcription.exp_ppgpp[indices_to_not_adjust_mask].sum()
+		remaining_exp_ppgpp_sum = 1.0 - fixed_exp_ppgpp_sum
+		indices_to_adjust_exp_ppgpp_sum = transcription.exp_ppgpp[~indices_to_not_adjust_mask].sum()
+		transcription.exp_ppgpp[~indices_to_not_adjust_mask] *= remaining_exp_ppgpp_sum / indices_to_adjust_exp_ppgpp_sum
+
 		import ipdb
 		ipdb.set_trace()
-
-
-
-		# Renormalize parameters
-		for synth_prob in transcription.rna_synth_prob.values():
-			synth_prob /= synth_prob.sum()
-		for exp in transcription.rna_expression.values():
-			exp /= exp.sum()
-		transcription.exp_free /= transcription.exp_free.sum()
-		transcription.exp_ppgpp /= transcription.exp_ppgpp.sum()
-
-
-
