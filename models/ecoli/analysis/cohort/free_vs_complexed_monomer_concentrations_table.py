@@ -88,6 +88,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
+
+		import ipdb;
+		ipdb.set_trace()
 		detailed_conc_avg, detailed_conc_std, monomers_and_complexes_names = monomer_counts_and_concentration(cell_paths, total_monomer_dict)
 
 		# Write data to table

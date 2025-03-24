@@ -44,7 +44,7 @@ EcoCyc_file = \
 # SPECIFY THE OUTPUT FILE NAME (to be placed in the flat file list)
 # Note: this file name needs to be added to the list in "knowledge_base_raw.py"
 # to be used in the model
-OUTPUT_FILE_NAME = 'priority_protease_assignments_0.tsv' # e.g. 'protease_assignments_Clim#.tsv'
+OUTPUT_FILE_NAME = 'priority_protease_assignments_1.tsv' # e.g. 'protease_assignments_Clim#.tsv'
 
 """
 END OF USER INPUTS

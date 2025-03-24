@@ -240,7 +240,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_reader = TableReader(
 			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
 		monomer_ids = monomer_reader.readAttribute('monomerIds')
-		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
+		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count) # include complex ids too
 
 		# Read columns
 		# remove_first=True because countsToMolar is 0 at first time step
