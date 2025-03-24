@@ -265,12 +265,13 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.bulkMonomers.countsInc(terminatedProteins) # is this where the proteins are updated?
 		# if we want to update degradation of complexes, note that we will need to index to total counts and not bulkmonomers!
 
-		print("didTerminate:", didTerminate)
-		print(self.bulkMonomers._totalCount[3863], self.bulkMonomers.total()[3863], self.bulkMonomers._counts()[3863], self.bulkMonomers._requestedCount[3863], self.bulkMonomers.total_counts()[3863],self.bulkMonomers.counts()[3863])
-		self.writeToListener('monomer_counts', 'peptide_elongate_ES1__totalCount',
-									 self.bulkMonomers._totalCount.copy())
-		self.writeToListener('monomer_counts', 'peptide_elongate_ES1_counts',
-									 self.bulkMonomers.counts)
+		print(self.bulkMonomers._totalCount[403], self.bulkMonomers.total()[403], self.bulkMonomers._counts()[403], self.bulkMonomers._requestedCount[403], self.bulkMonomers.total_counts()[403],self.bulkMonomers.counts()[403])
+		totalCount_for_listener = self.bulkMonomers._totalCount.copy()
+		counts_for_listener = self.bulkMonomers.counts()
+		self.writeToListener('MonomerCounts', 'peptide_elongate_ES1__totalCount',
+									 totalCount_for_listener)
+		self.writeToListener('MonomerCounts', 'peptide_elongate_ES1_counts',
+									 counts_for_listener)
 
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()

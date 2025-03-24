@@ -159,13 +159,15 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 
-		print("self.monomerCounts[3863]:",self.monomerCounts[3863])
+		print("self.monomerCounts[3863]:",self.monomerCounts[403])
 		#import ipdb; ipdb.set_trace() # at this point, self.monomerCounts[x] should equal the counts of the previous time step
 		# Update monomerCounts
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
-		print("self.monomerCounts[3863]:",self.monomerCounts[3863])
+		print("self.monomerCounts[3863]:",self.monomerCounts[403])
 		#import ipdb; ipdb.set_trace() # here, the counts should update to subtract out the monomers set to degrade and add the monomers set to be synthesized
 
+
+		# todo: do I also need to update my listener variables the way monomerCounts is above?
 
 
 
@@ -194,5 +196,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			protein_deg_CR2_counts = self.protein_deg_CR2_counts,
 			protein_deg_ES1_counts = self.protein_deg_ES1_counts,
 			peptide_elongate_ES1__totalCount=self.peptide_elongate_ES1__totalCount,
-			peptide_elongate_ES1_counts = self.peptide_elongate_ES1_counts
-			)
+			peptide_elongate_ES1_counts = self.peptide_elongate_ES1_counts)
+
+# I think this  has to be () at the end in order for this function to work properly. might also be able to add () at the end of the place wehre the listener is called

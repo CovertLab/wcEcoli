@@ -88,9 +88,9 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# todo: determine if fmin is finding the minimum for each protein (between either the proteins total counts or the degrdation rate times the proteins total counts)
 		# todo: determine if total_counts() adds up the counts of all proteins or still separates by protein
 		hi = 5
-		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
-
-		self.writeToListener('monomer_counts', 'protein_deg_CR1__totalCount', self.proteins._totalCount.copy())
+		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
+		print(self.proteins._totalCount[403], self.proteins.counts()[403], nProteinsToDegrade[403])
+		self.writeToListener('MonomerCounts', 'protein_deg_CR1__totalCount', self.proteins._totalCount.copy())
 
 		#import ipdb; ipdb.set_trace() # CR1
 
@@ -102,10 +102,14 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Assuming one N-1 H2O is required per peptide chain length N
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
-		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
+		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
+		print(self.proteins._totalCount[403], self.proteins.counts()[403], nProteinsToDegrade[403])
 
-		self.writeToListener('monomer_counts', 'protein_deg_CR2__totalCount', self.proteins._totalCount.copy())
-		self.writeToListener('monomer_counts', 'protein_deg_CR2_counts', self.proteins.counts) # todo: ask riley why .copy() doesnt work here
+		self.writeToListener('MonomerCounts', 'protein_deg_CR2__totalCount', self.proteins._totalCount.copy())
+		counts_for_CR2 = self.proteins.counts()
+		self.writeToListener('MonomerCounts', 'protein_deg_CR2_counts', counts_for_CR2) # todo: ask riley why .copy() doesnt work here
+		#import ipdb; ipdb.set_trace()
+
 		#import ipdb; ipdb.set_trace() # CR2
 		print("protein degradation calcREQUEST ended")
 
@@ -121,13 +125,15 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.proteinDegSMatrix,
 			self.proteins.counts()
 			))
-		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
-		self.writeToListener('monomer_counts', 'protein_deg_ES1_counts', self.proteins.counts)
+		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
+		print(self.proteins._totalCount[403], self.proteins.counts()[403])
+		counts_for_ES1 = self.proteins.counts()
+		self.writeToListener('MonomerCounts', 'protein_deg_ES1_counts', counts_for_ES1)
 
 		#import ipdb; ipdb.set_trace() # ES1
 
 		self.proteins.countsIs(0) # does this set the counts to zero?
-		print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
+		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
 
 		# import ipdb; ipdb.set_trace() # ES2
 		print("protein degradation evolveState ended")
