@@ -22,7 +22,8 @@ PLOT_PROTEINS = [#'G6890-MONOMER[c]',
 					   #'PD02936[c]',
 					   #'RED-THIOREDOXIN2-MONOMER[c]',
  						"PD03867[c]",
-						"EG11734-MONOMER[c]",]
+						"EG11734-MONOMER[c]",
+'CDPDIGLYSYN-MONOMER[i]',]
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
