@@ -51,40 +51,49 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		(free_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, monomerIds)
 
+		# doubling time function from nora:
+		def extract_doubling_times(cell_paths):
+			# Load data
+			time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
+			# Determine doubling time
+			doubling_times = read_stacked_columns(cell_paths, 'Main', 'time',
+												  fun=lambda x: (x[-1] - x[0])).squeeze().astype(
+				int)
+			end_generation_times = np.cumsum(doubling_times) + time[0]  #
+			start_generation_indices = np.searchsorted(time, end_generation_times[:-1],
+													   side='left').astype(int)
+			start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(
+				len(doubling_times))
+			end_generation_indices = start_generation_indices + doubling_times
+			return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
-		# Extract doubling times from cells
-		dt = read_stacked_columns(cell_paths, 'Main', 'time',
-			fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-		# Extract the end time of each generation
-		dts = np.zeros(len(dt))
-		for i in range(len(dt)):
-			if i == 0:
-				gt = dt[i]
-				dts[i] = gt
-			else:
-				gt = dt[i] + dts[i - 1]
-				dts[i] = gt
-
+		# extract the doubling times:
+		time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices = extract_doubling_times(
+			cell_paths)
 
 		# find how many proteins were removed via dilution for each doubling time:
-		diluted_counts = np.zeros(((len(dts)-1), len(monomerIds)))
-		for i in range(len(dts) -1): # -1 is to account for not doing the last generation
-			d_t = dts[i]
-			d_t = d_t * 60 # convert to seconds
-			# todo: figure out if the protein counts split at the end of the timestep every time or if they split based on which timestep they round closest to, assuming always the next for now
-			# add .49 seconds to it (to account for the fact that the time is not exact) and make sure it always rounds up (if it would already round up, this number will make sure it rounds down at the next number)
-			d_t = round(d_t + .49)
-			print(d_t)
+		diluted_counts = np.zeros(((len(doubling_times) - 1), len(monomerIds)))
+		diluted_counts_over_time = np.zeros(((len(time)), len(monomerIds)))
+		for i in range(
+				len(doubling_times) - 1):  # -1 is to account for not doing the last generation
+			end_gen = end_generation_indices[i]
+			start_gen = start_generation_indices[i + 1]  # the first start is zero, so skip that
+			print(end_gen, start_gen)
+
 			# find the protein counts at the end of the generation:
-			monomer_counts_at_gen_end = free_monomer_counts[d_t,:] # get this for each protein
+			monomer_counts_at_gen_end = free_monomer_counts[end_gen,
+										:]  # get this for each protein
 
 			# find the protein counts at the start of the next generation:
-			monomer_counts_at_gen_start = free_monomer_counts[d_t + 1,:]
+			monomer_counts_at_gen_start = free_monomer_counts[start_gen, :]
 
 			# find the difference between the two:
 			protein_counts_removed = monomer_counts_at_gen_end - monomer_counts_at_gen_start
-			diluted_counts[i,:] = protein_counts_removed
+			diluted_counts[i, :] = protein_counts_removed
+			diluted_counts_over_time[start_gen,
+			:] = protein_counts_removed  # put it at the start of the next gen in terms of time
 
+		print(diluted_counts)
 
 		# compute how many proteins were removed via degradation over the entire sim length:
 		degraded_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "protein_deg_ES1_counts") # take from evolve state counter!
@@ -105,7 +114,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		elongated_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "peptide_elongate_ES1_counts")
 		avg_elongated_counts = np.mean(elongated_counts, axis = 0)
 		log_avg_production_rate = np.log10(avg_elongated_counts)
-
 
 
 		# plot the red and blue proteins separately:
@@ -133,7 +141,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# plot a line at 1 magnitude below the y=x line:
 		plt.plot(x, x - 1, color = 'green', alpha = 0.5, linestyle='--')
 
-
 		plt.xlabel("Log10 Average Production Rate")
 		plt.ylabel("Log10 Average Loss Rate")
 		plt.title("Log10 Average Loss Rate vs Log10 Average Production Rate")
@@ -142,7 +149,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 		#save the plot:
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plot_name = plotOutFileName + "_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE)
+		exportFigure(plt, plotOutDir, plot_name, metadata)
 
 
 		# compute the average synthesis rate for each protein:
