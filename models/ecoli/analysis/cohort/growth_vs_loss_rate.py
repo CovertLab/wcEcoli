@@ -73,8 +73,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 
+		# extract the data over all generations:
+		# Load data
+		time = read_stacked_columns(cell_paths, 'Main', 'time')
+		(free_monomer_counts,) = read_stacked_bulk_molecules(
+			cell_paths, monomerIds)
 
-
+		bulkMolecules_pd_CR2_counts_all_gens = read_stacked_columns(cell_paths, 'MonomerCounts', 'protein_deg_CR2_counts')
 
 
 		## Or iterate on each cell if additional processing is needed
