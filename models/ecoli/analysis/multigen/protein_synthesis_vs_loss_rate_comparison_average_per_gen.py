@@ -152,8 +152,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		from sklearn.metrics import r2_score
 		#rsquared = r2_score( true, predicted)
-		r_squared = r2_score(log_avg_production_rate,
-							 log_avg_loss_rate)
+		r_squared = r2_score(log_avg_loss_rate, log_avg_production_rate
+							 )
 
 		plt.scatter(log_avg_production_rate, log_avg_loss_rate, s=5, alpha=0.3, color = 'grey', label=f"$R^2$ = " + str(r_squared))
 
