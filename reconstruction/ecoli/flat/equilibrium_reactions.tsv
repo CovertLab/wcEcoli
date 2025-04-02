@@ -1,8 +1,8 @@
 # Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 29.0
+# Version: 29.1
 # Orthologs: true
-# Date and time generated: November 18, 2024, 15:02:19
+# Date and time generated: March 20, 2025, 17:08:03
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
@@ -17,6 +17,7 @@
 "CPLX0-10669_RXN"	{"CPLX0-10669": 1, "CPLX0-7672": null, "MN+2": null}	"MntR-Mn<SUP>2+</SUP>"
 "CPLX0-11559_RXN"	{"CPLX0-11559": 1, "G7133-MONOMER": null, "ADP-D-GLUCOSE": null}	"YegW-ADP-&alpha;-D-glucose"
 "CPLX0-11744_RXN"	{"CPLX0-11744": 1, "CPLX0-7796": null, "S-ADENOSYLMETHIONINE": null}	"MetJ-SAM-AdoMet"
+"CPLX0-12545_RXN"	{"CPLX0-12545": 1, "PD00288": null, "2C-METH-D-ERYTHRITOL-CYCLODIPHOSPHATE": null}	"H-NS-2-C-methyl-D-erythritol-2,4-cyclodiphosphate"
 "CPLX0-226_RXN"	{"CPLX0-226": 1, "PC00004": null, "CAMP": null}	"CRP-cyclic-AMP DNA-binding transcriptional dual regulator"
 "CPLX0-228_RXN"	{"CPLX0-228": 1, "PC00005": null, "ARG": null}	"ArgR-L-arginine DNA-binding transcriptional dual regulator"
 "CPLX0-2781_RXN"	{"CPLX0-2781": 1, "PC00040": null, "ACETYLSERINE": null}	"CysB-<i>O</i>-acetyl-L-serine DNA-binding transcriptional dual regulator"
