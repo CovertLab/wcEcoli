@@ -418,9 +418,6 @@ class SimulationDataEcoli(object):
 				should be included in renormalization
 		"""
 
-		# TODO: delete later
-		factors[0] = 10**7
-
 		transcription = self.process.transcription
 		transcription_regulation = self.process.transcription_regulation
 
@@ -467,12 +464,6 @@ class SimulationDataEcoli(object):
 			indices_to_not_adjust = indices_to_not_adjust + gene_indices
 		indices_to_not_adjust_mask = np.array([i in np.array(indices_to_not_adjust) for i in range(len(transcription.exp_free))])
 
-		# TODO: delete after validating that this approach works
-		transcription_rna_synth_prob_values_copy = transcription.rna_synth_prob.copy()
-		transcription_rna_expression_values_copy = transcription.rna_expression.copy()
-		transcription_exp_free_copy = transcription.exp_free.copy()
-		transcription_exp_ppgpp_copy = transcription.exp_ppgpp.copy()
-
 		# Renormalize RNA synthesis probability
 		for key in transcription.rna_synth_prob.keys():
 			synth_prob = transcription.rna_synth_prob[key]
@@ -508,6 +499,3 @@ class SimulationDataEcoli(object):
 		remaining_exp_ppgpp_sum = 1.0 - fixed_exp_ppgpp_sum
 		indices_to_adjust_exp_ppgpp_sum = transcription.exp_ppgpp[~indices_to_not_adjust_mask].sum()
 		transcription.exp_ppgpp[~indices_to_not_adjust_mask] *= remaining_exp_ppgpp_sum / indices_to_adjust_exp_ppgpp_sum
-
-		import ipdb
-		ipdb.set_trace()

@@ -328,10 +328,7 @@ def induce_new_genes(sim_data, index):
 			sim_data.process.translation.translation_efficiencies_by_monomer[ # TODO: change this to prevent renormalization of new gene, ribosome, and RNAP components
 				monomer_index] = trl_eff_value
 		else:
-			raise Exception("RNAP_RENORMALIZATION, RIBOSOME_RENORMALIZATION, and NEW_GENE_RENORMALIZATION must all be set to True or False")
-
-	import ipdb
-	ipdb.set_trace()
+			raise Exception("RNAP_RENORMALIZATION, RIBOSOME_RENORMALIZATION, and NEW_GENE_RENORMALIZATION must be set to all True or all False")
 
 
 def knockout_induced_new_gene_expression(sim_data, index):
@@ -385,11 +382,6 @@ def new_gene_internal_shift(sim_data, index):
 
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
-
-	# # TODO: DELETE AFTER TESTING - this lets you debug in gen 0 before shift
-	induce_new_genes(sim_data, condition_index)
-	import ipdb
-	ipdb.set_trace()
 
 	# Add the new gene induction to the internal_shift instructions
 	# Note: Must add an entry for each non wildtype gen because sim_data is
