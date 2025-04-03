@@ -149,7 +149,10 @@ def determine_new_gene_ids_and_indices(sim_data):
 	new_gene_monomer_indices = [
 		monomer_idx_dict.get(monomer_id) for monomer_id in new_gene_monomer_ids]
 
+	# TODO: fix the above - only works if the new gene is not in a TU with anything else
+
 	return new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, new_gene_monomer_indices
+
 
 def determine_RNAP_component_ids_and_indices(sim_data):
 	"""
@@ -162,24 +165,33 @@ def determine_RNAP_component_ids_and_indices(sim_data):
 			RNAP components
 	"""
 
-	# TODO: check if cistrons is okay here? what is the exp_free shape? does this change with operons?
 	monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
-	mRNA_monomer_id_dict = dict(
-		zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+	monomer_id_to_cistron_id_dict = dict(
+		zip(monomer_sim_data['id'], monomer_sim_data['cistron_id']))
 	RNA_data = sim_data.process.transcription.rna_data
-	mRNA_idx_dict = {RNA[:-3]: i for i, RNA in enumerate(RNA_data['id'])}
+	RNA_idx_to_id_dict = {i: RNA[:-3] for i, RNA in enumerate(RNA_data['id'])}
 	monomer_idx_dict = {
 		monomer: i for i, monomer in enumerate(monomer_sim_data['id'])}
 
 	RNAP_component_monomer_ids = sim_data.molecule_groups.RNAP_subunits
-	RNAP_component_mRNA_ids = [
-		mRNA_monomer_id_dict.get(monomer_id) for monomer_id in RNAP_component_monomer_ids]
-	RNAP_component_mRNA_indices = [
-		mRNA_idx_dict.get(mRNA_id) for mRNA_id in RNAP_component_mRNA_ids]
-	RNAP_component_monomer_indices = [
-		monomer_idx_dict.get(monomer_id) for monomer_id in RNAP_component_monomer_ids]
+	RNAP_component_cistron_ids = [
+		monomer_id_to_cistron_id_dict.get(monomer_id) for monomer_id in RNAP_component_monomer_ids]
+	RNAP_component_RNA_indices = np.array([], dtype=int)
+	for cistron_id in RNAP_component_cistron_ids:
+		RNAP_component_RNA_indices = np.append(
+			RNAP_component_RNA_indices,
+			sim_data.process.transcription.cistron_id_to_rna_indexes(cistron_id))
+	RNAP_component_RNA_indices = np.unique(RNAP_component_RNA_indices)
+	RNAP_component_RNA_ids = np.array([
+		RNA_idx_to_id_dict[RNA_index] for RNA_index in RNAP_component_RNA_indices])
+	RNAP_component_monomer_indices = np.array([
+		monomer_idx_dict.get(monomer_id) for monomer_id in RNAP_component_monomer_ids])
 
-	return RNAP_component_mRNA_ids, RNAP_component_mRNA_indices, RNAP_component_monomer_ids, RNAP_component_monomer_indices
+	assert len(RNAP_component_RNA_ids) == len(RNAP_component_RNA_indices)
+	assert len(RNAP_component_monomer_ids) == len(RNAP_component_monomer_indices)
+
+	return RNAP_component_RNA_ids, RNAP_component_RNA_indices, RNAP_component_monomer_ids, RNAP_component_monomer_indices
+
 
 def determine_ribosome_component_ids_and_indices(sim_data):
 	"""
@@ -193,52 +205,52 @@ def determine_ribosome_component_ids_and_indices(sim_data):
 	"""
 
 	monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
-	mRNA_monomer_id_dict = dict(
-		zip(monomer_sim_data['cistron_id'], monomer_sim_data['id']))
+	monomer_id_to_cistron_id_dict = dict(
+		zip(monomer_sim_data['id'], monomer_sim_data['cistron_id']))
 	RNA_data = sim_data.process.transcription.rna_data
-	mRNA_idx_dict = {RNA[:-3]: i for i, RNA in enumerate(RNA_data['id'])}
+	RNA_idx_to_id_dict = {i: RNA[:-3] for i, RNA in enumerate(RNA_data['id'])}
 	monomer_idx_dict = {
 		monomer: i for i, monomer in enumerate(monomer_sim_data['id'])}
 
 	ribosome_component_monomer_ids = sim_data.molecule_groups.ribosomal_proteins
-	ribosome_component_RNA_ids = [
-		mRNA_monomer_id_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
-	ribosome_component_RNA_cistron_indices = [
-		mRNA_idx_dict.get(mRNA_id) for mRNA_id in ribosome_component_RNA_ids]
-	# map cistron indices to mRNA indices
-	ribosome_component_RNA_indices = []
-	for cistron_index in ribosome_component_RNA_cistron_indices:
-		ribosome_component_RNA_indices.extend(
-			np.where(sim_data.process.transcription.cistron_tu_mapping_matrix.T.dot(
-				np.isin(sim_data.process.transcription.cistron_data['id'],
-				sim_data.process.transcription.cistron_data['id'][cistron_index])))[0])
-	ribosome_component_monomer_indices = [
-		monomer_idx_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
+	ribosome_component_cistron_ids = [
+		monomer_id_to_cistron_id_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids]
+	ribosome_component_RNA_indices = np.array([], dtype=int)
+	for cistron_id in ribosome_component_cistron_ids:
+		ribosome_component_RNA_indices = np.append(
+			ribosome_component_RNA_indices,
+			sim_data.process.transcription.cistron_id_to_rna_indexes(cistron_id))
+	ribosome_component_RNA_ids = np.array([
+		RNA_idx_to_id_dict[RNA_index] for RNA_index in ribosome_component_RNA_indices])
+	ribosome_component_monomer_indices = np.array([
+		monomer_idx_dict.get(monomer_id) for monomer_id in ribosome_component_monomer_ids])
 
-	rRNA_operons = sim_data.molecule_groups.rRNA_operons
-	genes_in_rRNA_operons = []
+	gene_sim_data = sim_data.process.replication.gene_data
+	gene_id_to_cistron_id_dict = dict(
+		zip(gene_sim_data['name'], gene_sim_data['cistron_id']))
+
+	rRNA_operons = sim_data.molecule_groups.rRNA_operons  # this is a list of operon common names
+	rRNA_operons_genes = []
 	for rRNA_operon in rRNA_operons:
-		genes_in_rRNA_operons.extend(sim_data.molecule_groups.__dict__[rRNA_operon])
-	rRNA_indexes = np.where(sim_data.process.transcription.cistron_tu_mapping_matrix.T.dot(
-		np.isin(sim_data.process.transcription.cistron_data['gene_id'],
-		genes_in_rRNA_operons)))[0]
-	rRNA_indexes = np.where(
-		np.isin(sim_data.process.transcription.cistron_data['gene_id'],
-		genes_in_rRNA_operons))[0]
-	rRNA_indexes = rRNA_indexes.tolist()
-	rRNA_operons_mRNA_cistron_ids = (sim_data.process.transcription.cistron_data['id'][rRNA_indexes]).tolist()
+		rRNA_operons_genes.extend(sim_data.molecule_groups.__dict__[rRNA_operon])
+	rRNA_operons_cistron_ids = np.array([gene_id_to_cistron_id_dict[gene_id] for gene_id in rRNA_operons_genes])
+	rRNA_operons_RNA_indices = np.array([], dtype=int)
+	for cistron_id in rRNA_operons_cistron_ids:
+		rRNA_operons_RNA_indices = np.append(
+			rRNA_operons_RNA_indices,
+			sim_data.process.transcription.cistron_id_to_rna_indexes(cistron_id))
+	rRNA_operons_RNA_indices = np.unique(rRNA_operons_RNA_indices)
+	rRNA_operons_RNA_ids = np.array([
+		RNA_idx_to_id_dict[RNA_index] for RNA_index in rRNA_operons_RNA_indices])
 
-	import ipdb
-	ipdb.set_trace()
+	ribosome_component_RNA_indices = np.append(ribosome_component_RNA_indices, rRNA_operons_RNA_indices)
+	ribosome_component_RNA_ids = np.append(ribosome_component_RNA_ids, rRNA_operons_RNA_ids)
 
-	assert len(rRNA_indexes) == len(genes_in_rRNA_operons)
-	ribosome_component_RNA_indices.append(rRNA_indexes)
-	ribosome_component_RNA_ids.append(rRNA_operons_mRNA_cistron_ids)
-
-	import ipdb
-	ipdb.set_trace()
+	assert len(ribosome_component_RNA_ids) == len(ribosome_component_RNA_indices)
+	assert len(ribosome_component_monomer_ids) == len(ribosome_component_monomer_indices)
 
 	return ribosome_component_RNA_ids, ribosome_component_RNA_indices, ribosome_component_monomer_ids, ribosome_component_monomer_indices
+
 
 def get_new_gene_expression_factor_and_translation_efficiency(sim_data, index):
 	"""
@@ -292,12 +304,14 @@ def induce_new_genes(sim_data, index):
 	print("New gene indices: ", new_gene_indices)
 
 	# Determine ids and indices of RNAP and ribosome components
-	RNAP_component_mRNA_ids, RNAP_component_mRNA_indices, \
+	RNAP_component_RNA_ids, RNAP_component_RNA_indices, \
 		RNAP_component_monomer_ids, RNAP_component_monomer_indices = determine_RNAP_component_ids_and_indices(sim_data)
 	ribosome_component_RNA_ids, ribosome_component_RNA_indices, \
 		ribosome_component_monomer_ids, ribosome_component_monomer_indices = determine_ribosome_component_ids_and_indices(sim_data)
 
-	indices_to_not_adjust = RNAP_component_mRNA_indices + ribosome_component_RNA_indices
+	indices_to_not_adjust = np.append(RNAP_component_RNA_indices, ribosome_component_RNA_indices)
+	indices_to_not_adjust = np.unique(indices_to_not_adjust)
+	indices_to_not_adjust = indices_to_not_adjust.tolist()
 
 	# Modify expression and translation efficiency for new genes
 	for i in range(len(new_gene_indices)):
@@ -315,6 +329,9 @@ def induce_new_genes(sim_data, index):
 				monomer_index] = trl_eff_value
 		else:
 			raise Exception("RNAP_RENORMALIZATION, RIBOSOME_RENORMALIZATION, and NEW_GENE_RENORMALIZATION must all be set to True or False")
+
+	import ipdb
+	ipdb.set_trace()
 
 
 def knockout_induced_new_gene_expression(sim_data, index):
@@ -369,11 +386,10 @@ def new_gene_internal_shift(sim_data, index):
 	# Initialize internal shift dictionary
 	setattr(sim_data, 'internal_shift_dict', {})
 
-	# TODO: CHECK THAT ALL THE INDICES ARE FOR RNA data AND NOT CISTRONS
-
-	# TODO: DELETE AFTER TESTING
+	# # TODO: DELETE AFTER TESTING - this lets you debug in gen 0 before shift
 	induce_new_genes(sim_data, condition_index)
-
+	import ipdb
+	ipdb.set_trace()
 
 	# Add the new gene induction to the internal_shift instructions
 	# Note: Must add an entry for each non wildtype gen because sim_data is
