@@ -47,6 +47,8 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.monomer_index_to_tu_indexes = sim_data.relation.monomer_index_to_tu_indexes
 		self.monomerIds = sim_data.process.translation.monomer_data[
 			'id']
+		self.monomer_id_to_index = {
+			monomer_id: i for i, monomer_id in enumerate(self.monomerIds)}
 
 		# Create view on to active 70S ribosomes
 		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
@@ -57,6 +59,10 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 		# Create view onto RNAs
 		self.RNAs = self.uniqueMoleculesView('RNA')
+
+		# TODO: clean up implementation if this proves useful
+		self.new_genes_new_renomalization_method = sim_data.new_genes_new_renomalization_method
+		self.new_gene_renormalization = sim_data.new_gene_renormalization
 
 	def calculateRequest(self):
 		current_media_id = self._external_states['Environment'].current_media_id
@@ -125,13 +131,89 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 
 			cistron_counts[cistron_indexes] += length > cistron_start_positions
 
-		# TODO: figure this out for ng plus machinery upregulation - can't have normalization happening like this
+		if not self.new_genes_new_renomalization_method:
+			# Calculate initiation probabilities for ribosomes based on mRNA counts
+			# and associated mRNA translational efficiencies
+			protein_init_prob = normalize(
+				cistron_counts[self.cistron_to_monomer_mapping] * self.translationEfficiencies
+			)
+		# TODO: clean up implementation if this proves useful
+		else:
+			# Fixed proability for ribosome and RNAP proteins
+			protein_init_prob_production_machinery_monomer_ids = [
+				"EG10893-MONOMER[c]", "RPOC-MONOMER[c]", "RPOB-MONOMER[c]", "EG10864-MONOMER[c]",
+				"EG10865-MONOMER[c]", "EG10866-MONOMER[c]", "EG10867-MONOMER[c]",
+				"EG10868-MONOMER[c]", "EG10869-MONOMER[c]", "EG10870-MONOMER[c]",
+				"EG10871-MONOMER[c]", "EG10872-MONOMER[c]", "EG10873-MONOMER[c]",
+				"EG10874-MONOMER[c]", "EG10875-MONOMER[c]", "EG10876-MONOMER[c]",
+				"EG10877-MONOMER[c]", "EG10878-MONOMER[c]", "EG10879-MONOMER[c]",
+				"EG10880-MONOMER[c]", "EG10881-MONOMER[c]", "EG10882-MONOMER[c]",
+				"EG10883-MONOMER[c]", "EG10884-MONOMER[c]", "EG10885-MONOMER[c]",
+				"EG10886-MONOMER[c]", "EG10887-MONOMER[c]", "EG10888-MONOMER[c]",
+				"EG10889-MONOMER[c]", "EG10890-MONOMER[c]", "EG10891-MONOMER[c]",
+				"EG10892-MONOMER[c]", "EG10900-MONOMER[c]", "EG10901-MONOMER[c]",
+				"EG10902-MONOMER[c]", "EG10903-MONOMER[c]", "EG10904-MONOMER[c]",
+				"EG10905-MONOMER[c]", "EG10906-MONOMER[c]", "EG10907-MONOMER[c]",
+				"EG10908-MONOMER[c]", "EG10909-MONOMER[c]", "EG10910-MONOMER[c]",
+				"EG10911-MONOMER[c]", "EG10912-MONOMER[c]", "EG10913-MONOMER[c]",
+				"EG10914-MONOMER[c]", "EG10915-MONOMER[c]", "EG10916-MONOMER[c]",
+				"EG10917-MONOMER[c]", "EG10918-MONOMER[c]", "EG10919-MONOMER[c]",
+				"EG10920-MONOMER[c]", "EG11231-MONOMER[c]", "EG11232-MONOMER[c]",
+				"EG50001-MONOMER[c]", "EG50002-MONOMER[c]"
+			]
+			protein_init_prob_production_machinery_wt_averages = [ # from Sherlock sims Var 0 20250126 (192 cells)
+				0.001568891222931201,0.0006442700785720917,0.0006821817327190883,
+				0.00540970102753629,0.00475859642347963,0.005034707531523795,
+				0.004920232468467931,0.005350714785314307,0.005140925789781231,
+				0.007660048068656697,0.004636646477916895,0.0057325854993190775,
+				0.01763480093354898,0.004320080554452435,0.005479543999452174,
+				0.004917244347880968,0.004399804088259584,0.004488859197106797,
+				0.005060966573133763,0.0046912427457965105,0.005435711110032523,
+				0.004570079546941582,0.00481457550561655,0.005409008419909916,
+				0.005494705370257568,0.007657301217291726,0.004337003245307404,
+				0.004940956947911407,0.005207787503348046,0.009239694631968902,
+				0.005609539275637401,0.005527568848369066,0.005110946831165395,
+				0.005434301337342072,0.0045139089962265636,0.004871321917916269,
+				0.005008789416411867,0.008853681017458502,0.00650624715296144,
+				0.005202775094430449,0.005329672381466186,0.005097581750432442,
+				0.004967106914824536,0.005605083106438874,0.005061679312008517,
+				0.005257429158061467,0.009294907769563793,0.0051826962725286165,
+				0.004307513801147991,0.010736563374561539,0.004618135225982999,
+				0.004506030836185574,0.01242081688111554,0.004659388090561654,
+				0.004924109782446105,0.005288877847889438,0.005461438868113937
+			]
 
-		# Calculate initiation probabilities for ribosomes based on mRNA counts
-		# and associated mRNA translational efficiencies
-		protein_init_prob = normalize(
-			cistron_counts[self.cistron_to_monomer_mapping] * self.translationEfficiencies
-		)
+			sum_protein_production_machinery_init_probs = np.sum(np.array(protein_init_prob_production_machinery_wt_averages))
+			remaining_protein_init_prob = 1 - sum_protein_production_machinery_init_probs
+
+			# Find index for all ids in protein_init_prob_production_machinery_monomer_ids
+			indices_with_fixed_protein_init_prob = []
+			for protein_init_prob_production_machinery_monomer_id in protein_init_prob_production_machinery_monomer_ids:
+				indices_with_fixed_protein_init_prob.append(
+					self.monomer_id_to_index[protein_init_prob_production_machinery_monomer_id])
+			if not self.new_gene_renormalization: # then new gene should also have fixed protein init prob
+				# exit the sim
+				# TODO: think about later
+				raise ValueError("New gene fixed protein init prob would need to be provided")
+
+			indices_with_fixed_protein_init_prob_mask = np.zeros(len(self.monomerIds), dtype=bool)
+			indices_with_fixed_protein_init_prob_mask[indices_with_fixed_protein_init_prob] = True
+
+			# Calculate initiation probabilities for ribosomes based on mRNA counts
+			# and associated mRNA translational efficiencies
+			protein_init_prob = normalize(
+				cistron_counts[self.cistron_to_monomer_mapping] * self.translationEfficiencies
+			)
+
+			# Set fixed init probs for production machinery
+			protein_init_prob[indices_with_fixed_protein_init_prob_mask] = np.array(protein_init_prob_production_machinery_wt_averages)
+
+			# Now renormalize the rest of the protein_init_probs
+			indices_to_adjust_init_prob = np.sum(protein_init_prob[~indices_with_fixed_protein_init_prob_mask])
+			protein_init_prob[~indices_with_fixed_protein_init_prob_mask] *= remaining_protein_init_prob / indices_to_adjust_init_prob
+
+			assert np.isclose(np.sum(protein_init_prob), 1, atol=1e-5), f"Sum of protein init probs is not 1: {np.sum(protein_init_prob)}"
+
 		target_protein_init_prob = protein_init_prob.copy()
 		self.writeToListener(
 			"RibosomeData", "target_prob_translation_per_transcript",

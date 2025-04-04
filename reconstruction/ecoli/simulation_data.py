@@ -85,6 +85,10 @@ class SimulationDataEcoli(object):
 		self.translation_supply_rate = {}
 		self.pPromoterBound = {}
 
+		# TODO: clean up implementation if this proves useful
+		self.new_genes_new_renomalization_method = False # Means production machinery genes get normalized with everything else
+		self.new_gene_renormalization = True # means new genes would get normalized with other non production machinery genes
+
 
 	def _add_molecular_weight_keys(self, raw_data):
 		self.submass_name_to_index = {
@@ -499,3 +503,8 @@ class SimulationDataEcoli(object):
 		remaining_exp_ppgpp_sum = 1.0 - fixed_exp_ppgpp_sum
 		indices_to_adjust_exp_ppgpp_sum = transcription.exp_ppgpp[~indices_to_not_adjust_mask].sum()
 		transcription.exp_ppgpp[~indices_to_not_adjust_mask] *= remaining_exp_ppgpp_sum / indices_to_adjust_exp_ppgpp_sum
+
+		# TODO: clean up implementation if this proves useful
+		self.new_genes_new_renomalization_method = True
+		self.new_gene_renormalization = new_gene_renormalization
+

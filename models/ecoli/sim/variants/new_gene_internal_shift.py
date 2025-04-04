@@ -62,12 +62,12 @@ CONTROL_OUTPUT = dict(
 # Renormalization options
 RNAP_RENORMALIZATION = False # Preserve expression of RNAP subunits
 RIBOSOME_RENORMALIZATION = False # Preserve expression of ribosomal components
-NEW_GENE_RENORMALIZATION = False
+NEW_GENE_RENORMALIZATION = True
 
 # NOTE: If these values are greater than the number of generations you are
 # running, you will not see their effects.
 # OPTION: Set = -1 to skip induction or knockout shifts.
-NEW_GENE_INDUCTION_GEN = 8 # Generation index to induce new gene expression
+NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
 NEW_GENE_KNOCKOUT_GEN = -1 # Generation index to knock out new gene expression
 assert NEW_GENE_INDUCTION_GEN != 0, (
 	"New genes must be induced after the first generation.")
@@ -318,11 +318,11 @@ def induce_new_genes(sim_data, index):
 		gene_index = new_gene_indices[i]
 		monomer_index = new_gene_monomer_indices[i]
 
-		if RNAP_RENORMALIZATION and RIBOSOME_RENORMALIZATION and NEW_GENE_RENORMALIZATION:
+		if (RNAP_RENORMALIZATION and RIBOSOME_RENORMALIZATION and NEW_GENE_RENORMALIZATION) or (index ==0):
 			sim_data.adjust_new_gene_final_expression([gene_index], [expression_factor])
 			sim_data.process.translation.translation_efficiencies_by_monomer[
 				monomer_index] = trl_eff_value
-		elif not RNAP_RENORMALIZATION and not RIBOSOME_RENORMALIZATION and not NEW_GENE_RENORMALIZATION:
+		elif not RNAP_RENORMALIZATION and not RIBOSOME_RENORMALIZATION:
 			sim_data.adjust_new_gene_final_expression_modified_renormalization(
 				[gene_index], [expression_factor], indices_to_not_adjust, NEW_GENE_RENORMALIZATION)
 			sim_data.process.translation.translation_efficiencies_by_monomer[ # TODO: change this to prevent renormalization of new gene, ribosome, and RNAP components
