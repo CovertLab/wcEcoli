@@ -67,7 +67,7 @@ NEW_GENE_RENORMALIZATION = True
 # NOTE: If these values are greater than the number of generations you are
 # running, you will not see their effects.
 # OPTION: Set = -1 to skip induction or knockout shifts.
-NEW_GENE_INDUCTION_GEN = 1 # Generation index to induce new gene expression
+NEW_GENE_INDUCTION_GEN = 8 # Generation index to induce new gene expression
 NEW_GENE_KNOCKOUT_GEN = -1 # Generation index to knock out new gene expression
 assert NEW_GENE_INDUCTION_GEN != 0, (
 	"New genes must be induced after the first generation.")
@@ -78,7 +78,7 @@ if NEW_GENE_KNOCKOUT_GEN != -1:
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
-NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10]
+NEW_GENE_EXPRESSION_FACTORS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0] # Should be descending
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
