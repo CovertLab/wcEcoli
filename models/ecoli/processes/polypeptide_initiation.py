@@ -206,7 +206,7 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 			)
 
 			# Set fixed init probs for production machinery
-			protein_init_prob[indices_with_fixed_protein_init_prob_mask] = np.array(protein_init_prob_production_machinery_wt_averages)
+			protein_init_prob[indices_with_fixed_protein_init_prob] = np.array(protein_init_prob_production_machinery_wt_averages)
 
 			# Now renormalize the rest of the protein_init_probs
 			indices_to_adjust_init_prob = np.sum(protein_init_prob[~indices_with_fixed_protein_init_prob_mask])
