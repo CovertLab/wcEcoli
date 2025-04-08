@@ -71,8 +71,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print(end_gen, start_gen)
 
 			# find the protein counts at the end of the generation:
-			monomer_counts_at_gen_end = free_monomer_counts[end_gen,
-										:]  # get this for each protein
+			monomer_counts_at_gen_end = free_monomer_counts[end_gen, :]
 
 			# find the protein counts at the start of the next generation:
 			monomer_counts_at_gen_start = free_monomer_counts[start_gen, :]
@@ -80,8 +79,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# find the difference between the two:
 			protein_counts_removed = monomer_counts_at_gen_end - monomer_counts_at_gen_start
 			diluted_counts[i, :] = protein_counts_removed
-			diluted_counts_over_time[start_gen,
-			:] = protein_counts_removed  # put it at the start of the next gen in terms of time
+			diluted_counts_over_time[end_gen, :] = protein_counts_removed # todo: check that this is adding the # diluted to the start of the gen? (maybe it should be th end of the gen tho?)
 
 
 		# compute how many proteins were removed via degradation over the entire sim length:
@@ -96,6 +94,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			# find the protein counts at all time points in the generation:
 			monomer_counts_at_gen = degraded_counts[start_gen:end_gen, :]
+			# todo: add in the diluted counts here too!
+
+			#
+			dilution_counts_at_gen = diluted_counts[i-1,:]
+			# add dilution counts to the last time point of the generation:
+
+			monomer_counts_at_last_time_step = monomer_counts_at_gen[-1, :] + dilution_counts_at_gen
+			monomer_counts_at_gen[-1, :] = monomer_counts_at_last_time_step
+
 
 			# take the average:
 			generation_averages[i, :] = np.mean(monomer_counts_at_gen, axis = 0)
@@ -103,14 +110,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# find the average degradation for each protein over all generations:
 		avg_degraded_counts = np.mean(generation_averages, axis = 0)
 
-
 		# compute how many proteins were removed via dilution over the entire sim length:
-		# todo: make sure this is the right way to compute the average (when you only have one dilution timepoint (becuase there was that one graph I did
-		total_diluted_counts = np.sum(diluted_counts, axis = 0)
-		avg_diluted_counts = total_diluted_counts / len(time) # divide by the number of timesteps to get the average per timestep
+		#total_diluted_counts = np.sum(diluted_counts, axis = 0)
+		#avg_diluted_counts = total_diluted_counts / len(time) # divide by the number of timesteps to get the average per timestep
 
 		# compute the average loss rate for each protein:
-		# todo: decide if I should include dilution rate or not
+		# todo: affirm this is the correct way to account for dilution
 		avg_loss_rate = avg_degraded_counts
 
 		# compute how many counts were added via elongation over the entire sim length:
@@ -138,10 +143,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		min_avg_loss_rate = avg_loss_rate[min_avg_loss_rate_indices]
 		min_avg_elongated_counts_indices = np.nonzero(avg_elongated_counts)
 		min_avg_elongated_counts = avg_elongated_counts[min_avg_elongated_counts_indices]
-
 		min_values = [np.min(min_avg_loss_rate), np.min(min_avg_elongated_counts)]
 		min_value = np.min(min_values)
-		log_factor = min_value * 0.1 # add this to avoid negative and zero log values
+		log_factor = min_value * 1 # add this to avoid negative and zero log values
 
 		# compute the log of the loss and production rates
 		log_avg_loss_rate = np.log10(avg_loss_rate + log_factor)
@@ -152,8 +156,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		from sklearn.metrics import r2_score
 		#rsquared = r2_score( true, predicted)
-		r_squared = r2_score(log_avg_loss_rate, log_avg_production_rate
-							 )
+		r_squared = r2_score(log_avg_loss_rate, log_avg_production_rate)
 
 		plt.scatter(log_avg_production_rate, log_avg_loss_rate, s=5, alpha=0.3, color = 'grey', label=f"$R^2$ = " + str(r_squared))
 
@@ -168,8 +171,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.plot(x, x - 1, color = 'green', alpha = 0.5, linestyle='--')
 
 
-
-
 		plt.xlabel("Log10 Average Production Rate")
 		plt.ylabel("Log10 Average Loss Rate")
 		plt.legend()
@@ -177,14 +178,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		plt.axis('square')
 		plt.tight_layout()
 
-
-
 		#save the plot:
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 
-		# compute the average synthesis rate for each protein:
-		avg_synthesis_rate = avg_elongated_counts
 
 
 if __name__ == '__main__':
