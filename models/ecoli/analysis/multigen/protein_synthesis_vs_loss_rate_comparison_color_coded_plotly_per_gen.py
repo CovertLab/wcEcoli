@@ -15,7 +15,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 HIGHLIGHT_IN_RED = []#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
-HIGHLIGHT_IN_BLUE = []#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
+HIGHLIGHT_IN_BLUE =[] #['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
 HIGHLIGHT_IN_PURPLE = []#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -46,7 +46,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		protein_ids, half_lives, deg_rate_source = (
 			get_protein_data(sim_data, remove_yibQ=False))
-
 
 
 
@@ -160,6 +159,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# find the average elongation for each protein over all generations:
 		avg_elongated_counts = np.mean(generation_averages, axis=0)
 
+		# find the average monomer counts over all generations:
+		FMC_generation_averages = np.zeros((len(cell_paths), len(monomerIds)))
+		for i in range(len(end_generation_indices)):
+			# retrieve the generation start and end time:
+			end_gen = end_generation_indices[i]
+			start_gen = start_generation_indices[i]
+
+			# find the protein counts at all time points in the generation:
+			monomer_counts_at_gen = free_monomer_counts[start_gen:end_gen, :]
+
+			# take the average:
+			FMC_generation_averages[i, :] = np.mean(monomer_counts_at_gen, axis=0)
+
+		# find the average monomer counts over all generations:
+		avg_FMC = np.mean(FMC_generation_averages, axis=0)
+
 		# determine the minimum value:
 		# find the smallest nonzero value in the array:
 		min_avg_loss_rate_indices = np.nonzero(avg_loss_rate)
@@ -184,14 +199,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			x=log_avg_production_rate,
 			y=log_avg_loss_rate,
 			mode='markers',
-            customdata=np.stack((monomerIds, half_lives, deg_rate_source), axis=-1),
+            customdata=np.stack((monomerIds, half_lives, deg_rate_source, avg_FMC), axis=-1),
             hovertemplate=
             "Monomer ID: %{customdata[0]}<br>" +
             "half life: %{customdata[1]}<br>" +
             "source: %{customdata[2]}<br>" +
+			"avgerage free monomer counts: %{customdata[3]}<br>" +
             "<extra></extra>",
 			marker=dict(size=5, color='lightseagreen', opacity=0.3),
-			name='All Proteins'))
+			name="All Proteins"))
 
 		if len(HIGHLIGHT_IN_RED) > 0:
 			# Scatter plot for red proteins
@@ -253,8 +269,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			xaxis_title="Log10 Average Production Rate",
 			yaxis_title="Log10 Average Loss Rate",
 			width=700, height=700,
-			showlegend=True,
-		)
+			showlegend=True,)
 
 		#save the plot:
 		plot_name = plotOutFileName + "_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE) + "_purple_" + str(HIGHLIGHT_IN_PURPLE) + ".html"
