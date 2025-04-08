@@ -4,17 +4,19 @@ Template for multigen analysis plots
 
 import pickle
 import os
-
+from wholecell.utils import units
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-
+import plotly.graph_objects as go
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
-
+HIGHLIGHT_IN_RED = []#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
+HIGHLIGHT_IN_BLUE = []#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
+HIGHLIGHT_IN_PURPLE = []#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -25,6 +27,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cell_paths = self.ap.get_cells()
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
+
+		# Extract protein information (function from protein_half_lives.py)
+		def get_protein_data(sim_data, remove_yibQ):
+			protein_ids = sim_data.process.translation.monomer_data['id']
+			deg_rate_source = sim_data.process.translation.monomer_data['deg_rate_source']
+			degradation_rates = sim_data.process.translation.monomer_data['deg_rate'].asNumber(
+				1 / units.s)
+			half_lives = np.log(2) / degradation_rates / 60  # in minutes
+			if remove_yibQ:
+				indices = [i for i, x in enumerate(protein_ids) if x == "EG12298-MONOMER[c]"]
+				protein_ids_wo_yibQ = np.delete(protein_ids, indices[0])
+				half_lives_wo_yibQ = np.delete(half_lives, indices[0])
+				deg_rate_source_wo_yibQ = np.delete(deg_rate_source, indices[0])
+				return protein_ids_wo_yibQ, half_lives_wo_yibQ, deg_rate_source_wo_yibQ
+			else:
+				return protein_ids, half_lives, deg_rate_source
+
+		protein_ids, half_lives, deg_rate_source = (
+			get_protein_data(sim_data, remove_yibQ=False))
+
+
+
 
 		# Extract protein indexes for each new gene
 		monomer_counts_reader = TableReader(
@@ -37,11 +61,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		monomerIds = monomer_counts_reader.readAttribute(
 			"monomerIds")  # this is the one that matches the indexing  I used earlier to construct the listeners!
 
+
+		# extract the data over all generations:
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(free_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, monomerIds)
 
+		# doubling time function from nora:
 		def extract_doubling_times(cell_paths):
 			# Load data
 			time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
@@ -71,7 +98,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print(end_gen, start_gen)
 
 			# find the protein counts at the end of the generation:
-			monomer_counts_at_gen_end = free_monomer_counts[end_gen, :]
+			monomer_counts_at_gen_end = free_monomer_counts[end_gen,:]  # get this for each protein
 
 			# find the protein counts at the start of the next generation:
 			monomer_counts_at_gen_start = free_monomer_counts[start_gen, :]
@@ -79,7 +106,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# find the difference between the two:
 			protein_counts_removed = monomer_counts_at_gen_end - monomer_counts_at_gen_start
 			diluted_counts[i, :] = protein_counts_removed
-			diluted_counts_over_time[end_gen, :] = protein_counts_removed # todo: check that this is adding the # diluted to the start of the gen? (maybe it should be th end of the gen tho?)
+			diluted_counts_over_time[end_gen,:] = protein_counts_removed  # put it at the start of the next gen in terms of time
 
 
 		# compute how many proteins were removed via degradation over the entire sim length:
@@ -97,29 +124,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# todo: add in the diluted counts here too!
 
 			#
-			dilution_counts_at_gen = diluted_counts[i-1,:]
+			dilution_counts_at_gen = diluted_counts[i - 1, :]
 			# add dilution counts to the last time point of the generation:
 
-			monomer_counts_at_last_time_step = monomer_counts_at_gen[-1, :] + dilution_counts_at_gen
+			monomer_counts_at_last_time_step = monomer_counts_at_gen[-1,
+											   :] + dilution_counts_at_gen
 			monomer_counts_at_gen[-1, :] = monomer_counts_at_last_time_step
 
-
 			# take the average:
-			generation_averages[i, :] = np.mean(monomer_counts_at_gen, axis = 0)
+			generation_averages[i, :] = np.mean(monomer_counts_at_gen, axis=0)
 
 		# find the average degradation for each protein over all generations:
-		avg_degraded_counts = np.mean(generation_averages, axis = 0)
-
-		# compute how many proteins were removed via dilution over the entire sim length:
-		#total_diluted_counts = np.sum(diluted_counts, axis = 0)
-		#avg_diluted_counts = total_diluted_counts / len(time) # divide by the number of timesteps to get the average per timestep
+		avg_degraded_counts = np.mean(generation_averages, axis=0)
 
 		# compute the average loss rate for each protein:
 		# todo: affirm this is the correct way to account for dilution
 		avg_loss_rate = avg_degraded_counts
 
 		# compute how many counts were added via elongation over the entire sim length:
-		elongated_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "peptide_elongate_ES1_counts")
+		elongated_counts = read_stacked_columns(cell_paths, 'MonomerCounts',
+												"peptide_elongate_ES1_counts")
 		# find the average elongation for each protein over all generations:
 		generation_averages = np.zeros((len(cell_paths), len(monomerIds)))
 		for i in range(len(end_generation_indices)):
@@ -144,43 +168,98 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		min_avg_elongated_counts = avg_elongated_counts[min_avg_elongated_counts_indices]
 		min_values = [np.min(min_avg_loss_rate), np.min(min_avg_elongated_counts)]
 		min_value = np.min(min_values)
-		log_factor = min_value * .1 # add this to avoid negative and zero log values
+		log_factor = min_value * .1  # add this to avoid negative and zero log values
 
 		# compute the log of the loss and production rates
 		log_avg_loss_rate = np.log10(avg_loss_rate + log_factor)
 		log_avg_production_rate = np.log10(avg_elongated_counts + log_factor)
 
+
 		# plot the loss rate vs the production rate:
-		plt.figure()
+		# Create figure
+		fig = go.Figure()
 
-		from sklearn.metrics import r2_score
-		#rsquared = r2_score( true, predicted)
-		r_squared = r2_score(log_avg_loss_rate, log_avg_production_rate)
+		# Scatter plot for all proteins (grey)
+		fig.add_trace(go.Scatter(
+			x=log_avg_production_rate,
+			y=log_avg_loss_rate,
+			mode='markers',
+            customdata=np.stack((monomerIds, half_lives, deg_rate_source), axis=-1),
+            hovertemplate=
+            "Monomer ID: %{customdata[0]}<br>" +
+            "half life: %{customdata[1]}<br>" +
+            "source: %{customdata[2]}<br>" +
+            "<extra></extra>",
+			marker=dict(size=5, color='lightseagreen', opacity=0.3),
+			name='All Proteins'))
 
-		plt.scatter(log_avg_production_rate, log_avg_loss_rate, s=5, alpha=0.3, color = 'grey', label=f"$R^2$ = " + str(r_squared))
+		if len(HIGHLIGHT_IN_RED) > 0:
+			# Scatter plot for red proteins
+			red_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_RED]
+			fig.add_trace(go.Scatter(
+				x=log_avg_production_rate[red_protein_indices],
+				y=log_avg_loss_rate[red_protein_indices],
+				mode='markers',
+				hovertext=HIGHLIGHT_IN_RED,
+				marker=dict(size=5, color='red', opacity=1),
+				name='Red Proteins'))
 
-		# add an y=x line:
+		if len(HIGHLIGHT_IN_BLUE) > 0:
+			# Scatter plot for blue proteins
+			blue_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_BLUE]
+			fig.add_trace(go.Scatter(
+				x=log_avg_production_rate[blue_protein_indices],
+				y=log_avg_loss_rate[blue_protein_indices],
+				mode='markers',
+				hovertext=HIGHLIGHT_IN_BLUE,
+				marker=dict(size=5, color='blue', opacity=1),
+				name='Blue Proteins'))
+
+		if len(HIGHLIGHT_IN_PURPLE) > 0:
+			# Scatter plot for purple proteins
+			purple_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_PURPLE]
+			fig.add_trace(go.Scatter(
+				x=log_avg_production_rate[purple_protein_indices],
+				y=log_avg_loss_rate[purple_protein_indices],
+				mode='markers',
+				hovertext=HIGHLIGHT_IN_PURPLE,
+				marker=dict(size=5, color='hotpink', opacity=1),
+				name='Purple Proteins'))
+
+		# Generate line data
 		x = np.linspace(-4, 3, 100)
-		plt.plot(x, x, color = 'black', alpha = 0.5)
 
-		# plot a line at 1 magnitude above the y=x line:
-		plt.plot(x, x + 1, color = 'green', alpha = 0.5, linestyle='--')
+		# y = x line (black)
+		fig.add_trace(go.Scatter(
+			x=x, y=x, mode='lines', line=dict(color='black', width=2,),
+			name='y = x'
+		))
 
-		# plot a line at 1 magnitude below the y=x line:
-		plt.plot(x, x - 1, color = 'green', alpha = 0.5, linestyle='--')
+		# y = x + 1 line (green, dashed)
+		fig.add_trace(go.Scatter(
+			x=x, y=x + 1, mode='lines',
+			line=dict(color='green', width=2, dash='dash'), name='y = x + 1'
+		))
 
+		# y = x - 1 line (green, dashed)
+		fig.add_trace(go.Scatter(
+			x=x, y=x - 1, mode='lines',
+			line=dict(color='green', width=2, dash='dash'), name='y = x - 1'
+		))
 
-		plt.xlabel("Log10 Average Production Rate")
-		plt.ylabel("Log10 Average Loss Rate")
-		plt.legend()
-		plt.title("Log10 Average Loss Rate vs Log10 Average Production Rate")
-		plt.axis('square')
-		plt.tight_layout()
+		# Layout settings
+		fig.update_layout(
+			title="Log10 Average Loss Rate vs Log10 Average Production Rate",
+			xaxis_title="Log10 Average Production Rate",
+			yaxis_title="Log10 Average Loss Rate",
+			width=700, height=700,
+			showlegend=True,
+		)
 
 		#save the plot:
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
-
-
+		plot_name = plotOutFileName + "_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE) + "_purple_" + str(HIGHLIGHT_IN_PURPLE) + ".html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+		#exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
 
 if __name__ == '__main__':
