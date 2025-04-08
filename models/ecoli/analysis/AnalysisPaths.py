@@ -204,6 +204,15 @@ class AnalysisPaths(object):
 		mask = self._path_data['variant'] == variant if variant is not None else slice(None)
 		return sorted(np.unique(self._path_data["seed"][mask]))
 
+	def get_generations(self, variant: Optional[int] = None,
+						seed: Optional[int] = None) -> List[int]:
+		"""Return all the generation values for the given variant and seed."""
+		mask = np.logical_or(self._path_data['variant'] ==
+							  variant if variant is not None else slice(None),
+							  self._path_data['seed'] ==
+							  seed if seed is not None else slice(None))
+		return sorted(np.unique(self._path_data["generation"][mask]))
+
 	def get_cell_variant(self, path: str) -> int:
 		"""Return the variant index for the given get_cells() sim path."""
 		return self._path_data['variant'][self._path_index(path)]
