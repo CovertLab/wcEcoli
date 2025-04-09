@@ -13,10 +13,60 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
+import io
+from wholecell.io import tsv
+from wholecell.utils.filepath import ROOT_PATH
 
-HIGHLIGHT_IN_RED = []#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
-HIGHLIGHT_IN_BLUE =[] #['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
+HIGHLIGHT_IN_RED = ['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
+HIGHLIGHT_IN_BLUE =['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
 HIGHLIGHT_IN_PURPLE = []#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
+
+# function to match gene symbols to monomer ids
+def get_gene_symbols_for_monomer_ids():
+	"""
+	Extracts the gene symbols for each monomer id in the model.
+
+	Returns: a dictionary mapping monomer ids to gene symbols.
+	Code adapted from convert_to_flat.py.
+	"""
+	RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+								 'flat', 'rnas.tsv')
+	with (io.open(RNAS_FILE, 'rb') as f):
+		reader = tsv.reader(f, delimiter='\t')
+		headers = next(reader)
+		while headers[0].startswith('#'):
+			headers = next(reader)
+
+		# extract relevant information
+		gene_symbol_index = headers.index('common_name')
+		protein_id_index = headers.index('monomer_ids')
+		monomer_ids_to_gene_symbols = {}
+		for line in reader:
+			gene_symbol = line[gene_symbol_index]
+			protein_id = list(
+				line[protein_id_index][2:-2].split('", "'))[0]
+			monomer_ids_to_gene_symbols[protein_id] = gene_symbol
+
+	return monomer_ids_to_gene_symbols
+
+def get_common_name(protein_id):
+	"""
+    Obtains the common names for each protein of interest
+    Args:
+        protein_id: the name of the protein(s) of interest
+
+    Returns: the common name for the protein(s) of interest
+    """
+	if protein_id == 'NG-GFP-MONOMER[c]':
+		return 'GFP'
+
+	else:
+		protein = protein_id[:-3]  # subtract the compartment
+		common_name = get_gene_symbols_for_monomer_ids()[protein]
+
+	return common_name
+
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
@@ -47,7 +97,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		protein_ids, half_lives, deg_rate_source = (
 			get_protein_data(sim_data, remove_yibQ=False))
 
-
+		# Get the common names for each protein:
+		common_names = [get_common_name(protein_id) for protein_id in protein_ids]
 
 		# Extract protein indexes for each new gene
 		monomer_counts_reader = TableReader(
@@ -193,54 +244,99 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# plot the loss rate vs the production rate:
 		# Create figure
 		fig = go.Figure()
+		common_names = np.array(common_names)
 
 		# Scatter plot for all proteins (grey)
 		fig.add_trace(go.Scatter(
 			x=log_avg_production_rate,
 			y=log_avg_loss_rate,
 			mode='markers',
-            customdata=np.stack((monomerIds, half_lives, deg_rate_source, avg_FMC), axis=-1),
+            customdata=np.stack((monomerIds, half_lives, deg_rate_source, avg_FMC, common_names), axis=-1),
             hovertemplate=
             "Monomer ID: %{customdata[0]}<br>" +
             "half life: %{customdata[1]}<br>" +
             "source: %{customdata[2]}<br>" +
 			"avgerage free monomer counts: %{customdata[3]}<br>" +
+			"common name: %{customdata[4]}<br>" +
             "<extra></extra>",
 			marker=dict(size=5, color='lightseagreen', opacity=0.3),
 			name="All Proteins"))
 
+		red_name = ''
 		if len(HIGHLIGHT_IN_RED) > 0:
+			monomerIds = np.array(monomerIds)
+			common_names = np.array(common_names)
 			# Scatter plot for red proteins
 			red_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_RED]
 			fig.add_trace(go.Scatter(
 				x=log_avg_production_rate[red_protein_indices],
 				y=log_avg_loss_rate[red_protein_indices],
 				mode='markers',
-				hovertext=HIGHLIGHT_IN_RED,
+				customdata=np.stack(
+					(monomerIds[red_protein_indices], half_lives[red_protein_indices], deg_rate_source[red_protein_indices], avg_FMC[red_protein_indices], common_names[red_protein_indices]), axis=-1),
+				hovertemplate=
+				"Monomer ID: %{customdata[0]}<br>" +
+				"half life: %{customdata[1]}<br>" +
+				"source: %{customdata[2]}<br>" +
+				"avgerage free monomer counts: %{customdata[3]}<br>" +
+				"common name: %{customdata[4]}<br>" +
+				"<extra></extra>",
 				marker=dict(size=5, color='red', opacity=1),
 				name='Red Proteins'))
+			# indicate the name should be in the title:
+			red_name = str(common_names[red_protein_indices])
 
+		blue_name = ""
 		if len(HIGHLIGHT_IN_BLUE) > 0:
+			monomerIds = np.array(monomerIds)
 			# Scatter plot for blue proteins
 			blue_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_BLUE]
 			fig.add_trace(go.Scatter(
 				x=log_avg_production_rate[blue_protein_indices],
 				y=log_avg_loss_rate[blue_protein_indices],
 				mode='markers',
-				hovertext=HIGHLIGHT_IN_BLUE,
+				customdata=np.stack(
+					(monomerIds[blue_protein_indices], half_lives[blue_protein_indices],
+					 deg_rate_source[blue_protein_indices], avg_FMC[blue_protein_indices],
+					 common_names[blue_protein_indices]), axis=-1),
+				hovertemplate=
+				"Monomer ID: %{customdata[0]}<br>" +
+				"half life: %{customdata[1]}<br>" +
+				"source: %{customdata[2]}<br>" +
+				"avgerage free monomer counts: %{customdata[3]}<br>" +
+				"common name: %{customdata[4]}<br>" +
+				"<extra></extra>",
 				marker=dict(size=5, color='blue', opacity=1),
 				name='Blue Proteins'))
+			# indicate the name should be in the title:
+			blue_name = str(common_names[blue_protein_indices])
 
+		purple_name = ""
 		if len(HIGHLIGHT_IN_PURPLE) > 0:
+			monomerIds = np.array(monomerIds)
 			# Scatter plot for purple proteins
 			purple_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_PURPLE]
 			fig.add_trace(go.Scatter(
 				x=log_avg_production_rate[purple_protein_indices],
 				y=log_avg_loss_rate[purple_protein_indices],
 				mode='markers',
-				hovertext=HIGHLIGHT_IN_PURPLE,
+				customdata=np.stack(
+					(monomerIds[purple_protein_indices], half_lives[purple_protein_indices],
+					 deg_rate_source[purple_protein_indices], avg_FMC[purple_protein_indices],
+					 common_names[purple_protein_indices]), axis=-1),
+				hovertemplate=
+				"Monomer ID: %{customdata[0]}<br>" +
+				"half life: %{customdata[1]}<br>" +
+				"source: %{customdata[2]}<br>" +
+				"avgerage free monomer counts: %{customdata[3]}<br>" +
+				"common name: %{customdata[4]}<br>" +
+				"<extra></extra>",
 				marker=dict(size=5, color='hotpink', opacity=1),
 				name='Purple Proteins'))
+
+			# indicate the name should be in the title:
+			purple_name = str(common_names[purple_protein_indices])
+
 
 		# Generate line data
 		x = np.linspace(-4, 3, 100)
@@ -272,7 +368,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			showlegend=True,)
 
 		#save the plot:
-		plot_name = plotOutFileName + "_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE) + "_purple_" + str(HIGHLIGHT_IN_PURPLE) + ".html"
+		plot_name = plotOutFileName + "_red_" + red_name + "_blue_" + blue_name + "_purple_" + purple_name + ".html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 		#exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
