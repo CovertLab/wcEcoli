@@ -52,8 +52,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plot_variant_mask = np.full(len(variants), True)
 		doubling_times = np.zeros(len(variants))
 		avg_ng_monomer = np.zeros(len(variants))
-		trl_eff_values = np.zeros(len(variants))
-		expression_factors = np.zeros(len(variants))
+		avg_active_ribosome_counts = np.zeros(len(variants))
+		avg_active_rnap_counts = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
@@ -86,18 +86,43 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id)
 					for monomer_id in new_gene_monomer_ids]
 
+				uniqueMoleculeCounts = TableReader(
+					os.path.join(simOutDir, "UniqueMoleculeCounts"))
+				ribosome_index = uniqueMoleculeCounts.readAttribute(
+					"uniqueMoleculeIds").index('active_ribosome')
+
+				uniqueMoleculeCounts = TableReader(
+					os.path.join(simOutDir, "UniqueMoleculeCounts"))
+				active_rnap_index = uniqueMoleculeCounts.readAttribute(
+					"uniqueMoleculeIds").index('active_RNAP')
+
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
 				'MonomerCounts', 'monomerCounts',
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
+			active_ribosome_counts = read_stacked_columns(
+				all_cells, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				fun=lambda x: np.mean(x[:,ribosome_index],axis=0))
+
+			avg_active_ribosome_counts[i] = np.mean(active_ribosome_counts)
+
+			active_rnap_counts = read_stacked_columns(
+				all_cells, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				fun=lambda x: np.mean(x[:,active_rnap_index],axis=0))
+
+			avg_active_rnap_counts[i] = np.mean(active_rnap_counts)
+
 		# Save variant index, doubling time, and new gene protein counts
 		# to file
 		all_avg_monomer_counts = np.vstack((variants, doubling_times,
-			avg_ng_monomer)).T
+			avg_ng_monomer, avg_active_ribosome_counts, avg_active_rnap_counts)).T
 		header = np.array(['Variant Index', 'Doubling Time (min)',
-			'New Gene Protein Counts'])
+			'Avg New Gene Protein Counts', 'Avg Active Ribosome Counts',
+			'Avg Active RNA Polymerase Counts'])
 		all_avg_monomer_counts = np.vstack((header, all_avg_monomer_counts))
 		np.savetxt(os.path.join(plotOutDir, plotOutFileName + ".csv"),
 			all_avg_monomer_counts, delimiter=",", fmt="%s")
