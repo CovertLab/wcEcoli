@@ -18,13 +18,13 @@ DOUBLING_TIME_BOUNDS_MINUTES = [0, 180]
 N_BINS = 36
 
 # Set True to exclude cells that hit time limit
-EXCLUDE_TIMEOUT_CELLS = True
+EXCLUDE_TIMEOUT_CELLS = False
 
 # Set True to plot completion rate
-PLOT_COMPLETION_RATES = True
+PLOT_COMPLETION_RATES = False
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 16
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
