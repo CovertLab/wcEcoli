@@ -191,7 +191,7 @@ class Translation(object):
 			len(cistron_id) for cistron_id in cistron_ids)
 		max_deg_source_id_length = max(
 			len(source_id) for source_id in deg_rate_source_id)
-		max_protease_length = max_length = max(
+		max_protease_length = max(
 			len(protease_id) for protease_id in protease_assignment if protease_id is not None)
 
 		monomer_data = np.zeros(
