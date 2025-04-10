@@ -78,7 +78,7 @@ if NEW_GENE_KNOCKOUT_GEN != -1:
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
-NEW_GENE_EXPRESSION_FACTORS = [0, 5, 6, 7, 8, 9, 10]
+NEW_GENE_EXPRESSION_FACTORS = [0, 5, 6, 7, 8, 9, 10, 11, 12]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0] # Should be descending
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
