@@ -129,7 +129,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_inactive_ribosome_counts[i] = np.mean(inactive_ribosome_counts)
 			avg_total_ribosome_counts[i] = (
 					avg_active_ribosome_counts[i] + avg_inactive_ribosome_counts[i])
-			avg_total_ribosome_conc[i] = np.mean((active_ribosome_counts + inactive_ribosome_counts) * counts_to_molar)
+			avg_total_ribosome_conc[i] = np.mean((active_ribosome_counts + inactive_ribosome_counts) * counts_to_molar.squeeze())
 
 			active_rnap_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
@@ -143,7 +143,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_inactive_rnap_counts[i] = np.mean(rnapCountsBulk)
 			avg_total_rnap_counts[i] = (
 					avg_active_rnap_counts[i] + avg_inactive_rnap_counts[i])
-			avg_total_rnap_conc[i] = np.mean((active_rnap_counts + rnapCountsBulk) * counts_to_molar)
+			avg_total_rnap_conc[i] = np.mean((active_rnap_counts + rnapCountsBulk) * counts_to_molar.squeeze())
 
 		# Save variant index, doubling time, and new gene protein counts
 		# to file
