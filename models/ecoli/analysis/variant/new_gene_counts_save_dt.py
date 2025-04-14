@@ -109,48 +109,38 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				remove_first=True, ignore_exception=True)
 
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
-				'MonomerCounts', 'monomerCounts', remove_first=True,
-				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
+				'MonomerCounts', 'monomerCounts',
+				remove_first=True)[:,new_gene_monomer_indexes]
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
 			active_ribosome_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts', remove_first=True,
-				fun=lambda x: np.mean(x[:,ribosome_index],axis=0))
+				'uniqueMoleculeCounts',
+				remove_first=True)[:,ribosome_index]
 			avg_active_ribosome_counts[i] = np.mean(active_ribosome_counts)
 
 			complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
 			complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
 			(complex_counts_30s, complex_counts_50s) = read_stacked_bulk_molecules(
-				all_cells, (complex_id_30s, complex_id_50s))
-			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
-			cell_ids, idx, cell_total_timesteps = np.unique(
-				cell_id_vector, return_inverse=True, return_counts=True)
+				all_cells, (complex_id_30s, complex_id_50s),
+				remove_first=True)
 			inactive_ribosome_counts = np.minimum(
 				complex_counts_30s, complex_counts_50s)
-			sum_inactive_ribosome_counts = np.bincount(
-				idx, weights=inactive_ribosome_counts)
-			curr_avg_inactive_ribosome_counts = (sum_inactive_ribosome_counts / cell_total_timesteps)
-			avg_inactive_ribosome_counts[i] = np.mean(curr_avg_inactive_ribosome_counts)
+			avg_inactive_ribosome_counts[i] = np.mean(inactive_ribosome_counts)
 			avg_total_ribosome_counts[i] = (
 					avg_active_ribosome_counts[i] + avg_inactive_ribosome_counts[i])
 			avg_total_ribosome_conc[i] = np.mean((active_ribosome_counts + inactive_ribosome_counts) * counts_to_molar)
 
 			active_rnap_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts', remove_first=True,
-				fun=lambda x: np.mean(x[:,active_rnap_index],axis=0))
+				'uniqueMoleculeCounts',
+				remove_first=True)[:,active_rnap_index]
 
 			rnap_id = [sim_data.molecule_ids.full_RNAP]
-			(rnapCountsBulk,) = read_stacked_bulk_molecules(all_cells, (rnap_id,))
-			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
-			cell_ids, idx, cell_total_timesteps = np.unique(
-				cell_id_vector, return_inverse=True, return_counts=True)
-			sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
-			curr_avg_inactive_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
-
+			(rnapCountsBulk,) = read_stacked_bulk_molecules(
+				all_cells, (rnap_id,), remove_first=True)
 			avg_active_rnap_counts[i] = np.mean(active_rnap_counts)
-			avg_inactive_rnap_counts[i] = np.mean(curr_avg_inactive_rnap_counts)
+			avg_inactive_rnap_counts[i] = np.mean(rnapCountsBulk)
 			avg_total_rnap_counts[i] = (
 					avg_active_rnap_counts[i] + avg_inactive_rnap_counts[i])
 			avg_total_rnap_conc[i] = np.mean((active_rnap_counts + rnapCountsBulk) * counts_to_molar)

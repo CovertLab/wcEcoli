@@ -320,8 +320,7 @@ def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 		sim_out_dir = os.path.join(sim_dir, 'simOut')
 		try:
 			reader = TableReader(os.path.join(sim_out_dir, table))
-			column_data = reader.readColumn(column, squeeze=False)
-			# [_remove_first(remove_first)]
+			column_data = reader.readColumn(column, squeeze=False)[_remove_first(remove_first)]
 			data.append(np.ones_like(column_data)*counter)
 
 		except Exception as e:
