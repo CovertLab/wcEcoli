@@ -62,6 +62,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_inactive_rnap_counts = np.zeros(len(variants))
 		avg_total_rnap_counts = np.zeros(len(variants))
 		avg_total_rnap_conc = np.zeros(len(variants))
+		avg_dry_mass = np.zeros(len(variants))
+		avg_cell_mass = np.zeros(len(variants))
+		avg_mRNA_mass = np.zeros(len(variants))
+		avg_rRNA_mass = np.zeros(len(variants))
+		avg_tRNA_mass = np.zeros(len(variants))
+		avg_protein_mass = np.zeros(len(variants))
+		avg_dna_mass = np.zeros(len(variants))
+		avg_water_mass = np.zeros(len(variants))
+		avg_small_molecule_mass = np.zeros(len(variants))
+		avg_membrane_mass = np.zeros(len(variants))
+		percent_completion = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
@@ -145,13 +156,64 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					avg_active_rnap_counts[i] + avg_inactive_rnap_counts[i])
 			avg_total_rnap_conc[i] = np.mean((active_rnap_counts + rnapCountsBulk) * counts_to_molar.squeeze())
 
+			# Cell masses
+			avg_dry_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'dryMass',
+				remove_first=True, ignore_exception=True))
+			avg_cell_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'cellMass',
+				remove_first=True, ignore_exception=True))
+			avg_mRNA_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'mRnaMass',
+				remove_first=True, ignore_exception=True))
+			avg_rRNA_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'rRnaMass',
+				remove_first=True, ignore_exception=True))
+			avg_tRNA_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'tRnaMass',
+				remove_first=True, ignore_exception=True))
+			avg_protein_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'proteinMass',
+				remove_first=True, ignore_exception=True))
+			avg_dna_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'dnaMass',
+				remove_first=True, ignore_exception=True))
+			avg_water_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'waterMass',
+				remove_first=True, ignore_exception=True))
+			avg_small_molecule_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'smallMoleculeMass',
+				remove_first=True, ignore_exception=True))
+			avg_membrane_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'membrane_mass',
+				remove_first=True, ignore_exception=True))
+
+			# count number of seeds that reached full 24 gens
+			# of growth
+			all_cells_last_gen = self.ap.get_cells(
+				variant=[variant],
+				generation=np.arange(n_total_gens - 1, n_total_gens),
+				only_successful=True)
+
+			all_cells_first_gen = self.ap.get_cells(
+				variant=[variant],
+				generation=np.arange(0, 1),
+				only_successful=True)
+
+			percent_completion[i] = len(all_cells_last_gen) / len(all_cells_first_gen)
+
 		# Save variant index, doubling time, and new gene protein counts
 		# to file
 		all_avg_monomer_counts = np.vstack((variants, doubling_times,
 			avg_ng_monomer, avg_active_ribosome_counts, avg_inactive_ribosome_counts,
 			avg_total_ribosome_counts, avg_total_ribosome_conc,
 			avg_active_rnap_counts, avg_inactive_rnap_counts,
-			avg_total_rnap_counts, avg_total_rnap_conc)).T
+			avg_total_rnap_counts, avg_total_rnap_conc,
+			avg_dry_mass, avg_cell_mass, avg_mRNA_mass,
+			avg_rRNA_mass, avg_tRNA_mass, avg_protein_mass,
+			avg_dna_mass, avg_water_mass, avg_small_molecule_mass,
+			avg_membrane_mass, percent_completion,
+		)).T
 		header = np.array([
 			'Variant Index', 'Doubling Time (min)',
 			'Avg New Gene Protein Counts', 'Avg Active Ribosome Counts',
@@ -160,7 +222,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'Avg Active RNA Polymerase Counts',
 			'Avg Inactive RNA Polymerase Counts',
 		  	'Avg Total RNA Polymerase Counts',
-			'Avg Total RNA Polymerase Concentration (uM)'])
+			'Avg Total RNA Polymerase Concentration (uM)',
+			'Avg Dry Mass (fg)', 'Avg Cell Mass (fg)',
+			'Avg mRNA Mass (fg)', 'Avg rRNA Mass (fg)',
+			'Avg tRNA Mass (fg)', 'Avg Protein Mass (fg)',
+			'Avg DNA Mass (fg)', 'Avg Water Mass (fg)',
+			'Avg Small Molecule Mass (fg)', 'Avg Membrane Mass (fg)',
+			'Percent Completion (fraction of seeds that reached all gens)',
+		])
 		all_avg_monomer_counts = np.vstack((header, all_avg_monomer_counts))
 		np.savetxt(os.path.join(plotOutDir, plotOutFileName + ".csv"),
 			all_avg_monomer_counts, delimiter=",", fmt="%s")
