@@ -3,7 +3,6 @@ Analyze the average mass breakdowns for each variant index as
 bar charts.
 """
 
-import os
 import pickle
 
 import numpy as np
@@ -11,8 +10,6 @@ import matplotlib.pyplot as plt
 
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
-from wholecell.io.tablereader import TableReader
-from wholecell.utils import units
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
@@ -109,14 +106,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i, mass_category in enumerate(mass_categories):
 			mass_colors_dict[mass_category] = mass_colors[i]
 
-		avg_masses_by_category = {}
+		# Sort the variants by descending cell mass
+		sorted_indexes = np.argsort(avg_mass[:, 0])[::-1]
+		sorted_avg_mass = avg_mass[sorted_indexes]
+		sorted_avg_DNA_mass = avg_DNA_mass[sorted_indexes]
+		sorted_avg_mRNA_mass = avg_mRNA_mass[sorted_indexes]
+		sorted_avg_protein_mass = avg_protein_mass[sorted_indexes]
+		sorted_avg_rRNA_mass = avg_rRNA_mass[sorted_indexes]
+		sorted_avg_tRNA_mass = avg_tRNA_mass[sorted_indexes]
+		sorted_avg_membrane_mass = avg_membrane_mass[sorted_indexes]
+		sorted_avg_water_mass = avg_water_mass[sorted_indexes]
+		sorted_selected_variant_indexes = np.array(selected_variant_indexes)[sorted_indexes]
+		# Create a list of the average masses for each category
+		sorted_avg_masses = [sorted_avg_mass, sorted_avg_DNA_mass, sorted_avg_mRNA_mass,
+							 sorted_avg_protein_mass, sorted_avg_rRNA_mass, sorted_avg_tRNA_mass,
+							 sorted_avg_membrane_mass, sorted_avg_water_mass]
+		# Create a list of the colors for each category
+		sorted_avg_masses_by_category = {}
 		for i, mass_category in enumerate(mass_categories):
-			avg_masses_by_category[mass_category] = avg_masses[i]
-		x = np.arange(len(selected_variant_indexes))
+			sorted_avg_masses_by_category[mass_category] = sorted_avg_masses[i]
+
+		x = np.arange(len(sorted_selected_variant_indexes))
 		width = 0.1
 		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
-		for mass_category, avg_mass_for_category in avg_masses_by_category.items():
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
 			offset = width * multiplier
 			bars = ax.bar(
 				x + offset, avg_mass_for_category.squeeze(), width, label=mass_category,
@@ -124,25 +138,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			multiplier += 1
 		ax.set_ylabel('Mass (fg)')
 		ax.set_title('Mass Breakdown by Variant')
-		ax.set_xticks(x + width, selected_variant_indexes)
-		ax.set_xticklabels(selected_variant_indexes)
+		ax.set_xticks(x + width, sorted_selected_variant_indexes)
+		ax.set_xticklabels(sorted_selected_variant_indexes)
 		ax.legend()
-		ax.set_ylim(0, 1.2 * np.max(avg_mass))
 		ax.set_xlabel('Variant Index')
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, f"{plotOutFileName}_sorted", metadata)
 		plt.close('all')
 
 		# Make a bar plot where instead of plotting mass per category we plot
 		# the mass per category as a percentage of the total mass
-		avg_masses_by_category_as_percentage = {}
+		sorted_avg_masses_by_category_as_percentage = {}
 		for i, mass_category in enumerate(mass_categories):
-			avg_masses_by_category_as_percentage[mass_category] = (
-				avg_masses[i] / avg_mass) * 100
-		x = np.arange(len(selected_variant_indexes))
+			sorted_avg_masses_by_category_as_percentage[mass_category] = (
+				sorted_avg_masses[i] / sorted_avg_mass) * 100
+		x = np.arange(len(sorted_selected_variant_indexes))
 		width = 0.1
 		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
-		for mass_category, avg_mass_for_category in avg_masses_by_category_as_percentage.items():
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
 			if mass_category == 'Cell Mass':
 				continue
 			offset = width * multiplier
@@ -152,16 +165,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			multiplier += 1
 		ax.set_ylabel('Mass (%)')
 		ax.set_title('Mass Breakdown by Variant as Percentage of Total Mass')
-		ax.set_xticks(x + width, selected_variant_indexes)
-		ax.set_xticklabels(selected_variant_indexes)
+		ax.set_xticks(x + width, sorted_selected_variant_indexes)
+		ax.set_xticklabels(sorted_selected_variant_indexes)
 		ax.legend()
 		ax.set_xlabel('Variant Index')
-		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_with_water", metadata)
+		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_with_water_sorted", metadata)
 		plt.close('all')
 
-		# make the same plot but remove water mass
+		# Make the same plot but remove water mass
+		width = 0.1
+		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
-		for mass_category, avg_mass_for_category in avg_masses_by_category_as_percentage.items():
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
 			if mass_category == 'Cell Mass' or mass_category == 'Water Mass':
 				continue
 			offset = width * multiplier
@@ -171,26 +186,41 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			multiplier += 1
 		ax.set_ylabel('Mass (%)')
 		ax.set_title('Mass Breakdown by Variant as Percentage of Total Mass')
-		ax.set_xticks(x + width, selected_variant_indexes)
-		ax.set_xticklabels(selected_variant_indexes)
+		ax.set_xticks(x + width, sorted_selected_variant_indexes)
+		ax.set_xticklabels(sorted_selected_variant_indexes)
 		ax.legend()
 		ax.set_xlabel('Variant Index')
-		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage", metadata)
+		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_sorted", metadata)
 		plt.close('all')
 
 		# Make a separate plot for each mass category
-		for mass_category, avg_mass_for_category in avg_masses_by_category.items():
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
 			fig, ax = plt.subplots(layout='constrained')
 			bars = ax.bar(
 				x, avg_mass_for_category.squeeze(), width, label=mass_category,
 				color=mass_colors_dict[mass_category])
 			ax.set_ylabel('Mass (fg)')
 			ax.set_title(f'{mass_category} by Variant')
-			ax.set_xticks(x, selected_variant_indexes)
-			ax.set_xticklabels(selected_variant_indexes)
+			ax.set_xticks(x, sorted_selected_variant_indexes)
+			ax.set_xticklabels(sorted_selected_variant_indexes)
 			ax.legend()
 			ax.set_xlabel('Variant Index')
-			exportFigure(plt, plotOutDir, f"{plotOutFileName}_{mass_category}", metadata)
+			exportFigure(plt, plotOutDir, f"{plotOutFileName}_{mass_category}_sorted", metadata)
+			plt.close('all')
+
+		# Make a separate mass % plot for each mass category
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
+			fig, ax = plt.subplots(layout='constrained')
+			bars = ax.bar(
+				x, avg_mass_for_category.squeeze(), width, label=mass_category,
+				color=mass_colors_dict[mass_category])
+			ax.set_ylabel('Mass (%)')
+			ax.set_title(f'{mass_category} by Variant as Percentage of Total Mass')
+			ax.set_xticks(x, sorted_selected_variant_indexes)
+			ax.set_xticklabels(sorted_selected_variant_indexes)
+			ax.legend()
+			ax.set_xlabel('Variant Index')
+			exportFigure(plt, plotOutDir, f"{plotOutFileName}_{mass_category}_percentage_sorted", metadata)
 			plt.close('all')
 
 
