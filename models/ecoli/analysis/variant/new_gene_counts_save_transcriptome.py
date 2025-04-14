@@ -40,7 +40,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Load tables and attributes for RNA cistrons
 		RNA_reader = TableReader(
 			os.path.join(all_cells[0], 'simOut', 'RNACounts'))
-		RNA_cistron_ids = np.array(RNA_reader.readAttribute('mRNA_cistron_ids'))
+		RNA_cistron_ids = RNA_reader.readAttribute('mRNA_cistron_ids')
 
 		# Load tables and attributes for tRNAs and rRNAs
 		unique_molecule_counts_reader = TableReader(
