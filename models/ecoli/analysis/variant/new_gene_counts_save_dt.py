@@ -11,7 +11,9 @@ import pickle
 import os
 
 from models.ecoli.analysis import variantAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.analysis.analysis_tools import (
+	exportFigure, read_stacked_columns, read_stacked_bulk_molecules,
+	stacked_cell_identification)
 from wholecell.io.tablereader import TableReader
 
 # Remove first N gens from plot
@@ -53,7 +55,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		doubling_times = np.zeros(len(variants))
 		avg_ng_monomer = np.zeros(len(variants))
 		avg_active_ribosome_counts = np.zeros(len(variants))
+		avg_inactive_ribosome_counts = np.zeros(len(variants))
+		avg_total_ribosome_counts = np.zeros(len(variants))
 		avg_active_rnap_counts = np.zeros(len(variants))
+		avg_inactive_rnap_counts = np.zeros(len(variants))
+		avg_total_rnap_counts = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
@@ -99,30 +105,59 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
 				'MonomerCounts', 'monomerCounts',
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
-
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
 			active_ribosome_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
 				'uniqueMoleculeCounts',
 				fun=lambda x: np.mean(x[:,ribosome_index],axis=0))
-
 			avg_active_ribosome_counts[i] = np.mean(active_ribosome_counts)
+
+			complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
+			complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
+			(complex_counts_30s, complex_counts_50s) = read_stacked_bulk_molecules(
+				all_cells, (complex_id_30s, complex_id_50s))
+			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
+			cell_ids, idx, cell_total_timesteps = np.unique(
+				cell_id_vector, return_inverse=True, return_counts=True)
+			inactive_ribosome_counts = np.minimum(
+				complex_counts_30s, complex_counts_50s)
+			sum_inactive_ribosome_counts = np.bincount(
+				idx, weights=inactive_ribosome_counts)
+			curr_avg_inactive_ribosome_counts = (sum_inactive_ribosome_counts / cell_total_timesteps)
+			avg_inactive_ribosome_counts[i] = np.mean(curr_avg_inactive_ribosome_counts)
+			avg_total_ribosome_counts[i] = (
+					avg_active_ribosome_counts[i] + avg_inactive_ribosome_counts[i])
 
 			active_rnap_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
 				'uniqueMoleculeCounts',
 				fun=lambda x: np.mean(x[:,active_rnap_index],axis=0))
 
+			rnap_id = [sim_data.molecule_ids.full_RNAP]
+			(rnapCountsBulk,) = read_stacked_bulk_molecules(all_cells, (rnap_id,))
+			cell_id_vector = stacked_cell_identification(all_cells, 'Main', 'time')
+			cell_ids, idx, cell_total_timesteps = np.unique(
+				cell_id_vector, return_inverse=True, return_counts=True)
+			sum_rnap_counts = np.bincount(idx, weights=rnapCountsBulk)
+			curr_avg_inactive_rnap_counts = (sum_rnap_counts / cell_total_timesteps)
+
 			avg_active_rnap_counts[i] = np.mean(active_rnap_counts)
+			avg_inactive_rnap_counts[i] = np.mean(curr_avg_inactive_rnap_counts)
+			avg_total_rnap_counts[i] = (
+					avg_active_rnap_counts[i] + avg_inactive_rnap_counts[i])
 
 		# Save variant index, doubling time, and new gene protein counts
 		# to file
 		all_avg_monomer_counts = np.vstack((variants, doubling_times,
-			avg_ng_monomer, avg_active_ribosome_counts, avg_active_rnap_counts)).T
+			avg_ng_monomer, avg_active_ribosome_counts, avg_inactive_ribosome_counts,
+			avg_total_ribosome_counts, avg_active_rnap_counts, avg_inactive_rnap_counts,
+			avg_total_rnap_counts)).T
 		header = np.array(['Variant Index', 'Doubling Time (min)',
 			'Avg New Gene Protein Counts', 'Avg Active Ribosome Counts',
-			'Avg Active RNA Polymerase Counts'])
+			'Avg Inactive Ribosome Counts', 'Avg Total Ribosome Counts',
+			'Avg Active RNA Polymerase Counts', 'Avg Inactive RNA Polymerase Counts',
+		  	'Avg Total RNA Polymerase Counts'])
 		all_avg_monomer_counts = np.vstack((header, all_avg_monomer_counts))
 		np.savetxt(os.path.join(plotOutDir, plotOutFileName + ".csv"),
 			all_avg_monomer_counts, delimiter=",", fmt="%s")
