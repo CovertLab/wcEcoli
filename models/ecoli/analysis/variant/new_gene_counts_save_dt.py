@@ -57,9 +57,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_active_ribosome_counts = np.zeros(len(variants))
 		avg_inactive_ribosome_counts = np.zeros(len(variants))
 		avg_total_ribosome_counts = np.zeros(len(variants))
+		avg_total_ribosome_conc = np.zeros(len(variants))
 		avg_active_rnap_counts = np.zeros(len(variants))
 		avg_inactive_rnap_counts = np.zeros(len(variants))
 		avg_total_rnap_counts = np.zeros(len(variants))
+		avg_total_rnap_conc = np.zeros(len(variants))
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
@@ -102,14 +104,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				active_rnap_index = uniqueMoleculeCounts.readAttribute(
 					"uniqueMoleculeIds").index('active_RNAP')
 
+			counts_to_molar = read_stacked_columns(
+				all_cells, 'EnzymeKinetics', 'countsToMolar',
+				remove_first=True, ignore_exception=True)
+
 			avg_new_gene_monomer_counts = read_stacked_columns(all_cells,
-				'MonomerCounts', 'monomerCounts',
+				'MonomerCounts', 'monomerCounts', remove_first=True,
 				fun=lambda x: np.mean(x[:,new_gene_monomer_indexes],axis=0))
 			avg_ng_monomer[i] = np.mean(avg_new_gene_monomer_counts)
 
 			active_ribosome_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts',
+				'uniqueMoleculeCounts', remove_first=True,
 				fun=lambda x: np.mean(x[:,ribosome_index],axis=0))
 			avg_active_ribosome_counts[i] = np.mean(active_ribosome_counts)
 
@@ -128,10 +134,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_inactive_ribosome_counts[i] = np.mean(curr_avg_inactive_ribosome_counts)
 			avg_total_ribosome_counts[i] = (
 					avg_active_ribosome_counts[i] + avg_inactive_ribosome_counts[i])
+			avg_total_ribosome_conc[i] = np.mean((active_ribosome_counts + inactive_ribosome_counts) * counts_to_molar)
 
 			active_rnap_counts = read_stacked_columns(
 				all_cells, 'UniqueMoleculeCounts',
-				'uniqueMoleculeCounts',
+				'uniqueMoleculeCounts', remove_first=True,
 				fun=lambda x: np.mean(x[:,active_rnap_index],axis=0))
 
 			rnap_id = [sim_data.molecule_ids.full_RNAP]
@@ -146,18 +153,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_inactive_rnap_counts[i] = np.mean(curr_avg_inactive_rnap_counts)
 			avg_total_rnap_counts[i] = (
 					avg_active_rnap_counts[i] + avg_inactive_rnap_counts[i])
+			avg_total_rnap_conc[i] = np.mean((active_rnap_counts + rnapCountsBulk) * counts_to_molar)
 
 		# Save variant index, doubling time, and new gene protein counts
 		# to file
 		all_avg_monomer_counts = np.vstack((variants, doubling_times,
 			avg_ng_monomer, avg_active_ribosome_counts, avg_inactive_ribosome_counts,
-			avg_total_ribosome_counts, avg_active_rnap_counts, avg_inactive_rnap_counts,
-			avg_total_rnap_counts)).T
-		header = np.array(['Variant Index', 'Doubling Time (min)',
+			avg_total_ribosome_counts, avg_total_ribosome_conc,
+			avg_active_rnap_counts, avg_inactive_rnap_counts,
+			avg_total_rnap_counts, avg_total_rnap_conc)).T
+		header = np.array([
+			'Variant Index', 'Doubling Time (min)',
 			'Avg New Gene Protein Counts', 'Avg Active Ribosome Counts',
 			'Avg Inactive Ribosome Counts', 'Avg Total Ribosome Counts',
-			'Avg Active RNA Polymerase Counts', 'Avg Inactive RNA Polymerase Counts',
-		  	'Avg Total RNA Polymerase Counts'])
+			'Avg Total Ribosome Concentration (uM)',
+			'Avg Active RNA Polymerase Counts',
+			'Avg Inactive RNA Polymerase Counts',
+		  	'Avg Total RNA Polymerase Counts',
+			'Avg Total RNA Polymerase Concentration (uM)'])
 		all_avg_monomer_counts = np.vstack((header, all_avg_monomer_counts))
 		np.savetxt(os.path.join(plotOutDir, plotOutFileName + ".csv"),
 			all_avg_monomer_counts, delimiter=",", fmt="%s")
