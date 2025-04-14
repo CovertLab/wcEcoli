@@ -1,5 +1,6 @@
 """
-Save the average monomer counts for each variant index as a column in a csv file.
+Save the average monomer counts and mass portions for each variant index as
+a column in a csv file.
 """
 
 import os
@@ -14,7 +15,6 @@ from wholecell.utils import units
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
-# IGNORE_FIRST_N_GENS = 1
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
