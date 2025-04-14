@@ -67,16 +67,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cistron_id_to_gene_id[cistron_id] for cistron_id in RNA_cistron_ids]
 
 		essential_genes = validation_data.essential_genes.essential_genes
-		is_essential = np.array(
+		is_essential_RNA = np.array(
 			["essential_RNA" if gene_id in essential_genes else "non_essential_RNA" for gene_id in gene_ids])
 
-		is_essential = np.reshape(is_essential, (len(is_essential), 1))
+		is_essential_RNA = np.reshape(is_essential_RNA, (len(is_essential_RNA), 1))
 		RNA_cistron_ids = np.reshape(RNA_cistron_ids, (len(RNA_cistron_ids), 1))
+
+		n_mRNA = len(RNA_cistron_ids)
+		n_tRNA = len(tRNA_cistron_ids)
+		n_rRNA = len(rRNA_cistron_ids)
+
 		# Initialize a pandas dataframe to store the data
-		all_avg_RNA_counts = np.zeros((len(RNA_cistron_ids), n_variants))
-		all_avg_RNA_counts_portion = np.zeros((len(RNA_cistron_ids), n_variants))
-		all_avg_RNA_transcriptome_mass = np.zeros((len(RNA_cistron_ids), n_variants))
-		all_avg_RNA_dry_cell_mass = np.zeros((len(RNA_cistron_ids), n_variants))
+		all_avg_RNA_counts = np.zeros((n_mRNA + n_tRNA + n_rRNA, n_variants))
+		all_avg_RNA_counts_portion = np.zeros((n_mRNA + n_tRNA + n_rRNA, n_variants))
+		all_avg_RNA_transcriptome_mass = np.zeros((n_mRNA + n_tRNA + n_rRNA, n_variants))
+		all_avg_RNA_dry_cell_mass = np.zeros((n_mRNA + n_tRNA + n_rRNA, n_variants))
 
 		# Loop through variant indexes
 		for i, variant_index in enumerate(selected_variant_indexes):
@@ -114,14 +119,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rRNA_counts += full_ribosome_counts[:, None]
 
 			# Concatenate arrays
-			n_mRNA = len(RNA_cistron_ids)
-			n_tRNA = len(tRNA_cistron_ids)
-			n_rRNA = len(rRNA_cistron_ids)
-			rna_ids = np.concatenate((RNA_cistron_ids, tRNA_cistron_ids, rRNA_cistron_ids))
+
+			rna_ids = np.concatenate((
+				RNA_cistron_ids.squeeze(), np.array(tRNA_cistron_ids),
+				np.array(rRNA_cistron_ids)))
 			rna_counts = np.hstack((RNA_cistron_counts, tRNA_counts, rRNA_counts))
 			tRNA_labels = np.array(['tRNA'] * n_tRNA)
 			rRNA_labels = np.array(['rRNA'] * n_rRNA)
-			is_essential = np.concatenate ((is_essential, tRNA_labels, rRNA_labels))
+			is_essential = np.concatenate((is_essential_RNA.squeeze(), tRNA_labels, rRNA_labels))
 
 			cistron_id_to_mw = {
 				cistron_id: cistron_mw for (cistron_id, cistron_mw)
@@ -139,36 +144,51 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rna_masses_relative_to_total_rna_mass = rna_masses_avg / rna_masses_avg.sum()
 			rna_masses_relative_to_total_dcw = rna_masses_avg / dry_masses.mean()
 
-			all_avg_RNA_counts[i] = np.copy(rna_counts_avg)
-			all_avg_RNA_counts_portion[i] = np.copy(rna_counts_relative_to_total_rna_counts)
-			all_avg_RNA_transcriptome_mass[i] = np.copy(rna_masses_relative_to_total_rna_mass)
-			all_avg_RNA_dry_cell_mass[i] = np.copy(rna_masses_relative_to_total_dcw)
+			all_avg_RNA_counts[:, i] = np.copy(rna_counts_avg)
+			all_avg_RNA_counts_portion[:, i] = np.copy(rna_counts_relative_to_total_rna_counts)
+			all_avg_RNA_transcriptome_mass[:, i] = np.copy(rna_masses_relative_to_total_rna_mass)
+			all_avg_RNA_dry_cell_mass[:, i] = np.copy(rna_masses_relative_to_total_dcw)
 
 		# Save data
-		all_labeled_avg_RNA_counts = np.hstack((RNA_cistron_ids, is_essential, all_avg_RNA_counts))
-		header = np.array(['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
-		all_labeled_avg_RNA_cistron_counts = np.vstack((header, all_labeled_avg_RNA_counts))
+		rna_ids = np.reshape(rna_ids, (len(rna_ids), 1))
+		is_essential = np.reshape(is_essential, (len(is_essential), 1))
+
+		all_labeled_avg_RNA_counts = np.hstack((
+			rna_ids, is_essential, all_avg_RNA_counts))
+		header = np.array(
+			['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
+		all_labeled_avg_RNA_cistron_counts = np.vstack((
+			header, all_labeled_avg_RNA_counts))
 		np.savetxt(
 			os.path.join(plotOutDir, 'all_labeled_avg_RNA_counts.csv'),
 			all_labeled_avg_RNA_cistron_counts, delimiter=',', fmt='%s')
 
-		all_labeled_avg_RNA_counts_portion = np.hstack((RNA_cistron_ids, is_essential, all_avg_RNA_counts_portion))
-		header = np.array(['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
-		all_labeled_avg_RNA_counts_portion = np.vstack((header, all_labeled_avg_RNA_counts_portion))
+		all_labeled_avg_RNA_counts_portion = np.hstack((
+			rna_ids, is_essential, all_avg_RNA_counts_portion))
+		header = np.array(
+			['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
+		all_labeled_avg_RNA_counts_portion = np.vstack((
+			header, all_labeled_avg_RNA_counts_portion))
 		np.savetxt(
 			os.path.join(plotOutDir, 'all_labeled_avg_RNA_counts_portion.csv'),
 			all_labeled_avg_RNA_counts_portion, delimiter=',', fmt='%s')
 
-		all_labeled_avg_RNA_transcriptome_mass = np.hstack((RNA_cistron_ids, is_essential, all_avg_RNA_transcriptome_mass))
-		header = np.array(['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
-		all_labeled_avg_RNA_transcriptome_mass = np.vstack((header, all_labeled_avg_RNA_transcriptome_mass))
+		all_labeled_avg_RNA_transcriptome_mass = np.hstack((
+			rna_ids, is_essential, all_avg_RNA_transcriptome_mass))
+		header = np.array(
+			['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
+		all_labeled_avg_RNA_transcriptome_mass = np.vstack((
+			header, all_labeled_avg_RNA_transcriptome_mass))
 		np.savetxt(
 			os.path.join(plotOutDir, 'all_labeled_avg_RNA_transcriptome_mass.csv'),
 			all_labeled_avg_RNA_transcriptome_mass, delimiter=',', fmt='%s')
 
-		all_labeled_avg_RNA_dry_cell_mass = np.hstack((RNA_cistron_ids, is_essential, all_avg_RNA_dry_cell_mass))
-		header = np.array(['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
-		all_labeled_avg_RNA_dry_cell_mass = np.vstack((header, all_labeled_avg_RNA_dry_cell_mass))
+		all_labeled_avg_RNA_dry_cell_mass = np.hstack((
+			rna_ids, is_essential, all_avg_RNA_dry_cell_mass))
+		header = np.array(
+			['RNA_cistron_ids'] + ['is_essential'] + selected_variant_indexes)
+		all_labeled_avg_RNA_dry_cell_mass = np.vstack((
+			header, all_labeled_avg_RNA_dry_cell_mass))
 		np.savetxt(
 			os.path.join(plotOutDir, 'all_labeled_avg_RNA_dry_cell_mass.csv'),
 			all_labeled_avg_RNA_dry_cell_mass, delimiter=',', fmt='%s')
