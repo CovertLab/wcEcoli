@@ -229,6 +229,51 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			exportFigure(plt, plotOutDir, f"{plotOutFileName}_{mass_category}_percentage_dry_sorted", metadata)
 			plt.close('all')
 
+		# Compare the first sorted variant to the last sorted variant for all categories
+		# in terms of relative percent increase or decrease
+		# in mass
+		percent_changes = []
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
+			percent_change = (
+				avg_mass_for_category[-1] - avg_mass_for_category[0]) / avg_mass_for_category[0] * 100
+			percent_changes.append(percent_change)
+		# Create a bar plot for the percent changes
+		x = np.arange(len(mass_categories)) * 25
+		width = 1.5
+		fig, ax = plt.subplots(figsize=(14, 6))
+		bars = ax.bar(
+			x, percent_changes, width, label='Percent Change',
+			color=poster_colors['poster_blue'])
+		ax.set_ylabel('Percent Change (%)')
+		ax.set_title('Percent Change in Mass from First to Last Variant', fontsize=14, weight='bold')
+		ax.set_xticks(x)
+		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
+		ax.set_xlabel('Mass Category')
+		ax.legend(loc='upper right', frameon=False, ncol=3)
+		plt.tight_layout()
+		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percent_change", metadata)
+		plt.close('all')
+
+		# Do the same but for absolute mass values
+		absolute_mass_percent_changes = []
+		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
+			absolute_mass_percent_change = (
+				avg_mass_for_category[-1] - avg_mass_for_category[0])
+			absolute_mass_percent_changes.append(absolute_mass_percent_change)
+		# Create a bar plot for the percent changes
+		x = np.arange(len(mass_categories)) * 25
+		width = 1.5
+		fig, ax = plt.subplots(figsize=(14, 6))
+		bars = ax.bar(
+			x, absolute_mass_percent_changes, width, label='Absolute Mass Change',
+			color=poster_colors['poster_blue'])
+		ax.set_ylabel('Absolute Mass Change (fg)')
+		ax.set_title('Absolute Mass Change from First to Last Variant', fontsize=14, weight='bold')
+		ax.set_xticks(x)
+		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
+		ax.set_xlabel('Mass Category')
+		
+
 
 if __name__ == "__main__":
 	Plot().cli()
