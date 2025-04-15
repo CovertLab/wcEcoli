@@ -54,6 +54,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_membrane_mass = np.zeros((n_variants, 1))
 		avg_water_mass = np.zeros((n_variants, 1))
 		avg_dry_mass = np.zeros((n_variants, 1))
+		avg_small_molecule_mass = np.zeros((n_variants, 1))
 
 		# Loop through variant indexes
 		for i, variant_index in enumerate(selected_variant_indexes):
@@ -94,13 +95,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_dry_mass[i] = np.mean(read_stacked_columns(
 				all_cells, 'Mass', 'dryMass'
 			))
+			avg_small_molecule_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'smallMoleculeMass'
+			))
 
 		# Create a list of the mass categories
 		mass_categories = ['Dry Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
-						  'rRNA Mass', 'tRNA Mass', 'Membrane Mass']
+						  'rRNA Mass', 'tRNA Mass', 'Membrane Mass', 'Small Molecule Mass']
 		# Create a list of the average masses for each category
 		avg_masses = [avg_dry_mass, avg_DNA_mass, avg_mRNA_mass, avg_protein_mass,
-					  avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass]
+					  avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass, avg_small_molecule_mass]
 		# Create a list of the colors for each category
 		mass_colors = [poster_colors['poster_blue'], poster_colors['poster_green'],
 					   poster_colors['poster_purple'], poster_colors['poster_gold'],
@@ -119,11 +123,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		sorted_avg_rRNA_mass = avg_rRNA_mass[sorted_indexes]
 		sorted_avg_tRNA_mass = avg_tRNA_mass[sorted_indexes]
 		sorted_avg_membrane_mass = avg_membrane_mass[sorted_indexes]
+		sorted_avg_small_molecule_mass = avg_small_molecule_mass[sorted_indexes]
 		sorted_selected_variant_indexes = np.array(selected_variant_indexes)[sorted_indexes]
 		# Create a list of the average masses for each category
 		sorted_avg_masses = [sorted_avg_dry_mass, sorted_avg_DNA_mass, sorted_avg_mRNA_mass,
 							 sorted_avg_protein_mass, sorted_avg_rRNA_mass, sorted_avg_tRNA_mass,
-							 sorted_avg_membrane_mass]
+							 sorted_avg_membrane_mass, sorted_avg_small_molecule_mass]
 		# Create a list of the colors for each category
 		sorted_avg_masses_by_category = {}
 		for i, mass_category in enumerate(mass_categories):
@@ -132,7 +137,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		x = np.arange(len(sorted_selected_variant_indexes)) * 3
 		width = 0.4
 		multiplier = 0
-		fig, ax = plt.subplots(layout='constrained')
+		fig, ax = plt.subplots()
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
 			offset = width * multiplier
 			bars = ax.bar(
@@ -157,7 +162,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		x = np.arange(len(sorted_selected_variant_indexes)) * 3
 		width = 0.4
 		multiplier = 0
-		fig, ax = plt.subplots(layout='constrained')
+		fig, ax = plt.subplots()
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
 			if mass_category == 'Dry Mass' or mass_category == 'Water Mass':
 				continue
@@ -177,7 +182,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Make a separate plot for each mass category
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
-			fig, ax = plt.subplots(layout='constrained')
+			fig, ax = plt.subplots()
 			bars = ax.bar(
 				x, avg_mass_for_category.squeeze(), width, label=mass_category,
 				color=mass_colors_dict[mass_category])
@@ -192,7 +197,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Make a separate mass % plot for each mass category
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
-			fig, ax = plt.subplots(layout='constrained')
+			fig, ax = plt.subplots()
 			bars = ax.bar(
 				x, avg_mass_for_category.squeeze(), width, label=mass_category,
 				color=mass_colors_dict[mass_category])
