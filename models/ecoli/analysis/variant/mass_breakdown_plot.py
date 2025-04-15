@@ -107,11 +107,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			)
 
 		# Create a list of the mass categories
-		mass_categories = ['Dry Mass', 'Summed Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
-						  'rRNA Mass', 'tRNA Mass', 'Membrane Mass', 'Small Molecule Mass']
+		mass_categories = [
+			'Dry Mass', 'Summed Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
+			'rRNA Mass', 'tRNA Mass', 'Membrane Mass', 'Small Molecule Mass']
 		# Create a list of the average masses for each category
-		avg_masses = [avg_dry_mass, avg_summed_up_dry_mass, avg_DNA_mass, avg_mRNA_mass, avg_protein_mass,
-					  avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass, avg_small_molecule_mass]
+		avg_masses = [
+			avg_dry_mass, avg_summed_up_dry_mass, avg_DNA_mass,
+			avg_mRNA_mass, avg_protein_mass,
+			avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass,
+			avg_small_molecule_mass]
 		# Create a list of the colors for each category
 		mass_colors = [
 			poster_colors['poster_blue'], poster_colors['poster_light_blue'],
@@ -136,9 +140,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		sorted_avg_small_molecule_mass = avg_small_molecule_mass[sorted_indexes]
 		sorted_selected_variant_indexes = np.array(selected_variant_indexes)[sorted_indexes]
 		# Create a list of the average masses for each category
-		sorted_avg_masses = [sorted_avg_dry_mass, sorted_avg_summed_up_dry_mass, sorted_avg_mRNA_mass,
-							 sorted_avg_protein_mass, sorted_avg_rRNA_mass, sorted_avg_tRNA_mass,
-							 sorted_avg_membrane_mass, sorted_avg_small_molecule_mass]
+		sorted_avg_masses = [
+			sorted_avg_dry_mass, sorted_avg_summed_up_dry_mass,
+			sorted_avg_DNA_mass, sorted_avg_mRNA_mass,
+			sorted_avg_protein_mass, sorted_avg_rRNA_mass, sorted_avg_tRNA_mass,
+			sorted_avg_membrane_mass, sorted_avg_small_molecule_mass]
 		# Create a list of the colors for each category
 		sorted_avg_masses_by_category = {}
 		for i, mass_category in enumerate(mass_categories):
