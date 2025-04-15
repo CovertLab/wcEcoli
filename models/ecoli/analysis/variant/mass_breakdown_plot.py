@@ -150,7 +150,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xticks(x)
 		ax.set_xticklabels(sorted_selected_variant_indexes, rotation=45, ha='right')
 		ax.set_xlabel('Variant Index')
-		ax.legend(loc='upper right', frameon=False, ncol=2)
+		ax.legend(loc='upper right', frameon=False, ncol=3)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, f"{plotOutFileName}_dry_sorted", metadata)
@@ -175,11 +175,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				color=mass_colors_dict[mass_category])
 			multiplier += 1
 		ax.set_ylabel('Mass (%)')
-		ax.set_title('Mass Breakdown by Variant as Percentage of Total Mass')
-		ax.set_xticks(x, sorted_selected_variant_indexes)
-		ax.set_xticklabels(sorted_selected_variant_indexes)
-		ax.legend()
+		ax.set_title('Mass Breakdown by Variant as a Percentage of Total Dry Mass', fontsize=14, weight='bold')
+		ax.set_xticks(x)
+		ax.set_xticklabels(sorted_selected_variant_indexes, rotation=45, ha='right')
 		ax.set_xlabel('Variant Index')
+		ax.legend(loc='upper left', frameon=False, ncol=3)
 		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_dry_sorted", metadata)
 		plt.close('all')
 
