@@ -242,7 +242,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		width = 1.5
 		fig, ax = plt.subplots(figsize=(14, 6))
 		bars = ax.bar(
-			x, percent_changes, width, label='Percent Change',
+			x, np.array(percent_changes), width, label='Percent Change',
 			color=poster_colors['poster_blue'])
 		ax.set_ylabel('Percent Change (%)')
 		ax.set_title('Percent Change in Mass from First to Last Variant', fontsize=14, weight='bold')
@@ -265,14 +265,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		width = 1.5
 		fig, ax = plt.subplots(figsize=(14, 6))
 		bars = ax.bar(
-			x, absolute_mass_percent_changes, width, label='Absolute Mass Change',
+			x, np.array(absolute_mass_percent_changes), width, label='Absolute Mass Change',
 			color=poster_colors['poster_blue'])
 		ax.set_ylabel('Absolute Mass Change (fg)')
 		ax.set_title('Absolute Mass Change from First to Last Variant', fontsize=14, weight='bold')
 		ax.set_xticks(x)
 		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
 		ax.set_xlabel('Mass Category')
-		
+
 
 
 if __name__ == "__main__":
