@@ -134,22 +134,27 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for i, mass_category in enumerate(mass_categories):
 			sorted_avg_masses_by_category[mass_category] = sorted_avg_masses[i]
 
-		x = np.arange(len(sorted_selected_variant_indexes)) * 3
-		width = 0.4
+		x = np.arange(len(sorted_selected_variant_indexes)) * 10
+		width = 0.6
 		multiplier = 0
-		fig, ax = plt.subplots()
-		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
+
+		fig, ax = plt.subplots(figsize=(14, 6))
+		for i, (mass_category, avg_mass_for_category) in enumerate(
+				sorted_avg_masses_by_category.items()):
 			offset = width * multiplier
 			bars = ax.bar(
-				x + offset, avg_mass_for_category.squeeze(), width, label=mass_category,
-				color=mass_colors_dict[mass_category])
+				x + offset, avg_mass_for_category.squeeze(), width,
+				label=mass_category, color=mass_colors_dict[mass_category])
 			multiplier += 1
+
 		ax.set_ylabel('Mass (fg)')
-		ax.set_title('Mass Breakdown by Variant')
-		ax.set_xticks(x + width, sorted_selected_variant_indexes)
-		ax.set_xticklabels(sorted_selected_variant_indexes)
-		ax.legend()
+		ax.set_title('Mass Breakdown by Variant', fontsize=14, weight='bold')
+		ax.set_xticks(x + width)
+		ax.set_xticklabels(sorted_selected_variant_indexes, rotation=45, ha='right')
 		ax.set_xlabel('Variant Index')
+		ax.legend(loc='upper right', frameon=False, ncol=2)
+
+		plt.tight_layout()
 		exportFigure(plt, plotOutDir, f"{plotOutFileName}_dry_sorted", metadata)
 		plt.close('all')
 
