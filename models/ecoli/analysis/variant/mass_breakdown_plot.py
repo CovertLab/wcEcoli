@@ -108,19 +108,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Create a list of the mass categories
 		mass_categories = [
-			'Dry Mass', 'Summed Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
+			'Dry Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
 			'rRNA Mass', 'tRNA Mass', 'Membrane Mass', 'Small Molecule Mass']
 		# Create a list of the average masses for each category
 		avg_masses = [
-			avg_dry_mass, avg_summed_up_dry_mass, avg_DNA_mass,
+			avg_dry_mass, avg_DNA_mass,
 			avg_mRNA_mass, avg_protein_mass,
 			avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass,
 			avg_small_molecule_mass]
 		# Create a list of the colors for each category
 		mass_colors = [
-			poster_colors['poster_blue'], poster_colors['poster_light_blue'],
+			poster_colors['poster_blue'],
 			poster_colors['poster_green'],
 			poster_colors['poster_purple'], poster_colors['poster_gold'],
+			poster_colors['poster_light_blue'],
 			poster_colors['poster_red'],
 			poster_colors['light_gray'], 'magenta', 'cyan']
 		mass_colors_dict = {}
@@ -141,7 +142,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		sorted_selected_variant_indexes = np.array(selected_variant_indexes)[sorted_indexes]
 		# Create a list of the average masses for each category
 		sorted_avg_masses = [
-			sorted_avg_dry_mass, sorted_avg_summed_up_dry_mass,
+			sorted_avg_dry_mass,
 			sorted_avg_DNA_mass, sorted_avg_mRNA_mass,
 			sorted_avg_protein_mass, sorted_avg_rRNA_mass, sorted_avg_tRNA_mass,
 			sorted_avg_membrane_mass, sorted_avg_small_molecule_mass]
@@ -242,36 +243,47 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		width = 1.5
 		fig, ax = plt.subplots(figsize=(14, 6))
 		bars = ax.bar(
-			x, np.array(percent_changes), width, label='Percent Change',
-			color=poster_colors['poster_blue'])
-		ax.set_ylabel('Percent Change (%)')
-		ax.set_title('Percent Change in Mass from First to Last Variant', fontsize=14, weight='bold')
+			x, np.array(percent_changes).squeeze(), width, label=mass_categories,
+			color=mass_colors)
+		ax.set_ylabel('Percent Change (%) in Dry Mass Portion')
+		ax.set_title(
+			'Percent Change in Mass from First to Last Variant',
+			fontsize=14, weight='bold')
 		ax.set_xticks(x)
 		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
 		ax.set_xlabel('Mass Category')
 		ax.legend(loc='upper right', frameon=False, ncol=3)
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percent_change", metadata)
+		exportFigure(
+			plt, plotOutDir,
+			f"{plotOutFileName}_percent_change_portion", metadata)
 		plt.close('all')
 
 		# Do the same but for absolute mass values
 		absolute_mass_percent_changes = []
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
 			absolute_mass_percent_change = (
-				avg_mass_for_category[-1] - avg_mass_for_category[0])
+				avg_mass_for_category[-1] - avg_mass_for_category[0]) / avg_mass_for_category[0] * 100
 			absolute_mass_percent_changes.append(absolute_mass_percent_change)
 		# Create a bar plot for the percent changes
 		x = np.arange(len(mass_categories)) * 25
 		width = 1.5
 		fig, ax = plt.subplots(figsize=(14, 6))
 		bars = ax.bar(
-			x, np.array(absolute_mass_percent_changes), width, label='Absolute Mass Change',
-			color=poster_colors['poster_blue'])
-		ax.set_ylabel('Absolute Mass Change (fg)')
-		ax.set_title('Absolute Mass Change from First to Last Variant', fontsize=14, weight='bold')
+			x, np.array(absolute_mass_percent_changes).squeeze(), width,
+			label=mass_categories, color=mass_colors)
+		ax.set_ylabel('Percent Change (%) in Dry Mass (fg)')
+		ax.set_title(
+			'Mass Change from First to Last Variant', fontsize=14, weight='bold')
 		ax.set_xticks(x)
 		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
 		ax.set_xlabel('Mass Category')
+		ax.legend(loc='upper right', frameon=False, ncol=3)
+		plt.tight_layout()
+		exportFigure(
+			plt, plotOutDir,
+			f"{plotOutFileName}_percent_change_absolute", metadata)
+		plt.close('all')
 
 
 
