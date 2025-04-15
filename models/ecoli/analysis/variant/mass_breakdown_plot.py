@@ -252,7 +252,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xticks(x)
 		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
 		ax.set_xlabel('Mass Category')
-		ax.legend(loc='upper right', frameon=False, ncol=3)
+		ax.legend(loc='lower left', frameon=False, ncol=3)
 		plt.tight_layout()
 		exportFigure(
 			plt, plotOutDir,
@@ -278,7 +278,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xticks(x)
 		ax.set_xticklabels(mass_categories, rotation=45, ha='right')
 		ax.set_xlabel('Mass Category')
-		ax.legend(loc='upper right', frameon=False, ncol=3)
+		ax.legend(loc='lower left', frameon=False, ncol=3)
 		plt.tight_layout()
 		exportFigure(
 			plt, plotOutDir,
