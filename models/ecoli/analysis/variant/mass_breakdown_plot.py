@@ -53,6 +53,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_tRNA_mass = np.zeros((n_variants, 1))
 		avg_membrane_mass = np.zeros((n_variants, 1))
 		avg_water_mass = np.zeros((n_variants, 1))
+		avg_dry_mass = np.zeros((n_variants, 1))
 
 		# Loop through variant indexes
 		for i, variant_index in enumerate(selected_variant_indexes):
@@ -90,13 +91,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_water_mass[i] = np.mean(read_stacked_columns(
 				all_cells, 'Mass', 'waterMass'
 			))
+			avg_dry_mass[i] = np.mean(read_stacked_columns(
+				all_cells, 'Mass', 'dryMass'
+			))
 
 		# Create a list of the mass categories
-		mass_categories = ['Cell Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
-						  'rRNA Mass', 'tRNA Mass', 'Membrane Mass', 'Water Mass']
+		mass_categories = ['Dry Mass', 'DNA Mass', 'mRNA Mass', 'Protein Mass',
+						  'rRNA Mass', 'tRNA Mass', 'Membrane Mass']
 		# Create a list of the average masses for each category
-		avg_masses = [avg_mass, avg_DNA_mass, avg_mRNA_mass, avg_protein_mass,
-					  avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass, avg_water_mass]
+		avg_masses = [avg_dry_mass, avg_DNA_mass, avg_mRNA_mass, avg_protein_mass,
+					  avg_rRNA_mass, avg_tRNA_mass, avg_membrane_mass]
 		# Create a list of the colors for each category
 		mass_colors = [poster_colors['poster_blue'], poster_colors['poster_green'],
 					   poster_colors['poster_purple'], poster_colors['poster_gold'],
@@ -107,27 +111,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			mass_colors_dict[mass_category] = mass_colors[i]
 
 		# Sort the variants by descending cell mass
-		sorted_indexes = np.argsort(avg_mass[:, 0])[::-1]
-		sorted_avg_mass = avg_mass[sorted_indexes]
+		sorted_indexes = np.argsort(avg_dry_mass[:, 0])[::-1]
+		sorted_avg_dry_mass = avg_dry_mass[sorted_indexes]
 		sorted_avg_DNA_mass = avg_DNA_mass[sorted_indexes]
 		sorted_avg_mRNA_mass = avg_mRNA_mass[sorted_indexes]
 		sorted_avg_protein_mass = avg_protein_mass[sorted_indexes]
 		sorted_avg_rRNA_mass = avg_rRNA_mass[sorted_indexes]
 		sorted_avg_tRNA_mass = avg_tRNA_mass[sorted_indexes]
 		sorted_avg_membrane_mass = avg_membrane_mass[sorted_indexes]
-		sorted_avg_water_mass = avg_water_mass[sorted_indexes]
 		sorted_selected_variant_indexes = np.array(selected_variant_indexes)[sorted_indexes]
 		# Create a list of the average masses for each category
-		sorted_avg_masses = [sorted_avg_mass, sorted_avg_DNA_mass, sorted_avg_mRNA_mass,
+		sorted_avg_masses = [sorted_avg_dry_mass, sorted_avg_DNA_mass, sorted_avg_mRNA_mass,
 							 sorted_avg_protein_mass, sorted_avg_rRNA_mass, sorted_avg_tRNA_mass,
-							 sorted_avg_membrane_mass, sorted_avg_water_mass]
+							 sorted_avg_membrane_mass]
 		# Create a list of the colors for each category
 		sorted_avg_masses_by_category = {}
 		for i, mass_category in enumerate(mass_categories):
 			sorted_avg_masses_by_category[mass_category] = sorted_avg_masses[i]
 
 		x = np.arange(len(sorted_selected_variant_indexes))
-		width = 0.1
+		width = 0.2
 		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
@@ -142,7 +145,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xticklabels(sorted_selected_variant_indexes)
 		ax.legend()
 		ax.set_xlabel('Variant Index')
-		exportFigure(plt, plotOutDir, f"{plotOutFileName}_sorted", metadata)
+		exportFigure(plt, plotOutDir, f"{plotOutFileName}_dry_sorted", metadata)
 		plt.close('all')
 
 		# Make a bar plot where instead of plotting mass per category we plot
@@ -150,13 +153,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		sorted_avg_masses_by_category_as_percentage = {}
 		for i, mass_category in enumerate(mass_categories):
 			sorted_avg_masses_by_category_as_percentage[mass_category] = (
-				sorted_avg_masses[i] / sorted_avg_mass) * 100
+				sorted_avg_masses[i] / sorted_avg_dry_mass) * 100
 		x = np.arange(len(sorted_selected_variant_indexes))
-		width = 0.1
+		width = 0.2
 		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
-			if mass_category == 'Cell Mass':
+			if mass_category == 'Dry Mass' or mass_category == 'Water Mass':
 				continue
 			offset = width * multiplier
 			bars = ax.bar(
@@ -169,28 +172,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xticklabels(sorted_selected_variant_indexes)
 		ax.legend()
 		ax.set_xlabel('Variant Index')
-		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_with_water_sorted", metadata)
-		plt.close('all')
-
-		# Make the same plot but remove water mass
-		width = 0.1
-		multiplier = 0
-		fig, ax = plt.subplots(layout='constrained')
-		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
-			if mass_category == 'Cell Mass' or mass_category == 'Water Mass':
-				continue
-			offset = width * multiplier
-			bars = ax.bar(
-				x + offset, avg_mass_for_category.squeeze(), width, label=mass_category,
-				color=mass_colors_dict[mass_category])
-			multiplier += 1
-		ax.set_ylabel('Mass (%)')
-		ax.set_title('Mass Breakdown by Variant as Percentage of Total Mass')
-		ax.set_xticks(x + width, sorted_selected_variant_indexes)
-		ax.set_xticklabels(sorted_selected_variant_indexes)
-		ax.legend()
-		ax.set_xlabel('Variant Index')
-		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_sorted", metadata)
+		exportFigure(plt, plotOutDir, f"{plotOutFileName}_percentage_dry_sorted", metadata)
 		plt.close('all')
 
 		# Make a separate plot for each mass category
@@ -215,12 +197,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				x, avg_mass_for_category.squeeze(), width, label=mass_category,
 				color=mass_colors_dict[mass_category])
 			ax.set_ylabel('Mass (%)')
-			ax.set_title(f'{mass_category} by Variant as Percentage of Total Mass')
+			ax.set_title(f'{mass_category} by Variant as Percentage of Dry Mass')
 			ax.set_xticks(x, sorted_selected_variant_indexes)
 			ax.set_xticklabels(sorted_selected_variant_indexes)
 			ax.legend()
 			ax.set_xlabel('Variant Index')
-			exportFigure(plt, plotOutDir, f"{plotOutFileName}_{mass_category}_percentage_sorted", metadata)
+			exportFigure(plt, plotOutDir, f"{plotOutFileName}_{mass_category}_percentage_dry_sorted", metadata)
 			plt.close('all')
 
 
