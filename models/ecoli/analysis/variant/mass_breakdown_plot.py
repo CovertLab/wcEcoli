@@ -130,7 +130,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sorted_avg_masses_by_category[mass_category] = sorted_avg_masses[i]
 
 		x = np.arange(len(sorted_selected_variant_indexes))
-		width = 0.2
+		width = 0.4
 		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category.items():
@@ -138,7 +138,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			bars = ax.bar(
 				x + offset, avg_mass_for_category.squeeze(), width, label=mass_category,
 				color=mass_colors_dict[mass_category])
-			multiplier += 1
+			multiplier += 3
 		ax.set_ylabel('Mass (fg)')
 		ax.set_title('Mass Breakdown by Variant')
 		ax.set_xticks(x + width, sorted_selected_variant_indexes)
@@ -155,7 +155,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sorted_avg_masses_by_category_as_percentage[mass_category] = (
 				sorted_avg_masses[i] / sorted_avg_dry_mass) * 100
 		x = np.arange(len(sorted_selected_variant_indexes))
-		width = 0.2
+		width = 0.4
 		multiplier = 0
 		fig, ax = plt.subplots(layout='constrained')
 		for mass_category, avg_mass_for_category in sorted_avg_masses_by_category_as_percentage.items():
@@ -165,7 +165,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			bars = ax.bar(
 				x + offset, avg_mass_for_category.squeeze(), width, label=mass_category,
 				color=mass_colors_dict[mass_category])
-			multiplier += 1
+			multiplier += 3
 		ax.set_ylabel('Mass (%)')
 		ax.set_title('Mass Breakdown by Variant as Percentage of Total Mass')
 		ax.set_xticks(x + width, sorted_selected_variant_indexes)
