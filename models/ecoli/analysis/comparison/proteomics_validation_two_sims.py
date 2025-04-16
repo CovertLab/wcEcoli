@@ -122,7 +122,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(sim + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 				)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.2f}")
+			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.2f}, n = {len(val)}")
 			ax.set_xlabel("log10(Schmidt 2015 protein counts + 1)")
 			ax.set_ylabel(f"log10(Mean {name} simulation protein counts + 1)")
 			ax.spines["top"].set_visible(False)
@@ -149,17 +149,18 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(input_count + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 			)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}")
+			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
 			ax.set_xlabel(
-				f"log10(Mean simulated protein counts + 1),\n (for proteins that overlap with validation data, n={len(reference_count)}) {reference_sim_name}")
+				f"log10(Mean simulated protein counts + 1),\n (for proteins that overlap with validation data) {reference_sim_name}")
 			ax.set_ylabel(
-				f"log10(Mean simulated protein counts + 1),\n (for proteins that overlap with validation data, n={len(reference_count)}){input_sim_name}")
+				f"log10(Mean simulated protein counts + 1),\n (for proteins that overlap with validation data) {input_sim_name}")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
 			ax.spines["left"].set_position(("outward", 15))
 			ax.set_xlim([0, 6])
 			ax.set_ylim([0, 6])
+
 		def plot_all_protein_counts(ax, reference_count, input_count, pearson):
 			ax.plot([0, 6], [0, 6], ls='--', lw=1, c='k', alpha=0.05)
 			ax.scatter(
@@ -167,11 +168,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(input_count + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 			)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}")
+			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
 			ax.set_xlabel(
-				f"log10(Mean simulated protein counts + 1),\n (for all proteins in the WCM, n={len(reference_count)}) {reference_sim_name}")
+				f"log10(Mean simulated protein counts + 1),\n (for all proteins in the WCM) {reference_sim_name}")
 			ax.set_ylabel(
-				f"log10(Mean simulated protein counts + 1),\n (for all proteins in the WCM, n={len(reference_count)}) {input_sim_name}")
+				f"log10(Mean simulated protein counts + 1),\n (for all proteins in the WCM) {input_sim_name}")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
