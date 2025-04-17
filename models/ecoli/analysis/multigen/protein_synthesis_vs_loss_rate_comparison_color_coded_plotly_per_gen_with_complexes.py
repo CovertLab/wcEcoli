@@ -22,6 +22,7 @@ HIGHLIGHT_IN_BLUE =[]#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MO
 HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'G6988-MONOMER[c]','EG11111-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]' ]#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
 # lowest deg rates:  ['PD03867[c]', 'EG50004-MONOMER[c]','ADHP-MONOMER[c]', 'G6988-MONOMER[c]']
 
+# todo: highight complexes as squares
 
 
 # function to match gene symbols to monomer ids
