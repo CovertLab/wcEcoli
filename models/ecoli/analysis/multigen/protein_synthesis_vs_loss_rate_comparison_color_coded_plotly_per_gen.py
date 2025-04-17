@@ -18,11 +18,11 @@ from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
 
 HIGHLIGHT_IN_RED = []#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
-HIGHLIGHT_IN_BLUE =[]#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
-HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'G6988-MONOMER[c]','EG11111-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]' ]#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
+HIGHLIGHT_IN_BLUE =['NG-GFP-MONOMER[c]']#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
+HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]' ]#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
 # lowest deg rates:  ['PD03867[c]', 'EG50004-MONOMER[c]','ADHP-MONOMER[c]', 'G6988-MONOMER[c]']
 
-SKIP_FIRST_GENS = 1
+IGNORE_FIRST_N_GENS = 1
 
 
 # function to match gene symbols to monomer ids
@@ -75,14 +75,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		with open(validationDataFile, 'rb') as f:
-			validation_data = pickle.load(f)
 
 		# Get the cell paths
-		n_gens = self.ap.get_generations()
-		cell_paths = self.ap.get_cells(generation=[SKIP_FIRST_GENS, n_gens])
+		n_gens = self.ap.n_generation
+		cell_paths = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, n_gens), only_successful=True)
 		sim_dir = cell_paths[0]
+		split_dir = sim_dir.split('/')
+		sim_name = split_dir[split_dir.index('out') + 1]
 		simOutDir = os.path.join(sim_dir, 'simOut')
+		variant = self.ap.get_cell_variant(sim_dir)
+		seed = self.ap.get_cell_seed(sim_dir)
 
 		# Extract protein information (function from protein_half_lives.py)
 		def get_protein_data(sim_data, remove_yibQ):
@@ -120,7 +122,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# extract the data over all generations:
 		# Load data
-		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(free_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, monomerIds)
 
@@ -134,10 +135,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				int)
 			end_generation_times = np.cumsum(doubling_times) + time[0]  #
 			start_generation_indices = np.searchsorted(time, end_generation_times[:-1],
-													   side='left').astype(int)
+														   side='left').astype(int)
 			start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(
 				len(doubling_times))
 			end_generation_indices = start_generation_indices + doubling_times
+
+
+
 			return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
 		# extract the doubling times:
@@ -367,7 +371,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Layout settings
 		fig.update_layout(
-			title="Log10 Average Loss Rate vs Log10 Average Production Rate",
+			title=f"Log10 Average Loss Rate vs Log10 Average Production Rate <br> {sim_name}, variant {variant}, seed {seed}, generations {IGNORE_FIRST_N_GENS} - {n_gens-1} ",
 			xaxis_title="Log10 Average Production Rate",
 			yaxis_title="Log10 Average Loss Rate",
 			width=700, height=700,
