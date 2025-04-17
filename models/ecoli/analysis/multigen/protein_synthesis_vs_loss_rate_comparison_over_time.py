@@ -23,7 +23,8 @@ PLOT_PROTEINS = [#'G6890-MONOMER[c]',
 					   #'RED-THIOREDOXIN2-MONOMER[c]',
  						"PD03867[c]",
 						"EG11734-MONOMER[c]",
-'CDPDIGLYSYN-MONOMER[i]',]
+'CDPDIGLYSYN-MONOMER[i]',
+'NG-GFP-MONOMER[c]',]
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
@@ -105,8 +106,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		avg_diluted_counts = total_diluted_counts / len(time) # divide by the number of timesteps to get the average per timestep
 
 		# compute the average loss rate for each protein:
-		avg_loss_rate = avg_degraded_counts + avg_diluted_counts
-		log_avg_loss_rate = np.log10(avg_loss_rate)
+		#avg_loss_rate = avg_degraded_counts + avg_diluted_counts
+		#log_avg_loss_rate = np.log10(avg_loss_rate)
 
 
 		# compute how many counts were added via elongation over the entire sim length:
