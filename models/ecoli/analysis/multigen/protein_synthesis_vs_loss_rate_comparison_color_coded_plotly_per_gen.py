@@ -22,6 +22,7 @@ HIGHLIGHT_IN_BLUE =[]#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MO
 HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'G6988-MONOMER[c]','EG11111-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]' ]#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
 # lowest deg rates:  ['PD03867[c]', 'EG50004-MONOMER[c]','ADHP-MONOMER[c]', 'G6988-MONOMER[c]']
 
+SKIP_FIRST_GENS = 1
 
 
 # function to match gene symbols to monomer ids
@@ -77,7 +78,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		with open(validationDataFile, 'rb') as f:
 			validation_data = pickle.load(f)
 
-		cell_paths = self.ap.get_cells()
+		# Get the cell paths
+		n_gens = self.ap.get_num_generations()
+		cell_paths = self.ap.get_cells(generation=[SKIP_FIRST_GENS, n_gens])
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
 
