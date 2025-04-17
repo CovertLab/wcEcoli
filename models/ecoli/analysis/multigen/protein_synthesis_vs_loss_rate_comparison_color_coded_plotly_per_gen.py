@@ -79,7 +79,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			validation_data = pickle.load(f)
 
 		# Get the cell paths
-		n_gens = self.ap.get_num_generations()
+		n_gens = self.ap.get_generations()
 		cell_paths = self.ap.get_cells(generation=[SKIP_FIRST_GENS, n_gens])
 		sim_dir = cell_paths[0]
 		simOutDir = os.path.join(sim_dir, 'simOut')
