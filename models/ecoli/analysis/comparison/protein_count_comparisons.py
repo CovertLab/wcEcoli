@@ -82,12 +82,26 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		avg_free_counts = np.mean(free_counts, axis=0)
 
 		# Get the average complex counts for each monomer:
-		avg_complex_counts = avg_total_counts - avg_free_counts
+		avg_counts_for_monomers_in_complexs = avg_total_counts - avg_free_counts
 
 		#
 		hi = 5
+		# get the counts data for specific complexes:
+		complex_sim_data = (
+			sim_data.process.complexation.ids_complexes)
 
-		return avg_total_counts, avg_free_counts, avg_complex_counts
+		self.all_complex_ids = np.array(complex_sim_data)
+
+		# get the counts of the complexes:
+		(complex_counts,) = read_stacked_bulk_molecules(
+			all_cells, self.all_complex_ids, ignore_exception=True)
+		avg_complex_counts = np.mean(complex_counts, axis=0)
+
+
+
+		return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexs, avg_complex_counts
+
+
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
 		# From fw_queue, reference_sim_dir has operons="off"; input_sim_dir has
 		# operons="on".
@@ -108,16 +122,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			print('Skipping analysis -- not enough sims run.')
 			return
 
-		# Read data from sim_data
-		monomer_ids = sim_data1.process.translation.monomer_data["id"]
 
-		# Read validation protein counts
-		val_monomer_ids = validation_data1.protein.schmidt2015Data["monomerId"]
-		val_monomer_counts = validation_data1.protein.schmidt2015Data["glucoseCounts"]
+		avg_total_counts1, avg_free_counts1, avg_count_for_monomers_in_complexes1, avg_complex_counts1 = self.generate_data(reference_sim_dir)
+		avg_total_counts2, avg_free_counts2, avg_count_for_monomers_in_complexes2, avg_complex_counts2 = self.generate_data(input_sim_dir)
 
-		avg_total_counts1, avg_free_counts1, avg_complex_counts1 = self.generate_data(reference_sim_dir)
-		avg_total_counts2, avg_free_counts2, avg_complex_counts2 = self.generate_data(input_sim_dir)
 
+		hi = 5
 
 
 
@@ -129,10 +139,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			np.log10(avg_free_counts2 + 1))
 
 		protein_pearson3 = pearsonr(
+			np.log10(avg_count_for_monomers_in_complexes1 + 1),
+			np.log10(avg_count_for_monomers_in_complexes2 + 1))
+
+		protein_pearson4 = pearsonr(
 			np.log10(avg_complex_counts1 + 1),
 			np.log10(avg_complex_counts2 + 1))
-
-
 
 
 
@@ -196,15 +208,37 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			ax.set_xlim([0, 6])
 			ax.set_ylim([0, 6])
 
+		def plot_complex_counts(ax, reference_count, input_count, pearson):
+			ax.plot([0, 6], [0, 6], ls='--', lw=1, c='k', alpha=0.05)
+			ax.scatter(
+				np.log10(reference_count + 1),
+				np.log10(input_count + 1), clip_on=False,
+				c='#555555', edgecolor='none', s=20, alpha=0.25,
+			)
+			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
+			ax.set_xlabel(
+				f"log10(Mean simulated complex counts + 1),\n {reference_sim_name}")
+			ax.set_ylabel(
+				f"log10(Mean simulated complex counts + 1),\n {input_sim_name}")
+			ax.spines["top"].set_visible(False)
+			ax.spines["right"].set_visible(False)
+			ax.spines["bottom"].set_position(("outward", 15))
+			ax.spines["left"].set_position(("outward", 15))
+			ax.set_xlim([0, 6])
+			ax.set_ylim([0, 6])
+
+
+
 
 		ax1 = plt.subplot(2, 2, 1)
 		ax2 = plt.subplot(2, 2, 2)
 		plot_total_protein_counts(ax1, avg_total_counts1, avg_total_counts2, protein_pearson1)
 		plot_free_monomer_counts(ax2, avg_free_counts1, avg_free_counts2, protein_pearson2)
 		ax3 = plt.subplot(2, 2, 3)
-		plot_complexed_monomer_counts(ax3, avg_complex_counts1, avg_complex_counts2, protein_pearson3)
 		ax4 = plt.subplot(2, 2, 4)
-		plot_total_protein_counts(ax4, avg_total_counts1, avg_total_counts2, protein_pearson1)
+		plot_complexed_monomer_counts(ax3, avg_count_for_monomers_in_complexes1, avg_count_for_monomers_in_complexes2, protein_pearson3)
+		plot_complex_counts(ax4, avg_complex_counts1, avg_complex_counts2, protein_pearson4)
+
 
 
 
