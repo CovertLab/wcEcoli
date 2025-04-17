@@ -24,6 +24,7 @@ from wholecell.utils import units
 SKIP_GENS = 2
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
+
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
 		# From fw_queue, reference_sim_dir has operons="off"; input_sim_dir has
 		# operons="on".
