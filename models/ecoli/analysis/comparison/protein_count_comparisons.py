@@ -66,6 +66,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		# Get the paths for all cells:
 		n_total_gens = ap.n_generation
+		# todo: change this depending on which sim you are using (dont always have to have a variant)
 		all_cells = ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
 			only_successful=True)
@@ -84,8 +85,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Get the average complex counts for each monomer:
 		avg_counts_for_monomers_in_complexs = avg_total_counts - avg_free_counts
 
-		#
-		hi = 5
 		# get the counts data for specific complexes:
 		complex_sim_data = (
 			sim_data.process.complexation.ids_complexes)
@@ -113,6 +112,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		input_sim_name = os.path.basename(os.path.normpath(input_sim_dir))
 
 
+
+
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
@@ -126,8 +127,21 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		avg_total_counts1, avg_free_counts1, avg_count_for_monomers_in_complexes1, avg_complex_counts1 = self.generate_data(reference_sim_dir)
 		avg_total_counts2, avg_free_counts2, avg_count_for_monomers_in_complexes2, avg_complex_counts2 = self.generate_data(input_sim_dir)
 
+		# correct for the free monomer:
+		if avg_free_counts1.shape > avg_free_counts2.shape:
+			diff = avg_free_counts1.shape[0] - avg_free_counts2.shape[0]
+			counts_to_add = np.zeros(diff)
+			avg_total_counts2 = np.append(avg_total_counts2, counts_to_add)
+			avg_free_counts2 = np.append(avg_free_counts2, counts_to_add)
+			avg_count_for_monomers_in_complexes2 = np.append(avg_count_for_monomers_in_complexes2, counts_to_add)
 
-		hi = 5
+		if avg_free_counts2.shape > avg_free_counts1.shape:
+			diff = avg_free_counts2.shape[0] - avg_free_counts1.shape[0]
+			counts_to_add = np.zeros(diff)
+			avg_total_counts1 = np.append(avg_total_counts1, counts_to_add)
+			avg_free_counts1 = np.append(avg_free_counts1, counts_to_add)
+			avg_count_for_monomers_in_complexes1 = np.append(avg_count_for_monomers_in_complexes1,
+															 counts_to_add)
 
 
 
