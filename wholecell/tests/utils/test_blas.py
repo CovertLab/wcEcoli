@@ -12,9 +12,10 @@ presumably by changing evaluation order and thus floating point rounding.
 
 Any of these ways works to run this test. The first one is quiet if the test
 passes. The others always show stdout:
-	pytest wholecell/tests/utils/test_blas.py
-	python -m wholecell.tests.utils.test_blas
-	wholecell/tests/utils/test_blas.py
+	pytest wholecell/tests/utils/test_blas.py DOT  # measures a dot product speed
+	pytest wholecell/tests/utils/test_blas.py      # unit tests: time dot products with a range of threads
+	python -m wholecell.tests.utils.test_blas      # unit tests
+	wholecell/tests/utils/test_blas.py             # unit tests
 """
 
 import os
@@ -78,8 +79,10 @@ class Test_blas(unittest.TestCase):
 		# Issue #931: The expected value came from Numpy's copy of openblas on
 		# Intel CPUs on Sherlock, Mac, and Linux. But:
 		#
+		#   * Intel CPU on Mac using Accelerate or OpenBlas computed 0.016683805584112754
 		#   * Apple M1 CPU on Mac computed 0.01668380558411259
 		#   * Intel CPU on WSL on Windows computed 0.016683805584112667
+		#   * Intel CPU on Sherlock using openblas/0.3.28 also computed 0.016683805584112667
 		#
 		# Reproducible simulations require reproducible floating point results,
 		# but that might be unachievable across platforms.
