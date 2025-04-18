@@ -28,6 +28,10 @@ from wholecell.utils import units
 IGNORE_FIRST_N_GENS = 2
 # note: the reference_sim is listed second when the function is called, the input_sim is listed first
 
+# if a sim has multiple variants, you can specify which one to plot with here
+REFERENCE_VARIANT = None
+INPUT_VARIANT = 2
+""" END USER INPUTS """
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def setup(self, inputDir: str) -> Tuple[
@@ -37,7 +41,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		sim_data = self.read_sim_data_file(inputDir)
 		validation_data = self.read_validation_data_file(inputDir)
 		return ap, sim_data, validation_data
-	def generate_data(self, sim_dir):
+
+	def generate_data(self, ap, sim_data, VARIANT=None):
 		"""
 		# function from analyze_complex_counts.py
         Generates csv files of protein count data from simulations
@@ -57,19 +62,28 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
             self.all_monomer_ids: list of all the monomer ids (NG protein ids
             and orginal proteins' gene ids)
         """
-		# Read data from sim_data
-		ap, sim_data, validation_data = self.setup(sim_dir)
-
+		# Get the monomer data from the simulation data:
 		monomer_sim_data = (
 			sim_data.process.translation.monomer_data.struct_array)
 		self.all_monomer_ids = monomer_sim_data['id']
 
 		# Get the paths for all cells:
 		n_total_gens = ap.n_generation
-		# todo: change this depending on which sim you are using (dont always have to have a variant)
 		all_cells = ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
 			only_successful=True)
+
+		# specifically get the second variant
+		variants = ap.get_variants()
+		if len(variants) > 1:
+			if VARIANT is None:
+				print(f"WARNING: No variant specified; averaging over all {variants} variants.")
+			else:
+				print(f"variant {VARIANT} specified; averaging over this variant only.")
+				all_cells = ap.get_cells(variant=[VARIANT],
+					generation=np.arange(IGNORE_FIRST_N_GENS, n_total_gens),
+					only_successful=True)
+
 
 		# Get the average total protein counts for each monomer:
 		total_counts = (
@@ -96,8 +110,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			all_cells, self.all_complex_ids, ignore_exception=True)
 		avg_complex_counts = np.mean(complex_counts, axis=0)
 
-
-
 		return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexs, avg_complex_counts
 
 
@@ -111,9 +123,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		reference_sim_name = os.path.basename(os.path.normpath(reference_sim_dir))
 		input_sim_name = os.path.basename(os.path.normpath(input_sim_dir))
 
-
-
-
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, validation_data1 = self.setup(reference_sim_dir)
 		# noinspection PyUnusedLocal
@@ -123,9 +132,17 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			print('Skipping analysis -- not enough sims run.')
 			return
 
+		# If a variant is specified, add that to the name:
+		if REFERENCE_VARIANT is not None:
+			reference_sim_name += f"_variant_{REFERENCE_VARIANT}"
+		if INPUT_VARIANT is not None:
+			input_sim_name += f"_variant_{INPUT_VARIANT}"
 
-		avg_total_counts1, avg_free_counts1, avg_count_for_monomers_in_complexes1, avg_complex_counts1 = self.generate_data(reference_sim_dir)
-		avg_total_counts2, avg_free_counts2, avg_count_for_monomers_in_complexes2, avg_complex_counts2 = self.generate_data(input_sim_dir)
+		# Extract the counts data from the simulation data:
+		print(f"Extracting counts data for {reference_sim_name}.")
+		avg_total_counts1, avg_free_counts1, avg_count_for_monomers_in_complexes1, avg_complex_counts1 = self.generate_data(ap1, sim_data1, REFERENCE_VARIANT)
+		print(f"Extracting counts data for {input_sim_name}.")
+		avg_total_counts2, avg_free_counts2, avg_count_for_monomers_in_complexes2, avg_complex_counts2 = self.generate_data(ap2, sim_data2, INPUT_VARIANT)
 
 		# correct for the free monomer:
 		if avg_free_counts1.shape > avg_free_counts2.shape:
@@ -142,7 +159,6 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			avg_free_counts1 = np.append(avg_free_counts1, counts_to_add)
 			avg_count_for_monomers_in_complexes1 = np.append(avg_count_for_monomers_in_complexes1,
 															 counts_to_add)
-
 
 
 		protein_pearson1 = pearsonr(
@@ -172,11 +188,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(input_count + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 			)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
+			ax.set_title(f"Total Monomer Counts\n$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
 			ax.set_xlabel(
-				f"log10(Mean simulated protein counts + 1),\n (total monomer counts) {reference_sim_name}")
+				f"log10(mean counts + 1),\n Reference Simualtion")
 			ax.set_ylabel(
-				f"log10(Mean simulated protein counts + 1),\n (total monomer counts) {input_sim_name}")
+				f"log10(mean counts + 1),\n Input Simulation")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
@@ -191,11 +207,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(input_count + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 			)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
+			ax.set_title(f"Free Monomer Counts\n$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
 			ax.set_xlabel(
-				f"log10(Mean simulated protein counts + 1),\n (free monomer counts) {reference_sim_name}")
+				f"log10(mean counts + 1),\n Reference Simulation")
 			ax.set_ylabel(
-				f"log10(Mean simulated protein counts + 1),\n (free monomer counts) {input_sim_name}")
+				f"log10(mean counts + 1),\n Input Simulation")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
@@ -210,11 +226,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(input_count + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 			)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
+			ax.set_title(f"Complexed Monomer Counts\n$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
 			ax.set_xlabel(
-				f"log10(Mean simulated protein counts + 1),\n (complexed monomer counts) {reference_sim_name}")
+				f"log10(mean counts + 1),\n Reference Simulation")
 			ax.set_ylabel(
-				f"log10(Mean simulated protein counts + 1),\n (complexed monomer counts) {input_sim_name}")
+				f"log10(mean counts + 1),\n Input Simulation")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
@@ -229,11 +245,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				np.log10(input_count + 1), clip_on=False,
 				c='#555555', edgecolor='none', s=20, alpha=0.25,
 			)
-			ax.set_title(f"$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
+			ax.set_title(f"Complex Counts\n$R^2$ = {pearson[0] ** 2:.3f}, n = {len(reference_count)}")
 			ax.set_xlabel(
-				f"log10(Mean simulated complex counts + 1),\n {reference_sim_name}")
+				f"log10(mean counts + 1),\n Reference Simulation")
 			ax.set_ylabel(
-				f"log10(Mean simulated complex counts + 1),\n {input_sim_name}")
+				f"log10(mean counts + 1),\n Input Simulation")
 			ax.spines["top"].set_visible(False)
 			ax.spines["right"].set_visible(False)
 			ax.spines["bottom"].set_position(("outward", 15))
@@ -253,6 +269,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		plot_complexed_monomer_counts(ax3, avg_count_for_monomers_in_complexes1, avg_count_for_monomers_in_complexes2, protein_pearson3)
 		plot_complex_counts(ax4, avg_complex_counts1, avg_complex_counts2, protein_pearson4)
 
+		# Set the figure title
+		plt.suptitle(f"Comparison of {reference_sim_name} (reference) and\n {input_sim_name} (input) protein counts", fontsize=16)
 
 
 
