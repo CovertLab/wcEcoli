@@ -1,5 +1,6 @@
 """
-Save the average monomer counts for each variant index as a column in a csv file.
+Save the average monomer counts and mass portions for each variant index as
+a column in a csv file.
 """
 
 import os
@@ -10,6 +11,7 @@ import numpy as np
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import units
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
@@ -38,6 +40,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		monomer_reader = TableReader(
 			os.path.join(all_cells[0], 'simOut', 'MonomerCounts'))
 		monomer_ids = np.array(monomer_reader.readAttribute('monomerIds'))
+		monomer_mw = sim_data.getter.get_masses(monomer_ids).asNumber(units.fg / units.count)
 
 		# Determine which monomers correspond to essential genes
 		cistron_data = sim_data.process.transcription.cistron_data
@@ -61,6 +64,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		monomer_ids = np.reshape(monomer_ids, (len(monomer_ids), 1))
 		# Initialize a pandas dataframe to store the data
 		all_avg_monomer_counts = np.zeros((len(monomer_ids), n_variants))
+		all_avg_monomer_proteome_mass = np.zeros((len(monomer_ids), n_variants))
+		all_avg_monomer_dry_cell_mass = np.zeros((len(monomer_ids), n_variants))
 
 		# Loop through variant indexes
 		for i, variant_index in enumerate(selected_variant_indexes):
@@ -79,19 +84,40 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, 'MonomerCounts', 'monomerCounts',
 				remove_first=True, ignore_exception=True)
 
+			dry_masses = read_stacked_columns(
+				all_cells, 'Mass', 'dryMass',
+				remove_first=True, ignore_exception=True)
+
 			monomer_counts_avg = monomer_counts.mean(axis=0)
+			monomer_mass_avg = monomer_counts_avg * monomer_mw
+			monomer_mass_relative_to_total_monomer_mass = monomer_mass_avg / monomer_mass_avg.sum()
+			monomer_mass_relative_to_total_dcw = monomer_mass_avg / dry_masses.mean()
 
 			all_avg_monomer_counts[:, i] = np.copy(monomer_counts_avg)
+			all_avg_monomer_proteome_mass[:, i] = np.copy(monomer_mass_relative_to_total_monomer_mass)
+			all_avg_monomer_dry_cell_mass[:, i] = np.copy(monomer_mass_relative_to_total_dcw)
 
-		# Save all_avg_monomer_counts as a csv file with row names as monomer_ids
-		# and col names as selected_variant_indexes
+		# Save files
 		all_labeled_avg_monomer_counts = np.hstack((monomer_ids, is_essential, all_avg_monomer_counts))
 		header = np.array(['monomer_ids'] + ['is_essential'] + selected_variant_indexes)
 		all_labeled_avg_monomer_counts = np.vstack((header, all_labeled_avg_monomer_counts))
-
 		np.savetxt(
 			os.path.join(plotOutDir, 'all_labeled_avg_monomer_counts.csv'),
 			all_labeled_avg_monomer_counts, delimiter=',', fmt='%s')
+
+		all_labeled_avg_monomer_proteome_mass = np.hstack((monomer_ids, is_essential, all_avg_monomer_proteome_mass))
+		header = np.array(['monomer_ids'] + ['is_essential'] + selected_variant_indexes)
+		all_labeled_avg_monomer_proteome_mass = np.vstack((header, all_labeled_avg_monomer_proteome_mass))
+		np.savetxt(
+			os.path.join(plotOutDir, 'all_labeled_avg_monomer_proteome_mass.csv'),
+			all_labeled_avg_monomer_proteome_mass, delimiter=',', fmt='%s')
+
+		all_labeled_avg_monomer_dry_cell_mass = np.hstack((monomer_ids, is_essential, all_avg_monomer_dry_cell_mass))
+		header = np.array(['monomer_ids'] + ['is_essential'] + selected_variant_indexes)
+		all_labeled_avg_monomer_dry_cell_mass = np.vstack((header, all_labeled_avg_monomer_dry_cell_mass))
+		np.savetxt(
+			os.path.join(plotOutDir, 'all_labeled_avg_monomer_dry_cell_mass.csv'),
+			all_labeled_avg_monomer_dry_cell_mass, delimiter=',', fmt='%s')
 
 if __name__ == "__main__":
 	Plot().cli()
