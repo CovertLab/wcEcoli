@@ -46,14 +46,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation=np.arange(IGNORE_FIRST_N_GENS,self.n_total_gens),
 			only_successful=True)
 
-		# Calculate the average total monomer counts across all cells:
-		total_protein_counts = (read_stacked_columns(all_cells,
-			'MonomerCounts', 'monomerCounts')).mean(axis=0)
+		# # Calculate the average total monomer counts across all cells:
+		# total_protein_counts = (read_stacked_columns(all_cells,
+		# 	'MonomerCounts', 'monomerCounts')).mean(axis=0)
+		#
+		# # Make into a np.array:
+		# total_protein_counts = np.array(total_protein_counts)
+		# todo: delete the above if it matches below
 
-		# Make into a np.array:
-		total_protein_counts = np.array(total_protein_counts)
+		# Get the average total protein counts for each monomer:
+		total_counts = (
+			read_stacked_columns(all_cells, 'MonomerCounts',
+								 'monomerCounts', ignore_exception=True))
+		avg_total_counts = np.mean(total_counts, axis=0)
 
-		return total_protein_counts
+		# Get the average free protein counts for each monomer:
+		(free_counts,) = read_stacked_bulk_molecules(
+			all_cells, self.all_monomer_ids, ignore_exception=True)
+		avg_free_counts = np.mean(free_counts, axis=0)
+
+		# Get the average complex counts for each monomer:
+		avg_counts_for_monomers_in_complexs = avg_total_counts - avg_free_counts
+
+		return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexs
 
 	def get_validation_data(self, simDataFile, validationDataFile):
 		# adapted from multigen and single/proteinCountsValidation.py
@@ -148,11 +163,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		half_life_source = sim_data.process.translation.monomer_data["deg_rate_source"]
 
 		# Create a dictionary of the half lives for each protein:
-		total_protein_counts = self.generate_data(simDataFile)
+		total_protein_counts, _, _ = self.generate_data(simDataFile)
 		monomer_to_half_life = dict(zip(self.all_monomer_ids, half_lives))
 		monomer_to_half_life_source = dict(zip(self.all_monomer_ids, half_life_source))
 
 		return monomer_to_half_life, monomer_to_half_life_source
+
+
 
 	def get_LogData(self, protein_idxs, interest_protein_counts, index_vals=[]):
 		"""
@@ -282,8 +299,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		z = np.polyfit(x, y, 1)
 		p = np.poly1d(z)
 		trendline_y = p(x)
-
-
 
 		# Add trendline trace
 		plt.plot(x, trendline_y,
@@ -422,6 +437,159 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_half_life_source_highlighted_matplotlib.pdf"
 		plt.savefig(os.path.join(plotOutDir, plot_name))
 
+	def determine_fraction_table(self, simDataFile):
+		"""
+		Determines the fraction of proteins in complex form for each monomer
+		Args:
+			simDataFile: simulation data file
+		Returns:
+			complex_fraction: fraction of proteins in complex form for each monomer
+		"""
+		# Obtain counts data:
+		avg_total_counts, avg_free_counts, avg_complex_counts = self.generate_data(
+			simDataFile)
+		# Remove the last three characters from each value:
+		#monomer_ids = [id[:-3] for id in self.all_monomer_ids]
+		monomer_ids = self.all_monomer_ids
+
+		# Calculate the faction in complex and in free from:
+		complex_fraction = np.zeros(len(monomer_ids))
+		free_fraction = np.zeros(len(monomer_ids))
+		for i in range(len(monomer_ids)):
+			if avg_total_counts[i] == 0:
+				complex_fraction[i] = 0 # set to zero so it is still accounted for
+				free_fraction[i] = 0
+				print('Monomer ID:', monomer_ids[i], 'has no total counts')
+			else:
+				complex_fraction[i] = avg_complex_counts[i] / avg_total_counts[i]
+				free_fraction[i] = avg_free_counts[i] / avg_total_counts[i]
+
+
+		# make a table of the monomers and their counts and their fractions:
+		monomer_counts_table = pd.DataFrame({'Monomer ID': monomer_ids,
+									   'Total Counts': avg_total_counts,
+									   'Free Counts': avg_free_counts,
+									   'Free Fraction': free_fraction,
+									   'Complex Counts': avg_complex_counts,
+									   'Complex Fraction': complex_fraction})
+
+		monomer_id_to_complex_fraction = dict(zip(monomer_ids, complex_fraction))
+		monomer_id_to_complex_counts = dict(zip(monomer_ids, avg_complex_counts))
+
+		return monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts
+
+	def hover_text_info(self, dataframe):
+		hovertext = dataframe.apply(lambda
+										row: f"Monomer ID: {row['protein_id']}<br>HL Value: {row['half_life']}<br>HL Source: {row['half_life_source']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+									axis=1)
+		return hovertext
+	def plot_by_complex_fraction_plotly(self, simDataFile, plotOutDir, simulationCounts, validationCounts,
+								 overlapIDs, sim_name, val_name):
+		"""
+		Extract the complex count fractions for each protein in the simulation
+		Args:
+			simDataFile: simulation data file
+
+		Returns: a dictionary of the complex count fractions for each protein
+		"""
+
+
+		monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts = self.determine_fraction_table(simDataFile)
+
+		# Compute log10 values
+		x = self.get_LogData(overlapIDs, validationCounts)
+		y = self.get_LogData(overlapIDs, simulationCounts)
+
+		monomer_to_half_life, monomer_to_half_life_source = self.get_half_lives(simDataFile)
+
+		# create a dataframe of the protein ids and their half life sources:
+		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   'simulation_protein_counts': y,
+								   'validation_protein_counts': x})
+		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(monomer_id_to_complex_fraction)
+		protein_df['complex_counts'] = protein_df['protein_id'].map(monomer_id_to_complex_counts)
+		protein_df['half_life_source'] = protein_df['protein_id'].map(monomer_to_half_life_source)
+		protein_df['half_life'] = protein_df['protein_id'].map(monomer_to_half_life)
+
+		# make a yes or no column for whether the protein is in complex form:
+		protein_df['in_complex'] = protein_df['fraction_in_complex'].apply(lambda x: 'Yes' if x > 0 else 'No')
+
+
+		# split up the data frames by complex fraction:
+		complex_fraction_types = protein_df['in_complex'].unique()
+		complex_fraction_dfs = {}
+		for type in complex_fraction_types:
+			complex_fraction_dfs[type] = protein_df[protein_df['in_complex'] == type]
+
+		# create a color map for each complex fraction:
+		color_map = {
+			"Yes": "lightseagreen",
+			"No": "yellowgreen"}
+
+		name_map = {
+			"Yes": "Has Complexed Counts",
+			"No": "Free Monomer Only"}
+
+
+
+
+
+		# create a scatter plot for each half life source:
+		plt.figure(figsize=(9, 6), dpi=200)
+		fig = go.Figure()
+		for type, df in complex_fraction_dfs.items():
+			print(type)
+			c = color_map[type]; name = name_map[type]
+			hovertext = self.hover_text_info(df)
+			fig.add_trace(go.Scatter(x=df['validation_protein_counts'], y=df['simulation_protein_counts'], hovertext=hovertext, mode='markers',
+									 name=f"{name} (n={len(df)})",
+									 marker=dict(color=c, size=.7, opacity=.5)))
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Simulation Protein Counts ({sim_name}) "
+				  f"vs. Validation Protein Counts ({val_name} et al.),<br> R^2 > 30: {round(r_squared_30_above,3)}",
+			xaxis_title="log10(Validation Protein Counts+1)",
+			yaxis_title=f"log10(Simulation Protein Counts+1)",
+			autosize=False, width=900, height=600)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_complex_fraction_highlighted.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
 
 
 	def plot_validation_comparison(self, simDataFile, validationDataFile,plotOutDir, sim_name):
@@ -448,6 +616,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# generate matplotlib validation plots with half life source highlighted:
 		self.plot_with_color_by_half_life(simDataFile, plotOutDir, sim_schmidt_counts,
 			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
+		self.plot_with_color_by_half_life(simDataFile, plotOutDir, sim_wisniewski_counts,
+			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
+
+		# generate plotly validation plots with complex fraction highlighted:
+		self.plot_by_complex_fraction_plotly(simDataFile, plotOutDir, sim_schmidt_counts,
+			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
+		self.plot_by_complex_fraction_plotly(simDataFile, plotOutDir, sim_wisniewski_counts,
+			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
 
 
 
