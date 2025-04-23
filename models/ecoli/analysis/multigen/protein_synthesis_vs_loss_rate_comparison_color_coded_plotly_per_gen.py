@@ -133,6 +133,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# doubling time function from nora:
 		def extract_doubling_times(cell_paths):
 			# todo: double check this is working as expected when the generation start time is not zero!!!
+			# todo: based on the local test I did with shifting the doubling times, I think it is working just fine
 			# Load data
 			time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
 			# Determine doubling time
