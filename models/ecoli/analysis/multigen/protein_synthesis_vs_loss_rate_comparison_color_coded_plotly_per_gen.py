@@ -261,13 +261,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			x=log_avg_production_rate,
 			y=log_avg_loss_rate,
 			mode='markers',
-            customdata=np.stack((monomerIds, half_lives, deg_rate_source, avg_FMC, common_names), axis=-1),
+            customdata=np.stack((monomerIds, half_lives, deg_rate_source, avg_FMC, common_names, log_avg_production_rate, log_avg_loss_rate), axis=-1),
             hovertemplate=
             "Monomer ID: %{customdata[0]}<br>" +
             "half life: %{customdata[1]}<br>" +
             "source: %{customdata[2]}<br>" +
 			"avgerage free monomer counts: %{customdata[3]}<br>" +
 			"common name: %{customdata[4]}<br>" +
+			"Log10 Average Production Rate: %{customdata[5]}<br>" +
+			"Log10 Average Loss Rate: %{customdata[6]}<br>" +
             "<extra></extra>",
 			marker=dict(size=5, color='lightseagreen', opacity=0.3),
 			name="All Proteins"))
