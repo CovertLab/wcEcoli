@@ -371,7 +371,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Layout settings
 		fig.update_layout(
-			title=f"Log10 Average Loss Rate vs Log10 Average Production Rate <br> {sim_name}, variant {variant}, seed {seed}, generations {IGNORE_FIRST_N_GENS} - {n_gens-1} ",
+			title=f"Log10 Average Loss Rate vs Log10 Average Production Rate <br> {sim_name},<br> variant {variant}, seed {seed}, generations {IGNORE_FIRST_N_GENS} - {n_gens-1} ",
 			xaxis_title="Log10 Average Production Rate",
 			yaxis_title="Log10 Average Loss Rate",
 			width=700, height=700,
