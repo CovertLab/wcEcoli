@@ -285,13 +285,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				y=log_avg_loss_rate[red_protein_indices],
 				mode='markers',
 				customdata=np.stack(
-					(monomerIds[red_protein_indices], half_lives[red_protein_indices], deg_rate_source[red_protein_indices], avg_FMC[red_protein_indices], common_names[red_protein_indices]), axis=-1),
+					(monomerIds[red_protein_indices], half_lives[red_protein_indices], deg_rate_source[red_protein_indices], avg_FMC[red_protein_indices], common_names[red_protein_indices], log_avg_production_rate[red_protein_indices], log_avg_loss_rate[red_protein_indices]), axis=-1),
 				hovertemplate=
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
 				"source: %{customdata[2]}<br>" +
 				"avgerage free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
+				"Log10 Average Production Rate: %{customdata[5]}<br>" +
+				"Log10 Average Loss Rate: %{customdata[6]}<br>" +
 				"<extra></extra>",
 				marker=dict(size=5, color='red', opacity=1),
 				name='Red Proteins'))
@@ -310,13 +312,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				customdata=np.stack(
 					(monomerIds[blue_protein_indices], half_lives[blue_protein_indices],
 					 deg_rate_source[blue_protein_indices], avg_FMC[blue_protein_indices],
-					 common_names[blue_protein_indices]), axis=-1),
+					 common_names[blue_protein_indices], log_avg_production_rate[blue_protein_indices], log_avg_loss_rate[blue_protein_indices]), axis=-1),
 				hovertemplate=
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
 				"source: %{customdata[2]}<br>" +
 				"avgerage free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
+				"Log10 Average Production Rate: %{customdata[5]}<br>" +
+				"Log10 Average Loss Rate: %{customdata[6]}<br>" +
 				"<extra></extra>",
 				marker=dict(size=5, color='blue', opacity=1),
 				name='Blue Proteins'))
@@ -335,13 +339,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				customdata=np.stack(
 					(monomerIds[purple_protein_indices], half_lives[purple_protein_indices],
 					 deg_rate_source[purple_protein_indices], avg_FMC[purple_protein_indices],
-					 common_names[purple_protein_indices]), axis=-1),
+					 common_names[purple_protein_indices], log_avg_production_rate[purple_protein_indices], log_avg_loss_rate[purple_protein_indices]), axis=-1),
 				hovertemplate=
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
 				"source: %{customdata[2]}<br>" +
 				"avgerage free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
+				"Log10 Average Production Rate: %{customdata[5]}<br>" +
+				"Log10 Average Loss Rate: %{customdata[6]}<br>" +
 				"<extra></extra>",
 				marker=dict(size=5, color='hotpink', opacity=1),
 				name='Purple Proteins'))
