@@ -23,6 +23,7 @@ HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]' ]#[
 # lowest deg rates:  ['PD03867[c]', 'EG50004-MONOMER[c]','ADHP-MONOMER[c]', 'G6988-MONOMER[c]']
 
 IGNORE_FIRST_N_GENS = 14
+SET_LAST_GEN = 0
 
 
 # function to match gene symbols to monomer ids
@@ -79,6 +80,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Get the cell paths
 		n_gens = self.ap.n_generation
 		cell_paths = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, n_gens), only_successful=True)
+		if SET_LAST_GEN > 0:
+			cell_paths = self.ap.get_cells(generation=np.arange(IGNORE_FIRST_N_GENS, SET_LAST_GEN),
+										   only_successful=True)
+			n_gens = SET_LAST_GEN # todo: see if this needs a +1 (in terms of the plot title below)
 		sim_dir = cell_paths[0]
 		split_dir = sim_dir.split('/')
 		sim_name = split_dir[split_dir.index('out') + 1]
@@ -127,6 +132,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# doubling time function from nora:
 		def extract_doubling_times(cell_paths):
+			# todo: double check this is working as expected when the generation start time is not zero!!!
 			# Load data
 			time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
 			# Determine doubling time
@@ -139,8 +145,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(
 				len(doubling_times))
 			end_generation_indices = start_generation_indices + doubling_times
-
-
 
 			return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
@@ -167,7 +171,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			protein_counts_removed = monomer_counts_at_gen_end - monomer_counts_at_gen_start
 			diluted_counts[i, :] = protein_counts_removed
 			diluted_counts_over_time[end_gen,:] = protein_counts_removed  # put it at the start of the next gen in terms of time
-
+			# todo: double check this is working as expected when the generation start time is not zero!!!
 
 		# compute how many proteins were removed via degradation over the entire sim length:
 		degraded_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "protein_deg_ES1_counts") # take from evolve state counter!
@@ -244,7 +248,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		min_avg_elongated_counts = avg_elongated_counts[min_avg_elongated_counts_indices]
 		min_values = [np.min(min_avg_loss_rate), np.min(min_avg_elongated_counts)]
 		min_value = np.min(min_values)
-		log_factor = min_value * .1  # add this to avoid negative and zero log values
+		log_factor = min_value * .01  # add this to avoid negative and zero log values
 
 		# compute the log of the loss and production rates
 		log_avg_loss_rate = np.log10(avg_loss_rate + log_factor)
@@ -266,7 +270,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             "Monomer ID: %{customdata[0]}<br>" +
             "half life: %{customdata[1]}<br>" +
             "source: %{customdata[2]}<br>" +
-			"avgerage free monomer counts: %{customdata[3]}<br>" +
+			"average free monomer counts: %{customdata[3]}<br>" +
 			"common name: %{customdata[4]}<br>" +
 			"Log10 Average Production Rate: %{customdata[5]}<br>" +
 			"Log10 Average Loss Rate: %{customdata[6]}<br>" +
@@ -290,7 +294,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
 				"source: %{customdata[2]}<br>" +
-				"avgerage free monomer counts: %{customdata[3]}<br>" +
+				"average free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
 				"Log10 Average Production Rate: %{customdata[5]}<br>" +
 				"Log10 Average Loss Rate: %{customdata[6]}<br>" +
@@ -317,7 +321,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
 				"source: %{customdata[2]}<br>" +
-				"avgerage free monomer counts: %{customdata[3]}<br>" +
+				"average free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
 				"Log10 Average Production Rate: %{customdata[5]}<br>" +
 				"Log10 Average Loss Rate: %{customdata[6]}<br>" +
@@ -344,7 +348,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
 				"source: %{customdata[2]}<br>" +
-				"avgerage free monomer counts: %{customdata[3]}<br>" +
+				"average free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
 				"Log10 Average Production Rate: %{customdata[5]}<br>" +
 				"Log10 Average Loss Rate: %{customdata[6]}<br>" +
@@ -386,7 +390,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			showlegend=True,)
 
 		#save the plot:
-		plot_name = plotOutFileName + "_red_" + red_name + "_blue_" + blue_name + "_purple_" + purple_name + ".html"
+		sim_description = f"v{variant}s{seed}g{IGNORE_FIRST_N_GENS}-{n_gens-1}"
+		plot_name = plotOutFileName + '_'+sim_description+"_red_" + red_name + "_blue_" + blue_name + "_purple_" + purple_name + ".html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 		#exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
