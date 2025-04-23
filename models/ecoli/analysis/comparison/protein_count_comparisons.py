@@ -30,7 +30,7 @@ IGNORE_FIRST_N_GENS = 2
 
 # if a sim has multiple variants, you can specify which one to plot with here
 REFERENCE_VARIANT = None
-INPUT_VARIANT = 2
+INPUT_VARIANT = 3
 """ END USER INPUTS """
 
 class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
