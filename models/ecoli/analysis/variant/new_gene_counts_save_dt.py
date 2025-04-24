@@ -472,10 +472,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Save ribosome component counts by subunit
 		ribosome_components_by_subunit = np.array(variants)
 		ribosome_components_by_subunit = np.vstack((
-			ribosome_components_by_subunit, avg_s30_limiting_protein_counts,
+			ribosome_components_by_subunit,
+			avg_s30_total_counts,
+			avg_s30_limiting_protein_counts,
 			avg_s30_16s_rRNA_total_counts))
 		ribosome_components_by_subunit_header = np.array([
-			'Variants', 'Avg Limiting Protein Counts (Ribosomal 30s)',
+			'Variants', 'Avg Total Counts (Ribosomal 30s)',
+			'Avg Limiting Protein Counts (Ribosomal 30s)',
 			'Avg 16s rRNA Counts (Ribosomal 30s)'])
 		for id in s30_protein_ids:
 			ribosome_components_by_subunit = np.vstack((ribosome_components_by_subunit,
@@ -486,11 +489,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		ribosome_components_by_subunit = np.vstack((
 			ribosome_components_by_subunit,
+			avg_s50_total_counts,
 			avg_s50_limiting_protein_counts,
 			avg_s50_23s_rRNA_total_counts, avg_s50_5s_rRNA_total_counts))
 		ribosome_components_by_subunit_header = np.append(
 			ribosome_components_by_subunit_header,
-			('Avg Limiting Protein Counts (Ribosomal 50s)',
+			('Avg Total Counts (Ribosomal 50s)',
+			'Avg Limiting Protein Counts (Ribosomal 50s)',
 			'Avg 23s rRNA Counts (Ribosomal 50s)',
 			'Avg 5s rRNA Counts (Ribosomal 50s)'))
 		for id in s50_protein_ids:
