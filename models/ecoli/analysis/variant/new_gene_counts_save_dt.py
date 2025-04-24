@@ -82,6 +82,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_ribosomal_protein_counts = {}
 		avg_rnap_subunit_counts = {}
 		avg_rRNA_counts = {}
+
+		avg_s30_limiting_protein_counts = np.zeros(len(variants))
+		avg_s30_16s_rRNA_total_counts = np.zeros(len(variants))
+		avg_s50_limiting_protein_counts = np.zeros(len(variants))
+		avg_s50_23s_rRNA_total_counts = np.zeros(len(variants))
+		avg_s50_5s_rRNA_total_counts = np.zeros(len(variants))
+		avg_s30_total_counts = np.zeros(len(variants))
+		avg_s50_total_counts = np.zeros(len(variants))
+
+		avg_s30_protein_counts = {}
+		avg_s50_protein_counts = {}
+
 		n_total_gens = self.ap.n_generation
 
 		min_variant = min(variants)
@@ -311,6 +323,120 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				avg_rnap_subunit_counts[id + "_monomer"][i] = np.mean(
 					rnap_subunit_counts[:, j])
 
+			# From ribosome_components.py
+			# Load IDs of ribosome components from sim_data
+			s30_protein_ids = sim_data.molecule_groups.s30_proteins
+			s30_16s_rRNA_ids = sim_data.molecule_groups.s30_16s_rRNA
+			s30_full_complex_id = [sim_data.molecule_ids.s30_full_complex]
+			s50_protein_ids = sim_data.molecule_groups.s50_proteins
+			s50_23s_rRNA_ids = sim_data.molecule_groups.s50_23s_rRNA
+			s50_5s_rRNA_ids = sim_data.molecule_groups.s50_5s_rRNA
+			s50_full_complex_id = [sim_data.molecule_ids.s50_full_complex]
+
+			# Get complexation stoichiometries of ribosomal proteins
+			complexation = sim_data.process.complexation
+			s30_monomers = complexation.get_monomers(s30_full_complex_id[0])
+			s50_monomers = complexation.get_monomers(s50_full_complex_id[0])
+			s30_subunit_id_to_stoich = {
+				subunit_id: stoich for (subunit_id, stoich)
+				in zip(s30_monomers['subunitIds'], s30_monomers['subunitStoich'])
+				}
+			s50_subunit_id_to_stoich = {
+				subunit_id: stoich for (subunit_id, stoich)
+				in zip(s50_monomers['subunitIds'], s50_monomers['subunitStoich'])
+				}
+			s30_protein_stoich = np.array([
+				s30_subunit_id_to_stoich[subunit_id]
+				for subunit_id in s30_protein_ids
+				])
+			s50_protein_stoich = np.array([
+				s50_subunit_id_to_stoich[subunit_id]
+				for subunit_id in s50_protein_ids
+				])
+
+			# Read free counts of rRNAs
+			time = read_stacked_columns(all_cells, 'Main', 'time')
+			(s30_16s_rRNA_counts, s50_23s_rRNA_counts, s50_5s_rRNA_counts
+			) = read_stacked_bulk_molecules(
+				all_cells,
+				(s30_16s_rRNA_ids, s50_23s_rRNA_ids, s50_5s_rRNA_ids))
+
+			# Read counts of free 30S and 50S subunits
+			(s30_full_complex_counts, s50_full_complex_counts
+			) = read_stacked_bulk_molecules(
+				all_cells, (s30_full_complex_id, s50_full_complex_id))
+
+			# Read counts of active ribosomes
+			simOutDir = os.path.join(all_cells[0], 'simOut')
+			unique_molecule_counts_reader = TableReader(
+				os.path.join(simOutDir, 'UniqueMoleculeCounts'))
+			active_ribosome_index = unique_molecule_counts_reader.readAttribute(
+				'uniqueMoleculeIds').index('active_ribosome')
+			active_ribosome_counts = read_stacked_columns(
+				all_cells, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+				)[:, active_ribosome_index]
+
+			# Read counts of free and complexed ribosomal proteins (this includes
+			# ribosomal proteins in inactive ribosomal subunits and active
+			# ribosomes)
+			if variant == min_variant:
+				simOutDir = os.path.join(all_cells[0], 'simOut')
+				monomer_counts_reader = TableReader(
+					os.path.join(simOutDir, 'MonomerCounts'))
+				monomer_ids = monomer_counts_reader.readAttribute('monomerIds')
+				monomer_id_to_index = {
+					monomer_id: i for (i, monomer_id) in enumerate(monomer_ids)
+					}
+				s30_protein_indexes = np.array([
+					monomer_id_to_index[protein_id] for protein_id in s30_protein_ids
+					])
+				s50_protein_indexes = np.array([
+					monomer_id_to_index[protein_id] for protein_id in s50_protein_ids
+					])
+
+				# Set up data structures
+				for j in range(len(s30_protein_ids)):
+					avg_s30_protein_counts['s30_' + s30_protein_ids[j]] = np.zeros(len(variants))
+				for j in range(len(s50_protein_ids)):
+					avg_s50_protein_counts['s50_' + s50_protein_ids[j]] = np.zeros(len(variants))
+
+			monomer_counts = read_stacked_columns(
+				all_cells, 'MonomerCounts', 'monomerCounts',
+				)
+			# Divide by complexation stoichiometric constant
+			s30_protein_counts = monomer_counts[:, s30_protein_indexes] / s30_protein_stoich
+			s50_protein_counts = monomer_counts[:, s50_protein_indexes] / s50_protein_stoich
+
+			# Calculate total counts of all components
+			s30_limiting_protein_counts = s30_protein_counts.min(axis=1)
+			s30_16s_rRNA_total_counts = (
+					s30_16s_rRNA_counts.sum(axis=1)
+					+ s30_full_complex_counts + active_ribosome_counts)
+			s50_limiting_protein_counts = s50_protein_counts.min(axis=1)
+			s50_23s_rRNA_total_counts = (
+					s50_23s_rRNA_counts.sum(axis=1)
+					+ s50_full_complex_counts + active_ribosome_counts)
+			s50_5s_rRNA_total_counts = (
+					s50_5s_rRNA_counts.sum(axis=1)
+					+ s50_full_complex_counts + active_ribosome_counts)
+
+			# Calculate total counts of both subunits
+			s30_total_counts = s30_full_complex_counts + active_ribosome_counts
+			s50_total_counts = s50_full_complex_counts + active_ribosome_counts
+
+			avg_s30_limiting_protein_counts[i] = np.mean(s30_limiting_protein_counts)
+			avg_s30_16s_rRNA_total_counts[i] = np.mean(s30_16s_rRNA_total_counts)
+			avg_s50_limiting_protein_counts[i] = np.mean(s50_limiting_protein_counts)
+			avg_s50_23s_rRNA_total_counts[i] = np.mean(s50_23s_rRNA_total_counts)
+			avg_s50_5s_rRNA_total_counts[i] = np.mean(s50_5s_rRNA_total_counts)
+			avg_s30_total_counts[i] = np.mean(s30_total_counts)
+			avg_s50_total_counts[i] = np.mean(s50_total_counts)
+
+			for j, id in enumerate(s30_protein_ids):
+				avg_s30_protein_counts['s30_' + id][i] = np.mean(s30_protein_counts[:, j])
+			for j, id in enumerate(s50_protein_ids):
+				avg_s50_protein_counts['s50_' + id][i] = np.mean(s50_protein_counts[:, j])
+
 		# Save ribosome and RNAP component counts
 		ribosome_and_rnap_components = np.array(variants)
 		ribosome_and_rnap_components_header = np.array(['Variants'])
@@ -342,6 +468,41 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ribosome_and_rnap_components_header.T, ribosome_and_rnap_components.T))
 		np.savetxt(os.path.join(plotOutDir, plotOutFileName + "_ribosome_and_rnap_components.csv"),
 				   all_avg_component_counts, delimiter=",", fmt="%s")
+
+		# Save ribosome component counts by subunit
+		ribosome_components_by_subunit = np.array(variants)
+		ribosome_components_by_subunit = np.vstack((
+			ribosome_components_by_subunit, avg_s30_limiting_protein_counts,
+			avg_s30_16s_rRNA_total_counts))
+		ribosome_components_by_subunit_header = np.array([
+			'Variants', 'Avg Limiting Protein Counts (Ribosomal 30s)',
+			'Avg 16s rRNA Counts (Ribosomal 30s)'])
+		for id in s30_protein_ids:
+			ribosome_components_by_subunit = np.vstack((ribosome_components_by_subunit,
+				avg_s30_protein_counts['s30_' + id]))
+			ribosome_components_by_subunit_header = np.append(
+				ribosome_components_by_subunit_header,
+				"Avg Monomer Counts (Ribosomal 30s): " + id)
+
+		ribosome_components_by_subunit = np.vstack((
+			ribosome_components_by_subunit,
+			avg_s50_limiting_protein_counts,
+			avg_s50_23s_rRNA_total_counts, avg_s50_5s_rRNA_total_counts))
+		ribosome_components_by_subunit_header = np.append(
+			ribosome_components_by_subunit_header,
+			('Avg Limiting Protein Counts (Ribosomal 50s)',
+			'Avg 23s rRNA Counts (Ribosomal 50s)',
+			'Avg 5s rRNA Counts (Ribosomal 50s)'))
+		for id in s50_protein_ids:
+			ribosome_components_by_subunit = np.vstack((ribosome_components_by_subunit,
+				avg_s50_protein_counts['s50_' + id]))
+			ribosome_components_by_subunit_header = np.append(
+				ribosome_components_by_subunit_header,
+				"Avg Monomer Counts (Ribosomal 50s): " + id)
+		all_ribosome_components_by_subunit = np.vstack((
+			ribosome_components_by_subunit_header.T, ribosome_components_by_subunit.T))
+		np.savetxt(os.path.join(plotOutDir, plotOutFileName + "_ribosome_components_by_subunit.csv"),
+				   all_ribosome_components_by_subunit, delimiter=",", fmt="%s")
 
 		# Save variant index, doubling time, and new gene protein counts
 		# to file
