@@ -124,7 +124,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			header1 = np.array([f'variant number {i}']  + ['doubling time:'] + [doubling_times[i]] + []+[]+[]+[]+[])
 			header2 = np.array(['gene ids'] + ['monomer_ids'] + ['is_essential'] + ['number of timesteps monomer not present'] + ['total timesteps'] + ['number of cells where monomer disappears'] + ['total individual cells'] + ['avg monomer count'])
 
-			variant_table = np.vstack((header1, header2, variant_table_i))
+			variant_table = np.vstack((variant_table, header1, header2, variant_table_i))
 
 
 
