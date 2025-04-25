@@ -70,12 +70,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_genes = len(gene_ids)
 		total_essential_genes = len(essential_genes)
 		is_essential = np.reshape(is_essential, (len(is_essential), 1))
+		gene_ids = np.reshape(gene_ids, (len(gene_ids), 1))
+		total_timesteps = np.zeros((len(monomer_ids), 1))
+		total_individual_cells = np.zeros((len(monomer_ids), 1))
 
 
 		monomer_ids = np.reshape(monomer_ids, (len(monomer_ids), 1))
 		# Initialize a pandas dataframe to store the data
-		all_avg_monomer_counts = np.zeros((len(monomer_ids), n_variants))
-
+		all_avg_monomer_counts = np.zeros((len(monomer_ids), 1))
+		import ipdb
+		ipdb.set_trace()
 		variant_table = np.array([]+[]+[]+[]+[]+[]+[]+[])
 		for i, variant_index in enumerate(selected_variant_indexes):
 			# Get all cells (within the generation range) of this variant index
@@ -95,14 +99,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			monomer_counts_avg = monomer_counts.mean(axis=0)
 
-			all_avg_monomer_counts[:, i] = np.copy(monomer_counts_avg)
+			all_avg_monomer_counts[:] = np.copy(monomer_counts_avg)
 
 			# count whether each gene's monomer exists in each
 			# timestep or not
 			monomer_zeros = read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
 			     ignore_exception=True, fun=lambda x: (x == 0).sum(axis=0))[:, monomer_indexes]
-			total_timesteps = monomer_counts.shape[0]
+			total_timesteps[1:len(monomer_ids),1] = monomer_counts.shape[0]
 
 			# count number of cells where monomer goes to zero
 			cell_has_zero_monomer = read_stacked_columns(
@@ -110,7 +114,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ignore_exception=True, fun=lambda x: (x == 0).any(axis=0))[:, monomer_indexes]
 			cells_with_zero = cell_has_zero_monomer.sum(axis=0)
 
-			total_individual_cells = all_cells.shape[0]
+			total_individual_cells[1:len(monomer_ids),1] = all_cells.shape[0]
 
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
