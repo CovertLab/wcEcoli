@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECT_PDR_COMBO = 0 # select the protein degradation rate combo to use
+SELECT_PDR_COMBO = 1 # select the protein degradation rate combo to use
 
 class Translation(object):
 	""" Translation """
