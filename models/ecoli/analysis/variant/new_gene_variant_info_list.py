@@ -78,8 +78,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		monomer_ids = np.reshape(monomer_ids, (len(monomer_ids), 1))
 		# Initialize a pandas dataframe to store the data
 		all_avg_monomer_counts = np.zeros((len(monomer_ids), 1))
-		import ipdb
-		ipdb.set_trace()
+
 		variant_table = np.array([]+[]+[]+[]+[]+[]+[]+[])
 		for i, variant_index in enumerate(selected_variant_indexes):
 			# Get all cells (within the generation range) of this variant index
@@ -125,7 +124,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 			variant_table_i = np.hstack((gene_ids, monomer_ids, is_essential, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
-			header1 = np.array([f'variant number {i}']  + ['doubling time:'] + [doubling_times[i]] + []+[]+[]+[]+[])
+			header1 = np.array([f'variant number {i}']  + ['doubling time:'] + [doubling_times[i]] + ['']+['']+['']+['']+[''])
 			header2 = np.array(['gene ids'] + ['monomer_ids'] + ['is_essential'] + ['number of timesteps monomer not present'] + ['total timesteps'] + ['number of cells where monomer disappears'] + ['total individual cells'] + ['avg monomer count'])
 
 			variant_table = np.vstack((variant_table, header1, header2, variant_table_i))
