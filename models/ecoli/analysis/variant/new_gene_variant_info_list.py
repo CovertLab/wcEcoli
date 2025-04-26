@@ -97,6 +97,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				remove_first=True, ignore_exception=True)
 
 			monomer_counts_avg = monomer_counts.mean(axis=0)
+			monomer_counts_avg = monomer_counts_avg.reshape(-1, 1)
 
 
 			all_avg_monomer_counts = np.copy(monomer_counts_avg)
@@ -122,6 +123,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			doubling_times[i,0] = np.mean(dt)
 
 		# and col names as selected_variant_indexes
+
+			gene_ids = np.array(gene_ids).reshape(-1, 1)
+			monomer_ids = np.array(monomer_ids).reshape(-1, 1)
+			is_essential = np.array(is_essential).reshape(-1, 1)
+			total_timesteps = np.full((len(monomer_ids), 1), monomer_counts.shape[0])
+			cells_with_zero = cells_with_zero.reshape(-1, 1)
+			monomer_zeros= monomer_zeros.reshape(-1, 1)
+			total_individual_cells = np.full((len(monomer_ids), 1), len(all_cells))
 
 
 			variant_table_i = np.hstack((gene_ids, monomer_ids, is_essential, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
