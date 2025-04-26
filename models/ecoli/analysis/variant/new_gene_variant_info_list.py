@@ -99,14 +99,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			monomer_counts_avg = np.reshape(monomer_counts.mean(axis=0), (len(monomer_ids), 1))
 
 
-			all_avg_monomer_counts[:] = np.copy(monomer_counts_avg)
+			all_avg_monomer_counts[:,0] = np.copy(monomer_counts_avg)
 
 			# count whether each gene's monomer exists in each
 			# timestep or not
 			monomer_zeros = read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
 			     ignore_exception=True, fun=lambda x: (x == 0).sum(axis=0))[:, monomer_indexes]
-			total_timesteps[1:len(monomer_ids),1] = monomer_counts.shape[0]
+			total_timesteps[0:len(monomer_ids)-1,0] = monomer_counts.shape[0]
 
 			# count number of cells where monomer goes to zero
 			cell_has_zero_monomer = read_stacked_columns(
@@ -114,12 +114,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ignore_exception=True, fun=lambda x: (x == 0).any(axis=0))[:, monomer_indexes]
 			cells_with_zero = np.reshape(cell_has_zero_monomer.sum(axis=0), (len(monomer_ids), 1))
 
-			total_individual_cells[1:len(monomer_ids),1] = all_cells.shape[0]
+			total_individual_cells[0:len(monomer_ids)-1,0] = all_cells.shape[0]
 
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times[i] = np.reshape(np.mean(dt), (len(monomer_ids), 1))
+			doubling_times[i,0] = np.mean(dt)
 
 		# and col names as selected_variant_indexes
 
