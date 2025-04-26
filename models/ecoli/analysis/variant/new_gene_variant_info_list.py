@@ -96,10 +96,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, 'MonomerCounts', 'monomerCounts',
 				remove_first=True, ignore_exception=True)
 
-			monomer_counts_avg = np.reshape(monomer_counts.mean(axis=0), (len(monomer_ids), 1))
+			monomer_counts_avg = monomer_counts.mean(axis=0)
 
 
-			all_avg_monomer_counts[:,0] = np.copy(monomer_counts_avg)
+			all_avg_monomer_counts = np.copy(monomer_counts_avg)
 
 			# count whether each gene's monomer exists in each
 			# timestep or not
@@ -112,7 +112,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_has_zero_monomer = read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
 				ignore_exception=True, fun=lambda x: (x == 0).any(axis=0))[:, monomer_indexes]
-			cells_with_zero = np.reshape(cell_has_zero_monomer.sum(axis=0), (len(monomer_ids), 1))
+			cells_with_zero = cell_has_zero_monomer.sum(axis=0)
 
 			total_individual_cells[0:len(monomer_ids)-1,0] = all_cells.shape[0]
 
