@@ -79,7 +79,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Initialize a pandas dataframe to store the data
 		all_avg_monomer_counts = np.zeros((len(monomer_ids), 1))
 
-		variant_table = np.array([]+[]+[]+[]+[]+[]+[]+[])
+		variant_table = np.array(['']+['']+['']+['']+['']+['']+['']+[''])
 		for i, variant_index in enumerate(selected_variant_indexes):
 			# Get all cells (within the generation range) of this variant index
 			all_cells = self.ap.get_cells(
@@ -96,7 +96,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, 'MonomerCounts', 'monomerCounts',
 				remove_first=True, ignore_exception=True)
 
-			monomer_counts_avg = monomer_counts.mean(axis=0)
+			monomer_counts_avg = np.reshape(monomer_counts.mean(axis=0), (len(monomer_ids), 1))
+
 
 			all_avg_monomer_counts[:] = np.copy(monomer_counts_avg)
 
@@ -111,14 +112,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cell_has_zero_monomer = read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
 				ignore_exception=True, fun=lambda x: (x == 0).any(axis=0))[:, monomer_indexes]
-			cells_with_zero = cell_has_zero_monomer.sum(axis=0)
+			cells_with_zero = np.reshape(cell_has_zero_monomer.sum(axis=0), (len(monomer_ids), 1))
 
 			total_individual_cells[1:len(monomer_ids),1] = all_cells.shape[0]
 
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times[i] = np.mean(dt)
+			doubling_times[i] = np.reshape(np.mean(dt), (len(monomer_ids), 1))
 
 		# and col names as selected_variant_indexes
 
