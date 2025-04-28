@@ -120,7 +120,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times[i,0] = np.mean(dt)
+			doubling_times[i] = np.mean(dt)
 
 		# and col names as selected_variant_indexes
 
