@@ -24,7 +24,7 @@ EXCLUDE_TIMEOUT_CELLS = True
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 16
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
