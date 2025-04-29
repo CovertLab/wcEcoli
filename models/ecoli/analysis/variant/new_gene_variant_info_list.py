@@ -112,10 +112,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# count number of cells where monomer goes to zero
 			cell_has_zero_monomer = (read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True, fun=lambda x: (x == 0))[:, monomer_indexes]).any(axis=0)
+				ignore_exception=True, fun=lambda x: (x == 0).any(axis=0))[:, monomer_indexes])
 			cells_with_zero = cell_has_zero_monomer.sum(axis=0)
 
-			total_individual_cells[0:len(monomer_ids)-1,0] = all_cells.shape[0]
+			total_individual_cells[0:len(monomer_ids)-1,0] = cells_with_zero.shape[0]
 
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
