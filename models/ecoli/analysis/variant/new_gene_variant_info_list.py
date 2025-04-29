@@ -104,15 +104,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# count whether each gene's monomer exists in each
 			# timestep or not
-			monomer_zeros = read_stacked_columns(
+			monomer_zeros = (read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
-			     ignore_exception=True, fun=lambda x: (x == 0).sum(axis=0))[:, monomer_indexes]
+			     ignore_exception=True, fun=lambda x: (x == 0))[:, monomer_indexes]).sum(axis=0)
 			total_timesteps[0:len(monomer_ids)-1,0] = monomer_counts.shape[0]
 
 			# count number of cells where monomer goes to zero
-			cell_has_zero_monomer = read_stacked_columns(
+			cell_has_zero_monomer = (read_stacked_columns(
 				all_cells, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True, fun=lambda x: (x == 0).any(axis=0))[:, monomer_indexes]
+				ignore_exception=True, fun=lambda x: (x == 0))[:, monomer_indexes]).any(axis=0)
 			cells_with_zero = cell_has_zero_monomer.sum(axis=0)
 
 			total_individual_cells[0:len(monomer_ids)-1,0] = all_cells.shape[0]
@@ -121,6 +121,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
 			doubling_times[i] = np.mean(dt)
+
+
+
 
 		# and col names as selected_variant_indexes
 
@@ -134,7 +137,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 
 			variant_table_i = np.hstack((gene_ids, monomer_ids, is_essential, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
-			header1 = np.array([f'variant number {i}']  + ['doubling time:'] + [doubling_times[i]] + ['']+['']+['']+['']+[''])
+			header1 = np.array([f'variant number {i}']  + [''] + [''] + ['']+['']+['']+['']+[''])
 			header2 = np.array(['gene ids'] + ['monomer_ids'] + ['is_essential'] + ['number of timesteps monomer not present'] + ['total timesteps'] + ['number of cells where monomer disappears'] + ['total individual cells'] + ['avg monomer count'])
 
 			variant_table = np.vstack((variant_table, header1, header2, variant_table_i))
