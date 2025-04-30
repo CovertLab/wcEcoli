@@ -18,6 +18,17 @@ from sklearn.metrics import r2_score
 # Indicate the number of generations to be ignored at the start of each seed:
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
+# input proteins to highlight:
+HIGHLIGHT_PROTEINS = ['G6890-MONOMER[c]',
+ 					   'PD03938[c]',
+ 					   'G6737-MONOMER[c]',
+ 					   'RPOD-MONOMER[c]',
+ 					   'PD02936[c]',
+ 					   'RED-THIOREDOXIN2-MONOMER[c]',
+  						"EG10542-MONOMER[c]"]
+
+# threshold for complex fraction:
+COMPLEX_FRACTION_THRESHOLD = 0.9
 
 """ END USER INPUTS """
 
@@ -530,10 +541,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			"Yes": "Has Complexed Counts",
 			"No": "Free Monomer Only"}
 
-
-
-
-
 		# create a scatter plot for each half life source:
 		plt.figure(figsize=(9, 6), dpi=200)
 		fig = go.Figure()
@@ -590,6 +597,118 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_complex_fraction_highlighted.html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 
+	hi = 5
+	def plot_by_complex_fraction_with_proteins_highlighted_plotly(self, simDataFile, plotOutDir, simulationCounts, validationCounts,
+								 overlapIDs, sim_name, val_name):
+		"""
+		Extract the complex count fractions for each protein in the simulation
+		Args:
+			simDataFile: simulation data file
+
+		Returns: a dictionary of the complex count fractions for each protein
+		"""
+
+
+		monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts = self.determine_fraction_table(simDataFile)
+
+		# Compute log10 values
+		x = self.get_LogData(overlapIDs, validationCounts)
+		y = self.get_LogData(overlapIDs, simulationCounts)
+
+		# get the
+
+		monomer_to_half_life, monomer_to_half_life_source = self.get_half_lives(simDataFile)
+
+		# create a dataframe of the protein ids and their half life sources:
+		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   'simulation_protein_counts': y,
+								   'validation_protein_counts': x})
+		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(monomer_id_to_complex_fraction)
+		protein_df['complex_counts'] = protein_df['protein_id'].map(monomer_id_to_complex_counts)
+		protein_df['half_life_source'] = protein_df['protein_id'].map(monomer_to_half_life_source)
+		protein_df['half_life'] = protein_df['protein_id'].map(monomer_to_half_life)
+
+		# make a yes or no column for whether the protein is in complex form:
+		protein_df['in_complex'] = protein_df['fraction_in_complex'].apply(lambda x: 'Yes' if x > COMPLEX_FRACTION_THRESHOLD else 'No')
+
+		# Edit the in complex fraction to say "HIGHLIGHTED_PROTEINS" if the protein is in the highlight list:
+		protein_df.loc[protein_df['protein_id'].isin(
+			HIGHLIGHT_PROTEINS), 'in_complex'] = 'HIGHLIGHTED_PROTEINS'
+
+		# split up the data frames by complex fraction:
+		complex_fraction_types = protein_df['in_complex'].unique()
+		complex_fraction_dfs = {}
+		for type in complex_fraction_types:
+			complex_fraction_dfs[type] = protein_df[protein_df['in_complex'] == type]
+
+		# create a color map for each complex fraction:
+		color_map = {
+			"Yes": "lightseagreen",
+			"No": "yellowgreen"}
+		color_map['HIGHLIGHTED_PROTEINS'] = 'purple'
+
+		name_map = {
+			"Yes": f"Complex fraction above {COMPLEX_FRACTION_THRESHOLD}",
+			"No": f"Complex fraction below {COMPLEX_FRACTION_THRESHOLD}"}
+		name_map['HIGHLIGHTED_PROTEINS'] = 'Highlighted Proteins'
+
+		# create a scatter plot for each half life source:
+		plt.figure(figsize=(9, 6), dpi=200)
+		fig = go.Figure()
+		for type, df in complex_fraction_dfs.items():
+			print(type)
+			c = color_map[type]; name = name_map[type]
+			hovertext = self.hover_text_info(df)
+			fig.add_trace(go.Scatter(x=df['validation_protein_counts'], y=df['simulation_protein_counts'], hovertext=hovertext, mode='markers',
+									 name=f"{name} (n={len(df)})",
+									 marker=dict(color=c, size=.7, opacity=.5)))
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Simulation Protein Counts ({sim_name}) "
+				  f"vs. Validation Protein Counts ({val_name} et al.),<br> R^2 > 30: {round(r_squared_30_above,3)}",
+			xaxis_title="log10(Validation Protein Counts+1)",
+			yaxis_title=f"log10(Simulation Protein Counts+1)",
+			autosize=False, width=900, height=600)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_complex_fraction_above_{COMPLEX_FRACTION_THRESHOLD}_highlighted.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
 
 
 	def plot_validation_comparison(self, simDataFile, validationDataFile,plotOutDir, sim_name):
@@ -623,6 +742,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.plot_by_complex_fraction_plotly(simDataFile, plotOutDir, sim_schmidt_counts,
 			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
 		self.plot_by_complex_fraction_plotly(simDataFile, plotOutDir, sim_wisniewski_counts,
+			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
+
+		# generate plotly validation plots with complex fraction highlighted:
+		self.plot_by_complex_fraction_with_proteins_highlighted_plotly(simDataFile, plotOutDir, sim_schmidt_counts,
+			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
+		self.plot_by_complex_fraction_with_proteins_highlighted_plotly(simDataFile, plotOutDir, sim_wisniewski_counts,
 			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
 
 
