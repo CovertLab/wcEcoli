@@ -93,10 +93,37 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# todo: determine if total_counts() adds up the counts of all proteins or still separates by protein
 		hi = 5
 		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
-		print(self.proteins._totalCount[403], self.proteins.counts()[403], nProteinsToDegrade[403])
+		print(self.proteins._totalCount[2342], self.proteins.counts()[2342], nProteinsToDegrade[2342])
 		self.writeToListener('MonomerCounts', 'protein_deg_CR1__totalCount', self.proteins._totalCount.copy())
 
 		#import ipdb; ipdb.set_trace() # CR1
+		if USE_LON_DEGRADATION == True:
+			print("nemA free monomers to be degraded pre-active degradation:", self.proteins.counts()[2342])
+			# Degrade selected proteins
+			# lon complex index: 297
+			lon_complex_counts = self.complexes.total_counts()[297] # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
+
+			# just do one protein for now 'G6890-MONOMER[c]'
+			interest_protein_counts = self.proteins.total_counts()[2342]
+
+			# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
+			# k = [P]kcat/(km + [S])
+			kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
+			km = 0.0017 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
+			# todo: since this is per second, might need to convert to per timestep (based on how many are in a second)
+
+			k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
+			proteins_degraded = k_active * interest_protein_counts
+			print("proteins degraded pre-rounding:", proteins_degraded)
+			proteins_degraded = round(proteins_degraded)
+			print("nemA monomers to be degraded post-active degradation:",proteins_degraded)
+
+			# reassign the counts of the proteins to be degraded:
+			nProteinsToDegrade[2342] = proteins_degraded
+			print("nemA nProteinsToDegrade[2342] post-active degradation:",nProteinsToDegrade[2342])
+
+		# check if the if worked:
+		print("nemA nProteinsToDegrade[2342] post-if statement:", nProteinsToDegrade[2342])
 
 		# Determine the number of hydrolysis reactions
 		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
@@ -105,8 +132,13 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Assuming one N-1 H2O is required per peptide chain length N
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
+		print("self.proteins.counts()[2342] counts after if statement:", self.proteins.counts()[2342])
+		print("self.proteins._totalCount[2342] counts after if statement:", self.proteins._totalCount[2342])
+		print("nProteinsToDegrade[2342] counts after if statement:", nProteinsToDegrade[2342])
+
+		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
 		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
-		print(self.proteins._totalCount[403], self.proteins.counts()[403], nProteinsToDegrade[403])
+		#print(self.proteins._totalCount[2342], self.proteins.counts()[2342], nProteinsToDegrade[2342])
 
 		self.writeToListener('MonomerCounts', 'protein_deg_CR2__totalCount', self.proteins._totalCount.copy())
 		counts_for_CR2 = self.proteins.counts()
@@ -124,37 +156,41 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# todo: determine if this is where the proteins are actually degraded
 		# todo: test implementation of the degradation rates:
 		# only degrade proteins if True:
-		if USE_LON_DEGRADATION == True:
-			print("nemA free monomers degraded pre-active degradation:", self.proteins.counts()[2342])
-			# Degrade selected proteins
-			# lon complex index: 297
-			lon_complex_counts = self.complexes.total_counts()[297] # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
-
-			# just do one protein for now 'G6890-MONOMER[c]'
-			interest_protein_counts = self.proteins.total_counts()[2342]
-
-			# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
-			# k = [P]kcat/(km + [S])
-			kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
-			km = 0.0017 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
-
-			k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
-			proteins_degraded = round(k_active * interest_protein_counts)
-			print("nemA free monomers degraded:",proteins_degraded)
-
-			# reassign the counts of the proteins to be degraded:
-			self.proteins.counts()[2342] = proteins_degraded
+		# if USE_LON_DEGRADATION == True:
+		# 	print("nemA free monomers degraded pre-active degradation:", self.proteins.counts()[2342])
+		# 	# Degrade selected proteins
+		# 	# lon complex index: 297
+		# 	lon_complex_counts = self.complexes.total_counts()[297] # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
+		#
+		# 	# just do one protein for now 'G6890-MONOMER[c]'
+		# 	interest_protein_counts = self.proteins.total_counts()[2342]
+		#
+		# 	# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
+		# 	# k = [P]kcat/(km + [S])
+		# 	kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
+		# 	km = 0.0017 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
+		#
+		# 	k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
+		# 	proteins_degraded = k_active * interest_protein_counts
+		# 	print("proteins degraded pre-round:", proteins_degraded)
+		# 	proteins_degraded = round(proteins_degraded)
+		# 	print("nemA free monomers degraded post-active degradation:",proteins_degraded)
+		#
+		# 	# reassign the counts of the proteins to be degraded:
+		# 	self.proteins.requestIs('G6890-MONOMER[c]') = proteins_degraded
 
 
 
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
+		print("protein counts for 2342 after if statement:", self.proteins.counts()[2342])
+
 		self.metabolites.countsInc(np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
 			))
 		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])
-		print(self.proteins._totalCount[403], self.proteins.counts()[403])
+		print(self.proteins._totalCount[2342], self.proteins.counts()[2342])
 		counts_for_ES1 = self.proteins.counts()
 		self.writeToListener('MonomerCounts', 'protein_deg_ES1_counts', counts_for_ES1)
 
@@ -162,7 +198,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 
 
-		import ipdb; ipdb.set_trace() # ES1
+		#import ipdb; ipdb.set_trace() # ES1
 
 		self.proteins.countsIs(0) # does this set the counts to zero?
 		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863])

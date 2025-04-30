@@ -264,8 +264,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins) # is this where the proteins are updated?
 		# if we want to update degradation of complexes, note that we will need to index to total counts and not bulkmonomers!
-
-		print(self.bulkMonomers._totalCount[403], self.bulkMonomers.total()[403], self.bulkMonomers._counts()[403], self.bulkMonomers._requestedCount[403], self.bulkMonomers.total_counts()[403],self.bulkMonomers.counts()[403])
+		print("Protein counts after elongation:")
+		temp_num = 2342
+		print(self.bulkMonomers._totalCount[temp_num], self.bulkMonomers.total()[temp_num], self.bulkMonomers._counts()[temp_num], self.bulkMonomers._requestedCount[temp_num], self.bulkMonomers.total_counts()[temp_num],self.bulkMonomers.counts()[temp_num])
 		totalCount_for_listener = self.bulkMonomers._totalCount.copy()
 		counts_for_listener = self.bulkMonomers.counts()
 		self.writeToListener('MonomerCounts', 'peptide_elongate_ES1__totalCount',
