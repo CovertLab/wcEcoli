@@ -76,6 +76,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# TODO: ask nora how she was able to access the protein complexes per timestep. she has a file where she averages over them, try to figure out where that listener is that is recording itand then how to convert to concenration once you ahve that . add it here as a self.bulkMOlecules View thing here to be able know the complex ids at the start and be able to type self.compelxes in the evolve state and
 
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
+		hi = 5
 		#import ipdb; ipdb.set_trace()
 
 	def calculateRequest(self):

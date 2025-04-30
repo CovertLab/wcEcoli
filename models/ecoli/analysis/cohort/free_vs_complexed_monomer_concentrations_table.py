@@ -98,6 +98,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				remove_first=True, ignore_exception=True)
 
 			# Get the free monomer and complex counts per cell
+			# todo: check if this is only for the free monomers or if it includes the total counts as well?
 			(detailed_counts,) = read_stacked_bulk_molecules(
 				cell_paths, total_bulk_ids_to_check, ignore_exception=True, remove_first=True)
 
