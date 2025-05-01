@@ -61,7 +61,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		monomer_indexes = np.array([
 			monomer_id_to_index[monomer_id] for monomer_id in monomer_ids_table])
 
-		doubling_times = np.zeros(len(selected_variant_indexes))
+		doubling_times = np.zeros(len(monomer_ids),1)
 
 
 		essential_genes = validation_data.essential_genes.essential_genes
