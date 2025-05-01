@@ -73,13 +73,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		gene_ids = np.reshape(gene_ids, (len(gene_ids), 1))
 		total_timesteps = np.zeros((len(monomer_ids), 1))
 		total_individual_cells = np.zeros((len(monomer_ids), 1))
+		varianti = np.zeros((len(monomer_ids), 1))
 
 
 		monomer_ids = np.reshape(monomer_ids, (len(monomer_ids), 1))
 		# Initialize a pandas dataframe to store the data
 		all_avg_monomer_counts = np.zeros((len(monomer_ids), 1))
 
-		variant_table = np.array(['']+['']+['']+['']+['']+['']+['']+[''])
+		variant_table = np.array(['variant']+['doubling time']+ ['gene ids'] + ['monomer_ids'] + ['is_essential'] + [
+			'number of timesteps monomer not present'] + ['total timesteps'] + [
+							   'number of cells where monomer disappears'] + [
+							   'total individual cells'] + ['avg monomer count'])
+
 		for i, variant_index in enumerate(selected_variant_indexes):
 			# Get all cells (within the generation range) of this variant index
 			all_cells = self.ap.get_cells(
@@ -116,11 +121,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			cells_with_zero = cell_has_zero_monomer.sum(axis=0)
 
 			total_individual_cells[0:len(monomer_ids)-1,0] = cells_with_zero.shape[0]
+			varianti[0:len(monomer_ids) - 1, 0] = i
 
 			dt = read_stacked_columns(
 				all_cells, 'Main', 'time',
 				fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
-			doubling_times[i] = np.mean(dt)
+			doubling_times[0:len(monomer_ids) - 1, 0]  = np.mean(dt)
 
 
 
@@ -136,11 +142,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			total_individual_cells = np.full((len(monomer_ids), 1), len(all_cells))
 
 
-			variant_table_i = np.hstack((gene_ids, monomer_ids, is_essential, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
-			header1 = np.array([f'variant number {i}']  + [''] + [''] + ['']+['']+['']+['']+[''])
-			header2 = np.array(['gene ids'] + ['monomer_ids'] + ['is_essential'] + ['number of timesteps monomer not present'] + ['total timesteps'] + ['number of cells where monomer disappears'] + ['total individual cells'] + ['avg monomer count'])
+			variant_table_i = np.hstack((varianti, doubling_times, gene_ids, monomer_ids, is_essential, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
 
-			variant_table = np.vstack((variant_table, header1, header2, variant_table_i))
+			variant_table = np.vstack((variant_table,variant_table_i))
 
 
 
