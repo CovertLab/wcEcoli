@@ -68,27 +68,29 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 								 analysis_gen_index, ax_title, metadata):
 				mpl.rcParams['axes.spines.right'] = False
 				mpl.rcParams['axes.spines.top'] = False
-				fig = plt.figure(figsize=(12, total_plots * 3))
+				plt.figure(figsize=(12, total_plots * 3))
 				ax1 = plt.subplot(total_plots, 1, 1)
+				plot_num = 1
 
-				for plot_num, trna_id in enumerate(trna_ids, start=1):
-					ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-					ax.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--',
+				for trna_id in trna_ids:
+					plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+					plt.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--',
 							   lw=0.5)
-					ax.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
+					plt.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
 
 					counts = read_stacked_bulk_molecules(cell_paths, ([trna_id],),
 														 ignore_exception=True)
-					ax.plot(time / 60., counts[0].T, color=line_color)
+					plt.plot(time / 60., counts[0].T, color=line_color)
 
 					if suffix in ("_standard_axes_both", "_standard_axes_y"):
-						ax.set_ylim(-1, 4.5)
+						plt.ylim(-1, 4.5)
 					if suffix in ("_standard_axes_both", "_standard_axes_x"):
-						ax.set_xlim(standard_xlim)
+						plt.xlim(standard_xlim)
 
-					ax.set_xlabel("Time (min)")
-					ax.set_ylabel("Counts: " + trna_id, fontsize="x-small")
-					ax.set_title(f"{title_prefix} tRNA Counts: {trna_id}")
+					plt.xlabel("Time (min)")
+					plt.ylabel("Counts: " + trna_id, fontsize="x-small")
+					plt.title(f"{title_prefix} tRNA Counts: {trna_id}")
+					plot_num += 1
 
 				print(f"Total number of plots made: {len(trna_ids)}")
 				plt.subplots_adjust(hspace=0.7, top=0.95, bottom=0.05)
