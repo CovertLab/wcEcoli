@@ -95,7 +95,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		#print(self.proteins._totalCount[3863], self.proteins.total()[3863], self.proteins._counts()[3863], self.proteins._requestedCount[3863], self.proteins.total_counts()[3863],self.proteins.counts()[3863], nProteinsToDegrade[3863])
 		print(self.proteins._totalCount[2342], self.proteins.counts()[2342], nProteinsToDegrade[2342])
 		self.writeToListener('MonomerCounts', 'protein_deg_CR1__totalCount', self.proteins._totalCount.copy())
-
+		#import ipdb; ipdb.set_trace()
 		#import ipdb; ipdb.set_trace() # CR1
 		if USE_LON_DEGRADATION == True:
 			print("nemA free monomers to be degraded pre-active degradation:", self.proteins.counts()[2342])
@@ -109,7 +109,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
 			# k = [P]kcat/(km + [S])
 			kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
-			km = 0.0017 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
+			km = 0.0575 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
 			# todo: since this is per second, might need to convert to per timestep (based on how many are in a second)
 
 			k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
@@ -168,7 +168,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# 	# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
 		# 	# k = [P]kcat/(km + [S])
 		# 	kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
-		# 	km = 0.0017 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
+		# 	km = 0.0575 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
 		#
 		# 	k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
 		# 	proteins_degraded = k_active * interest_protein_counts
