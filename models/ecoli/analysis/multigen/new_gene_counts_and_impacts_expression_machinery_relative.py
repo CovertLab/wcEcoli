@@ -1204,7 +1204,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.xlabel("Time (min)")
 				plt.ylabel("Percent Change")
 				plt.title(comparison + ": Percent change compared to pre gfp induction average", fontsize='x-small')
-				plt.legend()
+				plt.legend(fontsize="x-small")
 				exportFigure(plt, plotOutDir, plotOutFileName + "_" + comparison, metadata)
 				plt.close("all")
 
