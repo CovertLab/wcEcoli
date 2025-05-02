@@ -1316,28 +1316,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
-			fig = plt.figure(figsize=(12, total_plots * 3))
+			plt.figure(figsize=(12, total_plots * 3))
 			plot_num = 1
 			ax1 = plt.subplot(total_plots, 1, plot_num)
 
 			for uncharged_id in uncharged_trna_ids:
 				ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+				ax.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--', lw=0.5)
+				ax.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
 
-				ax.axvline(
-					(time[doubling_time_index] / 60.), color='gray',
-					linestyle='--', lw=0.5)
-				ax.axvline(
-					(time[analysis_gen_index] / 60.), color='gray',
-					linestyle='--', lw=0.5)
-
-				uncharged_counts = read_stacked_bulk_molecules(
-					cell_paths, ([uncharged_id],), ignore_exception=True,
-					)
+				uncharged_counts = read_stacked_bulk_molecules(cell_paths, ([uncharged_id],),
+															   ignore_exception=True)
 				ax.plot(time / 60., uncharged_counts[0].T, color=LINE_COLOR)
 
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-					ax.set_ylim((-1, 4.5))
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				if plot_suffix in ("_standard_axes_both", "_standard_axes_y"):
+					ax.set_ylim(-1, 4.5)
+				if plot_suffix in ("_standard_axes_both", "_standard_axes_x"):
 					ax.set_xlim(standard_xlim)
 
 				ax.set_xlabel("Time (min)")
@@ -1347,33 +1341,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			print("Total number of plots made: ", plot_num)
 			plt.subplots_adjust(hspace=0.7, top=0.95, bottom=0.05)
-			exportFigure(plt, plotOutDir, plotOutFileName + "_uncharged_tRNA" + plot_suffix, metadata)
+			exportFigure(plt, plotOutDir, plotOutFileName + "_uncharged_tRNA" + plot_suffix,
+						 metadata)
 			plt.close("all")
 
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
-			fig = plt.figure(figsize=(12, total_plots * 3))
+			plt.figure(figsize=(12, total_plots * 3))
 			plot_num = 1
 			ax1 = plt.subplot(total_plots, 1, plot_num)
 
 			for charged_id in charged_trna_ids:
 				ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+				ax.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--', lw=0.5)
+				ax.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
 
-				ax.axvline(
-					(time[doubling_time_index] / 60.), color='gray',
-					linestyle='--', lw=0.5)
-				ax.axvline(
-					(time[analysis_gen_index] / 60.), color='gray',
-					linestyle='--', lw=0.5)
-
-				charged_counts = read_stacked_bulk_molecules(
-					cell_paths, ([charged_id],), ignore_exception=True,
-				)
+				charged_counts = read_stacked_bulk_molecules(cell_paths, ([charged_id],),
+															 ignore_exception=True)
 				ax.plot(time / 60., charged_counts[0].T, color=LINE_COLOR)
 
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_y":
-					ax.set_ylim((-1, 4.5))
-				if plot_suffix == "_standard_axes_both" or plot_suffix == "_standard_axes_x":
+				if plot_suffix in ("_standard_axes_both", "_standard_axes_y"):
+					ax.set_ylim(-1, 4.5)
+				if plot_suffix in ("_standard_axes_both", "_standard_axes_x"):
 					ax.set_xlim(standard_xlim)
 
 				ax.set_xlabel("Time (min)")
@@ -1385,6 +1374,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplots_adjust(hspace=0.7, top=0.95, bottom=0.05)
 			exportFigure(plt, plotOutDir, plotOutFileName + "_charged_tRNA" + plot_suffix, metadata)
 			plt.close("all")
+
 
 if __name__ == '__main__':
 	Plot().cli()
