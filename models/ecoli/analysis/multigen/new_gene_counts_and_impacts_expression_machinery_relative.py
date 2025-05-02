@@ -1172,20 +1172,38 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					'RPOB-MONOMER[c]_protein_counts', 'EG10893_RNA_mRNA_cistron_counts',
 					'EG10895_RNA_mRNA_cistron_counts', 'EG10894_RNA_mRNA_cistron_counts',
 				],
+				"rRNA_gene_copy_num": [
+					'rrnA_copy_num', 'rrnB_copy_num', 'rrnC_copy_num', 'rrnD_copy_num',
+					'rrnE_copy_num', 'rrnG_copy_num', 'rrnH_copy_num',
+				],
+				'rRNA_gene_target_synth_prob': [
+					'rrnA_target_synth_prob', 'rrnB_target_synth_prob', 'rrnC_target_synth_prob',
+					'rrnD_target_synth_prob', 'rrnE_target_synth_prob', 'rrnG_target_synth_prob',
+					'rrnH_target_synth_prob',
+				],
+				'rRNA_gene_actual_synth_prob': [
+					'rrnA_actual_synth_prob', 'rrnB_actual_synth_prob', 'rrnC_actual_synth_prob',
+					'rrnD_actual_synth_prob', 'rrnE_actual_synth_prob', 'rrnG_actual_synth_prob',
+					'rrnH_actual_synth_prob',
+				],
 			}
 			unique_gen_labels = set()
 			for labels in comparisons.values():
-				unique_gen_labels.update(labels)
+				if not labels[0].startswith("rrn"):
+					unique_gen_labels.update(labels)
+			unique_gen_labels.update([
+				'rrnA_copy_num', 'rrnA_target_synth_prob',
+				'rrnA_actual_synth_prob'])
 			unique_gen_labels = list(unique_gen_labels)
 			comparisons["all"] = unique_gen_labels
 
 			extended_colors = [
-				"#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
-				"#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe",
-				"#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000",
-				"#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080",
-				"#ffffff", "#000000", "#bcf60c", "#9a6324", "#fff0f5",
-				"#4b0082", "#ff69b4", "#1e90ff", "#7fff00", "#ff4500"
+				"#332288", "#88CCEE", "#44AA99", "#117733", "#999933",
+				"#DDCC77", "#CC6677", "#882255", "#AA4499", "#661100",
+				"#6699CC", "#888888", "#E69F00", "#56B4E9", "#009E73",
+				"#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000",
+				"#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
+				"#FFD92F", "#E5C494", "#B3B3B3", "#1B9E77", "#D95F02"
 			]
 
 			for comparison, labels in comparisons.items():
