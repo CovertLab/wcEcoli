@@ -1137,6 +1137,64 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
 			plt.close("all")
 
+			print(all_averages_index_mapping.keys())
+
+			comparisons = {
+				"production_machinery": [
+					"total_rnap_counts", "total_ribosome_counts",
+				],
+				"ribosome subunits": [
+					"50s_total_counts", "30s_total_counts",
+				],
+				"30s_subunit": [
+					'30s_16s_rRNA_total_counts', '30s_limiting_protein_counts'
+				],
+				"50s_subunit": [
+					'50s_23s_rRNA_total_counts', '50s_5s_rRNA_total_counts',
+					'50s_limiting_protein_counts'
+				],
+				"rnap_portions": [
+					'RNAP_subunit_rnap_portion', 'ribosomal_rnap_portion', 'rrna_rnap_portion',
+				],
+				"ribosome_portions": [
+					'rnap_subunit_ribosome_portion', 'ribosomal_ribosome_portion',
+				],
+				"rnap_subunit_protein_counts": [
+					'EG10893-MONOMER[c]_protein_counts', 'RPOC-MONOMER[c]_protein_counts',
+					'RPOB-MONOMER[c]_protein_counts',
+				],
+				"rnap_subunit_mRNA_counts": [
+					'EG10893_RNA_mRNA_cistron_counts', 'EG10895_RNA_mRNA_cistron_counts',
+					'EG10894_RNA_mRNA_cistron_counts',
+				],
+				"rnap_subunit_protein_and_mRNA_counts": [
+					'EG10893-MONOMER[c]_protein_counts', 'RPOC-MONOMER[c]_protein_counts',
+					'RPOB-MONOMER[c]_protein_counts', 'EG10893_RNA_mRNA_cistron_counts',
+					'EG10895_RNA_mRNA_cistron_counts', 'EG10894_RNA_mRNA_cistron_counts',
+				],
+			}
+
+			# get a list of all the unique strings in the values of comparisons
+			
+
+			for comparison, labels in comparisons.items():
+				plt.figure(figsize=(10, 7))
+				plt.axvline(
+					(time[doubling_time_index] / 60.), color='gray',
+					linestyle='--', lw=0.5)
+				plt.axvline(
+					(time[analysis_gen_index] / 60.), color='gray',
+					linestyle='--', lw=0.5)
+				for data_label in labels:
+					plot_num_index = all_averages_index_mapping[data_label]
+					plt.plot(time / 60., all_averages_percent[plot_num_index, :], label=data_label, alpha=0.5)
+				plt.xlabel("Time (min)")
+				plt.ylabel("Percent Change")
+				plt.title(comparison + ": Percent change compared to pre gfp induction average", fontsize='x-small')
+				plt.legend()
+				exportFigure(plt, plotOutDir, plotOutFileName + "_" + comparison, metadata)
+				plt.close("all")
+
 
 
 if __name__ == '__main__':
