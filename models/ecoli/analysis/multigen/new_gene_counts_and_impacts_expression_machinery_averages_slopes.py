@@ -223,6 +223,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			all_averages = np.zeros((total_plots, len(gen_labels)))
 			all_averages_percent = np.zeros((total_plots, len(gen_labels)))
+			all_averages_by_gen = np.zeros((total_plots, len(unique_gen_labels)))
 			all_averages_index_mapping = {}
 
 			# Doubling time
@@ -237,13 +238,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["doubling_time"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -266,13 +268,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["mass"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -310,13 +313,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["total_ribosome_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -430,21 +434,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_total_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
 			plt.ylabel("50S Total Counts", fontsize="x-small")
 			plt.title("50S Total Counts")
 			plot_num += 1
-
-
 
 			# Plot 50s 23s rRNA Counts
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
@@ -459,13 +462,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_23s_rRNA_total_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -486,13 +490,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_5s_rRNA_total_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -513,14 +518,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_limiting_protein_counts"] = plot_num
-			y_data = avg_per_gen_plot
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -541,13 +546,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["30s_total_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -568,13 +574,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["30s_16s_rRNA_total_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Time (min)")
@@ -595,13 +602,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["30s_limiting_protein_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -652,13 +660,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 				all_averages_index_mapping[
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_copy_num"] = plot_num
+				all_averages_by_gen[plot_num, :] = avg_per_gen
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				plt.axvline(
 					(8), color='gray',
 					linestyle='--', lw=0.5)
 				plt.axvline(
-					(8), color='gray',
+					(16), color='gray',
 					linestyle='--', lw=0.5)
 				plt.plot(x_data, y_data)
 				plt.xlabel("Generation")
@@ -719,13 +728,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 				all_averages_index_mapping[
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_target_synth_prob"] = plot_num
+				all_averages_by_gen[plot_num, :] = avg_per_gen
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				plt.axvline(
 					(8), color='gray',
 					linestyle='--', lw=0.5)
 				plt.axvline(
-					(8), color='gray',
+					(16), color='gray',
 					linestyle='--', lw=0.5)
 				plt.plot(x_data, y_data)
 				plt.xlabel("Generation")
@@ -751,13 +761,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 				all_averages_index_mapping[
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_actual_synth_prob"] = plot_num
+				all_averages_by_gen[plot_num, :] = avg_per_gen
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				plt.axvline(
 					(8), color='gray',
 					linestyle='--', lw=0.5)
 				plt.axvline(
-					(8), color='gray',
+					(16), color='gray',
 					linestyle='--', lw=0.5)
 				plt.plot(x_data, y_data)
 				plt.xlabel("Generation")
@@ -793,13 +804,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			avg_per_gen_percent_plot = np.repeat(avg_per_gen_percent, num_time_steps)
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["total_rnap_counts"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -830,13 +842,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 				all_averages_index_mapping[
 					RNAP_subunit_monomer_ids[r] + "_protein_counts"] = plot_num
+				all_averages_by_gen[plot_num, :] = avg_per_gen
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				plt.axvline(
 					(8), color='gray',
 					linestyle='--', lw=0.5)
 				plt.axvline(
-					(8), color='gray',
+					(16), color='gray',
 					linestyle='--', lw=0.5)
 				plt.plot(x_data, y_data)
 				plt.xlabel("Generation")
@@ -885,13 +898,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 				all_averages_index_mapping[
 					target_cistron_ids[r] + "_mRNA_cistron_counts"] = plot_num
+				all_averages_by_gen[plot_num, :] = avg_per_gen
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				plt.axvline(
 					(8), color='gray',
 					linestyle='--', lw=0.5)
 				plt.axvline(
-					(8), color='gray',
+					(16), color='gray',
 					linestyle='--', lw=0.5)
 				plt.plot(x_data, y_data)
 				plt.xlabel("Generation")
@@ -961,13 +975,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping[
 				"RNAP_subunit_rnap_portion"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -994,14 +1009,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping[
 				"ribosomal_rnap_portion"] = plot_num
-			y_data = avg_per_gen_plot
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -1028,13 +1043,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping[
 				"rrna_rnap_portion"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -1091,13 +1107,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping[
 				"rnap_subunit_ribosome_portion"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -1122,13 +1139,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping[
 				"ribosomal_ribosome_portion"] = plot_num
+			all_averages_by_gen[plot_num, :] = avg_per_gen
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			plt.axvline(
 				(8), color='gray',
 				linestyle='--', lw=0.5)
 			plt.axvline(
-				(8), color='gray',
+				(16), color='gray',
 				linestyle='--', lw=0.5)
 			plt.plot(x_data, y_data)
 			plt.xlabel("Generation")
@@ -1144,6 +1162,108 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
 			plt.close("all")
-			
+
+			print(all_averages_index_mapping.keys())
+
+			comparisons = {
+				"production_machinery": [
+					"total_rnap_counts", "total_ribosome_counts",
+					],
+				"ribosome subunits": [
+					"50s_total_counts", "30s_total_counts",
+					],
+				"30s_subunit": [
+					'30s_16s_rRNA_total_counts', '30s_limiting_protein_counts'
+					],
+				"50s_subunit": [
+					'50s_23s_rRNA_total_counts', '50s_5s_rRNA_total_counts',
+					'50s_limiting_protein_counts'
+					],
+				"rnap_portions": [
+					'RNAP_subunit_rnap_portion', 'ribosomal_rnap_portion', 'rrna_rnap_portion',
+					],
+				"ribosome_portions": [
+					'rnap_subunit_ribosome_portion', 'ribosomal_ribosome_portion',
+					],
+				"rnap_subunit_protein_counts": [
+					'EG10893-MONOMER[c]_protein_counts', 'RPOC-MONOMER[c]_protein_counts',
+					'RPOB-MONOMER[c]_protein_counts',
+					],
+				"rnap_subunit_mRNA_counts": [
+					'EG10893_RNA_mRNA_cistron_counts', 'EG10895_RNA_mRNA_cistron_counts',
+					'EG10894_RNA_mRNA_cistron_counts',
+					],
+				"rnap_subunit_protein_and_mRNA_counts": [
+					'EG10893-MONOMER[c]_protein_counts', 'RPOC-MONOMER[c]_protein_counts',
+					'RPOB-MONOMER[c]_protein_counts', 'EG10893_RNA_mRNA_cistron_counts',
+					'EG10895_RNA_mRNA_cistron_counts', 'EG10894_RNA_mRNA_cistron_counts',
+					],
+				"rRNA_gene_copy_num": [
+					'rrnA_copy_num', 'rrnB_copy_num', 'rrnC_copy_num', 'rrnD_copy_num',
+					'rrnE_copy_num', 'rrnG_copy_num', 'rrnH_copy_num',
+					],
+				'rRNA_gene_target_synth_prob': [
+					'rrnA_target_synth_prob', 'rrnB_target_synth_prob', 'rrnC_target_synth_prob',
+					'rrnD_target_synth_prob', 'rrnE_target_synth_prob', 'rrnG_target_synth_prob',
+					'rrnH_target_synth_prob',
+					],
+				'rRNA_gene_actual_synth_prob': [
+					'rrnA_actual_synth_prob', 'rrnB_actual_synth_prob', 'rrnC_actual_synth_prob',
+					'rrnD_actual_synth_prob', 'rrnE_actual_synth_prob', 'rrnG_actual_synth_prob',
+					'rrnH_actual_synth_prob',
+					],
+				}
+			unique_plot_labels = set()
+			for labels in comparisons.values():
+				if not labels[0].startswith("rrn"):
+					unique_plot_labels.update(labels)
+			unique_plot_labels.update([
+				'rrnA_copy_num', 'rrnA_target_synth_prob',
+				'rrnA_actual_synth_prob'])
+			unique_plot_labels = list(unique_plot_labels)
+			comparisons["all"] = unique_plot_labels
+
+			extended_colors = [
+				"#332288", "#88CCEE", "#44AA99", "#117733", "#999933",
+				"#DDCC77", "#CC6677", "#882255", "#AA4499", "#661100",
+				"#6699CC", "#888888", "#E69F00", "#56B4E9", "#009E73",
+				"#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000",
+				"#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854",
+				"#FFD92F", "#E5C494", "#B3B3B3", "#1B9E77", "#D95F02"
+				]
+
+			for comparison, labels in comparisons.items():
+				plt.figure(figsize=(10, 7))
+				plt.axvline(
+					(8), color='gray',
+					linestyle='--', lw=0.5)
+				plt.axvline(
+					(16), color='gray',
+					linestyle='--', lw=0.5)
+
+				for c, data_label in enumerate(labels):
+					plot_num_index = all_averages_index_mapping[data_label]
+					avg_per_gen = all_averages_by_gen[plot_num_index, :]
+
+					# Make y data the normalized slope per gen
+					y_data = np.zeros(len(unique_gen_labels))
+					for j in range(len(unique_gen_labels)):
+						if j == 0:
+							y_data[j] = 0
+						else:
+							y_data[j] = (avg_per_gen[j]) / (
+								avg_per_gen[7])
+					plt.plot(
+						unique_gen_labels, y_data,
+						label=data_label, alpha=0.5, color=extended_colors[c])
+				plt.xlabel("Generation")
+				plt.ylabel("Avg of Gen / Avg of Gen 7")
+				plt.title(comparison + ": Normalized Averages",
+						  fontsize='x-small')
+				plt.legend(loc='upper right', fontsize="x-small")
+				exportFigure(plt, plotOutDir, plotOutFileName + "_" + comparison, metadata)
+				plt.close("all")
+
+
 if __name__ == '__main__':
 	Plot().cli()
