@@ -1173,9 +1173,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					'EG10895_RNA_mRNA_cistron_counts', 'EG10894_RNA_mRNA_cistron_counts',
 				],
 			}
+			unique_gen_labels = set()
+			for labels in comparisons.values():
+				unique_gen_labels.update(labels)
+			unique_gen_labels = list(unique_gen_labels)
+			comparisons["all"] = unique_gen_labels
 
-			# get a list of all the unique strings in the values of comparisons
-			
+			extended_colors = [
+				"#e6194b", "#3cb44b", "#ffe119", "#0082c8", "#f58231",
+				"#911eb4", "#46f0f0", "#f032e6", "#d2f53c", "#fabebe",
+				"#008080", "#e6beff", "#aa6e28", "#fffac8", "#800000",
+				"#aaffc3", "#808000", "#ffd8b1", "#000080", "#808080",
+				"#ffffff", "#000000", "#bcf60c", "#9a6324", "#fff0f5",
+				"#4b0082", "#ff69b4", "#1e90ff", "#7fff00", "#ff4500"
+			]
 
 			for comparison, labels in comparisons.items():
 				plt.figure(figsize=(10, 7))
@@ -1185,17 +1196,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.axvline(
 					(time[analysis_gen_index] / 60.), color='gray',
 					linestyle='--', lw=0.5)
-				for data_label in labels:
+				for c, data_label in enumerate(labels):
 					plot_num_index = all_averages_index_mapping[data_label]
-					plt.plot(time / 60., all_averages_percent[plot_num_index, :], label=data_label, alpha=0.5)
+					plt.plot(
+						time / 60., all_averages_percent[plot_num_index, :],
+						label=data_label, alpha=0.5, color=extended_colors[c])
 				plt.xlabel("Time (min)")
 				plt.ylabel("Percent Change")
 				plt.title(comparison + ": Percent change compared to pre gfp induction average", fontsize='x-small')
 				plt.legend()
 				exportFigure(plt, plotOutDir, plotOutFileName + "_" + comparison, metadata)
 				plt.close("all")
-
-
 
 if __name__ == '__main__':
 	Plot().cli()
