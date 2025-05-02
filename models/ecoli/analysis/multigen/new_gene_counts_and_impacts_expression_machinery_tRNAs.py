@@ -74,9 +74,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				for trna_id in trna_ids:
 					plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-					plt.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--',
-							   lw=0.5)
-					plt.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
+					# plt.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--',
+					# 		   lw=0.5)
+					# plt.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
 
 					counts = read_stacked_bulk_molecules(cell_paths, ([trna_id],),
 														 ignore_exception=True)
