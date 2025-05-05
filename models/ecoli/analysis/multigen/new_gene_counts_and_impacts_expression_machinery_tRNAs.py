@@ -1,16 +1,12 @@
 """
-Plot mRNA and protein counts for new genes across multiple generations, as well
-as plots to analyze the impact of new gene expression, including growth rate,
-RNAP and ribosome counts, and ppGpp concentration.
+Plot tRNA counts across multiple generations.
 """
-# TODO: update file header comment
 
 import pickle
 import os
 
 from matplotlib import pyplot as plt
 import matplotlib as mpl
-# noinspection PyUnresolvedReferences
 import numpy as np
 from numpy import inf
 
@@ -58,10 +54,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			uncharged_trna_ids = transcription.uncharged_trna_names
 			charged_trna_ids = transcription.charged_trna_names
 
-			# TODO: delete after testing
-			uncharged_trna_ids = uncharged_trna_ids[0:5]
-			charged_trna_ids = charged_trna_ids[0:5]
-
 			def plot_trna_counts(trna_ids, title_prefix, suffix, time, cell_paths, output_dir,
 								 output_name, line_color, total_plots, standard_xlim,
 								 doubling_time_index,
@@ -69,14 +61,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				mpl.rcParams['axes.spines.right'] = False
 				mpl.rcParams['axes.spines.top'] = False
 				plt.figure(figsize=(12, total_plots * 3))
-				ax1 = plt.subplot(total_plots, 1, 1)
 				plot_num = 1
 
 				for trna_id in trna_ids:
-					plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-					# plt.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--',
-					# 		   lw=0.5)
-					# plt.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
+					if plot_num == 1:
+						ax1 = plt.subplot(total_plots, 1, 1)
+					else:
+						plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+					plt.axvline(time[doubling_time_index] / 60., color='gray', linestyle='--',
+							   lw=0.5)
+					plt.axvline(time[analysis_gen_index] / 60., color='gray', linestyle='--', lw=0.5)
 
 					counts = read_stacked_bulk_molecules(cell_paths, ([trna_id],),
 														 ignore_exception=True)
@@ -92,10 +86,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.title(f"{title_prefix} tRNA Counts: {trna_id}")
 					plot_num += 1
 
-				print(f"Total number of plots made: {len(trna_ids)}")
 				plt.subplots_adjust(hspace=0.7, top=0.95, bottom=0.05)
 				exportFigure(plt, output_dir, output_name + suffix, metadata)
 				plt.close("all")
+				print(f"Total number of plots made: {len(trna_ids)}")
 
 			for plot_suffix in plot_suffixes:
 				plot_trna_counts(
