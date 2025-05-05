@@ -10,7 +10,7 @@ TODO:
 
 """ USER INPUTS """
 USE_LON_DEGRADATION = True # whether to use lon degradation rates or not
-
+METHOD = 2
 """ END USER INPUTS """
 import numpy as np
 
@@ -70,6 +70,16 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		complexIds = np.array(sim_data.process.complexation.ids_complexes)
 		self.complexes = self.bulkMoleculesView(complexIds)
 
+		# get the names of the proteins and complexes:
+		self.protein_IDs = proteinIds
+		self.complex_IDs = complexIds
+
+		# get the molecular weights of the proteins and complexes:
+		self.protein_mws = sim_data.process.translation.monomer_data['mw']
+		self.n_avogadro = sim_data.constants.n_avogadro.asNumber(units.mol**-1)
+
+
+
 		# find lon complex:
 		lon_complex_idx = np.where(complexIds == 'CPLX0-2881[c]')[0][0]
 		#import ipdb ; ipdb.set_trace()
@@ -98,29 +108,170 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		#import ipdb; ipdb.set_trace()
 		#import ipdb; ipdb.set_trace() # CR1
 		if USE_LON_DEGRADATION == True:
-			print("nemA free monomers to be degraded pre-active degradation:", self.proteins.counts()[2342])
-			# Degrade selected proteins
-			# lon complex index: 297
-			lon_complex_counts = self.complexes.total_counts()[297] # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
+			# todo: (MIA) should I be using the whole cell's mass or the proteinMass? (which also can be extracted from the listener I believe)
+			cell_mass = self.readFromListener("Mass", "cellMass") * units.fg # if confused on how this works, look at 05.05.2025 notes
+			# convert cell_mass to g:
+			cell_mass_g = cell_mass.asNumber(units.g) # now in units of g
+			cell_mass_g = cell_mass_g # todo: determine if i should put this back in: * units.g # physically puts a "[g]" unit on it
 
-			# just do one protein for now 'G6890-MONOMER[c]'
-			interest_protein_counts = self.proteins.total_counts()[2342]
+			# load in the protein mass:
+			protein_mass = self.readFromListener("Mass", "proteinMass") * units.fg # note this is much smaller than the cell mass
 
-			# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
-			# k = [P]kcat/(km + [S])
-			kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
-			km = 0.0575 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
-			# todo: since this is per second, might need to convert to per timestep (based on how many are in a second)
+			# load in the cell volume:
+			# Todo: (MIA) determine if this is the correct way to get the cell volume, becuase it is not working but it appears to be in the listener script?
+			#cell_volume = self.readFromListener("Mass", "cellVolume") * units.L # this matches the simulation output units
 
-			k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
-			proteins_degraded = k_active * interest_protein_counts
-			print("proteins degraded pre-rounding:", proteins_degraded)
-			proteins_degraded = round(proteins_degraded)
-			print("nemA monomers to be degraded post-active degradation:",proteins_degraded)
+			# read in the cell density to manually calculate the cell volume:
+			cell_density = self.readFromListener("Mass", "cellDensity") # todo: figure out if I should add this bc it messes up the math later since the mol doesnt stay:* units.g / units.L # this is apparently constant? i.e. sim_data.constants.cell_density is a variable
+			cell_volume = cell_mass_g / cell_density # L
+			counts_to_molar = 1 / (self.n_avogadro * cell_volume)  #  mol/L ? # todo: are these the right units?
 
-			# reassign the counts of the proteins to be degraded:
-			nProteinsToDegrade[2342] = proteins_degraded
-			print("nemA nProteinsToDegrade[2342] post-active degradation:",nProteinsToDegrade[2342])
+
+			print("nemA free monomers to be degraded pre-active degradation:",
+				  self.proteins.counts()[2342])
+
+			if METHOD == 1:
+				# Degrade selected proteins
+				# lon complex index: 297
+
+				# todo: pick up with just simply getting the conc of the lon complex, then the conc of the proteins.
+				lon_complex_counts = self.complexes.total_counts()[297] # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
+
+
+				# just do one protein for now 'G6890-MONOMER[c]'
+				interest_protein_counts = self.proteins.total_counts()[2342]
+
+				# based off the first matlab calculation, degrade using the fsolve answer (calculated with 6 proteins present):
+				# k = [P]kcat/(km + [S])
+				kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
+				km = 0.0575 # calculated with fsolve in matlab based on kcat (and taking into account other 6 proteins)
+				# todo: since this is per second, might need to convert to per timestep (based on how many are in a second)
+
+				k_active = lon_complex_counts * kcat / (km + interest_protein_counts)
+				proteins_degraded = k_active * interest_protein_counts
+				print("proteins degraded pre-rounding:", proteins_degraded)
+				proteins_degraded = round(proteins_degraded)
+				print("nemA monomers to be degraded post-active degradation:",proteins_degraded)
+
+				# reassign the counts of the proteins to be degraded:
+				nProteinsToDegrade[2342] = proteins_degraded
+				print("nemA nProteinsToDegrade[2342] post-active degradation:",nProteinsToDegrade[2342])
+
+			if METHOD == 2:
+				print("METHOD 2 selected")
+				# todo: pick up with just simply getting the conc of the lon complex, then the conc of the proteins.
+
+
+				# list of the interesting proteins:
+				protease_FM = 'EG10542-MONOMER[c]'
+				protease = 'CPLX0-2881[c]'
+				protease_idx = np.where(self.complex_IDs == protease)[0][0]
+				lon_complex_counts = self.complexes.total_counts()[protease_idx]  # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
+				protease_concentration = lon_complex_counts * counts_to_molar
+
+				# determine the lon complex mass:
+				# todo: find a way to do this with the matricies. for now, just use the lon complex counts
+
+				print("lon complex concentration:", protease_concentration)
+
+				# see what the total protein counts are:
+				protein_counts_now = self.readFromListener("MonomerCounts", "monomerCounts")[527]
+				print("total Lon protein counts: ", protein_counts_now)
+				print("lon complex counts:", lon_complex_counts)
+				print("lon free monomer counts: ", self.proteins.total_counts()[527])
+				print("lon FMs + 6*lon complex counts: ", protein_counts_now + lon_complex_counts*6)
+
+
+
+
+				substrates = ['G6890-MONOMER[c]',
+					   'PD03938[c]',
+					   'G6737-MONOMER[c]',
+					   'RPOD-MONOMER[c]',
+					   'PD02936[c]',
+					   'RED-THIOREDOXIN2-MONOMER[c]']
+
+				# substrate counts:
+				s1 = self.proteins.total_counts()[2342]
+				s2 = self.proteins.total_counts()[3863]
+				s3 = self.proteins.total_counts()[2229]
+				s4 = self.proteins.total_counts()[4002]
+				s5 = self.proteins.total_counts()[3854]
+				s6 = self.proteins.total_counts()[3977]
+
+				def get_substrate_counts(substrates):
+					counts = []
+					for substrate in substrates:
+						substrate_idx = np.where(self.protein_IDs == substrate)[0][0]
+						substrate_count = self.proteins.total_counts()[substrate_idx]
+						counts.append(substrate_count)
+					return counts
+				def get_substrate_mws(substrates):
+					mws = []
+					for substrate in substrates:
+						substrate_idx = np.where(self.protein_IDs == substrate)[0][0]
+						substrate_mw = self.protein_mws[substrate_idx]
+						mws.append(substrate_mw)
+					return mws
+
+				def get_substrate_concentrations(substrates):
+					concentrations = []
+					for substrate in substrates:
+						substrate_idx =  np.where(self.protein_IDs == substrate)[0][0]
+						substrate_concentration = self.proteins.counts()[substrate_idx] * counts_to_molar
+						concentrations.append(substrate_concentration)
+					return concentrations
+
+				# dont actually need these:
+				#substrate_mws = get_substrate_mws(substrates) # g/mol
+
+				# get the substrate concentrations:
+				substrate_concentrations = get_substrate_concentrations(substrates)  # mol/L [=] M
+
+
+				kcat = 0.071  # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
+				# todo: the guess Km value was 3.7x10-6 M
+				Kms = [0.0575, 0.0444, 0.0599, 0.0630, 0.0627, 0.0614] # M
+
+
+				# calculate the k_active value:
+				def k_active(lon_complex_concentration, kcat, Kms, substrate_concentrations):
+					# calculate the beta value:
+					beta = 1 + s1 / Kms[0] + s2 / Kms[1] + s3 / Kms[2] + s4 / Kms[3] + s5 / Kms[
+						4] + s6 / Kms[5]
+					k_actives = []
+					for i in range(len(substrate_concentrations)):
+						k_active = (lon_complex_concentration * kcat * substrate_concentrations[i]) / (Kms[i]*beta)
+						k_actives.append(k_active)
+					return k_actives
+
+				def degrade_proteins(substrates, substrate_concentrations, k_actives, nProteinsToDegrade):
+					proteins_degraded = []
+					for i in range(len(substrate_concentrations)):
+						substrate_idx = np.where(self.protein_IDs == substrates[i])[0][0]
+						print("substrate nProteinsToDegrade[{}] pre-active degradation:".format(
+							substrates[i]), nProteinsToDegrade[substrate_idx])
+						proteins_degraded = k_actives[i] * substrate_concentrations[i]
+						# convert to counts and round:
+						proteins_degraded = proteins_degraded / counts_to_molar
+						#import ipdb; ipdb.set_trace()
+						print("proteins degraded pre-rounding:", proteins_degraded)
+						proteins_degraded = round(proteins_degraded)
+						# degrade the proteins
+						nProteinsToDegrade[substrate_idx] = proteins_degraded
+						print("substrate nProteinsToDegrade[{}] post-active degradation:".format(substrates[i]), nProteinsToDegrade[substrate_idx])
+
+					return nProteinsToDegrade
+
+				# call the function:
+				k_actives = k_active(protease_concentration, kcat, Kms, substrate_concentrations)
+				nProteinsToDegrade = degrade_proteins(substrates, substrate_concentrations, k_actives, nProteinsToDegrade)
+
+				# confirm it works:
+				print("post-active degradation counts for nemA: ", nProteinsToDegrade[2342])
+
+			else:
+				print("no method selected, proceeding with normal degradation")
 
 		# check if the if worked:
 		print("nemA nProteinsToDegrade[2342] post-if statement:", nProteinsToDegrade[2342])
