@@ -179,7 +179,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				print("total Lon protein counts: ", protein_counts_now)
 				print("lon complex counts:", lon_complex_counts)
 				print("lon free monomer counts: ", self.proteins.total_counts()[527])
-				print("lon FMs + 6*lon complex counts: ", protein_counts_now + lon_complex_counts*6)
+				print("lon FMs + 6*lon complex counts: ", (self.proteins.total_counts()[527] + (lon_complex_counts*6)))
 
 
 
@@ -218,7 +218,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 					concentrations = []
 					for substrate in substrates:
 						substrate_idx =  np.where(self.protein_IDs == substrate)[0][0]
-						substrate_concentration = self.proteins.counts()[substrate_idx] * counts_to_molar
+						substrate_concentration = self.proteins.total_counts()[substrate_idx] * counts_to_molar
 						concentrations.append(substrate_concentration)
 					return concentrations
 
@@ -235,15 +235,36 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 
 				# calculate the k_active value:
-				def k_active(lon_complex_concentration, kcat, Kms, substrate_concentrations):
+				def calculate_k_active(protease, substrates, kcat, Kms):
+					# calulate the complex concentration:
+					protease_idx = np.where(self.complex_IDs == protease)[0][0]
+					lon_complex_counts = self.complexes.total_counts()[protease_idx]  # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
+					protease_concentration = lon_complex_counts * counts_to_molar
+
+					substrate_concentrations = []
+					for substrate in substrates:
+						substrate_idx =  np.where(self.protein_IDs == substrate)[0][0]
+						substrate_concentration = self.proteins.total_counts()[substrate_idx] * counts_to_molar
+						substrate_concentrations.append(substrate_concentration)
+
 					# calculate the beta value:
-					beta = 1 + s1 / Kms[0] + s2 / Kms[1] + s3 / Kms[2] + s4 / Kms[3] + s5 / Kms[
-						4] + s6 / Kms[5]
+					beta = 1
+					for i in range(len(substrate_concentrations)):
+						term = substrate_concentrations[i] / (Kms[i])
+						beta += term
+						print("term[{}]:".format(i), term)
+					print("beta value:", beta)
+
+					# calculate the k_active value:
 					k_actives = []
 					for i in range(len(substrate_concentrations)):
-						k_active = (lon_complex_concentration * kcat * substrate_concentrations[i]) / (Kms[i]*beta)
+						k_active = (protease_concentration * kcat * substrate_concentrations[i]) / (Kms[i]*beta)
 						k_actives.append(k_active)
+					print("k_active values:", k_actives)
+					import ipdb; ipdb.set_trace()
 					return k_actives
+
+
 
 				def degrade_proteins(substrates, substrate_concentrations, k_actives, nProteinsToDegrade):
 					proteins_degraded = []
@@ -264,7 +285,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 					return nProteinsToDegrade
 
 				# call the function:
-				k_actives = k_active(protease_concentration, kcat, Kms, substrate_concentrations)
+				k_actives = calculate_k_active(protease, substrates, kcat, Kms)
 				nProteinsToDegrade = degrade_proteins(substrates, substrate_concentrations, k_actives, nProteinsToDegrade)
 
 				# confirm it works:
