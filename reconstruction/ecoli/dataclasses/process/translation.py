@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECT_PDR_COMBO = 10 # select the protein degradation rate combo to use
+SELECT_PDR_COMBO = 11 # select the protein degradation rate combo to use
 
 class Translation(object):
 	""" Translation """
@@ -535,6 +535,57 @@ class Translation(object):
 						Unexplained_contribution[i] = protease_dict[protein['id']][
 							'Unexplained_fraction']
 
+		hi = 11
+		# Uses everything as is except for the three proteins that are of interest
+		if SELECT_PDR_COMBO == 11:
+			protins_of_interest = ['G7122-MONOMER', 'EG12454-MONOMER', 'EG12794-MONOMER']
+			for i, protein in enumerate(all_proteins):
+				if protein['id'] in protins_of_interest:
+					deg_rate[i] = np.log(2) / (600*60) # 10 hours
+					deg_rate_source_id[i] = '600_mins'
+
+				# Use measured degradation rates if available
+				# note: this must be elif, otherwise it will get reassigned!
+				elif protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
+					if protein['id'] in protease_dict.keys():
+						protease_assignment[i] = protease_dict[protein['id']][
+							'protease_assignment']
+						ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+						Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+						Unexplained_contribution[i] = protease_dict[protein['id']][
+							'Unexplained_fraction']
+				elif protein['id'] in Clim_deg_rates:
+					deg_rate[i] = Clim_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'Gupta_et_al_MS_2024'
+					if protein['id'] in protease_dict.keys():
+						protease_assignment[i] = protease_dict[protein['id']][
+							'protease_assignment']
+						ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+						Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+						Unexplained_contribution[i] = protease_dict[protein['id']][
+							'Unexplained_fraction']
+				# If measured rates are unavailable, use N-end rule
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'  # All protein sequences should start
+					# with methionine
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
+					if protein['id'] in protease_dict.keys():
+						protease_assignment[i] = protease_dict[protein['id']][
+							'protease_assignment']
+						ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+						Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+						HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+						Unexplained_contribution[i] = protease_dict[protein['id']][
+							'Unexplained_fraction']
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
