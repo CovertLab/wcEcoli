@@ -9,7 +9,7 @@ TODO:
 """
 
 """ USER INPUTS """
-USE_LON_DEGRADATION = True # whether to use lon degradation rates or not
+USE_LON_DEGRADATION = False # whether to use lon degradation rates or not
 METHOD = 2
 """ END USER INPUTS """
 import numpy as np
