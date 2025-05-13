@@ -582,7 +582,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		fig.update_traces(marker_size=3)
 		fig.update_layout(
 			title=f"Simulation Protein Counts ({sim_name}) "
-				  f"vs. Validation Protein Counts ({val_name} et al.),<br> R^2 > 30: {round(r_squared_30_above,3)}",
+				  f"vs. Validation Protein Counts ({val_name} et al.),<br> $R^2$ > 30: {round(r_squared_30_above,3)}, n={len(above_30_idx[0])} (of {len(overlapIDs)} total)",
 			xaxis_title="log10(Validation Protein Counts+1)",
 			yaxis_title=f"log10(Simulation Protein Counts+1)",
 			autosize=False, width=900, height=600)
@@ -693,7 +693,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		fig.update_traces(marker_size=3)
 		fig.update_layout(
 			title=f"Simulation Protein Counts ({sim_name}) "
-				  f"vs. Validation Protein Counts ({val_name} et al.),<br> R^2 > 30: {round(r_squared_30_above,3)}",
+				  f"vs. Validation Protein Counts ({val_name} et al.),<br> R^2 > 30: {round(r_squared_30_above,3)}, n={len(above_30_idx[0])} (of {len(overlapIDs)} total)",
 			xaxis_title="log10(Validation Protein Counts+1)",
 			yaxis_title=f"log10(Simulation Protein Counts+1)",
 			autosize=False, width=900, height=600)
