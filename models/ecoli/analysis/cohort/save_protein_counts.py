@@ -70,7 +70,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def generate_data(self, simDataFile):
 		"""
         Extracts the average total monomer counts for each protein in the
-        simulation
+        simulation.
         Args:
             simDataFile: simulation data file
 
@@ -91,13 +91,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			only_successful=True)
 
 		# Calculate the average total monomer counts across all cells:
-		total_protein_counts = (read_stacked_columns(all_cells,
+		total_monomer_counts = (read_stacked_columns(all_cells,
 			'MonomerCounts', 'monomerCounts')).mean(axis=0)
 
-		# Make into a np.array:
-		total_protein_counts = np.array(total_protein_counts)
+		# Get the average free protein counts for each monomer:
+		(free_counts,) = read_stacked_bulk_molecules(
+			all_cells, self.all_monomer_ids, ignore_exception=True)
+		avg_free_counts = np.mean(free_counts, axis=0)
 
-		return total_protein_counts
+		# Make into a np.array:
+		total_monomer_counts = np.array(total_monomer_counts)
+		free_monomer_counts = np.array(avg_free_counts)
+
+		return total_monomer_counts, free_monomer_counts
 
 	def get_validation_data(self, simDataFile, validationDataFile):
 		# adapted from multigen and single/proteinCountsValidation.py
@@ -247,7 +253,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.n_total_gens = self.ap.n_generation
 		startGen = IGNORE_FIRST_N_GENS # note python numbering starts at 0
 		self.all_monomer_ids = []
-		total_protein_counts = self.generate_data(simDataFile)
+		total_protein_counts, free_monomer_counts = self.generate_data(simDataFile)
 		monomer_idx_dict_PreFilter = {monomer: i for i, monomer in
 									  enumerate(self.all_monomer_ids)}
 
@@ -255,9 +261,27 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ids = self.transpose_and_reshape(self.all_monomer_ids)
 		current_counts = self.transpose_and_reshape(total_protein_counts)
 		values = np.concatenate((ids, current_counts), axis=1)
-		col_labels = ["Monomer ID", "Average Monomer Counts"]
-		save_file(pth,f'AvgProteinCounts_startGen_{startGen}.csv',
+		col_labels = ["Monomer ID", "Average Total Monomer Counts"]
+		save_file(pth,f'AvgTotalMonomerCounts_startGen_{startGen}.csv',
 				  col_labels, values)
+
+		# Save the free monomer counts:
+		free_ids = self.transpose_and_reshape(self.all_monomer_ids)
+		free_counts = self.transpose_and_reshape(free_monomer_counts)
+		free_values = np.concatenate((free_ids, free_counts), axis=1)
+		free_col_labels = ["Monomer ID", "Average Free Monomer Counts"]
+		save_file(pth,f'AvgFreeMonomerCounts_startGen_{startGen}.csv',
+				  free_col_labels, free_values)
+
+		# Save a combination of the free and total monomer counts:
+		combined_ids = self.transpose_and_reshape(self.all_monomer_ids)
+		combined_counts = np.concatenate((current_counts, free_counts), axis=1)
+		combined_values = np.concatenate((combined_ids, combined_counts), axis=1)
+		combined_col_labels = ["Monomer ID", "Average Total Monomer Counts",
+							  "Average Free Monomer Counts"]
+		save_file(pth,f'AvgMonomerCounts_startGen_{startGen}.csv',
+				  combined_col_labels, combined_values)
+
 
 		# Save the unfiltered data on a log scale:
 		log_PCs = self.get_LogData(self.all_monomer_ids, total_protein_counts)
