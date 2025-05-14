@@ -102,15 +102,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def get_validation_data(self, simDataFile, validationDataFile):
 		# adapted from multigen and single/proteinCountsValidation.py
 		"""
-		Extract the protein counts for proteins that are present in either
-		validation data set
-		Args:
-			simDataFile: Simulation data file
-			validationDataFile: validation data file
+        Extract the protein counts for proteins that are present in either
+        validation data set
+        Args:
+            simDataFile: Simulation data file
+            validationDataFile: validation data file
 
-		Returns: lists of proteins that are present in both the simulation and
-		validation datasets, as well as the protein counts for each protein.
-		"""
+        Returns: lists of proteins that are present in both the simulation and
+        validation datasets, as well as the protein counts for each protein.
+        """
 		# Get simulation data:
 		sim_data = self.read_pickle_file(simDataFile)
 		sim_monomer_ids = sim_data.process.translation.monomer_data["id"]
@@ -127,38 +127,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens),
 			only_successful=True)
 
-		# Initialize lists to store data for overlapping protein counts:
-		sim_schmidt_counts_multigen = []
-		sim_wisniewski_counts_multigen = []
+		# get all the simulation monomer counts:
+		monomer_counts = (read_stacked_columns(all_cells,
+						'MonomerCounts', 'monomerCounts'))
 
-		# Extract data for proteins that are present in the validation data:
-		for simDir in all_cells:
-			simOutDir = os.path.join(simDir, "simOut")
-			monomer_counts_reader = (
-				TableReader(os.path.join(simOutDir, "MonomerCounts")))
-			monomer_counts = monomer_counts_reader.readColumn("monomerCounts")
-
-			# Obtain the protein counts for protiens that are present in both
-			# the simluation and validation datasets:
-			sim_schmidt_counts, val_schmidt_counts, schmidt_overlap_ids = (
-				get_simulated_validation_counts(
+		# the simluation and validation datasets:
+		sim_schmidt_counts, val_schmidt_counts, schmidt_overlap_ids = (
+			get_simulated_validation_counts(
 				schmidt_counts, monomer_counts, schmidt_ids, sim_monomer_ids))
-			sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = (
-				get_simulated_validation_counts(wisniewski_counts,
-					monomer_counts, wisniewski_ids, sim_monomer_ids))
+		sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = (
+			get_simulated_validation_counts(wisniewski_counts,
+							monomer_counts, wisniewski_ids, sim_monomer_ids))
 
-			# Append the protein counts for the current cell:
-			sim_schmidt_counts_multigen.append(sim_schmidt_counts)
-			sim_wisniewski_counts_multigen.append(sim_wisniewski_counts)
-
-		# Average over all the cells:
-		sim_schmidt_counts_multigen = (
-			(np.array(sim_schmidt_counts_multigen)).mean(axis=0))
-		sim_wisniewski_couts_multigen = (
-			(np.array(sim_wisniewski_counts_multigen)).mean(axis=0))
-
-		return (sim_schmidt_counts_multigen, val_schmidt_counts,
-				schmidt_overlap_ids, sim_wisniewski_couts_multigen,
+		return (sim_schmidt_counts, val_schmidt_counts,
+				schmidt_overlap_ids, sim_wisniewski_counts,
 				val_wisniewski_counts, wisniewski_overlap_ids)
 
 	def get_ids(self, monomer_idx_dict, protein_idxs):
