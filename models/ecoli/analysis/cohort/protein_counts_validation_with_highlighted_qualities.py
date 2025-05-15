@@ -19,13 +19,15 @@ from sklearn.metrics import r2_score
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # input proteins to highlight:
-HIGHLIGHT_PROTEINS = ['G6890-MONOMER[c]',
- 					   'PD03938[c]',
- 					   'G6737-MONOMER[c]',
- 					   'RPOD-MONOMER[c]',
- 					   'PD02936[c]',
- 					   'RED-THIOREDOXIN2-MONOMER[c]',
-  						"EG10542-MONOMER[c]"]
+HIGHLIGHT_PROTEINS = [#'G6890-MONOMER[c]',
+ 					   #'PD03938[c]',
+ 					   #'G6737-MONOMER[c]',
+ 					   #'RPOD-MONOMER[c]',
+ 					   #'PD02936[c]',
+ 					   #'RED-THIOREDOXIN2-MONOMER[c]',
+  						#"EG10542-MONOMER[c]"
+	'EG11111-MONOMER[c]',
+'EG11957-MONOMER[c]',]
 
 # threshold for complex fraction:
 COMPLEX_FRACTION_THRESHOLD = 0.9
@@ -109,39 +111,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.n_total_gens),
 			only_successful=True)
 
-		# Initialize lists to store data for overlapping protein counts:
-		sim_schmidt_counts_multigen = []
-		sim_wisniewski_counts_multigen = []
+		# get all the simulation monomer counts:
+		monomer_counts = (read_stacked_columns(all_cells,
+											   'MonomerCounts', 'monomerCounts'))
 
-		# Extract data for proteins that are present in the validation data:
-		for simDir in all_cells:
-			simOutDir = os.path.join(simDir, "simOut")
-			monomer_counts_reader = (
-				TableReader(os.path.join(simOutDir, "MonomerCounts")))
-			monomer_counts = monomer_counts_reader.readColumn("monomerCounts")
-
-			# Obtain the protein counts for protiens that are present in both
-			# the simluation and validation datasets:
-			sim_schmidt_counts, val_schmidt_counts, schmidt_overlap_ids = (
-				get_simulated_validation_counts(
+		# the simluation and validation datasets:
+		sim_schmidt_counts, val_schmidt_counts, schmidt_overlap_ids = (
+			get_simulated_validation_counts(
 				schmidt_counts, monomer_counts, schmidt_ids, sim_monomer_ids))
-			sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = (
-				get_simulated_validation_counts(wisniewski_counts,
-					monomer_counts, wisniewski_ids, sim_monomer_ids))
-
-			# Append the protein counts for the current cell:
-			sim_schmidt_counts_multigen.append(sim_schmidt_counts)
-			sim_wisniewski_counts_multigen.append(sim_wisniewski_counts)
-
-		# Average over all the cells:
-		sim_schmidt_counts = (
-			(np.array(sim_schmidt_counts_multigen)).mean(axis=0))
-		sim_wisniewski_counts = (
-			(np.array(sim_wisniewski_counts_multigen)).mean(axis=0))
+		sim_wisniewski_counts, val_wisniewski_counts, wisniewski_overlap_ids = (
+			get_simulated_validation_counts(wisniewski_counts,
+							monomer_counts, wisniewski_ids, sim_monomer_ids))
 
 		return (sim_schmidt_counts, val_schmidt_counts,
 				schmidt_overlap_ids, sim_wisniewski_counts,
 				val_wisniewski_counts, wisniewski_overlap_ids)
+
 
 	def get_ids(self, monomer_idx_dict, protein_idxs):
 		"""
