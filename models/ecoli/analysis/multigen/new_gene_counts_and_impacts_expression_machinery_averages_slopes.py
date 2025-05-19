@@ -1209,6 +1209,42 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# plt.title("Allocation of Active Ribosomes")
 			plot_num += 1
 
+			# Cell mass breakdown
+			mass_columns = [
+				"dryMass", "dnaMass", "mRnaMass", "proteinMass", "rRnaMass",
+				"tRnaMass", "membrane_mass", "waterMass", "smallMoleculeMass"]
+			mass_labels = [
+				"mass_dry_fg", "mass_dna_fg", "mass_mrna_fg", "mass_protein_fg",
+				"mass_rrna_fg", "mass_trna_fg", "mass_membrane_fg",
+				"mass_water_fg", "mass_small_molecule_fg"]
+			for k, mass_column in enumerate(mass_columns):
+				mass_label = mass_labels[k]
+				mass_data = read_stacked_columns(
+					cell_paths, 'Mass', mass_column)
+				avg_before_gfp = np.mean(
+					mass_data[gen_start_index[4]:gen_start_index[8]])
+				avg_per_gen = np.zeros(len(unique_gen_labels))
+				avg_per_gen_percent = np.zeros(len(unique_gen_labels))
+				for i in range(len(unique_gen_labels)):
+					avg_per_gen[i] = np.mean(
+						mass_data[gen_start_index[i]:gen_end_index[i]])
+					avg_per_gen_percent[i] = (
+						avg_per_gen[i] - avg_before_gfp) / avg_before_gfp * 100.0
+				avg_per_gen_plot = np.repeat(avg_per_gen, num_time_steps)
+				all_averages[plot_num, :] = avg_per_gen_plot
+				avg_per_gen_percent_plot = np.repeat(
+					avg_per_gen_percent, num_time_steps)
+				all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
+				all_averages_index_mapping[mass_label] = plot_num
+				all_averages_by_gen[plot_num, :] = avg_per_gen
+				all_initial_values_by_gen[plot_num, :] = (
+					mass_data[gen_start_index].squeeze())
+				all_final_values_by_gen[plot_num, :] = (
+					mass_data[gen_end_index].squeeze())
+				x_data = unique_gen_labels
+				y_data = avg_per_gen
+				plot_num += 1
+
 			# TODO: RNAP subunit synth prob
 
 			# TODO: RNAP subunit copy numbers
