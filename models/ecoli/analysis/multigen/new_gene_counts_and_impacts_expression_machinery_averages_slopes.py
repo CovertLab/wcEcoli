@@ -747,7 +747,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_target_synth_prob"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
 				all_initial_values_by_gen[plot_num, :] = (
-					rrna_rna_target_synth_prob[gen_start_index, i].squeeze())
+					rrna_rna_target_synth_prob[gen_start_index + 1, i].squeeze()) # RNASynthProb is always 0 at first time step
 				all_final_values_by_gen[plot_num, :] = (
 					rrna_rna_target_synth_prob[gen_end_index, i].squeeze())
 				x_data = unique_gen_labels
@@ -784,7 +784,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_actual_synth_prob"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
 				all_initial_values_by_gen[plot_num, :] = (
-					rrna_actual_synth_prob[gen_start_index, i].squeeze())
+					rrna_actual_synth_prob[gen_start_index + 1, i].squeeze()) # RNASynthProb is always 0 at first time step
 				all_final_values_by_gen[plot_num, :] = (
 					rrna_actual_synth_prob[gen_end_index, i].squeeze())
 				x_data = unique_gen_labels
