@@ -1,14 +1,7 @@
 """
-Plot mRNA and protein counts for new genes across multiple generations, as well
-as plots to analyze the impact of new gene expression, including growth rate,
-RNAP and ribosome counts, and ppGpp concentration.
+Save the average, initial, and final values for cell level properties for each
+generation as csv files.
 """
-# TODO: update file header comment
-
-
-# TODO: set standard ylim
-# TODO: relabel y axes
-
 
 import pickle
 import os
@@ -221,10 +214,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			doubling_time_index = np.where(dt_to_plot == dt[8])[0][0]
 			analysis_gen_index = np.where(dt_to_plot == dt[16])[0][0]
 
-			all_averages = np.zeros((total_plots, len(gen_labels)))
-			all_averages_percent = np.zeros((total_plots, len(gen_labels)))
-			all_averages_by_gen = np.zeros((total_plots, len(unique_gen_labels)))
+			all_averages = np.zeros((total_plots, len(gen_labels))) - 1.0
+			all_averages_percent = np.zeros((total_plots, len(gen_labels))) - 1.0
+			all_averages_by_gen = np.zeros((total_plots, len(unique_gen_labels))) - 1.0
 			all_averages_index_mapping = {}
+			all_initial_values_by_gen = np.zeros((total_plots, len(unique_gen_labels))) - 1.0
+			all_final_values_by_gen = np.zeros((total_plots, len(unique_gen_labels))) - 1.0
 
 			# Doubling time
 			avg_before_gfp = np.mean(dt[4:8])
@@ -269,6 +264,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["mass"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = mass[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = mass[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -314,6 +311,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["total_ribosome_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = total_ribosome_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = total_ribosome_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -435,6 +434,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_total_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s50_total_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s50_total_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -463,6 +464,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_23s_rRNA_total_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s50_23s_rRNA_total_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s50_23s_rRNA_total_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -491,6 +494,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_5s_rRNA_total_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s50_5s_rRNA_total_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s50_5s_rRNA_total_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -519,6 +524,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["50s_limiting_protein_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s50_limiting_protein_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s50_limiting_protein_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -547,6 +554,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["30s_total_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s30_total_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s30_total_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -575,6 +584,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["30s_16s_rRNA_total_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s30_16s_rRNA_total_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s30_16s_rRNA_total_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -603,6 +614,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["30s_limiting_protein_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = s30_limiting_protein_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = s30_limiting_protein_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -661,6 +674,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_index_mapping[
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_copy_num"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
+				all_initial_values_by_gen[plot_num, :] = (
+					rrna_gene_copy_numbers[gen_start_index, i].squeeze())
+				all_final_values_by_gen[plot_num, :] = (
+					rrna_gene_copy_numbers[gen_end_index, i].squeeze())
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				# plt.axvline(
@@ -729,6 +746,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_index_mapping[
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_target_synth_prob"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
+				all_initial_values_by_gen[plot_num, :] = (
+					rrna_rna_target_synth_prob[gen_start_index, i].squeeze())
+				all_final_values_by_gen[plot_num, :] = (
+					rrna_rna_target_synth_prob[gen_end_index, i].squeeze())
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				# plt.axvline(
@@ -762,6 +783,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_index_mapping[
 					GENE_ID_TO_RRNA_OPERON_ID[gene_id] + "_actual_synth_prob"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
+				all_initial_values_by_gen[plot_num, :] = (
+					rrna_actual_synth_prob[gen_start_index, i].squeeze())
+				all_final_values_by_gen[plot_num, :] = (
+					rrna_actual_synth_prob[gen_end_index, i].squeeze())
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				# plt.axvline(
@@ -805,6 +830,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_percent[plot_num, :] = avg_per_gen_percent_plot
 			all_averages_index_mapping["total_rnap_counts"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = total_rnap_counts[gen_start_index].squeeze()
+			all_final_values_by_gen[plot_num, :] = total_rnap_counts[gen_end_index].squeeze()
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -843,6 +870,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_index_mapping[
 					RNAP_subunit_monomer_ids[r] + "_protein_counts"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
+				all_initial_values_by_gen[plot_num, :] = (
+					rnap_subunit_protein_counts[gen_start_index, r].squeeze())
+				all_final_values_by_gen[plot_num, :] = (
+					rnap_subunit_protein_counts[gen_end_index, r].squeeze())
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				# plt.axvline(
@@ -899,6 +930,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				all_averages_index_mapping[
 					target_cistron_ids[r] + "_mRNA_cistron_counts"] = plot_num
 				all_averages_by_gen[plot_num, :] = avg_per_gen
+				all_initial_values_by_gen[plot_num, :] = (
+					rnap_subunit_mRNA_cistron_counts[gen_start_index, r].squeeze())
+				all_final_values_by_gen[plot_num, :] = (
+					rnap_subunit_mRNA_cistron_counts[gen_end_index, r].squeeze())
 				x_data = unique_gen_labels
 				y_data = avg_per_gen
 				# plt.axvline(
@@ -976,6 +1011,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_index_mapping[
 				"RNAP_subunit_rnap_portion"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = (
+				rnap_subunit_rnap_portion[gen_start_index].squeeze())
+			all_final_values_by_gen[plot_num, :] = (
+				rnap_subunit_rnap_portion[gen_end_index].squeeze())
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -1010,6 +1049,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_index_mapping[
 				"ribosomal_rnap_portion"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = (
+				ribosomal_rnap_portion[gen_start_index].squeeze())
+			all_final_values_by_gen[plot_num, :] = (
+				ribosomal_rnap_portion[gen_end_index].squeeze())
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -1044,6 +1087,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_index_mapping[
 				"rrna_rnap_portion"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = (
+				rrna_rnap_portion[gen_start_index].squeeze())
+			all_final_values_by_gen[plot_num, :] = (
+				rrna_rnap_portion[gen_end_index].squeeze())
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -1108,6 +1155,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_index_mapping[
 				"rnap_subunit_ribosome_portion"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = (
+				rnap_subunit_ribosome_portion[gen_start_index].squeeze())
+			all_final_values_by_gen[plot_num, :] = (
+				rnap_subunit_ribosome_portion[gen_end_index].squeeze())
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -1140,6 +1191,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			all_averages_index_mapping[
 				"ribosomal_ribosome_portion"] = plot_num
 			all_averages_by_gen[plot_num, :] = avg_per_gen
+			all_initial_values_by_gen[plot_num, :] = (
+				ribosomal_ribosome_portion[gen_start_index].squeeze())
+			all_final_values_by_gen[plot_num, :] = (
+				ribosomal_ribosome_portion[gen_end_index].squeeze())
 			x_data = unique_gen_labels
 			y_data = avg_per_gen
 			# plt.axvline(
@@ -1163,13 +1218,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
 			# plt.close("all")
 
-			# Save all_averages_per_gen as a csv file with the format seed, name, averages
-
-
-			# Get simulation seed using get_cell_seed
+			# Save csv files of average, initial, and final values for each generation and data keyword
 			sim_seed = self.ap.get_cell_seed(cell_paths[0])
-
-			# Create an empty dataframe
 			import pandas as pd
 			column_names = ["seed", "data_keyword"]
 			for gen_num in unique_gen_labels:
@@ -1177,18 +1227,36 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			all_averages_df = pd.DataFrame(columns=column_names)
 			for data_keyword in all_averages_index_mapping.keys():
-				# Get the index of the data keyword
 				data_index = all_averages_index_mapping[data_keyword]
-				# Get the averages for that data keyword
 				data_averages = all_averages_by_gen[data_index, :]
-				# Create a new row with the seed, data keyword and averages
 				new_row = [sim_seed, data_keyword] + list(data_averages)
-				# Append the new row to the dataframe
 				all_averages_df.loc[len(all_averages_df)] = new_row
-
-			# write dataframe to CSV file, including seed num
 			all_averages_df.to_csv(
 				os.path.join(plotOutDir, f"all_averages_by_gen_for_seed_{sim_seed}.csv"),
+				index=False)
+
+			all_initial_values_df = pd.DataFrame(columns=column_names)
+			for data_keyword in all_averages_index_mapping.keys():
+				if data_keyword == "doubling_time":
+					continue
+				data_index = all_averages_index_mapping[data_keyword]
+				data_initial_values = all_initial_values_by_gen[data_index, :]
+				new_row = [sim_seed, data_keyword] + list(data_initial_values)
+				all_initial_values_df.loc[len(all_initial_values_df)] = new_row
+			all_initial_values_df.to_csv(
+				os.path.join(plotOutDir, f"all_initial_values_by_gen_for_seed_{sim_seed}.csv"),
+				index=False)
+
+			all_final_values_df = pd.DataFrame(columns=column_names)
+			for data_keyword in all_averages_index_mapping.keys():
+				if data_keyword == "doubling_time":
+					continue
+				data_index = all_averages_index_mapping[data_keyword]
+				data_final_values = all_final_values_by_gen[data_index, :]
+				new_row = [sim_seed, data_keyword] + list(data_final_values)
+				all_final_values_df.loc[len(all_final_values_df)] = new_row
+			all_final_values_df.to_csv(
+				os.path.join(plotOutDir, f"all_final_values_by_gen_for_seed_{sim_seed}.csv"),
 				index=False)
 
 			# print(all_averages_index_mapping.keys())
