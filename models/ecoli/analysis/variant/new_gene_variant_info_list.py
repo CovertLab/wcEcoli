@@ -43,7 +43,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mRNA_cistron_ids = [
 			cistron_id for cistron_id in cistron_ids if cistron_id in cistron_id_to_protein_id]
 		# Get IDs of associated monomers and genes
-		monomer_ids = [
+		monomer_ids_gene_order = [
 			cistron_id_to_protein_id.get(cistron_id, None)
 			for cistron_id in mRNA_cistron_ids]
 		cistron_id_to_gene_id = {
@@ -61,7 +61,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		monomer_indexes = np.array([
 			monomer_id_to_index[monomer_id] for monomer_id in monomer_ids_table])
 
-		doubling_times = np.zeros((len(monomer_ids), 1))
+		doubling_times = np.zeros((len(monomer_ids_table), 1))
 
 
 		essential_genes = validation_data.essential_genes.essential_genes
@@ -71,12 +71,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_essential_genes = len(essential_genes)
 		is_essential = np.reshape(is_essential, (len(is_essential), 1))
 		gene_ids = np.reshape(gene_ids, (len(gene_ids), 1))
-		total_timesteps = np.zeros((len(monomer_ids), 1))
-		total_individual_cells = np.zeros((len(monomer_ids), 1))
-		varianti = np.zeros((len(monomer_ids), 1))
+		total_timesteps = np.zeros((len(monomer_ids_table), 1))
+		total_individual_cells = np.zeros((len(monomer_ids_table), 1))
+		varianti = np.zeros((len(monomer_ids_table), 1))
 
 
-		monomer_ids = np.reshape(monomer_ids, (len(monomer_ids), 1))
+		is_essential_dict = dict(zip(monomer_ids_gene_order, is_essential.flatten()))
+		gene_dict = dict(zip(monomer_ids_gene_order, gene_ids.flatten()))
+		is_essential_table_order = [is_essential_dict[monomer_id] for monomer_id in
+									monomer_ids_table]
+
+		gene_table_order = [gene_dict[monomer_id] for monomer_id in
+									monomer_ids_table]
+
+		monomer_ids = np.reshape(monomer_ids_table, (len(monomer_ids), 1))
 		# Initialize a pandas dataframe to store the data
 		all_avg_monomer_counts = np.zeros((len(monomer_ids), 1))
 
@@ -133,16 +141,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# and col names as selected_variant_indexes
 
-			gene_ids = np.array(gene_ids).reshape(-1, 1)
-			monomer_ids = np.array(monomer_ids).reshape(-1, 1)
-			is_essential = np.array(is_essential).reshape(-1, 1)
+			gene_ids_new = np.array(gene_table_order).reshape(-1, 1)
+			monomer_ids = np.array(monomer_ids_table).reshape(-1, 1)
+			is_essential_new = np.array(is_essential_table_order).reshape(-1, 1)
 			total_timesteps = np.full((len(monomer_ids), 1), monomer_counts.shape[0])
 			cells_with_zero = cells_with_zero.reshape(-1, 1)
 			monomer_zeros= monomer_zeros.reshape(-1, 1)
 			total_individual_cells = np.full((len(monomer_ids), 1), len(all_cells))
 
 
-			variant_table_i = np.hstack((varianti, doubling_times, gene_ids, monomer_ids, is_essential, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
+			variant_table_i = np.hstack((varianti, doubling_times, gene_ids_new, monomer_ids, is_essential_new, monomer_zeros, total_timesteps, cells_with_zero, total_individual_cells, all_avg_monomer_counts ))
 
 			variant_table = np.vstack((variant_table,variant_table_i))
 
