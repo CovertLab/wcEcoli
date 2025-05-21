@@ -84,7 +84,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		gene_table_order = [gene_dict[monomer_id] for monomer_id in
 									monomer_ids_table]
 
-		monomer_ids = np.reshape(monomer_ids_table, (len(monomer_ids), 1))
+		monomer_ids = np.reshape(monomer_ids_table, (len(monomer_ids_table), 1))
 		# Initialize a pandas dataframe to store the data
 		all_avg_monomer_counts = np.zeros((len(monomer_ids), 1))
 
