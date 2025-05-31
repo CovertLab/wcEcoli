@@ -289,8 +289,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				monomers = "None"
 			else:
 				# find the substrates associated with the reaction:
-				substrate_list = self.metabolic_reactions_df["catalyzed_by"].iloc[idx]
+				substrate_string = self.metabolic_reactions_df["catalyzed_by"].iloc[idx[0]]
 				hi = 5
+				substrate_list = json.loads(stoich_string)
 				# check if there are other complexes in the list:
 				substrate_complexes = self.find_complexes(substrate_list)
 				if substrate_complexes != 0:
