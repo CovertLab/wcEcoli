@@ -29,16 +29,22 @@ complexation_reactions_tsv_path = "reconstruction/ecoli/flat/complexation_reacti
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
 
-IMPORTANT_MONOMERS = ["EG10022-MONOMER"]
+IMPORTANT_MONOMERS = ["EG10022-MONOMER", "G6980-MONOMER"]
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	_suppress_numpy_warnings = True
 
 	def find_complexes(self, stoich_list):
+		if not hasattr(self, 'full_complex_ids_to_rxns'):
+			self.find_full_complexation_reaction_dicts()
+
+		complex_IDs_full = list(self.full_complex_ids_to_rxns.keys())
+
 		# check if there happens to be a complex within the list of stoich:
 		complex_appearances = []
 		for substrate in stoich_list:
-			if substrate in self.complex_IDs:
+			# todo: I do not think self.complex_IDs has all the complexes in it!
+			if substrate in complex_IDs_full:
 				complex_appearances.append(substrate)
 
 		return complex_appearances
@@ -100,12 +106,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def find_monomer_roots(self, stoich_list):
 		# find the monomer roots of each complex:
 		original_stoich_list = stoich_list
+
 		# determine if any substrates are complexes too:
 		substrate_complexes = self.find_complexes(original_stoich_list)
 		substrate_complexes = list(substrate_complexes)
 		hi = 5
 		# remove the complexes that have been found:
-		new_stoich_list = original_stoich_list
+		new_stoich_list = original_stoich_list.copy()
+
 		for complex in substrate_complexes:
 			new_stoich_list.remove(complex)
 
@@ -113,10 +121,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		substrate_complexes_caught = []
 		substrate_complexes_updated = substrate_complexes
 		while len(substrate_complexes_updated) != 0:
-
 			new_substrates = []
 			for complex in substrate_complexes_updated:
 				print(len(substrate_complexes_updated), substrate_complexes_updated)
+				print("current complex:", complex)
 				#rxn = self.complex_IDs_to_reactions.get(complex) # this does not work actually ughhhhh
 				rxn = self.find_reaction_ID_from_complex(complex)
 
@@ -130,8 +138,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					monomers = "None"
 
 				# find the substrates associated with the reaction:
-				stoich_series = self.complexation_reactions_df["stoichiometry"][idx]
-				stoich = ast.literal_eval(stoich_series.iloc[0])
+				stoich_string = self.complexation_reactions_df["stoichiometry"].iloc[idx[0]]
+				hi = 5
+				stoich = json.loads(stoich_string)
 
 				# get a list of the dictionary keys
 				monomers_list = list(stoich.keys())
@@ -148,22 +157,36 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# check if the new monomers are complexes too:
 				new_complexes = self.find_complexes(monomers_list)
 				if len(new_complexes) != 0:
-					substrate_complexes_updated.append(new_complexes)
-					# remove the complexes form the list:
-					hi = 5
-					monomers_list.remove(new_complexes)
-					monomers_caught.append(monomers_list)
+					if complex == 'ATPD-CPLX':
+						hi = 5
+					# append the complexes within this complex to the list if they exist! they technically should be handled!
 
+					# remove the complexes form the list:
+					print("complex with a complex inside:", complex)
+					print(monomers_list)
+					hi = 5
+					# a couple complexes within complexes, so those need to be taken out one by one
+					for comp in new_complexes:
+						monomers_list.remove(comp)
+						substrate_complexes_updated.append(comp)
+					hi = 5
+					# append left over monomers to monomer list (I do it this way so the item handleing at the bottom is consistent)
+					for monomer in monomers_list:
+						monomers_caught.append([monomer])
+					hi = 6
 				else:
 					monomers_caught.append(monomers_list)
 
-		final_stoich = new_stoich_list.append(monomers_caught)
-
-		return final_stoich
-
-
-
-
+		hi= 5
+		final_stoich = []
+		for monomer in new_stoich_list:
+			hi = 5
+			final_stoich.append([monomer])
+		for monomer in monomers_caught:
+			final_stoich.append(monomer)
+		hi = 5
+		final_stoich_flattened = [item[0] for item in final_stoich]
+		return final_stoich_flattened
 
 
 
@@ -178,6 +201,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		#self.catalyst_ids = metabolism.catalyst_ids # this is length 1553, which might be more than needed
 		#self.reactions_with_catalyst = metabolism.reactions_with_catalyst
 		hi = 5
+
+		# load in the complex IDs and reaction IDs
+		complex_IDs = sim_data.process.complexation.ids_complexes # todo: note: I do not think this has ALL complexes in it, like E20 and E10 are not in it?
+		self.complex_IDs = [i[:-3] for i in complex_IDs]
+		complexation_reactions = sim_data.process.complexation.ids_reactions
+
+		# create a dictionary mapping the complexation reaction IDs to their complex IDs (and vice versa)
+		# note: do so using this function becuase the above two variables are not a 1:1 match despite being the same length
+		self.complexation_reactions_df = pd.read_csv(complexation_reactions_tsv_path, sep='\t',
+													 comment="#")
+		self.find_full_complexation_reaction_dicts()
+
 		# technically, I belive there are around 8k catalysts. However, I think I only want the ones involved in the 415 relevant reactions:
 		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 		self.constrainedReactions = np.array(enzymeKineticsReader.readAttribute("constrainedReactions")) # length: 415
@@ -186,28 +221,32 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# create a complexation reaction to complex dictionary:
 		# get the complex ids:
-		complex_IDs = sim_data.process.complexation.ids_complexes
-		self.complex_IDs = [i[:-3] for i in complex_IDs]
-		complexation_reactions = sim_data.process.complexation.ids_reactions
-		#complexation_reactions = [i[:-3] for i in complexation_reactions]
-		self.complex_IDs_to_reactions = dict(zip(self.complex_IDs, complexation_reactions))
-		self.complex_reactions_to_IDs = dict(zip(complexation_reactions, self.complex_IDs))
+		# complex_IDs = sim_data.process.complexation.ids_complexes
+		# self.complex_IDs = [i[:-3] for i in complex_IDs] # TODO: this is not in the same order as complexes_IDs!!!!! CANNOT USE THIS!
+		# complexation_reactions = sim_data.process.complexation.ids_reactions
+		# #complexation_reactions = [i[:-3] for i in complexation_reactions]
+		# self.complex_IDs_to_reactions = dict(zip(self.complex_IDs, complexation_reactions)) # todo: cannot use this dictionary
+		# self.complex_reactions_to_IDs = dict(zip(complexation_reactions, self.complex_IDs))
 		hi = 5
 		# generate a dictionary that maps the complex to the monomers inside it:
-		complex_to_monomers = {}
-		self.complexation_reactions_df = pd.read_csv(complexation_reactions_tsv_path, sep='\t', comment="#")
+		complex_to_monomers_dict = {}
+		# todo: why is complexation reactions only 1109 long? should I be doing them all? or are these the only relevant ones in the code that are used in the sims?
 		for rxn in complexation_reactions:
-			complex_ID = self.complex_reactions_to_IDs.get(rxn) # TODO: this needs to be different
+			complex_ID = self.full_complex_rxns_to_ids.get(rxn) # TODO: this needs to be different
 			# find the row where the complex_ID shows up:
 			idx = self.complexation_reactions_df.index[self.complexation_reactions_df['id'] == rxn].tolist()
 			hi = 5
 			if len(idx) != 1:
-				print(f"More than one index for {rxn}: {idx}") # hopefully do not get any of these
+				print(f"More than one index or no indexes for {rxn}: {idx}") # hopefully do not get any of these
 				monomers = "None"
 			else:
 				# find the substrates associated with the reaction:
-				stoich_series = self.complexation_reactions_df["stoichiometry"][idx]
-				stoich = ast.literal_eval(stoich_series.iloc[0])
+				#stoich_series = self.complexation_reactions_df["stoichiometry"][idx]
+				#stoich = ast.literal_eval(stoich_series.iloc[0])
+				# todo: trying to do the json version instead incase the null is causing fail here too:
+				stoich_string = self.complexation_reactions_df["stoichiometry"].iloc[idx[0]]
+				hi = 5
+				stoich = json.loads(stoich_string)  # trying this to handle the null values
 				# get a list of the dictionary keys
 				monomers_list = list(stoich.keys())
 				# remove the complex itself from the keys:
@@ -217,54 +256,62 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					monomers_list.remove(complex_ID)
 				# check if there are other monomers in the list:
 				hi = 4
-				print("monomers_list AFTER:", monomers_list)
 
 				substrate_complexes = self.find_complexes(monomers_list)
 				hi = 5
 				# there are some complexes that are not in the self.complex_reactions_to_IDs dictionary, so this goes to another funciton that can break down everything
 				if len(substrate_complexes) != 0:
+					hi = 5
 					monomer_roots = self.find_monomer_roots(monomers_list)
 					monomers = monomer_roots
+					print("monomers_list AFTER:", monomers)
 
 				else:
 					monomers = monomers_list
+					print("monomers_list AFTER:", monomers)
+
 			# append to the dictionary:
 			hi = 5
-			complex_to_monomers[complex_ID] = monomers
+			complex_to_monomers_dict[complex_ID] = monomers
 
 		# ok so now I have the massive dictionary, time to find the catalysts:
-
+		hi = 5
 		metabolic_reaction_to_catalysts = {}
 		self.metabolic_reactions_df = pd.read_csv(metabolic_reactions_tsv_path, sep='\t', comment="#")
 		for rxn in self.constrainedReactions:
 			idx = self.metabolic_reactions_df.index[
 				self.metabolic_reactions_df['id'] == rxn].tolist()
 			if len(idx) != 1:
-				print(f"More than one index for metabloic reaction {rxn}: {idx}") # hopefully do not get any of these
+				if len(idx) == 0:
+					print(f"no catalysts for {rxn}")
+				if len(idx) > 1:
+					print(f"More than one index for metabloic reaction {rxn}: {idx}") # hopefully do not get any of these
 				monomers = "None"
 			else:
 				# find the substrates associated with the reaction:
-				stoich_series = self.metabolic_reactions_df["catalyzed_by"][idx]
-				stoich = ast.literal_eval(stoich_series.iloc[0])
-				# get a list of the dictionary keys
-				monomers_list = stoich.keys()
+				substrate_list = self.metabolic_reactions_df["catalyzed_by"].iloc[idx]
+				hi = 5
 				# check if there are other complexes in the list:
-				substrate_complexes = self.find_complexes(monomers_list)
+				substrate_complexes = self.find_complexes(substrate_list)
 				if substrate_complexes != 0:
-					monomer_roots = self.find_monomer_roots(monomers_list)
+					monomer_roots = self.find_monomer_roots(substrate_list)
 					monomers = monomer_roots
 				else:
-					monomers = monomers_list
+					monomers = substrate_list
 			# append to the dictionary:
 			metabolic_reaction_to_catalysts[rxn] = monomers
 
 		# finally, search the monomers in the in the input list and see if any show up in metabolic reactions plotted:
 		relevant_reactions = {}
 		for monomer in IMPORTANT_MONOMERS:
-			found_reaction = any(
-				monomer in v if isinstance(v, list) else monomer == v
-				for v in metabolic_reaction_to_catalysts.values())
-			relevant_reactions[monomer] = found_reaction
+			matches = []
+			for reaction, catalysts in metabolic_reaction_to_catalysts.items():
+				hi = 5
+				if isinstance(catalysts, list) and monomer in catalysts:
+
+					matches.append(reaction)
+			relevant_reactions[monomer] = matches
+
 
 		# return the reactions with relevancy:
 		return(relevant_reactions)
