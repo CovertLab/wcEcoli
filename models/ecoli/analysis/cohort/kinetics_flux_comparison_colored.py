@@ -392,6 +392,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		#todo: create a gene ID to protein ID dictionary, so that I can map the WCM gene implementation dashboard data into this
 
 		# finally, search the monomers in the in the input list and see if any show up in metabolic reactions plotted:
+		hi = 5
 		relevant_reactions = {}
 		for monomer in IMPORTANT_MONOMERS:
 			matches = []
@@ -469,6 +470,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
+		hello = self.load_data(simDataFile)
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
 		kcatOnlyReactions = constraint_is_kcat_only
 		kmAndKcatReactions = ~constraint_is_kcat_only
