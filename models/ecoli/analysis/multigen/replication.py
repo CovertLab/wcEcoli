@@ -23,8 +23,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		allDir = self.ap.get_cells()
 
 		# noinspection PyTypeChecker
-		fig, axesList = plt.subplots(6, sharex = True)
-		fig.set_size_inches(11, 11)
+		fig, axesList = plt.subplots(8, sharex = True)
+		fig.set_size_inches(11, 14)
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
 			time = TableReader(os.path.join(simOutDir, "Main")).readColumn("time") / 60. / 60.
@@ -81,6 +81,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			axesList[5].plot(time, criticalMassPerOriC, linewidth=2)
 			axesList[5].set_ylabel("Critical mass\nper oriC")
 			axesList[5].set_xlim([0, time.max()])
+
+			# Critical initiation mass
+			axesList[6].plot(time, criticalInitiationMass, linewidth=2)
+			axesList[6].set_ylabel("Critical initiation\nmass (fg)")
+			axesList[6].set_xlim([0, time.max()])
+
+			# Total mass
+			axesList[7].plot(time, totalMass, linewidth=2)
+			axesList[7].set_ylabel("Total Mass (fg)")
+			axesList[7].set_xlim([0, time.max()])
 
 		axesList[0].set_title("Replication plots")
 		axesList[-1].set_xlabel("Time (hr)")
