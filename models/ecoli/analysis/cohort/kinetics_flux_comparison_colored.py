@@ -25,6 +25,7 @@ os.chdir(os.path.expanduser('~/wcEcoli/'))
 metabolic_reactions_tsv_path = "reconstruction/ecoli/flat/metabolic_reactions.tsv"
 complexation_reactions_tsv_path = "reconstruction/ecoli/flat/complexation_reactions.tsv"
 metabolism_kinetics_tsv_path = "reconstruction/ecoli/flat/metabolism_kinetics.tsv"
+WCM_metabolism_gene_xlsx_path = "out/data_tables/WCM_gene_implementation_table_metabolism_06042025.xlsx"
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
@@ -298,7 +299,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				enzyme_list = json.loads(enzyme_string)
 				# check if there are other complexes in the list:
 				substrate_complexes = self.find_complexes(enzyme_list)
-				if substrate_complexes != 0:
+				if len(substrate_complexes) != 0:
 					hi = 5
 					monomer_roots = self.find_monomer_roots(enzyme_list)
 					monomers = monomer_roots
@@ -353,7 +354,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						enzyme_list = [enzyme_string]
 						# check if there are other complexes in the list:
 						enzyme_complexes = self.find_complexes(enzyme_list)
-						if enzyme_complexes != 0:
+						if len(enzyme_complexes) != 0:
 							hi = 5
 							monomer_roots = self.find_monomer_roots(enzyme_list)
 							monomers = monomer_roots
@@ -368,7 +369,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				enzyme_list = [enzyme_string]
 				# check if there are other complexes in the list:
 				enzyme_complexes = self.find_complexes(enzyme_list)
-				if enzyme_complexes != 0:
+				if len(enzyme_complexes) != 0:
 					hi = 5
 					monomer_roots = self.find_monomer_roots(enzyme_list)
 					monomers = monomer_roots
@@ -389,9 +390,73 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# check if any matches between the substrates in the kinetics file appear:
 		hi = 5
-		monomer_IDs = sim_data.process.translation.monomer_data["id"]
+		all_monomer_IDs = [i[:-3] for i in sim_data.process.translation.monomer_data["id"]]
+
+		kinetic_reactions_with_monomer_substrates = {}
+		for rxn in kinetic_reaction_IDs:
+			idx = self.metabolism_kinetics_df.index[
+				self.metabolism_kinetics_df['reactionID'] == rxn].tolist()
+			if len(idx) != 1:
+				if len(idx) == 0:
+					print(f"no catalysts for {rxn}")
+					continue
+				if len(idx) > 1:
+					print(f"More than one index for kinetic reaction {rxn}: {idx}")
+					if rxn in kinetic_reaction_to_catalysts.keys():
+						print("Skipping repeat appearance of:", rxn)
+						continue
+					else:
+						idx = [idx[0]]
+						print(f"Using first appearance of reaction {rxn} at index {idx}")
+						# check if the substrate is a monomer or complex comprised of monomers:
+						substrate_string = self.metabolism_kinetics_df["substrateIDs"].iloc[idx[0]]
+						substrate_list = json.loads(substrate_string)
+						monomers_caught = []
+						for substrate in substrate_list:
+							if substrate in all_monomer_IDs:
+								monomer_ID = all_monomer_IDs[
+									np.where(all_monomer_IDs == substrate)]
+								monomers_caught.append(monomer_ID)
+							# check if the substrate is a complex:
+							substrate_complexes = self.find_complexes(substrate)
+							if len(substrate_complexes) != 0:
+								monomer_roots = self.find_monomer_roots(substrate_complexes)
+								for monomer in monomer_roots:
+									if monomer in all_monomer_IDs:
+										monomers_caught.append(monomer)
+						if len(monomers_caught) != 0:
+							kinetic_reactions_with_monomer_substrates[rxn] = monomers_caught
+
+			else:
+				# check if the substrate is a monomer or complex comprised of monomers:
+				substrate_string = self.metabolism_kinetics_df["substrateIDs"].iloc[idx[0]]
+				substrate_list = json.loads(substrate_string)
+				monomers_caught = []
+				for substrate in substrate_list:
+					if substrate in all_monomer_IDs:
+						print(substrate)
+						hi = 89
+						#monomer_idx = all_monomer_IDs.index(substrate)
+						#monomer_ID = all_monomer_IDs[monomer_idx] # doing it this way in case only a slice matches
+						monomers_caught.append(substrate)
+					# check if the substrate is a complex:
+					substrate_complexes = self.find_complexes(substrate)
+					if len(substrate_complexes) != 0:
+						monomer_roots = self.find_monomer_roots(substrate_complexes)
+						for monomer in monomer_roots:
+							if monomer in all_monomer_IDs:
+								monomers_caught.append(monomer)
+				if len(monomers_caught) != 0:
+					kinetic_reactions_with_monomer_substrates[rxn] = monomers_caught
 
 
+		hi = 54
+
+
+		# check if any of the metabolism genes implemented are here:
+		self.WCM_gene_implementation_df = pd.read_excel(WCM_metabolism_gene_xlsx_path)
+
+		hi = 65
 
 
 		# return the reactions with relevancy:
