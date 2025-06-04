@@ -24,7 +24,7 @@ from models.ecoli.analysis import cohortAnalysisPlot
 os.chdir(os.path.expanduser('~/wcEcoli/'))
 metabolic_reactions_tsv_path = "reconstruction/ecoli/flat/metabolic_reactions.tsv"
 complexation_reactions_tsv_path = "reconstruction/ecoli/flat/complexation_reactions.tsv"
-
+metabolism_kinetics_tsv_path = "reconstruction/ecoli/flat/metabolism_kinetics.tsv"
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
@@ -189,90 +189,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return final_stoich_flattened
 
 	hi = 1
-	def find_monomer_roots2(self, stoich_list):
-		# find the monomer roots of each complex:
-		original_stoich_list = stoich_list
-
-		# determine if any substrates are complexes too:
-		substrate_complexes = self.find_complexes(original_stoich_list)
-		substrate_complexes = list(substrate_complexes)
-		hi = 5
-		# remove the complexes that have been found:
-		new_stoich_list = original_stoich_list.copy()
-		hi = 5
-		for complex in substrate_complexes:
-			new_stoich_list.remove(complex)
-
-		monomers_caught = []
-		substrate_complexes_caught = []
-		substrate_complexes_updated = substrate_complexes
-		while len(substrate_complexes_updated) != 0:
-			new_substrates = []
-			for complex in substrate_complexes_updated:
-				print(len(substrate_complexes_updated), substrate_complexes_updated)
-				print("current complex:", complex)
-				#rxn = self.complex_IDs_to_reactions.get(complex) # this does not work actually ughhhhh
-				rxn = self.find_reaction_ID_from_complex(complex)
-
-
-				# get the
-				idx = self.complexation_reactions_df.index[
-					self.complexation_reactions_df['id'] == rxn].tolist()
-				if len(idx) != 1:
-					print(
-						f"More than one index for {rxn}: {idx}")  # hopefully do not get any of these
-					monomers = "None"
-
-				# find the substrates associated with the reaction:
-				stoich_string = self.complexation_reactions_df["stoichiometry"].iloc[idx[0]]
-				hi = 5
-				stoich = json.loads(stoich_string)
-
-				# get a list of the dictionary keys
-				monomers_list = list(stoich.keys())
-				# remove the complex itself from the keys:
-				monomers_list.remove(complex)
-
-				# put the new substrate list in the mix:
-				new_substrates.append(monomers_list)
-
-				# remove the current complex from the list of substrates:
-				substrate_complexes_updated.remove(complex)
-				substrate_complexes_caught.append(complex)
-
-				# check if the new monomers are complexes too:
-				new_complexes = self.find_complexes(monomers_list)
-				if len(new_complexes) != 0:
-					if complex == 'ATPD-CPLX':
-						hi = 5
-					# append the complexes within this complex to the list if they exist! they technically should be handled!
-
-					# remove the complexes form the list:
-					print("complex with a complex inside:", complex)
-					print(monomers_list)
-					hi = 5
-					# a couple complexes within complexes, so those need to be taken out one by one
-					for comp in new_complexes:
-						monomers_list.remove(comp)
-						substrate_complexes_updated.append(comp)
-					hi = 5
-					# append left over monomers to monomer list (I do it this way so the item handleing at the bottom is consistent)
-					for monomer in monomers_list:
-						monomers_caught.append([monomer])
-					hi = 6
-				else:
-					monomers_caught.append(monomers_list)
-
-		hi= 5
-		final_stoich = []
-		for monomer in new_stoich_list:
-			hi = 5
-			final_stoich.append([monomer])
-		for monomer in monomers_caught:
-			final_stoich.append(monomer)
-		hi = 5
-		final_stoich_flattened = [item[0] for item in final_stoich]
-		return final_stoich_flattened
 
 	def load_data(self, simDataFile):
 		# code  from processes/metabolism.py  and debug/metabolism.py
@@ -281,6 +197,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sim_data = self.read_pickle_file(simDataFile)
 		simOutDir = os.path.join(allDir[0], "simOut") # only need one directory to access the things needed here
 
+		# todo: check what these are:
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		#self.catalyst_ids = metabolism.catalyst_ids # this is length 1553, which might be more than needed
 		#self.reactions_with_catalyst = metabolism.reactions_with_catalyst
@@ -288,7 +205,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# load in the complex IDs and reaction IDs
 		complex_IDs = sim_data.process.complexation.ids_complexes # todo: note: I do not think this has ALL complexes in it, like E20 and E10 are not in it?
-		self.complex_IDs = [i[:-3] for i in complex_IDs]
+		self.complex_IDs = [i[:-3] for i in complex_IDs] # todo: do i even use these?
 		complexation_reactions = sim_data.process.complexation.ids_reactions
 
 		# create a dictionary mapping the complexation reaction IDs to their complex IDs (and vice versa)
@@ -316,7 +233,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		complex_to_monomers_dict = {}
 		# todo: why is complexation reactions only 1109 long? should I be doing them all? or are these the only relevant ones in the code that are used in the sims?
 		for rxn in complexation_reactions:
-			complex_ID = self.full_complex_rxns_to_ids.get(rxn) # TODO: this needs to be different
+			complex_ID = self.full_complex_rxns_to_ids.get(rxn) #
 			# find the row where the complex_ID shows up:
 			idx = self.complexation_reactions_df.index[self.complexation_reactions_df['id'] == rxn].tolist()
 			hi = 5
@@ -359,6 +276,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			complex_to_monomers_dict[complex_ID] = monomers
 
 		# ok so now I have the massive dictionary, time to find the catalysts:
+		# todo: consider just using the above funciton for each of the complexes? but I think i did this so the output would come out consistantly formatted ie all were ["protein21", "protein2","protein1"] without extra brakets inside
 		hi = 5
 		metabolic_reaction_to_catalysts = {}
 		self.metabolic_reactions_df = pd.read_csv(metabolic_reactions_tsv_path, sep='\t', comment="#")
@@ -374,18 +292,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					print(f"More than one index for metabloic reaction {rxn}: {idx}") # hopefully do not get any of these
 				monomers = "None"
 			else:
-				# find the substrates associated with the reaction:
-				substrate_string = self.metabolic_reactions_df["catalyzed_by"].iloc[idx[0]]
+				# find the enzyme associated with the reaction:
+				enzyme_string = self.metabolic_reactions_df["catalyzed_by"].iloc[idx[0]]
 				hi = 5
-				substrate_list = json.loads(substrate_string)
+				enzyme_list = json.loads(enzyme_string)
 				# check if there are other complexes in the list:
-				substrate_complexes = self.find_complexes(substrate_list)
+				substrate_complexes = self.find_complexes(enzyme_list)
 				if substrate_complexes != 0:
 					hi = 5
-					monomer_roots = self.find_monomer_roots(substrate_list)
+					monomer_roots = self.find_monomer_roots(enzyme_list)
 					monomers = monomer_roots
 				else:
-					monomers = substrate_list
+					monomers = enzyme_list
 			# append to the dictionary:
 			metabolic_reaction_to_catalysts[rxn] = monomers
 
@@ -403,9 +321,81 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					matches.append(reaction)
 			relevant_reactions[monomer] = matches
 
+		# now check the metabolism_kinetics.tsv file for matches: (note, there are repeated reactions in this dataframe! just use the first one)
+		self.metabolism_kinetics_df = pd.read_csv(metabolism_kinetics_tsv_path, sep='\t',
+												  comment="#")
+
+		kinetic_reaction_IDs = self.metabolism_kinetics_df["reactionID"]
+		kinetic_reaction_enzymes = self.metabolism_kinetics_df["enzymeID"]
+		kinetic_reaction_substrates = self.metabolism_kinetics_df["substrateIDs"]
+
+		# map these!
+		kinetic_reaction_to_catalysts = {}
+		for rxn in kinetic_reaction_IDs:
+			idx = self.metabolism_kinetics_df.index[
+				self.metabolism_kinetics_df['reactionID'] == rxn].tolist()
+			if len(idx) != 1:
+				if len(idx) == 0:
+					print(f"no catalysts for {rxn}")
+					monomers = "None"
+				if len(idx) > 1:
+					print(f"More than one index for kinetic reaction {rxn}: {idx}")
+					if rxn in kinetic_reaction_to_catalysts.keys():
+						print("Skipping repeat appearance of:",rxn)
+						continue
+					else:
+						idx = [idx[0]]
+						print(f"Using first appearance of reaction {rxn} at index {idx}")
+						# find the enzymes associated with the reaction (in this file, there seems to only be one per):
+						enzyme_string = self.metabolism_kinetics_df["enzymeID"].iloc[idx[0]]
+						hi = 5
+						print(rxn, enzyme_string)
+						enzyme_list = [enzyme_string]
+						# check if there are other complexes in the list:
+						enzyme_complexes = self.find_complexes(enzyme_list)
+						if enzyme_complexes != 0:
+							hi = 5
+							monomer_roots = self.find_monomer_roots(enzyme_list)
+							monomers = monomer_roots
+						else:
+							monomers = enzyme_list
+
+			else:
+				# find the enzymes associated with the reaction (in this file, there seems to only be one per):
+				enzyme_string = self.metabolism_kinetics_df["enzymeID"].iloc[idx[0]]
+				hi = 5
+				print(rxn, enzyme_string)
+				enzyme_list = [enzyme_string]
+				# check if there are other complexes in the list:
+				enzyme_complexes = self.find_complexes(enzyme_list)
+				if enzyme_complexes != 0:
+					hi = 5
+					monomer_roots = self.find_monomer_roots(enzyme_list)
+					monomers = monomer_roots
+				else:
+					monomers = enzyme_list
+			# append to the dictionary:
+			kinetic_reaction_to_catalysts[rxn] = monomers
+
+		# find relevant kinetics reaction matches:
+		relevant_kinetics_reactions = {}
+		for monomer in IMPORTANT_MONOMERS:
+			matches = []
+			for reaction, catalysts in metabolic_reaction_to_catalysts.items():
+				hi = 5
+				if isinstance(catalysts, list) and monomer in catalysts:
+					matches.append(reaction)
+			relevant_kinetics_reactions[monomer] = matches
+
+		# check if any matches between the substrates in the kinetics file appear:
+		hi = 5
+		monomer_IDs = sim_data.process.translation.monomer_data["id"]
+
+
+
 
 		# return the reactions with relevancy:
-		return(relevant_reactions)
+		return relevant_reactions
 
 
 
@@ -470,7 +460,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
-		hello = self.load_data(simDataFile)
+		hello, yellow = self.load_data(simDataFile)
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
 		kcatOnlyReactions = constraint_is_kcat_only
 		kmAndKcatReactions = ~constraint_is_kcat_only
