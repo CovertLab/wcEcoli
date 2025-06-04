@@ -211,7 +211,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			hi = 6
 			# TODO: left off here
 			protein_ID = gene_to_monomer_dict.get(gene_ID)
-			WCM_gene_implementation_df["Gene ID (EcoCyc)"][idx] == protein_ID
+			WCM_gene_implementation_df.loc[idx, "Monomer ID"] = protein_ID
+
 
 		self.WCM_metabolic_protein_implementation_df = WCM_gene_implementation_df[["Monomer ID", "Gene name", "Macklin et al. (2020)", "Latest version (20220602)"]]
 
