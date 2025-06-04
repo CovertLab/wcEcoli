@@ -26,6 +26,7 @@ metabolic_reactions_tsv_path = "reconstruction/ecoli/flat/metabolic_reactions.ts
 complexation_reactions_tsv_path = "reconstruction/ecoli/flat/complexation_reactions.tsv"
 metabolism_kinetics_tsv_path = "reconstruction/ecoli/flat/metabolism_kinetics.tsv"
 WCM_metabolism_gene_xlsx_path = "out/data_tables/WCM_gene_implementation_table_metabolism_06042025.xlsx"
+ecocyc_proteins_to_genes_xlsx_path = "out/data_tables/ecocyc_proteins_to_genes_05302025.xlsx"
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
@@ -190,6 +191,31 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return final_stoich_flattened
 
 	hi = 1
+
+	def generate_WCM_implementation_df(self):
+		# first, map the gene names to protein names according to Ecocyc:
+		ecocyc_proteins_to_genes_df = pd.read_excel(ecocyc_proteins_to_genes_xlsx_path)
+		gene_to_monomer_dict = {}
+		for row in range(len(ecocyc_proteins_to_genes_df["Proteins"])):
+			gene = ecocyc_proteins_to_genes_df["Genes"][row]
+			protein = ecocyc_proteins_to_genes_df["Proteins"][row]
+			gene_to_monomer_dict[gene] = protein
+
+		# Add the proteins to the data WCM gene implementation data table:
+		WCM_gene_implementation_df = pd.read_excel(WCM_metabolism_gene_xlsx_path)
+		WCM_gene_implementation_df["Monomer ID"] = None
+		gene_IDs = WCM_gene_implementation_df["Gene ID (EcoCyc)"]
+		for gene_ID in gene_IDs:
+			idx = WCM_gene_implementation_df.index[
+				WCM_gene_implementation_df['Gene ID (EcoCyc)'] == gene_ID].tolist()
+			hi = 6
+			# TODO: left off here
+			protein_ID = gene_to_monomer_dict.get(gene_ID)
+			WCM_gene_implementation_df["Gene ID (EcoCyc)"][idx] == protein_ID
+
+		self.WCM_metabolic_protein_implementation_df = WCM_gene_implementation_df[["Monomer ID", "Gene name", "Macklin et al. (2020)", "Latest version (20220602)"]]
+
+
 
 	def load_data(self, simDataFile):
 		# code  from processes/metabolism.py  and debug/metabolism.py
@@ -454,9 +480,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 		# check if any of the metabolism genes implemented are here:
-		self.WCM_gene_implementation_df = pd.read_excel(WCM_metabolism_gene_xlsx_path)
+		self.generate_WCM_implementation_df()
 
 		hi = 65
+
+
 
 
 		# return the reactions with relevancy:
