@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECT_PDR_COMBO = 0 # select the protein degradation rate combo to use
+SELECT_PDR_COMBO = 11 # select the protein degradation rate combo to use
 
 class Translation(object):
 	""" Translation """
@@ -541,8 +541,8 @@ class Translation(object):
 			protins_of_interest = ['G7122-MONOMER', 'EG12454-MONOMER', 'EG12794-MONOMER']
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in protins_of_interest:
-					deg_rate[i] = np.log(2) / (.6*60) # 36 seconds
-					deg_rate_source_id[i] = '36_seconds'
+					deg_rate[i] = np.log(2) / (120*60) # 2 hours
+					deg_rate_source_id[i] = '2_hours'
 
 				# Use measured degradation rates if available
 				# note: this must be elif, otherwise it will get reassigned!
