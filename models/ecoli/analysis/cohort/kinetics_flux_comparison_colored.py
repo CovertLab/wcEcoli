@@ -482,6 +482,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# check if any of the metabolism genes implemented are here:
 		self.generate_WCM_implementation_df()
+		# todo: go to the break point in the function and see if you can see the 415 substrate ids!
 
 		hi = 65
 
