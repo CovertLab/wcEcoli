@@ -244,8 +244,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# technically, I belive there are around 8k catalysts. However, I think I only want the ones involved in the 415 relevant reactions:
 		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
-		self.constrainedReactions = np.array(enzymeKineticsReader.readAttribute("constrainedReactions")) # length: 415
-		#enzymeIDs = enzymeKineticsReader.readAttribute("enzymeIDs") # lenth: 307 (maybe multiple reactions use the same enzyme??)
+		#self.constrainedReactions_in_load_data = np.array(enzymeKineticsReader.readAttribute("constrainedReactions")) # length: 415
+		enzymeIDs = enzymeKineticsReader.readAttribute("enzymeIDs") # lenth: 307 (maybe multiple reactions use the same enzyme??)
 		enzymeKineticsReader.close()
 
 		# create a complexation reaction to complex dictionary:
@@ -356,6 +356,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		kinetic_reaction_IDs = self.metabolism_kinetics_df["reactionID"]
 		kinetic_reaction_enzymes = self.metabolism_kinetics_df["enzymeID"]
 		kinetic_reaction_substrates = self.metabolism_kinetics_df["substrateIDs"]
+		hi = 6
+		enzymeIDs = [i[:-3] for i in enzymeIDs]
+		self.shared_kinetic_enzymes = set(enzymeIDs) & set(kinetic_reaction_enzymes) # all the enzymeIDs in the reader exist in the kinetics reaction enzymes list!
+		self.non_shared_kinetic_enzymes = set(enzymeIDs) ^ set(kinetic_reaction_enzymes)
 
 		# map these!
 		kinetic_reaction_to_catalysts = {}
@@ -490,7 +494,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 		# return the reactions with relevancy:
-		return relevant_reactions
+		return relevant_reactions, kinetic_reaction_IDs, kinetic_reaction_to_catalysts, kinetic_reaction_enzymes,reaction_IDs
 
 
 
@@ -524,16 +528,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 			allTargetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("targetFluxes").T / coefficient).T
 			allActualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (enzymeKineticsReader.readColumn("actualFluxes").T / coefficient).T
+			hi = 0
 			kineticsConstrainedReactions = np.array(enzymeKineticsReader.readAttribute("kineticsConstrainedReactions"))
 			self.reaction_IDs =  np.array(enzymeKineticsReader.readAttribute("constrainedReactions"))
 			constraint_is_kcat_only = np.array(enzymeKineticsReader.readAttribute('constraint_is_kcat_only'))
 
 			allTargetFluxes = allTargetFluxes.asNumber(units.mmol / units.g / units.h)
 			allActualFluxes = allActualFluxes.asNumber(units.mmol / units.g / units.h)
-
+			h = 4
 			allTargetAve = np.nanmean(allTargetFluxes[burnIn, :], axis = 0)
 			allActualAve = np.nanmean(allActualFluxes[burnIn, :], axis = 0)
-
+			hello = 2
 			if len(targetFluxList) == 0:
 				targetFluxList = np.array([allTargetAve])
 				actualFluxList = np.array([allActualAve])
@@ -555,10 +560,26 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
-		hello, yellow = self.load_data(simDataFile)
+		relevant_reactions, kinetic_reaction_IDs, kinetic_reaction_to_catalysts, kinetic_reaction_enzymes, reaction_IDs = self.load_data(simDataFile)
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
 		kcatOnlyReactions = constraint_is_kcat_only
 		kmAndKcatReactions = ~constraint_is_kcat_only
+		shared_values = set(kineticsConstrainedReactions) & set(kinetic_reaction_IDs)
+		print(len(shared_values)) # len = 218??
+		hi = 5
+		# what is shared between kineticsConstrainedReactions (len 415) and sim_data.process.metabolism.kinetic_constraint_reactions (416)
+		shared_values2 = set(kineticsConstrainedReactions) & set(sim_data.process.metabolism.kinetic_constraint_reactions)
+		print(len(shared_values2)) # len = 415  (missing one reaction that I cannot find anywhere
+
+		# find how many of the 415 fall in the total list of the reactions from metabolic_reactions.tsv (len = 6625
+		shared_values3 = set(kineticsConstrainedReactions) & set(
+			reaction_IDs)
+		print(len(shared_values3))  # len = 246?? hmmm
+		hi = 6
+
+		# test out readers:
+		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+
 
 		# categorize how well the actual flux matches the target flux
 		thresholds = [2, 10] # TODO: might want to play around with this
