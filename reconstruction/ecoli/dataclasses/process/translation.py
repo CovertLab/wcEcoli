@@ -541,8 +541,8 @@ class Translation(object):
 			protins_of_interest = ['G7122-MONOMER', 'EG12454-MONOMER', 'EG12794-MONOMER']
 			for i, protein in enumerate(all_proteins):
 				if protein['id'] in protins_of_interest:
-					deg_rate[i] = np.log(2) / (240*60) # 4 hours
-					deg_rate_source_id[i] = '4_hours'
+					deg_rate[i] = np.log(2) / (5*60*60) # 5 hours
+					deg_rate_source_id[i] = '5_hours'
 
 				# Use measured degradation rates if available
 				# note: this must be elif, otherwise it will get reassigned!
