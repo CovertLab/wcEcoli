@@ -37,7 +37,6 @@ SELECTED_VARIANT_INDEXES = [
 	8,  # Expression factor: 8.5, Translation Efficiency: 2.20, Doubling time: 66
 	1,  # Expression factor: 8.5, Translation Efficiency: 3.25, Doubling time: 78
 	]
-
 VAR_TO_COLOR = {
 	0: poster_colors["poster_gold"],
 	1: poster_colors["poster_green"],
@@ -45,13 +44,13 @@ VAR_TO_COLOR = {
 	23: poster_colors["poster_blue"],
 	}
 
-# FOR LOCAL TESTING
-SELECTED_VARIANT_INDEXES = [0, 20, 21]
-VAR_TO_COLOR = {
-	0: poster_colors["poster_gold"],
-	20: poster_colors["poster_green"],
-	21: poster_colors["poster_purple"],
-	}
+# # FOR LOCAL TESTING
+# SELECTED_VARIANT_INDEXES = [0, 20, 21]
+# VAR_TO_COLOR = {
+# 	0: poster_colors["poster_gold"],
+# 	20: poster_colors["poster_green"],
+# 	21: poster_colors["poster_purple"],
+# 	}
 
 
 
