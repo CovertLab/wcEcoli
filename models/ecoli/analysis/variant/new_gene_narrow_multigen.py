@@ -25,7 +25,7 @@ poster_colors = {
 }
 
 START_GEN_INDEX = 7
-END_GEN_INDEX = 11
+END_GEN_INDEX = 13
 
 SELECTED_SEED_INDEXES = [
 			0, 1, 2, 3, 4, 5, 6, 7]
@@ -134,7 +134,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				total_plots = 30 # TODO: Modularize and get rid of this magic number
 				mpl.rcParams['axes.spines.right'] = False
 				mpl.rcParams['axes.spines.top'] = False
-				plt.figure(figsize = (12, total_plots*3))
+				plt.figure(figsize = (14, total_plots*3))
 
 				plot_num = 1
 				ax1 = plt.subplot(total_plots, 1, plot_num)
@@ -370,6 +370,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						plot_num += 1
 
 						# Doubling Time
+						plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 						for variant_index in variants_set:
 							cell_paths = all_cells_set[variant_index]
 							time = time_set[variant_index]
