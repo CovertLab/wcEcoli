@@ -180,6 +180,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								 label=f"Variant {variant_index}")
 						plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
 						plt.ylabel("Initial Cell Mass Ratio", fontsize=8)
+						plt.ylim(0.9, 2.5)
 				plt.xlabel("Time (min)", fontsize=8)
 				plt.legend(fontsize=6, loc='upper left', ncol=2)
 				plot_num += 1
@@ -226,6 +227,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
 						plt.ylabel("Initial Total RNAP Counts Ratio", fontsize=8)
 						all_total_rnap_counts_ratio_dict[seed_index][variant_index] = total_rnap_counts_ratio
+						plt.ylim(0.9, 2.5)
 				plt.xlabel("Time (min)", fontsize=8)
 				plt.legend(fontsize=6, loc='upper left', ncol=2)
 				plot_num += 1
@@ -275,6 +277,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
 						plt.ylabel("Initial Total Ribosome Counts Ratio", fontsize=8)
 						all_total_ribosome_counts_ratio_dict[seed_index][variant_index] = total_ribosome_counts_ratio
+						plt.ylim(0.9, 2.5)
 				plt.xlabel("Time (min)", fontsize=8)
 				plt.legend(fontsize=6, loc='upper left', ncol=2)
 				plot_num += 1
@@ -316,6 +319,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						plt.ylabel("Initial Total RNAP Counts Ratio Diff", fontsize=8)
 					plt.xlabel("Time (min)", fontsize=8)
 					plt.legend(fontsize=6, loc='lower left', ncol=2)
+					plt.ylim(-1.0, 1.0)
 					plot_num += 1
 
 				# Plot difference between total Ribosome ratio and the total Ribosome ratio for variant 0
@@ -339,6 +343,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						plt.ylabel("Initial Total Ribosome Counts Ratio Diff", fontsize=8)
 					plt.xlabel("Time (min)", fontsize=8)
 					plt.legend(fontsize=6, loc='lower left', ncol=2)
+					plt.ylim(-1.0, 1.0)
 					plot_num += 1
 
 					if plot_type == "ratios":
