@@ -13,6 +13,7 @@ from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import (
 	exportFigure, read_stacked_columns, read_stacked_bulk_molecules,
 	read_bulk_molecule_counts)
+from wholecell.io.tablereader import TableReader
 
 # Remove first N gens from plot
 IGNORE_FIRST_N_GENS = 16
@@ -69,11 +70,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_time_dict = {}
 		all_time_no_first_dict = {}
 		all_num_time_steps_dict = {}
+		all_gen_start_index_dict = {}
+		all_gen_end_index_dict = {}
 		for seed_index in selected_seed_indexes:
 			all_cells_dict[seed_index] = {}
 			all_time_dict[seed_index] = {}
 			all_time_no_first_dict[seed_index] = {}
 			all_num_time_steps_dict[seed_index] = {}
+			all_gen_start_index_dict[seed_index] = {}
+			all_gen_end_index_dict[seed_index] = {}
 
 		# Loop through variant indexes
 		for i, variant_index in enumerate(selected_variant_indexes):
@@ -95,11 +100,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				num_time_steps = read_stacked_columns(
 					all_cells, 'Main', 'time',
 					fun=lambda x: len(x)).squeeze()
+				dt = read_stacked_columns(
+					all_cells, 'Main', 'time',
+					fun=lambda x: (x[-1] - x[0]) / 60.).squeeze()
+				gen_labels = np.repeat(np.arange(len(dt)), num_time_steps)
+				unique_gen_labels = np.unique(gen_labels)
+				gen_start_index = np.array(
+					[gen_labels.tolist().index(i) for i in unique_gen_labels])
+				gen_end_index = np.concatenate((
+					np.array(gen_start_index[1:] - 1), np.array([len(gen_labels) - 1])))
 
 				all_cells_dict[seed_index][variant_index] = all_cells
 				all_time_dict[seed_index][variant_index] = time
 				all_time_no_first_dict[seed_index][variant_index] = time_no_first
 				all_num_time_steps_dict[seed_index][variant_index] = num_time_steps
+				all_gen_start_index_dict[seed_index][variant_index] = gen_start_index
+				all_gen_end_index_dict[seed_index][variant_index] = gen_end_index
 
 
 
@@ -158,15 +174,107 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					plt.ylabel("Cell Mass (fg)", fontsize=8)
 				elif plot_type == "ratios":
 					num_time_steps = num_time_steps_set[variant_index]
-					initial_cell_mass = read_stacked_columns(
-						cell_paths, 'Mass', 'cellMass',
-						ignore_exception=True, fun=lambda x: x[0]).squeeze()
+					gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+					initial_cell_mass = cell_mass[gen_starts]
 					initial_cell_mass_vec = np.repeat(initial_cell_mass, num_time_steps)
 					cell_mass_ratio = cell_mass / initial_cell_mass_vec
 					plt.plot(time / 60.0, cell_mass_ratio, color=color, linewidth=1,
 							 label=f"Variant {variant_index}")
 					plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
 					plt.ylabel("Initial Cell Mass Ratio", fontsize=8)
+			plt.xlabel("Time (min)", fontsize=8)
+			plt.legend(fontsize=6, loc='upper left', ncol=2)
+			plot_num += 1
+
+			# Total RNAP counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			for variant_index in variants_set:
+				cell_paths = all_cells_set[variant_index]
+				sim_dir = cell_paths[0]
+				simOutDir = os.path.join(sim_dir, 'simOut')
+				time = time_set[variant_index]
+				color = var_to_color[variant_index]
+				# Inactive
+				rnap_id = [sim_data.molecule_ids.full_RNAP]
+				(inactive_rnap_counts,) = read_stacked_bulk_molecules(
+					cell_paths, (rnap_id,), ignore_exception=True)
+				# Active
+				uniqueMoleculeCounts = TableReader(
+					os.path.join(simOutDir, "UniqueMoleculeCounts"))
+				active_rnap_index = uniqueMoleculeCounts.readAttribute(
+					"uniqueMoleculeIds").index('active_RNAP')
+				active_rnap_counts = read_stacked_columns(
+					cell_paths, 'UniqueMoleculeCounts',
+					'uniqueMoleculeCounts',
+					ignore_exception=True)[:, active_rnap_index]
+				total_rnap_counts = inactive_rnap_counts + active_rnap_counts
+				if plot_type == "counts":
+					plt.plot(time / 60.0, total_rnap_counts, color=color, linewidth=1,
+							 label=f"Variant {variant_index}")
+					plt.ylabel("Total RNAP Counts", fontsize=8)
+				elif plot_type == "ratios":
+					num_time_steps = num_time_steps_set[variant_index]
+					gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+					initial_inactive_rnap_counts = inactive_rnap_counts[
+						gen_starts]
+					initial_active_rnap_counts = active_rnap_counts[
+						gen_starts]
+					initial_total_rnap_counts = (
+						initial_inactive_rnap_counts + initial_active_rnap_counts)
+					initial_total_rnap_counts_vec = np.repeat(initial_total_rnap_counts, num_time_steps)
+					total_rnap_counts_ratio = total_rnap_counts / initial_total_rnap_counts_vec
+					plt.plot(time / 60.0, total_rnap_counts_ratio, color=color, linewidth=1,
+							 label=f"Variant {variant_index}")
+					plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
+					plt.ylabel("Initial Total RNAP Counts Ratio", fontsize=8)
+			plt.xlabel("Time (min)", fontsize=8)
+			plt.legend(fontsize=6, loc='upper left', ncol=2)
+			plot_num += 1
+
+			# Total Ribosome counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			for variant_index in variants_set:
+				cell_paths = all_cells_set[variant_index]
+				sim_dir = cell_paths[0]
+				simOutDir = os.path.join(sim_dir, 'simOut')
+				time = time_set[variant_index]
+				color = var_to_color[variant_index]
+				# Inactive
+				complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
+				complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
+				(complex_counts_30s, complex_counts_50s) = read_stacked_bulk_molecules(
+					cell_paths, (complex_id_30s, complex_id_50s), ignore_exception=True)
+				inactive_ribosome_counts = np.minimum(
+					complex_counts_30s, complex_counts_50s)
+				# Active
+				unique_molecule_counts_table = TableReader(
+					os.path.join(simOutDir, "UniqueMoleculeCounts"))
+				ribosome_index = unique_molecule_counts_table.readAttribute(
+					"uniqueMoleculeIds").index('active_ribosome')
+				active_ribosome_counts = read_stacked_columns(
+					cell_paths, 'UniqueMoleculeCounts',
+					'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
+				# Total
+				total_ribosome_counts = inactive_ribosome_counts + active_ribosome_counts
+				if plot_type == "counts":
+					plt.plot(time / 60.0, total_ribosome_counts, color=color, linewidth=1,
+							 label=f"Variant {variant_index}")
+					plt.ylabel("Total Ribosome Counts", fontsize=8)
+				elif plot_type == "ratios":
+					num_time_steps = num_time_steps_set[variant_index]
+					gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+					initial_inactive_ribosome_counts = inactive_ribosome_counts[
+						gen_starts]
+					initial_active_ribosome_counts = active_ribosome_counts[
+						gen_starts]
+					initial_total_ribosome_counts = (
+						initial_inactive_ribosome_counts + initial_active_ribosome_counts)
+					initial_total_ribosome_counts_vec = np.repeat(initial_total_ribosome_counts, num_time_steps)
+					total_ribosome_counts_ratio = total_ribosome_counts / initial_total_ribosome_counts_vec
+					plt.plot(time / 60.0, total_ribosome_counts_ratio, color=color, linewidth=1,
+							 label=f"Variant {variant_index}")
+					plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
+					plt.ylabel("Initial Total Ribosome Counts Ratio", fontsize=8)
 			plt.xlabel("Time (min)", fontsize=8)
 			plt.legend(fontsize=6, loc='upper left', ncol=2)
 			plot_num += 1
