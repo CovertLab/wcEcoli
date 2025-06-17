@@ -469,6 +469,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 								RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts / 2.0
 								RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0 / 2.0
 							gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+							gen_starts_0 = all_gen_start_index_dict[seed_index][0]
 							initial_RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts[
 								gen_starts]
 							initial_RNAP_subunit_monomer_counts_vec = np.repeat(
@@ -476,7 +477,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							RNAP_subunit_monomer_counts_ratio = (
 									RNAP_subunit_monomer_counts / initial_RNAP_subunit_monomer_counts_vec)
 							initial_RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0[
-								gen_starts]
+								gen_starts_0]
 							initial_RNAP_subunit_monomer_counts_vec_0 = np.repeat(
 								initial_RNAP_subunit_monomer_counts_0, num_time_steps_set[0])
 							RNAP_subunit_monomer_counts_ratio_0 = (
@@ -724,6 +725,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts / 2.0
 						RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0 / 2.0
 					gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+					gen_starts_0 = all_gen_start_index_dict[seed_index][0]
 					initial_RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts[
 						gen_starts]
 					initial_RNAP_subunit_monomer_counts_vec = np.repeat(
@@ -731,7 +733,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					RNAP_subunit_monomer_counts_ratio = (
 							RNAP_subunit_monomer_counts / initial_RNAP_subunit_monomer_counts_vec)
 					initial_RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0[
-						gen_starts]
+						gen_starts_0]
 					initial_RNAP_subunit_monomer_counts_vec_0 = np.repeat(
 						initial_RNAP_subunit_monomer_counts_0, num_time_steps_set[0])
 					RNAP_subunit_monomer_counts_ratio_0 = (
