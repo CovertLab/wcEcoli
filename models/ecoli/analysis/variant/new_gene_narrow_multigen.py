@@ -44,13 +44,13 @@ VAR_TO_COLOR = {
 	23: poster_colors["poster_blue"],
 	}
 
-# # FOR LOCAL TESTING
-# SELECTED_VARIANT_INDEXES = [0, 20, 21]
-# VAR_TO_COLOR = {
-# 	0: poster_colors["poster_gold"],
-# 	20: poster_colors["poster_green"],
-# 	21: poster_colors["poster_purple"],
-# 	}
+# FOR LOCAL TESTING
+SELECTED_VARIANT_INDEXES = [0, 20, 21]
+VAR_TO_COLOR = {
+	0: poster_colors["poster_gold"],
+	20: poster_colors["poster_green"],
+	21: poster_colors["poster_purple"],
+	}
 
 
 
@@ -393,6 +393,111 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						plt.legend(fontsize=6, loc='upper left', ncol=2)
 						plot_num += 1
 
+					# RNAP Subunit Protein Counts
+					RNAP_subunit_monomer_ids = sim_data.molecule_groups.RNAP_subunits
+					monomer_counts_reader = TableReader(
+						os.path.join(simOutDir, "MonomerCounts"))
+					monomer_idx_dict = {
+						monomer: i for i, monomer in enumerate(
+						monomer_counts_reader.readAttribute('monomerIds'))}
+					for i, RNAP_subunit_monomer_id in enumerate(RNAP_subunit_monomer_ids):
+						RNAP_subunit_monomer_index = monomer_idx_dict.get(
+							RNAP_subunit_monomer_id)
+						if RNAP_subunit_monomer_index is None:
+							print(
+								f"Monomer {RNAP_subunit_monomer_id} not found in MonomerCounts.")
+							continue
+						plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+						for variant_index in variants_set:
+							cell_paths = all_cells_dict[seed_index][variant_index]
+							time = all_time_dict[seed_index][variant_index]
+							num_time_steps = all_num_time_steps_dict[seed_index][variant_index]
+							color = VAR_TO_COLOR[variant_index]
+							RNAP_subunit_monomer_counts = read_stacked_columns(
+								cell_paths, 'MonomerCounts', 'monomerCounts',
+								ignore_exception=True)[:, RNAP_subunit_monomer_index].squeeze()
+							if RNAP_subunit_monomer_id == "EG10893-MONOMER[c]":
+								# Divide by 2 to account for stochiometry of RNAP subunits
+								RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts / 2.0
+							if plot_type == "counts":
+								# Plot the RNAP subunit monomer counts over time
+								plt.plot(
+									time / 60.0, RNAP_subunit_monomer_counts, color=color,
+									linewidth=1,
+									label=f"Variant {variant_index}")
+								plt.ylabel(f"{RNAP_subunit_monomer_id} Counts", fontsize=8)
+							elif plot_type == "ratios":
+								# Plot the ratio of RNAP subunit monomer counts to the initial counts
+								# at the start of each generation
+								gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+								initial_monomer_counts = RNAP_subunit_monomer_counts[gen_starts]
+								initial_monomer_counts_vec = np.repeat(initial_monomer_counts,
+																	   num_time_steps)
+								monomer_counts_ratio = RNAP_subunit_monomer_counts / initial_monomer_counts_vec
+								plt.plot(
+									time / 60.0, monomer_counts_ratio, color=color, linewidth=1,
+									label=f"Variant {variant_index}")
+								plt.axhline(y=2, color='k', linestyle='--', linewidth=0.5)
+								plt.ylabel(f"Initial {RNAP_subunit_monomer_id} Counts Ratio",
+										   fontsize=8)
+								plt.ylim(0.9, 2.5)
+						plt.xlabel("Time (min)", fontsize=8)
+						plt.legend(fontsize=6, loc='upper left', ncol=2)
+						plot_num += 1
+
+					# RNAP Subunit Protein Counts Ratio Difference
+					if plot_type == "ratios":
+						for i, RNAP_subunit_monomer_id in enumerate(RNAP_subunit_monomer_ids):
+							RNAP_subunit_monomer_index = monomer_idx_dict.get(
+								RNAP_subunit_monomer_id)
+							if RNAP_subunit_monomer_index is None:
+								print(
+									f"Monomer {RNAP_subunit_monomer_id} not found in MonomerCounts.")
+								continue
+							plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+							for variant_index in variants_set:
+								time = all_time_dict[seed_index][variant_index]
+								color = VAR_TO_COLOR[variant_index]
+								RNAP_subunit_monomer_counts = read_stacked_columns(
+									all_cells_dict[seed_index][variant_index], 'MonomerCounts',
+									'monomerCounts', ignore_exception=True)[:, RNAP_subunit_monomer_index].squeeze()
+								RNAP_subunit_monomer_counts_0 = read_stacked_columns(
+									all_cells_dict[seed_index][0], 'MonomerCounts',
+									'monomerCounts', ignore_exception=True)[:, RNAP_subunit_monomer_index].squeeze()
+								if RNAP_subunit_monomer_id == "EG10893-MONOMER[c]":
+									# Divide by 2 to account for stochiometry of RNAP subunits
+									RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts / 2.0
+									RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0 / 2.0
+								gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+								initial_RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts[
+									gen_starts]
+								initial_RNAP_subunit_monomer_counts_vec = np.repeat(
+									initial_RNAP_subunit_monomer_counts, num_time_steps_set[variant_index])
+								RNAP_subunit_monomer_counts_ratio = (
+										RNAP_subunit_monomer_counts / initial_RNAP_subunit_monomer_counts_vec)
+								initial_RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0[
+									gen_starts]
+								initial_RNAP_subunit_monomer_counts_vec_0 = np.repeat(
+									initial_RNAP_subunit_monomer_counts_0, num_time_steps_set[0])
+								RNAP_subunit_monomer_counts_ratio_0 = (
+									RNAP_subunit_monomer_counts_0 / initial_RNAP_subunit_monomer_counts_vec_0)
+								min_length = min(len(RNAP_subunit_monomer_counts_ratio),
+												 len(RNAP_subunit_monomer_counts_ratio_0))
+								RNAP_subunit_monomer_counts_ratio = RNAP_subunit_monomer_counts_ratio[:min_length]
+								RNAP_subunit_monomer_counts_ratio_0 = RNAP_subunit_monomer_counts_ratio_0[:min_length]
+								if len(time) > min_length:
+									time = time[:min_length]
+								plt.plot(
+									time / 60.0,
+									RNAP_subunit_monomer_counts_ratio - RNAP_subunit_monomer_counts_ratio_0,
+									color=color, linewidth=1, label=f"Variant {variant_index}")
+							plt.axhline(y=0, color='k', linestyle='--', linewidth=0.5)
+							plt.ylabel(f"{RNAP_subunit_monomer_id} Counts Ratio Diff",
+									   fontsize=8)
+							plt.xlabel("Time (min)", fontsize=8)
+							plt.legend(fontsize=6, loc='lower left', ncol=2)
+							plot_num += 1
+
 				# Save figure
 				print(f"\nSeed: {seed_index}, Plot Type: {plot_type}")
 				print("Total number of plots made: ", plot_num - 1)
@@ -533,6 +638,102 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					plotOutFileName + f"_rnap_ribosome_ratio_diff0_diff_seed_{seed_index}_var_{variant_index}",
 					metadata)
 				plt.close("all")
+
+				# Compare the protein counts of the RNAP subunits
+				RNAP_subunit_monomer_ids = sim_data.molecule_groups.RNAP_subunits
+				monomer_counts_reader = TableReader(
+					os.path.join(cell_paths[0], "simOut", "MonomerCounts"))
+				monomer_idx_dict = {
+					monomer: i for i, monomer in enumerate(
+						monomer_counts_reader.readAttribute('monomerIds'))}
+				plt.figure(figsize=(8, 6))
+				for i, RNAP_subunit_monomer_id in enumerate(RNAP_subunit_monomer_ids):
+					RNAP_subunit_monomer_index = monomer_idx_dict.get(
+						RNAP_subunit_monomer_id)
+					if RNAP_subunit_monomer_index is None:
+						print(
+							f"Monomer {RNAP_subunit_monomer_id} not found in MonomerCounts.")
+						continue
+					RNAP_subunit_monomer_counts = read_stacked_columns(
+						cell_paths, 'MonomerCounts', 'monomerCounts',
+						ignore_exception=True)[:, RNAP_subunit_monomer_index].squeeze()
+					RNAP_subunit_monomer_counts_0 = read_stacked_columns(
+						all_cells_dict[seed_index][0], 'MonomerCounts',
+						'monomerCounts', ignore_exception=True)[:, RNAP_subunit_monomer_index].squeeze()
+					if RNAP_subunit_monomer_id == "EG10893-MONOMER[c]":
+						# Divide by 2 to account for stochiometry of RNAP subunits
+						RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts / 2.0
+						RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0 / 2.0
+					gen_starts = all_gen_start_index_dict[seed_index][variant_index]
+					initial_RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts[
+						gen_starts]
+					initial_RNAP_subunit_monomer_counts_vec = np.repeat(
+						initial_RNAP_subunit_monomer_counts, num_time_steps)
+					RNAP_subunit_monomer_counts_ratio = (
+							RNAP_subunit_monomer_counts / initial_RNAP_subunit_monomer_counts_vec)
+					initial_RNAP_subunit_monomer_counts_0 = RNAP_subunit_monomer_counts_0[
+						gen_starts]
+					initial_RNAP_subunit_monomer_counts_vec_0 = np.repeat(
+						initial_RNAP_subunit_monomer_counts_0, num_time_steps_set[0])
+					RNAP_subunit_monomer_counts_ratio_0 = (
+						RNAP_subunit_monomer_counts_0 / initial_RNAP_subunit_monomer_counts_vec_0)
+					min_length = min(len(RNAP_subunit_monomer_counts_ratio),
+									 len(RNAP_subunit_monomer_counts_ratio_0))
+					RNAP_subunit_monomer_counts_ratio = RNAP_subunit_monomer_counts_ratio[:min_length]
+					RNAP_subunit_monomer_counts_ratio_0 = RNAP_subunit_monomer_counts_ratio_0[:min_length]
+					if len(time) > min_length:
+						time_plot = time[:min_length]
+					else:
+						time_plot = time
+					plt.plot(
+						time_plot / 60.,
+						RNAP_subunit_monomer_counts_ratio - RNAP_subunit_monomer_counts_ratio_0,
+						linewidth=1,
+						label=f"{RNAP_subunit_monomer_id} Counts Ratio Diff")
+				plt.axhline(y=0, color='k', linestyle='--', linewidth=0.5)
+				plt.xlabel("Time (min)", fontsize=8)
+				plt.ylabel(f"RNAP Subunit Protein Counts Ratio Diff", fontsize=8)
+				plt.title(f"Variant {variant_index}, Seed {seed_index}", fontsize=8)
+				plt.legend(fontsize=6, loc='upper left', ncol=2)
+				exportFigure(
+					plt, plotOutDir,
+					plotOutFileName + f"_RNAP_subunit_ratio_diff_seed_{seed_index}_var_{variant_index}",
+					metadata)
+				plt.close("all")
+
+				time = all_time_dict[seed_index][variant_index]
+				# Plot the RNAP subunit monomer counts over time
+				plt.figure(figsize=(8, 6))
+				for i, RNAP_subunit_monomer_id in enumerate(RNAP_subunit_monomer_ids):
+					RNAP_subunit_monomer_index = monomer_idx_dict.get(
+						RNAP_subunit_monomer_id)
+					if RNAP_subunit_monomer_index is None:
+						print(
+							f"Monomer {RNAP_subunit_monomer_id} not found in MonomerCounts.")
+						continue
+					RNAP_subunit_monomer_counts = read_stacked_columns(
+						cell_paths, 'MonomerCounts', 'monomerCounts',
+						ignore_exception=True)[:, RNAP_subunit_monomer_index].squeeze()
+					if RNAP_subunit_monomer_id == "EG10893-MONOMER[c]":
+						# Divide by 2 to account for stochiometry of RNAP subunits
+						RNAP_subunit_monomer_counts = RNAP_subunit_monomer_counts / 2.0
+					plt.plot(
+						time / 60.0, RNAP_subunit_monomer_counts, linewidth=1,
+						label=f"{RNAP_subunit_monomer_id} Counts")
+				plt.plot(
+					time / 60.0, total_rnap_counts, color="black",
+					linewidth=1, label="Total RNAP Counts",
+					linestyle='--', alpha=0.5)
+				plt.xlabel("Time (min)", fontsize=8)
+				plt.ylabel("Counts", fontsize=8)
+				plt.title(f"Variant {variant_index}, Seed {seed_index}", fontsize=8)
+				plt.legend(fontsize=6, loc='upper left', ncol=2)
+				exportFigure(
+					plt, plotOutDir,
+					plotOutFileName + f"_RNAP_subunit_counts_seed_{seed_index}_var_{variant_index}",
+					metadata)
+				plt.close("all")
+
 
 if __name__ == "__main__":
 	Plot().cli()
