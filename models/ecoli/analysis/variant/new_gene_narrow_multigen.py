@@ -44,13 +44,13 @@ VAR_TO_COLOR = {
 	23: poster_colors["poster_blue"],
 	}
 
-# FOR LOCAL TESTING
-SELECTED_VARIANT_INDEXES = [0, 20, 21]
-VAR_TO_COLOR = {
-	0: poster_colors["poster_gold"],
-	20: poster_colors["poster_green"],
-	21: poster_colors["poster_purple"],
-	}
+# # FOR LOCAL TESTING
+# SELECTED_VARIANT_INDEXES = [0, 20, 21]
+# VAR_TO_COLOR = {
+# 	0: poster_colors["poster_gold"],
+# 	20: poster_colors["poster_green"],
+# 	21: poster_colors["poster_purple"],
+# 	}
 
 
 
