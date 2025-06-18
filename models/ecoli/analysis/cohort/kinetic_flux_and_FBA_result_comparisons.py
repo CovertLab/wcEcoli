@@ -21,7 +21,7 @@ from models.ecoli.analysis import cohortAnalysisPlot
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
-IMPORTANT_MONOMERS = ["EG10022-MONOMER", "G6980-MONOMER"]
+IMPORTANT_MONOMERS = ["ISOCIT-LYASE-MONOMER", "G6980-MONOMER", "BASS-MONOMER"]
 
 # todo: make it so that the important monomners are marked and plotted automatically if they exist in either of the results plotted
 # have the relevant tsv file paths:
@@ -46,8 +46,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					0] + "]"
 			else:
 				print(f"Monomer {monomer} not found in simDataFile.")
-				edited_monomer_name = monomer
+				edited_monomer_name = None
 		else:
+			# pressumably it already has the compartment tag, so just return it:
+			print(f"Monomer {monomer} already has a compartment tag.")
 			edited_monomer_name = monomer
 
 		return edited_monomer_name
@@ -60,74 +62,153 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sim_data = self.read_pickle_file(simDataFile)
 
 		# attach the compartment tag to the monomers if it does not have one:
+		important_monomers = []
 		for monomer in IMPORTANT_MONOMERS:
 			edited_monomer_name = self.get_monomer_name_with_compartment(simDataFile, monomer)
-			IMPORTANT_MONOMERS[IMPORTANT_MONOMERS.index(monomer)] = edited_monomer_name
+			if edited_monomer_name is None:
+				print(f"Monomer {monomer} not found in simDataFile, skipping.")
+				continue
+			else:
+				important_monomers.append(edited_monomer_name)
 
 
 		reaction_catalysts_dict = sim_data.process.metabolism.reaction_catalysts
-		hi = 5
+
 		# should I make a specific reaction to catalyst monomer dict? or a catalyst to monomer dict, and then map that to the reaction?
 		# well I want to be able to save the specific reaction catalyst as complex (monomer name) if the monomer only is part of that reaction based on its monomer identity
 		reaction_to_catalyst_monomers_dict = {}
 		for reaction in reaction_catalysts_dict.keys():
 			catalyst_monomers = []
 			for catalyst in reaction_catalysts_dict[reaction]:
-				# check if the catalyst is a complex:
-				catalyst = self.get_monomer_name_with_compartment(simDataFile, catalyst)
-				hi = 6 # todo: left off 06/17: need to have a way to check if the catalyst is even going to be found, as it currently is not working if it does not exist in it
-				#equilibrium_monomers = sim_data.process.equilibrium.get_monomers(catalyst)
-				#for monomer in equilibrium_monomers:
-					#catalyst_monomers.append(monomer)
-				complexation_monomers = sim_data.process.complexation.get_monomers(catalyst)
+				# append the compartment tag to the catalyst if it does not have one:
+				if not catalyst.endswith("]"):
+					catalyst = self.get_monomer_name_with_compartment(simDataFile, catalyst)
+				# check if the catalyst is an equilibrium complex:
+				if catalyst in sim_data.process.equilibrium.ids_complexes:
+					print(f"Found equilibrium complex in {reaction}: {catalyst}")
+					equilibrium_monomers = sim_data.process.equilibrium.get_monomers(catalyst)['subunitIds']
+					for monomer in equilibrium_monomers:
+						catalyst_monomers.append(monomer)
+				# check if the catalyst is a complexation complex:
+				complexation_monomers = sim_data.process.complexation.get_monomers(catalyst)['subunitIds'] # technically this funciton works without using the if statement used for equilibrium complexes, but without it I can auto add the monomer only names to the list. or should I have an else statement for that to speed up the code and make this one an elif?
 				for monomer in complexation_monomers:
 					catalyst_monomers.append(monomer)
 			# remove duplicates:
 			catalyst_monomers = list(set(catalyst_monomers))
-
 			# append to the dictionary:
 			reaction_to_catalyst_monomers_dict[reaction] = catalyst_monomers
 
 		# for each monomer listed at the start of the code, check if it exists in the reaction to catalyst monomers dictionary:
-		relevant_reactions = {}
-		for monomer in IMPORTANT_MONOMERS:
+		relevant_reactions_as_catalysts = {}
+		for monomer in important_monomers:
 			reaction_to_name_info = {}
-			reactions_with_monomer = []
-			monomer_connection_to_reaction = [] # use this to attach the name of the monomer to the reaction if that monomer is connected via a complex
 			for reaction, catalysts in reaction_to_catalyst_monomers_dict.items():
 				if isinstance(catalysts, list) and monomer in catalysts:
-					reactions_with_monomer.append(reaction)
-					# check if the monomer is a complex:
+					# get the catalyst(s) for the reaction:
 					reaction_catalysts = reaction_catalysts_dict[reaction]
-					hi  = 5
+					# if the monomer is directly a catalyst, then add it directly to the reaction dictionary:
 					if monomer in reaction_catalysts:
-						# if the monomer is directly a catalyst, then add it directly to the reaction dictionary:
 						name = monomer
 					else:
-						# if the monomer is included as a catalyst due it it being in a complex with a catalytic monomer (or the catalyst is the complex itself), then add it as a complex:
+						# if the monomer is included as a catalyst due it it being in a complex that contains the catalytic monomer (or the catalyst is the complex itself), then add it as a complex:
 						for catalyst in reaction_catalysts:
-							equilibrium_monomers = sim_data.process.equilibrium.get_monomers(catalyst)
-							if monomer in equilibrium_monomers:
-								name =monomer + f"(via {catalyst})"
+							# attach the compartment tag to the catalyst if it does not have one:
+							if not catalyst.endswith("]"):
+								catalyst = self.get_monomer_name_with_compartment(simDataFile,
+																			  catalyst)
+							# check if it is in an equilibrium complex:
+							if catalyst in sim_data.process.equilibrium.ids_complexes:
+								equilibrium_monomers = sim_data.process.equilibrium.get_monomers(
+									catalyst)['subunitIds']
+								if monomer in equilibrium_monomers:
+									name = monomer + f" (via {catalyst})"
+							# check if it is in a complexation complex:
 							complexation_monomers = sim_data.process.complexation.get_monomers(
-								catalyst)
+								catalyst)['subunitIds']
 							if monomer in complexation_monomers:
-								name = monomer + f"(via {catalyst})"
+								name = monomer + f" (via {catalyst})"
 
-				# temporary check:
-				monomer_connection_to_reaction.append(name) # todo: delete later
-				# apppend the reaction and the name of it to the dictionary:
-				reaction_to_name_info[reaction] = name
+					# apppend the reaction and the name of it to the dictionary:
+					reaction_to_name_info[reaction] = name
 
-			# append the reactions to the dictionary:
-			relevant_reactions[monomer] = reaction_to_name_info
+				# append the reactions to the dictionary:
+				relevant_reactions_as_catalysts[monomer] = reaction_to_name_info
 
 
-		# todo: make the same check process for substrates!!! but maybe make it simpler by simply just checking which reactions have monomers or complexes in them
-		hi = 6
+		# next, search the reaction_stoich dictionary to see if any of the reactions have monomers in them:
+		reaction_stoich_dict = sim_data.process.metabolism.reaction_stoich
+		reaction_to_substrate_monomers_dict = {}
+		for reaction in reaction_stoich_dict.keys():
+			substrate_monomers = []
+			for substrate in reaction_stoich_dict[reaction]:
+				# append the compartment tag to the substrate if it does not have one:
+				if not substrate.endswith("]"):
+					substrate = self.get_monomer_name_with_compartment(simDataFile, substrate)
+				# check if the substrate is a monomer:
+				if substrate in sim_data.process.translation.monomer_data['id']:
+					substrate_monomers.append(substrate)
+				# check if the substrate is an equilibrium complex:
+				elif substrate in sim_data.process.equilibrium.ids_complexes:
+					print(f"Found equilibrium complex in {reaction}: {substrate}")
+					equilibrium_monomers = sim_data.process.equilibrium.get_monomers(substrate)['subunitIds']
+					for monomer in equilibrium_monomers:
+						substrate_monomers.append(monomer)
+				# check if the catalyst is a complexation complex:
+				elif substrate in sim_data.process.complexation.ids_complexes:
+					complexation_monomers = sim_data.process.complexation.get_monomers(substrate)['subunitIds'] # technically this funciton works without using the if statement used for equilibrium complexes, but without it I can auto add the monomer only names to the list. or should I have an else statement for that to speed up the code and make this one an elif?
+					for monomer in complexation_monomers:
+						substrate_monomers.append(monomer)
+				else:
+					# if the substrate is not a monomer or a complex, then it is not relevant:
+					continue
+
+			# remove duplicates:
+			substrate_monomers = list(set(substrate_monomers))
+
+			# only append the reaction to the dictionary if there are any monomers in it:
+			if substrate_monomers == []:
+				continue
+			else:
+				reaction_to_substrate_monomers_dict[reaction] = substrate_monomers
+
+		# check if there are any reactions that have the monomers in them as substrates:
+		relevant_reactions_as_substrates = {}
+		for monomer in important_monomers:
+			reaction_to_name_info = {}
+			for reaction, substrates in reaction_to_substrate_monomers_dict.items():
+				if isinstance(substrates, list) and monomer in substrates:
+					# get the substrate(s) for the reaction:
+					reaction_substrates = reaction_stoich_dict[reaction]
+					# if the monomer is directly a substrate, then add it directly to the reaction dictionary:
+					if monomer in reaction_substrates:
+						name = monomer
+					else:
+						# if the monomer is included as a substrate due it it being in a complex that contains the substrate monomer (or the substrate is the complex itself), then add it as a complex:
+						for substrate in reaction_substrates:
+							# attach the compartment tag to the substrate if it does not have one:
+							if not substrate.endswith("]"):
+								substrate = self.get_monomer_name_with_compartment(simDataFile,
+																				  substrate)
+							# check if it is in an equilibrium complex:
+							if substrate in sim_data.process.equilibrium.ids_complexes:
+								equilibrium_monomers = sim_data.process.equilibrium.get_monomers(
+									substrate)['subunitIds']
+								if monomer in equilibrium_monomers:
+									name = monomer + f" (via {substrate})"
+							# check if it is in a complexation complex:
+							complexation_monomers = sim_data.process.complexation.get_monomers(
+								substrate)['subunitIds']
+							if monomer in complexation_monomers:
+								name = monomer + f" (via {substrate})"
+
+					# apppend the reaction and the name of it to the dictionary:
+					reaction_to_name_info[reaction] = name
+
+				# append the reactions to the dictionary:
+				relevant_reactions_as_substrates[monomer] = reaction_to_name_info
 
 
-		return relevant_reactions
+		return relevant_reactions_as_catalysts, relevant_reactions_as_substrates
 
 
 	hi = 6
