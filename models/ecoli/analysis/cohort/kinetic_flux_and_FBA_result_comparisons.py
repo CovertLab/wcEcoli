@@ -24,6 +24,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
+IGNORE_FIRST_N_GENERATIONS = 0
 IMPORTANT_MONOMERS = ["ISOCIT-LYASE-MONOMER", "G6980-MONOMER", "BASS-MONOMER", 'G6986-MONOMER[c]']
 
 # todo: make it so that the important monomners are marked and plotted automatically if they exist in either of the results plotted
@@ -215,18 +216,265 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return relevant_reactions_as_catalysts, relevant_reactions_as_substrates
 
 
-
-	def obtain_FBA_results(self, simDataFile):
+	# version of funciton 1 WITH THE NAMES FROM THE LISTENER
+	def FBA_plots_averaging_method_1a(self, simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata):
 		"""
-		Obtain FBA results from the simDataFile.
+		average over all time steps in the simulations. So some cells are weighted more than others if they have a longer simulation time.
 		"""
 		sim_data = self.read_pickle_file(simDataFile)
-		fba = sim_data.process.metabolism.fba
-		fba_reaction_ids = fba.getReactionIDs()
-		base_reaction_ids = sim_data.process.metabolism.base_reaction_ids
-		fba_reaction_ids_to_base_reaction_ids = sim_data.process.metabolism.reaction_id_to_base_reaction_id
+		simOutDir = os.path.join(self.all_cells[0], "simOut")
+		mmol_per_g_per_h = units.mmol / units.g / units.h
 
-		return fba_reaction_ids, base_reaction_ids, fba_reaction_ids_to_base_reaction_ids
+
+		# get the reaction IDs:
+		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+		base_reaction_ids = fbaResults.readAttribute("base_reaction_ids") # can also access in sim data, but not sure if the mapping is consistent but the lengths are the same, so maybe? # todo: ask riley
+
+		# get the FBA results from the simDataFile:
+		self.rxn_fluxes = read_stacked_columns(self.all_cells, "FBAResults", "reactionFluxes")
+		self.base_rxn_fluxes = read_stacked_columns(self.all_cells, "FBAResults", "base_reaction_fluxes")
+
+		# obtain the simulation fluxes:
+		cellMass = read_stacked_columns(self.all_cells, "Mass", "cellMass")
+		dryMass = read_stacked_columns(self.all_cells, "Mass", "dryMass")
+		cellDensity = sim_data.constants.cell_density
+		coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+
+		# get the reaction fluxes:
+		base_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (
+			(self.base_rxn_fluxes).T / coefficient.squeeze()).T
+		base_reaction_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+		}
+
+		# get the Toya fluxes:
+		validation_data = self.read_pickle_file(validationDataFile)
+		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
+		toyaFluxes = validation_data.reactionFlux.toya2010fluxes["reactionFlux"]
+		toyaStdev = validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]
+		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
+		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
+
+		# match the toya fluxes to the base reaction fluxes:
+		modelFluxes = {}
+		toyaOrder = []
+		for rxn in toyaReactions:
+			modelFluxes[rxn] = []
+			toyaOrder.append(rxn)
+
+		# average the fluxes over all time steps if there is a matching reaction:
+		fluxTimeCourse_map = {}
+		for toyaReaction in toyaReactions:
+			if toyaReaction in base_reaction_id_to_index:
+				rxn_index = base_reaction_id_to_index[toyaReaction]
+				fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
+				fluxTimeCourse_map[toyaReaction] = fluxTimeCourse.asNumber(mmol_per_g_per_h)
+				modelFluxes[toyaReaction].append(
+					np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
+
+		# make a dictionary with the reaction fluxes and their standard deviations (note that the extra np.mean() of the flux does not change anything)
+		# TODO: ask riley if I should just be doing average by the cell, as this would actually yeild a standard deviation for each cell (written the way it is in the original file). I can edit it though to do over all time points, but idk if this is accurate
+		toyaVsReactionAve = []
+		for rxn, toyaFlux in toyaFluxesDict.items():
+			if rxn in modelFluxes:
+				toyaVsReactionAve.append(
+					(np.mean(modelFluxes[rxn]),
+					 toyaFlux.asNumber(mmol_per_g_per_h),
+					 np.std(fluxTimeCourse_map[rxn]), toyaStdevDict[rxn].asNumber(mmol_per_g_per_h)))
+
+		toyaVsReactionAve = np.array(toyaVsReactionAve)
+
+		# build the plot
+		idx = np.abs(toyaVsReactionAve[:, 0]) < 5 * np.abs(toyaVsReactionAve[:, 1])
+		rWithAll = pearsonr(toyaVsReactionAve[:, 0], toyaVsReactionAve[:, 1])
+		rWithoutOutliers = pearsonr(toyaVsReactionAve[idx, 0], toyaVsReactionAve[idx, 1])
+
+		# plot the results
+		plt.figure(figsize=(7, 7), dpi=100)
+		ax = plt.axes()
+		plt.title(
+			f"Central Carbon Metabolism Flux\n(averaged over {len(self.all_cells)} cells, each weighted by total time spanned, \nSimulation ID: {self.sim_id})", fontsize=12)
+		plt.errorbar(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0],
+					 xerr=toyaVsReactionAve[:, 3], yerr=toyaVsReactionAve[:, 2], fmt=".",
+					 ecolor="k", alpha=0.5, linewidth=0.5)
+		ylim = plt.ylim()
+		plt.plot([ylim[0], ylim[1]], [ylim[0], ylim[1]], color="k")
+		plt.plot(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0], "ob", markeredgewidth=0.1,
+				 alpha=0.9)
+		plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
+		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
+
+		# noinspection PyTypeChecker
+		ax.set_xlim([-20, 30])
+		xlim = ax.get_xlim()
+		ylim = ax.get_ylim()
+		ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
+		ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
+		ax.text(0.5, -0.08, "Pearson R = %.4f, p = %s\n(%.4f, %s without outliers)" % (
+				rWithAll[0], rWithAll[1], rWithoutOutliers[0], rWithoutOutliers[1]), fontsize=8, transform=ax.transAxes,
+				ha='center', va='top')
+
+		plotOutName = plotOutFileName + "_FBA_avgeraging_method_1a_" + self.sim_id + ".png"
+		exportFigure(plt, plotOutDir, plotOutName, metadata)
+		plt.close("all")
+
+
+		hi = 5
+
+	# function 2
+	def FBA_plots_averaging_method_1b(self, simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata):
+		"""
+		average over all time steps in the simulations, weighting cells by simulation time
+		"""
+		sim_data = self.read_pickle_file(simDataFile)
+		simOutDir = os.path.join(self.all_cells[0], "simOut")
+		mmol_per_g_per_h = units.mmol / units.g / units.h
+
+
+		# get the reaction IDs:
+		#base_reaction_IDs = fbaResults.readAttribute("base_reaction_ids") # can also access in sim data, but not sure if the mapping is consistent but the lengths are the same, so maybe? # todo: ask riley
+		base_reaction_ids = sim_data.process.metabolism.base_reaction_ids
+
+		# other ways to get the reaction ids: (already said the base one)
+		#all_reaciton_ids = list(sim_data.process.metabolism.reaction_id_to_base_reaction_id.keys())
+		#reaction_stoich_ids = list(sim_data.process.metabolism.reaction_stoich.keys())
+
+		# see what reaction IDs are in the all reaction ids of the reaction_stoich_ids:
+		#reaction_stoich_ids_set = set(reaction_stoich_ids).intersection(set(all_reaciton_ids))
+		# see which do not match:
+		#reaction_stoich_ids_not_in_all = set(all_reaciton_ids).difference(set(reaction_stoich_ids)) # I believe the 21 that do not match have to do with aa
+
+
+		# get the FBA results from the simDataFile:
+		self.base_reaction_fluxes = read_stacked_columns(self.all_cells, "FBAResults", "base_reaction_fluxes")
+
+		# get the FBA results from the simDataFile:
+		self.rxn_fluxes = read_stacked_columns(self.all_cells, "FBAResults", "reactionFluxes")
+		self.base_rxn_fluxes = read_stacked_columns(self.all_cells, "FBAResults",
+													"base_reaction_fluxes")
+
+		# obtain the simulation fluxes:
+		cellMass = read_stacked_columns(self.all_cells, "Mass", "cellMass")
+		dryMass = read_stacked_columns(self.all_cells, "Mass", "dryMass")
+		cellDensity = sim_data.constants.cell_density
+		coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+
+		# get the reaction fluxes:
+		base_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (
+				(self.base_rxn_fluxes).T / coefficient.squeeze()).T
+		base_reaction_id_to_index = {
+			rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+		}
+
+		# get the Toya fluxes:
+		validation_data = self.read_pickle_file(validationDataFile)
+		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
+		toyaFluxes = validation_data.reactionFlux.toya2010fluxes["reactionFlux"]
+		toyaStdev = validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]
+		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
+		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
+
+		# match the toya fluxes to the base reaction fluxes:
+		modelFluxes = {}
+		toyaOrder = []
+		for rxn in toyaReactions:
+			modelFluxes[rxn] = []
+			toyaOrder.append(rxn)
+
+		# average the fluxes over all time steps if there is a matching reaction:
+		fluxTimeCourse_map = {}
+		for toyaReaction in toyaReactions:
+			if toyaReaction in base_reaction_id_to_index:
+				rxn_index = base_reaction_id_to_index[toyaReaction]
+				fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
+				fluxTimeCourse_map[toyaReaction] = fluxTimeCourse.asNumber(mmol_per_g_per_h)
+				modelFluxes[toyaReaction].append(
+					np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
+
+		# make a dictionary with the reaction fluxes and their standard deviations (note that the extra np.mean() of the flux does not change anything)
+		# TODO: ask riley if I should just be doing average by the cell, as this would actually yeild a standard deviation for each cell (written the way it is in the original file). I can edit it though to do over all time points, but idk if this is accurate
+		toyaVsReactionAve = []
+		for rxn, toyaFlux in toyaFluxesDict.items():
+			if rxn in modelFluxes:
+				toyaVsReactionAve.append(
+					(np.mean(modelFluxes[rxn]),
+					 toyaFlux.asNumber(mmol_per_g_per_h),
+					 np.std(fluxTimeCourse_map[rxn]),
+					 toyaStdevDict[rxn].asNumber(mmol_per_g_per_h)))
+
+		toyaVsReactionAve = np.array(toyaVsReactionAve)
+
+		# build the plot
+		idx = np.abs(toyaVsReactionAve[:, 0]) < 5 * np.abs(toyaVsReactionAve[:, 1])
+		rWithAll = pearsonr(toyaVsReactionAve[:, 0], toyaVsReactionAve[:, 1])
+		rWithoutOutliers = pearsonr(toyaVsReactionAve[idx, 0], toyaVsReactionAve[idx, 1])
+
+		# plot the results
+		plt.figure(figsize=(7, 7), dpi=100)
+		ax = plt.axes()
+		plt.title(
+			f"Central Carbon Metabolism Flux\n(averaged over {len(self.all_cells)} cells, each weighted by total time spanned, \nSimulation ID: {self.sim_id})",
+			fontsize=12)
+		plt.errorbar(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0],
+					 xerr=toyaVsReactionAve[:, 3], yerr=toyaVsReactionAve[:, 2], fmt=".",
+					 ecolor="k", alpha=0.5, linewidth=0.5)
+		ylim = plt.ylim()
+		plt.plot([ylim[0], ylim[1]], [ylim[0], ylim[1]], color="k")
+		plt.plot(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0], "ob", markeredgewidth=0.1,
+				 alpha=0.9)
+		plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
+		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
+
+		# noinspection PyTypeChecker
+		ax.set_xlim([-20, 30])
+		xlim = ax.get_xlim()
+		ylim = ax.get_ylim()
+		ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
+		ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
+		ax.text(0.5, -0.08, "Pearson R = %.4f, p = %s\n(%.4f, %s without outliers)" % (
+			rWithAll[0], rWithAll[1], rWithoutOutliers[0], rWithoutOutliers[1]), fontsize=8,
+				transform=ax.transAxes,
+				ha='center', va='top')
+
+		plotOutName = plotOutFileName + "_FBA_avgeraging_method_1b_" + self.sim_id + ".png"
+		exportFigure(plt, plotOutDir, plotOutName, metadata)
+		plt.close("all")
+		hi = 5
+
+
+	# enzyme method 1
+	def test_order_plot(self, simDataFile):
+		"""
+		Plot the order of the reactions for each monomer in the monomer_to_reactions_dict.
+		"""
+		sim_data = self.read_pickle_file(simDataFile)
+		simOutDir = os.path.join(self.all_cells[0], "simOut")
+
+		# get the base reaction IDs:
+		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+		base_reaction_IDs = fbaResults.readAttribute("base_reaction_ids") # can also access in sim data, but not sure if the mapping is consistent but the lengths are the same, so maybe? # todo: ask riley
+		base_reaction_ids = sim_data.process.metabolism.base_reaction_ids
+
+		# other ways to get the reaction ids: (already said the base one)
+		all_reaciton_ids = list(sim_data.process.metabolism.reaction_id_to_base_reaction_id.keys())
+		reaction_stoich_ids = list(sim_data.process.metabolism.reaction_stoich.keys())
+		# see what reaction IDs are in the all reaction ids of the reaction_stoich_ids:
+		reaction_stoich_ids_set = set(reaction_stoich_ids).intersection(set(all_reaciton_ids))
+		# see which do not match:
+		reaction_stoich_ids_not_in_all = set(all_reaciton_ids).difference(set(reaction_stoich_ids)) # I believe the 21 that do not match have to do with aa
+
+		# reaction ids:
+		reaction_ids = reaction_stoich_ids
+		reaction_IDs = fbaResults.readAttribute("reactionIDs")
+
+		# get the enzyme IDs:
+		# no this one I do not trust to get from sim data.
+
+
+
+	# todo: just plot all reactions by the other version of all reactions
+
+
 
 	def get_reactions(self, monomer_to_reactions_dict, reactions_list_to_search):
 
@@ -244,10 +492,128 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return monomers_found_in_reaction_list
 
 
-	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-		# Get all cells
-		allDir = self.ap.get_cells()
 
+	def FBA_plot(self, sim_data, plotOutDir, plotOutFileName, validationDataFile, metadata):
+		# taken from models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py
+
+		# Get all cells
+		allDir = self.ap.get_cells() # todo: decide if I want to discard some of the initial generations
+
+		validation_data = self.read_pickle_file(validationDataFile)
+		toyaReactions = validation_data.reactionFlux.toya2010fluxes["reactionID"]
+		toyaFluxes = validation_data.reactionFlux.toya2010fluxes["reactionFlux"]
+		toyaStdev = validation_data.reactionFlux.toya2010fluxes["reactionFluxStdev"]
+		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
+		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
+
+		cellDensity = sim_data.constants.cell_density
+
+		modelFluxes = {}
+		toyaOrder = []
+		for rxn in toyaReactions:
+			modelFluxes[rxn] = []
+			toyaOrder.append(rxn)
+
+		mmol_per_g_per_h = units.mmol / units.g / units.h
+		for simDir in allDir:
+			simOutDir = os.path.join(simDir, "simOut")
+
+			massListener = TableReader(os.path.join(simOutDir, "Mass"))
+			cellMass = massListener.readColumn("cellMass")
+			dryMass = massListener.readColumn("dryMass")
+			coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+
+			fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
+			base_reaction_ids = fbaResults.readAttribute("base_reaction_ids")
+			base_reaction_fluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (
+						fbaResults.readColumn("base_reaction_fluxes").T / coefficient).T
+			base_reaction_id_to_index = {
+				rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
+			}
+			hi = 6 # check if coefficent is a numpy array or a single value
+
+			reaction_fluxes = fbaResults.readColumn("reactionFluxes")
+			base_reaction_fluxes1 = fbaResults.readColumn("base_reaction_fluxes")
+
+			reaction_IDs = fbaResults.readAttribute("reactionIDs")
+			kineticTargetFluxNames = fbaResults.readAttribute("kineticTargetFluxNames")
+			overlap_v_k = set(toyaReactions).intersection(set(kineticTargetFluxNames))
+			overlap_v_r = set(toyaReactions).intersection(set(reaction_IDs))
+			overlap_k_r = set(kineticTargetFluxNames).intersection(set(reaction_IDs))
+			overlap_r_b = set(base_reaction_ids).intersection(set(reaction_IDs))
+			overlap_k_b = set(base_reaction_ids).intersection(set(kineticTargetFluxNames))
+			overlap_r_b_unique = set(set(base_reaction_ids).intersection(set(reaction_IDs)))
+			overlap_b_v = set(toyaReactions).intersection(set(base_reaction_ids)) # all 23
+			no_overlap_v_r = set(toyaReactions).difference(set(reaction_IDs))
+			no_overlap_v_r = list(no_overlap_v_r)
+			rxn_id_to_base_rxn_id = sim_data.process.metabolism.reaction_id_to_base_reaction_id
+			target_value = no_overlap_v_r[0]
+			matching_keys = [k for k, v in rxn_id_to_base_rxn_id.items() if v == target_value]
+			unmatched_rxns = {}
+			for rxn in no_overlap_v_r:
+				matching_keys = [k for k, v in rxn_id_to_base_rxn_id.items() if v == rxn]
+				unmatched_rxns[rxn] = matching_keys
+
+			for toyaReaction in toyaReactions:
+				if toyaReaction in base_reaction_id_to_index:
+					rxn_index = base_reaction_id_to_index[toyaReaction]
+					fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
+					modelFluxes[toyaReaction].append(
+						np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
+		hi = 7
+		toyaVsReactionAve = []
+		for rxn, toyaFlux in toyaFluxesDict.items():
+			if rxn in modelFluxes:
+				toyaVsReactionAve.append(
+					(np.mean(modelFluxes[rxn]),
+					 toyaFlux.asNumber(mmol_per_g_per_h),
+					 np.std(modelFluxes[rxn]), toyaStdevDict[rxn].asNumber(mmol_per_g_per_h)))
+		hi = 5
+		toyaVsReactionAve = np.array(toyaVsReactionAve)
+		idx = np.abs(toyaVsReactionAve[:, 0]) < 5 * np.abs(toyaVsReactionAve[:, 1])
+		rWithAll = pearsonr(toyaVsReactionAve[:, 0], toyaVsReactionAve[:, 1])
+		rWithoutOutliers = pearsonr(toyaVsReactionAve[idx, 0], toyaVsReactionAve[idx, 1])
+		hi = 5
+		plt.figure(figsize=(3.5, 3.5))
+		ax = plt.axes()
+		plt.title(
+			"Central Carbon Metabolism Flux, Pearson R = %.4f, p = %s\n(%.4f, %s without outliers)" % (
+			rWithAll[0], rWithAll[1], rWithoutOutliers[0], rWithoutOutliers[1]), fontsize=6)
+		plt.errorbar(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0],
+					 xerr=toyaVsReactionAve[:, 3], yerr=toyaVsReactionAve[:, 2], fmt=".",
+					 ecolor="k", alpha=0.5, linewidth=0.5)
+		ylim = plt.ylim()
+		plt.plot([ylim[0], ylim[1]], [ylim[0], ylim[1]], color="k")
+		plt.plot(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0], "ob", markeredgewidth=0.1,
+				 alpha=0.9)
+		plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
+		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
+		whitePadSparklineAxis(ax)
+
+		# noinspection PyTypeChecker
+		ax.set_xlim([-20, 30])
+		xlim = ax.get_xlim()
+		ylim = ax.get_ylim()
+		ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
+		ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
+
+		plotOutName = plotOutFileName + "_FBA"
+		exportFigure(plt, plotOutDir, plotOutName, metadata)
+		plt.close("all")
+
+
+
+
+	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		# Get simulation information:
+		self.sim_id = metadata["description"]
+		self.n_total_gens = self.ap.n_generation
+		self.generations_to_plot = np.arange(IGNORE_FIRST_N_GENERATIONS, self.n_total_gens)
+		self.all_cells = self.ap.get_cells(generation=self.generations_to_plot, only_successful=True)
+
+		allDir = self.ap.get_cells() # todo: delete later if needed
+
+		# get simulation data:
 		sim_data = self.read_pickle_file(simDataFile)
 
 		targetFluxList = []
@@ -303,11 +669,26 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
-		relevant_reactions_as_catalysts, relevant_reactions_as_substrates = self.get_relevant_monomers(simDataFile)
+		#self.relevant_reactions_as_catalysts, self.relevant_reactions_as_substrates = self.get_relevant_monomers(simDataFile)
 
 		# see if the monomers show up in any of the kinetic constrained reactions:
-		catalyst_monomers_found_in_kinetic_reactions = self.get_reactions(relevant_reactions_as_catalysts, kineticsConstrainedReactions)
-		substrate_monomers_found_in_kinetic_reactions = self.get_reactions(relevant_reactions_as_substrates, kineticsConstrainedReactions)
+		#catalyst_monomers_found_in_kinetic_reactions = self.get_reactions(self.relevant_reactions_as_catalysts, kineticsConstrainedReactions)
+		#substrate_monomers_found_in_kinetic_reactions = self.get_reactions(self.relevant_reactions_as_substrates, kineticsConstrainedReactions)
+
+
+
+
+		# plot the FBA results
+		#self.FBA_plot(sim_data, plotOutDir, plotOutFileName, validationDataFile, metadata)
+
+		self.FBA_plots_averaging_method_1a(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
+		self.FBA_plots_averaging_method_1b(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
+
+
+
+		hi = 5
+		self.centralCarbonMetabolismScatterPlot(plotOutDir, plotOutFileName, simDataFile,
+										   validationDataFile, metadata)
 
 		hi = 5
 
@@ -317,7 +698,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# categorize reactions that use constraints with only kcat, Km and kcat, or switch between both types of constraints
 		kcatOnlyReactions = constraint_is_kcat_only
 		kmAndKcatReactions = ~constraint_is_kcat_only
-
+		hi = 5
 		# categorize how well the actual flux matches the target flux
 		thresholds = [2, 10]
 		categorization = np.zeros(n_kinetic_constrained_reactions)
