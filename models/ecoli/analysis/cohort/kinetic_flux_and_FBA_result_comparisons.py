@@ -454,6 +454,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		fbaResults = TableReader(os.path.join(simOutDir, "FBAResults"))
 		base_reaction_IDs = fbaResults.readAttribute("base_reaction_ids") # can also access in sim data, but not sure if the mapping is consistent but the lengths are the same, so maybe? # todo: ask riley
 		base_reaction_ids = sim_data.process.metabolism.base_reaction_ids
+		if base_reaction_IDs == base_reaction_ids:
+			print("base reaction ids are the same and in the same order.")
 
 		# other ways to get the reaction ids: (already said the base one)
 		all_reaciton_ids = list(sim_data.process.metabolism.reaction_id_to_base_reaction_id.keys())
@@ -466,9 +468,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# reaction ids:
 		reaction_ids = reaction_stoich_ids
 		reaction_IDs = fbaResults.readAttribute("reactionIDs")
+		if reaction_ids == reaction_IDs:
+			print("reaction ids are the same and in the same order.")
 
 		# get the enzyme IDs:
 		# no this one I do not trust to get from sim data.
+		hi = 6
 
 
 
@@ -680,7 +685,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# plot the FBA results
 		#self.FBA_plot(sim_data, plotOutDir, plotOutFileName, validationDataFile, metadata)
-
+		self.test_order_plot(simDataFile)
 		self.FBA_plots_averaging_method_1a(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 		self.FBA_plots_averaging_method_1b(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 

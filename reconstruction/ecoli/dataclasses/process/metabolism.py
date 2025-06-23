@@ -286,9 +286,11 @@ class Metabolism(object):
 
 		# Load kinetic reaction constraints from raw_data
 		known_metabolites = set(self.conc_dict)
-		raw_constraints = self.extract_kinetic_constraints(raw_data, sim_data,
+		raw_constraints, subunit_id_to_parent_complexes_map = self.extract_kinetic_constraints(raw_data, sim_data,
 			stoich=reaction_stoich, catalysts=catalysts,
 			known_metabolites=known_metabolites)
+
+		self.subunit_id_to_parent_complexes_map = subunit_id_to_parent_complexes_map
 
 		# Make modifications from kinetics data
 		(constraints, reaction_stoich, catalysts, reversible_reactions,
@@ -1441,6 +1443,10 @@ class Metabolism(object):
 		reaction_catalysts = {}
 		rxn_id_to_base_rxn_id = {}
 
+		all_reactions = []
+		f_reactions = []
+		r_reactions = []
+		b_reactions = []
 		# Load and parse reaction information from raw_data
 		for reaction in cast(Any, raw_data).metabolic_reactions:
 			reaction_id = reaction["id"]
@@ -1519,6 +1525,8 @@ class Metabolism(object):
 				if len(catalysts_for_this_rxn) > 0:
 					reaction_catalysts[reaction_id] = catalysts_for_this_rxn
 				rxn_id_to_base_rxn_id[reaction_id] = base_reaction_id
+				all_reactions.append(reaction_id)
+				f_reactions.append(reaction_id)
 
 			if reverse:
 				reverse_reaction_id = REVERSE_REACTION_ID.format(reaction_id)
@@ -1529,16 +1537,50 @@ class Metabolism(object):
 				if len(catalysts_for_this_rxn) > 0:
 					reaction_catalysts[reverse_reaction_id] = list(catalysts_for_this_rxn)
 				rxn_id_to_base_rxn_id[reverse_reaction_id] = base_reaction_id
+				all_reactions.append(reverse_reaction_id)
+				r_reactions.append(reverse_reaction_id)
 
 			if forward and reverse:
 				reversible_reactions.append(reaction_id)
+				b_reactions.append(reaction_id) # why does this not get appended to anything? does it not go through the ifs above?
 
 			if base_reaction_id not in all_base_rxns:
 				all_base_rxns.add(base_reaction_id)
 
 		base_rxn_ids = sorted(list(all_base_rxns))
+		hi = 5
+		interest_keys = list(reaction_stoich.keys())
+		unique_keys = set(interest_keys)
+		reaction_ids = []
+		for reaction in cast(Any, raw_data).metabolic_reactions:
+			reaction_id = reaction["id"]
+			reaction_ids.append(reaction_id)
+		len_reactions = len(reaction_ids)
+		unique_reaction_ids= set(reaction_ids)
+		rxn_ids_match_unique_keys = set(reaction_ids) & set(unique_keys)
+		# find which ids do not match:
+		missing_ids = set(unique_keys) - rxn_ids_match_unique_keys
 
-		return base_rxn_ids, reaction_stoich, reversible_reactions, reaction_catalysts, rxn_id_to_base_rxn_id
+		# find which of the reverse reactions are not in the whole thing:
+		substring = REVERSE_REACTION_ID.format('')
+		reverse_rxn_ids = list(filter(lambda x: substring in x, missing_ids))
+
+		reverse_rxn_ids_match_unique_keys = []
+		reverse_rxn_ids_do_not_match_unique_keys = []
+		for rxn_id in missing_ids:
+			original_rxn_id = rxn_id.replace(REVERSE_TAG, '')
+			if original_rxn_id in reversible_reactions:
+				reverse_rxn_ids_match_unique_keys.append(rxn_id)
+			else:
+				reverse_rxn_ids_do_not_match_unique_keys.append(rxn_id)
+
+		from collections import Counter
+		counts = Counter(all_reactions)
+		duplicates = [item for item, count in counts.items() if count > 1]
+
+		hello = 2
+
+		return base_rxn_ids, reaction_stoich, reversible_reactions, reaction_catalysts, rxn_id_to_base_rxn_id, subunit_id_to_parent_complexes
 
 	@staticmethod
 	def match_reaction(stoich, catalysts, rxn_to_match, enz, mets, direction=None):
@@ -1857,7 +1899,7 @@ class Metabolism(object):
 
 		# Load data for optional args if needed
 		if stoich is None or catalysts is None:
-			_, loaded_stoich, _, loaded_catalysts, _ = Metabolism.extract_reactions(raw_data, sim_data)
+			_, loaded_stoich, _, loaded_catalysts, _, subunit_id_to_parent_complexes = Metabolism.extract_reactions(raw_data, sim_data)
 
 			if stoich is None:
 				stoich = loaded_stoich
@@ -1936,7 +1978,7 @@ class Metabolism(object):
 				entries['saturation'] = entries.get('saturation', []) + saturation
 				constraints[key] = entries
 
-		return constraints
+		return constraints, subunit_id_to_parent_complexes
 
 	@staticmethod
 	def _replace_enzyme_reactions(constraints, stoich, rxn_catalysts, reversible_rxns, rxn_id_to_compiled_id):
