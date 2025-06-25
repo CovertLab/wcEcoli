@@ -25,7 +25,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 # ignore data from metabolism burnin period
 BURN_IN_TIME = 1
 IGNORE_FIRST_N_GENERATIONS = 0
-IMPORTANT_MONOMERS = ["ISOCIT-LYASE-MONOMER", "G6980-MONOMER", "BASS-MONOMER", 'G6986-MONOMER[c]']
+IMPORTANT_MONOMERS = ["ISOCIT-LYASE-MONOMER",  'EG11111-MONOMER', "G6980-MONOMER", "BASS-MONOMER", 'G6986-MONOMER[c]']
 
 # todo: make it so that the important monomners are marked and plotted automatically if they exist in either of the results plotted
 # have the relevant tsv file paths:
@@ -104,6 +104,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# for each monomer listed at the start of the code, check if it exists in the reaction to catalyst monomers dictionary:
 		relevant_reactions_as_catalysts = {}
+		name = ''
 		for monomer in important_monomers:
 			reaction_to_name_info = {}
 			for reaction, catalysts in reaction_to_catalyst_monomers_dict.items():
@@ -134,10 +135,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 								name = monomer + f" (via {catalyst})"
 
 					# apppend the reaction and the name of it to the dictionary:
-					reaction_to_name_info[reaction] = name
+					if name != '':
+						reaction_to_name_info[reaction] = name
 
 				# append the reactions to the dictionary:
-				relevant_reactions_as_catalysts[monomer] = reaction_to_name_info
+				if reaction_to_name_info != {}:
+					relevant_reactions_as_catalysts[monomer] = reaction_to_name_info
 
 
 		# next, search the reaction_stoich dictionary to see if any of the reactions have monomers in them:
@@ -178,6 +181,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# check if there are any reactions that have the monomers in them as substrates:
 		relevant_reactions_as_substrates = {}
+		name = ''
 		for monomer in important_monomers:
 			reaction_to_name_info = {}
 			for reaction, substrates in reaction_to_substrate_monomers_dict.items():
@@ -207,11 +211,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 								name = monomer + f" (via {substrate})"
 
 					# apppend the reaction and the name of it to the dictionary:
-					reaction_to_name_info[reaction] = name
+					if name != '':
+						reaction_to_name_info[reaction] = name
 
 				# append the reactions to the dictionary:
-				relevant_reactions_as_substrates[monomer] = reaction_to_name_info
-
+				if reaction_to_name_info != {}:
+					relevant_reactions_as_substrates[monomer] = reaction_to_name_info
 
 		return relevant_reactions_as_catalysts, relevant_reactions_as_substrates
 
@@ -413,7 +418,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.figure(figsize=(7, 7), dpi=100)
 		ax = plt.axes()
 		plt.title(
-			f"Central Carbon Metabolism Flux\n(averaged over {len(self.all_cells)} cells, each weighted by total time spanned, \nSimulation ID: {self.sim_id})",
+			f"Central Carbon Metabolism Flux\n(averaged over {len(self.all_cells)} cells, weighted by simulation time spanned, \nSimulation ID: {self.sim_id})",
 			fontsize=12)
 		plt.errorbar(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0],
 					 xerr=toyaVsReactionAve[:, 3], yerr=toyaVsReactionAve[:, 2], fmt=".",
@@ -535,7 +540,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			base_reaction_id_to_index = {
 				rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
 			}
-			hi = 6 # check if coefficent is a numpy array or a single value
 
 			reaction_fluxes = fbaResults.readColumn("reactionFluxes")
 			base_reaction_fluxes1 = fbaResults.readColumn("base_reaction_fluxes")
@@ -607,6 +611,154 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.close("all")
 
 
+	def enzyme_kinetics_plot(self, simDataFile, plotOutDir, plotOutFileName, metadata):
+		# adapted from models/ecoli/analysis/cohort/kinetics_flux_comparison.py
+
+		# obtain the simulation data:
+		sim_data = self.read_pickle_file(simDataFile)
+		simOutDir = os.path.join(self.all_cells[0], "simOut")
+
+		# burn in time:
+		cell_burnIn_times = []
+		for cell in self.all_cells:
+			mainListener = TableReader(os.path.join(os.path.join(cell, "simOut"), "Main"))
+			time = mainListener.readColumn("time")
+			mainListener.close()
+			burnIn = time > BURN_IN_TIME
+			burnIn[0] = False
+			cell_burnIn_times.append(burnIn)
+
+		# concatenate the burn in times:
+		burnIn = np.concatenate(cell_burnIn_times)
+
+		# get the coefficent for the fluxes: # todo: check that this is an ok way to find the coefficent and everything
+		cellMass = read_stacked_columns(self.all_cells, "Mass", "cellMass")
+		dryMass = read_stacked_columns(self.all_cells, "Mass", "dryMass")
+		cellDensity = sim_data.constants.cell_density
+		coefficient = dryMass / cellMass * cellDensity.asNumber(MASS_UNITS / VOLUME_UNITS)
+
+		# obtain enzyme kinetics data:
+		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
+		kineticsConstrainedReactions = np.array(
+			enzymeKineticsReader.readAttribute("kineticsConstrainedReactions"))
+		self.reaction_IDs = np.array(enzymeKineticsReader.readAttribute("constrainedReactions"))
+		constraint_is_kcat_only = np.array(
+			enzymeKineticsReader.readAttribute('constraint_is_kcat_only')) # todo: is this needed?
+
+		# get the enzyme kinetics fluxes using read stacked columns:
+		allTargetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (
+				read_stacked_columns(self.all_cells, "EnzymeKinetics", "targetFluxes").T / coefficient.squeeze()).T
+		allActualFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (
+					read_stacked_columns(self.all_cells, "EnzymeKinetics", "actualFluxes").T / coefficient.squeeze()).T
+
+		allTargetFluxes = allTargetFluxes.asNumber(units.mmol / units.g / units.h)
+		allActualFluxes = allActualFluxes.asNumber(units.mmol / units.g / units.h)
+
+		allTargetAve = np.nanmean(allTargetFluxes[burnIn, :], axis=0)
+		allActualAve = np.nanmean(allActualFluxes[burnIn, :], axis=0)
+
+		# todo: what is this even doing?
+		n_kinetic_constrained_reactions = len(kineticsConstrainedReactions)
+
+		# boundary target fluxes
+		# TODO: what are these doing?
+		boundaryTargetAve = allTargetAve[n_kinetic_constrained_reactions:]
+		boundaryActualAve = allActualAve[n_kinetic_constrained_reactions:]
+
+		# kinetic target fluxes
+		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
+		actualAve = allActualAve[:n_kinetic_constrained_reactions]
+		hi = 5
+
+		kcatOnlyReactions = constraint_is_kcat_only
+		kmAndKcatReactions = ~constraint_is_kcat_only
+
+		# categorize how well the actual flux matches the target flux
+		thresholds = [2, 10]  # TODO: might want to play around with this
+		categorization = np.zeros(n_kinetic_constrained_reactions)
+		for i, threshold in enumerate(thresholds):
+			categorization[actualAve / targetAve < 1. / threshold] = i + 1
+			categorization[actualAve / targetAve > threshold] = i + 1
+		categorization[actualAve == 0] = -2
+		categorization[actualAve == targetAve] = -1
+
+		# write data for each reaction to a file
+		csvFile = io.open(os.path.join(plotOutDir, plotOutFileName + ".tsv"), "wb")
+		output = tsv.writer(csvFile)
+		output.writerow(["Km and kcat", "Target", "Actual", "Category"])
+		for reaction, target, flux, category in zip(
+				kineticsConstrainedReactions[kmAndKcatReactions], targetAve[kmAndKcatReactions],
+				actualAve[kmAndKcatReactions], categorization[kmAndKcatReactions]):
+			output.writerow([reaction, target, flux, category])
+
+		output.writerow(["kcat only"])
+		for reaction, target, flux, category in zip(
+				kineticsConstrainedReactions[kcatOnlyReactions], targetAve[kcatOnlyReactions],
+				actualAve[kcatOnlyReactions], categorization[kcatOnlyReactions]):
+			output.writerow([reaction, target, flux, category])
+		csvFile.close()
+
+		# add small number to allow plotting of 0 flux on log scale
+		targetAve += 1e-6
+		actualAve += 1e-6
+
+		pearsonAll = pearsonr(np.log10(targetAve), np.log10(actualAve))
+		pearsonNoZeros = pearsonr(np.log10(targetAve[(categorization != -2)]),
+								  np.log10(actualAve[(categorization != -2)]))
+
+		# plot data
+		plt.figure(figsize=(7, 7), dpi=100)
+		ax = plt.axes()
+		plt.plot([-6, 4], [-6, 4], 'k', linewidth=0.75)
+		plt.plot([-5, 4], [-6, 3], 'k', linewidth=0.5)
+		plt.plot([-6, 3], [-5, 4], 'k', linewidth=0.5)
+		plt.plot(np.log10(targetAve), np.log10(actualAve), 'o', color="black", markersize=8,
+				 alpha=0.15, zorder=1, markeredgewidth=0.0)
+		plt.plot(np.log10(boundaryTargetAve), np.log10(boundaryActualAve), "ob", color="red",
+				 markeredgewidth=0.25, alpha=0.9, label='boundary fluxes')
+		plt.title(f"Enzyme Kinetics Flux Comparison\n(averaged over {len(self.all_cells)} cells, each weighted by simulation time spanned, \nSimulation ID: {self.sim_id})")
+		plt.xlabel("Log10(Target Flux [mmol/g/hr])")
+		plt.ylabel("Log10(Actual Flux [mmol/g/hr])")
+		ax.text(0.5, -0.8,"PCC = %.3f, p = %s\n(%.3f, p = %s without points at zero)" % (
+		pearsonAll[0], pearsonAll[1], pearsonNoZeros[0], pearsonNoZeros[1]))
+		plt.minorticks_off()
+		whitePadSparklineAxis(ax)
+		xlim = ax.get_xlim()
+		ylim = ax.get_ylim()
+		ax.set_ylim(ylim[0] - 0.5, ylim[1])
+		ax.set_xlim(xlim[0] - 0.5, xlim[1])
+		ax.set_yticks(list(range(-6, int(ylim[1]) + 1, 2)))
+		ax.set_xticks(list(range(-6, int(xlim[1]) + 1, 2)))
+
+		if self.relevant_reactions_as_catalysts is not None:
+			catalyst_monomers_found_in_kinetic_reactions = self.get_reactions(
+				self.relevant_reactions_as_catalysts, kineticsConstrainedReactions)
+
+			if catalyst_monomers_found_in_kinetic_reactions:
+				plt.scatter(np.log10(targetAve[list(catalyst_monomers_found_in_kinetic_reactions.keys())]),
+							np.log10(actualAve[list(catalyst_monomers_found_in_kinetic_reactions.keys())]),
+							marker='o', color='blue', label='catalyst monomers', )
+				for monomer, reactions in catalyst_monomers_found_in_kinetic_reactions.items():
+					for reaction in reactions:
+						words = catalyst_monomers_found_in_kinetic_reactions[monomer]
+						plt.annotate(words, xy=(np.log10(targetAve[reaction]), np.log10(actualAve[reaction])),
+									 xytext=(5, 5), textcoords='offset points', fontsize=8, color='blue')
+						#ax.text(x + .2, y, name, ha='center', va='bottom', fontsize=8,rotation=0, )
+
+
+
+
+		ax.legend()
+
+		plotOutFileName = plotOutFileName + "_enzyme_kinetics_" + self.sim_id + ".png"
+		exportFigure(plt, plotOutDir, plotOutFileName)
+
+
+
+
+
+
+
 
 
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -631,7 +783,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			time = mainListener.readColumn("time")
 			mainListener.close()
 			burnIn = time > BURN_IN_TIME
+			hi = 5
 			burnIn[0] = False
+			hi =5
 
 			massListener = TableReader(os.path.join(simOutDir, "Mass"))
 			cellMass = massListener.readColumn("cellMass")
@@ -674,7 +828,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		targetAve = allTargetAve[:n_kinetic_constrained_reactions]
 		actualAve = allActualAve[:n_kinetic_constrained_reactions]
 
-		#self.relevant_reactions_as_catalysts, self.relevant_reactions_as_substrates = self.get_relevant_monomers(simDataFile)
+		self.relevant_reactions_as_catalysts, self.relevant_reactions_as_substrates = self.get_relevant_monomers(simDataFile)
 
 		# see if the monomers show up in any of the kinetic constrained reactions:
 		#catalyst_monomers_found_in_kinetic_reactions = self.get_reactions(self.relevant_reactions_as_catalysts, kineticsConstrainedReactions)
@@ -689,7 +843,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.FBA_plots_averaging_method_1a(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 		self.FBA_plots_averaging_method_1b(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 
-
+		self.enzyme_kinetics_plot(simDataFile, plotOutDir, plotOutFileName, metadata)
 
 		hi = 5
 		self.centralCarbonMetabolismScatterPlot(plotOutDir, plotOutFileName, simDataFile,
