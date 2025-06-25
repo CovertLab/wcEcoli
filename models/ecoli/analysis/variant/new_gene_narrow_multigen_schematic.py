@@ -229,6 +229,267 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				loc='upper left', fontsize=8)
 			plot_num += 1
 
+			# TODO: Limiting RNAP subunit protein and mRNA counts
+
+			# RNAP Counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# Inactive
+			rnap_id = [sim_data.molecule_ids.full_RNAP]
+			(inactive_rnap_counts_A,) = read_stacked_bulk_molecules(
+				all_cells_A, (rnap_id,), ignore_exception=True)
+			# Active
+			uniqueMoleculeCounts = TableReader(
+				os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			active_rnap_index = uniqueMoleculeCounts.readAttribute(
+				"uniqueMoleculeIds").index('active_RNAP')
+			active_rnap_counts_A = read_stacked_columns(
+				all_cells_A, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				ignore_exception=True)[:, active_rnap_index]
+			total_rnap_counts_A = inactive_rnap_counts_A + active_rnap_counts_A
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = total_rnap_counts_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				(inactive_rnap_counts_B,) = read_stacked_bulk_molecules(
+					all_cells_B, (rnap_id,), ignore_exception=True)
+				active_rnap_counts_B = read_stacked_columns(
+					all_cells_B, 'UniqueMoleculeCounts',
+					'uniqueMoleculeCounts',
+					ignore_exception=True)[:, active_rnap_index]
+				total_rnap_counts_B = inactive_rnap_counts_B + active_rnap_counts_B
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = total_rnap_counts_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('RNAP Counts')
+			plt.xlabel('Time (minutes)')
+			handles, labels = plt.gca().get_legend_handles_labels()
+			by_label = dict(zip(labels, handles))
+			plt.legend(
+				by_label.values(), by_label.keys(),
+				loc='upper left', fontsize=8)
+			plot_num += 1
+
+			# TODO: rRNA counts
+
+			# Ribosome Counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# Inactive
+			complex_id_30s = [sim_data.molecule_ids.s30_full_complex]
+			complex_id_50s = [sim_data.molecule_ids.s50_full_complex]
+			(complex_counts_30s_A, complex_counts_50s_A) = read_stacked_bulk_molecules(
+				all_cells_A, (complex_id_30s, complex_id_50s), ignore_exception=True)
+			inactive_ribosome_counts_A = np.minimum(
+				complex_counts_30s_A, complex_counts_50s_A)
+			# Active
+			unique_molecule_counts_table = TableReader(
+				os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			ribosome_index = unique_molecule_counts_table.readAttribute(
+				"uniqueMoleculeIds").index('active_ribosome')
+			active_ribosome_counts_A = read_stacked_columns(
+				all_cells_A, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
+			# Total
+			total_ribosome_counts_A = inactive_ribosome_counts_A + active_ribosome_counts_A
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = total_ribosome_counts_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				(complex_counts_30s_B, complex_counts_50s_B) = read_stacked_bulk_molecules(
+					all_cells_B, (complex_id_30s, complex_id_50s), ignore_exception=True)
+				inactive_ribosome_counts_B = np.minimum(
+					complex_counts_30s_B, complex_counts_50s_B)
+				active_ribosome_counts_B = read_stacked_columns(
+					all_cells_B, 'UniqueMoleculeCounts',
+					'uniqueMoleculeCounts', ignore_exception=True)[:, ribosome_index]
+				total_ribosome_counts_B = inactive_ribosome_counts_B + active_ribosome_counts_B
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = total_ribosome_counts_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Ribosome Counts')
+			plt.xlabel('Time (minutes)')
+			handles, labels = plt.gca().get_legend_handles_labels()
+			by_label = dict(zip(labels, handles))
+			plt.legend(
+				by_label.values(), by_label.keys(),
+				loc='upper left', fontsize=8)
+			plot_num += 1
+
+			# Cell Mass
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			cell_mass_A = read_stacked_columns(
+				all_cells_A, 'Mass', 'cellMass', ignore_exception=True).squeeze()
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = cell_mass_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				cell_mass_B = read_stacked_columns(
+					all_cells_B, 'Mass', 'cellMass', ignore_exception=True).squeeze()
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = cell_mass_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Cell Mass (fg)')
+			plt.xlabel('Time (minutes)')
+			handles, labels = plt.gca().get_legend_handles_labels()
+			by_label = dict(zip(labels, handles))
+			plt.legend(
+				by_label.values(), by_label.keys(),
+				loc='upper left', fontsize=8)
+			plot_num += 1
+
+			# Critical Chromosome Replication Initiation Mass
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			critical_initiation_mass_A = read_stacked_columns(
+				all_cells_A, 'ReplicationData', 'criticalInitiationMass',
+				ignore_exception=True).squeeze()
+			critical_mass_equivalents_A = (
+				cell_mass_A / critical_initiation_mass_A)
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = critical_mass_equivalents_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				critical_initiation_mass_B = read_stacked_columns(
+					all_cells_B, 'ReplicationData', 'criticalInitiationMass',
+					ignore_exception=True).squeeze()
+				critical_mass_equivalents_B = (
+					cell_mass_B / critical_initiation_mass_B)
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = critical_mass_equivalents_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.axhline(y=1, color='k', linestyle='--')
+			plt.axhline(y=2, color='k', linestyle='--')
+			plt.ylabel('Factors of Critical Initiation Mass')
+			plt.xlabel('Time (minutes)')
+			handles, labels = plt.gca().get_legend_handles_labels()
+			by_label = dict(zip(labels, handles))
+			plt.legend(
+				by_label.values(), by_label.keys(),
+				loc='upper left', fontsize=8)
+			plot_num += 1
+
+			# Pairs of Forks (Chromosome Replication Initiation)
+			# TODO: figure out why read_stacked_columns is not working here
+			# replication_fork_coordinates_A = read_stacked_columns(
+			# 	all_cells_A, 'ReplicationData', 'fork_coordinates',
+			# 	ignore_exception=True)
+			# pairs_of_forks_A = (
+			# 		np.logical_not(np.isnan(
+			# 		replication_fork_coordinates_A)).sum(axis=1) / 2)
+			# for gen in GEN_RANGE:
+			# 	rel_gen_index = gen - START_GEN_INDEX
+			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+			# 	counts_data = pairs_of_forks_A[
+			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+			# 	plt.plot(
+			# 		time_data / 60., counts_data,
+			# 		color=GEN_TO_COLOR[gen],
+			# 		label = f'Variant {VARIANT_INDEX_A}',)
+			# if VARIANT_INDEX_B != -1:
+			# 	replication_fork_coordinates_B = read_stacked_columns(
+			# 		all_cells_B, 'ReplicationData', 'fork_coordinates',
+			# 		ignore_exception=True)
+			# 	pairs_of_forks_B = (
+			# 			np.logical_not(np.isnan(
+			# 			replication_fork_coordinates_B)).sum(axis=1) / 2)
+			# 	for gen in GEN_RANGE:
+			# 		rel_gen_index = gen - START_GEN_INDEX
+			# 		time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+			# 		counts_data = pairs_of_forks_B[
+			# 			gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+			# 		plt.plot(
+			# 			time_data / 60., counts_data,
+			# 			color=VARIANT_B_COLOR,
+			# 			label = f'Variant {VARIANT_INDEX_B}',)
+			# plt.ylabel('Pairs of Forks')
+			# plt.xlabel('Time (minutes)')
+			# handles, labels = plt.gca().get_legend_handles_labels()
+			# by_label = dict(zip(labels, handles))
+			# plt.legend(
+			# 	by_label.values(), by_label.keys(),
+			# 	loc='upper left', fontsize=8)
+			# plot_num += 1
+
+			# Doubling Time
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			dt_to_plot_A = np.repeat(dt_A, num_time_steps_A)
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = dt_to_plot_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				dt_to_plot_B = np.repeat(dt_B, num_time_steps_B)
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = dt_to_plot_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Doubling Time (min)')
+			plt.xlabel('Time (minutes)')
+			handles, labels = plt.gca().get_legend_handles_labels()
+			by_label = dict(zip(labels, handles))
+			plt.legend(
+				by_label.values(), by_label.keys(),
+				loc='upper left', fontsize=8)
+			plot_num += 1
+
+			# TODO: rRNA Copy Number
 
 			# Save figure
 			print(f"\nSeed: {seed_index}")
