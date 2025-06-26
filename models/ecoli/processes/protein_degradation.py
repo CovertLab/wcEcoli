@@ -231,7 +231,14 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 				kcat = 0.071  # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
 				# todo: the guess Km value was 3.7x10-6 M
-				Kms = [0.0575, 0.0444, 0.0599, 0.0630, 0.0627, 0.0614] # M
+				Kms1 = [0.0575, 0.0444, 0.0599, 0.0630, 0.0627, 0.0614] # M --> source: original matlab file
+
+				# Kms from new solving with b = 1.24
+				# original order: PD03938, G6890-MONOMER, G6737-MONOMER, RPOD-MONOMER, PD02936, RED-THIOREDOXIN2-MONOMER
+				Kms2 = [] # M --> source: original matlab file
+
+
+
 
 
 				# calculate the k_active value:
