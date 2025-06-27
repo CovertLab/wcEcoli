@@ -234,8 +234,11 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				Kms1 = [0.0575, 0.0444, 0.0599, 0.0630, 0.0627, 0.0614] # M --> source: original matlab file
 
 				# Kms from new solving with b = 1.24
-				# original order: PD03938, G6890-MONOMER, G6737-MONOMER, RPOD-MONOMER, PD02936, RED-THIOREDOXIN2-MONOMER
-				Kms2 = [] # M --> source: original matlab file
+
+				# original order: PD03938, G6890-MONOMER, G6737-MONOMER, RPOD-MONOMER, PD02936, RED-THIOREDOXIN2-MONOMER --> SWITCHED PROPERLY TO SUBSTRATES ORDER
+				Kms2 = [ 3.1190099e-4, 5.29487648e-6, 5.2999865e-4,   4.1087516e-4, 1.23777405e-4, 9.36398294e-3] # M --> source: original matlab file
+
+				Kms = Kms2
 
 
 
