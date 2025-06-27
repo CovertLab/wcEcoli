@@ -641,9 +641,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		enzymeKineticsReader = TableReader(os.path.join(simOutDir, "EnzymeKinetics"))
 		kineticsConstrainedReactions = np.array(
 			enzymeKineticsReader.readAttribute("kineticsConstrainedReactions"))
-		self.reaction_IDs = np.array(enzymeKineticsReader.readAttribute("constrainedReactions"))
 		constraint_is_kcat_only = np.array(
 			enzymeKineticsReader.readAttribute('constraint_is_kcat_only')) # todo: is this needed?
+
+		# make a dictionary of the reaction IDs and their indices:
+		kinetic_rxn_id_to_idx = {rxn: i for i, rxn in enumerate(kineticsConstrainedReactions)}
+
+
+
+		hi = 5
 
 		# get the enzyme kinetics fluxes using read stacked columns:
 		allTargetFluxes = (COUNTS_UNITS / MASS_UNITS / TIME_UNITS) * (
@@ -733,25 +739,36 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if self.relevant_reactions_as_catalysts is not None:
 			catalyst_monomers_found_in_kinetic_reactions = self.get_reactions(
 				self.relevant_reactions_as_catalysts, kineticsConstrainedReactions)
-
-			if catalyst_monomers_found_in_kinetic_reactions:
-				plt.scatter(np.log10(targetAve[list(catalyst_monomers_found_in_kinetic_reactions.keys())]),
-							np.log10(actualAve[list(catalyst_monomers_found_in_kinetic_reactions.keys())]),
-							marker='o', color='blue', label='catalyst monomers', )
-				for monomer, reactions in catalyst_monomers_found_in_kinetic_reactions.items():
-					for reaction in reactions:
-						words = catalyst_monomers_found_in_kinetic_reactions[monomer]
-						plt.annotate(words, xy=(np.log10(targetAve[reaction]), np.log10(actualAve[reaction])),
-									 xytext=(5, 5), textcoords='offset points', fontsize=8, color='blue')
-						#ax.text(x + .2, y, name, ha='center', va='bottom', fontsize=8,rotation=0, )
+			hi = 5
 
 
+			if catalyst_monomers_found_in_kinetic_reactions is not None:
+				for monomer in catalyst_monomers_found_in_kinetic_reactions.keys():
+					for reaction in catalyst_monomers_found_in_kinetic_reactions[monomer]:
+						rxn_idx = kinetic_rxn_id_to_idx[reaction]
+						plt.plot(np.log10(targetAve[rxn_idx]), np.log10(actualAve[rxn_idx]),'o', color="blue", markersize=8, alpha=0.9, markeredgewidth=0.25,label='catalyst monomers' if rxn_idx == 0 else "")
+						# add the monomer names to the plot
+						ax.text(np.log10(targetAve[rxn_idx]), np.log10(actualAve[rxn_idx]), catalyst_monomers_found_in_kinetic_reactions[reaction], reaction,ha='center', va='bottom', fontsize=8, rotation=0, color="blue", zorder=2)
 
 
-		ax.legend()
+		# add a legend and save the figure
+		plt.legend(loc='upper left', fontsize=8, frameon=False)
 
-		plotOutFileName = plotOutFileName + "_enzyme_kinetics_" + self.sim_id + ".png"
-		exportFigure(plt, plotOutDir, plotOutFileName)
+
+
+				# for monomer, reactions in catalyst_monomers_found_in_kinetic_reactions.items():
+				# 	for reaction in reactions:
+				# 		words = catalyst_monomers_found_in_kinetic_reactions[monomer]
+				# 		plt.annotate(words, xy=(np.log10(targetAve[reaction]), np.log10(actualAve[reaction])),
+				# 					 xytext=(5, 5), textcoords='offset points', fontsize=8, color='blue')
+				# 		#ax.text(x + .2, y, name, ha='center', va='bottom', fontsize=8,rotation=0, )
+
+
+
+		# ax.legend()
+		#
+		# plotOutFileName = plotOutFileName + "_enzyme_kinetics_" + self.sim_id + ".png"
+		# exportFigure(plt, plotOutDir, plotOutFileName)
 
 
 
