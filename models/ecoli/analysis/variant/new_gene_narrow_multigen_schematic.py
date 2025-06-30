@@ -44,9 +44,9 @@ VARIANT_B_COLOR = poster_colors["light_gray"]
 VARIANT_INDEX_A = 23
 VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
 
-# FOR LOCAL DEVELOPMENT
-VARIANT_INDEX_A = 21
-VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
+# # FOR LOCAL DEVELOPMENT
+# VARIANT_INDEX_A = 21
+# VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
