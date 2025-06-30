@@ -346,6 +346,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.xlabel('Time (minutes)')
 			plot_num += 1
 
+			# Total Transcriptional Output - NTPs Used
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			count_NTPs_used_A = read_stacked_columns(
+				all_cells_A, "TranscriptElongationListener", "countNTPsUSed",
+				ignore_exception=True)
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = count_NTPs_used_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				count_NTPs_used_B = read_stacked_columns(
+					all_cells_B, "TranscriptElongationListener", "countNTPsUSed",
+					ignore_exception=True)
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = count_NTPs_used_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Total Transcriptional Output (NTPs Used)', fontsize=8)
+			plt.xlabel('Time (minutes)')
+			plot_num += 1
+
 			# Limiting rRNA Counts
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			limiting_rRNA_cistron_id = sim_data.molecule_groups.s50_23s_rRNA[0]
@@ -448,6 +479,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						color=VARIANT_B_COLOR,
 						label = f'Variant {VARIANT_INDEX_B}',)
 			plt.ylabel('Ribosome Counts')
+			plt.xlabel('Time (minutes)')
+			plot_num += 1
+
+			# Total Translational Output - counts of translated amino acids
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			translated_AAs_A = read_stacked_columns(
+				all_cells_A, 'RibosomeData', 'actualElongations',
+				ignore_exception=True).squeeze()
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = translated_AAs_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				translated_AAs_B = read_stacked_columns(
+					all_cells_B, 'RibosomeData', 'actualElongations',
+					ignore_exception=True).squeeze()
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = translated_AAs_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Total Translational Output (AAs)')
 			plt.xlabel('Time (minutes)')
 			plot_num += 1
 
