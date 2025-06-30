@@ -222,11 +222,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						label = f'Variant {VARIANT_INDEX_B}',)
 			plt.ylabel('New Gene Protein Counts')
 			plt.xlabel('Time (minutes)')
-			handles, labels = plt.gca().get_legend_handles_labels()
-			by_label = dict(zip(labels, handles))
-			plt.legend(
-				by_label.values(), by_label.keys(),
-				loc='upper left', fontsize=8)
 			plot_num += 1
 
 			# TODO: Limiting RNAP subunit protein and mRNA counts
@@ -275,11 +270,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						label = f'Variant {VARIANT_INDEX_B}',)
 			plt.ylabel('RNAP Counts')
 			plt.xlabel('Time (minutes)')
-			handles, labels = plt.gca().get_legend_handles_labels()
-			by_label = dict(zip(labels, handles))
-			plt.legend(
-				by_label.values(), by_label.keys(),
-				loc='upper left', fontsize=8)
 			plot_num += 1
 
 			# TODO: rRNA counts
@@ -332,11 +322,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						label = f'Variant {VARIANT_INDEX_B}',)
 			plt.ylabel('Ribosome Counts')
 			plt.xlabel('Time (minutes)')
-			handles, labels = plt.gca().get_legend_handles_labels()
-			by_label = dict(zip(labels, handles))
-			plt.legend(
-				by_label.values(), by_label.keys(),
-				loc='upper left', fontsize=8)
 			plot_num += 1
 
 			# Cell Mass
@@ -366,11 +351,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						label = f'Variant {VARIANT_INDEX_B}',)
 			plt.ylabel('Cell Mass (fg)')
 			plt.xlabel('Time (minutes)')
-			handles, labels = plt.gca().get_legend_handles_labels()
-			by_label = dict(zip(labels, handles))
-			plt.legend(
-				by_label.values(), by_label.keys(),
-				loc='upper left', fontsize=8)
 			plot_num += 1
 
 			# Critical Chromosome Replication Initiation Mass
@@ -408,54 +388,46 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.axhline(y=2, color='k', linestyle='--')
 			plt.ylabel('Factors of Critical Initiation Mass')
 			plt.xlabel('Time (minutes)')
-			handles, labels = plt.gca().get_legend_handles_labels()
-			by_label = dict(zip(labels, handles))
-			plt.legend(
-				by_label.values(), by_label.keys(),
-				loc='upper left', fontsize=8)
 			plot_num += 1
 
 			# Pairs of Forks (Chromosome Replication Initiation)
-			# TODO: figure out why read_stacked_columns is not working here
-			# replication_fork_coordinates_A = read_stacked_columns(
-			# 	all_cells_A, 'ReplicationData', 'fork_coordinates',
-			# 	ignore_exception=True)
-			# pairs_of_forks_A = (
-			# 		np.logical_not(np.isnan(
-			# 		replication_fork_coordinates_A)).sum(axis=1) / 2)
-			# for gen in GEN_RANGE:
-			# 	rel_gen_index = gen - START_GEN_INDEX
-			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	counts_data = pairs_of_forks_A[
-			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	plt.plot(
-			# 		time_data / 60., counts_data,
-			# 		color=GEN_TO_COLOR[gen],
-			# 		label = f'Variant {VARIANT_INDEX_A}',)
-			# if VARIANT_INDEX_B != -1:
-			# 	replication_fork_coordinates_B = read_stacked_columns(
-			# 		all_cells_B, 'ReplicationData', 'fork_coordinates',
-			# 		ignore_exception=True)
-			# 	pairs_of_forks_B = (
-			# 			np.logical_not(np.isnan(
-			# 			replication_fork_coordinates_B)).sum(axis=1) / 2)
-			# 	for gen in GEN_RANGE:
-			# 		rel_gen_index = gen - START_GEN_INDEX
-			# 		time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		counts_data = pairs_of_forks_B[
-			# 			gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		plt.plot(
-			# 			time_data / 60., counts_data,
-			# 			color=VARIANT_B_COLOR,
-			# 			label = f'Variant {VARIANT_INDEX_B}',)
-			# plt.ylabel('Pairs of Forks')
-			# plt.xlabel('Time (minutes)')
-			# handles, labels = plt.gca().get_legend_handles_labels()
-			# by_label = dict(zip(labels, handles))
-			# plt.legend(
-			# 	by_label.values(), by_label.keys(),
-			# 	loc='upper left', fontsize=8)
-			# plot_num += 1
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				# Because of dynamic sizing, read_stacked_columns does not work for fork_coordinates
+				sim_dir_A = all_cells_A[rel_gen_index]
+				simOutDirA = os.path.join(sim_dir_A, 'simOut')
+				time_data = TableReader(os.path.join(simOutDirA, "Main")).readColumn(
+					"time")
+				replication_data_file_A = TableReader(os.path.join(simOutDirA, "ReplicationData"))
+				fork_coordinates_A = replication_data_file_A.readColumn("fork_coordinates")
+				pairs_of_forks_A = np.logical_not(np.isnan(fork_coordinates_A)).sum(axis=1) / 2
+				replication_data_file_A.close()
+				counts_data = pairs_of_forks_A
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					# Because of dynamic sizing, read_stacked_columns does not work for fork_coordinates
+					sim_dir_B = all_cells_B[rel_gen_index]
+					simOutDirB = os.path.join(sim_dir_B, 'simOut')
+					time_data = TableReader(os.path.join(simOutDirB, "Main")).readColumn(
+						"time")
+					replication_data_file_B = TableReader(os.path.join(simOutDirB, "ReplicationData"))
+					fork_coordinates_B = replication_data_file_B.readColumn("fork_coordinates")
+					pairs_of_forks_B = np.logical_not(np.isnan(fork_coordinates_B)).sum(axis=1) / 2
+					replication_data_file_B.close()
+					counts_data = pairs_of_forks_B
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Pairs of Forks')
+			plt.xlabel('Time (minutes)')
+			plot_num += 1
 
 			# Doubling Time
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
@@ -482,11 +454,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						label = f'Variant {VARIANT_INDEX_B}',)
 			plt.ylabel('Doubling Time (min)')
 			plt.xlabel('Time (minutes)')
-			handles, labels = plt.gca().get_legend_handles_labels()
-			by_label = dict(zip(labels, handles))
-			plt.legend(
-				by_label.values(), by_label.keys(),
-				loc='upper left', fontsize=8)
 			plot_num += 1
 
 			# TODO: rRNA Copy Number
