@@ -584,6 +584,55 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plot_num += 1
 
 			# TODO: rRNA Copy Number
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+
+			# Get rna_ids attribute from RnaSynthProb table in reference cell path
+			reference_cell_path = all_cells_A[0]
+			sim_out_dir = os.path.join(reference_cell_path, 'simOut')
+			rna_synth_prob_reader = TableReader(
+				os.path.join(sim_out_dir, 'RnaSynthProb'))
+			rna_ids = rna_synth_prob_reader.readAttribute('rnaIds')
+
+			# Get indexes of rRNAs in RnaSynthProb table
+			transcription = sim_data.process.transcription
+			rna_id_to_is_rRNA = {
+				rna['id']: rna['is_rRNA'] for rna in transcription.rna_data
+				}
+			rrna_indexes_rna_synth_prob = np.array([
+				i for (i, rna_id) in enumerate(rna_ids)
+				if rna_id_to_is_rRNA[rna_id]
+				])
+			rna_synth_prob_reader.close()
+			rrna_copy_numbers_A = read_stacked_columns(
+				all_cells_A, 'RnaSynthProb', 'promoter_copy_number',
+				fun=lambda x: x[:, rrna_indexes_rna_synth_prob])
+			rrna_copy_numbers_A = rrna_copy_numbers_A.sum(axis=1)
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = rrna_copy_numbers_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				rrna_copy_numbers_B = read_stacked_columns(
+					all_cells_B, 'RnaSynthProb', 'promoter_copy_number',
+					fun=lambda x: x[:, rrna_indexes_rna_synth_prob])
+				rrna_copy_numbers_B = rrna_copy_numbers_B.sum(axis=1)
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = rrna_copy_numbers_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Summed rRNA Copy Number')
+			plt.xlabel('Time (minutes)')
+			plot_num += 1
 
 			# Save figure
 			print(f"\nSeed: {seed_index}")
