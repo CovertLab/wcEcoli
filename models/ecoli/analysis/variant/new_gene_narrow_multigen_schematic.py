@@ -645,16 +645,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.xlabel('Time (minutes)')
 			plot_num += 1
 
-			# TODO: rRNA Copy Number
+			# rRNA Copy Number
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-
 			# Get rna_ids attribute from RnaSynthProb table in reference cell path
 			reference_cell_path = all_cells_A[0]
 			sim_out_dir = os.path.join(reference_cell_path, 'simOut')
 			rna_synth_prob_reader = TableReader(
 				os.path.join(sim_out_dir, 'RnaSynthProb'))
 			rna_ids = rna_synth_prob_reader.readAttribute('rnaIds')
-
 			# Get indexes of rRNAs in RnaSynthProb table
 			transcription = sim_data.process.transcription
 			rna_id_to_is_rRNA = {
