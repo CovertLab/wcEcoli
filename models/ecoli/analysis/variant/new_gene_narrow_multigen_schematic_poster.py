@@ -85,7 +85,7 @@ RRNA_GEN_TO_COLOR = {
 }
 
 # FOR SHERLOCK
-VARIANT_INDEX_A = 23
+VARIANT_INDEX_A = 1
 VARIANT_INDEX_B = -1 # Optional, set to -1 if only one variant is desired
 
 # # FOR LOCAL DEVELOPMENT
@@ -124,7 +124,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
 			plt.rcParams['font.size'] = 20
-			fig= plt.figure(figsize=(14, total_plots * 5))
+			fig= plt.figure(figsize=(18, total_plots * 3))
 
 			plot_num = 1
 			ax1 = plt.subplot(total_plots, 1, plot_num)
@@ -399,8 +399,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.spines["left"].set_position(("outward", 10))
 			ax.spines["bottom"].set_visible(False)
 			ax.get_xaxis().set_visible(False)
-			max_y = 60
-			min_y = 45
+			max_y = 62
+			min_y = 46
 			ax.set_ylim([min_y, max_y])
 			ax.set_yticks([min_y, (max_y - min_y) / 2 + min_y, max_y])
 			plot_num += 1
@@ -462,8 +462,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						artist.set_clip_on(False)
 					except AttributeError:
 						pass
-
 			# Save figure
+			fig.subplots_adjust(hspace=0.5)
 			print(f"\nSeed: {seed_index}")
 			print("Total number of plots made: ", plot_num - 1)
 			# plt.subplots_adjust(hspace=0.7, top=0.95, bottom=0.05)
