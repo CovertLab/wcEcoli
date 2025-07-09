@@ -381,17 +381,51 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_yticks([0, max_y / 2, max_y])
 			plot_num += 1
 
-			# Doubling Time
+			# # Doubling Time
+			# ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# dt_to_plot_A = np.repeat(dt_A, num_time_steps_A)
+			# for gen in GEN_RANGE:
+			# 	rel_gen_index = gen - START_GEN_INDEX
+			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+			# 	counts_data = dt_to_plot_A[
+			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+			# 	GEN_TO_COLOR = DT_GEN_TO_COLOR
+			# 	plt.plot(
+			# 		time_data / 60., counts_data,
+			# 		color=GEN_TO_COLOR[gen],
+			# 		label = f'Variant {VARIANT_INDEX_A}', linewidth=std_linewidth)
+			# plt.ylabel('Doubling Time (min)')
+			# ax.spines["bottom"].set_position(("outward", 10))
+			# ax.spines["left"].set_position(("outward", 10))
+			# ax.spines["bottom"].set_visible(False)
+			# ax.get_xaxis().set_visible(False)
+			# max_y = 62
+			# min_y = 46
+			# ax.set_ylim([min_y, max_y])
+			# ax.set_yticks([min_y, (max_y - min_y) / 2 + min_y, max_y])
+			# plot_num += 1
+
+			# Instantaneous Doubling Time
 			ax = plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			dt_to_plot_A = np.repeat(dt_A, num_time_steps_A)
+			instantaneous_growth_rate_A = read_stacked_columns(
+				all_cells_A, 'Mass', 'instantaneous_growth_rate',
+				ignore_exception=True).squeeze()
+			instantaneous_dt_A = np.log(2) / instantaneous_growth_rate_A / 60.0
 			for gen in GEN_RANGE:
 				rel_gen_index = gen - START_GEN_INDEX
 				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-				counts_data = dt_to_plot_A[
+				counts_data = instantaneous_dt_A[
 					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				time_data = time_data[100:]
+				counts_data = counts_data[100:]
+				moving_window = min(21, len(counts_data))
+				convolution_array = (np.ones(moving_window) / moving_window)
+				pad = moving_window // 2
+				padded = np.pad(counts_data, pad_width=pad, mode='edge')
+				counts_data_convolved = np.convolve(padded, convolution_array, mode='valid')
 				GEN_TO_COLOR = DT_GEN_TO_COLOR
 				plt.plot(
-					time_data / 60., counts_data,
+					time_data / 60., counts_data_convolved,
 					color=GEN_TO_COLOR[gen],
 					label = f'Variant {VARIANT_INDEX_A}', linewidth=std_linewidth)
 			plt.ylabel('Doubling Time (min)')
@@ -399,8 +433,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.spines["left"].set_position(("outward", 10))
 			ax.spines["bottom"].set_visible(False)
 			ax.get_xaxis().set_visible(False)
-			max_y = 62
-			min_y = 46
+			max_y = 76
+			min_y = 40
 			ax.set_ylim([min_y, max_y])
 			ax.set_yticks([min_y, (max_y - min_y) / 2 + min_y, max_y])
 			plot_num += 1
