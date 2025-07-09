@@ -418,7 +418,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
 				time_data = time_data[100:]
 				counts_data = counts_data[100:]
-				moving_window = min(21, len(counts_data))
+				moving_window = min(301, len(counts_data))
 				convolution_array = (np.ones(moving_window) / moving_window)
 				pad = moving_window // 2
 				padded = np.pad(counts_data, pad_width=pad, mode='edge')
@@ -433,7 +433,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.spines["left"].set_position(("outward", 10))
 			ax.spines["bottom"].set_visible(False)
 			ax.get_xaxis().set_visible(False)
-			max_y = 76
+			max_y = 80
 			min_y = 40
 			ax.set_ylim([min_y, max_y])
 			ax.set_yticks([min_y, (max_y - min_y) / 2 + min_y, max_y])
