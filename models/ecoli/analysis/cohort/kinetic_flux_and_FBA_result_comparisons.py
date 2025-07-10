@@ -736,11 +736,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax.set_yticks(list(range(-6, int(ylim[1]) + 1, 2)))
 		ax.set_xticks(list(range(-6, int(xlim[1]) + 1, 2)))
 
+
+
 		if self.relevant_reactions_as_catalysts is not None:
 			catalyst_monomers_found_in_kinetic_reactions = self.get_reactions(
 				self.relevant_reactions_as_catalysts, kineticsConstrainedReactions)
-			hi = 5
-
 
 			if catalyst_monomers_found_in_kinetic_reactions is not None:
 				for monomer in catalyst_monomers_found_in_kinetic_reactions.keys():
@@ -748,11 +748,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						rxn_idx = kinetic_rxn_id_to_idx[reaction]
 						plt.plot(np.log10(targetAve[rxn_idx]), np.log10(actualAve[rxn_idx]),'o', color="blue", markersize=8, alpha=0.9, markeredgewidth=0.25,label='catalyst monomers' if rxn_idx == 0 else "")
 						# add the monomer names to the plot
-						ax.text(np.log10(targetAve[rxn_idx]), np.log10(actualAve[rxn_idx]), catalyst_monomers_found_in_kinetic_reactions[reaction], reaction,ha='center', va='bottom', fontsize=8, rotation=0, color="blue", zorder=2)
+						# todo: do I want the reaction name or the monomer name to be the text name?
+						ax.text(np.log10(targetAve[rxn_idx])+0.5, np.log10(actualAve[rxn_idx]), reaction ,ha='center', va='bottom', fontsize=8, rotation=0, color="blue", zorder=2)
+
+		# make a table at the bottom of the graph with the important reactions
 
 
 		# add a legend and save the figure
 		plt.legend(loc='upper left', fontsize=8, frameon=False)
+		plotOutFileName = plotOutFileName + "_enzyme_kinetics_" + self.sim_id + ".png"
+		exportFigure(plt, plotOutDir, plotOutFileName)
 
 
 
