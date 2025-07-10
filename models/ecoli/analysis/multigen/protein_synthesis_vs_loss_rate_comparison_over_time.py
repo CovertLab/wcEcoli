@@ -15,16 +15,17 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 
-PLOT_PROTEINS = ['G6890-MONOMER[c]',
-					   'PD03938[c]',
-						'G6737-MONOMER[c]',
-					   	'RPOD-MONOMER[c]',
-					   	'PD02936[c]',
-					   	'RED-THIOREDOXIN2-MONOMER[c]',]
+PLOT_PROTEINS = [#'G6890-MONOMER[c]',
+					   #'PD03938[c]',
+						#'G6737-MONOMER[c]',
+					   	#'RPOD-MONOMER[c]',
+					   	#'PD02936[c]',
+					   	#'RED-THIOREDOXIN2-MONOMER[c]',]
  						#"PD03867[c]",
-						#"EG11734-MONOMER[c]"]
-#'CDPDIGLYSYN-MONOMER[i]',
-#'NG-GFP-MONOMER[c]',]
+						"EG11734-MONOMER[c]",
+"PD03867[c]"]
+
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
