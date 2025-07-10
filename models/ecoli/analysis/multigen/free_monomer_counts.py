@@ -16,7 +16,13 @@ from wholecell.io.tablereader import TableReader
 # Add the proteins to be plotted here (there can be multiple):
 interest_proteins = np.array([
 	# 'EG11854-MONOMER[c]',
-	'NG-GFP-MONOMER[c]',
+	#'G6890-MONOMER[c]',
+	#'PD03938[c]',
+	#'G6737-MONOMER[c]',
+	#'RPOD-MONOMER[c]',
+	#'PD02936[c]',
+	#'RED-THIOREDOXIN2-MONOMER[c]'
+
 ])
 
 """ END USER INPUTS """
@@ -37,7 +43,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 		monomer_sim_data = sim_data.process.translation.monomer_data.struct_array
-
 		# extract info about the protein(s) from the monomer data:
 		monomer_data_idxs = []
 		for protein in interest_proteins:

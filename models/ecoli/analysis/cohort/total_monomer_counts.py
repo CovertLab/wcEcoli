@@ -29,9 +29,11 @@ interest_proteins = np.array([
 	#'EG11854-MONOMER[c]',
 	#'TRYPSYN-APROTEIN[c]',
 	#'TRYPSYN-BPROTEIN[c]',
-	'LEUD-MONOMER[c]',
+	#'LEUD-MONOMER[c]',
 	#'3-ISOPROPYLMALDEHYDROG-MONOMER[c]',
 	#"NG-GFP-MONOMER[c]",
+'G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]'
+
 ])
 
 # Indicate if the average value for each generation should be plotted:
