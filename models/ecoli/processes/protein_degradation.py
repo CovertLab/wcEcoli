@@ -197,7 +197,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				s3 = self.proteins.total_counts()[2229]
 				s4 = self.proteins.total_counts()[4002]
 				s5 = self.proteins.total_counts()[3854]
-				s6 = self.proteins.total_counts()[3977]
+				s6 = self.proteins.total_counts()[3977] # todo: double check this is correct
 
 				def get_substrate_counts(substrates):
 					counts = []
