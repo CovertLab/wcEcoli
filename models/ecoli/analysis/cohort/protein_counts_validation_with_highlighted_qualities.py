@@ -19,15 +19,16 @@ from sklearn.metrics import r2_score
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # input proteins to highlight:
-HIGHLIGHT_PROTEINS = [#'G6890-MONOMER[c]',
- 					   #'PD03938[c]',
- 					   #'G6737-MONOMER[c]',
- 					   #'RPOD-MONOMER[c]',
- 					   #'PD02936[c]',
- 					   #'RED-THIOREDOXIN2-MONOMER[c]',
+HIGHLIGHT_PROTEINS = ['G6890-MONOMER[c]',
+ 					   'PD03938[c]',
+ 					   'G6737-MONOMER[c]',
+ 					   'RPOD-MONOMER[c]',
+ 					   'PD02936[c]',
+ 					   'RED-THIOREDOXIN2-MONOMER[c]',
   						#"EG10542-MONOMER[c]"
-	'EG11111-MONOMER[c]',
-'EG11957-MONOMER[c]',]
+	#'EG11111-MONOMER[c]',
+#'EG11957-MONOMER[c]',
+]
 
 # threshold for complex fraction:
 COMPLEX_FRACTION_THRESHOLD = 0.9
