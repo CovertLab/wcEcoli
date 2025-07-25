@@ -136,6 +136,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			proteins_degraded = (degraded_counts[:, protein_idx])*-1
 			monomer_data = sim_data.process.translation.monomer_data[protein_idx]
 			deg_rate = monomer_data["deg_rate"]
+			measured_HL = (np.log(2) / deg_rate) / 60
 
 
 
@@ -165,24 +166,32 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				hi = 5 # PD029 had a single non nan
 
 
-				# Calculate half-life
-				y_pos = gen_protein_counts.max() * 1.05  # just above max count in that generation
-				ax1.text(dt, y_pos,
-						 f"HL ≈ {avg_half_life:.1f} min",
-						 color="black",
-						 ha="center",
-						 va="bottom",
-						 fontsize=8,
-						 rotation=0)
+				# make a plot of the effective half lives
+				def effective_HL(t, C0, k):
+					return C0 * np.exp(-k * t)
+
+				k_avg = np.log(2) / (avg_half_life*60) # todo is this an issue units wise agh. does it need to be multipled by 60
+				C0_fit = gen_protein_counts[0]
+				# todo: fix this! I think gen_time is what should not be in here. it should be like 1 to end_gen_time!
+				time_for_graph = gen_time - np.ones(len(gen_time))*gen_time[0]
+				y_data = effective_HL(time_for_graph, C0_fit, k_avg)
+				hi = 5
+				ax1.plot(gen_time, y_data,
+						 color='gray', linestyle='--',)
+
+				y_pos = y_data[0] * .8
+				ax1.text(dt-time_for_graph[-1]/2, y_pos, f"HL ≈ {avg_half_life:.1f} min", color="black",
+						 ha="center", va="bottom", fontsize=8, rotation=0)
+
+				# also plot the measured half life as a comparison:
+				k_measured = np.log(2)/(measured_HL*60)
+				y_data_measured = effective_HL(time_for_graph, C0_fit, k_measured)
+				ax1.plot(gen_time, y_data_measured,
+						 color='orange', linestyle=':', alpha=0.5 )
 
 
 
-
-
-
-
-			measured_HL = (np.log(2)/deg_rate)/60
-			ax1.text(.98,.98, f"measured HL= {measured_HL:.1f} min", color="orange")
+			ax1.text(0,protein_FMC.max()*.95, f"measured HL= {measured_HL:.1f} min", color="orange")
 			ax1.set_ylabel("Free Monomer Count")
 			ax1.set_title("Monomer counts and influx/efflux behavior over time for " + protein)
 
