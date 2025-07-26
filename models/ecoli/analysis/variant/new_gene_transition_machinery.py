@@ -185,7 +185,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ignore_exception=True)[:, active_rnap_index]
 			total_rnap_counts_A = inactive_rnap_counts_A + active_rnap_counts_A
 			rel_rnap_counts_A = total_rnap_counts_A / total_rnap_counts_A[0]
-			counterfactual_rel_rnap_counts_A = rel_rnap_counts_control - rel_rnap_counts_A
 
 			# Ribosome Counts
 			# Inactive
@@ -207,10 +206,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Total
 			total_ribosome_counts_A = inactive_ribosome_counts_A + active_ribosome_counts_A
 			rel_ribosome_counts_A = total_ribosome_counts_A / total_ribosome_counts_A[0]
-			counterfactual_rel_ribosome_counts_A = rel_ribosome_counts_control - rel_ribosome_counts_A
-
-			counterfactual_diff_A = counterfactual_rel_rnap_counts_A - counterfactual_rel_ribosome_counts_A
-			avg_counterfactual_diff_A[seed_index] = np.mean(counterfactual_diff_A)
 
 
 			# Get data for variant B
@@ -251,7 +246,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					ignore_exception=True)[:, active_rnap_index]
 				total_rnap_counts_B = inactive_rnap_counts_B + active_rnap_counts_B
 				rel_rnap_counts_B = total_rnap_counts_B / total_rnap_counts_B[0]
-				counterfactual_rel_rnap_counts_B = rel_rnap_counts_control - rel_rnap_counts_B
 
 				# Ribosome Counts
 				# Inactive
@@ -273,8 +267,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				# Total
 				total_ribosome_counts_B = inactive_ribosome_counts_B + active_ribosome_counts_B
 				rel_ribosome_counts_B = total_ribosome_counts_B / total_ribosome_counts_B[0]
-				counterfactual_rel_ribosome_counts_B = rel_ribosome_counts_control - rel_ribosome_counts_B
 
+			# Truncate data to the minimum length across all variants
+			if VARIANT_INDEX_B != -1:
+				min_length = min(
+					len(time_control), len(time_A), len(time_B))
+				time_B = time_B[:min_length]
+				rel_rnap_counts_B = rel_rnap_counts_B[:min_length]
+				rel_ribosome_counts_B = rel_ribosome_counts_B[:min_length]
+			else:
+				min_length = min(len(time_control), len(time_A))
+			time_control = time_control[:min_length]
+			rel_rnap_counts_control = rel_rnap_counts_control[:min_length]
+			rel_ribosome_counts_control = rel_ribosome_counts_control[:min_length]
+			time_A = time_A[:min_length]
+			rel_rnap_counts_A = rel_rnap_counts_A[:min_length]
+			rel_ribosome_counts_A = rel_ribosome_counts_A[:min_length]
+
+			counterfactual_rel_rnap_counts_A = rel_rnap_counts_control - rel_rnap_counts_A
+			counterfactual_rel_ribosome_counts_A = rel_ribosome_counts_control - rel_ribosome_counts_A
+			counterfactual_diff_A = counterfactual_rel_rnap_counts_A - counterfactual_rel_ribosome_counts_A
+			avg_counterfactual_diff_A[seed_index] = np.mean(counterfactual_diff_A)
+
+			if VARIANT_INDEX_B != -1:
+				counterfactual_rel_rnap_counts_B = rel_rnap_counts_control - rel_rnap_counts_B
+				counterfactual_rel_ribosome_counts_B = rel_ribosome_counts_control - rel_ribosome_counts_B
 				counterfactual_diff_B = counterfactual_rel_rnap_counts_B - counterfactual_rel_ribosome_counts_B
 				avg_counterfactual_diff_B[seed_index] = np.mean(counterfactual_diff_B)
 
