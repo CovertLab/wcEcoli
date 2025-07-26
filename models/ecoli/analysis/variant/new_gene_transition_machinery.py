@@ -300,7 +300,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				mpl.rcParams['axes.spines.right'] = False
 				mpl.rcParams['axes.spines.top'] = False
 				plt.rcParams['font.size'] = 20
-				fig = plt.figure(figsize=(18, total_plots * 3))
+				fig = plt.figure(figsize=(18, total_plots * 5))
 
 				plot_num = 1
 				ax1 = plt.subplot(total_plots, 1, plot_num)
@@ -340,7 +340,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ax.legend()
 
 		# Save figure
-		fig.subplots_adjust(hspace=0.5)
+		fig.subplots_adjust(hspace=0.75)
 		if VARIANT_INDEX_B != -1:
 			variants_str = f"{VARIANT_INDEX_A}_vs_{VARIANT_INDEX_B}"
 		else:
