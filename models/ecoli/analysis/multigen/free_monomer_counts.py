@@ -16,12 +16,12 @@ from wholecell.io.tablereader import TableReader
 # Add the proteins to be plotted here (there can be multiple):
 interest_proteins = np.array([
 	# 'EG11854-MONOMER[c]',
-	#'G6890-MONOMER[c]',
-	#'PD03938[c]',
-	#'G6737-MONOMER[c]',
-	#'RPOD-MONOMER[c]',
-	#'PD02936[c]',
-	#'RED-THIOREDOXIN2-MONOMER[c]'
+	'G6890-MONOMER[c]',
+	'PD03938[c]',
+	'G6737-MONOMER[c]',
+	'RPOD-MONOMER[c]',
+	'PD02936[c]',
+	'RED-THIOREDOXIN2-MONOMER[c]'
 
 ])
 
