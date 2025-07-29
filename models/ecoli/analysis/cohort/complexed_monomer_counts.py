@@ -32,7 +32,13 @@ interest_proteins = np.array([
 
 # Specifiy generations to be skipped if desired:
 SKIP_GENERATIONS = 0 # 0 -> no generations are skipped
-PLOT_AVERAGES = 0 # 0 -> no, 1 -> yes (if SKIP_GENERATIONS = 0)
+PLOT_AVERAGES = 0 # 0 -> no, 1 -> yes (plot will show averages by generation)
+
+if SKIP_GENERATIONS != 0:
+	# If generations are skipped, the indexing for averaging will be messed up
+	assert PLOT_AVERAGES == 0
+
+
 
 """ END USER INPUTS """
 
