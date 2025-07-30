@@ -75,11 +75,12 @@ if NEW_GENE_KNOCKOUT_GEN != -1:
 # NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0] # Should be descending
 NEW_GENE_EXPRESSION_FACTORS = [0, 8.5]
 NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [ # Should be descending
-	3.40, 3.25, 3.10, 2.95, 2.80,
-	2.65, 2.50, 2.35, 2.20, 2.05,
-	1.90, 1.75, 1.60, 1.45, 1.30,
-	1.15, 1.00, 0.85, 0.70, 0.55,
-	0.40, 0.25, 0.10, 0]
+    3.40, 0.0]
+#	3.40, 3.25, 3.10, 2.95, 2.80,
+#	2.65, 2.50, 2.35, 2.20, 2.05,
+#	1.90, 1.75, 1.60, 1.45, 1.30,
+#	1.15, 1.00, 0.85, 0.70, 0.55,
+#	0.40, 0.25, 0.10, 0]
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, (
 	"The first new gene expression factor should always be the control sim")
