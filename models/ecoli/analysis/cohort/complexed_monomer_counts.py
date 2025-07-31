@@ -528,7 +528,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.ylabel("Cistron Counts")
 		plt.title(f"mRNA Counts for {cistron[0]} "
 				  f"(common name: {common_name})")
-		plt.legend(fontsize=6)
+		plt.legend(fontsize=7)
 
 		# generate a table below the plots:
 		columns = ('avg. cycle duration', 'avg. monomer counts',
