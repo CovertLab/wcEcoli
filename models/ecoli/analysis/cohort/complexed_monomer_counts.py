@@ -183,7 +183,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
-		plt.title(f"Predicted Counts of Monomers within Complexes in Seed "
+		plt.title(f"Predicted counts for monomers within complexes, "
+				  f"in seed "
 				  f"{seed}, generations {SKIP_GENERATIONS} - {end_gen}")
 		plt.legend(fontsize=6)
 
@@ -209,11 +210,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.legend(fontsize=6)
 
 		# export plot:
+		gene_names = ''
+		for gene in gene_list:
+			gene_names += gene + '_'
+
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
 		exportFigure(plt, plotOutPath, plotOutFileName + f'_cohortPlot_'
 					f'gens_[{SKIP_GENERATIONS},{end_gen}]_seed_'
-					 + str(seed) + '_geneIDs_' + str(gene_list), metadata)
+					 + str(seed) + '_geneIDs_' + str(gene_names), metadata)
 		plt.close("all")
 
 	def plot_all_count_types_per_seed(self, seed, cell_paths, monomer_ids, time,
@@ -528,7 +533,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.ylabel("Cistron Counts")
 		plt.title(f"mRNA Counts for {cistron[0]} "
 				  f"(common name: {common_name})")
-		plt.legend(fontsize=7)
+		plt.legend(fontsize=6)
 
 		# generate a table below the plots:
 		columns = ('avg. cycle duration', 'avg. monomer counts',
@@ -709,7 +714,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# create a dictionary to map cistron ids to monomer ids
 		cistron_monomer_id_dict = dict(zip(monomer_sim_data['cistron_id'],
-										   monomer_sim_data['id']))
+										   monomer_sim_data['id'])) # todo: consider getting rid of this
+
+		monomer_id_to_cistron_id_dict = dict(zip(monomer_sim_data['id'],
+											monomer_sim_data['cistron_id']))
+
+		protein_id_to_common_name_dict = {}
+		protein_id_to_cistron_id_dict = {}
+		for protein in interest_proteins:
+			common_name = self.get_common_name(protein[0])
+			protein_id_to_common_name_dict[protein] = common_name
+			cistron_id = monomer_id_to_cistron_id_dict[protein]
+			protein_id_to_cistron_id_dict[protein] = cistron_id
+
 
 		# iterate through the seeds to generate graphs for each seed
 		for seed in seeds:
@@ -734,6 +751,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Now, plot for each individual protein across all seeds
 		for protein in interest_proteins:
 			# get the the cistron id for the protein
+			# todo: consider getting rid of this and using the other dictionary
 			cistron_id = [
 				key for key, v in cistron_monomer_id_dict.items() if v == protein]
 			protein_id = [protein]  # fomrat the protein id for extract_data()
