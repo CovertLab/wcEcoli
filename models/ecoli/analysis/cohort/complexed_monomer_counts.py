@@ -226,6 +226,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 									  plotOutFileName, metadata):
 		"""
 		Plots the total, free, and complexed monomer counts for a given seed.
+		Creates a plot export for the total, free, and predicted
+		complexed monomer counts for each protein in the seed.
+
 		Args:
 			seed: current seed to be plotted within the cohort
 			monomer_ids: monomer IDs for the proteins of interest
@@ -238,9 +241,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plotOutDir: directory for the plot output
 			plotOutFileName: name for the plot output
 			metadata: metadata for the simulation
-
-		Returns: A plot export for the total, free, and predicted
-		complexed monomer counts for each protein in the seed
 
 		"""
 		plt.figure(figsize=(8.5, 14))
