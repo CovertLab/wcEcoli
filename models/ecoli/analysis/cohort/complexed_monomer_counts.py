@@ -27,7 +27,7 @@ from wholecell.io.tablereader import TableReader
 """ USER INPUTS """
 # Replace with the proteins you would like to visualize here:
 interest_proteins = np.array([
-	'EG10542-MONOMER[c]','G6890-MONOMER[c]',
+	'EG10542-MONOMER[c]','G6890-MONOMER[c]', "EG10158-MONOMER[c]",
 ])
 
 # Specifiy generations to be skipped if desired:
@@ -183,7 +183,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
 		plt.title(f"Predicted counts of monomers within complexes"
-				  f"(seed {seed}, generations {SKIP_GENERATIONS} - {end_gen})")
+				  f" (seed {seed}, generations {SKIP_GENERATIONS} - {end_gen})")
 		plt.legend(fontsize=6)
 
 		# mRNA Counts Plot
@@ -216,7 +216,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.subplots_adjust(hspace=0.5, top=0.95, bottom=0.05)
 		plotOutPath = os.path.join(plotOutDir, f'00000{seed}')
 		exportFigure(plt, plotOutPath, plotOutFileName + f'_cohortPlot_seed_{seed}'
-					f'gens_{SKIP_GENERATIONS}to{end_gen}_geneIDs_{gene_names}',
+					f'_gens_{SKIP_GENERATIONS}to{end_gen}_geneIDs_{gene_names}',
 					 metadata)
 		plt.close("all")
 
