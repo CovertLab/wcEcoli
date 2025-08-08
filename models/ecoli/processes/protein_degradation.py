@@ -199,7 +199,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				s5 = self.proteins.total_counts()[3854]
 				s6 = self.proteins.total_counts()[3977] # todo: double check this is correct
 				print(s6)
-				import ipdb; ipdb.set_trace()
+				#import ipdb; ipdb.set_trace()
 
 				def get_substrate_counts(substrates):
 					counts = []
@@ -273,7 +273,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 						k_active = (protease_concentration * kcat * substrate_concentrations[i]) / (Kms[i]*beta)
 						k_actives.append(k_active)
 					print("k_active values:", k_actives)
-					import ipdb; ipdb.set_trace()
+					#import ipdb; ipdb.set_trace()
 					return k_actives
 
 
