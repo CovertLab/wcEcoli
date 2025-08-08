@@ -534,7 +534,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.xlabel("Time (min)");
 		plt.ylabel("Cistron Counts")
 		plt.title(f"mRNA Counts for {cistron[0]} "
-				  f"(common name: {common_name})")
+				  f"({common_name})")
 		plt.legend(fontsize=6)
 
 		# generate a table below the plots:
@@ -673,8 +673,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Plot specs for the complexed monomer counts graph
 		plt.xlabel("Time (min)");
 		plt.ylabel("Complexed Monomer Counts")
-		plt.title(f"Predicted Counts for {protein[0]} ({common_name}) "
-				  f"Monomers within Complexes")
+		plt.title(f"Predicted counts of monomers within complexes for"
+				  f" {protein[0]} ({common_name})")
 		plt.legend(fontsize=6)
 
 		# export plot:
