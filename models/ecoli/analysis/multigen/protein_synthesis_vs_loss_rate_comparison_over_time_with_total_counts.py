@@ -153,6 +153,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				start_time= start_generation_indices[i]
 				end_time = end_generation_indices[i]
 				gen_time = time[start_time:end_time]
+				hi = 5
 				gen_protein_counts = protein_FMC[start_time:end_time]
 				gen_degraded_counts = proteins_degraded[start_time:end_time]
 				# todo: double check that the protein counts are being sliced correctly
@@ -168,10 +169,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				# make a plot of the effective half lives
 				def effective_HL(t, C0, k):
-					return C0 * np.exp(-k * t)
+					return C0 * k * t
+					#return C0 * np.exp(-k * t)
 
 				k_avg = np.log(2) / (avg_half_life*60) # todo is this an issue units wise agh. does it need to be multipled by 60
-				C0_fit = gen_protein_counts[0]
+				C0_fit = gen_protein_counts
 				# todo: fix this! I think gen_time is what should not be in here. it should be like 1 to end_gen_time!
 				time_for_graph = gen_time - np.ones(len(gen_time))*gen_time[0]
 				y_data = effective_HL(time_for_graph, C0_fit, k_avg)
@@ -214,7 +216,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 			#save the plot:
-			file_name = plotOutFileName + "_synthesis_vs_loss_rate_over_time_with_counts_"+protein
+			file_name = plotOutFileName + "_synthesis_vs_loss_rate_over_time_with_counts_instantanious_"+protein
 			exportFigure(plt, plotOutDir, file_name, metadata)
 
 
