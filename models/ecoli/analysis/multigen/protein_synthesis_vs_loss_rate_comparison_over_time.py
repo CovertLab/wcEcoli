@@ -15,15 +15,16 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 
-PLOT_PROTEINS = [#'G6890-MONOMER[c]',
+PLOT_PROTEINS = ['G6890-MONOMER[c]',
 					   #'PD03938[c]',
-						#'G6737-MONOMER[c]',
+						'G6737-MONOMER[c]',
 					   	#'RPOD-MONOMER[c]',
 					   	#'PD02936[c]',
 					   	#'RED-THIOREDOXIN2-MONOMER[c]',]
  						#"PD03867[c]",
-						"EG11734-MONOMER[c]",
-"PD03867[c]"]
+						#"EG11734-MONOMER[c]",
+#"PD03867[c]"
+]
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -145,7 +146,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 			#save the plot:
-			file_name = plotOutFileName + "_synthesis_vs_loss_rate_over_time_"+protein
+			file_name = plotOutFileName + "_synthesis_vs_loss_rate_over_time_instantaneous_"+protein
 			exportFigure(plt, plotOutDir, file_name, metadata)
 
 

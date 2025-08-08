@@ -95,7 +95,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			diluted_counts[i,:] = protein_counts_removed
 			diluted_counts_over_time[start_gen,:] = protein_counts_removed # put it at the start of the next gen in terms of time
 
-		diluted_counts
+
 
 
 
