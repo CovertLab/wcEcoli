@@ -191,11 +191,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				ax1.plot(gen_time, y_data_measured,
 						 color='orange', linestyle=':', alpha=0.5 )
 
+			sim_name = metadata["description"]
 
 
 			ax1.text(0,protein_FMC.max()*.95, f"measured HL= {measured_HL:.1f} min", color="orange")
-			ax1.set_ylabel("Free Monomer Count")
-			ax1.set_title("Monomer counts and influx/efflux behavior over time for " + protein)
+			ax1.set_ylabel("Free Monomer Counts")
+			ax1.set_title(f"Monomer counts and influx/efflux behavior over time for {protein}\n {sim_name}")
 
 			# rates
 			ax2.plot(time, degraded_counts[:, protein_idx], color='red', alpha=0.5,
@@ -213,6 +214,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax2.legend()
 
 			plt.tight_layout()
+
+
+
+
+
+
 
 
 			#save the plot:
