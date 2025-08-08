@@ -9,7 +9,7 @@ TODO:
 """
 
 """ USER INPUTS """
-USE_LON_DEGRADATION = False # whether to use lon degradation rates or not
+USE_LON_DEGRADATION = True # whether to use lon degradation rates or not
 METHOD = 2
 """ END USER INPUTS """
 import numpy as np
@@ -176,10 +176,10 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 				# see what the total protein counts are:
 				protein_counts_now = self.readFromListener("MonomerCounts", "monomerCounts")[527]
-				print("total Lon protein counts: ", protein_counts_now)
+				#print("total Lon protein counts: ", protein_counts_now)
 				print("lon complex counts:", lon_complex_counts)
-				print("lon free monomer counts: ", self.proteins.total_counts()[527])
-				print("lon FMs + 6*lon complex counts: ", (self.proteins.total_counts()[527] + (lon_complex_counts*6)))
+				#print("lon free monomer counts: ", self.proteins.total_counts()[527])
+				#print("lon FMs + 6*lon complex counts: ", (self.proteins.total_counts()[527] + (lon_complex_counts*6)))
 
 
 
@@ -198,6 +198,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				s4 = self.proteins.total_counts()[4002]
 				s5 = self.proteins.total_counts()[3854]
 				s6 = self.proteins.total_counts()[3977] # todo: double check this is correct
+				print(s6)
+				import ipdb; ipdb.set_trace()
 
 				def get_substrate_counts(substrates):
 					counts = []
@@ -236,7 +238,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				# Kms from new solving with b = 1.24
 
 				# original order: PD03938, G6890-MONOMER, G6737-MONOMER, RPOD-MONOMER, PD02936, RED-THIOREDOXIN2-MONOMER --> SWITCHED PROPERLY TO SUBSTRATES ORDER
-				Kms2 = [ 3.1190099e-4, 5.29487648e-6, 5.2999865e-4,   4.1087516e-4, 1.23777405e-4, 9.36398294e-3] # M --> source: original matlab file
+				Kms2 = [ 3.1190099e-4, 5.29487648e-6, 5.2999865e-4,   4.1087516e-4, 1.23777405e-4, 9.36398294e-3]
 
 				Kms = Kms2
 
@@ -277,8 +279,9 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 
 				def degrade_proteins(substrates, substrate_concentrations, k_actives, nProteinsToDegrade):
-					proteins_degraded = []
+
 					for i in range(len(substrate_concentrations)):
+						print(substrates[i])
 						substrate_idx = np.where(self.protein_IDs == substrates[i])[0][0]
 						print("substrate nProteinsToDegrade[{}] pre-active degradation:".format(
 							substrates[i]), nProteinsToDegrade[substrate_idx])
@@ -289,7 +292,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 						print("proteins degraded pre-rounding:", proteins_degraded)
 						proteins_degraded = round(proteins_degraded)
 						# degrade the proteins
-						nProteinsToDegrade[substrate_idx] = proteins_degraded
+						nProteinsToDegrade[substrate_idx] = proteins_degraded # todo: is this not working?
 						print("substrate nProteinsToDegrade[{}] post-active degradation:".format(substrates[i]), nProteinsToDegrade[substrate_idx])
 
 					return nProteinsToDegrade
