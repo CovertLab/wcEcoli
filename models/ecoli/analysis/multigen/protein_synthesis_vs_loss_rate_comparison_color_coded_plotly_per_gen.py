@@ -17,9 +17,9 @@ import io
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
 
-HIGHLIGHT_IN_RED = [ 'NG-GFP-MONOMER[c]']#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
-HIGHLIGHT_IN_BLUE =[]#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
-HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]' ]#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
+HIGHLIGHT_IN_RED = ['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
+HIGHLIGHT_IN_BLUE =''#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
+HIGHLIGHT_IN_PURPLE = '' #['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]'] 'ADHP-MONOMER[c]', 'PD03867[c]', 'EG50004-MONOMER[c]',
 # lowest deg rates:  ['PD03867[c]', 'EG50004-MONOMER[c]','ADHP-MONOMER[c]', 'G6988-MONOMER[c]']
 
 
@@ -47,10 +47,31 @@ def get_gene_symbols_for_monomer_ids():
 		for line in reader:
 			gene_symbol = line[gene_symbol_index]
 			protein_id = list(
-				line[protein_id_index][2:-2].split('", "'))[0]
+				line[protein_id_index][2:-2].split('", "'))[0] # not sure what this does
 			monomer_ids_to_gene_symbols[protein_id] = gene_symbol
 
 	return monomer_ids_to_gene_symbols
+
+def get_descriptive_name_for_monomer_ids():
+	PROTEINS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+							 'flat', 'proteins.tsv')
+	with (io.open(PROTEINS_FILE, 'rb') as f):
+		reader = tsv.reader(f, delimiter='\t')
+		headers = next(reader)
+		while headers[0].startswith('#'):
+			headers = next(reader)
+
+		# extract relevant information
+		gene_description_index = headers.index('common_name')
+		protein_id_index = headers.index('id')
+		monomer_ids_to_descriptive_names = {}
+		for line in reader:
+			gene_description = line[gene_description_index]
+			protein_id = line[protein_id_index]
+			monomer_ids_to_descriptive_names[protein_id] = gene_description
+
+	return monomer_ids_to_descriptive_names
+
 
 def get_common_name(protein_id):
 	"""
@@ -64,10 +85,26 @@ def get_common_name(protein_id):
 		return 'GFP'
 
 	else:
-		protein = protein_id[:-3]  # subtract the compartment
+		if "[" in protein_id:
+			protein = protein_id[:-3]  # subtract the compartment
+		else:
+			protein = protein_id
 		common_name = get_gene_symbols_for_monomer_ids()[protein]
 
 	return common_name
+
+def get_descriptive_name(protein_id):
+	if protein_id == 'NG-GFP-MONOMER[c]':
+		return 'GFP'
+
+	else:
+		if "[" in protein_id:
+			protein = protein_id[:-3]  # subtract the compartment
+		else:
+			protein = protein_id
+		descriptive_name = get_descriptive_name_for_monomer_ids()[protein]
+
+	return descriptive_name
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -102,6 +139,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# Get the common names for each protein:
 		common_names = [get_common_name(protein_id) for protein_id in protein_ids]
+		descriptive_names = [get_descriptive_name(protein_id) for protein_id in protein_ids]
 
 		# Extract protein indexes for each new gene
 		monomer_counts_reader = TableReader(
@@ -244,10 +282,44 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		log_avg_production_rate = np.log10(avg_elongated_counts + log_factor)
 
 
+		# function for checking protein validity:
+		def check_validity_and_get_compartment(protein_list):
+			revised_protein_list = []
+			for protein in protein_list:
+				if "[" in protein:
+					protein = protein[:-3] # remove compartment
+				if sim_data.getter.is_valid_molecule(protein):
+					revised_name = protein + sim_data.getter.get_compartment_tag(protein)
+					revised_protein_list.append(revised_name)
+
+			return revised_protein_list
+
+		def hover_template_layout(customdata):
+			# update as needed:
+			customdata = customdata
+			hover_text = ("Monomer ID: %{customdata[0]}<br>"
+						  + "common name: %{customdata[4]}<br>"
+						  + "descriptive name: %{customdata[5]}<br>"
+						  + "half life: %{customdata[1]}<br>"
+						  + "source: %{customdata[2]}<br>"
+						  +"avgerage free monomer counts: %{customdata[3]}<br>"
+						  + "<extra></extra>")
+			return hover_text
+
+		def generate_common_name_list(common_names):
+			name_list = ""
+			for i in range(len(common_names)):
+				name_list = name_list + common_names[i] + "_"
+			name_list = name_list[:-1]
+
+			return name_list
+
+
 		# plot the loss rate vs the production rate:
 		# Create figure
 		fig = go.Figure()
 		common_names = np.array(common_names)
+		descriptive_names = np.array(descriptive_names)
 
 		# Scatter plot for all proteins (grey)
 		fig.add_trace(go.Scatter(
@@ -257,10 +329,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             customdata=np.stack((monomerIds, half_lives, deg_rate_source, avg_FMC, common_names), axis=-1),
             hovertemplate=
             "Monomer ID: %{customdata[0]}<br>" +
+			"common name: %{customdata[4]}<br>" +
             "half life: %{customdata[1]}<br>" +
             "source: %{customdata[2]}<br>" +
 			"avgerage free monomer counts: %{customdata[3]}<br>" +
-			"common name: %{customdata[4]}<br>" +
             "<extra></extra>",
 			marker=dict(size=5, color='lightseagreen', opacity=0.3),
 			name="All Proteins"))
@@ -268,77 +340,67 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		red_name = ''
 		if len(HIGHLIGHT_IN_RED) > 0:
 			monomerIds = np.array(monomerIds)
-			common_names = np.array(common_names)
+			common_names = np.array(common_names) # is this a repeat?
 			# Scatter plot for red proteins
-			red_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_RED]
+			red_proteins = check_validity_and_get_compartment(HIGHLIGHT_IN_RED)
+			red_protein_indices = [monomer_idx_dict[protein] for protein in red_proteins]
+			custom_data = np.stack(
+					(monomerIds[red_protein_indices], half_lives[red_protein_indices], deg_rate_source[red_protein_indices], avg_FMC[red_protein_indices], common_names[red_protein_indices], descriptive_names[red_protein_indices]), axis=-1)
 			fig.add_trace(go.Scatter(
 				x=log_avg_production_rate[red_protein_indices],
 				y=log_avg_loss_rate[red_protein_indices],
 				mode='markers',
-				customdata=np.stack(
-					(monomerIds[red_protein_indices], half_lives[red_protein_indices], deg_rate_source[red_protein_indices], avg_FMC[red_protein_indices], common_names[red_protein_indices]), axis=-1),
-				hovertemplate=
-				"Monomer ID: %{customdata[0]}<br>" +
-				"half life: %{customdata[1]}<br>" +
-				"source: %{customdata[2]}<br>" +
-				"avgerage free monomer counts: %{customdata[3]}<br>" +
-				"common name: %{customdata[4]}<br>" +
-				"<extra></extra>",
+				customdata=custom_data,
+				hovertemplate= hover_template_layout(custom_data),
 				marker=dict(size=5, color='red', opacity=1),
 				name='Red Proteins'))
 			# indicate the name should be in the title:
-			red_name = str(common_names[red_protein_indices])
+			red_name = generate_common_name_list(common_names[red_protein_indices])
 
 		blue_name = ""
 		if len(HIGHLIGHT_IN_BLUE) > 0:
 			monomerIds = np.array(monomerIds)
 			# Scatter plot for blue proteins
-			blue_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_BLUE]
+			blue_proteins = check_validity_and_get_compartment(HIGHLIGHT_IN_BLUE)
+			blue_protein_indices = [monomer_idx_dict[protein] for protein in blue_proteins]
+			custom_data = np.stack(
+				(monomerIds[blue_protein_indices], half_lives[blue_protein_indices],
+				 deg_rate_source[blue_protein_indices], avg_FMC[blue_protein_indices],
+				 common_names[blue_protein_indices], descriptive_names[blue_protein_indices]),
+				axis=-1)
 			fig.add_trace(go.Scatter(
 				x=log_avg_production_rate[blue_protein_indices],
 				y=log_avg_loss_rate[blue_protein_indices],
 				mode='markers',
-				customdata=np.stack(
-					(monomerIds[blue_protein_indices], half_lives[blue_protein_indices],
-					 deg_rate_source[blue_protein_indices], avg_FMC[blue_protein_indices],
-					 common_names[blue_protein_indices]), axis=-1),
-				hovertemplate=
-				"Monomer ID: %{customdata[0]}<br>" +
-				"half life: %{customdata[1]}<br>" +
-				"source: %{customdata[2]}<br>" +
-				"avgerage free monomer counts: %{customdata[3]}<br>" +
-				"common name: %{customdata[4]}<br>" +
-				"<extra></extra>",
+				customdata=custom_data,
+				hovertemplate= hover_template_layout(custom_data),
 				marker=dict(size=5, color='blue', opacity=1),
 				name='Blue Proteins'))
 			# indicate the name should be in the title:
-			blue_name = str(common_names[blue_protein_indices])
+			blue_name = generate_common_name_list(common_names[blue_protein_indices])
 
 		purple_name = ""
 		if len(HIGHLIGHT_IN_PURPLE) > 0:
 			monomerIds = np.array(monomerIds)
 			# Scatter plot for purple proteins
-			purple_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_PURPLE]
+			purple_proteins = check_validity_and_get_compartment(HIGHLIGHT_IN_PURPLE)
+			purple_protein_indices = [monomer_idx_dict[protein] for protein in purple_proteins]
+			custom_data = np.stack(
+				(monomerIds[purple_protein_indices], half_lives[purple_protein_indices],
+				 deg_rate_source[purple_protein_indices], avg_FMC[purple_protein_indices],
+				 common_names[purple_protein_indices], descriptive_names[purple_protein_indices]),
+				axis=-1)
 			fig.add_trace(go.Scatter(
 				x=log_avg_production_rate[purple_protein_indices],
 				y=log_avg_loss_rate[purple_protein_indices],
 				mode='markers',
-				customdata=np.stack(
-					(monomerIds[purple_protein_indices], half_lives[purple_protein_indices],
-					 deg_rate_source[purple_protein_indices], avg_FMC[purple_protein_indices],
-					 common_names[purple_protein_indices]), axis=-1),
-				hovertemplate=
-				"Monomer ID: %{customdata[0]}<br>" +
-				"half life: %{customdata[1]}<br>" +
-				"source: %{customdata[2]}<br>" +
-				"avgerage free monomer counts: %{customdata[3]}<br>" +
-				"common name: %{customdata[4]}<br>" +
-				"<extra></extra>",
+				customdata=custom_data,
+				hovertemplate=hover_template_layout(custom_data),
 				marker=dict(size=5, color='hotpink', opacity=1),
 				name='Purple Proteins'))
 
 			# indicate the name should be in the title:
-			purple_name = str(common_names[purple_protein_indices])
+			purple_name = generate_common_name_list(common_names[purple_protein_indices])
 
 
 		# Generate line data
@@ -371,7 +433,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			showlegend=True,)
 
 		#save the plot:
-		plot_name = plotOutFileName + "_red_" + red_name + "_blue_" + blue_name + "_purple_" + purple_name + ".html"
+		plot_name = plotOutFileName + "_RED_" + red_name + "_BLUE_" + blue_name + "_PURPLE_" + purple_name + ".html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 		#exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
