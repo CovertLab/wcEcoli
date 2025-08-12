@@ -33,6 +33,7 @@ interest_proteins = np.array([
 # Specifiy generations to be skipped if desired:
 SKIP_GENERATIONS = 0 # 0 -> no generations are skipped
 PLOT_AVERAGES = 0 # 0 -> no, 1 -> yes (plot will show average over generations)
+ADD_AVERAGES_TABLE = 0 # 0 -> no, 1 -> yes (generates a table at the bottom of the plot with the counts for each generation between each seed)
 
 if SKIP_GENERATIONS != 0:
 	# If generations are skipped, the indexing for averaging will be messed up
@@ -524,11 +525,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			plt.plot(time / 60., mRNA_counts,
 					 label=f'seed {seed}', alpha=0.5)
 
-		if SKIP_GENERATIONS == 0:
-			if PLOT_AVERAGES == 1:
-				# plot the average values:
-				plt.scatter(avg_time_points, avg_mRNA_cts,
-					label='average', color='black', marker='.')
+
+		if PLOT_AVERAGES == 1:
+			# plot the average values:
+			plt.scatter(avg_time_points, avg_mRNA_cts,
+				label='average', color='black', marker='.')
 
 		# Plot specs for the mRNA counts graph
 		plt.xlabel("Time (min)");
@@ -554,12 +555,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		avg_monomer_cts = np.append(avg_monomer_cts, avg_monomer_cts_all)
 		avg_mRNA_cts = np.append(avg_mRNA_cts, avg_mRNA_cts_all)
 
-		# create the data for the table:
-		table_data = np.array([avg_generation_durations,
+		if ADD_AVERAGES_TABLE==1:
+			# create the data for the table:
+			table_data = np.array([avg_generation_durations,
 							   avg_monomer_cts, avg_mRNA_cts]).T
-		# create the table:
-		plt.table(cellText=table_data, rowLabels=rows, colLabels=columns,
-				  loc='bottom', bbox=[0.1, -0.75, 1, 0.5])
+			# create the table:
+			plt.table(cellText=table_data, rowLabels=rows, colLabels=columns,
+					  loc='bottom', bbox=[0.1, -0.75, 1, 0.5])
 
 		# export plot:
 		end_gen = len(generations) - 1  # for python counting
