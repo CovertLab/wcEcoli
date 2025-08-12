@@ -19,12 +19,25 @@ from sklearn.metrics import r2_score
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # input proteins to highlight:
-HIGHLIGHT_PROTEINS = ['G6890-MONOMER[c]',
- 					   'PD03938[c]',
- 					   'G6737-MONOMER[c]',
- 					   'RPOD-MONOMER[c]',
- 					   'PD02936[c]',
- 					   'RED-THIOREDOXIN2-MONOMER[c]',
+HIGHLIGHT_PROTEINS = ["EG10606-MONOMER[i]",
+					  "EG10608-MONOMER[i]",
+					  "EG10607-MONOMER[i]",
+					  "EG10610-MONOMER[i]",
+					  "EG10609-MONOMER[i]",
+					  "EG10605-MONOMER[i]",
+					  "EG10341-MONOMER[i]",
+					  "EG10202-MONOMER[i]",
+"G7265-MONOMER[i]"
+
+
+
+
+	#'G6890-MONOMER[c]',
+ 					   #'PD03938[c]',
+ 					   #'G6737-MONOMER[c]',
+ 					   #'RPOD-MONOMER[c]',
+ 					   #'PD02936[c]',
+ 					   #'RED-THIOREDOXIN2-MONOMER[c]',
   						#"EG10542-MONOMER[c]"
 	#'EG11111-MONOMER[c]',
 #'EG11957-MONOMER[c]',
