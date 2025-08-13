@@ -469,8 +469,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.close()
 
 			# Plot a scatterplot of RNAP counts vs time steps / 60 and ribosome counts vs time steps / 60
-			plt.figure(figsize=(12, 6))
-			plt.subplot(1, 3, 1)
+			plt.figure(figsize=(16, 6))
+			plt.subplot(1, 4, 1)
 			plt.scatter(num_time_steps / 60, unnormalized_rnap_counts, color=poster_colors["poster_green"], alpha=0.7)
 			plt.title(f"RNAP Counts vs N Time Steps / 60 (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
 			plt.xlabel("Time (min)")
@@ -481,7 +481,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.legend()
 			plt.title(plt.gca().get_title(), fontsize=8)
 
-			plt.subplot(1, 3, 2)
+			plt.subplot(1, 4, 2)
 			plt.scatter(num_time_steps / 60, unnormalized_ribosome_counts, color=poster_colors["poster_blue"], alpha=0.7)
 			plt.title(f"Ribosome Counts vs N Time Steps / 60 (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
 			plt.xlabel("Time (min)")
@@ -491,13 +491,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.legend()
 			plt.title(plt.gca().get_title(), fontsize=8)
 
-			plt.subplot(1, 3, 3)
+			plt.subplot(1, 4, 3)
 			plt.scatter(num_time_steps / 60, unnormalized_cell_mass, color=poster_colors["poster_purple"], alpha=0.7)
 			plt.title(f"Cell Mass vs N Time Steps / 60 (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
 			plt.xlabel("Time (min)")
 			plt.ylabel("Cell Mass (fg)")
 			slope, intercept, r_value, p_value, std_err = linregress(num_time_steps / 60, unnormalized_cell_mass)
 			plt.plot(num_time_steps / 60, intercept + slope * (num_time_steps / 60), color='red', label=f'Fit: y={slope:.2f}x+{intercept:.2f}, R²={r_value**2:.2f}')
+			plt.legend()
+			plt.title(plt.gca().get_title(), fontsize=8)
+
+			plt.subplot(1, 4, 4)
+			plt.scatter(unnormalized_rnap_counts, unnormalized_ribosome_counts, color=poster_colors["poster_light_blue"], alpha=0.7)
+			plt.title(f"Ribosome Counts vs RNAP Counts (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
+			plt.xlabel("RNAP Counts")
+			plt.ylabel("Ribosome Counts")
+			slope, intercept, r_value, p_value, std_err = linregress(unnormalized_rnap_counts, unnormalized_ribosome_counts)
+			plt.plot(unnormalized_rnap_counts, intercept + slope * unnormalized_rnap_counts, color='red', label=f'Fit: y={slope:.2f}x+{intercept:.2f}, R²={r_value**2:.2f}')
 			plt.legend()
 			plt.title(plt.gca().get_title(), fontsize=8)
 
