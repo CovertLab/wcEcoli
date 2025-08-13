@@ -103,6 +103,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						unnormalized_ribosome_matrix = np.full((
 							len(SELECTED_SEED_INDEXES) * len(GEN_RANGE), 1 + NUM_STEPS_PER_CELL_CYCLE),
 							-1.0, dtype=float)
+						
+						unnormalized_mass_matrix = np.full((
+							len(SELECTED_SEED_INDEXES) * len(GEN_RANGE), 1 + NUM_STEPS_PER_CELL_CYCLE),
+							-1.0, dtype=float)
 
 					num_time_steps_matrix[total_cells_included, 0] = seed_index
 					num_time_steps_matrix[total_cells_included, 1] = len(time_A)
@@ -175,6 +179,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					# Cell Mass
 					cell_mass_A = read_stacked_columns(
 						all_cells_A, 'Mass', 'cellMass', ignore_exception=True).squeeze()
+					unnormalized_cell_mass_A = cell_mass_A.copy()
 					# Normalize to the first time point
 					cell_mass_A = cell_mass_A / cell_mass_A[0]
 
@@ -182,6 +187,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					cell_mass_A = cell_mass_A.flatten()
 					mass_matrix[total_cells_included, 1:(1 +
 						NUM_STEPS_PER_CELL_CYCLE)] = cell_mass_A[time_indices_to_include]
+					
+					unnormalized_mass_matrix[total_cells_included, 0] = seed_index
+					unnormalized_cell_mass_A = unnormalized_cell_mass_A.flatten()
+					unnormalized_mass_matrix[total_cells_included, 1:(1 +
+						NUM_STEPS_PER_CELL_CYCLE)] = unnormalized_cell_mass_A[time_indices_to_include]
 
 					# # Instantaneous Doubling Time
 					# instantaneous_growth_rate_A = read_stacked_columns(
@@ -297,6 +307,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print(f"Total number of cells included: {total_cells_included}")
 			print(f"Expected: {len(SELECTED_SEED_INDEXES) * len(GEN_RANGE)}")
 
+			# Save unnormalized mass matrix
+			unnormalized_mass_matrix = unnormalized_mass_matrix[:total_cells_included, :]
+			unnormalized_mass_matrix_file = os.path.join(
+				plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_unnormalized_mass_matrix.csv")
+			np.savetxt(
+				unnormalized_mass_matrix_file, unnormalized_mass_matrix, delimiter=",",
+				header="seed_index," + ",".join([
+					f"cell_cycle_step_{i}_of_{NUM_STEPS_PER_CELL_CYCLE}"
+					for i in range(NUM_STEPS_PER_CELL_CYCLE)]),
+				comments="", fmt="%s")
+
 		else:
 			# Load in the matrices
 			num_time_steps_matrix = np.loadtxt(
@@ -308,11 +330,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rnap_matrix = np.loadtxt(
 				os.path.join(plotOutDir, f"variant_{VARIANT_INDEX_A}_rnap_matrix.csv"),
 				delimiter=",", skiprows=1)
+			unnormalized_rnap_matrix = np.loadtxt(
+				os.path.join(plotOutDir, f"variant_{VARIANT_INDEX_A}_unnormalized_rnap_matrix.csv"),
+				delimiter=",", skiprows=1)
 			ribosome_matrix = np.loadtxt(
 				os.path.join(plotOutDir, f"variant_{VARIANT_INDEX_A}_ribosome_matrix.csv"),
 				delimiter=",", skiprows=1)
+			unnormalized_ribosome_matrix = np.loadtxt(
+				os.path.join(plotOutDir, f"variant_{VARIANT_INDEX_A}_unnormalized_ribosome_matrix.csv"),
+				delimiter=",", skiprows=1)
 			mass_matrix = np.loadtxt(
 				os.path.join(plotOutDir, f"variant_{VARIANT_INDEX_A}_mass_matrix.csv"),
+				delimiter=",", skiprows=1)
+			unnormalized_mass_matrix = np.loadtxt(
+				os.path.join(plotOutDir, f"variant_{VARIANT_INDEX_A}_unnormalized_mass_matrix.csv"),
 				delimiter=",", skiprows=1)
 
 		cell_cycle_steps_to_plot_distrib = np.arange(0, NUM_STEPS_PER_CELL_CYCLE, 100)
@@ -333,6 +364,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Get the mass for this cell cycle step
 			cell_mass = mass_matrix[:, 1 + cell_cycle_step]
+			unnormalized_cell_mass = unnormalized_mass_matrix[:, 1 + cell_cycle_step]
 
 			# Get the number of time steps
 			num_time_steps = num_time_steps_matrix[:, 1]
@@ -438,19 +470,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			# Plot a scatterplot of RNAP counts vs time steps / 60 and ribosome counts vs time steps / 60
 			plt.figure(figsize=(12, 6))
-			plt.subplot(1, 2, 1)
+			plt.subplot(1, 3, 1)
 			plt.scatter(num_time_steps / 60, unnormalized_rnap_counts, color=poster_colors["poster_green"], alpha=0.7)
 			plt.title(f"RNAP Counts vs N Time Steps / 60 (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
 			plt.xlabel("Time (min)")
 			plt.ylabel("RNAP Counts")
-			plt.grid(True)
+			from scipy.stats import linregress
+			slope, intercept, r_value, p_value, std_err = linregress(num_time_steps / 60, unnormalized_rnap_counts)
+			plt.plot(num_time_steps / 60, intercept + slope * (num_time_steps / 60), color='red', label=f'Fit: y={slope:.2f}x+{intercept:.2f}, R²={r_value**2:.2f}')
+			plt.legend()
+			plt.title(plt.gca().get_title(), fontsize=8)
 
-			plt.subplot(1, 2, 2)
+			plt.subplot(1, 3, 2)
 			plt.scatter(num_time_steps / 60, unnormalized_ribosome_counts, color=poster_colors["poster_blue"], alpha=0.7)
 			plt.title(f"Ribosome Counts vs N Time Steps / 60 (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
 			plt.xlabel("Time (min)")
 			plt.ylabel("Ribosome Counts")
-			plt.grid(True)
+			slope, intercept, r_value, p_value, std_err = linregress(num_time_steps / 60, unnormalized_ribosome_counts)
+			plt.plot(num_time_steps / 60, intercept + slope * (num_time_steps / 60), color='red', label=f'Fit: y={slope:.2f}x+{intercept:.2f}, R²={r_value**2:.2f}')
+			plt.legend()
+			plt.title(plt.gca().get_title(), fontsize=8)
+
+			plt.subplot(1, 3, 3)
+			plt.scatter(num_time_steps / 60, unnormalized_cell_mass, color=poster_colors["poster_purple"], alpha=0.7)
+			plt.title(f"Cell Mass vs N Time Steps / 60 (Cell Cycle Step {cell_cycle_step} of {NUM_STEPS_PER_CELL_CYCLE})")
+			plt.xlabel("Time (min)")
+			plt.ylabel("Cell Mass (fg)")
+			slope, intercept, r_value, p_value, std_err = linregress(num_time_steps / 60, unnormalized_cell_mass)
+			plt.plot(num_time_steps / 60, intercept + slope * (num_time_steps / 60), color='red', label=f'Fit: y={slope:.2f}x+{intercept:.2f}, R²={r_value**2:.2f}')
+			plt.legend()
+			plt.title(plt.gca().get_title(), fontsize=8)
 
 			plt.tight_layout()
 			exportFigure(
