@@ -15,16 +15,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 
-PLOT_PROTEINS = ['G6890-MONOMER[c]',
-					   'PD03938[c]',
-						'G6737-MONOMER[c]',
-					   	'RPOD-MONOMER[c]',
-					   	'PD02936[c]',
-					   	'RED-THIOREDOXIN2-MONOMER[c]',
- 						"PD03867[c]",
-
-						"EG11734-MONOMER[c]",
-"PD03867[c]"]
+PLOT_PROTEINS = ["PD00196", "EG11111-MONOMER", "EG11545-MONOMER", "EG10320-MONOMER", "ADHP-MONOMER", "EG10580-MONOMER", "YJCQ-MONOMER", "G6988-MONOMER", "MOTB-FLAGELLAR-MOTOR-STATOR-PROTEIN"]
 
 
 
@@ -127,10 +118,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# calculate the net change per time:
 		net_rate = degraded_counts + diluted_counts_over_time + elongated_counts
 
+		def check_validity_and_get_compartment(protein_list):
+			revised_protein_list = []
+			for protein in protein_list:
+				if "[" in protein:
+					protein = protein[:-3] # remove compartment
+				if sim_data.getter.is_valid_molecule(protein):
+					revised_name = protein + sim_data.getter.get_compartment_tag(protein)
+					revised_protein_list.append(revised_name)
 
+			return revised_protein_list
+
+		PLOT_PROTEINS_revised = check_validity_and_get_compartment(PLOT_PROTEINS)
 
 		# plot the loss rate and the production rate:
-		for protein in PLOT_PROTEINS:
+		for protein in PLOT_PROTEINS_revised:
 			protein_idx = monomer_idx_dict[protein]
 			protein_FMC = free_monomer_counts[:, protein_idx]
 			proteins_degraded = (degraded_counts[:, protein_idx])*-1
