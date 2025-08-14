@@ -238,9 +238,10 @@ class ProteinDegradation(wholecell.processes.process.Process):
 				# Kms from new solving with b = 1.24
 
 				# original order: PD03938, G6890-MONOMER, G6737-MONOMER, RPOD-MONOMER, PD02936, RED-THIOREDOXIN2-MONOMER --> SWITCHED PROPERLY TO SUBSTRATES ORDER
-				Kms2 = [ 3.1190099e-4, 5.29487648e-6, 5.2999865e-4,   4.1087516e-4, 1.23777405e-4, 9.36398294e-3]
-
+				Kms2 = [3.1190099e-4, 5.29487648e-6, 5.2999865e-4, 4.1087516e-4, 1.23777405e-4, 9.36398294e-3]
+				Kms2 = np.array(Kms2) * int(10e-1)
 				Kms = Kms2
+				#import ipdb; ipdb.set_trace()
 
 
 
@@ -298,7 +299,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 					return nProteinsToDegrade
 
 				# call the function:
-				k_actives = calculate_k_active(protease, substrates, kcat, Kms)
+				k_actives = calculate_k_active(protease, substrates, kcat, Kms2)
 				nProteinsToDegrade = degrade_proteins(substrates, substrate_concentrations, k_actives, nProteinsToDegrade)
 
 				# confirm it works:
