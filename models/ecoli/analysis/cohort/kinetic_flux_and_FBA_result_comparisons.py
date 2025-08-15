@@ -260,45 +260,41 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		toyaFluxesDict = dict(zip(toyaReactions, toyaFluxes))
 		toyaStdevDict = dict(zip(toyaReactions, toyaStdev))
 
-		# match the toya fluxes to the base reaction fluxes:
-		modelFluxes = {}
-		toyaOrder = []
-		for rxn in toyaReactions:
-			modelFluxes[rxn] = []
-			toyaOrder.append(rxn)
 
-		# average the fluxes over all time steps if there is a matching reaction:
+		# average the fluxes over all time steps if there is a matching reaction in the model:
 		fluxTimeCourse_map = {}
+		modelFluxes = {}
 		for toyaReaction in toyaReactions:
 			if toyaReaction in base_reaction_id_to_index:
 				rxn_index = base_reaction_id_to_index[toyaReaction]
 				fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
 				fluxTimeCourse_map[toyaReaction] = fluxTimeCourse.asNumber(mmol_per_g_per_h)
-				modelFluxes[toyaReaction].append(
-					np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
+				modelFluxes[toyaReaction] = np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h)
 
-		# make a dictionary with the reaction fluxes and their standard deviations (note that the extra np.mean() of the flux does not change anything)
-		# TODO: ask riley if I should just be doing average by the cell, as this would actually yeild a standard deviation for each cell (written the way it is in the original file). I can edit it though to do over all time points, but idk if this is accurate
-		toyaVsReactionAve = []
+		# make a dictionary with the reaction fluxes and their standard deviations (note that the extra np.mean() of the flux does not change anything here as this averaging method already averaged over all the cells present by averaging over the full time)
+		toyaVsReactionAve = [] # todo: is this the best way to do the STD for the model?
 		for rxn, toyaFlux in toyaFluxesDict.items():
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append(
-					(np.mean(modelFluxes[rxn]),
-					 toyaFlux.asNumber(mmol_per_g_per_h),
-					 np.std(fluxTimeCourse_map[rxn]), toyaStdevDict[rxn].asNumber(mmol_per_g_per_h)))
+					(np.mean(modelFluxes[rxn]), # mean WCM flux
+					 toyaFlux.asNumber(mmol_per_g_per_h), # Toya flux
+					 np.std(fluxTimeCourse_map[rxn]), # WCM flux STD over the entire simulation duration
+					 toyaStdevDict[rxn].asNumber(mmol_per_g_per_h))) # Toya STD
 
 		toyaVsReactionAve = np.array(toyaVsReactionAve)
 
-		# build the plot
-		idx = np.abs(toyaVsReactionAve[:, 0]) < 5 * np.abs(toyaVsReactionAve[:, 1])
+		# Calulate r for all data points as well as just a select few
 		rWithAll = pearsonr(toyaVsReactionAve[:, 0], toyaVsReactionAve[:, 1])
+		# removes outliers if there are any:
+		idx = np.abs(toyaVsReactionAve[:, 0]) < 5 * np.abs(toyaVsReactionAve[:, 1])
 		rWithoutOutliers = pearsonr(toyaVsReactionAve[idx, 0], toyaVsReactionAve[idx, 1])
 
 		# plot the results
 		plt.figure(figsize=(7, 7), dpi=100)
 		ax = plt.axes()
 		plt.title(
-			f"Central Carbon Metabolism Flux\n(averaged over {len(self.all_cells)} cells, each weighted by total time spanned, \nSimulation ID: {self.sim_id})", fontsize=12)
+			f"Central Carbon Metabolism Flux Comparison ", fontsize=12, pad=20)
+		plt.suptitle(f"(averaged over {len(self.all_cells)} cells, each weighted by cell cycle length)", fontsize=8, y=.90)
 		plt.errorbar(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0],
 					 xerr=toyaVsReactionAve[:, 3], yerr=toyaVsReactionAve[:, 2], fmt=".",
 					 ecolor="k", alpha=0.5, linewidth=0.5)
@@ -307,17 +303,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.plot(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0], "ob", markeredgewidth=0.1,
 				 alpha=0.9)
 		plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
-		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
+		plt.ylabel(f"Mean WCM Reaction Flux [mmol/g/hr] \n(Simulation ID: {self.sim_id})")
 
 		# noinspection PyTypeChecker
 		ax.set_xlim([-20, 30])
 		xlim = ax.get_xlim()
 		ylim = ax.get_ylim()
-		ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
-		ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
-		ax.text(0.5, -0.08, "Pearson R = %.4f, p = %s\n(%.4f, %s without outliers)" % (
-				rWithAll[0], rWithAll[1], rWithoutOutliers[0], rWithoutOutliers[1]), fontsize=8, transform=ax.transAxes,
-				ha='center', va='top')
+		#ax.set_yticks(list(range(int(ylim[0]), int(ylim[1]) + 1, 10)))
+		#ax.set_xticks(list(range(int(xlim[0]), int(xlim[1]) + 1, 10)))
+		ax.text(.95, 0.075, "Pearson R = %.4f, p = %s\n(%.4f, %s without outliers)" % (
+				rWithAll[0], rWithAll[1], rWithoutOutliers[0], rWithoutOutliers[1]), fontsize=6, transform=ax.transAxes,
+				ha='right', color="grey")
 
 		plotOutName = plotOutFileName + "_FBA_avgeraging_method_1a_" + self.sim_id + ".png"
 		exportFigure(plt, plotOutDir, plotOutName, metadata)
@@ -329,7 +325,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	# function 2
 	def FBA_plots_averaging_method_1b(self, simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata):
 		"""
-		average over all time steps in the simulations, weighting cells by simulation time
+		average over all time steps in the simulations,
 		"""
 		sim_data = self.read_pickle_file(simDataFile)
 		simOutDir = os.path.join(self.all_cells[0], "simOut")
@@ -349,10 +345,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# see which do not match:
 		#reaction_stoich_ids_not_in_all = set(all_reaciton_ids).difference(set(reaction_stoich_ids)) # I believe the 21 that do not match have to do with aa
 
-
-		# get the FBA results from the simDataFile:
-		self.base_reaction_fluxes = read_stacked_columns(self.all_cells, "FBAResults", "base_reaction_fluxes")
-
 		# get the FBA results from the simDataFile:
 		self.rxn_fluxes = read_stacked_columns(self.all_cells, "FBAResults", "reactionFluxes")
 		self.base_rxn_fluxes = read_stacked_columns(self.all_cells, "FBAResults",
@@ -369,7 +361,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				(self.base_rxn_fluxes).T / coefficient.squeeze()).T
 		base_reaction_id_to_index = {
 			rxn_id: i for (i, rxn_id) in enumerate(base_reaction_ids)
-		}
+		} # TODO: either this base_reaction_ids or the one in 1a. choose! even tho they are the same dont use both
 
 		# get the Toya fluxes:
 		validation_data = self.read_pickle_file(validationDataFile)
@@ -381,24 +373,25 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# match the toya fluxes to the base reaction fluxes:
 		modelFluxes = {}
-		toyaOrder = []
-		for rxn in toyaReactions:
+		toyaOrder = [] # todo: can I take this out I do not use it from what I can tell?
+		for rxn in toyaReactions: # todo: should this have .keys()?
 			modelFluxes[rxn] = []
 			toyaOrder.append(rxn)
-
-		# average the fluxes over all time steps if there is a matching reaction:
+		hey = 1
+		# average the fluxes over all time steps if there is a matching reaction in the model:
 		fluxTimeCourse_map = {}
 		for toyaReaction in toyaReactions:
-			if toyaReaction in base_reaction_id_to_index:
+			if toyaReaction in base_reaction_id_to_index: # todo: does this have to have .keys()?
 				rxn_index = base_reaction_id_to_index[toyaReaction]
 				fluxTimeCourse = base_reaction_fluxes[:, rxn_index]
 				fluxTimeCourse_map[toyaReaction] = fluxTimeCourse.asNumber(mmol_per_g_per_h)
 				modelFluxes[toyaReaction].append(
 					np.mean(fluxTimeCourse).asNumber(mmol_per_g_per_h))
-
+				# todo: check that this is indeed appending to the dictionary as I would like it to be, bc maybe its best to justmake the modelFluxes dict at this loop and not the one before it
+		hey = 3
 		# make a dictionary with the reaction fluxes and their standard deviations (note that the extra np.mean() of the flux does not change anything)
 		# TODO: ask riley if I should just be doing average by the cell, as this would actually yeild a standard deviation for each cell (written the way it is in the original file). I can edit it though to do over all time points, but idk if this is accurate
-		toyaVsReactionAve = []
+		toyaVsReactionAve = [] # will contain the mean WCM flux, mean Toya flux, WCM STD
 		for rxn, toyaFlux in toyaFluxesDict.items():
 			if rxn in modelFluxes:
 				toyaVsReactionAve.append(
@@ -409,17 +402,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		toyaVsReactionAve = np.array(toyaVsReactionAve)
 
+
 		# build the plot
 		idx = np.abs(toyaVsReactionAve[:, 0]) < 5 * np.abs(toyaVsReactionAve[:, 1])
 		rWithAll = pearsonr(toyaVsReactionAve[:, 0], toyaVsReactionAve[:, 1])
 		rWithoutOutliers = pearsonr(toyaVsReactionAve[idx, 0], toyaVsReactionAve[idx, 1])
-
+		hey = 2
 		# plot the results
 		plt.figure(figsize=(7, 7), dpi=100)
 		ax = plt.axes()
 		plt.title(
-			f"Central Carbon Metabolism Flux\n(averaged over {len(self.all_cells)} cells, weighted by simulation time spanned, \nSimulation ID: {self.sim_id})",
+			f"Central Carbon Metabolism Flux Comparison",
 			fontsize=12)
+		plt.suptitle(
+			f"(averaged over {len(self.all_cells)} cells, each weighted by total time spanned)",
+			fontsize=8)
 		plt.errorbar(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0],
 					 xerr=toyaVsReactionAve[:, 3], yerr=toyaVsReactionAve[:, 2], fmt=".",
 					 ecolor="k", alpha=0.5, linewidth=0.5)
@@ -428,7 +425,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.plot(toyaVsReactionAve[:, 1], toyaVsReactionAve[:, 0], "ob", markeredgewidth=0.1,
 				 alpha=0.9)
 		plt.xlabel("Toya 2010 Reaction Flux [mmol/g/hr]")
-		plt.ylabel("Mean WCM Reaction Flux [mmol/g/hr]")
+		plt.ylabel(f"Mean WCM (Simulation ID: {self.sim_id}) Reaction Flux [mmol/g/hr]")
 
 		# noinspection PyTypeChecker
 		ax.set_xlim([-20, 30])
@@ -474,7 +471,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		reaction_ids = reaction_stoich_ids
 		reaction_IDs = fbaResults.readAttribute("reactionIDs")
 		if reaction_ids == reaction_IDs:
-			print("reaction ids are the same and in the same order.")
+			print("reaction ids are the same and in the same order.") # Seems like this one is not printed, so pressumably I cannot trust this order!
 
 		# get the enzyme IDs:
 		# no this one I do not trust to get from sim data.
@@ -505,7 +502,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	def FBA_plot(self, sim_data, plotOutDir, plotOutFileName, validationDataFile, metadata):
 		# taken from models/ecoli/analysis/cohort/centralCarbonMetabolismScatter.py
-
+		# todo: I think this was where I meant to weight differently?
 		# Get all cells
 		allDir = self.ap.get_cells() # todo: decide if I want to discard some of the initial generations
 
@@ -525,6 +522,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			toyaOrder.append(rxn)
 
 		mmol_per_g_per_h = units.mmol / units.g / units.h
+		# I bleieve this one is different averaging wise becuase it should be doing STD and flux averaging by the generation
 		for simDir in allDir:
 			simOutDir = os.path.join(simDir, "simOut")
 
@@ -860,8 +858,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 		# plot the FBA results
-		#self.FBA_plot(sim_data, plotOutDir, plotOutFileName, validationDataFile, metadata)
-		self.test_order_plot(simDataFile)
+		self.FBA_plot(sim_data, plotOutDir, plotOutFileName, validationDataFile, metadata)
+		self.test_order_plot(simDataFile) # todo: since reaction ids are not always in the same order, which should I use?
 		self.FBA_plots_averaging_method_1a(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 		self.FBA_plots_averaging_method_1b(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 
