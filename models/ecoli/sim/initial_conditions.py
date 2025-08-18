@@ -127,9 +127,7 @@ def setDaughterInitialConditions(sim, sim_data):
 		if sim._generation_index >= min(shift_range_start_gen_indices):
 			# Determine which generation index key defines the shift functions
 			# to use for this range of generation indices
-			shift_range_start_gen_index = min(
-				shift_range_start_gen_indices,
-				key=lambda x: abs(x - sim._generation_index))
+			shift_range_start_gen_index = max(x for x in shift_range_start_gen_indices if x <= sim._generation_index)
 			shifts = sim_data.internal_shift_dict[shift_range_start_gen_index]
 			# Apply the shift functions in order
 			for shift_tuple in shifts:
