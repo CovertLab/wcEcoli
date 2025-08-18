@@ -25,23 +25,48 @@ poster_colors = {
     "poster_red": (202/255, 0/255, 32/255),
 }
 
-START_GEN_INDEX = 7
-END_GEN_INDEX = 11 # Not inclusive
+START_GEN_INDEX = 0
+END_GEN_INDEX = 20 # Not inclusive
 GEN_RANGE = np.arange(START_GEN_INDEX, END_GEN_INDEX)
 
 SELECTED_SEED_INDEXES = [
-			0, 1, 2, 3, 4, 5, 6, 7]
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+#GEN_TO_COLOR = {
+#	7: poster_colors["light_gray"],
+#	8: poster_colors["poster_green"],
+#	9: poster_colors["poster_blue"],
+#	10: poster_colors["poster_purple"],
+#}
 
 GEN_TO_COLOR = {
-	7: poster_colors["light_gray"],
-	8: poster_colors["poster_green"],
-	9: poster_colors["poster_blue"],
-	10: poster_colors["poster_purple"],
+	0: (0, 0, 0),
+	1: (0, 0, 0),
+	2: (0, 0, 0),
+	3: (0, 0, 0),
+	4: (0, 0, 0),
+	5: (0, 0, 0),
+	6: (0, 0, 0),
+	7: (0, 0, 0),
+	8: (0, 0, 0),
+	9: (0, 0, 0),
+	10: (0, 0, 0),
+	11: (0, 0, 0),
+	12: (0, 0, 0),
+	13: (0, 0, 0),
+	14: (0, 0, 0),
+	15: (0, 0, 0),
+	16: poster_colors["poster_green"],
+	17: poster_colors["poster_blue"],
+	18: poster_colors["poster_purple"],
+	19: poster_colors["poster_gold"],
+	20: poster_colors["poster_light_blue"],
 	}
+
 VARIANT_B_COLOR = poster_colors["light_gray"]
 
 # FOR SHERLOCK
-VARIANT_INDEX_A = 23
+VARIANT_INDEX_A = 1
 VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
 
 # # FOR LOCAL DEVELOPMENT

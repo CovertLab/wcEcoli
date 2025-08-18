@@ -33,7 +33,7 @@ MAX_CELL_INDEX = 8 # do not include any generation >= this index
 generations before this may not be representative of dynamics 
 due to how they are initialized
 """
-MIN_LATE_CELL_INDEX = 4
+MIN_LATE_CELL_INDEX = 16
 
 MAX_CELL_LENGTH = 180
 if (exclude_timeout_cells==0):
