@@ -26,7 +26,7 @@ poster_colors = {
 }
 
 START_GEN_INDEX = 0
-END_GEN_INDEX = 20 # Not inclusive
+END_GEN_INDEX = 24 # Not inclusive
 GEN_RANGE = np.arange(START_GEN_INDEX, END_GEN_INDEX)
 
 SELECTED_SEED_INDEXES = [
@@ -48,19 +48,22 @@ GEN_TO_COLOR = {
 	5: (0, 0, 0),
 	6: (0, 0, 0),
 	7: (0, 0, 0),
-	8: (0, 0, 0),
-	9: (0, 0, 0),
-	10: (0, 0, 0),
-	11: (0, 0, 0),
-	12: (0, 0, 0),
-	13: (0, 0, 0),
-	14: (0, 0, 0),
-	15: (0, 0, 0),
+	8: poster_colors["poster_blue"],
+	9: poster_colors["poster_blue"],
+	10: poster_colors["poster_blue"],
+	11: poster_colors["poster_blue"],
+	12: poster_colors["poster_blue"],
+	13: poster_colors["poster_blue"],
+	14: poster_colors["poster_blue"],
+	15: poster_colors["poster_blue"],
 	16: poster_colors["poster_green"],
-	17: poster_colors["poster_blue"],
-	18: poster_colors["poster_purple"],
-	19: poster_colors["poster_gold"],
-	20: poster_colors["poster_light_blue"],
+	17: poster_colors["poster_green"],
+	18: poster_colors["poster_green"],
+	19: poster_colors["poster_green"],
+	20: poster_colors["poster_green"],
+	21: poster_colors["poster_green"],
+	22: poster_colors["poster_green"],
+	23: poster_colors["poster_green"],
 	}
 
 VARIANT_B_COLOR = poster_colors["light_gray"]
