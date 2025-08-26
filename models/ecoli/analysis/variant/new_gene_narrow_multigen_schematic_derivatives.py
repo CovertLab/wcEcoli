@@ -186,53 +186,59 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				monomer_idx_dict.get(monomer_id) for monomer_id in new_gene_monomer_ids]
 			monomer_counts_reader.close()
 
-			# # New Gene mRNA Counts
-			# new_gene_mRNA_counts_A = read_stacked_columns(
-			# 	all_cells_A, 'RNACounts',
-			# 	'mRNA_counts')[:, new_gene_mRNA_indexes]
-			# for gen in GEN_RANGE:
-			# 	rel_gen_index = gen - START_GEN_INDEX
-			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	counts_data = new_gene_mRNA_counts_A[
-			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1, :]
-			# 	# Use the derivatives for plotting
-				# time_data = time_data.squeeze()
-				# counts_data = counts_data.squeeze()
-			# 	counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 	time_data = time_data[1:] 
-			# 	plt.plot(
-			# 		time_data / 60., counts_data,
-			# 		color=GEN_TO_COLOR[gen],
-			# 		label = f'Variant {VARIANT_INDEX_A}',)
-			# if VARIANT_INDEX_B != -1:
-			# 	new_gene_mRNA_counts_B = read_stacked_columns(
-			# 		all_cells_B, 'RNACounts',
-			# 	'mRNA_counts')[:, new_gene_mRNA_indexes]
-			# 	for gen in GEN_RANGE:
-			# 		rel_gen_index = gen - START_GEN_INDEX
-			# 		time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		counts_data = new_gene_mRNA_counts_B[
-			# 			gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1, :]
-			# 		# Use the derivatives for plotting
-					# time_data = time_data.squeeze()
-					# counts_data = counts_data.squeeze()
-			# 		counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 		time_data = time_data[1:] 
-			# 		plt.plot(
-			# 			time_data / 60., counts_data,
-			# 			color=VARIANT_B_COLOR,
-			# 			label = f'Variant {VARIANT_INDEX_B}',)
-			# plt.ylabel('Deriv. New Gene mRNA Counts')
-			# plt.xlabel('Time (minutes)')
-			# handles, labels = plt.gca().get_legend_handles_labels()
-			# by_label = dict(zip(labels, handles))
-			# plt.legend(
-			# 	by_label.values(), by_label.keys(),
-			# 	loc='upper left', fontsize=8)
-			# plot_num += 1
+			# New Gene mRNA Counts
+			new_gene_mRNA_counts_A = read_stacked_columns(
+				all_cells_A, 'RNACounts',
+				'mRNA_counts')[:, new_gene_mRNA_indexes]
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = new_gene_mRNA_counts_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1, :]
+				# Use the derivatives for plotting
+				time_data = time_data.squeeze()
+				counts_data = counts_data.squeeze()
+				counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+				time_data = time_data[1:] 
+				moving_window = min(301, len(counts_data))
+				convolution_array = (np.ones(moving_window) / moving_window)
+				pad = moving_window // 2
+				padded = np.pad(counts_data, pad_width=pad, mode='edge')
+				counts_data_convolved = np.convolve(padded, convolution_array, mode='valid')
+				counts_data = counts_data_convolved
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				new_gene_mRNA_counts_B = read_stacked_columns(
+					all_cells_B, 'RNACounts',
+				'mRNA_counts')[:, new_gene_mRNA_indexes]
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = new_gene_mRNA_counts_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1, :]
+					# Use the derivatives for plotting
+					time_data = time_data.squeeze()
+					counts_data = counts_data.squeeze()
+					counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+					time_data = time_data[1:] 
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Deriv. New Gene mRNA Counts')
+			plt.xlabel('Time (minutes)')
+			handles, labels = plt.gca().get_legend_handles_labels()
+			by_label = dict(zip(labels, handles))
+			plt.legend(
+				by_label.values(), by_label.keys(),
+				loc='upper left', fontsize=8)
+			plot_num += 1
 
 			# New Gene Protein Counts
-			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 			new_gene_protein_counts_A = read_stacked_columns(
 				all_cells_A, 'MonomerCounts',
 				'monomerCounts')[:, new_gene_monomer_indexes]
@@ -278,101 +284,114 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.xlabel('Time (minutes)')
 			plot_num += 1
 
-			# # Limiting RNAP subunit mRNA counts
-			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			# # Mapping from cistron ids to indexes
-			# sim_dir = all_cells_A[0]
-			# simOutDir = os.path.join(sim_dir, 'simOut')
-			# mRNA_counts_reader = TableReader(os.path.join(
-			# 	simOutDir, 'RNACounts'))
-			# mRNA_cistron_idx_dict = {rna: i for i, rna in enumerate(
-			# 	mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
-			# mRNA_counts_reader.close()
-			# limiting_RNAP_subunit_mRNA_cistron_id = "EG10895_RNA"
-			# limiting_RNAP_subunit_mRNA_cistron_index = mRNA_cistron_idx_dict.get(
-			# 	limiting_RNAP_subunit_mRNA_cistron_id)
-			# limiting_RNAP_subunit_mRNA_counts_A = read_stacked_columns(
-			# 	all_cells_A, 'RNACounts',
-			# 	'mRNA_cistron_counts')[:, limiting_RNAP_subunit_mRNA_cistron_index]
-			# for gen in GEN_RANGE:
-			# 	rel_gen_index = gen - START_GEN_INDEX
-			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	counts_data = limiting_RNAP_subunit_mRNA_counts_A[
-			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	# Use the derivatives for plotting
-				# time_data = time_data.squeeze()
-				# counts_data = counts_data.squeeze()
-			# 	counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 	time_data = time_data[1:] 
-			# 	plt.plot(
-			# 		time_data / 60., counts_data,
-			# 		color=GEN_TO_COLOR[gen],
-			# 		label = f'Variant {VARIANT_INDEX_A}',)
-			# if VARIANT_INDEX_B != -1:
-			# 	limiting_RNAP_subunit_mRNA_counts_B = read_stacked_columns(
-			# 		all_cells_B, 'RNACounts',
-			# 		'mRNA_cistron_counts')[:, limiting_RNAP_subunit_mRNA_cistron_index]
-			# 	for gen in GEN_RANGE:
-			# 		rel_gen_index = gen - START_GEN_INDEX
-			# 		time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		counts_data = limiting_RNAP_subunit_mRNA_counts_B[
-			# 			gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		# Use the derivatives for plotting
-					# time_data = time_data.squeeze()
-					# counts_data = counts_data.squeeze()
-			# 		counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 		time_data = time_data[1:] 
-			# 		plt.plot(
-			# 			time_data / 60., counts_data,
-			# 			color=VARIANT_B_COLOR,
-			# 			label = f'Variant {VARIANT_INDEX_B}',)
-			# plt.ylabel('Deriv.Limiting RNAP Subunit (rpoC) mRNA Counts', fontsize=8)
-			# plt.xlabel('Time (minutes)')
-			# plot_num += 1
+			# Limiting RNAP subunit mRNA counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			# Mapping from cistron ids to indexes
+			sim_dir = all_cells_A[0]
+			simOutDir = os.path.join(sim_dir, 'simOut')
+			mRNA_counts_reader = TableReader(os.path.join(
+				simOutDir, 'RNACounts'))
+			mRNA_cistron_idx_dict = {rna: i for i, rna in enumerate(
+				mRNA_counts_reader.readAttribute('mRNA_cistron_ids'))}
+			mRNA_counts_reader.close()
+			limiting_RNAP_subunit_mRNA_cistron_id = "EG10895_RNA"
+			limiting_RNAP_subunit_mRNA_cistron_index = mRNA_cistron_idx_dict.get(
+				limiting_RNAP_subunit_mRNA_cistron_id)
+			limiting_RNAP_subunit_mRNA_counts_A = read_stacked_columns(
+				all_cells_A, 'RNACounts',
+				'mRNA_cistron_counts')[:, limiting_RNAP_subunit_mRNA_cistron_index]
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = limiting_RNAP_subunit_mRNA_counts_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				# Use the derivatives for plotting
+				time_data = time_data.squeeze()
+				counts_data = counts_data.squeeze()
+				counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+				time_data = time_data[1:] 
+				moving_window = min(301, len(counts_data))
+				convolution_array = (np.ones(moving_window) / moving_window)
+				pad = moving_window // 2
+				padded = np.pad(counts_data, pad_width=pad, mode='edge')
+				counts_data_convolved = np.convolve(padded, convolution_array, mode='valid')
+				counts_data = counts_data_convolved
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				limiting_RNAP_subunit_mRNA_counts_B = read_stacked_columns(
+					all_cells_B, 'RNACounts',
+					'mRNA_cistron_counts')[:, limiting_RNAP_subunit_mRNA_cistron_index]
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = limiting_RNAP_subunit_mRNA_counts_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					# Use the derivatives for plotting
+					time_data = time_data.squeeze()
+					counts_data = counts_data.squeeze()
+					counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+					time_data = time_data[1:] 
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Deriv.Limiting RNAP Subunit (rpoC) mRNA Counts', fontsize=8)
+			plt.xlabel('Time (minutes)')
+			plt.ylim(-0.03, 0.03)
+			plot_num += 1
 
-			# # Limiting RNAP subunit monomer counts
-			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			# limiting_RNAP_subunit_monomer_id = ["RPOC-MONOMER[c]"]
-			# limiting_RNAP_subunit_monomer_index = monomer_idx_dict.get(
-			# 	limiting_RNAP_subunit_monomer_id[0])
-			# limiting_RNAP_subunit_monomer_counts_A = read_stacked_columns(
-			# 	all_cells_A, 'MonomerCounts',
-			# 	'monomerCounts')[:, limiting_RNAP_subunit_monomer_index]
-			# for gen in GEN_RANGE:
-			# 	rel_gen_index = gen - START_GEN_INDEX
-			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	counts_data = limiting_RNAP_subunit_monomer_counts_A[
-			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	# Use the derivatives for plotting
-							# time_data = time_data.squeeze()
-				# counts_data = counts_data.squeeze()
-			# 	counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 	time_data = time_data[1:] 
-			# 	plt.plot(
-			# 		time_data / 60., counts_data,
-			# 		color=GEN_TO_COLOR[gen],
-			# 		label = f'Variant {VARIANT_INDEX_A}',)
-			# if VARIANT_INDEX_B != -1:
-			# 	limiting_RNAP_subunit_monomer_counts_B = read_stacked_columns(
-			# 		all_cells_B, 'MonomerCounts',
-			# 		'monomerCounts')[:, limiting_RNAP_subunit_monomer_index]
-			# 	for gen in GEN_RANGE:
-			# 		rel_gen_index = gen - START_GEN_INDEX
-			# 		time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		counts_data = limiting_RNAP_subunit_monomer_counts_B[
-			# 			gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		# Use the derivatives for plotting
-				# 			time_data = time_data.squeeze()
-				# counts_data = counts_data.squeeze()
-			# 		counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 		time_data = time_data[1:] 
-			# 		plt.plot(
-			# 			time_data / 60., counts_data,
-			# 			color=VARIANT_B_COLOR,
-			# 			label = f'Variant {VARIANT_INDEX_B}',)
-			# plt.ylabel('Deriv.Limiting RNAP Subunit (RpoC) Monomer Counts', fontsize=8)
-			# plt.xlabel('Time (minutes)')
-			# plot_num += 1
+			# Limiting RNAP subunit monomer counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			limiting_RNAP_subunit_monomer_id = ["RPOC-MONOMER[c]"]
+			limiting_RNAP_subunit_monomer_index = monomer_idx_dict.get(
+				limiting_RNAP_subunit_monomer_id[0])
+			limiting_RNAP_subunit_monomer_counts_A = read_stacked_columns(
+				all_cells_A, 'MonomerCounts',
+				'monomerCounts')[:, limiting_RNAP_subunit_monomer_index]
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = limiting_RNAP_subunit_monomer_counts_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				# Use the derivatives for plotting
+				time_data = time_data.squeeze()
+				counts_data = counts_data.squeeze()
+				counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+				time_data = time_data[1:] 
+				moving_window = min(301, len(counts_data))
+				convolution_array = (np.ones(moving_window) / moving_window)
+				pad = moving_window // 2
+				padded = np.pad(counts_data, pad_width=pad, mode='edge')
+				counts_data_convolved = np.convolve(padded, convolution_array, mode='valid')
+				counts_data = counts_data_convolved
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				limiting_RNAP_subunit_monomer_counts_B = read_stacked_columns(
+					all_cells_B, 'MonomerCounts',
+					'monomerCounts')[:, limiting_RNAP_subunit_monomer_index]
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = limiting_RNAP_subunit_monomer_counts_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					# Use the derivatives for plotting
+					time_data = time_data.squeeze()
+					counts_data = counts_data.squeeze()
+					counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+					time_data = time_data[1:] 
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Deriv.Limiting RNAP Subunit (RpoC) Monomer Counts', fontsize=8)
+			plt.xlabel('Time (minutes)')
+			plot_num += 1
 
 			# RNAP Counts
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
@@ -489,69 +508,75 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.ylim(-50,50)
 			plot_num += 1
 
-			# # Limiting rRNA Counts
-			# plt.subplot(total_plots, 1, plot_num, sharex=ax1)
-			# limiting_rRNA_cistron_id = sim_data.molecule_groups.s50_23s_rRNA[0]
-			# limiting_ribosomal_subunit_id = sim_data.molecule_ids.s50_full_complex
-			# unique_molecule_counts_table = TableReader(
-			# 	os.path.join(simOutDir, "UniqueMoleculeCounts"))
-			# ribosome_index = unique_molecule_counts_table.readAttribute(
-			# 	"uniqueMoleculeIds").index('active_ribosome')
-			# unique_molecule_counts_table.close()
-			# (limiting_rRNA_counts_A) = read_stacked_bulk_molecules(
-			# 	all_cells_A, ([limiting_rRNA_cistron_id],), ignore_exception=True)
-			# (limiting_ribosomal_subunit_counts_A) = read_stacked_bulk_molecules(
-			# 	all_cells_A, ([limiting_ribosomal_subunit_id],), ignore_exception=True)
-			# full_ribosome_counts_A = (read_stacked_columns(
-			# 	all_cells_A, 'UniqueMoleculeCounts',
-			# 	'uniqueMoleculeCounts',
-			# 	ignore_exception=True)[:, ribosome_index])
-			# limiting_rRNA_counts_A = limiting_rRNA_counts_A[0]
-			# limiting_rRNA_counts_A += limiting_ribosomal_subunit_counts_A[0]
-			# limiting_rRNA_counts_A += full_ribosome_counts_A
-			# for gen in GEN_RANGE:
-			# 	rel_gen_index = gen - START_GEN_INDEX
-			# 	time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	counts_data = limiting_rRNA_counts_A[
-			# 		gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
-			# 	# Use the derivatives for plotting
-				# 			time_data = time_data.squeeze()
-				# counts_data = counts_data.squeeze()
-			# 	counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 	time_data = time_data[1:] 
-			# 	plt.plot(
-			# 		time_data / 60., counts_data,
-			# 		color=GEN_TO_COLOR[gen],
-			# 		label = f'Variant {VARIANT_INDEX_A}',)
-			# if VARIANT_INDEX_B != -1:
-			# 	(limiting_rRNA_counts_B) = read_stacked_bulk_molecules(
-			# 		all_cells_B, ([limiting_rRNA_cistron_id],), ignore_exception=True)
-			# 	(limiting_ribosomal_subunit_counts_B) = read_stacked_bulk_molecules(
-			# 		all_cells_B, ([limiting_ribosomal_subunit_id],), ignore_exception=True)
-			# 	full_ribosome_counts_B = read_stacked_columns(
-			# 		all_cells_B, 'UniqueMoleculeCounts',
-			# 		'uniqueMoleculeCounts',
-			# 		ignore_exception=True)[:, ribosome_index]
-			# 	limiting_rRNA_counts_B = limiting_rRNA_counts_B[0]
-			# 	limiting_rRNA_counts_B += limiting_ribosomal_subunit_counts_B[0]
-			# 	limiting_rRNA_counts_B += full_ribosome_counts_B
-			# 	for gen in GEN_RANGE:
-			# 		rel_gen_index = gen - START_GEN_INDEX
-			# 		time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		counts_data = limiting_rRNA_counts_B[
-			# 			gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
-			# 		# Use the derivatives for plotting
-				# 			time_data = time_data.squeeze()
-				# counts_data = counts_data.squeeze()
-			# 		counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
-			# 		time_data = time_data[1:] 
-			# 		plt.plot(
-			# 			time_data / 60., counts_data,
-			# 			color=VARIANT_B_COLOR,
-			# 			label = f'Variant {VARIANT_INDEX_B}',)
-			# plt.ylabel('Deriv. Limiting rRNA (23s) Counts', fontsize=8)
-			# plt.xlabel('Time (minutes)')
-			# plot_num += 1
+			# Limiting rRNA Counts
+			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+			limiting_rRNA_cistron_id = sim_data.molecule_groups.s50_23s_rRNA[0]
+			limiting_ribosomal_subunit_id = sim_data.molecule_ids.s50_full_complex
+			unique_molecule_counts_table = TableReader(
+				os.path.join(simOutDir, "UniqueMoleculeCounts"))
+			ribosome_index = unique_molecule_counts_table.readAttribute(
+				"uniqueMoleculeIds").index('active_ribosome')
+			unique_molecule_counts_table.close()
+			(limiting_rRNA_counts_A) = read_stacked_bulk_molecules(
+				all_cells_A, ([limiting_rRNA_cistron_id],), ignore_exception=True)
+			(limiting_ribosomal_subunit_counts_A) = read_stacked_bulk_molecules(
+				all_cells_A, ([limiting_ribosomal_subunit_id],), ignore_exception=True)
+			full_ribosome_counts_A = (read_stacked_columns(
+				all_cells_A, 'UniqueMoleculeCounts',
+				'uniqueMoleculeCounts',
+				ignore_exception=True)[:, ribosome_index])
+			limiting_rRNA_counts_A = limiting_rRNA_counts_A[0]
+			limiting_rRNA_counts_A += limiting_ribosomal_subunit_counts_A[0]
+			limiting_rRNA_counts_A += full_ribosome_counts_A
+			for gen in GEN_RANGE:
+				rel_gen_index = gen - START_GEN_INDEX
+				time_data = time_A[gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				counts_data = limiting_rRNA_counts_A[
+					gen_start_indexes_A[rel_gen_index]:gen_end_indexes_A[rel_gen_index] + 1]
+				# Use the derivatives for plotting
+				time_data = time_data.squeeze()
+				counts_data = counts_data.squeeze()
+				counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+				time_data = time_data[1:]
+				moving_window = min(301, len(counts_data))
+				convolution_array = (np.ones(moving_window) / moving_window)
+				pad = moving_window // 2
+				padded = np.pad(counts_data, pad_width=pad, mode='edge')
+				counts_data_convolved = np.convolve(padded, convolution_array, mode='valid')
+				counts_data = counts_data_convolved 
+				plt.plot(
+					time_data / 60., counts_data,
+					color=GEN_TO_COLOR[gen],
+					label = f'Variant {VARIANT_INDEX_A}',)
+			if VARIANT_INDEX_B != -1:
+				(limiting_rRNA_counts_B) = read_stacked_bulk_molecules(
+					all_cells_B, ([limiting_rRNA_cistron_id],), ignore_exception=True)
+				(limiting_ribosomal_subunit_counts_B) = read_stacked_bulk_molecules(
+					all_cells_B, ([limiting_ribosomal_subunit_id],), ignore_exception=True)
+				full_ribosome_counts_B = read_stacked_columns(
+					all_cells_B, 'UniqueMoleculeCounts',
+					'uniqueMoleculeCounts',
+					ignore_exception=True)[:, ribosome_index]
+				limiting_rRNA_counts_B = limiting_rRNA_counts_B[0]
+				limiting_rRNA_counts_B += limiting_ribosomal_subunit_counts_B[0]
+				limiting_rRNA_counts_B += full_ribosome_counts_B
+				for gen in GEN_RANGE:
+					rel_gen_index = gen - START_GEN_INDEX
+					time_data = time_B[gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					counts_data = limiting_rRNA_counts_B[
+						gen_start_indexes_B[rel_gen_index]:gen_end_indexes_B[rel_gen_index] + 1]
+					# Use the derivatives for plotting
+					time_data = time_data.squeeze()
+					counts_data = counts_data.squeeze()
+					counts_data = (counts_data[1:] - counts_data[:-1]) / (time_data[1:] - time_data[:-1])
+					time_data = time_data[1:] 
+					plt.plot(
+						time_data / 60., counts_data,
+						color=VARIANT_B_COLOR,
+						label = f'Variant {VARIANT_INDEX_B}',)
+			plt.ylabel('Deriv. Limiting rRNA (23s) Counts', fontsize=8)
+			plt.xlabel('Time (minutes)')
+			plot_num += 1
 
 			# Ribosome Counts
 			plt.subplot(total_plots, 1, plot_num, sharex=ax1)
