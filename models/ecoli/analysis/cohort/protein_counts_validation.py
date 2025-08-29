@@ -276,8 +276,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		plt.title(f"Simulation Protein Counts ({sim_name}) "
 				  f"vs.\n Validation Protein Counts ({val_name} et al., 2016)")
-		plt.xlabel("log10(Validation Protein Counts)")
-		plt.ylabel(f"log10(Simulation Protein Counts)")
+		plt.xlabel("log10(Validation Counts)")
+		plt.ylabel(f"log10(Simulation Counts)")
 		plt.xlim(0, 6)
 		plt.ylim(0, 6)
 		plt.gca().set_aspect('equal', adjustable='box')
