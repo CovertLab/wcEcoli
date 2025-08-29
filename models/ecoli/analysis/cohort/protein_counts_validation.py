@@ -248,7 +248,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		r_squared_30_above = r2_score(x_above_30, y_above_30)
 
 		# Add scatter trace
-		plt.scatter(x=x, y=y, s=5, label=f"Counts ($R^2$: {round(r_squared_30_above,3)})",
+		plt.scatter(x=x, y=y, s=5, label=f"Counts",
 					alpha=0.5, color='lightseagreen')
 
 		# Compute linear trendline
@@ -275,14 +275,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Update layout
 
 		plt.title(f"Simulation Protein Counts ({sim_name}) "
-				  f"vs.\n Validation Protein Counts ({val_name} et al.)")
+				  f"vs.\n Validation Protein Counts ({val_name} et al., 2016)")
 		plt.xlabel("log10(Validation Protein Counts)")
 		plt.ylabel(f"log10(Simulation Protein Counts)")
 		plt.xlim(0, 6)
 		plt.ylim(0, 6)
 		plt.gca().set_aspect('equal', adjustable='box')
 
-		plt.legend()
+		plt.text(0.95, 0.02, f'$R^2$ for counts > 30: {round(r_squared_30_above, 2)}',
+				 ha='right', va='bottom',
+				 transform=plt.gca().transAxes,
+				 fontsize=8, color='gray')
+		plt.legend(bbox_to_anchor=(1.3,1.), loc='upper right', fontsize=6, )
+
+
 
 
 
