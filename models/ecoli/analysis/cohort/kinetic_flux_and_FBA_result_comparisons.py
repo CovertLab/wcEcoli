@@ -862,7 +862,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.test_order_plot(simDataFile) # todo: since reaction ids are not always in the same order, which should I use?
 		self.FBA_plots_averaging_method_1a(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
 		self.FBA_plots_averaging_method_1b(simDataFile, validationDataFile, plotOutFileName, plotOutDir, metadata)
-
 		self.enzyme_kinetics_plot(simDataFile, plotOutDir, plotOutFileName, metadata)
 
 		hi = 5
