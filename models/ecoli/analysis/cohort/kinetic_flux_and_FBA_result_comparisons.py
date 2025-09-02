@@ -866,10 +866,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self.enzyme_kinetics_plot(simDataFile, plotOutDir, plotOutFileName, metadata)
 
 		hi = 5
-		self.centralCarbonMetabolismScatterPlot(plotOutDir, plotOutFileName, simDataFile,
-										   validationDataFile, metadata)
 
-		hi = 5
+
 
 		# check if any of the relevant reactions are in the fba reactions:
 
