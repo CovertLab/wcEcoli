@@ -12,6 +12,10 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.protein_counts import get_simulated_validation_counts
 import plotly.graph_objects as go
 from sklearn.metrics import r2_score
+import io
+from wholecell.io import tsv
+from wholecell.utils.filepath import ROOT_PATH
+
 
 """ USER INPUTS """
 
@@ -128,6 +132,87 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				schmidt_overlap_ids, sim_wisniewski_counts,
 				val_wisniewski_counts, wisniewski_overlap_ids)
 
+	# hi = 5
+	# function to match gene symbols to monomer ids
+	def get_gene_symbols_for_monomer_ids(self):
+		"""
+		Extracts the gene symbols for each monomer id in the model.
+
+		Returns: a dictionary mapping monomer ids to gene symbols.
+		Code adapted from convert_to_flat.py.
+		"""
+		RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+									 'flat', 'rnas.tsv')
+		with (io.open(RNAS_FILE, 'rb') as f):
+			reader = tsv.reader(f, delimiter='\t')
+			headers = next(reader)
+			while headers[0].startswith('#'):
+				headers = next(reader)
+
+			# extract relevant information
+			gene_symbol_index = headers.index('common_name')
+			protein_id_index = headers.index('monomer_ids')
+			monomer_ids_to_gene_symbols = {}
+			for line in reader:
+				gene_symbol = line[gene_symbol_index]
+				protein_id = list(
+						line[protein_id_index][2:-2].split('", "'))[0]  # not sure what this does
+				monomer_ids_to_gene_symbols[protein_id] = gene_symbol
+
+		return monomer_ids_to_gene_symbols
+
+	def get_descriptive_name_for_monomer_ids(self):
+		PROTEINS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+										 'flat', 'proteins.tsv')
+		with (io.open(PROTEINS_FILE, 'rb') as f):
+			reader = tsv.reader(f, delimiter='\t')
+			headers = next(reader)
+			while headers[0].startswith('#'):
+				headers = next(reader)
+
+			# extract relevant information
+			gene_description_index = headers.index('common_name')
+			protein_id_index = headers.index('id')
+			monomer_ids_to_descriptive_names = {}
+			for line in reader:
+				gene_description = line[gene_description_index]
+				protein_id = line[protein_id_index]
+				monomer_ids_to_descriptive_names[protein_id] = gene_description
+
+		return monomer_ids_to_descriptive_names
+
+	def get_common_name(self, protein_id):
+		"""
+		Obtains the common names for each protein of interest
+		Args:
+		    protein_id: the name of the protein(s) of interest
+
+		Returns: the common name for the protein(s) of interest
+		"""
+		if protein_id == 'NG-GFP-MONOMER[c]':
+			return 'GFP'
+
+		else:
+			if "[" in protein_id:
+				protein = protein_id[:-3]  # subtract the compartment
+			else:
+				protein = protein_id
+			common_name = self.get_gene_symbols_for_monomer_ids()[protein]
+
+		return common_name
+
+	def get_descriptive_name(self, protein_id):
+		if protein_id == 'NG-GFP-MONOMER[c]':
+			return 'GFP'
+
+		else:
+			if "[" in protein_id:
+				protein = protein_id[:-3]  # subtract the compartment
+			else:
+				protein = protein_id
+			descriptive_name = self.get_descriptive_name_for_monomer_ids()[protein]
+
+		return descriptive_name
 
 	def get_ids(self, monomer_idx_dict, protein_idxs):
 		"""
@@ -477,7 +562,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	def hover_text_info(self, dataframe):
 		hovertext = dataframe.apply(lambda
-										row: f"Monomer ID: {row['protein_id']}<br>HL Value: {row['half_life']}<br>HL Source: {row['half_life_source']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+					row: f"Monomer ID: {row['protein_id']}<br>HL Value: {row['half_life']}<br>HL Source: {row['half_life_source']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
 									axis=1)
 		return hovertext
 	def plot_by_complex_fraction_plotly(self, simDataFile, plotOutDir, simulationCounts, validationCounts,
@@ -601,9 +686,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		x = self.get_LogData(overlapIDs, validationCounts)
 		y = self.get_LogData(overlapIDs, simulationCounts)
 
-		# get the
-
 		monomer_to_half_life, monomer_to_half_life_source = self.get_half_lives(simDataFile)
+
+		# retreive the common names and the descriptions:
+
 
 		# create a dataframe of the protein ids and their half life sources:
 		protein_df = pd.DataFrame({"protein_id": overlapIDs,
