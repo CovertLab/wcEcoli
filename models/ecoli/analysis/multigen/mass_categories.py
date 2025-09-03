@@ -1,6 +1,7 @@
 import os
 
 from matplotlib import pyplot as plt
+import numpy as np
 
 from wholecell.io.tablereader import TableReader
 from wholecell.analysis.analysis_tools import exportFigure
@@ -13,7 +14,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 
 		# Get all cells
-		allDir = self.ap.get_cells(generations = range(START_GEN, END_GEN))
+		allDir = self.ap.get_cells(generation = np.arange(START_GEN, END_GEN))
 
 		massNames = [
 					"cellMass",
