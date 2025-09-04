@@ -533,7 +533,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# -------------------
 			# 1. Scatter plots (separate contributions)
 			# -------------------
-			fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+			fig, axs = plt.subplots(1, 2, figsize=(24, 10))
 			axs[0].scatter(ribosomes, doubling_time, alpha=0.6)
 			axs[0].set_xlabel("Ribosome count")
 			axs[0].set_ylabel("Doubling time")
@@ -553,7 +553,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# -------------------
 			# 2. Colored scatter (joint effects)
 			# -------------------
-			plt.figure(figsize=(6, 5))
+			plt.figure(figsize=(12, 10))
 			sc = plt.scatter(ribosomes, rnaps, c=doubling_time, cmap="viridis", alpha=0.7)
 			plt.xlabel("Ribosome count")
 			plt.ylabel("RNAP count")
@@ -575,7 +575,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			Xi, Yi = np.meshgrid(xi, yi)
 			Zi = griddata((ribosomes, rnaps), doubling_time, (Xi, Yi), method="cubic")
 
-			plt.figure(figsize=(7, 6))
+			plt.figure(figsize=(14, 12))
 			contourf = plt.contourf(Xi, Yi, Zi, levels=15, cmap="viridis", alpha=0.8)
 			contour = plt.contour(Xi, Yi, Zi, levels=10, colors="black", linewidths=0.6)
 			plt.clabel(contour, inline=True, fontsize=8)
@@ -602,7 +602,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				aggfunc="mean"
 			)
 
-			plt.figure(figsize=(10, 6))
+			plt.figure(figsize=(20, 12))
 			sns.heatmap(heatmap_data, cmap="viridis")
 			plt.title("Heatmap of mean Doubling time (binned)")
 			plt.xlabel("Ribosome bins")
@@ -620,7 +620,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rib_cut = np.median(ribosomes)
 			df["rib_group"] = np.where(df["ribosomes"] <= rib_cut, "Low Ribosomes", "High Ribosomes")
 
-			plt.figure(figsize=(7, 5))
+			plt.figure(figsize=(14, 10))
 			sns.lineplot(x="rnaps", y="doubling_time", hue="rib_group",
 						data=df.sort_values("rnaps"), estimator="mean", errorbar=None)
 			plt.xlabel("RNAP count")
@@ -635,7 +635,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Split RNAPs into low vs high (median split)
 			rnap_cut = np.median(rnaps)
 			df["rnap_group"] = np.where(df["rnaps"] <= rnap_cut, "Low RNAPs", "High RNAPs")
-			plt.figure(figsize=(7, 5))
+			plt.figure(figsize=(14, 10))
 			sns.lineplot(x="ribosomes", y="doubling_time", hue="rnap_group",
 						data=df.sort_values("ribosomes"), estimator="mean", errorbar=None)
 			plt.xlabel("Ribosome count")
