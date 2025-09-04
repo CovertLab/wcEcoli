@@ -519,5 +519,134 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			plt.close()
 
 
+
+			# Plots for RNAP, Ribosome, and DT relationships
+
+			from scipy.interpolate import griddata
+			import seaborn as sns
+			import pandas as pd
+
+			ribosomes = unnormalized_ribosome_counts
+			rnaps = unnormalized_rnap_counts
+			doubling_time = num_time_steps / 60.  # Using time in minutes as a proxy for doubling time
+
+			# -------------------
+			# 1. Scatter plots (separate contributions)
+			# -------------------
+			fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+			axs[0].scatter(ribosomes, doubling_time, alpha=0.6)
+			axs[0].set_xlabel("Ribosome count")
+			axs[0].set_ylabel("Doubling time")
+			axs[0].set_title("Doubling time vs Ribosomes")
+
+			axs[1].scatter(rnaps, doubling_time, alpha=0.6, color="orange")
+			axs[1].set_xlabel("RNAP count")
+			axs[1].set_ylabel("Doubling time")
+			axs[1].set_title("Doubling time vs RNAPs")
+			plt.tight_layout()
+			# plt.show()
+			exportFigure(plt, plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_dt_rnap_ribo_separate_scatter_cell_cycle_step_{cell_cycle_step}",
+				metadata)
+			plt.close()
+
+			# -------------------
+			# 2. Colored scatter (joint effects)
+			# -------------------
+			plt.figure(figsize=(6, 5))
+			sc = plt.scatter(ribosomes, rnaps, c=doubling_time, cmap="viridis", alpha=0.7)
+			plt.xlabel("Ribosome count")
+			plt.ylabel("RNAP count")
+			cbar = plt.colorbar(sc)
+			cbar.set_label("Doubling time")
+			plt.title("Ribosomes vs RNAPs colored by Doubling time")
+			# plt.show()
+			exportFigure(plt, plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_dt_rnap_ribo_colored_joint_scatter_cell_cycle_step_{cell_cycle_step}",
+				metadata)
+			plt.close()
+
+
+			# -------------------
+			# 3. Contour map (interpolated response surface)
+			# -------------------
+			xi = np.linspace(ribosomes.min(), ribosomes.max(), 100)
+			yi = np.linspace(rnaps.min(), rnaps.max(), 100)
+			Xi, Yi = np.meshgrid(xi, yi)
+			Zi = griddata((ribosomes, rnaps), doubling_time, (Xi, Yi), method="cubic")
+
+			plt.figure(figsize=(7, 6))
+			contourf = plt.contourf(Xi, Yi, Zi, levels=15, cmap="viridis", alpha=0.8)
+			contour = plt.contour(Xi, Yi, Zi, levels=10, colors="black", linewidths=0.6)
+			plt.clabel(contour, inline=True, fontsize=8)
+			plt.scatter(ribosomes, rnaps, c="white", s=10, alpha=0.3)  # overlay points
+			plt.xlabel("Ribosome count")
+			plt.ylabel("RNAP count")
+			cbar = plt.colorbar(contourf)
+			cbar.set_label("Doubling time")
+			plt.title("Contour map of Doubling time")
+			# plt.show()
+			exportFigure(plt, plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_dt_rnap_ribo_contour_map_cell_cycle_step_{cell_cycle_step}",
+				metadata)
+			plt.close()
+
+			# -------------------
+			# 4. Heatmap (binned averages)
+			# -------------------
+			df = pd.DataFrame({"ribosomes": ribosomes, "rnaps": rnaps, "doubling_time": doubling_time})
+			heatmap_data = df.pivot_table(
+				values="doubling_time",
+				index=pd.cut(df["rnaps"], bins=20),
+				columns=pd.cut(df["ribosomes"], bins=20),
+				aggfunc="mean"
+			)
+
+			plt.figure(figsize=(10, 6))
+			sns.heatmap(heatmap_data, cmap="viridis")
+			plt.title("Heatmap of mean Doubling time (binned)")
+			plt.xlabel("Ribosome bins")
+			plt.ylabel("RNAP bins")
+			# plt.show()
+			exportFigure(plt, plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_dt_rnap_ribo_heatmap_cell_cycle_step_{cell_cycle_step}",
+				metadata)
+			plt.close()
+
+			# -------------------
+			# 5. Interaction plot
+			# -------------------
+			# Split ribosomes into low vs high (median split)
+			rib_cut = np.median(ribosomes)
+			df["rib_group"] = np.where(df["ribosomes"] <= rib_cut, "Low Ribosomes", "High Ribosomes")
+
+			plt.figure(figsize=(7, 5))
+			sns.lineplot(x="rnaps", y="doubling_time", hue="rib_group",
+						data=df.sort_values("rnaps"), estimator="mean", errorbar=None)
+			plt.xlabel("RNAP count")
+			plt.ylabel("Doubling time")
+			plt.title("Interaction plot: effect of RNAP at low vs high Ribosomes")
+			# plt.show()
+			exportFigure(plt, plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_dt_rnap_ribo_interaction_plot_rnap_cell_cycle_step_{cell_cycle_step}",
+				metadata)
+			plt.close()
+
+			# Split RNAPs into low vs high (median split)
+			rnap_cut = np.median(rnaps)
+			df["rnap_group"] = np.where(df["rnaps"] <= rnap_cut, "Low RNAPs", "High RNAPs")
+			plt.figure(figsize=(7, 5))
+			sns.lineplot(x="ribosomes", y="doubling_time", hue="rnap_group",
+						data=df.sort_values("ribosomes"), estimator="mean", errorbar=None)
+			plt.xlabel("Ribosome count")
+			plt.ylabel("Doubling time")
+			plt.title("Interaction plot: effect of Ribosomes at low vs high RNAPs")
+			# plt.show()
+			exportFigure(plt, plotOutDir,
+				f"variant_{VARIANT_INDEX_A}_dt_rnap_ribo_interaction_plot_ribosomes_cell_cycle_step_{cell_cycle_step}",
+				metadata)
+			plt.close()
+
+
 if __name__ == "__main__":
 	Plot().cli()
