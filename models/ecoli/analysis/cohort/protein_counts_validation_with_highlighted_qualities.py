@@ -886,85 +886,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plot_name = "proteinCountsValidation_cohortPlot_validation_source_comparison.html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 
-	# try again'
-	def validation_data_source_comparison_plot1(self, sim_schmidt_counts, val_schmidt_counts,
-											   schmidt_overlap_ids, schmidt_name,
-											   sim_wisniewski_counts,
-											   val_wisniewski_counts, wisniewski_overlap_ids,
-											   wisniewski_name, plotOutDir):
-
-		# find the validation data values that overlap with simulation proteins from both validation sets:
-		validation_overlap = set(schmidt_overlap_ids) & set(wisniewski_overlap_ids)
-		validation_overlap = list(validation_overlap)
-		schmidt_idxs = [i for i, n in enumerate(schmidt_overlap_ids) if n in validation_overlap]
-		wisniewski_idxs = [i for i, n in enumerate(wisniewski_overlap_ids) if
-						   n in validation_overlap]
-
-		# double check that this yields the same:
-		x = self.get_LogData(schmidt_overlap_ids, val_schmidt_counts)[schmidt_idxs]
-		y = self.get_LogData(wisniewski_overlap_ids, val_wisniewski_counts)[wisniewski_idxs]
-
-		print(schmidt_overlap_ids[schmidt_idxs[1]])
-		print(wisniewski_overlap_ids[wisniewski_idxs[1]])
-
-		hi = 5
-
-		# Compute linear trendline
-		z = np.polyfit(x, y, 1)
-		p = np.poly1d(z)
-		trendline_y = p(x)
-
-		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
-		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
-		x_above_30 = x[above_30_idx]
-		y_above_30 = y[above_30_idx]
-		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
-		p_above_30 = np.poly1d(z_above_30)
-		trendline_y_above_30 = p_above_30(x)
-
-		# compute the rsquared value:
-		r_squared_30_above = r2_score(x_above_30, y_above_30)
-
-		hovertext = np.array(validation_overlap)
-
-		# Add scatter trace
-		fig = go.Figure()
-		fig.add_trace(
-			go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
-					   name=f"Counts (R^2 for counts > 30:{round(r_squared_30_above, 3)})"))
-
-		# Add trendline trace
-		fig.add_trace(
-			go.Scatter(x=x, y=trendline_y, mode='lines',
-					   name=f'Linear fit: {p}',
-					   line=dict(color='green')))
-		fig.add_trace(
-			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
-					   name=f'Linear fit (counts > 30): {p_above_30}',
-					   line=dict(color='pink')))
-
-		# Update layout
-		fig.update_traces(marker_size=3)
-		fig.update_layout(
-			title=f"Validation Protein Counts Comparison: {wisniewski_name} et al. "
-				  f"vs. {schmidt_name} et al.",
-			xaxis_title=f"log10({schmidt_name} et al. + 1))",
-			yaxis_title=f"log10({wisniewski_name} et al. + 1))",
-			autosize=False, width=900, height=600)
-
-		# add a y=x line
-		fig.add_trace(
-			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
-					   line=go.scatter.Line(color="black", dash="dash"),
-					   opacity=0.2, name="y=x"));
-
-		# save the figure as an html:
-		plot_name = f"proteinCountsValidation_cohortPlot_validation_source_comparison1.html"
-		fig.write_html(os.path.join(plotOutDir, plot_name))
-
-
-
-
 
 	def plot_validation_comparison(self, simDataFile, validationDataFile,plotOutDir, sim_name):
 
@@ -980,11 +901,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 													sim_wisniewski_counts,
 													val_wisniewski_counts, wisniewski_overlap_ids,
 													"Wisniewski", plotOutDir)
-		self.validation_data_source_comparison_plot1(sim_schmidt_counts, val_schmidt_counts,
-													 schmidt_overlap_ids, "Schmidt",
-													 sim_wisniewski_counts,
-													 val_wisniewski_counts, wisniewski_overlap_ids,
-													 "Wisniewski", plotOutDir)
+
 
 		# generate interactive validation plotlys:
 		self.generate_validation_plotly(simDataFile, plotOutDir, sim_schmidt_counts,
