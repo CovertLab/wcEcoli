@@ -292,11 +292,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		return data
 
 
-	def generate_validation_plotly(self, plotOutDir, simulationCounts, validationCounts,
+	def generate_validation_plotly(self, simDataFile, plotOutDir, simulationCounts, validationCounts,
 								 overlapIDs, sim_name, val_name):
 		fig = go.Figure()
-		# have the monomer IDs be the overlap text
-		hovertext = overlapIDs
 
 		# Compute log10 values
 		x = self.get_LogData(overlapIDs, validationCounts)
@@ -317,6 +315,28 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# compute the rsquared value:
 		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		# have the monomer IDs be the overlap text
+		monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts = self.determine_fraction_table(
+			simDataFile)
+		monomer_to_half_life, monomer_to_half_life_source = self.get_half_lives(simDataFile)
+
+		# retreive the common names and the descriptions:
+		common_names = [self.get_common_name(protein_id) for protein_id in overlapIDs]
+		descriptive_names = [self.get_descriptive_name(protein_id) for protein_id in overlapIDs]
+
+		# create a dataframe of the protein ids and their half life sources:
+		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   "common_name": common_names,
+								   "descriptive_name": descriptive_names,
+								   'simulation_protein_counts': y,
+								   'validation_protein_counts': x})
+		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(
+			monomer_id_to_complex_fraction)
+		protein_df['complex_counts'] = protein_df['protein_id'].map(monomer_id_to_complex_counts)
+		protein_df['half_life_source'] = protein_df['protein_id'].map(monomer_to_half_life_source)
+		protein_df['half_life'] = protein_df['protein_id'].map(monomer_to_half_life)
+		hovertext = self.hover_text_info(protein_df)
 
 		# Add scatter trace
 		fig.add_trace(
@@ -562,7 +582,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	def hover_text_info(self, dataframe):
 		hovertext = dataframe.apply(lambda
-					row: f"Monomer ID: {row['protein_id']}<br>HL Value: {row['half_life']}<br>HL Source: {row['half_life_source']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+					row: f"Monomer ID: {row['protein_id']}<br>Common Name: {row['common_name']}<br>Description: {row['descriptive_name']}<br>HL Value: {row['half_life']}<br>HL Source: {row['half_life_source']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
 									axis=1)
 		return hovertext
 	def plot_by_complex_fraction_plotly(self, simDataFile, plotOutDir, simulationCounts, validationCounts,
@@ -584,8 +604,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		monomer_to_half_life, monomer_to_half_life_source = self.get_half_lives(simDataFile)
 
+		# retreive the common names and the descriptions:
+		common_names = [self.get_common_name(protein_id) for protein_id in overlapIDs]
+		descriptive_names = [self.get_descriptive_name(protein_id) for protein_id in overlapIDs]
+
 		# create a dataframe of the protein ids and their half life sources:
 		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   "common_name": common_names,
+								   "descriptive_name": descriptive_names,
 								   'simulation_protein_counts': y,
 								   'validation_protein_counts': x})
 		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(monomer_id_to_complex_fraction)
@@ -689,10 +715,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		monomer_to_half_life, monomer_to_half_life_source = self.get_half_lives(simDataFile)
 
 		# retreive the common names and the descriptions:
+		common_names = [self.get_common_name(protein_id) for protein_id in overlapIDs]
+		descriptive_names = [self.get_descriptive_name(protein_id) for protein_id in overlapIDs]
 
 
 		# create a dataframe of the protein ids and their half life sources:
 		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   "common_name": common_names,
+								   "descriptive_name": descriptive_names,
 								   'simulation_protein_counts': y,
 								   'validation_protein_counts': x})
 		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(monomer_id_to_complex_fraction)
@@ -780,6 +810,159 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_complex_fraction_above_{COMPLEX_FRACTION_THRESHOLD}_highlighted.html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 
+	def validation_data_source_comparison_plot(self, sim_schmidt_counts, val_schmidt_counts,
+		 schmidt_overlap_ids, schmidt_name, sim_wisniewski_counts,
+		 val_wisniewski_counts, wisniewski_overlap_ids, wisniewski_name, plotOutDir):
+
+		# # find the validation data values that overlap with simulation proteins from both validation sets:
+		# do not use set, as it does not guarentee the same order every iteration:
+		validation_overlap = [n for n in schmidt_overlap_ids if n in wisniewski_overlap_ids]
+
+		# create a map for each dataset:
+		schmidt_map = {n: i for i, n in enumerate(schmidt_overlap_ids)}
+		wisniewski_map = {n: i for i, n in enumerate(wisniewski_overlap_ids)}
+
+		# map to the indicies of the original overlapping proteins (with the sim data) datasets for each validation source:
+		schmidt_idxs = [schmidt_map[n] for n in validation_overlap]
+		wisniewski_idxs = [wisniewski_map[n] for n in validation_overlap]
+
+
+
+		# extract the overlapping counts:
+		x = self.get_LogData(list(range(len(validation_overlap))), val_schmidt_counts, schmidt_idxs)
+		y = self.get_LogData(list(range(len(validation_overlap))), val_wisniewski_counts, wisniewski_idxs)
+
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		hovertext = np.array(validation_overlap)
+
+		# Add scatter trace
+		fig = go.Figure()
+		fig.add_trace(
+			go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+					   name=f"Counts (R^2 for counts > 30:{round(r_squared_30_above, 3)})"))
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Validation Protein Counts Comparison: {wisniewski_name} et al. "
+				  f"vs. {schmidt_name} et al. (n={len(validation_overlap)} plotted)",
+			xaxis_title=f"log10({schmidt_name} et al. Counts + 1))",
+			yaxis_title=f"log10({wisniewski_name} et al. Counts + 1))",
+			autosize=False, width=900, height=600)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# save the figure as an html:
+		plot_name = "proteinCountsValidation_cohortPlot_validation_source_comparison.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+	# try again'
+	def validation_data_source_comparison_plot1(self, sim_schmidt_counts, val_schmidt_counts,
+											   schmidt_overlap_ids, schmidt_name,
+											   sim_wisniewski_counts,
+											   val_wisniewski_counts, wisniewski_overlap_ids,
+											   wisniewski_name, plotOutDir):
+
+		# find the validation data values that overlap with simulation proteins from both validation sets:
+		validation_overlap = set(schmidt_overlap_ids) & set(wisniewski_overlap_ids)
+		validation_overlap = list(validation_overlap)
+		schmidt_idxs = [i for i, n in enumerate(schmidt_overlap_ids) if n in validation_overlap]
+		wisniewski_idxs = [i for i, n in enumerate(wisniewski_overlap_ids) if
+						   n in validation_overlap]
+
+		# double check that this yields the same:
+		x = self.get_LogData(schmidt_overlap_ids, val_schmidt_counts)[schmidt_idxs]
+		y = self.get_LogData(wisniewski_overlap_ids, val_wisniewski_counts)[wisniewski_idxs]
+
+		print(schmidt_overlap_ids[schmidt_idxs[1]])
+		print(wisniewski_overlap_ids[wisniewski_idxs[1]])
+
+		hi = 5
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		hovertext = np.array(validation_overlap)
+
+		# Add scatter trace
+		fig = go.Figure()
+		fig.add_trace(
+			go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+					   name=f"Counts (R^2 for counts > 30:{round(r_squared_30_above, 3)})"))
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Validation Protein Counts Comparison: {wisniewski_name} et al. "
+				  f"vs. {schmidt_name} et al.",
+			xaxis_title=f"log10({schmidt_name} et al. + 1))",
+			yaxis_title=f"log10({wisniewski_name} et al. + 1))",
+			autosize=False, width=900, height=600)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_validation_source_comparison1.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
 
 
 
@@ -791,10 +974,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		 val_wisniewski_counts, wisniewski_overlap_ids) = (
 			self.get_validation_data(simDataFile, validationDataFile))
 
+		# plot the comparison of the validation counts:
+		self.validation_data_source_comparison_plot(sim_schmidt_counts, val_schmidt_counts,
+													schmidt_overlap_ids, "Schmidt",
+													sim_wisniewski_counts,
+													val_wisniewski_counts, wisniewski_overlap_ids,
+													"Wisniewski", plotOutDir)
+		self.validation_data_source_comparison_plot1(sim_schmidt_counts, val_schmidt_counts,
+													 schmidt_overlap_ids, "Schmidt",
+													 sim_wisniewski_counts,
+													 val_wisniewski_counts, wisniewski_overlap_ids,
+													 "Wisniewski", plotOutDir)
+
 		# generate interactive validation plotlys:
-		self.generate_validation_plotly(plotOutDir, sim_schmidt_counts,
+		self.generate_validation_plotly(simDataFile, plotOutDir, sim_schmidt_counts,
 			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
-		self.generate_validation_plotly(plotOutDir, sim_wisniewski_counts,
+		self.generate_validation_plotly(simDataFile, plotOutDir, sim_wisniewski_counts,
 			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
 
 
@@ -821,6 +1016,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
 		self.plot_by_complex_fraction_with_proteins_highlighted_plotly(simDataFile, plotOutDir, sim_wisniewski_counts,
 			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
+
+
 
 
 
