@@ -127,6 +127,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			counts_to_molar = 1 / (self.n_avogadro * cell_volume)  #  mol/L ? # todo: are these the right units?
 
 
+
+
 			print("nemA free monomers to be degraded pre-active degradation:",
 				  self.proteins.counts()[2342])
 
@@ -164,7 +166,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 				# list of the interesting proteins:
 				protease_FM = 'EG10542-MONOMER[c]'
-				protease = 'CPLX0-2881[c]'
+				protease = 'CPLX0-2881[c]' #this is lon
 				protease_idx = np.where(self.complex_IDs == protease)[0][0]
 				lon_complex_counts = self.complexes.total_counts()[protease_idx]  # todo: go back and figure out which lon complex ids are most important (total_counts, _totalCounts, etc.)
 				protease_concentration = lon_complex_counts * counts_to_molar
@@ -239,7 +241,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 				# original order: PD03938, G6890-MONOMER, G6737-MONOMER, RPOD-MONOMER, PD02936, RED-THIOREDOXIN2-MONOMER --> SWITCHED PROPERLY TO SUBSTRATES ORDER
 				Kms2 = [3.1190099e-4, 5.29487648e-6, 5.2999865e-4, 4.1087516e-4, 1.23777405e-4, 9.36398294e-3]
-				Kms2 = np.array(Kms2) * int(10e-1)
+				Kms2 = np.array(Kms2) * 0.01
 				Kms = Kms2
 				#import ipdb; ipdb.set_trace()
 
@@ -271,11 +273,12 @@ class ProteinDegradation(wholecell.processes.process.Process):
 					# calculate the k_active value:
 					k_actives = []
 					for i in range(len(substrate_concentrations)):
-						k_active = (protease_concentration * kcat * substrate_concentrations[i]) / (Kms[i]*beta)
+						k_active = (protease_concentration * kcat) / (Kms[i]*beta)
 						k_actives.append(k_active)
 					print("k_active values:", k_actives)
 					#import ipdb; ipdb.set_trace()
 					return k_actives
+				hi = 5
 
 
 
