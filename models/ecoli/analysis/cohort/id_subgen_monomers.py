@@ -32,68 +32,82 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if self.ap.n_generation <= IGNORE_FIRST_N_GENS:
 			print('Skipping analysis - not enough generations run.')
 			return
-
-		# Extract all monomer and cistron ids in simulation
-		monomer_ids = sim_data.process.translation.monomer_data['id']
-		cistron_ids = sim_data.process.transcription.cistron_data['id']
-
-		# Filter list of cistron IDs to only keep ones with associated monomer ids
-		monomer_id_to_cistron_id = {
-			monomer['id']: monomer['cistron_id']
-			for monomer in monomer_ids
-		}
-
-		mRNA_cistron_ids = [
-			cistron_id for cistron_id in cistron_ids
-			if cistron_id in monomer_id_to_cistron_id.values()]
-
-
-		# Get subcolumn for mRNA cistron IDs in RNA counts table to extract cistron indices
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
 
-		simOutDir = os.path.join(cell_paths[0], 'simOut')
-		rna_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
-		mRNA_cistron_ids_rna_counts_table = rna_counts_reader.readAttribute(
-			'mRNA_cistron_ids')
+		# There are 4346 mRNA ids with counts
+		RNA_reader = TableReader(
+				os.path.join(cell_paths[0], 'simOut', 'RNACounts'))
+		mRNA_ids = RNA_reader.readAttribute('mRNA_cistron_ids')
 
-		# Get indexes of mRNA cistrons in this subcolumn
-		mRNA_cistron_id_to_index = {
+		mRNA_id_to_index = {
 			cistron_id: i for (i, cistron_id)
-			in enumerate(mRNA_cistron_ids_rna_counts_table)
+			in enumerate(mRNA_ids)
 		}
-		mRNA_cistron_indexes = np.array([
-			mRNA_cistron_id_to_index[cistron_id] for cistron_id
-			in mRNA_cistron_ids
-		])
 
-		# Get subcolumn for monomer IDs in monomer counts table to extract monomer indices
-		monomer_counts_reader = TableReader(
-			os.path.join(simOutDir, 'MonomerCounts'))
-		monomer_ids_monomer_counts_table = monomer_counts_reader.readAttribute(
-			'monomerIds')
+		# There are 4539 mRNA ids total w/ gene names
+		cistron_id_to_gene_id = {
+			cistron['id']: cistron['gene_id']
+			for cistron in sim_data.process.transcription.cistron_data
+		}
+
+		# There are 4310 mRNA ids with associated protein/monomer ids
+		protein_id_to_cistron_id = {
+			protein['id']:protein['cistron_id']
+			for protein in sim_data.process.translation.monomer_data
+		}
+
+		monomer_reader = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
+		monomer_ids = monomer_reader.readAttribute('monomerIds')
 
 		# Get indexes of monomers in this subcolumn
 		monomer_id_to_index = {
 			monomer_id: i for (i, monomer_id)
-			in enumerate(monomer_ids_monomer_counts_table)
+			in enumerate(monomer_ids)
 		}
-		monomer_indexes = np.array([
+
+		monomer_indices = np.array([
 			monomer_id_to_index[monomer_id] for monomer_id in monomer_ids
 		])
 
-		cistron_counts = read_stacked_columns(
-			cell_paths, 'mRNACounts', 'mRNA_cistron_counts')[:, cistron_indexes]
+		# order cistrons in the order of monomers ids
+		cistron_ids_in_order = np.array([
+			protein_id_to_cistron_id[monomer_id] for monomer_id in monomer_ids
+		])
 
+		# order gene names in the order of monomers ids
+		gene_ids_in_order = np.array([
+			cistron_id_to_gene_id[cistron_id] for cistron_id in cistron_ids_in_order
+		])
 
-		monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indexes]
+		# Get indices of cistron_ids_in_order
+		mRNA_ids_indices = np.array([
+			mRNA_id_to_index[cistron_id] for cistron_id
+			in cistron_ids_in_order
+		])
 
 		# Get maximum counts of monomers for each gene across all timepoints
 		max_monomer_counts = read_stacked_columns(
 			cell_paths, 'MonomerCounts', 'monomerCounts',
-			ignore_exception=True).max(axis=0)[monomer_indexes]
+			ignore_exception=True).max(axis=0)[monomer_indices]
+
+		mean_monomer_counts = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts',
+			ignore_exception=True).mean(axis=0)[monomer_indices]
+
+		monomer_counts = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]
+
+		# Get maximum counts of mRNAs for each gene across all timepoints
+		max_mRNA_counts = read_stacked_columns(
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
+			ignore_exception=True).max(axis=0)[mRNA_ids_indices]
+
+		mean_mRNA_counts = read_stacked_columns(
+			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
+			ignore_exception=True).mean(axis=0)[mRNA_ids_indices]
 
 		def extract_doubling_times(cell_paths):
 			# Load data
@@ -107,7 +121,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
 
-		def subgen_monomer_status(monomer_counts, end_generation_indices, doubling_times):
+		def subgen_monomer_status_per_seed(monomer_counts, end_generation_indices, doubling_times):
 
 			monomer_expressed_bool = (monomer_counts > 0) * 1
 
@@ -120,27 +134,56 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			monomer_expressed_per_generation_bool = (monomer_expressed_by_generation > 0) * 1
 
-			frequency_of_monomer_over_all_generations = np.sum(monomer_expressed_per_generation_bool, axis=0) / len(
-				cell_cycle_length)
+			return monomer_expressed_per_generation_bool
 
-			subgenerational_monomer_mask = (
-					(frequency_of_monomer_over_all_generations > 0)
-					& (frequency_of_monomer_over_all_generations < 1)
-			)
+		subgen_matrix_list = []
 
-			subgenerational_monomer_ids = np.array(monomer_ids)[subgenerational_monomer_mask]
-			not_expressed_monomer_ids = np.array(monomer_ids)[frequency_of_monomer_over_all_generations == 0]
-			always_expressed_monomer_ids = np.array(monomer_ids)[frequency_of_monomer_over_all_generations == 1]
+		for seed in self.ap.get_seeds():
+			cell_paths_per_seed = self.ap.get_cells(
+				generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
+				only_successful=True)
 
-			return subgenerational_monomer_ids, not_expressed_monomer_ids, always_expressed_monomer_ids
+			if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
+				continue
 
+			_, doubling_times, _, _, end_generation_indices = extract_doubling_times(
+				cell_paths_per_seed)
+			monomer_expressed_per_generation_bool = subgen_monomer_status_per_seed(monomer_counts, end_generation_indices, doubling_times)
+			subgen_matrix_list.append(monomer_expressed_per_generation_bool)
 
-		_, doubling_times, _, _, end_generation_indices = extract_doubling_times(cell_paths)
+		all_seeds_subgen_status_bool = np.vstack(subgen_matrix_list)
 
-		subgenerational_monomer_ids, not_expressed_monomer_ids, always_expressed_monomer_ids = subgen_monomer_status(monomer_counts, end_generation_indices, doubling_times)
+		frequency_of_monomer_over_all_generations = np.sum(all_seeds_subgen_status_bool, axis=0) / len(
+			all_seeds_subgen_status_bool)
 
-		import ipdb;
-		ipdb.set_trace()
+		subgenerational_monomer_mask = (
+				(frequency_of_monomer_over_all_generations > 0)
+				& (frequency_of_monomer_over_all_generations < 1)
+		)
+
+		expression_status_array = np.full(
+			frequency_of_monomer_over_all_generations.shape,
+			'always_expressed' , dtype='<U20')
+
+		expression_status_array[subgenerational_monomer_mask] = 'subgen'
+		expression_status_array[frequency_of_monomer_over_all_generations == 0] = 'never_expressed'
+
+		# Write data to table
+		with open(os.path.join(plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			writer.writerow([
+				'gene_name', 'cistron_name', 'monomer_name',
+				'prob_monomer_expressed', 'max_mRNA_count', 'mean_mRNA_count',
+				'max_protein_count', 'mean_protein_count', 'expression_status'
+			])
+
+			for i in monomer_indices:
+				writer.writerow([
+					gene_ids_in_order[i], cistron_ids_in_order[i], monomer_ids[i],
+					frequency_of_monomer_over_all_generations[i], max_mRNA_counts[i], mean_mRNA_counts[i],
+					max_monomer_counts[i], mean_monomer_counts[i], expression_status_array[i]
+				])
+
 
 if __name__ == '__main__':
 	Plot().cli()
