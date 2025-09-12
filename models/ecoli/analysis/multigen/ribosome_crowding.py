@@ -15,6 +15,9 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
+# Set this to ensure maximum figure size of 2^16 pixels is not exceeded
+MAX_NUMBER_OF_MONOMERS_TO_PLOT = 300
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
@@ -54,10 +57,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			monomer_ids[monomer_index])) for monomer_index in
 			overcrowded_monomer_indexes]
 
+		# Ensure we do not exceed maximum figure size
+		n_overcrowded_monomers_to_plot = n_overcrowded_monomers
+		if n_overcrowded_monomers > MAX_NUMBER_OF_MONOMERS_TO_PLOT:
+			n_overcrowded_monomers_to_plot = MAX_NUMBER_OF_MONOMERS_TO_PLOT
+
 		# Plot the target vs actual rna synthesis probabilites of these mRNAs
-		plt.figure(figsize=(6, 1.5*n_overcrowded_monomers))
+		plt.figure(figsize=(6, 1.5*n_overcrowded_monomers_to_plot))
 
 		for i, monomer_index in enumerate(overcrowded_monomer_indexes):
+			if i > MAX_NUMBER_OF_MONOMERS_TO_PLOT:
+				continue
+
 			target_prob_this_monomer = target_prob_translation_per_transcript[
 				:, monomer_index]
 			actual_prob_this_monomer = actual_prob_translation_per_transcript[
@@ -69,13 +80,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.set_ylabel(f'{overcrowded_gene_ids[i]}\ntranslation probs')
 
 			if i == 0:
-				ax.set_title(f'Total number of proteins '
-							 f'corresponding to overcrowded mRNAs: '
-							 f'{n_overcrowded_monomers}')
+				if n_overcrowded_monomers > MAX_NUMBER_OF_MONOMERS_TO_PLOT:
+					ax.set_title(f'Total number of proteins '
+								 f'corresponding to overcrowded mRNAs: '
+								 f'{n_overcrowded_monomers} (plotting '
+								 f'first {MAX_NUMBER_OF_MONOMERS_TO_PLOT})')
+				else:
+					ax.set_title(f'Total number of proteins '
+								 f'corresponding to overcrowded mRNAs: '
+								 f'{n_overcrowded_monomers}')
 				ax.legend(loc=1)
 
 			if i == n_overcrowded_monomers - 1:
 				ax.set_xlabel('Time [min]')
+
+			ax.title.set_size(8)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

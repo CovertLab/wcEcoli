@@ -69,7 +69,7 @@ class Translation(object):
 			}
 
 		# Get mappings from monomer IDs to cistron IDs
-		# TODO (ggsun): Handle cistrons with two or more associated proteins
+		# TODO (rjuene): Handle cistrons with two or more associated proteins
 		monomer_id_to_cistron_id = {
 			rna['monomer_ids'][0]: rna['id']
 			for rna in raw_data.rnas
