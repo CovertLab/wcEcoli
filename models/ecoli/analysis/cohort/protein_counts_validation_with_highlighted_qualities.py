@@ -12,6 +12,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils.protein_counts import get_simulated_validation_counts
 import plotly.graph_objects as go
 from sklearn.metrics import r2_score
+from scipy.stats import pearsonr
 import io
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
@@ -390,11 +391,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		p_above_30 = np.poly1d(z_above_30)
 		trendline_y_above_30 = p_above_30(x)
 
-		# compute the rsquared value:
+		# compute the pearsonr and R2:
+		r_value, p_val = pearsonr(x_above_30, y_above_30)
+		pr2 = r_value ** 2
+		# compute the coefficent of determination rsquared value:
 		r_squared_30_above = r2_score(x_above_30, y_above_30)
 
 		# Add scatter trace
-		plt.scatter(x=x, y=y, s=5, label=f"Counts ($R^2$ counts > 30: {round(r_squared_30_above,3)})",
+		plt.scatter(x=x, y=y, s=5, label=f"Counts (n={len(x)})",
 					alpha=0.5, color='lightseagreen')
 
 		# Compute linear trendline
@@ -426,6 +430,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.gca().set_aspect('equal', adjustable='box')
 
 		plt.legend(bbox_to_anchor=(1.45,1.), loc='upper right', fontsize=8, )
+		plt.text(0.96, 0.03, f'Pearson R (counts > 30): {round(r_value,3)}\n Pearson $R^2$ (counts > 30): {round(pr2,3)}\nCoefficent of determination $R^2$ (counts > 30): {round(r_squared_30_above,3)}',
+				 ha='right', va='bottom',
+				 transform=plt.gca().transAxes,
+				 fontsize=6, color='gray')
 
 
 
@@ -469,18 +477,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			"N_end_rule": "lightseagreen",
 			"Gupta_et_al_MS_2024": "yellowgreen",
 			"CL_measured_deg_rates_2020": "orange",
+			"Nagar_et_al_ML_2021": "violet"
 		}
 
 		size_map = {
 			"N_end_rule": 5,
 			"Gupta_et_al_MS_2024": 2,
 			"CL_measured_deg_rates_2020": 5,
+			"Nagar_et_al_ML_2021": 2
 		}
 
 		alpha_map = {
 			"N_end_rule": 0.5,
 			"Gupta_et_al_MS_2024": 0.3,
 			"CL_measured_deg_rates_2020": 0.9,
+			"Nagar_et_al_ML_2021": 0.3
 		}
 
 		# create a scatter plot for each half life source:
@@ -488,18 +499,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for source, df in half_life_dfs.items():
 			c = color_map[source]; si = size_map[source]; a = alpha_map[source]
 			print(source)
+			name = source + f"(n={len(df['validation_protein_counts'])})"
 			plt.scatter(df['validation_protein_counts'], df['simulation_protein_counts'],
-						label=source, color=c, alpha=a, s=si)
+						label=name, color=c, alpha=a, s=si)
 
 		# Compute linear trendline for counts above log10(30):
 		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		#above_30_idx = np.where(x >= np.log10(30 + 1))
 		x_above_30 = x[above_30_idx]
 		y_above_30 = y[above_30_idx]
 		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
 		p_above_30 = np.poly1d(z_above_30)
 		trendline_y_above_30 = p_above_30(x)
 
-		# compute the rsquared value:
+		# compute the pearsonr and R2:
+		r_value, p_val = pearsonr(x_above_30, y_above_30)
+		pr2 = r_value ** 2
+		# compute the coefficent of determination rsquared value:
 		r_squared_30_above = r2_score(x_above_30, y_above_30)
 
 		# Compute linear trendline
@@ -528,12 +544,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		plt.xlim(0, 6)
 		plt.ylim(0, 6)
 		plt.gca().set_aspect('equal', adjustable='box')
-		plt.text(0.95, 0.02, f'$R^2$ for counts > 30: {round(r_squared_30_above,2)}',
+		plt.text(0.97, 0.03, f'Pearson R (counts > 30): {round(r_value,3)}\n Pearson $R^2$ (counts > 30): {round(pr2,3)}\nCoefficent of determination $R^2$ (counts > 30): {round(r_squared_30_above,3)}',
 				 ha='right', va='bottom',
 				 transform=plt.gca().transAxes,
-				 fontsize=8, color='gray')
+				 fontsize=7, color='gray')
 
-		plt.legend(bbox_to_anchor=(1.45, 1.), loc='upper right', fontsize=8, )
+		plt.legend(bbox_to_anchor=(1.45, 1.), loc='upper right', fontsize=6, )
 
 		# save the figure as an html:
 		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}_half_life_source_highlighted_matplotlib.pdf"
