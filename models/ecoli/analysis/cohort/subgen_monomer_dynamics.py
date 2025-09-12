@@ -11,8 +11,6 @@ import numpy as np
 from matplotlib import cm
 
 import csv
-import pandas as pd
-import seaborn as sns
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -22,7 +20,7 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
+IGNORE_FIRST_N_GENS = 2
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
 						'BETAGALACTOSID-MONOMER[c]',  # lacZ
@@ -156,6 +154,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					ax.set_title(molecule_id, fontsize=30)
 					ax.tick_params(axis='x', labelsize=30)
 					ax.tick_params(axis='y', labelsize=30)
+
+					ax.spines['right'].set_visible(False)
+					ax.spines['top'].set_visible(False)
+
 					for x in end_generation_times / 60:
 						ax.axvline(x=x,
 								   color='grey',
@@ -164,7 +166,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for i in range(num_groups, rows * cols):
 				fig.delaxes(axes.flat[i])
 
-			sns.despine();
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_{seed}', metadata)
 

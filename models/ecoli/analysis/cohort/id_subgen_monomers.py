@@ -11,8 +11,6 @@ import numpy as np
 from matplotlib import cm
 
 import csv
-import pandas as pd
-import seaborn as sns
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
