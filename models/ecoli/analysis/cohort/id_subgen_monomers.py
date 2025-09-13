@@ -19,7 +19,7 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
+IGNORE_FIRST_N_GENS = 2
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -95,8 +95,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, 'MonomerCounts', 'monomerCounts',
 			ignore_exception=True).mean(axis=0)[monomer_indices]
 
-		monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]
+
+		# Monomer exists per gen
+		monomer_exists_in_gen = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts',
+			ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[
+							 :, monomer_indices]
+
+		# Divide by total number of cells to get probability
+		p_monomer_exists_in_gen = (
+			monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
+
 
 		# Get maximum counts of mRNAs for each gene across all timepoints
 		max_mRNA_counts = read_stacked_columns(
@@ -107,64 +116,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 			ignore_exception=True).mean(axis=0)[mRNA_ids_indices]
 
-		def extract_doubling_times(cell_paths):
-			# Load data
-			time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
-			# Determine doubling time
-			doubling_times = read_stacked_columns(cell_paths, 'Main', 'time', fun=lambda x: (x[-1] - x[0])).squeeze().astype(int)
-			end_generation_times = np.cumsum(doubling_times) + time[0] #
-			start_generation_indices = np.searchsorted(time, end_generation_times[:-1], side = 'left').astype(int)
-			start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(len(doubling_times))
-			end_generation_indices = start_generation_indices + doubling_times
-			return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
-
-
-		def subgen_monomer_status_per_seed(monomer_counts, end_generation_indices, doubling_times):
-
-			monomer_expressed_bool = (monomer_counts > 0) * 1
-
-			monomer_expressed_bool_by_generation = np.split(monomer_expressed_bool, end_generation_indices, axis=0)
-
-			monomer_expressed_by_generation = np.array([
-				np.sum(monomer_expressed_bool_by_generation[i], axis=0)
-				for i in range(len(doubling_times))
-			])
-
-			monomer_expressed_per_generation_bool = (monomer_expressed_by_generation > 0) * 1
-
-			return monomer_expressed_per_generation_bool
-
-		subgen_matrix_list = []
-
-		for seed in self.ap.get_seeds():
-			cell_paths_per_seed = self.ap.get_cells(
-				generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
-				only_successful=True)
-
-			if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
-				continue
-
-			_, doubling_times, _, _, end_generation_indices = extract_doubling_times(
-				cell_paths_per_seed)
-			monomer_expressed_per_generation_bool = subgen_monomer_status_per_seed(monomer_counts, end_generation_indices, doubling_times)
-			subgen_matrix_list.append(monomer_expressed_per_generation_bool)
-
-		all_seeds_subgen_status_bool = np.vstack(subgen_matrix_list)
-
-		frequency_of_monomer_over_all_generations = np.sum(all_seeds_subgen_status_bool, axis=0) / len(
-			all_seeds_subgen_status_bool)
-
 		subgenerational_monomer_mask = (
-				(frequency_of_monomer_over_all_generations > 0)
-				& (frequency_of_monomer_over_all_generations < 1)
+				(p_monomer_exists_in_gen > 0)
+				& (p_monomer_exists_in_gen < 1)
 		)
 
 		expression_status_array = np.full(
-			frequency_of_monomer_over_all_generations.shape,
+			p_monomer_exists_in_gen.shape,
 			'always_expressed' , dtype='<U20')
 
 		expression_status_array[subgenerational_monomer_mask] = 'subgen'
-		expression_status_array[frequency_of_monomer_over_all_generations == 0] = 'never_expressed'
+		expression_status_array[p_monomer_exists_in_gen == 0] = 'never_expressed'
 
 		# Write data to table
 		with open(os.path.join(plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
@@ -178,7 +140,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for i in monomer_indices:
 				writer.writerow([
 					gene_ids_in_order[i], cistron_ids_in_order[i], monomer_ids[i],
-					frequency_of_monomer_over_all_generations[i], max_mRNA_counts[i], mean_mRNA_counts[i],
+					p_monomer_exists_in_gen[i], max_mRNA_counts[i], mean_mRNA_counts[i],
 					max_monomer_counts[i], mean_monomer_counts[i], expression_status_array[i]
 				])
 
