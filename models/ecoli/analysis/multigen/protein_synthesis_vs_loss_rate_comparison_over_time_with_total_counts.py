@@ -179,7 +179,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					return C0 * k * t
 					#return C0 * np.exp(-k * t)
 
-				k_avg = np.log(2) / (avg_half_life*60) # todo is this an issue units wise agh. does it need to be multipled by 60
+				k_avg = np.log(2) / (avg_half_life*60)
 				C0_fit = gen_protein_counts
 				# todo: fix this! I think gen_time is what should not be in here. it should be like 1 to end_gen_time!
 				time_for_graph = gen_time - np.ones(len(gen_time))*gen_time[0]
