@@ -25,12 +25,14 @@ poster_colors = {
     "poster_red": (202/255, 0/255, 32/255),
 }
 
-START_GEN_INDEX = 0
-END_GEN_INDEX = 24 # Not inclusive
+START_GEN_INDEX = 6
+END_GEN_INDEX = 12 # Not inclusive
 GEN_RANGE = np.arange(START_GEN_INDEX, END_GEN_INDEX)
 
 SELECTED_SEED_INDEXES = [
-			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    0, 1, 2, 3,
+    # 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+]
 
 #GEN_TO_COLOR = {
 #	7: poster_colors["light_gray"],
@@ -69,7 +71,7 @@ GEN_TO_COLOR = {
 VARIANT_B_COLOR = poster_colors["light_gray"]
 
 # FOR SHERLOCK
-VARIANT_INDEX_A = 1
+VARIANT_INDEX_A = 4
 VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
 
 # # FOR LOCAL DEVELOPMENT
