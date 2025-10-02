@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
+# Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 29.1
 # Orthologs: true
-# Date and time generated: March 20, 2025, 17:08:06
+# Date and time generated: October 2, 2025, 15:07:36
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "EG10001"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
 "EG10002"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	795862	796551	"+"	["EG10002_RNA"]
@@ -197,6 +197,7 @@
 "EG10196"	"cysS"	["cysS", "syc", "b0526", "ECK0519"]	554611	555996	"+"	["EG10196_RNA"]
 "EG10197"	"cysU"	["cysU", "cysT", "b2424", "ECK2419"]	2541679	2542512	"-"	["EG10197_RNA"]
 "EG10198"	"cysW"	["cysW", "b2423", "ECK2418"]	2540804	2541679	"-"	["EG10198_RNA"]
+"EG10199"	"cysX"	["cysX", "putative uncharacterized protein CysX", "b4747", "ECK4704"]	3781864	3782256	"+"	["EG10199_RNA"]
 "EG10200"	"cytR"	["cytR", "b3934", "ECK3926"]	4123431	4124456	"-"	["EG10200_RNA"]
 "EG10201"	"dacA"	["dacA", "pfv", "b0632", "ECK0625"]	662752	663963	"-"	["EG10201_RNA"]
 "EG10202"	"dacB"	["dacB", "b3182", "ECK3171"]	3328963	3330396	"+"	["EG10202_RNA"]
@@ -1951,7 +1952,7 @@
 "EG12032"	"psuT"	["psuT", "pscT", "yeiM", "b2164", "ECK2157"]	2256085	2257335	"-"	["EG12032_RNA"]
 "EG12033"	"psuG"	["psuG", "yeiN", "pscG", "b2165", "ECK2158"]	2257429	2258367	"-"	["EG12033_RNA"]
 "EG12034"	"setB"	["setB", "yeiO", "b2170", "ECK2163"]	2263863	2265044	"+"	["EG12034_RNA"]
-"EG12035"	"eflP"	["eflP", "yeiP", "b2171", "ECK2165"]	2265450	2266022	"+"	["EG12035_RNA"]
+"EG12035"	"efpL"	["efpL", "yeiP", "b2171", "ECK2165"]	2265450	2266022	"+"	["EG12035_RNA"]
 "EG12036"	"yeiQ"	["yeiQ", "b2172", "ECK2166"]	2266245	2267711	"+"	["EG12036_RNA"]
 "EG12037"	"yejA"	["yejA", "b2177", "ECK2171"]	2272364	2274178	"+"	["EG12037_RNA"]
 "EG12038"	"yejB"	["yejB", "b2178", "ECK2172"]	2274179	2275273	"+"	["EG12038_RNA"]
@@ -2111,7 +2112,7 @@
 "EG12225"	"yhiJ"	["yhiJ", "b3488", "ECK3473"]	3630968	3632590	"-"	["EG12225_RNA"]
 "EG12227"	"yhiL"	["yhiL", "b3490", "b3489", "ECK3474", "yhiK", "b4660", "ECK3475"]	3632852	3634458	"-"	["EG12227_RNA"]
 "EG12228"	"yhiM"	["yhiM", "b3491", "ECK3476"]	3634841	3635893	"+"	["EG12228_RNA"]
-"EG12229"	"yhiN"	["yhiN", "b3492", "ECK3477"]	3636208	3637410	"-"	["EG12229_RNA"]
+"EG12229"	"rdsA"	["rdsA", "yhiN", "b3492", "ECK3477"]	3636208	3637410	"-"	["EG12229_RNA"]
 "EG12230"	"pitA"	["pitA", "pit", "b3493", "ECK3478"]	3637642	3639141	"+"	["EG12230_RNA"]
 "EG12231"	"uspB"	["uspB", "yhiO", "b3494", "ECK3479"]	3639385	3639720	"-"	["EG12231_RNA"]
 "EG12232"	"dtpB"	["dtpB", "yhiP", "b3496", "ECK3481"]	3640862	3642331	"+"	["EG12232_RNA"]

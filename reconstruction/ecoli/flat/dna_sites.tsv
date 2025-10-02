@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
+# Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 29.1
 # Orthologs: true
-# Date and time generated: March 20, 2025, 17:08:02
+# Date and time generated: October 2, 2025, 15:07:30
 "id"	"common_name"	"synonyms"	"type"	"left_end_pos"	"right_end_pos"	"direction"
 "BS-7046"	null	[]	"dna-binding-site"	1825765	1825784	null
 "BS-7048"	null	[]	"dna-binding-site"	3169748	3169760	null
@@ -905,6 +905,16 @@
 "BS0-11021"	null	[]	"dna-binding-site"	882724	882754	null
 "BS0-11022"	null	[]	"dna-binding-site"	926574	926608	null
 "BS0-11023"	null	[]	"dna-binding-site"	986968	987000	null
+"BS0-11024"	null	[]	"dna-binding-site"	2344803	2344818	null
+"BS0-11026"	null	[]	"dna-binding-site"	106483	106497	null
+"BS0-11027"	null	[]	"dna-binding-site"	1116742	1116756	null
+"BS0-11028"	null	[]	"dna-binding-site"	3801170	3801184	null
+"BS0-11029"	null	[]	"dna-binding-site"	106483	106497	null
+"BS0-11030"	null	[]	"dna-binding-site"	106483	106497	null
+"BS0-11031"	null	[]	"dna-binding-site"	1116742	1116756	null
+"BS0-11032"	null	[]	"dna-binding-site"	1116742	1116756	null
+"BS0-11033"	null	[]	"dna-binding-site"	2224958	2224972	null
+"BS0-11034"	null	[]	"dna-binding-site"	2224958	2224972	null
 "BS0-1121"	null	[]	"dna-binding-site"	3493838	3493852	null
 "BS0-1122"	null	[]	"dna-binding-site"	963666	963678	null
 "BS0-1123"	null	[]	"dna-binding-site"	963586	963598	null
@@ -1066,8 +1076,8 @@
 "BS0-2429"	null	[]	"dna-binding-site"	2313036	2313055	null
 "BS0-2430"	null	[]	"dna-binding-site"	2313164	2313178	null
 "BS0-2441"	null	[]	"dna-binding-site"	1735256	1735268	null
-"BS0-2461"	null	[]	"dna-binding-site"	3219279	3219295	null
-"BS0-2462"	null	[]	"dna-binding-site"	3219257	3219273	null
+"BS0-2461"	null	[]	"dna-binding-site"	null	null	null
+"BS0-2462"	null	[]	"dna-binding-site"	null	null	null
 "BS0-2481"	null	[]	"dna-binding-site"	3219330	3219344	null
 "BS0-2482"	null	[]	"dna-binding-site"	3219196	3219208	null
 "BS0-2483"	null	[]	"dna-binding-site"	1832269	1832285	null
@@ -5048,4 +5058,14 @@
 "REPV9"	"REPv9"	[]	"repeat-region"	129348	129362	"+"
 "REPV92A"	"REPv92a"	[]	"repeat-region"	1068355	1068383	"+"
 "REPV97A"	"REPv97a"	[]	"repeat-region"	1113418	1113446	"+"
+"SEG0-26"	"CRISPR REP10"	[]	"repeat-region"	2877884	2877912	"-"
+"SEG0-29"	"CRISPR REP1"	[]	"repeat-region"	2878435	2878463	"-"
+"SEG0-30"	"CRISPR REP3"	[]	"repeat-region"	2878313	2878341	"-"
+"SEG0-31"	"CRISPR REP2"	[]	"repeat-region"	2878374	2878402	"-"
+"SEG0-32"	"CRISPR REP4"	[]	"repeat-region"	2878252	2878280	"-"
+"SEG0-33"	"CRISPR REP5"	[]	"repeat-region"	2878190	2878218	"-"
+"SEG0-34"	"CRISPR REP6"	[]	"repeat-region"	2878128	2878156	"-"
+"SEG0-35"	"CRISPR REP7"	[]	"repeat-region"	2878067	2878095	"-"
+"SEG0-36"	"CRISPR REP8"	[]	"repeat-region"	2878006	2878034	"-"
+"SEG0-37"	"CRISPR REP9"	[]	"repeat-region"	2877945	2877973	"-"
 "TERC"	"TerC"	[]	"extragenic-site"	1609157	1609179	null
