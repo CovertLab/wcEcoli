@@ -102,14 +102,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			max_monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts',
 				ignore_exception=True).max(axis=0)[monomer_index]
+			print("max monomer counts shape: ")
+			print(max_monomer_counts.shape)
 			mean_monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts',
 				ignore_exception=True).mean(axis=0)[monomer_index]
+			print("mean monomer counts shape: ")
+			print(mean_monomer_counts.shape)
 			# Monomer exists per gen
 			monomer_exists_in_gen = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts',
 				ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[
 								:, monomer_index]
+			print("monomer exists in gen shape: ")
+			print(monomer_exists_in_gen.shape)
 			# Divide by total number of cells to get probability
 			p_monomer_exists_in_gen = (
 				monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
@@ -119,10 +125,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			max_mRNA_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True).max(axis=0)[mRNA_index]
+			print("max mRNA counts shape: ")
+			print(max_mRNA_counts.shape)
 			
 			mean_mRNA_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-			ignore_exception=True).mean(axis=0)[mRNA_index]
+				cell_paths, 'RNACounts', 'mRNA_cistron_counts', 
+				ignore_exception=True).mean(axis=0)[mRNA_index]
+			print("mean mRNA counts shape: ")
+			print(mean_mRNA_counts.shape)
 			
 			max_monomer_counts_all[i] = max_monomer_counts
 			mean_monomer_counts_all[i] = mean_monomer_counts
