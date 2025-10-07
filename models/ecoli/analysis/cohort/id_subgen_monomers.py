@@ -33,6 +33,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = np.arange(0, 64),
 			only_successful=True)
+		
+		print('Analyzing %d cells...' % len(cell_paths))
 
 		# There are 4346 mRNA ids with counts
 		RNA_reader = TableReader(
@@ -133,7 +135,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				ignore_exception=True).mean(axis=0)[mRNA_index]
 			print("mean mRNA counts shape: ")
 			print(mean_mRNA_counts.shape)
-			
+
 			max_monomer_counts_all[i] = max_monomer_counts
 			mean_monomer_counts_all[i] = mean_monomer_counts
 			p_monomer_exists_in_gen[i] = p_monomer_exists_in_gen
