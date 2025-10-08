@@ -46,6 +46,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.actual_rna_synth_prob = np.zeros(self.n_TU, np.float64)
 		self.basal_prob_orig = np.zeros(self.n_TU, np.float64)
 		self.basal_prob_updated = np.zeros(self.n_TU, np.float64)
+		self.attenuated_rna_indices = np.array([], np.int64)
+		self.attenuation_adjustments = np.array([], np.float64)
+		self.basal_prob_attenuation = np.zeros(self.n_TU, np.float64)
+		self.basal_prob_ppgpp_synth_prob = np.zeros(self.n_TU, np.float64)
 		self.tu_is_overcrowded = np.zeros(self.n_TU, bool)
 		self.promoter_copy_number = np.zeros(self.n_TU, np.int16)
 		self.rna_synth_prob_per_cistron = np.zeros(self.n_cistron, np.float64)
@@ -115,6 +119,8 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			'actual_rna_synth_prob': 'rnaIds',
 			'basal_prob_orig': 'rnaIds',
 			'basal_prob_updated': 'rnaIds',
+			'basal_prob_attenuation': 'rnaIds',
+			'basal_prob_ppgpp_synth_prob': 'rnaIds',
 			'tu_is_overcrowded': 'rnaIds',
 			'actual_rna_synth_prob_per_cistron': 'cistron_ids',
 			'target_rna_synth_prob_per_cistron': 'cistron_ids',
@@ -149,6 +155,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			actual_rna_synth_prob =	self.actual_rna_synth_prob,
 			basal_prob_orig = self.basal_prob_orig,
 			basal_prob_updated = self.basal_prob_updated,
+			attenuated_rna_indices = self.attenuated_rna_indices,
+			attenuation_adjustments = self.attenuation_adjustments,
+			basal_prob_attenuation = self.basal_prob_attenuation,
+			basal_prob_ppgpp_synth_prob = self.basal_prob_ppgpp_synth_prob,
 			tu_is_overcrowded = self.tu_is_overcrowded,
 			max_p = self.max_p,
 			actual_rna_synth_prob_per_cistron = self.actual_rna_synth_prob_per_cistron,

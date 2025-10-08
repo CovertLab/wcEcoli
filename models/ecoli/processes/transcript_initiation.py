@@ -27,6 +27,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		super(TranscriptInitiation, self).__init__()
 
 	def initialize(self, sim, sim_data):
+		print("Running transcript initiation initialization")
+		self.counter = 0
 		super(TranscriptInitiation, self).initialize(sim, sim_data)
 
 		# Sim options
@@ -123,21 +125,36 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				counts_to_molar = 1 / (self.n_avogadro * cell_volume)
 				ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
 				basal_prob, _ = self.synth_prob(ppgpp_conc, self.copy_number)
+				print("\nIn transcript_initiation calculateRequest")
+				print("ppGpp concentration:", ppgpp_conc)
+				self.basal_prob_synth_prob = basal_prob.copy()
 				if self.trna_attenuation:
+					print("Attenuated RNA Indices: ", self.attenuated_rna_indices)
+					print("Attenuation Adjustments: ", self.attenuation_adjustments)
 					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
+				self.basal_prob_attenuation = basal_prob.copy()
 				self.fracActiveRnap = self.get_rnap_active_fraction_from_ppGpp(ppgpp_conc)
 				ppgpp_scale = basal_prob[TU_index]
 				ppgpp_scale[ppgpp_scale == 0] = 1  # Use original delta prob if no ppGpp basal prob
+
+				# TODO!!! LOOK AT ATTENUATION ADJUSTMENTS
+
 			else:
 				basal_prob = self.basal_prob
 				self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
 				ppgpp_scale = 1
 
-			# if self.basal_prob[-1] > 0:
-			# 	import ipdb
-			# 	ipdb.set_trace()
-
 			self.basal_prob_updated = basal_prob.copy()
+
+			print("basal_prob_orig: ", self.basal_prob_orig[[2923, 2780, 2695, 3265]])
+			print("basal_prob_synth_prob: ", self.basal_prob_synth_prob[[2923, 2780, 2695, 3265]])
+			print("basal_prob_attenuation: ", self.basal_prob_attenuation[[2923, 2780, 2695, 3265]])
+			print("basal_prob_updated: ", self.basal_prob_updated[[2923, 2780, 2695, 3265]])
+
+			if self.basal_prob[-1] > 0 and self.counter == 0:
+				self.counter += 1
+				import ipdb
+				ipdb.set_trace()
 
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (basal_prob[TU_index] + ppgpp_scale *
@@ -227,6 +244,14 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			"RnaSynthProb", "basal_prob_orig", self.basal_prob_orig)
 		self.writeToListener(
 			"RnaSynthProb", "basal_prob_updated", self.basal_prob_updated)
+		self.writeToListener(
+			"RnaSynthProb", "basal_prob_attenuation", self.basal_prob_attenuation)
+		# self.writeToListener(
+		# 	"RnaSynthProb", "attenuated_rna_indices", self.attenuated_rna_indices)
+		# self.writeToListener(
+		# 	"RnaSynthProb", "attenuation_adjustments", self.attenuation_adjustments)
+		self.writeToListener(
+			"RnaSynthProb", "basal_prob_ppgpp_synth_prob", self.basal_prob_synth_prob)
 
 		# Calculate RNA polymerases to activate based on probabilities
 		# Note: ideally we should be using the actual TU synthesis probabilities
