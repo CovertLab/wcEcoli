@@ -24,7 +24,6 @@ SEED_RANGE = np.arange(0, 64)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
-	@profile
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -102,8 +101,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		print(monomer_exists_in_gen.shape)
 		# Divide by total number of cells to get probability
 		p_monomer_exists_in_gen = (
-			monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
-				subgenerational_monomer_mask = (
+			monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0]
+			)
+		subgenerational_monomer_mask = (
 				(p_monomer_exists_in_gen > 0)
 				& (p_monomer_exists_in_gen < 1)
 		)
