@@ -20,9 +20,11 @@ from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = 8
+SEED_RANGE = np.arange(0, 64)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
+	@profile
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
@@ -31,7 +33,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('Skipping analysis - not enough generations run.')
 			return
 		cell_paths = self.ap.get_cells(
-			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = np.arange(0, 64),
+			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
 			only_successful=True)
 		
 		print('Analyzing %d cells...' % len(cell_paths))
@@ -85,64 +87,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cistron_id_to_gene_id[cistron_id] for cistron_id in cistron_ids_in_order
 		])
 
-		# Get indices of cistron_ids_in_order
-		mRNA_ids_indices = np.array([
-			mRNA_id_to_index[cistron_id] for cistron_id
-			in cistron_ids_in_order
-		])
+		# # Get indices of cistron_ids_in_order
+		# mRNA_ids_indices = np.array([
+		# 	mRNA_id_to_index[cistron_id] for cistron_id
+		# 	in cistron_ids_in_order
+		# ])
 
-		max_monomer_counts_all = np.zeros(monomer_indices.shape)
-		mean_monomer_counts_all = np.zeros(monomer_indices.shape)
-		p_monomer_exists_in_gen = np.zeros(monomer_indices.shape)
-		max_mRNA_counts_all = np.zeros(mRNA_ids_indices.shape)
-		mean_mRNA_counts_all = np.zeros(mRNA_ids_indices.shape)
-
-		# Use for loop to avoid memory issues (128 seeds and 32 gens = 4096 cells)
-
-		for i, monomer_index in enumerate(monomer_indices):
-			# Get maximum counts of monomers for each gene across all timepoints
-			max_monomer_counts = read_stacked_columns(
-				cell_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True).max(axis=0)[monomer_index]
-			print("max monomer counts shape: ")
-			print(max_monomer_counts.shape)
-			mean_monomer_counts = read_stacked_columns(
-				cell_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True).mean(axis=0)[monomer_index]
-			print("mean monomer counts shape: ")
-			print(mean_monomer_counts.shape)
-			# Monomer exists per gen
-			monomer_exists_in_gen = read_stacked_columns(
-				cell_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[
-								:, monomer_index]
-			print("monomer exists in gen shape: ")
-			print(monomer_exists_in_gen.shape)
-			# Divide by total number of cells to get probability
-			p_monomer_exists_in_gen = (
-				monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
-			
-			# Get maximum counts of mRNAs for each gene across all timepoints
-			mRNA_index = mRNA_ids_indices[i]
-			max_mRNA_counts = read_stacked_columns(
-				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-				ignore_exception=True).max(axis=0)[mRNA_index]
-			print("max mRNA counts shape: ")
-			print(max_mRNA_counts.shape)
-			
-			mean_mRNA_counts = read_stacked_columns(
-				cell_paths, 'RNACounts', 'mRNA_cistron_counts', 
-				ignore_exception=True).mean(axis=0)[mRNA_index]
-			print("mean mRNA counts shape: ")
-			print(mean_mRNA_counts.shape)
-
-			max_monomer_counts_all[i] = max_monomer_counts
-			mean_monomer_counts_all[i] = mean_monomer_counts
-			p_monomer_exists_in_gen[i] = p_monomer_exists_in_gen
-			max_mRNA_counts_all[i] = max_mRNA_counts
-			mean_mRNA_counts_all[i] = mean_mRNA_counts
-
-		subgenerational_monomer_mask = (
+		# Monomer exists per gen
+		monomer_exists_in_gen = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts',
+			ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[
+							:, monomer_indices]
+		print("monomer exists in gen shape: ")
+		print(monomer_exists_in_gen.shape)
+		# Divide by total number of cells to get probability
+		p_monomer_exists_in_gen = (
+			monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0])
+				subgenerational_monomer_mask = (
 				(p_monomer_exists_in_gen > 0)
 				& (p_monomer_exists_in_gen < 1)
 		)
@@ -154,20 +115,71 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		expression_status_array[subgenerational_monomer_mask] = 'subgen'
 		expression_status_array[p_monomer_exists_in_gen == 0] = 'never_expressed'
 
+
+		# max_monomer_counts_all = np.zeros(monomer_indices.shape)
+		# mean_monomer_counts_all = np.zeros(monomer_indices.shape)
+		
+		# max_mRNA_counts_all = np.zeros(mRNA_ids_indices.shape)
+		# mean_mRNA_counts_all = np.zeros(mRNA_ids_indices.shape)
+
+		# Use for loop to avoid memory issues (128 seeds and 32 gens = 4096 cells)
+
+		# for i, monomer_index in enumerate(monomer_indices):
+		# 	# Get maximum counts of monomers for each gene across all timepoints
+		# 	max_monomer_counts = read_stacked_columns(
+		# 		cell_paths, 'MonomerCounts', 'monomerCounts',
+		# 		ignore_exception=True).max(axis=0)[monomer_index]
+		# 	print("max monomer counts shape: ")
+		# 	print(max_monomer_counts.shape)
+		# 	mean_monomer_counts = read_stacked_columns(
+		# 		cell_paths, 'MonomerCounts', 'monomerCounts',
+		# 		ignore_exception=True).mean(axis=0)[monomer_index]
+		# 	print("mean monomer counts shape: ")
+		# 	print(mean_monomer_counts.shape)
+						
+		# 	# Get maximum counts of mRNAs for each gene across all timepoints
+		# 	mRNA_index = mRNA_ids_indices[i]
+		# 	max_mRNA_counts = read_stacked_columns(
+		# 		cell_paths, 'RNACounts', 'mRNA_cistron_counts',
+		# 		ignore_exception=True).max(axis=0)[mRNA_index]
+		# 	print("max mRNA counts shape: ")
+		# 	print(max_mRNA_counts.shape)
+			
+		# 	mean_mRNA_counts = read_stacked_columns(
+		# 		cell_paths, 'RNACounts', 'mRNA_cistron_counts', 
+		# 		ignore_exception=True).mean(axis=0)[mRNA_index]
+		# 	print("mean mRNA counts shape: ")
+		# 	print(mean_mRNA_counts.shape)
+
+		# 	max_monomer_counts_all[i] = max_monomer_counts
+		# 	mean_monomer_counts_all[i] = mean_monomer_counts
+		# 	p_monomer_exists_in_gen[i] = p_monomer_exists_in_gen
+		# 	max_mRNA_counts_all[i] = max_mRNA_counts
+		# 	mean_mRNA_counts_all[i] = mean_mRNA_counts
+
+
 		# Write data to table
 		with open(os.path.join(plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow([
 				'gene_name', 'cistron_name', 'monomer_name',
-				'prob_monomer_expressed', 'max_mRNA_count', 'mean_mRNA_count',
-				'max_protein_count', 'mean_protein_count', 'expression_status'
+				'prob_monomer_expressed', 
+				# 'max_mRNA_count', 
+				# 'mean_mRNA_count',
+				# 'max_protein_count', 
+				# 'mean_protein_count', 
+				'expression_status'
 			])
 
 			for i in monomer_indices:
 				writer.writerow([
 					gene_ids_in_order[i], cistron_ids_in_order[i], monomer_ids[i],
-					p_monomer_exists_in_gen[i], max_mRNA_counts_all[i], mean_mRNA_counts_all[i],
-					max_monomer_counts_all[i], mean_monomer_counts_all[i], expression_status_array[i]
+					p_monomer_exists_in_gen[i], 
+					# max_mRNA_counts_all[i], 
+					# mean_mRNA_counts_all[i],
+					# max_monomer_counts_all[i],
+					# mean_monomer_counts_all[i], 
+					expression_status_array[i]
 				])
 
 
