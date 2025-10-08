@@ -291,7 +291,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for j in range(len(rna_idx_where_updated_yes_gfp_greater)):
 			yes_gfp_greater_dict[rna_ids_where_updated_yes_gfp_greater[j]] = rna_idx_where_updated_yes_gfp_greater[j]
 
-		print(yes_gfp_greater_dict)
+		# print(yes_gfp_greater_dict)
+		# import ipdb; ipdb.set_trace()
 
 		# map from rna_ids to cistrons
 		cistron_ids_where_updated_yes_gfp_greater = np.array([])
