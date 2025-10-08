@@ -269,11 +269,11 @@ class Replication(object):
 		# Return the predicted average copy number
 		n_avg_copy = 2**(((1 - relative_pos) * self.c_period_in_mins + self.d_period_in_mins) / tau)
 
-		print("\nIn get_avg_copy_number")
-		print("Tau:", tau)
-		print("C period: ", self.c_period_in_mins)
-		print("D period: ", self.d_period_in_mins)
-		print("n_avg_copy_shape:", n_avg_copy.shape)
-		print("n_avg_copy:", n_avg_copy[[2923, 2780, 2695, 3265]])
+		# print("\nIn get_avg_copy_number")
+		# print("Tau:", tau)
+		# print("C period: ", self.c_period_in_mins)
+		# print("D period: ", self.d_period_in_mins)
+		# print("n_avg_copy_shape:", n_avg_copy.shape)
+		# print("n_avg_copy:", n_avg_copy[[2923, 2780, 2695, 3265]])
 
 		return n_avg_copy
