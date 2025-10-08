@@ -116,7 +116,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		expression_status_array[p_monomer_exists_in_gen == 0] = 'never_expressed'
 
 
-		# max_monomer_counts_all = np.zeros(monomer_indices.shape)
+		max_monomer_counts_all = np.zeros(monomer_indices.shape)
 		# mean_monomer_counts_all = np.zeros(monomer_indices.shape)
 		
 		# max_mRNA_counts_all = np.zeros(mRNA_ids_indices.shape)
@@ -124,13 +124,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Use for loop to avoid memory issues (128 seeds and 32 gens = 4096 cells)
 
-		# for i, monomer_index in enumerate(monomer_indices):
-		# 	# Get maximum counts of monomers for each gene across all timepoints
-		# 	max_monomer_counts = read_stacked_columns(
-		# 		cell_paths, 'MonomerCounts', 'monomerCounts',
-		# 		ignore_exception=True).max(axis=0)[monomer_index]
-		# 	print("max monomer counts shape: ")
-		# 	print(max_monomer_counts.shape)
+		for i, monomer_index in enumerate(monomer_indices):
+			# Get maximum counts of monomers for each gene across all timepoints
+			max_monomer_counts = read_stacked_columns(
+				cell_paths, 'MonomerCounts', 'monomerCounts',
+				ignore_exception=True).max(axis=0)[monomer_index]
+			print("max monomer counts shape: ")
+			print(max_monomer_counts.shape)
 		# 	mean_monomer_counts = read_stacked_columns(
 		# 		cell_paths, 'MonomerCounts', 'monomerCounts',
 		# 		ignore_exception=True).mean(axis=0)[monomer_index]
@@ -151,9 +151,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# 	print("mean mRNA counts shape: ")
 		# 	print(mean_mRNA_counts.shape)
 
-		# 	max_monomer_counts_all[i] = max_monomer_counts
+			max_monomer_counts_all[i] = max_monomer_counts
 		# 	mean_monomer_counts_all[i] = mean_monomer_counts
-		# 	p_monomer_exists_in_gen[i] = p_monomer_exists_in_gen
 		# 	max_mRNA_counts_all[i] = max_mRNA_counts
 		# 	mean_mRNA_counts_all[i] = mean_mRNA_counts
 
@@ -166,7 +165,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				'prob_monomer_expressed', 
 				# 'max_mRNA_count', 
 				# 'mean_mRNA_count',
-				# 'max_protein_count', 
+				'max_protein_count', 
 				# 'mean_protein_count', 
 				'expression_status'
 			])
@@ -177,7 +176,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					p_monomer_exists_in_gen[i], 
 					# max_mRNA_counts_all[i], 
 					# mean_mRNA_counts_all[i],
-					# max_monomer_counts_all[i],
+					max_monomer_counts_all[i],
 					# mean_monomer_counts_all[i], 
 					expression_status_array[i]
 				])
