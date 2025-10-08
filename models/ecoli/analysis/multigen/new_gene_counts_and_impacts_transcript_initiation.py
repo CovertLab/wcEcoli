@@ -283,6 +283,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# get rna ids for all rna_idx_where_updated_yes_gfp_greater where counts_rna_idx_where_updated_yes_gfp_greater is greater than 2000
 		rna_ids_where_updated_yes_gfp_greater = [sim_data.process.transcription.rna_data['id'][rna_idx] for rna_idx in rna_idx_where_updated_yes_gfp_greater if counts_rna_idx_where_updated_yes_gfp_greater[rna_idx] > 2000]
 
+		# print(rna_idx_where_updated_yes_gfp_greater)
+		# print(rna_ids_where_updated_yes_gfp_greater)
+
+		# make a dictionary
+		yes_gfp_greater_dict = {}
+		for j in range(len(rna_idx_where_updated_yes_gfp_greater)):
+			yes_gfp_greater_dict[rna_ids_where_updated_yes_gfp_greater[j]] = rna_idx_where_updated_yes_gfp_greater[j]
+
+		print(yes_gfp_greater_dict)
+
 		# map from rna_ids to cistrons
 		cistron_ids_where_updated_yes_gfp_greater = np.array([])
 		for rna_id in rna_ids_where_updated_yes_gfp_greater:
