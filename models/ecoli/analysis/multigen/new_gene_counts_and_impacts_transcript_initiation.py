@@ -286,10 +286,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# print(rna_idx_where_updated_yes_gfp_greater)
 		# print(rna_ids_where_updated_yes_gfp_greater)
 
-		# make a dictionary
-		yes_gfp_greater_dict = {}
-		for j in range(len(rna_idx_where_updated_yes_gfp_greater)):
-			yes_gfp_greater_dict[rna_ids_where_updated_yes_gfp_greater[j]] = rna_idx_where_updated_yes_gfp_greater[j]
+		# # make a dictionary
+		# yes_gfp_greater_dict = {}
+		# for j in range(len(rna_idx_where_updated_yes_gfp_greater)):
+		# 	yes_gfp_greater_dict[rna_ids_where_updated_yes_gfp_greater[j]] = rna_idx_where_updated_yes_gfp_greater[j]
 
 		# print(yes_gfp_greater_dict)
 		# import ipdb; ipdb.set_trace()
