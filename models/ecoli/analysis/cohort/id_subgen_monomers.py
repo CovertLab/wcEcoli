@@ -108,7 +108,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				& (p_monomer_exists_in_gen < 1)
 		)
 
-		sub_gen_p_monomer_exists_in_gen = p_monomer_exists_in_gen[subgenerational_monomer_mask]
+		sub_gen_p_monomer_exists_in_gen = np.array(p_monomer_exists_in_gen)[subgenerational_monomer_mask]
+
+		print("sub_gen_p_monomer_exists_in_gen: ")
+		print(sub_gen_p_monomer_exists_in_gen.shape)
 
 		expression_status_array = np.full(
 			p_monomer_exists_in_gen.shape,
@@ -117,10 +120,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		expression_status_array[subgenerational_monomer_mask] = 'subgen'
 		expression_status_array[p_monomer_exists_in_gen == 0] = 'never_expressed'
 
-		sub_gen_monomer_indices = monomer_indices[subgenerational_monomer_mask]
-		sub_gen_monomer_ids = monomer_ids[subgenerational_monomer_mask]
-		sub_gen_cistron_ids = cistron_ids_in_order[subgenerational_monomer_mask]
-		sub_gen_gene_ids = gene_ids_in_order[subgenerational_monomer_mask]
+		sub_gen_monomer_indices = np.array(monomer_indices)[subgenerational_monomer_mask]
+		sub_gen_monomer_ids = np.array(monomer_ids)[subgenerational_monomer_mask]
+		sub_gen_cistron_ids = np.array(cistron_ids_in_order)[subgenerational_monomer_mask]
+		sub_gen_gene_ids = np.array(gene_ids_in_order)[subgenerational_monomer_mask]
 
 
 		max_monomer_counts = read_stacked_columns(
@@ -128,6 +131,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				ignore_exception=True).max(axis=0)[sub_gen_monomer_indices]
 		print("max monomer counts shape: ")
 		print(max_monomer_counts.shape)
+		import ipdb; ipdb.set_trace()
 
 
 		# max_monomer_counts_all = np.zeros(monomer_indices.shape)
@@ -184,7 +188,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# 'expression_status'
 			])
 
-			for i in sub_gen_monomer_indices:
+			for i,_ in enumerate(sub_gen_monomer_indices):
 				writer.writerow([
 					sub_gen_gene_ids[i], sub_gen_cistron_ids[i], sub_gen_monomer_ids[i],
 					sub_gen_p_monomer_exists_in_gen[i], 
