@@ -35,3 +35,4 @@
 "CPLX0-8306_RXN"	"Removed to prevent the consumption of DCUS-MONOMER, a histidine kinase of a 2CS"
 "CPLX0-9871_RXN"	"Subunit PYRUVFORMLY-CPLX missing from model"
 "CPLX0-10120_RXN"	"No subunits listed for complexation reaction"
+"CPLX0-13320_RXN"	"Subunit MONOMER0-4594 missing from model"

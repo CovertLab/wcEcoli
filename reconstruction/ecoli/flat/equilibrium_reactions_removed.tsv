@@ -74,5 +74,7 @@
 "MONOMER-51_T2-C4-DECADIENYL-COA_RXN"	"Multiple reactions produce the same compound (MONOMER-51)"
 "MONOMER-51_T2-DECENOYL-COA_RXN"	"Multiple reactions produce the same compound (MONOMER-51)"
 "MONOMER-51_TETRADECANOYL-COA_RXN"	"Multiple reactions produce the same compound (MONOMER-51)"
+"MONOMER-51_D-METHYL-MALONYL-COA_RXN"	"Multiple reactions produce the same compound (MONOMER-51)"
+"MONOMER-51_METHYL-MALONYL-COA_RXN"	"Multiple reactions produce the same compound (MONOMER-51)"
 "CPLX0-8083_RXN"	"Molecular weight of CPD-6 unknown"
 "MONOMER0-157_RXN"	"Manual fix for 1CS TF CPLX0-7796"

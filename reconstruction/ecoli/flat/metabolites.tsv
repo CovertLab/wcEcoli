@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
+# Organism: Escherichia coli K-12 substr. MG1655
 # Database: EcoCyc
 # Version: 29.1
 # Orthologs: true
-# Date and time generated: March 20, 2025, 17:08:54
+# Date and time generated: October 2, 2025, 15:08:04
 "id"	"common_name"	"synonyms"	"chemical_formula"	"mw"	"molecular_charge"	"_smiles"
 "--TRANS-ACENAPHTHENE-12-DIOL"	"(+/-)-<i>trans</i>-acenaphthene-1,2-diol"	["<i>trans</i>-1,2-acenaphthylene glycol"]	"C12H10O2"	186.21	0	"c2(cc1(cccc3(c1c(c2)[C@@H]([C@H]3O)O)))"
 "1-2-Beta-D-Glucans"	"a 1,2-&beta;-D-glucan"	[]	null	null	0	"C(O)[C@H]7(O[C@@H](O)[C@H](O[C@@H]6(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O[C@H]5([C@H](O[C@@H]4(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O[C@H]3([C@H](O[C@@H]2(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O[C@H]1([C@H](O[R])[C@@H](O)[C@H](O)[C@@H](CO)O1))2))[C@@H](O)[C@H](O)[C@@H](CO)O3))4))[C@@H](O)[C@H](O)[C@@H](CO)O5))6))[C@@H](O)[C@H](O)7)"
@@ -86,7 +86,7 @@
 "11-13-Eicosadienoates"	"an 11,13-icosadienoate"	["11,13-eicosadienoic acid", "an 11,13-eicosadienoate"]	"C20H35O2"	307.495	-1	"CCCCCC/C=C/C=C/CCCCCCCCCC([O-])=O"
 "11-Beta-Hydroxysteroids1"	"an 11-&beta;-hydroxysteroid"	[]	null	null	0	"CC34(C[C@H](O)C2(C(CCC1(CCCCC(C)12))C(CCC([R])3)4))"
 "11-Cis-Retinyl-Esters"	"an 11-<i>cis</i>-retinyl ester"	[]	null	null	0	"CC(/C=C/C1(/C(C)(C)CCCC(/C)=1))=C\C=C/C(\C)=C/COC([R])=O"
-"11-DEOXY-CORTISOL"	"11-desoxycortisol"	["substance S, Reichstein's", "11-desoxycortisone", "cortexolone", "Reichstein's substance S", "cortodoxone"]	"C21H30O4"	346.466	0	"C[C@@]34([C@H]2(CC[C@@]1(C)([C@@H](CC[C@@](C(=O)CO)(O)1)[C@@H]2CCC/3=C\C(=O)CC4)))"
+"11-DEOXY-CORTISOL"	"11-desoxycortisol"	["substance S, Reichstein's", "11-desoxycortisone", "cortexolone", "Reichstein's substance S", "cortodoxone", "4-pregnen-17,21-diol-3,20-dione"]	"C21H30O4"	346.466	0	"C[C@@]34([C@H]2(CC[C@@]1(C)([C@@H](CC[C@@](C(=O)CO)(O)1)[C@@H]2CCC/3=C\C(=O)CC4)))"
 "11-DEOXYCORTICOSTERONE"	"11-deoxycorticosterone"	["deoxycorticosterone", "cortexone", "21-hydroxy-4-pregnene-3,20-dione"]	"C21H30O3"	330.466	0	"C[C@@]34([C@H]2(CC[C@@]1(C)([C@@H](CC[C@H](C(=O)CO)1)[C@@H]2CCC/3=C\C(=O)CC4)))"
 "11-HPODE"	"11-HpODE"	["11-hydroperoxyoctadeca-9,12-dienoic acid", "(9Z,12Z)-11-hydroperoxyoctadeca-9,12-dienoate", "11-hydroperoxylinoleic acid", "11-hydroperoxylinoleate", "(&plusmn;)11-HpODE"]	"C18H31O4"	311.44	-1	"CCCCC\C=C/C(OO)\C=C/CCCCCCCC([O-])=O"
 "11-Hydroxyjasmonates"	"an 11-hydroxyjasmonate"	["an 11-OHJA", "an 11-hydroxyjasmonic acid", "an 11-hydroxy-JA"]	"C12H17O4"	225.264	-1	"CC(O)\C=C/CC1(C(=O)CCC1CC([O-])=O)"
@@ -190,6 +190,7 @@
 "2-AMINOMALONATE-SEMIALDEHYDE"	"3-oxo-L-alanine"	["FGly", "(<i>S</i>)-C<sup>&alpha;</sup>-formylglycine", "2-aminomalonate semialdehyde", "(<i>S</i>)-formylglycine"]	"C3H5NO3"	103.077	0	"C(=O)[C@H]([NH3+])C(=O)[O-]"
 "2-Arylethylamines"	"a 2-arylethylamine"	[]	null	null	1	"C([NH3+])C[R]"
 "2-C-METHYL-D-ERYTHRITOL-4-PHOSPHATE"	"2-C-methyl-D-erythritol 4-phosphate"	["2-methylerylthritol 4-phosphate"]	"C5H11O7P"	214.111	-2	"C[C@](O)(CO)[C@H](O)COP([O-])([O-])=O"
+"2-Carboxy-Acyl-CoAs"	"a 2-carboxyacyl-CoA"	[]	null	null	-5	"C([R])CC(C([O-])=O)C(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
 "2-CARBOXYMUCONATE"	"2-carboxymuconate"	[]	"C7H3O6"	183.097	-3	"C(/C=C(C(=O)[O-])C(=O)[O-])=C\C(=O)[O-]"
 "2-D-THREO-HYDROXY-3-CARBOXY-ISOCAPROATE"	"(2<i>R</i>,3<i>S</i>)-3-isopropylmalate"	["2-D-threo-hydroxy-3-carboxy-isocaproate", "3-carboxy-2-hydroxy-4-methylpentanoate", "&beta;-isopropylmalate", "3-isopropylmalate"]	"C7H10O5"	174.153	-2	"CC(C)[C@H](C([O-])=O)[C@H](C([O-])=O)O"
 "2-DEHYDRO-3-DEOXY-D-GALACTONATE"	"2-dehydro-3-deoxy-D-galactonate"	["2-dehydro-3-deoxygalactonate", "2-keto-3-deoxygalactonate", "2-keto-3-deoxy-D-galactonate"]	"C6H9O6"	177.133	-1	"C(O)[C@@H](O)[C@H](O)CC(C(=O)[O-])=O"
@@ -344,6 +345,7 @@
 "23S-rRNA-uracils"	"a uracil in 23S rRNA"	["23S rRNA uracil"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
 "23S-rRNA-uridine-2552"	"uridine<sup>2552</sup> in 23S rRNA"	[]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
 "23S-rRNA-uridine1911-1915-1917"	"a 23S rRNA uridine<sup>1911/1915/1917</sup>"	[]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
+"23S-rRNA-uridine2449"	"uridine<sup>2449</sup> in 23S rRNA"	["a 23S rRNA uridine<sup>2449</sup>"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
 "23S-rRNA-uridine2457"	"uridine<sup>2457</sup> in 23S rRNA"	["a 23S rRNA uridine<sup>2457</sup>"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
 "23S-rRNA-uridine2604"	"a uridine<sup>2604</sup> in 23S rRNA"	["a 23S rRNA uridine<sup>2604</sup>"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
 "23S-rRNA-uridine2605"	"uridine<sup>2605</sup> in 23S rRNA"	["a 23S rRNA uridine<sup>2605</sup>"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](n1(ccc(=O)[nH]c(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
@@ -446,7 +448,7 @@
 "3-KETOBUTYRATE"	"acetoacetate"	["3-ketobutyrate", "3-oxobutanate", "oxobutyrate", "acetoacetic acid", "3-oxobutyric acid", "3-oxobutanoic acid", "diacetic acid", "&beta;-ketobutyric acid"]	"C4H5O3"	101.082	-1	"CC(=O)CC([O-])=O"
 "3-Ketomaltose"	"3'-dehydromaltose"	["3-dehydro-&alpha;-D-glucopyranose-(1&rarr;4)-D-glucopyranose", "3'-ketomaltose"]	"C12H20O11"	340.283	0	"C(O)[C@H]1(O[C@@H]([C@@H](C([C@@H]1O)=O)O)O[C@H]2([C@@H]([C@H](C(O[C@@H]2CO)O)O)O))"
 "3-MERCAPTO-PYRUVATE"	"2-oxo-3-sulfanylpropanoate"	["mercaptopyruvate", "3-mercaptopyruvic acid", "&beta;-thiopyruvate", "&beta;-mercaptopyruvate", "3-mercaptopyruvate"]	"C3H3O3S"	119.115	-1	"C(C(C(=O)[O-])=O)S"
-"3-Methoxy-4-Hydroxy-5-Polyprenylbenzoate"	"a 3-methoxy-4-hydroxy-5-(<i>all-trans</i>-polyprenyl)benzoate"	[]	null	null	-1	"CC(/C[R])=C\Cc1(c(c(OC)cc(C([O-])=O)c1)O)"
+"3-Methoxy-4-Hydroxy-5-Polyprenylbenzoate"	"a 4-hydroxy-3-methoxy-5-(<i>all-trans</i>-polyprenyl)benzoate"	[]	null	null	-1	"CC(/C[R])=C\Cc1(c(c(OC)cc(C([O-])=O)c1)O)"
 "3-Methyl-Adenines"	"3-methyladenine"	[]	"C6H7N5"	149.155	0	"Cn1(c2(ncnc(c(N)nc1)2))"
 "3-METHYL-CROTONYL-COA"	"3-methylcrotonyl-CoA"	["&beta;-methylcrotonoyl-CoA", "3-methylbut-2-enoyl-CoA", "3-methyl-2-butenoyl-CoA"]	"C26H38N7O17P3S"	845.604	-4	"CC(C)=CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
 "3-Methyl-Saturated-Fatty-Acids"	"a 3-methyl-branched 2,3,4-saturated fatty acid"	[]	null	null	-1	"CC(C[R])CC([O-])=O"
@@ -456,7 +458,8 @@
 "3-N-3-carboxypropyl-uridine47-tRNAPhe"	"a 3-[(3S)-3-amino-3-carboxypropyl]-uridine<sup>47</sup> in tRNA<sup>Phe</sup>"	[]	null	null	-2	"C(OP(=O)([O-])O[a tRNA<SUP>Phe</SUP>])[C@H]2(O[C@@H](n1(ccc(=O)n(CC[C@@H](C([O-])=O)[NH3+])c(=O)1))[C@H](O)[C@H](OP(=O)(O[a tRNA<SUP>Phe</SUP>])[O-])2)"
 "3-NITROBENZALDEHYDE"	"3-nitrobenzaldehyde"	["<i>m</i>-nitrobenzaldehyde"]	"C7H5NO3"	151.121	0	"C(c1(cc(ccc1)[N+]([O-])=O))=O"
 "3-O-acetyl-Rhamnogalacturns"	"a 3-<i>O</i>-acetylated rhamnogalacturonan I"	[]	null	null	0	"C[C@H]4([C@H](O)[C@@H](O)[C@@H](O[C@H]3(O[C@@H]([C@H](O[C@@H]1(O[C@H]([C@H](O)[C@H]([C@H]1O[C@H]2(O[C@@H]([C@@H]([C@@H]([C@H]2O)OC(=O)C)O[R1])C(O)=O))O)C))[C@@H]([C@H]3O)OC(=O)C)C(=O)O))[C@@H](O4)O[R2])"
-"3-OCTAPRENYL-4-HYDROXYBENZOATE"	"4-hydroxy-3-octaprenylbenzoate"	["3-octaprenyl-4-hydroxybenzoate"]	"C47H69O3"	682.06	-1	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/Cc1(c(O)ccc(C(=O)[O-])c1)"
+"3-O-methyl-L-rhamnose"	"L-acofriose"	["3-O-methyl-L-rhamnose"]	"C7H14O5"	178.18501	0	"C[C@H]1([C@@H]([C@H]([C@H](C(O1)O)O)OC)O)"
+"3-OCTAPRENYL-4-HYDROXYBENZOATE"	"4-hydroxy-3-(<i>all-trans</i>-octaprenyl)benzoate"	["3-octaprenyl-4-hydroxybenzoate"]	"C47H69O3"	682.06	-1	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/Cc1(c(O)ccc(C(=O)[O-])c1)"
 "3-Oxo-5-Alpha-Steroids"	"a 3-oxo-5&alpha;-steroid"	[]	null	null	0	"CC34(CCC1(C(CC[C@H]2(CC(=O)CCC(C)12))C(CCC([R])3)4))"
 "3-Oxo-5-Beta-Steroids"	"a 3-oxo-5&beta;-steroid"	[]	null	null	0	"CC34(CCC1(C(CC[C@@H]2(CC(=O)CCC(C)12))C(CCC([R])3)4))"
 "3-oxo-D-glucose-6-phosphate"	"3-dehydro-D-glucose 6-phosphate"	["3-oxo-D-glucose 6-phosphate", "3-oxo-D-glucose 6-P", "3-dehydro-D-glucose 6P"]	"C6H9O9P"	256.105	-2	"C([C@H]1(OC([C@@H](C([C@@H]1O)=O)O)O))OP([O-])([O-])=O"
@@ -489,7 +492,7 @@
 "36-Dideoxyhexoses"	"a 3,6-dideoxyhexose"	[]	null	null	0	null
 "3alpha-hydroxysteroyl-CoA"	"a 3&alpha;-hydroxy bile acid CoA ester"	[]	"C45H70N7O18P3S"	1122.065	-4	"C[C@H](CCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])C5(CCC6(C7(CCC4(C[C@H](O)CCC(C)4C(CCC(C)56)7))))"
 "3b-hydroxy-D5-steroids"	"a 3&beta;-hydroxy-&delta;<sup>5</sup>-steroid"	[]	null	null	0	"CC34(CCC2(C(C\C=C1(C[C@@H](O)CCC(C)12))C(CCC([R])3)4))"
-"3FE-4S"	"a [3Fe-4S] iron-sulfur cluster"	["a Fe<SUB>3</SUB>S<SUB>4</SUB> cluster", "a Fe<SUB>3</SUB>S<SUB>4</SUB> center", "Fe<SUB>3</SUB>S<SUB>4</SUB>", "a Fe<SUB>3</SUB>S<SUB>4</SUB> iron-sulfur center", "a Fe<sub>3</sub>S<sub>4</sub> iron-sulfur cluster", "a [3Fe-4S] iron-sulfur center", "[3Fe-4S]", "Iron-sulfur (3Fe-4S)"]	"HS4Fe3"	295.781	0	"[Fe]12(S[Fe]3(S1[Fe](S2)S3))"
+"3FE-4S"	"a [3Fe-4S] iron-sulfur cluster"	["a Fe<SUB>3</SUB>S<SUB>4</SUB> cluster", "a Fe<SUB>3</SUB>S<SUB>4</SUB> center", "Fe<SUB>3</SUB>S<SUB>4</SUB>", "a Fe<SUB>3</SUB>S<SUB>4</SUB> iron-sulfur center", "a Fe<sub>3</sub>S<sub>4</sub> iron-sulfur cluster", "a [3Fe-4S] iron-sulfur center", "[3Fe-4S]", "Iron-sulfur (3Fe-4S)"]	"S4Fe3"	295.781	0	"[Fe]12(S[Fe](S1)S[Fe]S2)"
 "3Glc-Protopanaxadiol-ginsenosides"	"a protopanaxadiol-type ginsenoside with one glucosyl residue at position 3"	[]	null	null	0	"CC(C)=CCC[C@](C)(O[R])[C@@H]1(CC[C@@]2([C@@H]1[C@H](O)C[C@H]3([C@@]2(C)CC[C@H]4([C@]3(C)CC[C@@H](C(C)(C)4)O[C@H]5([C@@H]([C@H]([C@H](O)[C@@H](CO)O5)O)O))))C)"
 "3GlcGlc-Protopanaxadiol-ginsenosides"	"a protopanaxadiol-type ginsenoside with two glucosyl residues at position 3"	[]	null	null	0	"CC(C)=CCC[C@](C)(O[R])[C@@H]1(CC[C@@]2([C@@H]1[C@H](O)C[C@H]3([C@@]2(C)CC[C@H]4([C@]3(C)CC[C@@H](C(C)(C)4)O[C@H]5([C@@H]([C@H]([C@H](O)[C@@H](CO)O5)O)O[C@H]6([C@H](O)[C@H]([C@H](O)[C@@H](CO)O6)O)))))C)"
 "3OH-4P-OH-ALPHA-KETOBUTYRATE"	"(3R)-3-hydroxy-2-oxo-4 phosphooxybutanoate"	["3-hydroxy-4-phospho-hydroxy-&alpha;-ketobutyrate", "2-oxo-3-hydroxy-4-phosphobutanoate"]	"C4H4O8P"	211.045	-3	"C([C@H](C(C([O-])=O)=O)O)OP([O-])(=O)[O-]"
@@ -530,14 +533,17 @@
 "4-PHOSPHONOOXY-THREONINE"	"4-phosphooxy-L-threonine"	["L-threo-3-hydroxy-homoserine phosphate", "4-phosphonooxy-L-threonine", "4-phospho-hydroxy-threonine", "4-(phosphonooxy)-threonine", "<i>O</i>-phospho-4-hydroxy-L-threonine", "phospho-hydroxy-threonine", "4-(phosphonooxy)-L-threonine", "4-phospho-hydroxy-L-threonine"]	"C4H8NO7P"	213.083	-2	"C(=O)([O-])[C@@H]([NH3+])[C@H](O)COP([O-])(=O)[O-]"
 "4alpha-Methyl-3-Oxosteroids"	"a 4&alpha;-methyl-3-oxosteroid"	["a 3-oxo-4&alpha;-methylsteroid"]	null	null	0	"C[C@@H]4(C(=O)CCC2(C)(C(CCC1(C3(CCC([R])C(C)(CCC12)3)))4))"
 "4beta-Methyl-3-Oxosteroids"	"a 4&beta;-methyl-3-oxosteroid"	[]	null	null	0	"C[C@H]4(C(=O)CCC2(C)(C(CCC1(C3(CCC([R])C(C)(CCC12)3)))4))"
-"4Fe-2O-2S-Cluster"	"a [4Fe-2O-2S] iron-sulfur cluster"	["a Fe<sub>4</sub>S<sub>2</sub>O<sub>2</sub> iron-sulfur-oxygen cluster", "Iron-oxo-sulfur (4Fe-2O-2S)"]	"HO2S2Fe4"	320.515	1	"[Fe][S+]1([Fe](O)S[Fe](O[Fe])1)"
+"4Fe-2O-2S-Cluster"	"a [4Fe-2O-2S] iron-sulfur cluster"	["a Fe<sub>4</sub>S<sub>2</sub>O<sub>2</sub> iron-sulfur-oxygen cluster", "Iron-oxo-sulfur (4Fe-2O-2S)"]	"HO2S2Fe4"	320.515	0	"[Fe].[Fe]1(O[Fe])(S[Fe](O)S1)"
 "4prime-Hydroxyflavanones"	"a 4'-hydroxyflavanone"	[]	null	null	0	"c2([R7])(c([R6])c3(C(=O)C([R5])C(c1(c([R1])c([R2])c(O)c([R3])c([R4])1))Oc(c([R9])c([R8])2)3))"
 "4R-Limonene-1-2-epoxides"	"a (4R)-1,2-epoxymenth-8-ene"	["a (4R)-limonene-1,2-epoxide"]	"C10H16O"	152.236	0	"C=C([C@@H]1(CCC2(C(C1)O2)(C)))C"
 "4S-limonene-1-2-epoxides"	"a (4S)-1,2-epoxymenth-8-ene"	["a (4S)-limonene-1,2-epoxide"]	"C10H16O"	152.236	0	"C=C([C@H]1(CCC2(C(C1)O2)(C)))C"
 "5-10-METHENYL-THF"	"5,10-methenyltetrahydrofolate mono-L-glutamate"	["N5-N10-CH-THF mono-L-glutamate", "N5-N10-methenyltetrahydrofolate mono-L-glutamate", "CH-THF mono-L-glutamate", "5,10-methenyl-THF mono-L-glutamate", "anhydroleucovorin mono-L-glutamate", "methenyl-tetrahydrofolate mono-L-glutamate", "methenyl-THF mono-L-glutamate", "methenyl-H<sub>4</sub>F mono-L-glutamate", "5,10-methenyl-H<sub>4</sub>PteGlu<sub>1</sub>"]	"C20H20N7O6"	454.421	-1	"C4(Nc1(nc(N)[nH]c(=O)c1[N+]3(\[C@H](CN(c2(ccc(cc2)C(=O)N[C@@H](CCC([O-])=O)C([O-])=O))/C=3)4)))"
 "5-10-METHENYL-THF-GLU-N"	"a 5,10-methenyltetrahydrofolate"	["a 5,10-methenyl-THF"]	null	null	0	"C4(Nc1(nc(N)[nH]c(=O)c1[N+]3(\[C@H](CN(c2(ccc(cc2)C(=O)N[C@@H](CCC([R])=O)C([O-])=O))/C=3)4)))"
 "5-2-me-oxy-2-oxo-et-ur-34-tRNA"	"a 5-(2-methoxy-2-oxoethyl)uridine<sup>34</sup> in tRNA"	["a tRNA containing 5-(2-methoxy-2-oxoethyl)uridine<sup>34</sup>", "an mcm<sup>5</sup>U<sup>34</sup> in tRNA", "5-methoxycarbonylmethyl-uridine<sup>34</sup> in tRNA"]	null	null	-2	"COC(=O)Cc1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a transfer RNA])[C@@H](OP(=O)(O[a transfer RNA])[O-])[C@@H](O)2))"
+"5-6-DihydroUracil-23S-rRNAs"	"a 5,6-dihydrouracil in 23S rRNA"	["23S rRNA containing 5,6-dihydrouracil"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](N1(CCC(=O)NC(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
+"5-6-DihydroUracil-rRNAs"	"a 5,6-dihydrouracil in rRNA"	["rRNA containing 5,6-dihydrouracil"]	null	null	-2	"C(OP(=O)([O-])O[a ribosomal RNA])[C@H]2(O[C@@H](N1(CCC(=O)NC(=O)1))[C@H](O)[C@H](OP(=O)(O[a ribosomal RNA])[O-])2)"
 "5-6-DihydroUracil-tRNAs"	"a 5,6-dihydrouracil in tRNA"	["tRNA containing 5,6-dihydrouracil"]	null	null	-2	"C(OP(=O)([O-])O[a transfer RNA])[C@H]2(O[C@@H](N1(CCC(=O)NC(=O)1))[C@H](O)[C@H](OP(=O)(O[a transfer RNA])[O-])2)"
+"5-6-DihydroUracil2449-23S-rRNAs"	"a 5,6-dihydrouracil<sup>2449</sup> in 23S rRNA"	["23S rRNA containing 5,6-dihydrouracil at position 2449"]	null	null	-2	"C(OP(=O)([O-])O[a 23S rRNA])[C@H]2(O[C@@H](N1(CCC(=O)NC(=O)1))[C@H](O)[C@H](OP(=O)(O[a 23S rRNA])[O-])2)"
 "5-AMINO-5-DEOXY-D-GALACTOPYRANOSIDE"	"5-amino-5-deoxy-D-galactopyranoside"	[]	"C6H14NO5"	180.18	1	"C([C@@H]1([C@@H]([C@@H]([C@H](C([NH2+]1)O)O)O)O))O"
 "5-AMINO-LEVULINATE"	"5-aminolevulinate"	["5-amino-4-oxopentanoate", "5-amino-4-oxo-pentanoic acid", "5-amino-levulinic acid", "5-amino-4-oxopentanoic acid", "&delta;-aminolevulinate", "5-aminolevulinic acid", "5-amino-levulinate", "ALA", "&delta;-aminolevulinic acid"]	"C5H9NO3"	131.131	0	"C(C(C[NH3+])=O)CC([O-])=O"
 "5-AMINOPENTANOATE"	"5-aminopentanoate"	["5-aminovalerate", "&delta;-aminovalerate", "&delta;-amino-valeric acid", "5-aminopentanoic acid", "5-aminovaleric acid", "&delta;-aminovaleric acid", "&delta;-amino-<i>N</i>-valeric acid", "&delta;-amino-<i>N</i>-valerate"]	"C5H11NO2"	117.147	0	"C(CC[NH3+])CC(=O)[O-]"
@@ -630,7 +636,7 @@
 "6-Hydroxy-Purine-Nucleotides"	"a 6-hydroxypurine nucleotide"	[]	"C10H13N4O8P"	348.208	0	"C(OP(=O)(O)O)C1(C(O)C(O)C(O1)n2(cnc3(c2ncnc(O)3)))"
 "6-hydroxysphingosines"	"a (6R)-6-hydroxy-sphingosine ceramide"	[]	null	null	0	"CCCCCCCCCCCC[C@@H](O)CC[C@@H](O)[C@@H](NC(=O)[R])CO"
 "6-isopropenyl-3-methyloxepan-2-one"	"a 6-isopropenyl-3-methyloxepan-2-one"	["a 6-isopropenyl-3-methyl-2oxo-oxepanon", "an isoprop(en)ylmethyloxepan-2-one"]	"C10H16O2"	168.235	0	"C=C(C)C1(CCC(C)C(=O)OC1)"
-"6-Methoxy-3-Methyl-2-Polyprenyl-14-Benzoquinol"	"a 5-methoxy-2-methyl-3-(<i>all-trans</i>-polyprenyl)benzene-1,4-diol"	["a 6-methoxy-3-methyl-2-(<i>all-trans</i>-polyprenyl)-1,4-benzoquinol"]	null	null	0	"CC(/C[R])=C\Cc1(c(c(OC)cc(c1C)O)O)"
+"6-Methoxy-3-Methyl-2-Polyprenyl-14-Benzoquinol"	"a 3-demethoxyubiquinol"	["a 6-methoxy-3-methyl-2-(<i>all-trans</i>-polyprenyl)-1,4-benzoquinol", "a 5-methoxy-2-methyl-3-(<i>all-trans</i>-polyprenyl)benzene-1,4-diol"]	null	null	0	"CC(/C[R])=C\Cc1(c(c(OC)cc(c1C)O)O)"
 "6-O-sulfate-cellulose"	"6-<i>O</i>-sulfate cellulose"	[]	null	null	-2	"[C@@H]1([R1])([C@H](O)[C@@H](O)[C@@H](O[C@H](COS(=O)(=O)[O-])1)O[C@H]2([C@H](O)[C@@H](O)[C@@H](O[C@H](CO)2)O[C@H]3([C@H](O)[C@@H](O)[C@@H](O[C@H](COS(=O)(=O)[O-])3)O[C@H]4([C@H](O)[C@@H](O)[C@H]([R2])O[C@H](CO)4))))"
 "6-Phospho-b-D-galactosides"	"a 6-phospho-&beta;-D-galactoside"	[]	null	null	-2	"C(OP(=O)([O-])[O-])[C@@H]1([C@H](O)[C@@H]([C@@H](O)[C@H](O[R])O1)O)"
 "6-Phosphoglc-3-Phosphoglc-Amylopectins"	"a 6-phosphogluco-3-phosphogluco-amylopectin"	[]	null	null	0	null
@@ -677,7 +683,7 @@
 "8-Oxo-dGTP"	"8-oxo-dGTP"	["7,8-dihydro-8-oxo-2'-dGTP", "2'-deoxy-7,8-dihydro-8-oxo-guanosine 5'-triphosphate"]	"C10H12N5O14P3"	519.151	-4	"C(OP(=O)([O-])OP(=O)([O-])OP(=O)([O-])[O-])[C@H]3(O[C@@H](n1(c2(c([nH]c(=O)1)c(=O)[nH]c(N)n2)))C[C@H](O)3)"
 "8-SELENO-OCTANOATE"	"8-seleno-octanoate"	[]	"C8H15O2Se"	222.165	-1	"C(CCC[SeH])CCCC(=O)[O-]"
 "8-THIO-OCTANOATE"	"8-thio-octanoate"	[]	"C8H15O2S"	175.265	-1	"C(CCCS)CCCC(=O)[O-]"
-"8FE-7S"	"an [8Fe-7S] cluster"	["a Fe<SUB>8</SUB>S<SUB>7</SUB> cluster", "a Fe<SUB>8</SUB>S<SUB>7</SUB> center", "Fe<SUB>8</SUB>S<SUB>7</SUB>", "a Fe<SUB>8</SUB>S<SUB>7</SUB> iron-sulfur center", "a Fe<sub>8</sub>S<sub>7</sub> iron-sulfur cluster", "a [8Fe-7S] iron-sulfur center", "[8Fe-7S]", "P-cluster"]	null	null	0	"[Fe]157(S([R])[Fe]%10(S9([Fe]2(S61([Fe]3(S([R])2)(S([Fe]4([R])(S3[Fe]([R])(S45)6))7)))S8([Fe]([R])([R])S([Fe]([R])89)%10))))"
+"8FE-7S"	"an [8Fe-7S] cluster"	["a Fe<SUB>8</SUB>S<SUB>7</SUB> cluster", "a Fe<SUB>8</SUB>S<SUB>7</SUB> center", "Fe<SUB>8</SUB>S<SUB>7</SUB>", "a Fe<SUB>8</SUB>S<SUB>7</SUB> iron-sulfur center", "a Fe<sub>8</sub>S<sub>7</sub> iron-sulfur cluster", "a [8Fe-7S] iron-sulfur center", "[8Fe-7S]", "P-cluster"]	null	null	0	"[Fe]3(S[Fe]1(S[Fe]([R])S1))(S2([Fe]S[Fe]([R])[R])([Fe](S[R])S[Fe]([R])2))(S[Fe]([R])S3).[R]"
 "9-apo-Carotenones"	"a 9-apo-carotenone"	[]	null	null	0	null
 "9-cis-Epoxycarotenoids"	"a 9-<i>cis</i>-epoxycarotenoid"	[]	null	null	0	"CC([R])=C/C=C/C(\C)=C/C=C/C=C(C)/C=C/C=C(C)\C=C\[C@@]12(O[C@@](C)1C[C@@H](O)CC(C)(C)2)"
 "9-Methyl-sphing-4-8-dienine-ceramides"	"a 9-methyl-(4<i>E</i>,8<i>E</i>)-sphinga-4,8-dienine ceramide"	["a 9-methyl-sphinga-4,8-dienine ceramide"]	null	null	0	"CCCCCCCCCC(\C)=C/CC/C=C/[C@H]([C@@H](NC(=O)[R])CO)O"
@@ -695,7 +701,7 @@
 "A-DARA-HEX-2:5_2:KETO"	"a-dara-HEX-2:5|2:keto"	["&alpha;-D-Fru<i>f</i>"]	null	null	0	null
 "A-DARA-PEN-1:4"	"a-dara-PEN-1:4"	["&alpha;-D-Ara<i>f</i>"]	null	null	0	null
 "A-DEEP-ROUGH-FORM-LIPOPOLYSACCHARIDE"	"a deep rough form lipopolysaccharide"	["Re-LPS"]	null	null	0	null
-"a-denuded-peptidoglycan"	"a denuded peptidoglycan"	["a peptidoglycan with cleaved peptide", "[GlcNAc-(1 &rarr; 4)-MurNAc]<sub>n</sub>", "peptide-free peptidoglycan"]	null	null	-2	"C[C@@H](O[C@@H]4([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)[O-])C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4))C(=O)[O-]"
+"a-denuded-peptidoglycan"	"a denuded glycan"	["[GlcNAc-(1 &rarr; 4)-MurNAc]<sub>n</sub>", "peptide-free peptidoglycan"]	null	null	-2	"C[C@@H](O[C@@H]4([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)[O-])C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4))C(=O)[O-]"
 "A-DGAL-HEX-1:4"	"a-dgal-HEX-1:4"	["&alpha;-D-Gal<i>f</i>"]	null	null	0	null
 "A-DGAL-HEX-1:5"	"a-dgal-HEX-1:5"	["&alpha;-D-Gal<i>p</i>"]	null	null	0	null
 "A-DGAL-HEX-1:5_6:A"	"a-dgal-HEX-1:5|6:a"	["&alpha;-D-GalA"]	null	null	0	null
@@ -715,6 +721,7 @@
 "a-DNA-3-alpha-beta-unsaturated-aldehyde"	"a [DNA]-3'-&alpha;,&beta;-unsaturated aldehyde"	[]	null	null	-2	"C(=O)/C=C/[C@@H](O)COP(O[C@H]1(C[C@H]([a nucleobase])O[C@H](COP(=O)([O-])O[a deoxyribonucleic acid])1))(=O)[O-]"
 "A-DNMP-L-TYROSINE"	"a 2'-deoxyribonucleoside 5'-monophosphate-L-tyrosine"	["tyrosinyl-5'-dNMP"]	null	null	-1	"C(OP(=O)([O-])Oc1(ccc(cc1)C[C@@H](C(=O)[O-])[NH3+]))[C@H]2(O[C@@H]([a nucleobase])C[C@H](O)2)"
 "A-DONOR-PG-WITH-MESODAP-PENTAPEPTIDE"	"a donor peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanyl-D-alanine) pentapeptide"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(=O)N[C@H](C)C(=O)N[C@H](C)C(=O)[O-])C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
+"A-DONOR-PG-WITH-MESODAP-TETRAPEPTIDE"	"a donor peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanine) tetrapeptide"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
 "A-DXYL-PEN-1:5"	"a-dxyl-PEN-1:5"	["&alpha;-D-Xyl<i>p</i>"]	null	null	0	null
 "A-GALACTOSYLCERAMIDE"	"a &beta;-D-galactosyl-<i>N</i>-acylsphingosine"	["a galactosylceramide"]	null	null	0	"CCCCCCCCCCCCC/C=C/[C@H]([C@H](CO[C@@H]1(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)1))NC(=O)[R])O"
 "a-GlcNAc-16-anhydro-MurNAc-tripeptide"	"a GlcNAc-1,6-anhydro-MurNAc-tripeptide"	[]	null	null	-1	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCCC([R])[NH3+])C(=O)[O-])C(=O)[O-])=O"
@@ -738,6 +745,8 @@
 "a-lyso-cardiolipin"	"a lyso-cardiolipin"	["lyso-CL"]	null	null	0	null
 "a-mature-triacylated-lipoprotein"	"an <i>N</i>-acyl-(<i>S</i>-diacyl-<i>sn</i>-glyceryl)-L-cysteinyl-[lipoprotein]"	[]	null	null	0	"C(=O)([a prolipoprotein])[C@@H](NC(=O)[R3])CSC[C@H](OC([R2])=O)COC([R1])=O"
 "a-methyl-beta-cyclodextrin"	"a methylated &beta;-cyclodextrin"	[]	null	null	0	null
+"A-MURAYMYCIN"	"a muraymycin"	[]	null	null	0	"CC(C)C([R1])[C@H](NC([C@H]([C@@H]1(CC\N=C(N)/N1))NC(N[C@@H](C(C)C)C(O)=O)=O)=O)C(=O)NCCCN[C@H](C(O)=O)[C@H](O[R2])[C@@H]2([C@@H](O)[C@@H](O)[C@@H](O2)n3(ccc(=O)[nH]c3=O))"
+"a-nascent-peptidoglycan-undecaprenol-anchored"	"a nascent peptidoglycan (undecaprenol-anchored)"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]4(O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R1])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCCC([R])[NH3+])C(N[C@H](C)C(=O)N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))[C@H](O)[C@@H](NC(=O)C)3))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCCC([R])[NH3+])C(N[C@H](C)C(=O)N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)4))([O-])=O)(=O)[O-]"
 "A-PEPTIDOGLYCAN-MDAP-TRIPEPTIDE"	"a peptidoglycan internal segment with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimelate) tripeptide"	["peptidoglycan tripeptide, glycan chain 1", "a peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<I>meso</I>-2,6-diaminopimelate) tripeptide"]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(=O)[O-])C(=O)[O-])=O"
 "A-PHTHALYLAMIDE"	"a phthalylamide"	["a phthalyl (<i>N</i> substituted) amide"]	null	null	-1	"c1(ccc(C(=O)[O-])c(c1)C(=O)N[R])"
 "a-polycistronic-transcript-containing-tRNA-amp-mRNA"	"a polycistronic transcript containing tRNA &amp; mRNA"	[]	null	null	0	null
@@ -756,6 +765,7 @@
 "Acceptor-Xyloglucans"	"an acceptor xyloglucan"	[]	null	null	0	null
 "ACET"	"acetate"	["acetate", "acetic acid", "ethanoate"]	"C2H3O2"	59.044	-1	"CC([O-])=O"
 "ACETALD"	"acetaldehyde"	["acetic aldehyde", "ethanal", "aldehyde", "ethyl aldehyde"]	"C2H4O"	44.053	0	"CC=O"
+"Acetals"	"an acetal"	[]	null	null	0	null
 "ACETAMIDE"	"acetamide"	[]	"C2H5NO"	59.068	0	"CC(=O)N"
 "Acetan"	"acetan"	[]	null	null	-3	"C[C@@H]%21(O[C@@H](OC[C@H]1(O[C@H]([C@H](O)[C@@H](O)[C@H](O)1)OC[C@H]2(O[C@@H]([C@H](O)[C@@H](O)[C@H](O)2)O[C@H]3([C@H](O)[C@@H](O)[C@@H](O[C@H](C([O-])=O)3)O[C@H]4([C@@H](O)[C@H](O)[C@@H](COC(=O)C)O[C@@H]4O[C@H]5([C@H](O[R1])[C@@H](CO)O[C@H]([C@H](O)5)O[C@H]%20([C@H](O)[C@@H](O)[C@@H](O[C@H]%11([C@H](O[C@H]%10(O[C@H](COC(=O)C)[C@@H](O)[C@H](O)[C@H](O[C@@H]9(O[C@H](C([O-])=O)[C@@H](O[C@H]8(O[C@H](CO[C@@H]7(O[C@H](CO[C@@H]6(O[C@@H](C)[C@H](O)[C@@H](O)[C@@H](O)6))[C@@H](O)[C@H](O)[C@@H](O)7))[C@@H](O)[C@H](O)[C@@H](O)8))[C@H](O)[C@@H](O)9))%10))[C@@H](O)[C@@H](O[C@H](CO)%11)O[C@H]%19([C@H](O)[C@@H](O)[C@@H](O[C@H]%17([C@H](O[C@H]%16(O[C@H](COC(=O)C)[C@@H](O)[C@H](O)[C@H](O[C@@H]%15(O[C@H](C([O-])=O)[C@@H](O[C@H]%14(O[C@H](CO[C@@H]%13(O[C@H](CO[C@@H]%12(O[C@@H](C)[C@H](O)[C@@H](O)[C@@H](O)%12))[C@@H](O)[C@H](O)[C@@H](O)%13))[C@@H](O)[C@H](O)[C@@H](O)%14))[C@H](O)[C@@H](O)%15))%16))[C@@H](O)[C@@H](O[C@H](CO)%17)O[C@H]%18([C@H](O)[C@@H](O)[C@H](O[C@H](COC(=O)C)%18)O[R2])))O[C@H](COC(=O)C)%19)))O[C@H](COC(=O)C)%20)))))))[C@H](O)[C@H](O)[C@@H](O)%21)"
 "Acetate-esters"	"an acetyl ester"	["an acetate ester", "an acetic ester"]	null	null	0	"CC(=O)O[R]"
@@ -871,6 +881,7 @@
 "Aldotrioses"	"an aldotriose"	[]	null	null	0	null
 "Aldoxime"	"an aldoxime"	[]	null	null	0	"C(\[R1])=N\O"
 "ALGINATE"	"alginate"	["(alginate)n", "alginic acid", "algin"]	null	null	-5	"C(=O)([O-])[C@H]1([C@@H](O[R1])[C@H](O)[C@H](O)[C@@H](O1)O[C@H]5([C@H](O)[C@H](O)[C@H](O[C@H]2([C@H](O)[C@H](O)[C@@H](O[C@@H](C(=O)[O-])2)O[C@@H]4([C@@H](C([O-])=O)O[C@@H](O[C@H]3([C@H](O)[C@H](O)[C@@H](O[C@@H](C(=O)[O-])3)O[R2]))[C@@H](O)[C@@H](O)4)))O[C@H](C([O-])=O)5))"
+"Alicyclic-Ketones"	"an alicyclic ketone"	[]	null	null	0	null
 "Aliphatic-aldehydes-or-ketones"	"an aliphatic aldehyde or ketone"	[]	null	null	0	null
 "Aliphatic-Aldoximes"	"an aliphatic aldoxime"	[]	null	null	0	"C(/[R])=N\O"
 "Aliphatic-Alpha-Omega-Diamines"	"an aliphatic &alpha;,&omega;-diamine"	["aliphatic &alpha;,&omega;-diamine", "an &alpha;,&omega;-diamine", "&alpha;,&omega;-diamine"]	null	null	0	null
@@ -915,7 +926,7 @@
 "ALL-TRANS-HEXAPRENYL-DIPHOSPHATE"	"all-<i>trans</i>-hexaprenyl diphosphate"	["hexaprenyl-diphosphate"]	"C30H49O7P2"	583.66	-3	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/COP(=O)([O-])OP(=O)([O-])[O-]"
 "ALL-TRANS-PENTAPRENYL-DIPHOSPHATE"	"all-<i>trans</i>-pentaprenyl diphosphate"	["pentaprenyl-diphosphate", "geranylfarnesyl diphosphate", "geranylfarnesyl-PP", "geranylfarnesyl-diphosphate", "2,6,10,14-<i>trans</i>-pentaprenyl diphosphate", "(2E,6E,10E,14E)-geranylfarnesyl diphosphate", "<i>all-trans</i>-geranylfarnesyl diphosphate", "<i>all-trans</i>-farnesylgeranyl diphosphate"]	"C25H41O7P2"	515.542	-3	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(\C)=C/CCC(\C)=C/COP(=O)([O-])OP(=O)([O-])[O-]"
 "All-trans-Retinyl-Esters"	"an <i>all-trans</i>-retinyl ester"	[]	null	null	0	"CC(/C=C/C1(/C(C)(C)CCCC(/C)=1))=C\C=C\C(/C)=C\COC(=O)[R]"
-"ALLANTOATE"	"allantoate"	["allantoic acid"]	"C4H7N4O4"	175.124	-1	"C(C(=O)[O-])(NC(=O)N)NC(=O)N"
+"ALLANTOATE"	"allantoate"	["2,2-bis(aminocarbonylamino)ethanoate", "allantoate", "allantoate ion", "bis(carbamoylamino)acetate", "bis[(aminocarbonyl)amino]acetate", "diureidoacetate"]	"C4H7N4O4"	175.124	-1	"C(C(=O)[O-])(NC(=O)N)NC(=O)N"
 "ALLANTOIN"	"allantoin"	[]	"C4H6N4O3"	158.116	0	"C1(NC(=O)N)(NC(=O)NC(=O)1)"
 "ALLO-THR"	"DL-allothreonine"	["allothreonine", "allo-thr"]	"C4H9NO3"	119.12	0	"CC(O)C([NH3+])C([O-])=O"
 "ALLOLACTOSE"	"allolactose"	["&beta;-D-galactopyranosyl-(1&rarr;6)-D-glucopyranose"]	"C12H22O11"	342.299	0	"C([C@H]1(O[C@H]([C@@H]([C@H]([C@H]1O)O)O)OC[C@H]2(OC([C@@H]([C@H]([C@@H]2O)O)O)O)))O"
@@ -957,7 +968,7 @@
 "Alpha-lactose"	"&alpha;-lactose"	["&beta;-D-galactopyranosyl-(1&rarr;4)-&alpha;-D-glucopyranose", "&alpha;-D-lactose", "&beta;-D-Gal-(1&rarr;4)-&alpha;-D-Glc"]	"C12H22O11"	342.299	0	"C([C@H]1(O[C@H]([C@@H]([C@H]([C@H]1O)O)O)O[C@@H]2([C@@H](CO)O[C@@H]([C@@H]([C@H]2O)O)O)))O"
 "Alpha-linolenoyl-groups"	"a [glycerolipid]-&alpha;-linolenate"	["a [glycerolipid]-(9,12,15)-linolenic acid", "a [glycerolipid]-(9,12,15)-linolenate", "a [glycerolipid]-(9Z,12Z,15Z)-octadeca-9,12,15-trienoate", "a [glycerolipid]-9Z,12Z,15Z-octadecatrienoic acid"]	null	null	0	"CC\C=C/C\C=C/C\C=C/CCCCCCCC(=O)[a glycerolipid]"
 "ALPHA-METHYLMETHIONINE"	"&alpha;-methylmethionine"	["2-methylmethionine"]	"C6H13NO2S"	163.234	0	"C[C@](C(=O)[O-])([NH3+])CCSC"
-"ALPHA-N-ACETYLNEURAMINYL-23-BETA-ETCETER"	"an <i>N</i>-acetyl-&alpha;-neuraminyl-(2&rarr;3)-&beta;-D-galactosyl-(1&rarr;4)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-R"	["an <i>N</i>-acetyl-&alpha;-neuraminyl-2,3-&beta;-D-galactosyl-1,4-<i>N</i>-acetyl-D-glucosaminyl-glycoprotein"]	null	null	-1	"CC(=O)N[C@@H]3([C@H](C[C@@](C(=O)[O-])(O[C@@H]1([C@@H](O)[C@@H](O[C@H](CO)[C@H](O)1)O[C@@H]2([C@@H](CO)O[C@H]([C@H](NC(C)=O)[C@@H](O)2)O[R])))O[C@H]3[C@H](O)[C@H](O)CO)O)"
+"ALPHA-N-ACETYLNEURAMINYL-23-BETA-ETCETER"	"an <i>N</i>-acetyl-&alpha;-neuraminyl-(2&rarr;3)-&beta;-D-galactosyl-(1&rarr;4)-<i>N</i>-acetyl-&beta;-D-glucosaminyl-R"	["an <i>N</i>-acetyl-&alpha;-neuraminyl-2,3-&beta;-D-galactosyl-1,4-<i>N</i>-acetyl-D-glucosaminyl-glycoprotein", "a Sial-(2&rarr;3)-&beta;-D-Gal-(1&rarr;4)-GlcNAc-R"]	null	null	-1	"CC(=O)N[C@@H]3([C@H](C[C@@](C(=O)[O-])(O[C@@H]1([C@@H](O)[C@@H](O[C@H](CO)[C@H](O)1)O[C@@H]2([C@@H](CO)O[C@H]([C@H](NC(C)=O)[C@@H](O)2)O[R])))O[C@H]3[C@H](O)[C@H](O)CO)O)"
 "ALPHA-N-ACETYLNEURAMINYL-23-ETCETERA"	"an <i>N</i>-acetyl-&alpha;-neuraminyl-(2&rarr;3)-&beta;-D-galactosyl-R"	["an <i>N</i>-acetylneuraminyl-&alpha;-2,3-galactosyl-&beta;-oligosaccharide", "an <i>N</i>-acetyl-&alpha;-neuraminyl-2,3-&beta;-D-galactosyl-R"]	null	null	-1	"CC(=O)N[C@@H]2([C@H](C[C@@](C(=O)[O-])(O[C@@H]1([C@@H](O)[C@H](O[R])O[C@H](CO)[C@H](O)1))O[C@H]2[C@H](O)[C@H](O)CO)O)"
 "ALPHA-N-ACETYLNEURAMINYL-ETCETERA"	"an <i>N</i>-acetyl-&alpha;-neuraminyl-(2->3)-&beta;-D-galactosyl-(1->3)-<i>N</i>-acetyl-&alpha;-D-galactosaminyl-R"	[]	null	null	-1	"CC(=O)N[C@@H]3([C@H](C[C@](O[C@H]2([C@@H](O)[C@@H](CO)O[C@@H](O[C@H]1([C@@H](O)[C@@H](CO)O[C@H](O[R])[C@H](NC(=O)C)1))[C@H](O)2))(C(=O)[O-])O[C@H]3[C@H](O)[C@H](O)CO)O)"
 "alpha-N-Peptidyl-LGlutamate"	"a [protein] C-terminal L-glutamate"	["a [protein] with C-terminal &alpha;-L-glutamate"]	null	null	-2	"C(=O)([O-])CC[C@@H](C(=O)[O-])N[a protein]"
@@ -993,6 +1004,7 @@
 "AMINOACYL-PHOSPHATIDYLGLYCEROL"	"a 3-aminoacyl-phosphatidylglycerol"	[]	null	null	0	"[C@@H]([R3])(C(=O)OC[C@@H](COP(OC[C@@H](COC([R1])=O)OC([R2])=O)([O-])=O)O)[NH3+]"
 "Aminoalkylphosphinates"	"an aminoalkylphosphinate"	[]	null	null	0	null
 "Aminoalkylphosphonates"	"an (aminoalkyl)phosphonate"	[]	null	null	0	null
+"Aminobenzoates"	"an aminobenzoate"	[]	null	null	0	null
 "Aminoglycoside-Antibiotics"	"an aminoglycoside antibiotic"	[]	null	null	0	null
 "Aminoglycosides"	"an aminoglycoside"	["a aminoglycoside"]	null	null	0	null
 "AMINOMALONATE"	"aminomalonate"	["aminomalonic acid"]	"C3H4NO4"	118.069	-1	"C([NH3+])(C(=O)[O-])C(=O)[O-]"
@@ -1032,6 +1044,7 @@
 "Anthocyanidins"	"an anthocyanidin"	[]	null	null	1	"c3(c(c([R5])c(c1(c(cc2(c([o+]1)cc(c([R8])c2[R7])[R9]))[R6]))c([R1])c3[R2])[R4])[R3]"
 "Anthocyanins"	"an anthocyanin"	["an anthocyanidin glycoside"]	null	null	0	null
 "Anthracenes"	"an anthracene"	[]	null	null	0	null
+"Anthracenones"	"an anthracenone"	[]	null	null	0	null
 "Anthracyclines"	"an anthracycline"	[]	null	null	0	null
 "ANTHRANILATE"	"anthranilate"	["anthranilic acid", "2-aminobenzoic acid", "vitamin L1", "<i>o</i>-aminobenzoic acid", "2-aminobenzoate", "<i>o</i>-aminobenzoate"]	"C7H6NO2"	136.13	-1	"C(c1(c(cccc1)N))(=O)[O-]"
 "anthraniloyl-PqsD"	"a [PqsD protein]-<i>S</i>-anthraniloyl-L-cysteine"	[]	null	null	0	"C(=O)([a [PqsD protein]])[C@@H](N[a [PqsD protein]])CSC(c1(c(cccc1)N))=O"
@@ -1040,6 +1053,7 @@
 "Antigen-BLey"	"a B (Lewis y) histo-blood group epitope"	["a BLe<sup>y</sup> histo-blood group antigen"]	null	null	0	"C[C@H]5([C@@H](O)[C@@H](O)[C@H](O)[C@H](O[C@@H]1([C@@H](NC(=O)C)[C@H](O[R])O[C@H](CO)[C@H]1O[C@H]4(O[C@H](CO)[C@H](O)[C@H](O[C@H]2(O[C@@H]([C@H](O)[C@H](O)[C@@H](O)2)CO))[C@@H](O[C@@H]3(O[C@@H](C)[C@@H](O)[C@@H](O)[C@H](O)3))4)))O5)"
 "Antigen-Leb"	"a Lewis b epitope"	["an Le<sup>b</sup> antigen", "a Lewis b antigen", "a histo-blood group Lewis b antigen"]	null	null	0	"C[C@H]4([C@@H](O)[C@@H](O)[C@H](O)[C@H](O[C@H]3([C@H](O[C@@H]2(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O[C@@H]1(O[C@@H](C)[C@@H](O)[C@@H](O)[C@H](O)1))2))[C@@H](NC(=O)C)[C@H](O[R])O[C@H](CO)3))O4)"
 "Antigen-Ley"	"a Lewis y epitope"	["a histo-blood group Le<sup>y</sup> antigen", "AH6 antigen"]	null	null	0	"C[C@H]4([C@@H](O)[C@@H](O)[C@H](O)[C@H](O[C@@H]1([C@@H](NC(=O)C)[C@H](O[R])O[C@H](CO)[C@H]1O[C@@H]3(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O[C@@H]2(O[C@@H](C)[C@@H](O)[C@@H](O)[C@H](O)2))3)))O4)"
+"Antimicrobial-Peptides"	"an antimicrobial peptide"	[]	null	null	0	null
 "ANTIMONITE"	"antimonite"	[]	"O3Sb"	169.758	-3	"[O-][Sb]([O-])[O-]"
 "Apiogalacturonans"	"an apiogalacturonan"	[]	null	null	-3	"C(O)[C@]4(O)([C@@H](O)[C@H](O[C@H]3([C@@H](O[C@H]2(O[C@@H]([C@H](O[C@H]1(O[C@@H]([C@@H]([C@@H]([C@H]1O)O)[R1])C([O-])=O))[C@@H]([C@H]2O)O)C(=O)[O-]))[C@H](O[C@@H]([C@@H]3O)[R2])C(=O)[O-]))CC4)"
 "Apo-Base-off-His-on-Enzymes"	"an <i>apo</i>-[\"base-off/His-on\" B12-enzyme]"	[]	null	null	0	"C([C@H](Cc1(nc[nH]c1))N[a protein])([a protein])=O"
@@ -1087,6 +1101,7 @@
 "Aryl-Carrier-Protein-Group"	"[aryl-carrier protein] group"	[]	null	null	-1	"CC(C)(COP(=O)([O-])OC[C@H](N[an aryl-carrier protein])C(=O)[an aryl-carrier protein])[C@@H](O)C(=O)NCCC(=O)NCCS"
 "Aryl-Dialkyl-Phosphate"	"an aryl dialkyl phosphate"	[]	null	null	0	"c1([R3])(c([R2])c([R1])c(OP(O[R7])(=O)O[R6])c([R5])c([R4])1)"
 "Aryl-Glucosides"	"an aryl glucoside"	[]	null	null	0	null
+"Aryl-Lactates"	"an aryl-lactate"	[]	null	null	0	null
 "Aryl-Phosphates"	"an aryl phosphate"	[]	null	null	0	null
 "Aryl-sulfates"	"an aryl sulfate"	["an aromatic sulfate", "a phenol sulfate"]	null	null	-1	"c1(c(c([R5])c(c([R1])c([R2])1)OS(=O)(=O)[O-])[R4])[R3]"
 "Arylalkylamines"	"an arylalkylamine"	[]	null	null	0	"N[R]"
@@ -1107,6 +1122,8 @@
 "Azaarenes"	"an azaarene"	[]	null	null	0	null
 "Azabicycloalkanes"	"an azabicycloalkane"	[]	null	null	0	null
 "Azasugars"	"an azasugar"	[]	null	null	0	null
+"Azo-Compounds"	"an azo compound"	[]	null	null	0	null
+"Azobenzenes"	"an azobenzene"	[]	null	null	0	null
 "Azoles"	"an azole"	[]	null	null	0	null
 "B-ALANINE"	"&beta;-alanine"	["3-azaniumylpropanoate", "3-aminopropanoate", "3-aminopropanoic acid"]	"C3H7NO2"	89.094	0	"C(C[NH3+])C([O-])=O"
 "B-antigen"	"a B antigen"	["a histo-blood group substance B", "an &alpha;-D-galactosyl-(1->3)-[&alpha;-L-fucosyl-(1->2)]-&beta;-D-galactosyl-R", "a B histo-blood group antigen"]	null	null	0	"C[C@H]3([C@@H](O)[C@@H]([C@@H]([C@@H](O[C@H]2([C@@H](O[C@H](CO)[C@@H]([C@H](O[C@H]1(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)1))2)O)O[R]))O3)O)O)"
@@ -1153,7 +1170,7 @@
 "Bacteriocins"	"a bacteriocin"	[]	null	null	0	null
 "Bases"	"a nucleobase"	["a nucleotide base", "a nitrogenous base"]	null	null	0	"[a nucleobase]"
 "Basic-Amino-Acids"	"a basic amino acid"	[]	null	null	0	"[C@@H]([NH3+])([R])C([O-])=O"
-"BCAA-dehydrogenase-2MB-DH-lipoyl"	"an [<i>apo</i> BCAA dehydrogenase E2 protein] <i>N<sup>6</sup></i>-<i>S</i>-[2-methylbutanoyl]dihydrolipoyl-L-lysine"	[]	null	null	0	"CCC(C)C(=O)SCCC(S)CCCCC(=O)NCCCC[C@H](N[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])C(C[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])=O"
+"BCAA-dehydrogenase-2MB-DH-lipoyl"	"an [<i>apo</i> BCAA dehydrogenase E2 protein] <i>N<sup>6</sup></i>-<i>S</i>-[(2<i>S</i>)-2-methylbutanoyl]dihydrolipoyl-L-lysine"	[]	null	null	0	"CC[C@H](C)C(=O)SCCC(S)CCCCC(=O)NCCCC[C@H](N[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])C(C[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])=O"
 "BCAA-dehydrogenase-2MP-DH-lipoyl"	"an [<i>apo</i> BCAA dehydrogenase E2 protein] <i>N<sup>6</sup></i>-<i>S</i>-[2-methylpropanoyl]dihydrolipoyl-L-lysine"	[]	null	null	0	"CC(C)C(=O)SCCC(S)CCCCC(=O)NCCCC[C@@H](C(=O)C[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])N[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component]"
 "BCAA-dehydrogenase-3MB-DH-lipoyl"	"a [<i>apo</i> BCAA dehydrogenase E2 protein] <i>N<sup>6</sup></i>-<i>S</i>-[3-methylbutanoyl]dihydrolipoyl-L-lysine"	[]	null	null	0	"CC(C)CC(=O)SCC[C@H](S)CCCCC(=O)NCCCC[C@@H](C(=O)C[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])N[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component]"
 "BCAA-dehydrogenase-DH-lipoyl"	"an [<i>apo</i> BCAA dehydrogenase E2 protein] <i>N<sup>6</sup></i>-dihydrolipoyl-L-lysine"	[]	null	null	0	"C([[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component])C(=O)[C@H](CCCCNC(CCCCC(S)CCS)=O)N[[branched chain &alpha;-keto acid dehydrogenase] lipoyl carrier component]"
@@ -1256,11 +1273,9 @@
 "Brassinosteroid-sulfates"	"a brassinosteroid sulfate"	[]	null	null	0	null
 "Brassinosteroids"	"a brassinosteroid"	[]	null	null	0	null
 "BRIJ97"	"Brij 97"	["Brij 96", "polyoxyethylene (10) oleoyl ether"]	"C38H76O11"	709.012	0	"CCCCCCCC\C=C/CCCCCCCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCO"
-"Bromide"	"an organobromine compound"	["RBr"]	null	null	0	"Br[R]"
 "BROMOACETATE"	"bromoacetate"	[]	"C2H2O2Br"	137.941	-1	"C(Br)C([O-])=O"
 "Bromoaromtic-Compounds"	"a bromoaromatic compound"	[]	null	null	0	null
 "Buffers"	"a buffer"	[]	null	null	0	null
-"Bulgecins"	"a bulgecin"	[]	"C15H26N2O11S"	442.437	0	"CC(=O)C2(CC(OC1(OC(CO)C(OS(=O)(=O)O)C(O)C(NC(=O)C)1))C(CO)N2)"
 "BUTANAL"	"1-butanal"	["butanal", "butyraldehyde", "n-butyraldehyde", "butan-1-al"]	"C4H8O"	72.107	0	"CCCC=O"
 "BUTANEDIOL"	"(R,R)-2,3-butanediol"	["D(-)-2,3-butanediol", "2,3-butylene glycol", "2,3-butanediol", "butanediol", "(R,R)-butane-2,3-diol", "(R,R)-2,3-butylene glycol"]	"C4H10O2"	90.122	0	"C[C@H]([C@H](O)C)O"
 "BUTANOL"	"butan-1-ol"	["n-butyl alcohol", "n-butanol", "butanol", "1-hydroxybutane", "1-butanol"]	"C4H10O"	74.122	0	"CCCCO"
@@ -1413,6 +1428,7 @@
 "Chlorins"	"a chlorin"	[]	"C20H16N4"	312.373	0	"c4(c3(\C=C5(\C=C/C(\C=C1(CCC(\N1)=C\C2(\C=C/C(/N=2)=C/c([nH]3)c4)))=N5)))"
 "CHLOROACETALDEHYDE"	"chloroacetaldehyde"	["2-chloroacetaldehyde", "2-chloroethanal", "chloroaldehyde", "chloroethanal", "monochloroacetaldehyde"]	"C2H3OCl"	78.498	0	"C(C=O)Cl"
 "Chloroaromatic-Compounds"	"a chloroaromatic compound"	[]	null	null	0	null
+"Chlorobenzenes"	"a chlorobenzene"	[]	null	null	0	null
 "Chlorophyllide-e"	"a bacteriochlorophyllide <i>e</i>"	[]	null	null	-2	"C([R2])([R1])CC6(/C7(\C=c4(c(C[R3])c2(C(=O)[CH-]C3(\C1(/[C@@H](CCC(=O)[O-])[C@H](C)C(\N=1)=C(C)\c5(c(C)c(C(O)C)c(n([Mg]n(c\2=3)4)5)\C=C(C(/C=O)=6)/N=7)))))))"
 "Chlorophyllides"	"a chlorophyllide"	[]	null	null	0	null
 "Chlorophylls"	"a chlorophyll"	["chlorophyll"]	null	null	0	null
@@ -1502,7 +1518,7 @@
 "Corphins"	"a corphin"	[]	"C20H18N4"	null	0	"C4(\CC3(/C=C5(CCC(/C=c1(ccc(\[nH]1)=C\C2(/CCC(\N=2)=C\C(\N=3)=4)))=N\5)))"
 "Corrinoids"	"a corrinoid"	[]	null	null	0	null
 "Corrins"	"a corrin"	["corrinoid"]	null	null	0	"C1(C3(\N=C(C([R])([R])1)C(/[R])=C2(C([R])([R])C([R])([R])C([R])(N2)C5([R])(C([R])([R])C(C(C(/[R])=C4(C([R])([R])C(C(C(/[R])=3)=N4)([R])[R]))=N5)([R])[R]))))([R])([R])"
-"CORTISOL"	"cortisol"	["11&beta;-cortisol", "hydrocortisone"]	"C21H30O5"	362.465	0	"C[C@@]34([C@H]2([C@@H](O)C[C@@]1(C)([C@@H](CC[C@@](C(=O)CO)(O)1)[C@@H]2CCC/3=C\C(=O)CC4)))"
+"CORTISOL"	"cortisol"	["(11beta)-11,17,21-trihydroxypregn-4-ene-3,20-dione", "11beta,17alpha,21-trihydroxy-4-pregnene-3,20-dione", "11beta-hydrocortisone", "17-hydroxycorticosterone", "4-pregnen-11beta,17alpha,21-triol-3,20-dione", "cortisol", "hidrocortisona", "hydrocortisone", "hydrocortisonum", "Kendall's compound F", "Reichstein's substance M", "4-pregnen-11beta,17,21-triol-20,3-dione"]	"C21H30O5"	362.465	0	"C[C@@]34([C@H]2([C@@H](O)C[C@@]1(C)([C@@H](CC[C@@](C(=O)CO)(O)1)[C@@H]2CCC/3=C\C(=O)CC4)))"
 "Coumarins"	"a coumarin"	["a 1,2-benzopyrone"]	"C9H6O2"	146.145	0	"c2(ccc1(OC(=O)\C=C/c1c2))"
 "CPD-10016"	"tacrolimus"	["FK-506", "Prograf", "Advagraf", "Fujimycin", "Protopic", "Protopy", "LCP-Tacro", "Ambap5429", "BSPBio-001279"]	"C44H69NO12"	804.029	0	"C=CC[C@@H]2(/C=C(C)/C[C@@H](C[C@H](OC)[C@@H]4([C@@H](OC)C[C@@H](C)[C@](O)(C(C(=O)N3([C@H](C(=O)O[C@H](C(\C)=C/C1(CC[C@@H](O)[C@H](OC)C1))[C@H](C)[C@@H](O)CC2=O)CCCC3))=O)O4))C)"
 "CPD-10071"	"(5R)-6-hydroxy-5-isopropenyl-2-methylhexanoate"	[]	"C10H17O3"	185.242	-1	"C=C(C)[C@H](CCC(C)C(=O)[O-])CO"
@@ -1571,6 +1587,7 @@
 "CPD-1109"	"an <i>N</i>-acyl-D-mannosamine"	[]	null	null	0	"C(N[C@@H]1(C(O[C@@H]([C@H]([C@@H]1O)O)CO)O))([R])=O"
 "CPD-111"	"3-methylcatechol"	["2,3-dihydroxytoluene"]	"C7H8O2"	124.139	0	"Cc1(cccc(c1O)O)"
 "CPD-1114"	"D-arabinonate"	["D-arabinonic acid"]	"C5H9O6"	165.122	-1	"C(=O)([O-])[C@@H](O)[C@H](O)[C@H](O)CO"
+"CPD-1117"	"L-arabinonate"	[]	"C5H9O6"	165.122	-1	"C(=O)([O-])[C@H](O)[C@@H](O)[C@@H](O)CO"
 "CPD-1119"	"an <i>N</i>-acyl-neuraminate"	[]	null	null	-1	"C(O)[C@@H](O)[C@@H](O)[C@H]1([C@H](NC(=O)[R])[C@@H](O)CC(C(=O)[O-])(O)O1)"
 "CPD-11209"	"guanosine 5'-monophosphomorpholidate"	["GMP-MOR"]	"C14H20N6O8P"	431.321	-1	"C1(COCCN1P([O-])(=O)OC[C@H]4(O[C@@H](n2(c3(c(nc2)c(=O)[nH]c(N)n3)))[C@H](O)[C@H](O)4))"
 "CPD-11244"	"an unsaturated pectate oligosaccharide"	["a pectate oligosaccharide with 4-(4-deoxy-&alpha;-D-galact-4-enuronosyl)-D-galacturonate end", "&Delta;4,5-unsaturated polygalacturonate"]	null	null	-3	"C1(\[C@@H]([C@H]([C@H](OC(/C([O-])=O)=1)O[C@H]3([C@@H](C(=O)[O-])O[C@H](O[C@H]2([C@@H](C(=O)[O-])O[C@H](O[R])[C@@H]([C@H]2O)O))[C@@H]([C@H]3O)O))O)O)"
@@ -1578,6 +1595,7 @@
 "CPD-11256"	"an 11-hydroxyjasmonate sulfate"	["an 11-OHJA sulfate", "an 11-hydroxyjasmonic acid sulfate", "an 11-SO4-hydroxy-JA", "an 11-hydroxy-JA-sulfate"]	"C12H16O7S"	304.314	-2	"CC(OS(=O)(=O)[O-])\C=C/CC1(C(=O)CCC1CC([O-])=O)"
 "CPD-11281"	"<i>S</i>-sulfanylglutathione"	["glutathione-sulfide", "glutathione persulfide"]	"C10H16N3O6S2"	338.373	-1	"C(SS)[C@@H](C(NCC([O-])=O)=O)NC(=O)CC[C@H]([NH3+])C([O-])=O"
 "CPD-11285"	"sulfathiazole"	["Neostrepsan", "Norsulfasol", "Norsulfazole"]	"C9H9N3O2S2"	255.309	0	"c1(sccn1)NS(=O)(=O)c2(ccc(cc2)N)"
+"CPD-1134"	"2-dehydro-3-deoxy-L-pentonate"	["2-keto-3-deoxy-L-lyxonate", "2-dehydro-3-deoxy-L-xylonate", "2-dehydro-3-deoxy-L-arabinonate"]	"C5H7O5"	147.107	-1	"C(O)[C@H](O)CC(=O)C(=O)[O-]"
 "CPD-1136"	"(<i>Z</i>)-2-methylaconitate"	["(Z)-but-2-ene-1,2,3-tricarboxylate", "2-methyl-<I>cis</I>-aconitate", "<i>cis</i>-2-methylaconitate"]	"C7H5O6"	185.113	-3	"CC(\C([O-])=O)=C(CC([O-])=O)\C([O-])=O"
 "CPD-11391"	"&alpha;-curcumene"	["1-(1,5-dimethyl-4-hexenyl)-4-methylbenzene", "2-methyl-6-p-tolyl-2-heptene"]	"C15H22"	202.339	0	"CC(C)=CCCC(C)c1(ccc(C)cc1)"
 "CPD-1142"	"salicin"	["salicoside", "2-(hydroxymethyl)-phenyl-&beta;-D-glucopyranoside", "D(-)-salicin"]	"C13H18O7"	286.281	0	"C(O)c1(c(cccc1)O[C@@H]2(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O)2))"
@@ -1609,6 +1627,7 @@
 "CPD-11708"	"an <i>N</i>-acetyl-&beta;-D-galactosaminyl-(1&rarr;4)-[&alpha;-<i>N</i>-acetylneuraminyl-(2&rarr;3)]-&beta;-D-galactosyl-R"	["an <i>N</i>-acetylgalactosaminyl-<i>N</i>-acetylneuraminyl-&alpha;-2,3-galactosyl-&beta;-oligosaccharide"]	null	null	-1	"CC(=O)N[C@H]3([C@H]([C@H](O)[C@H](O)CO)O[C@@](O[C@H]2([C@@H](O[C@@H]1(O[C@@H]([C@H](O)[C@H](O)[C@@H](NC(=O)C)1)CO))[C@H](O[C@@H](O[R])[C@H](O)2)CO))(C([O-])=O)C[C@H](O)3)"
 "CPD-11725"	"homotaurine"	["3-aminopropanesulfonate", "Tramiprosate", "Alzhemed", "Cerebril", "3-aminopropanesulphonic acid", "3-aminopropanesulfonic acid"]	"C3H9NO3S"	139.169	0	"C([NH3+])CCS(=O)([O-])=O"
 "CPD-11763"	"bisorganyltrisulfane"	["GS<sub>3</sub>G"]	"C20H32N6O12S3"	644.686	-2	"C(SSSCC(NC(=O)CCC([NH3+])C(=O)[O-])C(=O)NCC(=O)[O-])C(C(O)NCC(=O)[O-])NC(CCC(C([O-])=O)[NH3+])=O"
+"CPD-11764"	"1-piperideine"	["&Delta;1-piperideine"]	"C5H9N"	83.133	0	"C1(C\C=N/CC1)"
 "CPD-11770"	"7,8-dihydromonapterin"	["L-<i>threo</i>-7,8-dihydroneopterin"]	"C9H13N5O4"	255.233	0	"C1(Nc2(nc(N)[nH]c(=O)c(/N=C1/[C@H](O)[C@@H](O)CO)2))"
 "CPD-11797"	"2-<i>O</i>-sulfonatolactate"	["2-<i>O</i>-sulfonatolactic acid", "2-(sulfooxy)propanoic acid", "2-(sulfooxy)propanoate"]	"C3H4O6S"	168.121	-2	"CC(C(=O)[O-])OS(=O)(=O)[O-]"
 "CPD-11803"	"(<i>RS</i>)-phospho-3-sulfolactate"	["(2<i>RS</i>)-<i>O</i>-phospho-3-sulfolactate", "(2<i>RS</i>)-2-<i>O</i>-phosphonato-3-sulfonatolactate", "(<i>RS</i>)-phosphosulfolactate"]	"C3H3O9PS"	246.085	-4	"C([O-])(=O)C(CS(=O)(=O)[O-])OP([O-])([O-])=O"
@@ -1718,7 +1737,7 @@
 "CPD-1302"	"5-methyltetrahydropteroyl tri-L-glutamate"	["<i>N</i><sup>5</sup>-methyl--H<sub>4</sub>PteGlu<sub>3</sub>", "<i>N</i><sup>5</sup>-methyltetrahydropteroyl tri-L-glutamate"]	"C30H35N9O12"	713.66	-4	"CN1([C@H](CNc2(c1c([nH]c(n2)N)=O))CNc3(ccc(C(N[C@H](C(=O)[O-])CCC(N[C@H](C(=O)[O-])CCC(N[C@H](C(=O)[O-])CCC([O-])=O)=O)=O)=O)cc3))"
 "CPD-13025"	"guanosine 2'-monophosphate"	[]	"C10H12N5O8P"	361.207	-2	"C(O)[C@H]3(O[C@@H](n1(cnc2(c(=O)[nH]c(N)nc12)))[C@H](OP([O-])(=O)[O-])[C@H](O)3)"
 "CPD-13034"	"(2<i>E</i>)-3-(5,6-dihydroxycyclohexa-1,3-dien-1-yl)prop-2-enoate"	["cis-3-(3-carboxyethenyl)-3,5-cyclohexadiene-1,2-diol", "<i>cis</i>-3-(3-carboxyethenyl)-3,5-cyclohexadiene-1,2-diol", "3-(<i>cis</i>-5,6-dihydroxycyclohexa-1,3-dien-1-yl)prop-2-enoate", "(2<i>E</i>)-3-[(5<i>R</i>,6<i>S</i>)-5,6-dihydroxycyclohexa-1,3-dien-1-yl]prop-2-enoate"]	"C9H9O4"	181.168	-1	"C(/C=C/C1(/[C@H](O)[C@H](O)\C=C/C=1))(=O)[O-]"
-"CPD-13043"	"7-carboxy-7-deazaguanine"	[]	"C7H5N4O3"	193.141	-1	"c12(c(c(C([O-])=O)c[nH]1)c(=O)[nH]c(N)n2)"
+"CPD-13043"	"7-carboxy-7-deazaguanine"	["7-carboxy-7-carbaguanine"]	"C7H5N4O3"	193.141	-1	"c12(c(c(C([O-])=O)c[nH]1)c(=O)[nH]c(N)n2)"
 "CPD-13059"	"2-keto-L-gulonate"	["2-dehydro-L-gulonate", "2-dehydro-L-idonate", "2-keto-L-idonate", "L-sorbosonate", "2-oxo-L-gulonate", "2oxo-L-idonate", "L-<i>xylo</i>-2-hexulosonate", "L-<i>xylo</i>-2-hex-2-ulosonate"]	"C6H9O7"	193.133	-1	"C(C([C@H]([C@@H]([C@H](CO)O)O)O)=O)([O-])=O"
 "CPD-13118"	"GDP-&beta;-L-fucose"	["GDP-&beta;-L-fucopyranose", "GDP-L-fucose", "guanosine diphosphate fucose", "GDP-L-fucopyranose", "GDP-L-Fuc", "GDP-L-Fuc<i>p</i>"]	"C16H23N5O15P2"	587.33	-2	"C[C@@H]4(O[C@H](OP(OP(=O)([O-])OC[C@H]3(O[C@@H](n1(c2(c(nc1)c(=O)[nH]c(N)n2)))[C@H](O)[C@H](O)3))(=O)[O-])[C@H]([C@@H]([C@@H]4O)O)O)"
 "CPD-13158"	"polymyxin E2"	["colistin B"]	"C52H103N16O13"	1160.485	5	"CC(C)CCCCC(=O)N[C@@H](CC[NH3+])C(=O)N[C@@H]([C@H](O)C)C(=O)N[C@@H](CC[NH3+])C(=O)N[C@H]1(CCNC(=O)[C@H]([C@H](O)C)NC(=O)[C@H](CC[NH3+])NC(=O)[C@H](CC[NH3+])NC(=O)[C@H](CC(C)C)NC(=O)[C@@H](CC(C)C)NC(=O)[C@H](CC[NH3+])NC(=O)1)"
@@ -1820,6 +1839,8 @@
 "CPD-14553"	"UDP-&alpha;-D-galactose"	["UDP-&alpha;-D-galactopyranose", "UDP-galactose", "UDP-Gal"]	"C15H22N2O17P2"	564.289	-2	"C(O)[C@@H]1([C@H](O)[C@H](O)[C@@H](O)[C@H](O1)OP(OP(OC[C@@H]3([C@H]([C@H]([C@H](n2(ccc(=O)[nH]c2=O))O3)O)O))(=O)[O-])(=O)[O-])"
 "CPD-14577"	"a plant arabinogalactan-[protein]"	["a plant [protein]-arabinogalactan"]	null	null	0	null
 "CPD-14581"	"a rhamnogalacturonan type II"	["rhamnogalacturonan II", "RG-II"]	null	null	0	null
+"CPD-14601"	"mycophenolate"	["mycophenolic acid"]	"C17H19O6"	319.333	-1	"CC(/CCC([O-])=O)=C\Cc1(c(c(C)c2(COC(=O)c(c(O)1)2))OC)"
+"CPD-14602"	"mycophenolic acid <i>O</i>-acyl-glucuronide"	[]	"C23H27O12"	495.459	-1	"CC(/CCC(O[C@H]1([C@H](O)[C@H]([C@H](O)[C@@H](C([O-])=O)O1)O))=O)=C\Cc2(c(c(C)c3(COC(=O)c(c(O)2)3))OC)"
 "CPD-14676"	"rapamycin"	[]	"C51H79NO13"	914.184	0	"C[C@@H]2(/C=C/C=C/C=C(C)/[C@@H](OC)C[C@@H]4(CC[C@@H](C)[C@](O)(C(=O)C(N1(CCCC[C@H]1C(=O)O[C@@H](CC(=O)[C@H](C)/C=C(C)/[C@@H](O)[C@@H](OC)C(=O)[C@H](C)C2)[C@H](C)C[C@H]3(C[C@@H](OC)[C@H](O)CC3)))=O)O4))"
 "CPD-14729"	"(3Z)-oct-3-enoyl-CoA"	["3-<i>cis</i>-octenoyl coenzyme A", "3-<i>cis</i>-octenoyl-CoA"]	"C29H44N7O17P3S"	887.685	-4	"CCCC\C=C/CC(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
 "CPD-14730"	"(3<i>Z</i>)-tetradec-3-enoyl-CoA"	["3-<i>cis</i>-tetradecenoyl coenzyme A", "3-<i>cis</i>-tetradecenoyl-CoA"]	"C35H56N7O17P3S"	971.845	-4	"CCCCCCCCCC\C=C/CC(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
@@ -1854,6 +1875,7 @@
 "CPD-15238"	"lipid A-core oligosaccharide phosphoethanolamine (hep I)"	["phosphoethanolamine modifed Lipid A", "galactosyl-(glucosyl)<sub>3</sub>-(heptosyl)<sub>4</sub>-Kdo<sub>2</sub>-lipid A-bisphosphate-phosphoethanolamine"]	"C164H289N3O92P5"	3929.921	-9	"CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]%11([C@H]([C@@H](O[C@H](CO[C@@]%10(C(=O)[O-])(O[C@H]([C@H](O)CO)[C@H](O[C@H]8(O[C@H]([C@@H](O)CO)[C@@H](OP(=O)([O-])OP(=O)([O-])OCC[NH3+])[C@H](O[C@H]7(O[C@H]([C@@H](CO[C@H]1(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)1))O)[C@@H](OP([O-])(=O)[O-])[C@H](O[C@H]6(O[C@H](CO[C@H]2(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)2))[C@@H](O)[C@H](O[C@H]3(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O[C@H]5(O[C@H](CO[C@H]4(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)4))[C@@H](O)[C@H](O)[C@@H](O)5)))[C@@H](O)6))[C@H](O)7))[C@H](O)8))[C@H](O[C@]9(O[C@H]([C@@H](CO)O)[C@H](O)[C@H](O)C9)C(=O)[O-])C%10))[C@H]%11OP([O-])([O-])=O)OC[C@@H]%12([C@@H](O)[C@H](OC(C[C@H](O)CCCCCCCCCCC)=O)[C@@H](NC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H](OP([O-])([O-])=O)O%12))NC(C[C@H](OC(=O)CCCCCCCCCCC)CCCCCCCCCCC)=O)"
 "CPD-15242"	"lipid A-core oligosaccharide pyrophosphoethanolamine"	[]	"C164H289N3O92P5"	3929.921	-9	"CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]%11([C@H]([C@@H](O[C@H](CO[C@@]%10(C(=O)[O-])(O[C@H]([C@H](O)CO)[C@H](O[C@H]8(O[C@H]([C@@H](O)CO)[C@@H](OP([O-])([O-])=O)[C@H](O[C@H]7(O[C@H]([C@@H](CO[C@H]1(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)1))O)[C@@H](OP([O-])(=O)[O-])[C@H](O[C@H]6(O[C@H](CO[C@H]2(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)2))[C@@H](O)[C@H](O[C@H]3(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O[C@H]5(O[C@H](CO[C@H]4(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)4))[C@@H](O)[C@H](O)[C@@H](O)5)))[C@@H](O)6))[C@H](O)7))[C@H](O)8))[C@H](O[C@]9(O[C@H]([C@@H](CO)O)[C@H](O)[C@H](O)C9)C(=O)[O-])C%10))[C@H]%11OP([O-])(=O)OP(OCC[NH3+])([O-])=O)OC[C@@H]%12([C@@H](O)[C@H](OC(C[C@H](O)CCCCCCCCCCC)=O)[C@@H](NC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H](OP([O-])([O-])=O)O%12))NC(C[C@H](OC(=O)CCCCCCCCCCC)CCCCCCCCCCC)=O)"
 "CPD-15244"	"3-oxo-(5Z)-tetradecenoyl-CoA"	["3-oxo-5-cis-tetradecenoyl-CoA", "3-oxo-14:1-&Delta;5-CoA", "3-keto-5-cis-tetradecenoyl-CoA"]	"C35H54N7O18P3S"	985.829	-4	"CCCCCCCC\C=C/CC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
+"CPD-15249"	"liposidomycin B1"	[]	"C43H67N5O21S"	1022.083	-2	"CC(C)CCCCCCCCCC(CC(=O)O[C@H]4(CN(C)C(C(OC1([C@H](O)[C@H](O)C(C[NH3+])O1))C3(OC(C2(\N=C/C(=O)NC(=O)2))[C@H](OS(=O)(=O)[O-])[C@H](O)3))C(=O)N(C)[C@H](C([O-])=O)4))OC(=O)CC(C)CC(=O)[O-]"
 "CPD-15291"	"(-)-epigallocatechin-3-<i>O</i>-gallate"	["[(2<i>R</i>,3<i>R</i>)-5,7-dihydroxy-2-(3,4,5-trihydroxyphenyl)-3,4-dihydro-2H-chromen-3-yl] 3,4,5-trihydroxybenzoate", "(-)-epigallocatechin 3-gallate"]	"C22H18O11"	458.378	0	"c1(c(O)c(O)c(O)cc1[C@H]3(Oc4(c(C[C@@H](OC(=O)c2(cc(O)c(O)c(O)c2))3)c(O)cc(O)c4)))"
 "CPD-15302"	"platensimycin"	["PMN", "(-)-platensimycin"]	"C24H26NO7"	440.472	-1	"C[C@]3(C(=O)\C=C/[C@@]24(C[C@@H]1([C@@](C)(O[C@@H](C1)[C@H]23)C4)))(CCC(=O)Nc5(c(O)ccc(C([O-])=O)c(O)5))"
 "CPD-15317"	"D-ribofuranose 5-phosphate"	[]	"C5H9O8P"	228.095	-2	"C(OP([O-])(=O)[O-])[C@@H]1([C@@H](O)[C@@H](O)C(O)O1)"
@@ -2051,13 +2073,10 @@
 "CPD-17926"	"a nascent peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<I>meso</I>-2,6-diaminopimeloyl-D-alanine) tetrapeptide"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
 "CPD-17927"	"a nascent peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanyl-D-alanine) pentapeptide"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(=O)N[C@H](C)C(=O)N[C@H](C)C(=O)[O-])C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
 "CPD-17931"	"a peptidoglycan internal segment with (L-alanyl-&gamma;-D-glutamyl-<I>meso</I>-2,6-diaminopimeloyl-D-alanine) tetrapeptide"	["peptidoglycan tetrapeptide, glycan chain 1", "peptidoglycan tetrapeptide, glycan chain 2"]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
-"CPD-17947"	"a nascent peptidoglycan with L,D cross links (<i>meso</i>-diaminopimelate containing)"	[]	null	null	-6	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(=O)(OP(O[C@H]4(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R1])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](CCC[C@@H](C(N[C@H](C)C(=O)[O-])=O)NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]3([C@@H](NC(=O)C)[C@H](O[R3])O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)2))3))C)=O)C)C(=O)[O-])C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)4))([O-])=O)[O-]"
+"CPD-17947"	"a peptidoglycan with L,D cross links (<i>meso</i>-diaminopimelate containing)"	[]	null	null	-6	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(=O)(OP(O[C@H]4(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](CCC[C@@H](C(N[C@H](C)C(=O)[O-])=O)NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]3([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)2))3))C)=O)C)C(=O)[O-])C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)4))([O-])=O)[O-]"
 "CPD-17968"	"a nascent peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimelate) tripeptide"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C([O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
 "CPD-17969"	"a nascent peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-glycine) tetrapeptide"	[]	null	null	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(NCC(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
-"CPD-17985"	"a mature peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanyl-D-alanine) pentapeptide"	["GlcNAc-1,6-anhydro-MurNAc-pentapeptide", "GlcNAc-1,6-anhydro-MurNAc-(L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanyl-D-alanine) pentapeptide"]	null	null	-2	"C[C@H](C(=O)N[C@H](C)C(=O)[O-])NC(=O)[C@H](CCC[C@H](C(=O)[O-])[NH3+])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C)C(=O)[O-]"
-"CPD-17986"	"GlcNAc-1,6-anhydro-MurNAc-(L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanine) tetrapeptide"	["a mature peptidoglycan strand with 1,6-anhydro-MurNAc terminus", "GlcNAc-1,6-anhydro-MurNAc-tetrapeptide"]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
-"CPD-17987"	"a mature peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimelate) tripeptide"	["GlcNAc-1,6-anhydro-MurNAc-tripeptide", "GlcNAc-1,6-anhydro-MurNAc- (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimelate) tripeptide"]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C([O-])=O)C(=O)[O-])=O"
-"CPD-17988"	"a mature peptidoglycan with L,D cross-links (<i>meso</i>-diaminopimelate containing)"	[]	null	null	-4	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@H](O[R3])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@@H](NC(=O)[C@H](CCC[C@H](C(=O)[O-])[NH3+])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)C5(OCC([C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[R1])[C@H](O)[C@@H](NC(=O)C)3))4)O5)))C)=O)C)C(=O)[O-])C(=O)[O-])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
+"CPD-17986"	"a peptidoglycan (<i>meso</i>-DAP containing) with GlcNAc-1,6-anhydro-MurNAc terminus"	["GlcNAc-1,6-anhydro-MurNAc-(L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanine) tetrapeptide", "GlcNAc-1,6-anhydro-MurNAc-tetrapeptide"]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
 "CPD-17989"	"a mature peptidoglycan (<i>meso</i>-DAP containing)"	[]	null	null	-4	"C[C@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)C5(OCC([C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4)O5)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
 "CPD-18012"	"thymine glycol"	["5,6-dihydroxy-5-methyldihydropyrimidine-2,4(1H,3H)-dione"]	"C5H8N2O4"	160.129	0	"CC1(O)(C(O)NC(=O)NC(=O)1)"
 "CPD-18013"	"uracil glycol"	[]	"C4H6N2O4"	146.102	0	"C1(C(O)C(NC(=O)N1)=O)(O)"
@@ -2166,10 +2185,9 @@
 "CPD-18734"	"5-phospho-D-arabinonate"	[]	"C5H8O9P"	243.087	-3	"C(=O)([O-])[C@@H](O)[C@H](O)[C@H](O)COP(=O)([O-])[O-]"
 "CPD-18739"	"diphenyl ether"	[]	"C12H10O"	170.21	0	"c1(ccc(cc1)Oc2(ccccc2))"
 "CPD-18804"	"a peptidoglycan internal segment (with L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanine tetrapeptide)"	[]	null	null	-4	"C[C@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
-"CPD-18805"	"a mature peptidoglycan (with L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanine tetrapeptide) (non-reducing terminus)"	[]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@H]([C@@H](O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))2)O[R])NC(=O)C))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
+"CPD-18805"	"a peptidoglycan (<i>meso</i>-DAP containing) with GlcNAc non-reducing terminus"	[]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@H]([C@@H](O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))2)O[R])NC(=O)C))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
 "CPD-18807"	"a nascent peptidoglycan (<i>meso</i>-DAP containing)"	[]	null	null	-6	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]4(O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C([O-])=O)[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@@H]([NH3+])C([O-])=O)C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)4))([O-])=O)(=O)[O-]"
 "CPD-18808"	"a nascent peptidoglycan (<i>meso</i>-DAP containing) with GlcNAc non-reducing terminus"	[]	"C92H147N7O27P2"	1845.151	-4	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@@H]([NH3+])C([O-])=O)C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@@H](NC(=O)C)2))([O-])=O)(=O)[O-]"
-"CPD-18809"	"a mature peptidoglycan with (L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-glycine) tetrapeptide"	[]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(NCC(=O)[O-])=O)C(=O)[O-])=O"
 "CPD-18866"	"a 3-(1-hydroxyethyl) chlorophyllide <i>d</i>"	[]	null	null	-2	"C([R2])([R1])CC6(\C7(/C=c4(c(C[R3])c2(C(=O)[CH-]C3(\C1(/[C@@H](CCC(=O)[O-])[C@H](C)C(\N=1)=C\c5(c(C)c(C(O)C)c(n([Mg]n(c\2=3)4)5)\C=C(C(/C)=6)/N=7)))))))"
 "CPD-18867"	"a bacteriochlorophyllide <i>c</i>"	[]	null	null	-2	"C([R2])([R1])CC6(\C7(/C=c4(c(C[R3])c2(C(=O)[CH-]C3(\C1(/[C@@H](CCC(=O)[O-])[C@H](C)C(\N=1)=C(C)\c5(c(C)c(C(O)C)c(n([Mg]n(c\2=3)4)5)\C=C(C(/C)=6)/N=7)))))))"
 "CPD-18899"	"a chlorophyll <i>a</i>"	[]	null	null	-1	"C=Cc1(c(C)c4(\C=C7([C@@H](C)[C@H](CCC(=O)O[R])C(\C6(/[C@@H-](C(OC)=O)C(=O)c5(c(C)c2(\n([Mg]n(c1\C=C3(C(/C)=C(CC)/C(\C=2)=N3))4)c\5=6))))=N7)))"
@@ -2314,12 +2332,14 @@
 "CPD-20333"	"pipecolate"	["piperidine-2-carboxylate", "piperidine-2-carboxylic acid", "pipecolinic acid", "homoproline", "2-piperidinecarboxylic acid"]	"C6H11NO2"	129.158	0	"C1(CCCC(C(=O)[O-])[NH2+]1)"
 "CPD-20340"	"ophthalmate"	["ophthalmic acid", "N-{(2S)-1-[(carboxymethyl)amino]-1-oxobutan-2-yl}-L-glutamine", "(&gamma;-L-glutamyl-(<i>S</i>)-2-aminobutanoyl-glycine"]	"C11H18N3O6"	288.28	-1	"CC[C@@H](C(NCC(=O)[O-])=O)NC(CC[C@@H](C(=O)[O-])[NH3+])=O"
 "CPD-20431"	"(+)-kolavelool"	["(2&xi;)-3-methyl-5-[(1R,2S,4aS,8aS)-1,2,4a,5-tetramethyl-1,2,3,4,4a,7,8,8a-octahydronaphthalen-1-yl]pent-1-en-3-ol"]	"C20H34O"	290.488	0	"C=CC(O)(C)CC[C@@]1(C)([C@H]2([C@](C)(CC[C@H](C)1)C(/C)=C/CC2))"
-"CPD-205"	"pimelate"	["heptanedioate", "6-carboxyhexanoate", "pimelic acid"]	"C7H10O4"	158.154	-2	"C([O-])(=O)CCCCCC([O-])=O"
+"CPD-205"	"pimelate"	["heptanedioate", "6-carboxyhexanoate", "pimelic acid", "1,5-dicarboxypentane"]	"C7H10O4"	158.154	-2	"C([O-])(=O)CCCCCC([O-])=O"
 "CPD-20511"	"a [LarE]-<i>S</i>-[5-carboxy-1-(5-<i>O</i>-phosphono-&beta;-D-ribofuranosyl)pyridin-1-ium-3-carbonyl]-L-cysteine"	[]	null	null	-2	"c2(c(cc(C(SC[C@@H](C(=O)[a LarE protein])N[a LarE protein])=O)c[n+]([C@@H]1(O[C@H](COP(=O)([O-])[O-])[C@@H](O)[C@@H](O)1))2)C([O-])=O)"
 "CPD-20517"	"a [LarE]-<i>S</i>-[1-(5-<i>O</i>-phosphono-&beta;-D-ribofuranosyl)-5-(sulfanylcarbonyl)pyridin-1-ium-3-carbonyl]-L-cysteine"	[]	null	null	-1	"c2(c(cc(C(SC[C@@H](C(=O)[a LarE protein])N[a LarE protein])=O)c[n+]([C@@H]1(O[C@H](COP(=O)([O-])[O-])[C@@H](O)[C@@H](O)1))2)C(S)=O)"
 "CPD-20571"	"(L-prolyl)adenylate"	["L-prolyl-AMP", "L-prolyl-adenylate"]	"C15H21N6O8P"	444.34	0	"C1([NH2+][C@@H](CC1)C(=O)OP(OC[C@H]4(O[C@@H](n2(c3(c(nc2)c(N)ncn3)))[C@H](O)[C@H](O)4))(=O)[O-])"
+"CPD-20606"	"diclofenac"	["2-[(2,6-dichlorophenyl)amino]benzeneacetic acid"]	"C14H10NO2Cl2"	295.144	-1	"C([O-])(=O)Cc1(ccccc1Nc2(c(Cl)cccc2Cl))"
 "CPD-20645"	"a dipeptide with an N-terminal L-histidine"	["His-Xaa"]	null	null	0	"c1([nH]cnc1C[C@H]([NH3+])C(=O)N[C@H](C([O-])=O)[R])"
 "CPD-207"	"phenylacetyl-CoA"	["phenylacetate-CoA"]	"C29H38N7O17P3S"	881.637	-4	"CC(C)([C@@H](O)C(=O)NCCC(=O)NCCSC(=O)Cc1(ccccc1))COP(=O)(OP(=O)(OC[C@@H]2([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O2)n4(c3(c(c(N)ncn3)nc4))))[O-])[O-]"
+"CPD-20701"	"cefoselis"	["wincef"]	"C19H22N8O6S2"	522.553	0	"CO\N=C(c1(nc(N)sc1))/C(=O)N[C@@H]3(C(=O)N4(C(/C(=O)[O-])=C(CN2(\C=C/C(N(CCO)2)=[NH2+]))/CS[C@H]34))"
 "CPD-20735"	"two adjacent 2'-deoxycytidines in DNA"	[]	null	null	-3	"c1(n(c(=O)nc(N)c1)[C@@H]4(O[C@H](COP(O[C@H]3(C[C@H](n2(c(=O)nc(N)cc2))O[C@H](COP(=O)([O-])O[a deoxyribonucleic acid])3))([O-])=O)[C@@H](OP([O-])(O[a deoxyribonucleic acid])=O)C4))"
 "CPD-20746"	"N&alpha;,N&epsilon;-diacetyl-lysyl-D-alanine"	["diacetyl-lys-D-ala"]	"C13H22N3O5"	300.334	-1	"C[C@H](C([O-])=O)NC(=O)[C@@H](NC(=O)C)CCCCNC(C)=O"
 "CPD-20750"	"L-alanyl-&gamma;-D-glutamyl-L-lysyl-D-alanine"	["L-Ala-&gamma;-D-glu-L-Lys-D-Ala", "peptidoglycan tetrapeptide"]	"C17H31N5O7"	417.461	0	"C[C@H]([NH3+])C(=O)N[C@@H](CCC(N[C@@H](CCCC[NH3+])C(=O)N[C@H](C)C([O-])=O)=O)C([O-])=O"
@@ -2477,7 +2497,7 @@
 "CPD-22805"	"microcin B17"	[]	"C118H156N48O45S4"	3095.065	0	"CC[C@H](C)[C@@H](C(=O)NCC(=O)NCC(NCC(=O)NCC(NCC(=O)NCC(NCC(=O)NCC(NCC(=O)NCc1(nc(co1)c9(scc(C(=O)NCC(=O)NCC(N[C@@H](CCC(=O)N)C(=O)NCC(=O)NCC(=O)NCc2(nc(cs2)C(=O)NCC(=O)NCc8(nc(C(N[C@@H](CO)C(=O)N[C@@H](CC(=O)N)C(NCc3(nc(cs3)c7(occ(C(NCC(=O)NCC(N[C@@H](CC(=O)N)C(=O)NCC(NCc6(nc(C(NCC(NCc5(nc(C(NCC(=O)N[C@@H](CO)C(N[C@H](Cc4(nc[nH]c4))C(=O)N[C@H]([C@@H](C)CC)C(=O)[O-])=O)=O)co5))=O)=O)co6))=O)=O)=O)n7)))=O)=O)sc8)))=O)n9)))=O)=O)=O)=O)NC(CNC(=O)[C@@H]([NH3+])C(C)C)=O"
 "CPD-22841"	"L-homocysteine thiolactone"	["3-aminothiolan-2-one"]	"C4H8NOS"	118.173	1	"C1(SC(=O)[C@@H]([NH3+])C1)"
 "CPD-22978"	"4-hydroxy-2-pentenal-5-phosphate"	[]	"C5H7O6P"	194.08	-2	"C(=O)/C=C/C(COP([O-])(=O)[O-])O"
-"CPD-23"	"a [3Fe-3S] iron-sulfur cluster"	["Fe<SUB>3</SUB>S<SUB>3</SUB>", "a Fe<SUB>3</SUB>S<SUB>3</SUB> center", "a Fe<SUB>3</SUB>S<SUB>3</SUB> cluster", "a Fe<SUB>3</SUB>S<SUB>3</SUB> iron-sulfur cluster", "a Fe<SUB>3</SUB>S<SUB>3</SUB> iron-sulfur center", "[3Fe-3S]"]	"HS3Fe3"	263.721	0	"[Fe]1(S[Fe]2(S1[Fe]S2))"
+"CPD-23"	"a [3Fe-3S] iron-sulfur cluster"	["Fe<SUB>3</SUB>S<SUB>3</SUB>", "a Fe<SUB>3</SUB>S<SUB>3</SUB> center", "a Fe<SUB>3</SUB>S<SUB>3</SUB> cluster", "a Fe<SUB>3</SUB>S<SUB>3</SUB> iron-sulfur cluster", "a Fe<SUB>3</SUB>S<SUB>3</SUB> iron-sulfur center", "[3Fe-3S]"]	"H2S3Fe3"	265.737	0	"[Fe](S)S[Fe]S.[Fe]"
 "CPD-230"	"&beta;-palatinose"	["6-O-&alpha;-D-glucopyranosyl-D-fructofuranose", "&alpha;-D-glucopyranose-(1&rarr;6)-&beta;-D-fructofuranose"]	"C12H22O11"	342.299	0	"C([C@H]2(O[C@H](OC[C@H]1(O[C@](O)(CO)[C@H]([C@@H]1O)O))[C@@H]([C@H]([C@@H]2O)O)O))O"
 "CPD-23250"	"a deoxyinosine in DNA"	["hypoxanthine in DNA"]	null	null	-4	"C(OP(=O)O[a deoxyribonucleic acid])[C@H]6(O[C@@H]([a nucleobase])C[C@H](OP(OC[C@H]5(O[C@@H](n1(c2(c(nc1)c(=O)[nH]cn2)))C[C@H](OP(OC[C@H]4(O[C@@H]([a nucleobase])C[C@H](OP(OC[C@H]3(O[C@@H]([a nucleobase])C[C@H](OP(O[a deoxyribonucleic acid])(=O)[O-])3))(=O)[O-])4))(=O)[O-])5))(=O)[O-])6)"
 "CPD-23251"	"deoxyinosine-containing DNA after cleavage by EndoV"	[]	null	null	-2	"C(OP(=O)O[a deoxyribonucleic acid])[C@H]5(O[C@@H]([a nucleobase])C[C@H](OP(OC[C@H]4(O[C@@H](n1(c2(c(nc1)c(=O)[nH]cn2)))C[C@H](OP(OC[C@H]3(O[C@@H]([a nucleobase])C[C@H](O)3))(=O)[O-])4))(=O)[O-])5)"
@@ -2517,7 +2537,7 @@
 "CPD-24514"	"an &alpha;-Hep-(1&rarr;3)-&alpha;-Hep-(1&rarr;5)-[&alpha;-Kdo-(2&rarr;4)]-&alpha;-Kdo-(2&rarr;6)-[lipid A]"	["a heptosyl<sub>2</sub>-Kdo<sub>2</sub>-[lipid A]", "a heptosyl-heptosyl-Kdo<sub>2</sub>-[lipidA]", "a(heptosyl)<sub>2</sub>-Kdo<sub>2</sub>-[lipid A]"]	null	null	-2	"C(O)[C@@H](O)[C@@H]1([C@H](O)[C@H](O)C[C@@](O1)(C(=O)[O-])O[C@H]4([C@H]([C@@H]([C@H](O)CO)O[C@](C(=O)[O-])(OC[C@H]3(O[C@@H](OC[C@H]2(O[C@H](O[R6])[C@H](N[R4])[C@@H](O[R3])[C@H](O)2))[C@H](N[R2])[C@@H](O[R1])[C@H](O[R5])3))C4)O[C@H]6(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O[C@H]5(O[C@H]([C@@H](CO)O)[C@@H](O)[C@H](O)[C@H](O)5))[C@H](O)6)))"
 "CPD-24515"	"an &alpha;-Hep-(1&rarr;3)-4-<i>O</i>-phospho-&alpha;-Hep-(1&rarr;5)-[&alpha;-Kdo-(2&rarr;4)]-&alpha;-Kdo-(2&rarr;6)-[lipid A]"	["a (heptosyl)<sub>2</sub>-Kdo<sub>2</sub>-[lipid A] phosphate"]	null	null	-4	"C(O)[C@@H](O)[C@@H]1([C@H](O)[C@H](O)C[C@@](O1)(C(=O)[O-])O[C@H]4([C@H]([C@@H]([C@H](O)CO)O[C@](C(=O)[O-])(OC[C@H]3(O[C@@H](OC[C@H]2(O[C@H](O[R6])[C@H](N[R4])[C@@H](O[R3])[C@H](O)2))[C@H](N[R2])[C@@H](O[R1])[C@H](O[R5])3))C4)O[C@H]6(O[C@H]([C@@H](O)CO)[C@@H](OP([O-])(=O)[O-])[C@H](O[C@H]5(O[C@H]([C@@H](CO)O)[C@@H](O)[C@H](O)[C@H](O)5))[C@H](O)6)))"
 "CPD-24516"	"an &alpha;-Hep-(1&rarr;7)-&alpha;-Hep-(1&rarr;3)-4-O-phospho-&alpha;-Hep-(1&rarr;5)-[&alpha;-Kdo-(2&rarr;4)]-&alpha;-Kdo-(2&rarr;6)-[lipid A]"	["a (heptosyl)<sub>3</sub>-Kdo<sub>2</sub>-[lipid A]-phosphate"]	null	null	-4	"C(O)[C@@H](O)[C@@H]1([C@H](O)[C@H](O)C[C@@](O1)(C(=O)[O-])O[C@H]4([C@H]([C@@H]([C@H](O)CO)O[C@](C(=O)[O-])(OC[C@H]3(O[C@@H](OC[C@H]2(O[C@H](O[R6])[C@H](N[R4])[C@@H](O[R3])[C@H](O)2))[C@H](N[R2])[C@@H](O[R1])[C@H](O[R5])3))C4)O[C@H]7(O[C@H]([C@@H](O)CO)[C@@H](OP([O-])([O-])=O)[C@H](O[C@H]6(O[C@H]([C@@H](CO[C@H]5(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)5))O)[C@@H](O)[C@H](O)[C@H](O)6))[C@H](O)7)))"
-"CPD-24549"	"gemcitabine"	[]	"C9H11N3O4F2"	263.2	0	"C(O)[C@@H]1([C@@H](O)C(F)(F)[C@@H](O1)n2(ccc(N)nc(=O)2))"
+"CPD-24549"	"gemcitabine"	["Gemzar", "2',2'-difluorodeoxycytidine", "2',2'-difluoro-2'-deoxycytidine,"]	"C9H11N3O4F2"	263.2	0	"C(O)[C@@H]1([C@@H](O)C(F)(F)[C@@H](O1)n2(ccc(N)nc(=O)2))"
 "CPD-24804"	"lipid A-core oligosaccharide phosphoethanolamine (KdoII)"	[]	"C164H288N3O92P5"	3928.913	-10	"CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]%11([C@H]([C@@H](O[C@H](CO[C@@]%10(C(=O)[O-])(O[C@H]([C@H](O)CO)[C@H](O[C@@H]8(O[C@H]([C@@H](O)CO)[C@@H](OP([O-])([O-])=O)[C@@H](O[C@@H]7(O[C@H]([C@@H](CO[C@H]1(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)1))O)[C@@H](OP([O-])(=O)[O-])[C@H](O[C@H]6(O[C@H](CO[C@H]2(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)2))[C@@H](O)[C@H](O[C@H]3(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O[C@H]5(O[C@H](CO[C@H]4(O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@H](O)4))[C@@H](O)[C@H](O)[C@@H](O)5)))[C@@H](O)6))[C@H](O)7))[C@H](O)8))[C@H](O[C@]9(O[C@H]([C@@H](CO)OP(=O)(OCC[NH3+])[O-])[C@H](O)[C@H](O)C9)C(=O)[O-])C%10))[C@H]%11OP([O-])([O-])=O)OC[C@@H]%12([C@@H](O)[C@H](OC(C[C@H](O)CCCCCCCCCCC)=O)[C@@H](NC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H](OP([O-])([O-])=O)O%12))NC(C[C@H](OC(=O)CCCCCCCCCCC)CCCCCCCCCCC)=O)"
 "CPD-24805"	"a peptidoglycan internal segment with (L-alanyl-&gamma;-D-glutamyl-<I>meso</I>-2,6-diaminopimeloyl-D-glycine) tetrapeptide"	[]	null	null	-2	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(NCC(=O)[O-])=O)C(=O)[O-])=O"
 "CPD-24813"	"D-fructose 6-phosphate"	[]	"C6H11O9P"	258.121	-2	"C(O)C(=O)[C@@H](O)[C@@H]([C@H](O)COP([O-])(=O)[O-])O"
@@ -2604,7 +2624,7 @@
 "CPD-270"	"an <i>N</i>-acyl-D-glucosamine"	[]	null	null	0	"C(N[C@H]1([C@@H](O[C@@H]([C@H]([C@@H]1O)O)CO)O))(=O)[R]"
 "CPD-27104"	"lipid I (containing a pentapeptide)"	[]	null	null	-3	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]1(O[C@H](CO)[C@@H](O)[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCCC([R])[NH3+])C(=O)N[C@H](C)C(=O)N[C@H](C)C(=O)[O-])C(=O)[O-])=O)C)[C@@H](NC(=O)C)1))([O-])=O)(=O)[O-]"
 "CPD-27111"	"4-nitrophenyl-&alpha;-D-maltohexaoside"	["PG6"]	"C42H65NO33"	1111.962	0	"c1(c(ccc(c1)O[C@@H]2([C@@H]([C@H]([C@@H]([C@@H](CO)O2)O[C@@H]3([C@@H]([C@H]([C@@H]([C@@H](CO)O3)O[C@@H]4([C@@H]([C@H]([C@@H]([C@@H](CO)O4)O[C@@H]5([C@@H]([C@H]([C@@H]([C@@H](CO)O5)O[C@@H]6([C@@H]([C@H]([C@@H]([C@@H](CO)O6)O[C@@H]7([C@@H]([C@H]([C@@H]([C@@H](CO)O7)O)O)O))O)O))O)O))O)O))O)O))O)O))[N+](=O)[O-])"
-"CPD-27208"	"dimethylguanidinium"	["1,1-dimethylguanidine", "1.1-diMethylGdm<sup>+</sup>"]	"C3H10N3"	88.132	1	"CN(C)C(N)=[NH2+]"
+"CPD-27208"	"dimethylguanidinium"	["1,1-dimethylguanidine", "1.1-diMethylGdm<sup>+</sup>", "dimethylguanidine"]	"C3H10N3"	88.132	1	"CN(C)C(N)=[NH2+]"
 "CPD-273"	"<i>N</i>-glycolylneuraminate"	["<i>N</i>-glycoloyl-neuraminate", "<i>N</i>--glycolylneuraminic acid", "Neu5Gc"]	"C11H18NO10"	324.264	-1	"C(O)[C@@H](O)[C@@H](O)[C@@H]1(OC(O)(C([O-])=O)C[C@H](O)[C@@H](NC(CO)=O)1)"
 "CPD-27301"	"4-sulfobutanoate"	["4-sulfobutanoic acid"]	"C4H6O5S"	166.14801	-2	"C(S(=O)(=O)[O-])CCC(=O)[O-]"
 "CPD-27332"	"4-(carboxyamino)butanoate"	[]	"C5H7NO4"	145.115	-2	"C(NC(=O)[O-])CCC(=O)[O-]"
@@ -2612,8 +2632,24 @@
 "CPD-27360"	"malachite green"	[]	"C23H25N2"	329.46402	1	"CN(C)c1(ccc(cc1)C(c2(ccccc2))=c3(ccc(cc3)=[N+](C)C))"
 "CPD-27507"	"UDP-<i>N</i>-acetyl-&alpha;-D-muramoyl-L-serine"	["UDP-MurNAc-L-Ser"]	"C23H33N4O21P2"	763.47504	-3	"C[C@@H](O[C@@H]3([C@@H](NC(=O)C)[C@@H](OP([O-])(OP(OC[C@@H]2([C@H]([C@H]([C@H](n1(ccc(=O)[nH]c1=O))O2)O)O))(=O)[O-])=O)O[C@H](CO)[C@@H](O)3))C(=O)N[C@@H](CO)C(=O)[O-]"
 "CPD-27514"	"carbonate radical"	["(CO3)(.-)", "carbonate radical", "CO3(.-)"]	"CO3"	60.009003	-1	"C(=O)(O)[O-]"
+"CPD-27736"	"antimony triglutathione"	["Sb(SG)<sub>3</sub>"]	"C30H45N9O18S3Sb"	1037.675	-3	"C(NC([C@@H](NC(=O)CC[C@H]([NH3+])C([O-])=O)CS[Sb](SC[C@H](NC(=O)CC[C@H]([NH3+])C(=O)[O-])C(NCC([O-])=O)=O)SC[C@H](NC(=O)CC[C@H]([NH3+])C(=O)[O-])C(NCC([O-])=O)=O)=O)C([O-])=O"
 "CPD-27768"	"<I>aldehydo</i> 3,6-anhydro-&alpha;-L-galactose"	[]	"C6H10O5"	162.142	0	"C[C@@H]([C@H](C([C@@H](C=O)O)=O)O)O"
+"CPD-27798"	"5-fluorodihydrouracil"	["5-fluoro-5,6-dihydrouracil", "5-fluorodihydropyrimidine-2,4(1H,3H)-dione"]	"C4H5N2O2F"	132.09401	0	"C1(NC(=O)NC(=O)C(F)1)"
+"CPD-27807"	"diclofenac glucuronide"	["diclofenac acyl glucuronide", "diclofenac glucuronide", "diclofenac O-glucuronide"]	"C20H18NO8Cl2"	471.27002	-1	"C(O[C@H]1([C@H](O)[C@H]([C@H](O)[C@@H](C(=O)[O-])O1)O))(=O)Cc2(ccccc2Nc3(c(Cl)cccc3Cl))"
+"CPD-27850"	"amoxapine"	["2-Chloro-11-(1-piperazinyl)dibenz(b,f)(1,4)oxazepine", "amoxapina", "amoxapine", "amoxapinum", "Desmethylloxapin"]	"C17H16N3OCl"	313.786	0	"C1(NCCN(C1)C4(\c2(cc(Cl)ccc2Oc3(ccccc3/N=4))))"
+"CPD-27851"	"Inh-1"	[]	"C21H23N3O3S"	397.49103	0	"Cc1(cc(C)c2(c(c1)cc(c([nH]2)=O)CN(C(Nc3(ccc(cc3)O))=S)CCO))"
+"CPD-27984"	"2-amino-4-oxo-3H,4H,7H-pyrrolo[2,3-d]pyrimidine-5-carboxyadenylate"	[]	"C17H17N9O9P"	522.35004	-1	"C(OP(OC(=O)c1(c[nH]c2(c1c(=O)[nH]c(N)n2)))(=O)[O-])[C@H]5(O[C@@H](n3(c4(c(nc3)c(N)ncn4)))[C@H](O)[C@H](O)5)"
+"CPD-27985"	"7-amido-7-deazaguanine"	["7-amido-7-carbaguanine"]	"C7H7N5O2"	193.16501	0	"C(O)(=N)c1(c[nH]c2(c1c([nH]c(N)n2)=O))"
+"CPD-27987"	"2-amino-4-oxo-3H,4H,7H-pyrrolo[2,3-d]pyrimidine-5-carboximidyl-adenylate"	[]	"C17H18N10O8P"	521.36505	-1	"C(OP(OC(c1(c[nH]c2(c1c([nH]c(N)n2)=O)))=N)(=O)[O-])[C@H]5(O[C@@H](n3(c4(c(nc3)c(N)ncn4)))[C@H](O)[C@H](O)5)"
 "CPD-280"	"glutarate semialdehyde"	["5-oxopentanoate"]	"C5H7O3"	115.108	-1	"C(CCCC(=O)[O-])=O"
+"CPD-28028"	"2-piperideine"	[]	"C5H10N"	84.14101	1	"C1(\[NH2+]CCC\C=1)"
+"CPD-28030"	"(2R,3'R)-tetrahydroanabasine"	[]	"C10H19N2"	167.27301	1	"C1(\[C@H](CCC\N=1)[C@@H]2([NH2+]CCCC2))"
+"CPD-28121"	"ramoplanin"	[]	"C119H154N21O40Cl"	2554.0952	0	"CC(C)C/C=C/C=C\C(=O)N[C@@H](CC(N)=O)C(=O)N[C@H]6([C@@H](C(N)=O)OC([C@H](c1(ccc(O)c(Cl)c1))NC(=O)[C@@H](C)NC(=O)[C@H](CC(C)C)NC(=O)CNC(=O)[C@@H](NC([C@H](NC(=O)[C@H](c4(ccc(O[C@@H]3([C@@H](O[C@H]2(O[C@H](CO)[C@@H](O)[C@H](O)[C@H](O)2))[C@@H](O)[C@H](O)[C@H](O3)CO))cc4))NC(=O)[C@H](NC(=O)[C@H](Cc5(ccccc5))NC(=O)[C@H]([C@H](C)O)NC(=O)[C@H](NC([C@@H](NC([C@H](NC([C@H](NC([C@H](NC(=O)6)c7(ccc(O)cc7))=O)CCCN)=O)[C@@H](C)O)=O)c8(ccc(O)cc8))=O)c9(ccc(O)cc9))CCCN)[C@@H](C)O)=O)c%10(ccc(O)cc%10))=O)"
+"CPD-28123"	"mureidomycin A"	[]	"C38H48N8O12S"	840.90405	0	"CC(C(NC(=O)C(CCSC)NC(NC(Cc1(cccc(O)c1))C(O)=O)=O)C(N\C=C3(C[C@@H](O)[C@H](n2(ccc(=O)[nH]c(=O)2))O3))=O)N(C)C(=O)C(N)Cc4(cccc(O)c4)"
+"CPD-28124"	"avibactam"	[]	"C7H11N3O6S"	265.24002	0	"C1(N2(C(=O)N(OS(=O)(=O)O)[C@@H]1CC[C@@H](C(N)=O)2))"
+"CPD-28147"	"negamycin"	[]	"C9H20N4O4"	248.281	0	"CN(NC(C[C@@H](C[C@H](CN)O)N)=O)CC(O)=O"
+"CPD-28148"	"nitazoxanide"	["NTZ", "acetic acid [2-[[(5-nitro-2-thiazolyl)amino]-oxomethyl]phenyl] ester"]	"C12H9N3O5S"	307.28003	0	"CC(Oc2(c(C(Nc1(sc([N+]([O-])=O)cn1))=O)cccc2))=O"
+"CPD-28192"	"brilacidin"	[]	"C40H50N14O6F6"	936.916	0	"C(N=C(N)N)CCCC(=O)Nc5(c(OC1(CCNC1))c(NC(c2(cc(ncn2)C(Nc4(cc(cc(NC(CCCCN=C(N)N)=O)c(OC3(CCNC3))4)C(F)(F)F))=O))=O)cc(c5)C(F)(F)F)"
 "CPD-2841"	"azide"	["trinitride (1-)"]	"N3"	42.02	-1	"[N-]=[N+]=[N-]"
 "CPD-288"	"(1R,2S)-cyclohexa-3,5-diene-1,2-diol"	["<i>cis</i>-benzene glycol", "<i>cis</i>-cyclohexa-3,5-diene-1,2-diol", "<i>cis</i>-1,2-dihydrobenzene-1,2-diol", "<i>cis</i>cis-dihydrocatechol"]	"C6H8O2"	112.128	0	"C1(\C=C/[C@H]([C@H](\C=1)O)O)"
 "CPD-29"	"<i>p</i>-chloromercuribenzoate"	["4-chloromercuribenzoic acid", "(4-carboxyphenyl)-chloro-mercury", "p-CMB", "<i>p</i>-chloromercuribenzoic acid"]	"C7H4O2ClHg"	356.15	-1	"c1(ccc(cc1)C(=O)[O-])[Hg]Cl"
@@ -2639,6 +2675,7 @@
 "CPD-347"	"1,3-propanediol"	["propane-1,3-diol", "Trimethylene glycol", "PDO", "TMG"]	"C3H8O2"	76.095	0	"C(CCO)O"
 "CPD-352"	"17&beta;-estradiol"	["estradiol", "&beta;-estradiol", "oestradiol"]	"C18H24O2"	272.386	0	"C[C@]12([C@@H](CC[C@H](O)1)[C@@H]4([C@H](CC2)c3(c(cc(O)cc3)CC4)))"
 "CPD-355"	"D-arabinitol"	["D-arabitol", "D-arabinol", "D-lyxitol", "(2R,4R)-pentane-1,2,3,4,5-pentol"]	"C5H12O5"	152.147	0	"C(O)[C@@H](O)[C@@H](O)[C@H](O)CO"
+"CPD-356"	"D-arabinono-1,4-lactone"	["D-arabino-1,4-lactone"]	"C5H8O5"	148.115	0	"C(O)[C@H]1(OC(=O)[C@@H](O)[C@H](O)1)"
 "CPD-3561"	"lactulose"	["&beta;-D-Gal-(1&rarr;4)-D-Fru<i>f</i>"]	"C12H22O11"	342.299	0	"C(O)[C@H]2(O[C@@H](O[C@@H]1([C@@H](CO)O[C@](O)(CO)[C@@H](O)1))[C@H](O)[C@@H](O)[C@@H](O)2)"
 "CPD-3563"	"Tween 80"	["polysorbate 80"]	"C32H60O10"	604.82	0	"CCCCCCCC/C=C/CCCCCCCC(=O)OCCOCC(C1(C(C(CO1)OCCO)OCCO))OCCO"
 "CPD-3564"	"(S)-2-hydroxybutanoate"	["L-2-hydroxybutyric acid", "L-2-hydroxybutyrate", "L-&alpha;-hydroxybutyrate", "a-hydroxybutyric acid", "(S)-2-hydroxybutyrate"]	"C4H7O3"	103.097	-1	"CC[C@H](O)C(=O)[O-]"
@@ -2652,6 +2689,7 @@
 "CPD-3573"	"methyl pyruvate"	["propanoic acid, 2-oxo-, methyl ester", "pyruvic acid methylester"]	"C4H6O3"	102.09	0	"CC(=O)C(=O)OC"
 "CPD-358"	"(R)-lactaldehyde"	["D-lactaldehyde", "D-2-hydroxy-propionaldehyde"]	"C3H6O2"	74.079	0	"C[C@H](C=O)O"
 "CPD-3582"	"methyl &alpha;-D-glucoside"	["&alpha;-methyl-D-glucoside", "&alpha;-methylglucoside", "methyl &alpha;-D-glucopyranose", "methyl &alpha;-D-glucopyranoside", "methyl-D-glucoside", "a-methyl-D-glucoside", "&alpha;MG"]	"C7H14O6"	194.184	0	"CO[C@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O)1)"
+"CPD-360"	"D-xylono-1,5-lactone"	["D-xylonolactone"]	"C5H8O5"	148.115	0	"C1([C@@H]([C@H]([C@@H](CO1)O)O)O)=O"
 "CPD-3602"	"laminaran"	["a laminarin", "laminarin"]	null	null	0	"C([C@H]4(O[C@@H](OC[C@@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O[R2])O)O[C@H]2([C@@H]([C@H]([C@@H]([C@H](O2)CO)O)O[C@H]3([C@@H]([C@H]([C@@H]([C@H](O3)CO)O)O[R1])O))O))O))[C@@H]([C@H]([C@@H]4O)O)O))O"
 "CPD-3604"	"<i>N</i>-acetyl-&alpha;-D-galactosamine"	["<i>N</i>-acetylgalactosamine", "acetylgalactosamine", "2-acetamido-2-deoxy-D-galactopyranose", "2-acetamido-2-deoxy-D-galactose", "<i>N</i>-acetyl-D-chondrosamine", "&alpha;-D-galactopyranose, 2-(acetylamino)-2-deoxy-", "<i>N</i>-acetyl-D-galactosamine", "&alpha;-GalNAc"]	"C8H15NO6"	221.21	0	"CC(N[C@@H]1([C@H]([C@H]([C@H](O[C@@H]1O)CO)O)O))=O"
 "CPD-3605"	"&beta;-gentiobiose"	["gentiobiose", "&beta;-D-Glcp-(1&rarr;6)-&beta;-D-Glcp", "&beta;-D-glucopyranose-(1&rarr;6)-&beta;-D-glucopyranose"]	"C12H22O11"	342.299	0	"C(O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O)1))[C@H]2(O[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)2)"
@@ -2672,6 +2710,7 @@
 "CPD-3633"	"D-asparagine"	[]	"C4H8N2O3"	132.119	0	"C(C[C@H](C(=O)[O-])[NH3+])(N)=O"
 "CPD-3642"	"D-valine"	["2-amino-3-methylbutanoic acid(D)", "D-2-amino-3-methylbutyric acid", "D-2-amino-3-methylbutanoic acid", "(R)-valine"]	"C5H11NO2"	117.147	0	"CC(C)[C@@H]([NH3+])C([O-])=O"
 "CPD-3662"	"2-phthalimidoglutarate"	["2-phthalimidoglutaric acid", "2-(1,3-dioxoisoindol-2-yl)glutaric acid", "L-2-phthalimidoglutaric acid", "N-phthaloyl-L-glutamic acid", "N-phthalyl-L-glutamic acid", "phthaloyl-L-glutamic acid", "N-phthaloyl-L-glutamate"]	"C13H9NO6"	275.217	-2	"c1(ccc2(C(=O)N(C(=O)c(c1)2)[C@@H](CCC(=O)[O-])C(=O)[O-]))"
+"CPD-368"	"L-arabinono-1,4-lactone"	["L-arabino-1,4-lactone", "L-arabinonic acid gamma-lactone"]	"C5H8O5"	148.115	0	"C([C@@H]1(OC([C@@H]([C@H]1O)O)=O))O"
 "CPD-3681"	"n-amylamine"	["1-pentanamine", "1-aminopentane", "1-pentylamine", "monoamylamine", "norleucamine", "n-pentylamine"]	"C5H14N"	88.172	1	"CCCCC[NH3+]"
 "CPD-3682"	"ethylenediamine"	["ethanediamine", "1,2-diaminoethane", "1,2-ethanediamine", "dimethylenediamine"]	"C2H9N2"	61.106	1	"C([NH3+])CN"
 "CPD-3684"	"alloxan"	["2,4,5,6(1H,3H)-pyrimidinetetrone", "5,6-dioxouracil", "2,4,5,6-tetraoxohexahydropyrimidine"]	"C4H2N2O4"	142.071	0	"c1(=O)(c(=O)[nH]c(=O)[nH]c(=O)1)"
@@ -2746,7 +2785,7 @@
 "CPD-4461"	"plumbagin"	["plumbagine", "5-hydroxy-2-methyl-1,4-naphthoquinone"]	"C11H8O3"	188.182	0	"Cc2(c(c1(cccc(c1c(c2)=O)O))=O)"
 "CPD-448"	"&beta;-D-glucopyranose 1-phosphate"	["&beta;-D-glucose 1-phosphate"]	"C6H11O9P"	258.121	-2	"C(O)[C@H]1(O[C@H]([C@@H]([C@H]([C@@H]1O)O)O)OP([O-])([O-])=O)"
 "CPD-4501"	"miconazole"	["1-(2,4-dichloro-&beta;-((2,4-dichlorobenzyl)oxy)phenethyl) imidazole", "1H-imidazole, 1-(2-(2,4-dichlorophenyl)-2-((2,4-dichlorophenyl) methoxy)ethyl)-", "imidazole, 1-(2,4-dichloro-&beta;-((2,4-dichlorobenzyl)oxy) phenethyl)-", "imidazole, 1-(2-(2,4-dichlorophenyl)-2-((2,4-dichlorophenyl) methoxy)ethyl)- (9CI)"]	"C18H14N2OCl4"	416.133	0	"c1(cncn1CC(OCc2(ccc(Cl)cc(Cl)2))c3(ccc(Cl)cc(Cl)3))"
-"CPD-452"	"a 6-(<i>N</i>-acetyl-&alpha;-D-glucosaminyl)-1-phosphatidyl-1D-myo-inositol"	["<i>N</i>-acetyl-&alpha;-D-glucosaminylphosphatidylinositol"]	null	null	-1	"CC(=O)N[C@@H]2([C@@H](O)[C@H](O)[C@@H](CO)O[C@H](O[C@@H]1([C@@H](O)[C@H](O)[C@@H](O)[C@@H](O)[C@@H](OP([O-])(=O)OC[C@H](OC([R2])=O)COC([R1])=O)1))2)"
+"CPD-452"	"a 6-(<i>N</i>-acetyl-&alpha;-D-glucosaminyl)-1-phosphatidyl-1D-<i>myo</i>-inositol"	["&alpha;-D-GlcNAc-(1&rarr;6)-<i>myo</i>-inositol phospholipid.", "<i>N</i>-acetylglucosaminyl phosphatidylinositol", "<i>N</i>-acetyl-&alpha;-D-glucosaminylphosphatidylinositol"]	null	null	-1	"CC(=O)N[C@@H]2([C@@H](O)[C@H](O)[C@@H](CO)O[C@H](O[C@@H]1([C@@H](O)[C@H](O)[C@@H](O)[C@@H](O)[C@@H](OP([O-])(=O)OC[C@H](OC([R2])=O)COC([R1])=O)1))2)"
 "CPD-4544"	"tellurite"	["TeO2", "trioxotellurate(IV)", "tellurite ion"]	"O3Te"	175.598	-2	"[O-][Te]([O-])=O"
 "CPD-4584"	"vanadate"	["ortho-vanadate", "tetraoxovanadate"]	"O4V"	114.938	-3	"O=[V]([O-])([O-])[O-]"
 "CPD-468"	"L-2-aminoadipate"	["L-aminoadipic acid", "L-aminoadipate", "L-2-amino-hexanedioic acid", "L-&alpha;-aminoadipate", "L-&alpha;-aminoadipic acid", "L-2-aminoadipic acid", "L-2-aminohexanedioate", "aminoadipate"]	"C6H10NO4"	160.149	-1	"C([O-])(=O)CCC[C@@H](C(=O)[O-])[NH3+]"
@@ -2782,7 +2821,7 @@
 "CPD-524"	"aspirin"	["salicylic acid acetate", "o-carboxyphenyl acetate", "O-acetylsalicylic acid", "o-acetoxybenzoic acid", "Easprin", "Azetylsalizylsaeure", "ASA", "acidum acetylsalicylicum", "acido acetilsalicilico", "acide acetylsalicylique", "acide 2-(acetyloxy)benzoique", "Acetylsalicylsaeure", "2-acetoxybenzoic acid", "acetylsalicylic acid", "2-acetoxybenzenecarboxylic acid", "acetylsalicylate"]	"C9H7O4"	179.152	-1	"CC(Oc1(ccccc1C([O-])=O))=O"
 "CPD-5242"	"a tunicamycin"	["an N-[2-[3-acetylamino-4,5-dihydroxy-6-(hydroxymethyl) tetrahydropyran-2-yl]oxy-6-[2-[5-[(2,4-dioxo-1H-pyrimidin-1-yl)] -3,4-dihydroxy-tetrahydrofuran-2-yl]-2-hydroxy-ethyl]-4,5- dihydroxy-tetrahydropyran-3-yl]-5-methyl-hex-2-enamide", "a mycospocidin"]	null	null	0	"CC(N[C@@H]4([C@H]([C@@H]([C@@H](CO)O[C@H](O[C@H]3([C@H](NC(=O)[R])[C@@H](O)[C@@H](O)[C@@H](CC([C@@H]2([C@@H](O)[C@@H](O)[C@H](n1(ccc(=O)[nH]c1=O))O2))O)O3))4)O)O))=O"
 "CPD-534"	"D-<i>myo</i>-inositol (1,2,4,5,6)-pentakisphosphate"	["1D-<i>myo</i>-inositol 1,2,4,5,6-penta<i>kis</i>phosphate", "<i>myo</i>-inositol 1,2,4,5,6-penta<i>kis</i>phosphate", "inositol 1,2,4,5,6-penta<i>kis</i>phosphate"]	"C6H7O21P5"	569.977	-10	"[C@H]1(O)([C@@H](OP([O-])(=O)[O-])[C@H](OP([O-])([O-])=O)[C@@H](OP([O-])([O-])=O)[C@H](OP([O-])([O-])=O)[C@H](OP([O-])(=O)[O-])1)"
-"CPD-535"	"&beta;-D-fructose 2,6-bisphosphate"	["fru 2,6-P<sub>2</sub>", "fructose 2,6-diphosphate"]	"C6H10O12P2"	336.085	-4	"C([C@H]1(O[C@@]([C@H]([C@@H]1O)O)(CO)OP([O-])([O-])=O))OP(=O)([O-])[O-]"
+"CPD-535"	"&beta;-D-fructose 2,6-bisphosphate"	["fru 2,6-P<sub>2</sub>", "fructose 2,6-diphosphate"]	"C6H10O12P2"	336.085	-4	"C(OP(=O)([O-])[O-])[C@H]1(O[C@](OP([O-])(=O)[O-])(CO)[C@H]([C@@H]1O)O)"
 "CPD-536"	"glycerol 2-phosphate"	["&beta;-glycerol-phosphate", "2-glycerophosphate", "b-glycerol-phosphate", "&beta;-glycerophosphate"]	"C3H7O6P"	170.058	-2	"C(C(CO)OP([O-])([O-])=O)O"
 "CPD-538"	"a serine phosphoethanolamine"	[]	"C5H13N2O6P"	228.141	0	"C(COP(OCC(C(=O)[O-])[NH3+])([O-])=O)[NH3+]"
 "CPD-5401"	"p-chloromercuriphenylsulfonate"	["<i>p</i>-chloromercuriphenyl sulphonate", "<i>p</i>-chloromercuriphenyl sulphonic acid", "<i>p</i>-CMPSA", "<i>p</i>-chloromercuriphenylsulphonate", "PCMBS", "4-chloromercuribenzenesulfonate", "<i>p</i>-chloromercuribenzenesulfonate"]	"C6H4O3SClHg"	392.199	-1	"c1(ccc(cc1)S(=O)([O-])=O)[Hg]Cl"
@@ -2809,7 +2848,7 @@
 "CPD-5742"	"amobarbital"	["amytal"]	"C11H17N2O3"	225.267	-1	"CCC1(C([N-]C(NC1=O)=O)=O)CCC(C)C"
 "CPD-576"	"an <i>N</i>-acyl-L-aspartate"	[]	null	null	-2	"C(N[C@H](C(=O)[O-])CC(=O)[O-])([R])=O"
 "CPD-58"	"octopamine"	["1-(4-hydroxyphenyl)-2-aminoethanol", "p-hydroxyphenylethanolamine", "D,L-octopamine"]	"C8H12NO2"	154.188	1	"C(C(c1(ccc(cc1)O))O)[NH3+]"
-"CPD-581"	"N,N-Dimethylformamide"	["N,N-Dimethylmethanamide", "DMF"]	"C3H7NO"	73.094	0	"CN(C)C=O"
+"CPD-581"	"<i>N</i>,<i>N</i>-dimethylformamide"	["dimethylformamide", "DMF", "<i>N</i>,<i>N</i>-dimethylmethanamide", "<i>N</i>-formyldimethylamine"]	"C3H7NO"	73.094	0	"CN(C=O)C"
 "CPD-582"	"guanylyl molybdenum cofactor"	["MGD", "MPT-GMP", "MoO<sub>2</sub>(OH)Dtpp-mGDP", "molybdopterin guanine dinucleotide"]	"C20H22N10O16P2S2Mo"	880.45905	-4	"C(OP(OP(=O)([O-])OC[C@H]2(O[C@H]1(Nc4(nc(N)[nH]c(=O)c(N[C@H]1C3(\S[Mo-]([O-])(=O)(=O)SC\2=3))4))))(=O)[O-])[C@H]7(O[C@@H](n5(c6(c(nc5)c(=O)[nH]c(N)n6)))[C@H](O)[C@H](O)7)"
 "CPD-5821"	"(<i>S</i>)-2-oxo-4-hydroxy-4-carboxy-5-ureidoimidazoline"	["(<i>S</i>)-5-hydroxy-2-oxo-4-ureido-2,5-dihydro-1H imidazole-5-carboxylate", "(<i>S</i>)-OHCU", "4-(carbamoylamino)-5-hydroxy-2-oxo-2,5-dihydro-1H-imidazole-5-carboxylate"]	"C5H5N4O5"	201.118	-1	"C([C@]1(O)(NC(=O)/N=C1/NC(N)=O))(=O)[O-]"
 "CPD-5861"	"2-deoxy-D-galactose"	["2-deoxy-D-lyxohexose", "deoxygalactose"]	"C6H12O5"	164.158	0	"C(O)[C@@H]1([C@H](O)[C@H](O)CC(O)O1)"
@@ -2842,6 +2881,7 @@
 "CPD-644"	"L-<i>threo</i>-3-phenylserine"	["L-threo-phenylserine", "L-<i>threo</i>-phenylserine", "L-<i>threo</i>-&beta;-phenylserine", "(2S,3S)-2-amino-3-hydroxy-3-phenylpropanoate"]	"C9H11NO3"	181.191	0	"C([O-])(=O)[C@H]([C@H](c1(ccccc1))O)[NH3+]"
 "CPD-650"	"(3<i>R</i>)-hydroxybutanoyl-CoA"	["3-OH-butyryl-CoA", "OH-butyryl-CoA", "&beta;-hydroxybutyryl-<i>S</i>-CoA", "D-3-hydroxybutyryl-CoA", "hydroxy-butyryl-CoA", "&beta;-hydroxybutyryl-CoA", "3-hydroxybutyryl-CoA", "(3R)-3-hydroxybutanoyl-CoA", "3-hydroxybutanoyl-CoA"]	"C25H38N7O18P3S"	849.593	-4	"C[C@H](CC(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O)O"
 "CPD-653"	"(<i>S</i>)-NADHX"	["(6<i>S</i>)-6-&beta;-hydroxy-1,4,5,6-tetrahydronicotinamide-adenine dinucleotide"]	"C21H29N7O15P2"	681.445	-2	"C1(/N([C@@H](O)CCC(/C(N)=O)=1)[C@@H]5(O[C@H](COP(OP(OC[C@H]4(O[C@@H](n2(c3(c(nc2)c(N)ncn3)))[C@H](O)[C@H](O)4))(=O)[O-])(=O)[O-])[C@@H](O)[C@@H](O)5))"
+"CPD-654"	"2,5-dioxopentanoate"	["2-oxoglutarate semialdehyde", "2,5-dioxovalerate"]	"C5H5O4"	129.092	-1	"C(=O)CCC(C([O-])=O)=O"
 "CPD-656"	"5-oxo-D-proline"	["D-Pyroglutamic acid", "D-5-Pyrrolidone-2-carboxylic acid"]	"C5H6NO3"	128.107	-1	"C(=O)([C@@H]1(NC(CC1)=O))[O-]"
 "CPD-6562"	"DIMBOA-&beta;-D-glucoside"	["(2<i>R</i>)-4-hydroxy-7-methoxy-3-oxo-3,4-dihydro-2<i>H</i>-1,4-benzoxazin-2-yl &beta;-D-glucopyranoside", "DIMBOA-Glc"]	"C15H19NO10"	373.316	0	"COc1(ccc3(c(c1)OC(O[C@@H]2(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](O)2))C(=O)N(O)3))"
 "CPD-66"	"(3R)-oxaloglycolate"	["(2R)-2-hydroxy-3-oxosuccinate", "(2R)-2-hydroxy-3-oxobutanedioate"]	"C4H2O6"	146.056	-2	"C([C@@H](C(C(=O)[O-])=O)O)([O-])=O"
@@ -2862,7 +2902,7 @@
 "CPD-6901"	"cerulenin"	[]	"C12H17NO3"	223.271	0	"C/C=C/C/C=C/CCC(=O)[C@@H]1(O[C@@H](C(N)=O)1)"
 "CPD-6972"	"4-(2'-carboxyphenyl)-4-oxobutyryl-CoA"	["succinylbenzoyl-CoA", "2-succinylbenzoyl-CoA", "2-(3'-carboxypropionyl)benzoyl-CoA", "<i>o</i>-succinylbenzoyl-CoA"]	"C32H39N7O20P3S"	966.676	-5	"CC(C)([C@@H](O)C(=O)NCCC(=O)NCCSC(CCC(c1(ccccc(C([O-])=O)1))=O)=O)COP(=O)(OP(=O)(OC[C@H]2(O[C@H]([C@@H]([C@@H]2OP([O-])(=O)[O-])O)n4(c3(c(c(N)ncn3)nc4))))[O-])[O-]"
 "CPD-6982"	"(R)-3-(3,4-dihydroxyphenyl)lactate"	["R(+)-(3,4-dihydroxyphenyl)lactic acid", "(2R)-3-(3,4-dihydroxyphenyl)-2-hydroxypropanoate"]	"C9H9O5"	197.167	-1	"C([C@@H](Cc1(ccc(O)c(O)c1))O)(=O)[O-]"
-"CPD-7"	"a [4Fe-4S] iron-sulfur cluster"	["Iron-sulfur (4Fe-4S)", "a 4Fe-4S iron-sulfur cluster", "a 4Fe-4S center", "a 4Fe-4S cluster", "a 4Fe-4S iron-sulfur center", "a Fe<sub>4</sub>S<sub>4</sub> iron-sulfur center", "a [4Fe-4S] iron-sulfur center", "[4Fe-4S]", "4Fe-4S", "[4Fe-4S] cluster", "Fe<sub>4</sub>S<sub>4</sub> cluster"]	"H4S4Fe4"	351.628	0	"[Fe]15(S4([Fe]3(S1[Fe]2(S([Fe](S23)4)5))))"
+"CPD-7"	"a [4Fe-4S] iron-sulfur cluster"	["Iron-sulfur (4Fe-4S)", "a 4Fe-4S iron-sulfur cluster", "a 4Fe-4S center", "a 4Fe-4S cluster", "a 4Fe-4S iron-sulfur center", "a Fe<sub>4</sub>S<sub>4</sub> iron-sulfur center", "a [4Fe-4S] iron-sulfur center", "[4Fe-4S]", "4Fe-4S", "[4Fe-4S] cluster", "Fe<sub>4</sub>S<sub>4</sub> cluster"]	"S4Fe4"	351.62802	0	"[Fe]12(S[Fe]S[Fe](S1)S2).[Fe]"
 "CPD-7000"	"isobutanal"	["isobutyraldehyde", "isobutylaldehyde"]	"C4H8O"	72.107	0	"CC(C)C=O"
 "CPD-702"	"4-nitrobenzyl alcohol"	["4NBA"]	"C7H7NO3"	153.137	0	"C(O)c1(ccc(cc1)[N+]([O-])=O)"
 "CPD-703"	"4-nitrobenzaldehyde"	["4NBZ", "<i>p</i>-nitrobenzaldehyde"]	"C7H5NO3"	151.121	0	"C(=O)c1(ccc(cc1)[N+]([O-])=O)"
@@ -2995,6 +3035,7 @@
 "CPD-9195"	"ampicillin"	["aminobenzylpenicillin", "ampicillin Acid", "ampicillin Anhydrous", "D-(-)-6-(alpha-Aminophenylacetamido)penicillanic acid", "D-(-)-Ampicillin", "6-(D-(2-Amino-2-phenylacetamido))-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo(3.2.0)heptane-2-carboxylic acid", "anhydrous ampicillin"]	"C16H19N3O4S"	349.404	0	"CC1(C)([C@H](C(=O)[O-])N2([C@H](S1)[C@@H](C(=O)2)NC(=O)[C@H]([NH3+])c3(ccccc3)))"
 "CPD-9196"	"penicillin V"	["phenoxymethylpenicillin"]	"C16H17N2O5S"	349.381	-1	"CC2(C)([C@H](C(=O)[O-])N1(C([C@H]([C@H]1S2)NC(COc3(ccccc3))=O)=O))"
 "CPD-9218"	"carbenicillin"	["carboxybenzylpenicillin", "pyopen"]	"C17H16N2O6S"	376.383	-2	"CC2(C)([C@H](C(=O)[O-])N1(C([C@H]([C@H]1S2)NC(=O)C(C(=O)[O-])c3(ccccc3))=O))"
+"CPD-9220"	"methicillin"	["Methicillinum", "Dimocillin", "Metacillin", "Methycillin"]	"C17H19N2O6S"	379.407	-1	"CC2(C)([C@H](C(=O)[O-])N1(C([C@H]([C@H]1S2)NC(c3(c(cccc3OC)OC))=O)=O))"
 "CPD-9224"	"oxacillin"	["Micropenin", "Prostaphlin", "Resistopen", "Bristopen", "Stapenor", "Oxabel", "Staphcillin V"]	"C19H18N3O5S"	400.428	-1	"Cc2(c(c(c1(ccccc1))no2)C(N[C@@H]3(C(N4([C@@H](C(=O)[O-])C(C)(C)S[C@H]34))=O))=O)"
 "CPD-9225"	"cloxacillin"	["Syntarpen", "Methocillin S", "Clossacillina [DCIT]", "Spectrum 001345"]	"C19H17N3O5SCl"	434.873	-1	"Cc2(c(c(c1(ccccc1Cl))no2)C(N[C@@H]3(C(N4([C@@H](C(=O)[O-])C(C)(C)S[C@H]34))=O))=O)"
 "CPD-9226"	"dicloxacillin"	["dicloxacycline", "dicloxacilin", "maclicine"]	"C19H16N3O5SCl2"	469.318	-1	"Cc2(c(c(c1(c(cccc1Cl)Cl))no2)C(N[C@@H]3(C(N4([C@@H](C(=O)[O-])C(C)(C)S[C@@H]34))=O))=O)"
@@ -3002,6 +3043,7 @@
 "CPD-9228"	"cephaloridine"	["Kefloridin", "Loridine", "Cephaloridinum", "Cefaloridin", "Cefalorizin", "Cepaloridin", "Cephaloridin", "Glaxoridin"]	"C19H17N3O4S2"	415.481	0	"c1(cc[n+](cc1)CC2(\CS[C@@H]3([C@@H](C(N(C(/C(=O)[O-])=2)3)=O)NC(Cc4(cccs4))=O)))"
 "CPD-9229"	"cephalothin"	["Cephalothinum", "Cefalothin", "Cephalotin", "Cefalotin", "Cemastin", "Coaxin", "Keflin", "Averon-1"]	"C16H15N2O6S2"	395.424	-1	"CC(=O)OCC1(\CS[C@@H]2([C@@H](C(N(C(/C(=O)[O-])=1)2)=O)NC(Cc3(cccs3))=O))"
 "CPD-9231"	"imipenem"	["<i>N</i>-formimidoylthienamycin"]	"C12H16N3O4S"	298.336	-1	"C[C@@H](O)[C@H]1(C(=O)N2(C(\C(=O)[O-])=C(C[C@H]12)/SCCNC=N))"
+"CPD-9232"	"cefotaxime"	["Claforan"]	"C16H16N5O7S2"	454.452	-1	"CC(=O)OCC1(\CS[C@@H]2([C@@H](C(N(C(/C(=O)[O-])=1)2)=O)NC(C(\c3(csc(N)n3))=N/OC)=O))"
 "CPD-9233"	"cefoxitin"	["Mefoxitin", "Mefoxin", "Spectrum 001399"]	"C16H16N3O7S2"	426.438	-1	"CO[C@]1(C(N2(C(/C(=O)[O-])=C(COC(N)=O)/CS[C@H]12))=O)NC(Cc3(cccs3))=O"
 "CPD-9234"	"nitrocefin"	["cephalosporin 87/312", "(7R)-3-((E)-2,4-Dinitrostyryl)-7-(2-thienylacetamido)-3-cephem-4-carboxylic acid"]	"C21H15N4O8S2"	515.492	-1	"C(=O)(N[C@H]3([C@@H]2(N(C(/C([O-])=O)=C(/C=C/c1(c([N+]([O-])=O)cc([N+](=O)[O-])cc1))/CS2)C(=O)3)))Cc4(sccc4)"
 "CPD-9235"	"aztreonam"	["(Z,)-2-((((2-Amino-4-thiazolyl)(((2S,3S,)-2-methyl-4-oxo-1-sulfo-3-azetidinyl)carbamoyl)methylene)amino)oxy)-2-methylpropionic acid", "Azactam", "AZT", "aztreonam", "aztreonamum", "Primbactam"]	"C13H16N5O8S2"	434.418	-1	"C[C@@H]2(N(S(=O)(=O)[O-])C(=O)[C@@H](NC(C(/c1(nc([NH3+])sc1))=N/OC(C)(C)C([O-])=O)=O)2)"
@@ -3132,7 +3174,7 @@
 "CPD0-1161"	"3-hydroxytetradecanoyl-CoA"	[]	"C35H58N7O18P3S"	989.861	-4	"CCCCCCCCCCCC(O)CC(SCCNC(=O)CCNC(=O)C(O)C(COP(OP(OCC3(C(OP(=O)([O-])[O-])C(O)C(n2(c1(ncnc(N)c1nc2)))O3))(=O)[O-])(=O)[O-])(C)C)=O"
 "CPD0-1162"	"(2<i>E</i>,5<i>Z</i>)-tetradec-2,5-enoyl-CoA"	["2-trans,5-cis-tetradecenoyl-CoA", "14:2-&Delta;2,&Delta;5-CoA", "2-<i>trans</i>,5-<i>cis</i>-tetradecadienoyl-CoA"]	"C35H54N7O17P3S"	969.83	-4	"CCCCCCCC\C=C/C/C=C/C(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@H]1(O[C@H]([C@@H]([C@@H]1OP([O-])(=O)[O-])O)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
 "CPD0-1163"	"(S)-3-hydroxy-(5Z)-tetradecenoyl-CoA"	["(S)-3-hydroxy-5-cis-tetradecenoyl-CoA", "(S)-3-hydroxy-14:1-&Delta;5-CoA", "(3S)-hydroxy-5-<i>cis</i>-tetradecenoyl-CoA"]	"C35H56N7O18P3S"	987.845	-4	"CCCCCCCC\C=C/C[C@H](O)CC(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
-"CPD0-1171"	"a peptidoglycan tripeptide crosslinked to murein lipoprotein"	[]	null	null	-2	"C(NC(=O)[C@H](CCC[C@H](C(=O)[O-])[NH3+])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C)C(=O)[O-])CCC[C@@H](NC(=O)[C@@H]([R])N[a murein lipoprotein])C([O-])=O"
+"CPD0-1171"	"a peptidoglycan crosslinked to murein lipoprotein"	[]	null	null	-2	"C(NC(=O)[C@H](CCC[C@H](C(=O)[O-])[NH3+])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C)C(=O)[O-])CCC[C@@H](NC(=O)[C@@H]([R])N[a murein lipoprotein])C([O-])=O"
 "CPD0-1174"	"a GlcNAc-MurNAc-pentapeptide"	[]	null	null	-3	"C[C@H](C(=O)N[C@H](C)C(=O)[O-])NC(=O)[C@H](CCCC([R])[NH3+])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@@H](OP([O-])([O-])=O)O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C)C(=O)[O-]"
 "CPD0-1176"	"a GlcNAc-1,6-anhydro-MurNAc-tetrapeptide"	[]	null	null	-1	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)C3(OCC([C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))2)O3)))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCCC([R])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
 "CPD0-1185"	"a peptidoglycan internal segment with L,D cross links (<i>meso</i>-diaminopimelate containing)"	["peptidoglycan DAP-DAP crosslink"]	null	null	-4	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@H](O[R4])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R3])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@@H](NC(=O)[C@H](CCC[C@H](C(=O)[O-])[NH3+])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@H](O[R2])O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[R1])[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C)C(=O)[O-])C(=O)[O-])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
@@ -3702,7 +3744,7 @@
 "CPD0-2269"	"peptidoglycan dimer with tetrapeptide stems (<i>meso</i>-diaminopimelate containing)"	["[N-acetylglucosamine-N-acetylmuramoyl-L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-2,6-diaminopimeloyl-D-alanine]<sub>2</sub>", "two linked disacharide tetrapeptide murein units (uncrosslinked, middle of chain)"]	"C74H116N14O41"	1857.8	-4	"C[C@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@@H](O)O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](OC2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O)C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
 "CPD0-2270"	"two disacharide linked murein units, tetrapeptide crosslinked tetrapeptide (A2pm->D-ala) (middle of chain)"	[]	"C74H111N14O39"	1820.761	-5	"CC2(C(=O)NC(CCC(=O)[O-])C(=O)NC(CCCC(NC(=O)C(C)NC(=O)C(CCCC(N)C(=O)[O-])NC(=O)C(CCC(=O)[O-])NC(=O)C(C)NC(=O)C(C)OC5(C(NC(=O)C)C(OC1(C(CO)OC(C(NC(=O)C)C(O)1)OC3(C(CO)O/C=C(C(OC(C)C(=O)N2)3)/NC(=O)C)))OC(CO)C(OC4(OC(C(O)C(O)C(NC(=O)C)4)CO))5))C(=O)[O-])C(=O)NC(C)C([O-])=O)"
 "CPD0-2272"	"peptidoglycan dimer with tripeptide stems (<i>meso</i>-diaminopimelate containing)"	["[N-acetylglucosamine-N-acetylmuramoyl-L-alanyl-&gamma;-D-glutamyl-<i>meso</i>-diaminopimelate]<sub>2</sub>", "two linked disaccharide tripeptide murein units (uncrosslinked, middle of chain)"]	"C68H106N12O39"	1715.642	-4	"C[C@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@@H](O)O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](OC2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C([O-])=O)[NH3+])C(=O)[O-])C(=O)[O-])=O)C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C([O-])=O)[NH3+])C(=O)[O-])C(=O)[O-])=O"
-"CPD0-2273"	"a peptidoglycan with D,D tripeptide-tetrapeptide crosslinks  (<i>meso</i>-diaminopimelate containing)"	["two disacharide linked murein units, tripeptide crosslinked tetrapeptide (A2pm->D-ala) (middle of chain)"]	null	null	-4	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@H](O[R4])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R3])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(N[C@H](C)C(=O)N[C@H](CCC[C@@H](C(=O)[O-])NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C)C(=O)[O-])C(=O)[O-])=O)C(=O)[O-])=O"
+"CPD0-2273"	"a peptidoglycan with D,D tripeptide-tetrapeptide crosslinks  (<i>meso</i>-diaminopimelate containing)"	["two disacharide linked murein units, tripeptide crosslinked tetrapeptide (A2pm->D-ala) (middle of chain)"]	null	null	-4	"C[C@H](NC([C@H](O[C@@H]2([C@@H](NC(=O)C)[C@@H](O[R3])O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R4])[C@H](O)[C@@H](NC(=O)C)1))2))C)=O)C(N[C@@H](C([O-])=O)CCC(N[C@H](C(N[C@H](C)C(N[C@H](CCC[C@H](NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C)C([O-])=O)C([O-])=O)C([O-])=O)=O)=O)CCC[C@H](C([O-])=O)[NH3+])=O)=O"
 "CPD0-2274"	"peptidoglycan dimer with tetrapeptide and tripepetide stems (<i>meso</i> diaminopimelate containing)"	[]	"C71H111N13O40"	1786.721	-4	"C[C@H](NC([C@H](O[C@@H]4([C@@H](NC(=O)C)[C@@H](O)O[C@H](CO)[C@@H](O[C@@H]3(O[C@H](CO)[C@@H](OC2(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C([O-])=O)[NH3+])C(=O)[O-])C(=O)[O-])=O)C)[C@H]2NC(=O)C))[C@H](O)[C@@H](NC(=O)C)3))4))C)=O)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C([O-])=O)[NH3+])C(N[C@H](C)C(=O)[O-])=O)C(=O)[O-])=O"
 "CPD0-2275"	"adenosine tetraphosphopyridoxal"	["adenosine-(5')tetraphospho(5')pyridoxal", "AP4-PL"]	"C18H20N6O18P4"	732.28	-4	"Cc1(c(c(C=O)c(cn1)COP([O-])(=O)OP([O-])(=O)OP([O-])(=O)OP(OC[C@H]4(O[C@@H](n2(c3(c(nc2)c(N)ncn3)))[C@H](O)[C@H](O)4))([O-])=O)O)"
 "CPD0-2276"	"glycine ethyl ester"	[]	"C4H9NO2"	103.121	0	"CCOC(=O)CN"
@@ -3745,7 +3787,7 @@
 "CPD0-2368"	"2-aminopropanal"	["2-aminopropionaldehyde"]	"C3H8NO"	74.102	1	"CC([NH3+])C=O"
 "CPD0-2370"	"<i>S</i>-(acet-2-yl)-glutathione"	[]	"C12H17N3O8S"	363.342	-2	"C(SCC([O-])=O)[C@@H](C(NCC([O-])=O)=O)NC(=O)CC[C@H]([NH3+])C([O-])=O"
 "CPD0-2375"	"4-hydroxy-L-<i>allo</i>-threonine"	[]	"C4H9NO4"	135.119	0	"C(O)[C@H](O)[C@H]([NH3+])C(=O)[O-]"
-"CPD0-2376"	"SN-38G"	[]	"C28H27N2O11"	567.528	-1	"CCc2(c1(cc(ccc1nc3(c2Cn4(c(c5(COC([C@](CC)(c(cc34)5)O)=O))=O)))O[C@H]6([C@@H]([C@H]([C@@H]([C@@H](C([O-])=O)O6)O)O)O)))"
+"CPD0-2376"	"SN38 glucuronide"	["SN-38G"]	"C28H27N2O11"	567.528	-1	"CCc3(c2(cc(O[C@H]1([C@H](O)[C@H]([C@@H]([C@H](O1)C([O-])=O)O)O))ccc2nc5(c3Cn6(c(=O)c4(c([C@@](O)(CC)C(OC4)=O)cc56)))))"
 "CPD0-2377"	"<i>N</i><sup>7</sup>-methylguanine"	["7-MeG", "7-methylguanine", "2-amino-7-methyl-1,7-dihydro-6H-purin-6-one"]	"C6H7N5O"	165.154	0	"Cn1(cnc2(nc([nH]c(=O)c12)N))"
 "CPD0-2379"	"glutathionylspermidine disulfide"	["(GspS)<sub>2</sub>"]	"C34H70N12O10S2"	871.121	4	"C([NH3+])CC[NH2+]CCCCNC(=O)CNC(=O)[C@H](CSSC[C@@H](C(NCC(NCCCC[NH2+]CCC[NH3+])=O)=O)NC(=O)CC[C@H]([NH3+])C([O-])=O)NC(=O)CC[C@H]([NH3+])C([O-])=O"
 "CPD0-2381"	"methanetelluronate"	["methylated tellurite"]	"CH3O3Te"	190.633	-1	"C[Te](=O)([O-])=O"
@@ -3866,7 +3908,7 @@
 "CPD0-2596"	"<i>N</i>-pantoylglycyl-2-aminoethanethiol"	["Gly-Pan"]	"C10H20N2O4S"	264.339	0	"CC([C@@H](O)C(=O)NCC(=O)NCCS)(C)CO"
 "CPD0-2597"	"faropenem"	["(5R,6S)-6-[(1R)-1-hydroxyethyl]-7-oxo-3-[(2R)-tetrahydrofuran-2-yl]-4-thia-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid", "(+)-(5R,6S)-6-((1R)-1-hydroxyethyl)-7-oxo-3-((2R)-tetrahydro-2-furyl)-4-thia-1-azabicyclo(3.2.0)hept-2-ene-2-carboxylic acid", "fropenem"]	"C12H14NO5S"	284.306	-1	"C[C@@H](O)[C@H]1(C(=O)N3([C@@H]1SC(/[C@H]2(CCCO2))=C(C([O-])=O)/3))"
 "CPD0-2598"	"AM-112"	[]	"C14H22N2O5"	298.338	0	"C[C@@H](O)[C@@H]1(C(N2(C(/C(=O)[O-])=C(C(C)(C)CCC[NH3+])/O[C@H]12))=O)"
-"CPD0-2599"	"mecillinam"	["FL 1060"]	"C15H22N3O3S"	324.417	-1	"CC1(C)(S[C@H]3(N([C@@H](C(=O)[O-])1)C(=O)[C@@H](/N=C/N2(CCCCCC2))3))"
+"CPD0-2599"	"mecillinam"	["FL 1060", "amdinocillin"]	"C15H22N3O3S"	324.417	-1	"CC1(C)(S[C@H]3(N([C@@H](C(=O)[O-])1)C(=O)[C@@H](/N=C/N2(CCCCCC2))3))"
 "CPD0-2600"	"doripenem"	[]	"C15H24N4O6S2"	420.498	0	"C[C@H]3(C(/S[C@H]1(C[C@@H](CNS(N)(=O)=O)[NH2+]C1))=C(C(=O)[O-])\N2(C(=O)[C@@H]([C@H]23)[C@H](C)O))"
 "CPD0-2601"	"ceftobiprole"	[]	"C20H21N8O6S2"	533.556	-1	"C2(N([C@@H]1(CC[NH2+]C1))C(=O)C(\C2)=C/C5(/CS[C@@H]4([C@H](NC(=O)C(/c3(nc(N)sn3))=N/[O-])C(=O)N4C(/C(=O)[O-])=5)))"
 "CPD0-2602"	"cefepime"	[]	"C19H24N6O5S2"	480.556	0	"C[N+]1(CCCC1)CC4(\CS[C@@H]3([C@H](NC(=O)C(/c2(nc(N)sc2))=N/OC)C(=O)N3C(/C(=O)[O-])=4))"
@@ -3953,6 +3995,8 @@
 "CPD0-2717"	"<i>N</i>-acetyl-&alpha;-D-glucosaminyl-diphosphate-diacylglycerol"	["GlcNAc-PP-DAG"]	null	null	-2	"CC(=O)N[C@@H]1([C@@H](O)[C@H](O)[C@@H](CO)O[C@H](OP(OP([O-])(=O)OC[C@H](COC([R1])=O)OC(=O)[R2])([O-])=O)1)"
 "CPD0-2718"	"a peptidoglycan with D,D cross-links (<i>meso</i>-diaminoepimelate containing)"	[]	null	null	-6	"CC(C)=CCCC(\C)=C/CCC(\C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/CCC(/C)=C/COP(OP(O[C@H]4(O[C@H](CO)[C@@H](O[C@@H]1(O[C@H](CO)[C@@H](O[R])[C@H](O)[C@@H](NC(=O)C)1))[C@H](O[C@@H](C(=O)N[C@@H](C)C(N[C@H](CCC(=O)N[C@@H](CCC[C@H](C(=O)[O-])[NH3+])C(=O)N[C@H](C)C(=O)N[C@H](CCC[C@@H](C(N[C@H](C)C(=O)[O-])=O)NC(=O)CC[C@@H](NC(=O)[C@@H](NC([C@H](O[C@@H]3([C@@H](NC(=O)C)[C@H](O[R1])O[C@H](CO)[C@@H](O[C@@H]2(O[C@H](CO)[C@@H](O[R2])[C@H](O)[C@@H](NC(=O)C)2))3))C)=O)C)C(=O)[O-])C(=O)[O-])C(=O)[O-])=O)C)[C@@H](NC(=O)C)4))([O-])=O)(=O)[O-]"
 "CPD0-2726"	"1,<i>N</i><sup>6</sup>-&alpha;-hydroxypropanoadenine in DNA"	[]	null	null	-2	"C(OP(=O)([O-])O[a deoxyribonucleic acid])[C@H]4(O[C@@H](n3(c2(c(C1(\N(CCC(O)\N=1)\C=N/2))nc3)))C[C@H](OP(=O)(O[a deoxyribonucleic acid])[O-])4)"
+"CPD0-2728"	"uridine<sup>2449</sup> in 23S rRNA"	["a 23S rRNA uridine<sup>2449</sup>"]	null	null	0	null
+"CPD0-2731"	null	[]	null	null	0	null
 "CPD0-341"	"S-succinyl-dihydrolipoamide"	[]	"C12H20NO4S2"	306.414	-1	"C(N)(=O)CCCC[C@H](SC(=O)CCC(=O)[O-])CCS"
 "CPD0-441"	"fosmidomycin"	[]	"C4H9NO5P"	182.093	-1	"C(N(O)C=O)CCP([O-])(O)=O"
 "CPD0-621"	"iron(III)-coprogen"	["ferric coprogen"]	"C35H53N6O13Fe"	821.683	0	"CC(/CCO)=C\C(N(CCC[C@@H]1(NC(=O)[C@@H](NC(=O)1)CCCN([O-])C(=O)/C=C(C)/CCOC([C@@H](NC(=O)C)CCCN([O-])C(=O)/C=C(C)/CCO)=O))[O-])=O.[Fe+3]"
@@ -4019,7 +4063,7 @@
 "Curdlan"	"curdlan"	[]	null	null	0	"C([C@H]3(O[C@@H](O[C@@H]2([C@H]([C@H](O[C@H]1([C@@H]([C@H](O[C@H]([C@@H]1O)O[R2])CO)O))O[C@@H]([C@H]2O)CO)O))[C@@H]([C@H]([C@@H]3O)O[R1])O))O"
 "CUSO4"	"copper sulfate"	["cupric sulfate"]	"Cu(SO4)"	159.604	0	null
 "Cutin-Monomers"	"a cutin monomer"	["cutin monomer"]	null	null	0	null
-"Cutins"	"a cutin"	["cutin"]	null	null	0	null
+"Cutins"	"a cutin"	["cutin"]	"C96H181O19"	null	-1	"C(CCCCCC(OC(CCCCCCCCC(OC(CCCCCCCCC(O)CCCCCCO)=O)CCCCCCOC(CCCCCCCCC(O)CCCCCCO)=O)=O)CCCCCCCCC(OCCCCCCC(OC(CCCCCCCCC(O)CCCCCCO)=O)CCCCCCCCC([O-])=O)=O)O"
 "Cyanocobamides"	"a cyanocobamide"	[]	null	null	0	null
 "Cyanohydrins"	"a cyanohydrin"	[]	null	null	0	"C(#N)C([R2])(O)[R1]"
 "Cyanophycin"	"cyanophycin"	["N-&beta;-aspartylarginine", "[L-Asp(4-L-Arg)]n", "[L-4-(L-arginin-2-N-yl)aspartic acid]n", "poly{N4-[(1S)-1-carboxy-4-guanidinobutyl]-L-asparagine}", "multi-L-arginyl-poly [L-aspartic acid]"]	null	null	0	"C(NC(N)=[NH2+])CC[C@@H](C([O-])=O)NC(C[C@@H](C([a protein])=O)NC([C@H](CC(=O)N[C@H](C([O-])=O)CCCNC(N)=[NH2+])NC([C@H](CC(=O)N[C@H](C([O-])=O)CCCNC(N)=[NH2+])NC([C@H](CC(=O)N[C@H](C([O-])=O)CCCNC(N)=[NH2+])N[a protein])=O)=O)=O)=O"
@@ -4047,6 +4091,8 @@
 "Cyclitols"	"a cyclitol"	[]	null	null	0	null
 "Cycloalkenes"	"a cycloalkene"	[]	null	null	0	null
 "Cyclodextrins"	"a cyclodextrin"	["a cyclomaltodextrin", "a Schardinger dextrin"]	null	null	0	null
+"Cyclohexanediones"	"a cyclohexanedione"	[]	null	null	0	null
+"Cyclohexanones"	"a cyclohexanone"	[]	null	null	0	null
 "Cycloisomaltooligosaccharides"	"a cycloisomaltooligosaccharide"	[]	null	null	0	null
 "Cypemycin"	"cypemycin"	[]	null	null	0	null
 "Cypemycin-C-Terminal-Cys"	"a [cypemycin] C-terminal L-Cys-L-Leu-L-Val-L-Cys"	[]	null	null	-1	"CC(C)C[C@H](NC(=O)[C@@H](N[cypemycin])CS)C(=O)N[C@H](C(=O)N[C@H](C(=O)[O-])CS)C(C)C"
@@ -4210,6 +4256,7 @@
 "D-TYROSINE"	"D-tyrosine"	["2-amino-3-(4-hydroxyphenyl)-propanoic acid"]	"C9H11NO3"	181.191	0	"C([C@@H](Cc1(ccc(O)cc1))[NH3+])(=O)[O-]"
 "D-xylofuranose"	"D-xylofuranose"	[]	"C5H10O5"	150.131	0	"C(O)[C@@H]1([C@@H]([C@H](C(O)O1)O)O)"
 "D-XYLONATE"	"D-xylonate"	[]	"C5H9O6"	165.122	-1	"C(=O)([O-])[C@H](O)[C@@H](O)[C@H](O)CO"
+"D-XYLONO-14-LACTONE"	"D-xylono-1,4-lactone"	[]	"C5H8O5"	148.115	0	"C(O)[C@H]1(OC(=O)[C@H](O)[C@@H](O)1)"
 "D-Xylopyranose"	"D-xylopyranose"	[]	"C5H10O5"	150.131	0	"C1(OC(O)[C@H](O)[C@@H](O)[C@H](O)1)"
 "D-Xylose"	"D-xylose"	["(+)-xylose", "(D)-Xylose", "D-Xyl", "wood sugar"]	"C5H10O5"	150.131	0	"C(=O)[C@H](O)[C@@H](O)[C@H](O)CO"
 "D-Xylulofuranose"	"D-xylulofuranose"	[]	"C5H10O5"	150.131	0	"C(O)C1(O)([C@H]([C@@H](CO1)O)O)"
@@ -4316,9 +4363,11 @@
 "DIAMINONONANOATE"	"(7<i>R</i>,8<i>S</i>)-diaminononanoate"	["(7<i>R</i>,8<i>S</i>)-7,8-diaminopelargonate", "DAPA"]	"C9H21N2O2"	189.277	1	"C[C@@H]([C@@H](CCCCCC([O-])=O)[NH3+])[NH3+]"
 "Diaryl-Sulfone-Derivatives"	"a diaryl sulfone derivative"	[]	null	null	0	null
 "Diazines"	"a diazine"	[]	null	null	0	null
+"Dibenzooxazepines"	"a dibenzooxazepine"	[]	null	null	0	null
 "Dibenzoquinolizines"	"a dibenzoquinolizine"	[]	null	null	0	null
 "dicarboxylate"	"a dicarboxylate"	["a dicarboxylic acid"]	null	null	0	null
 "DICARBOXYLIC-ACID-MONOAMIDES"	"a monoamide of a dicarboxylate"	["monoamide of a dicarboxylic acid"]	null	null	0	null
+"Dichlorobenzenes"	"a dichlorobenzene"	[]	null	null	0	null
 "Dichlorobenzoate"	"a dichlorobenzoate"	[]	null	null	0	null
 "DICOUMAROL"	"dicoumarol"	["dicoumarin", "melitoxin", "bis-hydroxycoumarin", "dicumarol"]	"C19H12O6"	336.3	0	"c1(cc4(c(cc1)OC(C(\CC2(/C(Oc3(c(C(/O)=2)cccc3))=O))=C4/O)=O))"
 "Diesters"	"a diester"	[]	null	null	0	null
@@ -4405,6 +4454,7 @@
 "Dipeptides-With-L-Ala-At-N-Terminal"	"a dipetide with an N-terminal L-alanine"	["a dipetide with L-alanine at the N-terminal"]	null	null	0	"C[C@H]([NH3+])C(=O)N[C@@H]([R])C(=O)[O-]"
 "Dipeptides-With-Met-Amino"	"a dipeptide with an N-terminal L-methionine"	["Met-Xaa dipeptide", "a dipeptide with L-methionine at the N-terminal"]	null	null	0	"CSCC[C@@H](C(=O)N[C@@H]([R])C(=O)[O-])[NH3+]"
 "Dipeptides-With-Proline-Carboxy"	"a dipeptide with a C-terminal L-proline"	["Xaa-Pro", "a dipeptide with proline at carboxy terminal"]	null	null	0	"C1(N(C(=O)[C@H]([R])[NH3+])[C@@H](CC1)C(=O)[O-])"
+"Diphenyl-Ethers"	"a diphenyl ether"	[]	null	null	0	null
 "DIPHOSPHO-1D-MYO-INOSITOL-TETRAKISPHOSPH"	"a diphospho-1D-myo-inositol tetrakisphosphate"	[]	"C6H7O24P6"	648.949	-11	"[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@H]1OP([O-])(=O)[O-])OP([O-])(=O)[O-])OP([O-])(=O)[O-])OP(=O)([O-])OP([O-])(=O)[O-])OP(=O)([O-])[O-])O"
 "DIPHTHAMIDE"	"a diphthamide-[translation elongation factor 2]"	["a {3-[4-(2-amino-2-carboxy-ethyl)-1H-imidazol-2-YL]-1-carbomyl-propyl}-trimethyl-ammonium", "a 2-[(3R)-3-carbamoyl-3-(trimethylammonio)propyl]-L-histidyl", "a 2'-[3-carboxamido-3-(trimethylammonio)propyl]-L-histidine", "a peptide diphthamide", "a diphthamide in eEF-2", "a [translation elongation factor 2] diphthamide"]	null	null	1	"C[N+](C)(C)[C@H](C(N)=O)CCc1(nc(c[nH]1)C[C@H](N[elongation factor 2])C(=O)[elongation factor 2])"
 "Diphthine-methyl-ester-EF2"	"a diphthine methyl ester-[translation elongation factor 2]"	["a diphthine methyl ester in eEF-2", "a [translation elongation factor 2]-diphthine methyl ester"]	null	null	1	"C[N+](C)(C)[C@H](C(OC)=O)CCc1(nc(c[nH]1)C[C@H](N[elongation factor 2])C(=O)[elongation factor 2])"
@@ -4436,7 +4486,6 @@
 "DNA-6-O-Methyl-Guanines"	"an <i>O</i><sup>6</sup>-methylguanine in DNA"	["a DNA 6-O-methylguanine", "DNA 6-O-methylguanine", "DNA (CONTAINING 6-O-METHYLGUANINE)", "a DNA containing 6-O-methylguanine"]	null	null	-2	"COc1(nc(N)nc2(n(cnc12)[C@@H]3(O[C@H](COP(=O)([O-])O[a deoxyribonucleic acid])[C@@H](OP(=O)(O[a deoxyribonucleic acid])[O-])C3)))"
 "DNA-Adenines"	"an adenine in DNA"	["a DNA adenine"]	null	null	-2	"C(OP(=O)([O-])O[a deoxyribonucleic acid])[C@H]3(O[C@@H](n1(c2(c(nc1)c(N)ncn2)))C[C@H](OP(=O)(O[a deoxyribonucleic acid])[O-])3)"
 "DNA-Cleaved-Recognition-Site"	"DNA cleaved at recognition site"	[]	null	null	0	null
-"DNA-Combined-With-Exogenous-DNA"	"DNA combined with exogenous DNA to form a recombinational junction"	[]	null	null	0	null
 "DNA-containing-diamino-hydro-formamidops"	"a ring-opened 7-methylguanine in DNA"	["Fapy-7MeG", "a 2,6-diamino-4-hydroxy-5N-methyl-formamidopyrimidine in DNA"]	null	null	-4	"CN(C=O)c4(c(=O)[nH]c(N)nc(N[C@@H]3(O[C@H](COP(O[C@H]1(C[C@H]([a nucleobase])O[C@H](COP(=O)([O-])O[a deoxyribonucleic acid])1))(=O)[O-])[C@@H](OP(OC[C@H]2(O[C@@H]([a nucleobase])C[C@H](OP(O[a deoxyribonucleic acid])(=O)[O-])2))(=O)[O-])C3))4)"
 "DNA-Containing-N6-Methyladenine"	"an <i>N<sup>6</sup></i>-methyladenine in DNA"	["a DNA 6-methylaminopurine", "DNA containing <i>N<sup>6</sup></i>-methyladenine", "a 6-methylaminopurine in DNA"]	null	null	-2	"CNc1(ncnc2(n(cnc12)[C@@H]3(O[C@H](COP(=O)([O-])O[a deoxyribonucleic acid])[C@@H](OP(=O)(O[a deoxyribonucleic acid])[O-])C3)))"
 "DNA-Cytidines"	"a 2'-deoxycytidine in DNA"	["a DNA cytidine"]	null	null	-2	"C(OP(=O)([O-])O[a deoxyribonucleic acid])[C@H]2(O[C@@H](n1(ccc(N)nc(=O)1))C[C@H](OP(=O)(O[a deoxyribonucleic acid])[O-])2)"
@@ -4573,7 +4622,7 @@
 "Fatty-Acids"	"a fatty acid"	[]	null	null	-1	"C([R])([O-])=O"
 "Fatty-Acids-Within-Glycerolipids"	"a fatty acid within a glycerolipid"	[]	null	null	0	"C(CC(=O)[a glycerolipid])[R]"
 "Fatty-acyl-adenylate"	"a fatty-acyl adenylate ester"	["an adenylated fatty-acid", "a fatty acyl-AMP"]	null	null	-1	"C([C@@H]3([C@H]([C@H]([C@H](n2(c1(c(c(ncn1)N)nc2)))O3)O)O))OP(OC(=O)[R])([O-])=O"
-"Fatty-Acyl-CoAs"	"a fatty acyl-CoA"	[]	null	null	0	null
+"Fatty-Acyl-CoAs"	"a fatty acyl-CoA"	[]	null	null	-4	"C([R])CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
 "Fatty-Alcohols"	"a fatty alcohol"	[]	null	null	0	"C([R])O"
 "Fatty-Aldehydes"	"a fatty aldehyde"	[]	null	null	0	"C(=O)[R]"
 "Fatty-amides"	"a fatty amide"	[]	null	null	0	"C(N[R2])(=O)[R1]"
@@ -4895,7 +4944,7 @@
 "Groups"	"Superatoms"	["Groups"]	null	null	0	null
 "GTP"	"GTP"	["guanylyl imidodiphosphate", "guanosine 5'-triphosphate", "guanosine-triphosphate"]	"C10H12N5O14P3"	519.151	-4	"C(OP(=O)([O-])OP(=O)([O-])OP(=O)([O-])[O-])[C@H]3(O[C@@H](n1(c2(c(nc1)c(=O)[nH]c(N)n2)))[C@H](O)[C@H](O)3)"
 "Guaiacols"	"a guaiacol"	["an <i>O</i>-methoxyphenol", "a catechol monomethyl ether"]	null	null	0	"COc1(c([R4])c([R3])c([R2])c([R1])c1O)"
-"Guaiacyl-Monolignols"	"a guaiacyl-type monolignol"	[]	null	null	0	"COc1(cc([R])ccc(O)1)"
+"Guaiacyl-Monolignols"	"a para-substituted 2-methoxyphenol"	["a guaiacyl-type monolignol"]	null	null	0	"COc1(cc([R])ccc(O)1)"
 "Guaiacylglycerol-guaiacyl-ether"	"guaiacylglycerol-&beta;-guaiacyl ether"	["GGE"]	"C17H20O6"	320.341	0	"COc1(ccccc1OC(CO)C(O)c2(cc(OC)c(O)cc2))"
 "Guanidines"	"a guanidine"	[]	null	null	0	null
 "Guanido-Compounds"	"a guanido compound"	[]	null	null	0	null
@@ -5110,7 +5159,9 @@
 "Indole-Derivatives"	"an indole derivative"	[]	null	null	0	null
 "Indole-Phytoalexins"	"an indole-phytoalexin"	[]	null	null	0	null
 "Indoles"	"an indole"	[]	null	null	0	null
-"INDOLE_LACTATE"	"indole-3-lactate"	["indole lactate", "(indol-3-yl)lactate", "indolelactic acid", "indolelactate", "Indole-3-lactic acid"]	"C11H10NO3"	204.205	-1	"c1(ccc2(c(c1)c(CC(O)C(=O)[O-])c[nH]2))"
+"INDOLE_ACETALDEHYDE"	"(indol-3-yl)acetaldehyde"	["indole-3-acetaldehyde", "2-(indol-3-yl)acetaldehyde", "indole acetaldehyde"]	"C10H9NO"	159.187	0	"C(=O)Cc1(c2(c([nH]c1)cccc2))"
+"INDOLE_ACETATE_AUXIN"	"(indol-3-yl)acetate"	["IAA", "indole-3-acetic acid", "indoleacetic acid", "auxin", "indoleacetate", "indole-3-acetate", "(1<i>H</i>-indol-3-yl)acetate", "3-indoleacetic acid"]	"C10H8NO2"	174.179	-1	"C([O-])(=O)Cc1(c[nH]c2(ccccc12))"
+"INDOLE_LACTATE"	"(indol-3-yl)lactate"	["indole lactate", "indole-3-lactate", "indolelactic acid", "indolelactate", "Indole-3-lactic acid"]	"C11H10NO3"	204.205	-1	"c1(ccc2(c(c1)c(CC(O)C(=O)[O-])c[nH]2))"
 "INDOLE_PYRUVATE"	"(indol-3-yl)pyruvate"	["indole-pyr", "indolepyruvic acid", "indole-3-pyruvate", "indolepyruvate", "3-(indol-3-yl)pyruvate", "3-indole-2-oxopropanoate", "IPA", "indole-3-pyruvic acid"]	"C11H8NO3"	202.189	-1	"C([O-])(=O)C(=O)Cc1(c[nH]c2(ccccc12))"
 "Indolocarbazoles"	"an indolocarbazole alkaloid"	[]	null	null	0	null
 "Inorganic-Anions"	"an inorganic anion"	[]	null	null	0	null
@@ -5204,7 +5255,8 @@
 "Keratan-sulfate-NAcGlc"	"[keratan sulfate]-&alpha;-<i>N</i>-acetyl-D-glucosamine"	["a keratan glucosamine"]	null	null	0	"CC(=O)N[C@H]1([C@@H](O[R1])O[C@H](CO)[C@@H](O[R2])[C@H](O)1)"
 "Keratan-sulfate-NAcGlcN6S"	"[keratan sulfate]-&alpha;-<i>N</i>-acetyl-D-glucosamine 6-<i>O</i>-sulfate"	["a keratan glucosamine 6-<i>O</i>-sulfate"]	null	null	-1	"CC(=O)N[C@H]1([C@@H](O[R1])O[C@H](COS(=O)(=O)[O-])[C@@H](O[R2])[C@H](O)1)"
 "Ket0-D-Psicose"	"<i>keto</i>-D-psicose"	["D-ribo-2-ketohexose", "D-ribo-2-hexulose", "erythrohexulose", "D-allulose", "psicose", "pseudofructose", "D-altrulose"]	"C6H12O6"	180.157	0	"C(O)C(=O)[C@H](O)[C@H](O)[C@H](O)CO"
-"Ketals"	"a ketoaldehyde"	[]	null	null	0	null
+"Ketals"	"a ketal"	[]	null	null	0	null
+"Ketoaldehydes"	"a ketoaldehyde"	[]	null	null	0	null
 "Ketoaldonates"	"a ketoaldonate"	["a ketoaldonic acid"]	null	null	0	null
 "Ketocarotenoids"	"a ketocarotenoid"	[]	null	null	0	null
 "Ketohexoses"	"a ketohexose"	[]	"C6H12O6"	180.157	0	"C(O)C(=O)C(O)C(O)C(O)CO"
@@ -5368,6 +5420,7 @@
 "Lacto-Series-GSLs"	"a lacto-series glycosphingolipid"	[]	null	null	0	"CC(=O)N[C@H]2([C@@H](O[C@H](CO)[C@H]([C@H](O[C@@H]1(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)1))2)O)O[C@H]4([C@@H](O)[C@@H](CO)O[C@@H](O[C@@H]3([C@@H](CO)O[C@@H](OC[C@H](NC(=O)[R2])[C@H](O)[R1])[C@H](O)[C@@H](O)3))[C@H](O)4))"
 "Lactones"	"a lactone"	[]	null	null	0	null
 "Lactosyl-Ceramides"	"a lactosylceramide"	["Gal-&beta;1->4Glc-&beta;1->1'Cer", "a &beta;-D-galactosyl-1,4-&beta;-D-glucosylceramide", "a lactosyl ceramide", "LacCer", "a lactosyl-<i>N</i>-acylsphingosine", "cytolipin-H", "a &beta;-D-galactosyl-(1&rarr;4)-&beta;-D-glucosyl-(1&harr;1)-ceramide", "a p histo-blood group antigen"]	null	null	0	"CCCCCCCCCCCCC/C=C/[C@@H](O)[C@H](CO[C@@H]1(O[C@H](CO)[C@H]([C@H](O)[C@@H](O)1)O[C@@H]2(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)2)))NC(=O)[R]"
+"LACTOYL-COA"	"(<i>S</i>)-lactoyl-CoA"	["lactoyl-CoA", "L-lactoyl-CoA"]	"C24H36N7O18P3S"	835.566	-4	"C[C@H](O)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
 "Lactoyl-CoAs"	"lactoyl-CoA"	[]	"C24H36N7O18P3S"	835.566	-4	"CC(O)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
 "Lambda-Carrageenan"	"&lambda;-carrageenan"	["&lambda;- carrageenan"]	null	null	-6	"C(O)[C@H]4(O[C@@H](O[C@@H]3([C@H](O)[C@@H](OS(=O)(=O)[O-])[C@@H](O[C@@H]2([C@@H](OS(=O)(=O)[O-])[C@H](O[C@@H]1([C@H](O)[C@@H](OS(=O)(=O)[O-])[C@@H](O[R2])O[C@H](COS(=O)([O-])=O)1))O[C@H](CO)[C@H](O)2))O[C@H](COS(=O)([O-])=O)3))[C@H](OS(=O)(=O)[O-])[C@H]([C@@H](O)4)O[R1])"
 "Lanthanide-Cations"	"a lanthanide cation"	[]	null	null	0	null
@@ -5379,6 +5432,7 @@
 "LC-ACYL-SN-GLYCEROL-3P"	"1-(long-chain acyl)-<i>sn</i>-glycerol 3-phosphate"	[]	null	null	-2	"C(CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)[O-])O)[R]"
 "LC-alcohol-LC-acyl-ester"	"a long-chain alcohol--long-chain acyl wax ester"	[]	null	null	0	"C([R1])CCCCCCCCCCCCOC(=O)CCCCCCCCCCCC[R2]"
 "LC-alcohol-VLC-acyl-ester"	"a long-chain alcohol--very-long-chain acyl wax ester"	[]	null	null	0	"C(CCCCCCCCCCCCCCCCCCCCCCC(=O)OCCCCCCCCCCCCC[R])[R]"
+"LC-Alcohol-Wax-Esters"	"a long-chain alcohol wax ester"	[]	null	null	0	"C([R1])CCCCCCCCCCCCOC(=O)CC[R2]"
 "LDL-receptor-L-serine"	"[low-density-lipoprotein receptor]-L-serine"	[]	null	null	0	"C([C@@H](N[a protein])CO)([a protein])=O"
 "LDL-receptor-O-phospho-L-serine"	"[low-density-lipoprotein receptor]-O-phospho-L-serine"	[]	null	null	-2	"C([C@@H](N[a protein])COP(=O)([O-])[O-])([a protein])=O"
 "LEU"	"L-leucine"	["(2S)-&alpha;-2-amino-4-methylvaleric acid", "L", "leucine", "2-amino-4-methylvaleric acid", "(2S)-&alpha;-leucine", "L-leu", "leu"]	"C6H13NO2"	131.174	0	"CC(C)C[C@H]([NH3+])C([O-])=O"
@@ -5563,7 +5617,7 @@
 "Marinoloyl-Coa"	"a marinoloyl-CoA"	[]	null	null	-4	"CC(/C([R])[C@H]1([C@H](O)[C@H](O)[C@@H](C/C=C/[C@H]([C@H](C)O)C)CO1))=C\C(OCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]2([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O2)n4(c3(c(c(N)ncn3)nc4))))[O-])[O-])=O"
 "Mature-Peptidoglycan"	"a mature peptidoglycan"	[]	null	null	0	null
 "MC-alcohol-LC-acyl-ester"	"a medium-chain alcohol--long-chain acyl wax ester"	[]	null	null	0	"C(CCCCCCCCCCCC(=O)OCCCCCC[R])[R2]"
-"MC-alcohol-VLC-acyl-ester"	"a medium-chain alcohol--very-long-chain acyl wax ester"	[]	null	null	0	"C(CCCCCCCCCCCCCCCCCCCCCCC(=O)OCCCCCC[R])[R]"
+"MC-alcohol-Wax-Esters"	"a medium-chain alcohol wax ester"	[]	null	null	0	"C([R2])CC(=O)OCCCCCC[R1]"
 "mcm5s2U-34-tRNA"	"a 5-(2-methoxy-2-oxoethyl)2-thiouridine<sup>34</sup> in tRNA"	["a tRNA containing 5-(2-methoxy-2-oxoethyl)2-thiouridine<sup>34</sup>", "an mcm<sup>5</sup>s<sup>2</sup>U<sup>34</sup> in tRNA", "a 5-methoxycarbonylmethyl-2-thiouridine<sup>34</sup> in tRNA"]	null	null	-2	"COC(=O)CC1(\C(=O)NC(=S)N(\C=1)[C@@H]2(O[C@H](COP(=O)([O-])O[a transfer RNA])[C@@H](OP(=O)(O[a transfer RNA])[O-])[C@@H](O)2))"
 "mcmo5U34m-tRNA"	"a 5-(methoxycarbonylmethoxy)-2'-<i>O</i>-methyluridine<sup>34</sup> in tRNA"	["a mcmo<sup>5</sup>U<sup>34</sup>m in tRNA"]	null	null	-2	"COC(=O)COc1(c(=O)[nH]c(=O)n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a transfer RNA])[C@@H](OP(=O)(O[a transfer RNA])[O-])[C@@H](OC)2))"
 "MDO-D-Glucoses"	"an osmoregulated periplasmic glucan"	["an MDO-&beta;-D-glucan", "an OPG-&beta;-D-glucan"]	null	null	0	"C([C@@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O[R])O)O)O))O[C@H]2([C@@H]([C@H]([C@@H]([C@H](O2)CO)O)O)O[C@H]3([C@@H]([C@H]([C@@H]([C@H](O3)CO)O)O)O))"
@@ -5576,7 +5630,7 @@
 "Medium-Chain-3-Hydroxyacyl-CoAs"	"a medium-chain (3<i>R</i>)-3-hydroxyacyl-CoA"	[]	null	null	0	null
 "Medium-Chain-3S-Hydroxyacyl-CoAs"	"a medium-chain (3<i>S</i>)-3-hydroxyacyl-CoA"	[]	null	null	-4	"C([R])CC[C@H](O)CC(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@H]1(O[C@H]([C@@H]([C@@H]1OP([O-])(=O)[O-])O)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
 "Medium-Chain-Acyl-CoAs"	"a medium-chain fatty acyl-CoA"	[]	null	null	-4	"C([R])CCCCC(SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@H]1(O[C@H]([C@@H]([C@@H]1OP([O-])(=O)[O-])O)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-])=O"
-"Medium-Chain-Alcohols"	"a medium-chain fatty alcohol"	[]	null	null	0	"C([R])O"
+"Medium-Chain-Alcohols"	"a medium-chain fatty alcohol"	[]	null	null	0	"C([R])CCCCCO"
 "Medium-Chain-Aldehydes"	"a medium-chain fatty aldehyde"	["a medium-chain aldehyde"]	null	null	0	"C([R])=O"
 "Medium-Chain-Alkanes"	"a medium-chain alkane"	[]	null	null	0	"C[R]"
 "Medium-Chain-Carboxylates"	"a medium-chain carboxylate"	["a medium-chain acid anion"]	null	null	-1	"C([O-])(=O)[R]"
@@ -5597,11 +5651,12 @@
 "Mercapturates"	"a mercapturate"	["an S-substituted-<i>N</i>-acetyl-L-cysteine", "an <i>N</i>-acetyl-L-cysteine-<i>S</i>-conjugate", "a mercapturic acid"]	null	null	-1	"CC(=O)N[C@@H](CS[R])C(=O)[O-]"
 "MESACONATE"	"mesaconate"	["2-methylfumarate", "mesaconic acid", "(<i>E</i>)-2-methyl-2-butanedionic acid"]	"C5H4O4"	128.084	-2	"CC(/C([O-])=O)=C\C([O-])=O"
 "MESO-DIAMINOPIMELATE"	"<i>meso</i>-diaminopimelate"	["meso-2,6-diaminopimelate", "meso-A<SUB>2</SUB>pm", "meso-diaminoheptanedioate", "meso-2,6-diaminoheptanedioate", "meso-1-&alpha;,&epsilon;-diaminopimelate", "D,L-diaminopimelate", "D,L-DAP", "D,L-meso-diaminoheptanedioate", "M-DAP"]	"C7H14N2O4"	190.199	0	"C([C@H](CCC[C@H](C([O-])=O)[NH3+])[NH3+])([O-])=O"
-"MESO-TARTRATE"	"<i>meso</i>-tartrate"	["<i>meso</i>-tartaric acid", "(2R,3S)-2,3-dihydroxybutanedioate", "mesotartaric acid", "erythrarate", "M-tartarate", "M-tartaric acid", "(2R,3S/2S,3R)-tartrate"]	"C4H4O6"	148.072	-2	"C([C@H]([C@H](C([O-])=O)O)O)([O-])=O"
+"MESO-TARTRATE"	"<i>meso</i>-tartrate"	["<i>meso</i>-tartaric acid", "(2<i>R</i>,3<i>S</i>)-2,3-dihydroxybutanedioate", "mesotartaric acid", "erythrarate", "M-tartarate", "M-tartaric acid", "(2<i>R</i>,3<i>S</i>/2<i>S</i>,3<i>R</i>)-tartrate"]	"C4H4O6"	148.072	-2	"C([C@H]([C@H](C([O-])=O)O)O)([O-])=O"
 "MET"	"L-methionine"	["M", "methionine", "L-met"]	"C5H11NO2S"	149.207	0	"CSCC[C@H]([NH3+])C([O-])=O"
 "Metal-Ions"	"a metal cation"	[]	null	null	0	null
 "Metal-sulfur-Clusters"	"a metal-sulfur cluster"	["a metal-sulfur center"]	null	87.907	0	null
 "Metalloid-Cations"	"a metalloid cation"	[]	null	null	0	null
+"Metallophores"	"a metallophore"	[]	null	null	0	null
 "Metalloporphyrins"	"a metalloporphyrin"	[]	null	null	0	null
 "Metallotetrapyrroles"	"a metallotetrapyrrole"	[]	null	null	0	null
 "Methanofurans"	"a methanofuran"	[]	null	null	-1	"C(NC(=O)CC[C@H](NC(=O)CC[C@H](N[R])C(=O)[O-])C(=O)[O-])Cc2(ccc(OCc1(coc(C[NH3+])c1))cc2)"
@@ -5691,7 +5746,7 @@
 "Modified-uracil-in-RNAs"	"a modified uracil within RNA"	[]	null	null	0	null
 "Modified-Uridine-in-RNAs"	"a modified uridine in RNA"	[]	null	null	0	null
 "Modified-Uridines"	"a modified uridine"	[]	null	null	0	null
-"MOENOMYCIN"	"moenomycin"	[]	"C69H104N4O35P"	1580.56	-3	"CC(C)=CCCC(\C)=C/CC(CCC(C)(C)/C=C/CCC(\C)=C/CO[C@@H](C([O-])=O)COP(=O)([O-])O[C@H]6(O[C@@H]([C@](O)(C)[C@H](OC(=O)N)[C@@H](O[C@@H]5(O[C@H](CO[C@H]1([C@H](O)[C@H]([C@H](O)[C@@H](CO)O1)O))[C@@H](O[C@@H]4(O[C@@H]([C@@H](O[C@H]3([C@H](O)[C@H]([C@@H](O)[C@@H](C(=O)NC2(/C(=O)CCC(\O)=2))O3)O))[C@H](O)[C@@H](NC(=O)C)4)C))[C@H](O)[C@@H](NC(=O)C)5))6)C(=O)[O-]))=C"
+"MOENOMYCIN"	"moenomycin"	["flavomycin", "moenomycin A", "babmermycin"]	"C69H104N4O35P"	1580.56	-3	"CC(C)=CCCC(\C)=C/CC(CCC(C)(C)/C=C/CCC(\C)=C/CO[C@@H](C([O-])=O)COP(=O)([O-])O[C@H]6(O[C@@H]([C@](O)(C)[C@H](OC(=O)N)[C@@H](O[C@@H]5(O[C@H](CO[C@H]1([C@H](O)[C@H]([C@H](O)[C@@H](CO)O1)O))[C@@H](O[C@@H]4(O[C@@H]([C@@H](O[C@H]3([C@H](O)[C@H]([C@@H](O)[C@@H](C(=O)NC2(/C(=O)CCC(\O)=2))O3)O))[C@H](O)[C@@H](NC(=O)C)4)C))[C@H](O)[C@@H](NC(=O)C)5))6)C(=O)[O-]))=C"
 "MONO-BETA-D-GALACTOSYLACYLGLYCEROL"	"a mono-&beta;-D-galactosylacylglycerol"	[]	null	null	0	"C(OC(=O)[R])[C@H](CO[C@@H]1(O[C@H](CO)[C@H](O)[C@H](O)[C@@H](O)1))O"
 "Mono-Rhamnolipids"	"a mono-rhamnolipid"	[]	null	null	-1	"C([R1])[C@H](CC(=O)[O-])OC(=O)C[C@@H](C[R2])O[C@H]1([C@H](O)[C@H](O)[C@@H](O)[C@H](C)O1)"
 "Mono-trans-poly-cis-polyprenyl-PP"	"a mono-<i>trans</i>, poly-<i>cis</i>-polyisoprenyl diphosphate"	[]	null	null	0	null
@@ -6015,6 +6070,7 @@
 "Nitrobenzenes"	"a nitrobenzene"	[]	null	null	0	null
 "Nitrogen-Molecular-Entities"	"a nitrogen molecular entity"	[]	null	null	0	null
 "Nitrohydrocarbons"	"a nitrohydrocarbon"	[]	null	null	0	"[N+]([R])(=O)[O-]"
+"Nitrosamines"	"a nitrosamine"	["an <i>N</i>-nitroso amine"]	null	null	0	"N([R2])([R1])N=O"
 "Nitroso-Compounds"	"a nitroso compound"	[]	null	null	0	null
 "Nitrosoaromatic-Compounds"	"a nitrosoaromatic compound"	[]	null	null	0	null
 "NITROUS-OXIDE"	"nitrous oxide"	["N<sub>2</sub>O"]	"N2O"	44.013	0	"N#N=O"
@@ -6034,6 +6090,7 @@
 "Non-standard-amino-acids"	"a non-proteinogenic &alpha;-amino acid"	["a non-standard &alpha; amino acid"]	null	null	0	null
 "Nonionic-Detergents"	"a nonionic detergent"	[]	null	null	0	null
 "Nonribosomal-Peptides"	"a non-ribosomal peptide"	[]	null	null	0	null
+"Nortropane-Alkaloids"	"a nortropane alkaloid"	[]	null	null	0	null
 "NRPS-Group"	"[non-ribosomal peptide synthase] group"	[]	null	null	-1	"CC(C)(COP(=O)([O-])OC[C@H](N[a non-ribosomal peptide synthase])C(=O)[a non-ribosomal peptide synthase])[C@@H](O)C(=O)NCCC(=O)NCCS"
 "NSAID"	"a non-steroidal anti-inflammatory drug"	[]	null	null	0	null
 "nu-Carrageenan"	"&nu;-carrageenan"	[]	null	null	-6	"C(O)[C@H]4(O[C@@H](O[C@@H]3([C@H](O)[C@@H](OS(=O)(=O)[O-])[C@@H](O[C@@H]2([C@@H](O)[C@H](O[C@@H]1([C@H](O)[C@@H](OS(=O)(=O)[O-])[C@@H](O[R2])O[C@H](COS(=O)([O-])=O)1))O[C@H](CO)[C@H](OS(=O)([O-])=O)2))O[C@H](COS(=O)([O-])=O)3))[C@H](O)[C@@H](O[R1])[C@@H](OS(=O)([O-])=O)4)"
@@ -6067,7 +6124,7 @@
 "O-Acyl-L-Carnitines"	"an <i>O</i>-acyl-L-carnitine"	[]	null	null	0	"C([C@H](OC([R])=O)CC(=O)[O-])[N+](C)(C)C"
 "O-acylcarnitines"	"an <i>O</i>-acyl-carnitine"	["an <i>O</i>-acyl-DL-carnitine"]	null	null	0	"C(C(OC([R])=O)CC(=O)[O-])[N+](C)(C)C"
 "O-acylpseudotropines"	"an <i>O</i>-acylpseudotropine"	[]	null	null	1	"C[NH+]1([C@H]2(C[C@H](OC(=O)[R])C[C@H]1CC2))"
-"O-acyltropines"	"an <i>O</i>-acyltropine"	[]	null	null	0	"C([R1])(=O)OC1(CC2(CCC(C1)N2C))"
+"O-acyltropines"	"an <i>O</i>-acyltropine"	[]	null	null	1	"C[NH+]1([C@@H]2(C[C@@H](C[C@@H]1CC2)OC(=O)[R]))"
 "O-ALKYLGLYCERONE"	"an O-alkylglycerone"	[]	null	null	0	"C(O)C(=O)COC[R]"
 "O-Antigens"	"a lipid-linked O antigen"	["an O-specific polysaccharide", "an O polysaccharide", "an O side-chain"]	null	null	0	null
 "O-D-MANNOSYL-PROTEIN"	"a 3-<i>O</i>-(&alpha;-D-mannosyl)-(Ser/Thr)-[protein]"	["a [protein]-<i>O</i>-D-mannosyl-(L-serine/L-threonine)"]	null	null	0	"C([C@@H](N[a protein])C([R])O[C@H]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@H](O)1))(=O)[a protein]"
@@ -6159,6 +6216,7 @@
 "Organo-Sulfates"	"an organic sulfate"	["an organosulfate", "alkyl sulfate"]	null	null	-1	"O([R])S(=O)(=O)[O-]"
 "Organoantimony-Compounds"	"an organoantimony compound"	[]	null	null	0	null
 "Organoarsenics"	"an organoarsenic compound"	[]	null	null	0	null
+"Organobromides"	"an organobromine compound"	["RBr"]	null	null	0	"Br[R]"
 "Organohalogen-Compounds"	"an organohalogen compound"	[]	null	null	0	null
 "Organoiodine-Compounds"	"an organoiodine compound"	[]	null	null	0	"F[R]"
 "Organometallics"	"an organometallic compound"	[]	null	null	0	null
@@ -6280,6 +6338,7 @@
 "PGL"	"a dimycocerosyl glycosyl phenolphthiocerol"	["a glycosyl dimycocerosyl phenolphthiocerol", "PGL"]	null	null	0	"C(CCCCCCCCCCCC[C@@H](C)C[C@@H](C)C[C@H](C[C@@H](C)C(O[C@H](CCCCCCCCCCCCC[R2]c1(ccc(O[R5])cc1))C[C@H](OC(=O)[C@H](C)C[C@H](C)C[C@H](C)C[C@H](C)CCCCCCCCCCCCC[R3])CCCC[C@H](C)[C@H](OC)C[R1])=O)C)[R4]"
 "PHE"	"L-phenylalanine"	["2S-&alpha;-phenylalanine", "F", "endophenyl", "phenylalanine", "L-phe", "phe"]	"C9H11NO2"	165.191	0	"C([O-])(=O)[C@@H]([NH3+])Cc1(ccccc1)"
 "PHENANTHRENE-RING"	"phenanthrene-ring"	[]	"C14H10"	178.233	0	"c1(cc2(ccc3(c(c(cc1)2)cccc3)))"
+"PHENOL"	"phenol"	["carbolic acid", "phenylalcohol"]	"C6H6O"	94.113	0	"c1(ccc(O)cc1)"
 "Phenolcarboxyphthiodiolenones"	"a phenolcarboxyphthiodiolenone"	[]	null	null	-1	"CC(/C(=O)C(C)C([O-])=O)=C\CCC[C@@H](O)C[C@H](O)CCCCCCCCCCCCC[R]c1(ccc(O)cc1)"
 "Phenolic-Donors"	"a phenolic donor"	[]	null	null	0	"c1([R])(ccc(O)cc1)"
 "Phenolphthiocerol-A"	"a phenolphthiocerol A"	[]	null	null	0	"CC[C@@H](OC)[C@@H](C)CCCC[C@@H](O)C[C@H](O)CCCCCCCCCCCCC[R]c1(ccc(O)cc1)"
@@ -6570,6 +6629,7 @@
 "PROCOLLAGEN-5-HYDROXY-L-LYSINE"	"a [procollagen]-(5R)-5-hydroxy-L-lysine"	["a [procollagen] L-erythro-5-hydroxy-L-lysine", "a [procollagen]-5-hydroxy-L-lysine", "a (2S,5R)- 5-hydroxy-L-lysine-[procollagen]"]	null	null	1	"C([NH3+])[C@H](O)CC[C@@H](C(=O)[a procollagen])N[a procollagen]"
 "PROCOLLAGEN-L-LYSINE"	"a [procollagen]-L-lysine"	["an L-lysine-[procollagen]"]	null	null	1	"C([NH3+])CCC[C@@H](C(=O)[a procollagen])N[a procollagen]"
 "PROCOLLAGEN-L-PROLINE"	"a [procollagen]-L-proline"	[]	null	null	0	"C1(N([a procollagen])[C@H](C([a procollagen])=O)CC1)"
+"Prodrugs"	"a prodrug"	[]	null	null	0	null
 "PROGESTERONE"	"progesterone"	["pregn-4-ene-3,20-dione"]	"C21H30O2"	314.467	0	"CC(=O)[C@H]3(CC[C@H]4([C@@H]2(CCC1(\[C@@](CCC(=O)\C=1)(C)[C@H]2CC[C@](C)34))))"
 "Progestogens"	"a progestogen"	[]	null	null	0	null
 "Prolipoprotein-Cysteines"	"a [prolipoprotein]-L-cysteine"	[]	null	null	0	"C(=O)([a prolipoprotein])[C@@H](N[a lipoprotein signal peptide])CS"
@@ -6659,6 +6719,7 @@
 "Protein-N5-methyl-L-glutamine"	"a [protein]-N<sup>5</sup>-methyl-L-glutamine"	[]	null	null	0	"CNC(=O)CC[C@@H](C(=O)[a protein])N[a protein]"
 "Protein-N6-5-glutamyl-lysine-crosslinks"	"a protein with an <i>N</i><sup>6</sup>-(&gamma;-glutamyl)-L-lysine crosslink"	[]	null	null	0	"C(NC(CC[C@@H](C([a protein])=O)N[a protein])=O)CCC[C@@H](C(=O)[a protein])N[a protein]"
 "Protein-N6-5-glutamyl-serotonin"	"a [protein] <i>N</i><sup>6</sup>-[(5-hydroxy-1<i>H</i>-indol-3-yl)ethyl]-L-glutamine"	[]	null	null	0	"C(NC(=O)CC[C@@H](C(=O)[a protein])N[a protein])Cc1(c[nH]c2(ccc(O)cc12))"
+"PROTEIN-N6-LACTOYL-L-LYSINES"	"a [protein]-<i>N</i><sup>6</sup>-(S)-lactoyl-L-lysine"	[]	null	null	0	"CC(O)C(=O)NCCCC[C@@H](C([a protein])=O)N[a protein]"
 "Protein-nitrosothiol-L-alanine"	"a [protein] 3-nitrosothio-L-alanine"	[]	null	null	0	"C(=O)([a protein])[C@@H](N[a protein])CSN=O"
 "Protein-phospho-fructosamines"	"a [protein]-<i>N</i><sup>6</sup>-(1-deoxy-3-<i>O</i>-phospho-D-fructos-1-yl)-L-lysine"	[]	null	null	-1	"C([NH2+]CCCC[C@H](N[a protein])C([a protein])=O)C(=O)[C@@H](OP([O-])([O-])=O)[C@H](O)[C@H](O)CO"
 "Protein-phospho-L-histidines"	"a [protein]-<i>N</i>-phospho-L-histidine"	[]	null	null	0	null
@@ -6772,7 +6833,6 @@
 "PYROPHOSPHATE-GROUP"	"a pyrophosphate group"	[]	null	null	-3	"[O-]P(OP(=O)([O-])O[R])(=O)[O-]"
 "Pyrophosphate-inositol-phosphates"	"a pyrophosphate-containing inositol phosphate"	["a diphospho-<i>myo</i>-inositol pentakisphosphate", "a diphospho-<i>myo</i>-inositol polyphosphate"]	null	null	0	null
 "Pyrroles"	"a pyrrole"	[]	"C4H5N"	67.09	0	"c1(cc[nH]c1)"
-"Pyrrolidine-Diones"	"a pyrrolidine dione"	[]	null	null	0	"CC(C)[C@@H](C(C1(C(=O)NC(=O)[C@@H](C)1))=O)NC(=O)C[C@H](N[R])c2(ccccc2)"
 "Pyrrolidinecarboxamides"	"a pyrrolidinecarboxamide"	[]	null	null	0	null
 "Pyrrolidines"	"a pyrrolidine"	[]	null	null	0	null
 "Pyrrolines"	"a pyrroline"	[]	null	null	0	null
@@ -6793,7 +6853,7 @@
 "Quinolones"	"a quinolone"	["a quinolinone"]	null	null	0	null
 "Quinones"	"a quinone"	[]	null	null	0	"c1([R4])(c([R3])c(=O)c([R3])c([R1])c(=O)1)"
 "Quinovose"	"quinovose"	[]	null	null	0	null
-"R--ALLANTOIN"	"(<i>R</i>)-(-)-allantoin"	["<i>R</i>-allantoin"]	"C4H6N4O3"	158.116	0	"[C@@H]1(NC(=O)N)(NC(=O)NC(=O)1)"
+"R--ALLANTOIN"	"(<i>R</i>)-(-)-allantoin"	["<i>R</i>-allantoin"]	"C4H6N4O3"	158.116	0	"C(N[C@@H]1(NC(=O)NC(=O)1))(=O)N"
 "R-2-Haloacids"	"an (<i>R</i>)-2-halocarboxylate"	["an (<i>R</i>)-2-haloacid"]	null	null	-1	"C(=O)([O-])[C@H]([X])[R]"
 "R-2-HYDROXYGLUTARATE"	"(<i>R</i>)-2-hydroxyglutarate"	["(<i>R</i>)-2-hydroxyglutaric acid", "(<i>R</i>)-2-hydroxypentanedioic acid", "D-2-hydroxyglutarate"]	"C5H6O5"	146.099	-2	"C(CC[C@H](C([O-])=O)O)([O-])=O"
 "R-2-METHYLACYL-COA"	"a (2<i>R</i>)-2-methylacyl-CoA"	[]	null	null	0	"C[C@H]([R])C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP(O)(=O)O)[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))O)O"
@@ -6816,7 +6876,6 @@
 "Reduced-Quinones"	"a quinol"	["quinol", "a hydroquinone", "a reduced quinone"]	null	null	0	"c1([R4])(c([R4])c(O)c([R2])c([R1])c(O)1)"
 "Release-factor-L-glutamine"	"a [release factor]-L-glutamine"	[]	null	null	0	"C(=O)([a release factor])[C@@H](N[a release factor])CCC(=O)N"
 "Release-factor-N5-Methyl-L-glutamine"	"a [release factor]-<i>N</i><sup>5</sup>-methyl-L-glutamine"	[]	null	null	0	"CNC(=O)CC[C@@H](C(=O)[a release factor])N[a release factor]"
-"Resolution-of-Recombinational-Junction"	"resolution of recombinational junction formation of two intact strands"	[]	null	null	0	null
 "RETINAL"	"<i>all-trans</i>-retinal"	["vitamin A aldehyde", "retinene", "axerophthal", "retinaldehyde", "retinal", "<i>all-trans</i>-Vitamin A aldehyde", "<i>all-trans</i>-retinene"]	"C20H28O"	284.441	0	"CC(/C=C/C1(/C(C)(C)CCCC(/C)=1))=C\C=C\C(/C)=C\C=O"
 "Retinals"	"a retinal"	["Vitamin A", "Vitamin A1"]	"C20H28O"	284.441	0	"CC(/C=C/C1(/C(C)(C)CCCC(/C)=1))=C\C=C\C(/C)=C\C=O"
 "Retinoates"	"a retinoate"	["Vitamin A", "a retinoic acid"]	"C20H27O2"	299.432	-1	"CC(/C=C/C1(/C(CCCC(/C)=1)(C)C))=C\C=C\C(/C)=C\C([O-])=O"
@@ -6917,7 +6976,7 @@
 "S-Alkyl-L-Cysteine-S-Oxides"	"an <i>S</i>-alkyl-L-cysteine S-oxide"	[]	null	null	0	"C([R])S(=O)C[C@H]([NH3+])C([O-])=O"
 "S-Alkyl-L-Cysteines"	"an S-alkyl-L-cysteine"	[]	null	null	0	"C(S[R])[C@H]([NH3+])C(=O)[O-]"
 "S-ALKYL-THIOSULFATE"	"an <i>S</i>-alkyl thiosulfate"	[]	null	null	-1	"O=S([O-])(=O)S[R]"
-"S-ALLANTOIN"	"(<i>S</i>)-(+)-allantoin"	["<i>S</i>-allantoin"]	"C4H6N4O3"	158.116	0	"C(=O)(N)N[C@H]1(NC(=O)NC(=O)1)"
+"S-ALLANTOIN"	"(<i>S</i>)-(+)-allantoin"	["<i>S</i>-allantoin"]	"C4H6N4O3"	158.116	0	"C(N[C@H]1(NC(=O)NC(=O)1))(=O)N"
 "S-CAMPHOR"	"(<i>S</i>)-camphor"	["()-bornan-2-one", "(1S)-(-)-camphor", "l-camphor", "(-)-camphor"]	"C10H16O"	152.236	0	"CC1(C)([C@H]2(CC(=O)[C@@]1(C)CC2))"
 "S-CARBOXYMETHYL-D-CYSTEINE"	"S-carboxymethyl-D-cysteine"	[]	"C5H8NO4S"	178.182	-1	"C(C([O-])=O)SC[C@@H]([NH3+])C(=O)[O-]"
 "S-CITRAMALATE"	"(<i>S</i>)-citramalate"	["&alpha;-methylmalate", "(<i>S</i>)-2-methylmalic acid", "(3<i>S</i>)-citramalate", "(3<i>S</i>)-citramalic acid", "(3<i>S</i>)-&alpha;-hydroxypyrotartaric acid", "(<i>S</i>)-2-methylmalate", "L-citramalic acid", "L-&alpha;-hydroxypyrotartaric acid", "L-citramalate", "<i>S</i>-citramalic acid", "<i>S</i>-&alpha;-hydroxypyrotartaric acid", "L-(+)-citramalate"]	"C5H6O5"	146.099	-2	"C[C@@](O)(C(=O)[O-])CC(=O)[O-]"
@@ -6953,6 +7012,7 @@
 "SAMP-C-Terminal-adenylate"	"a carboxyadenylated [SAMP] C-terminal glycine"	[]	null	null	-1	"C(N[a small archaeal modifier protein])C(=O)OP(OC[C@H]3(O[C@@H](n1(c2(c(nc1)c(N)ncn2)))[C@H](O)[C@H](O)3))(=O)[O-]"
 "SAMP-C-Terminal-Glycine"	"a [SAMP] C-terminal glycine"	["a C-terminal [SAMP]-glycine"]	null	null	-1	"C(N[a small archaeal modifier protein])C(=O)[O-]"
 "SAMP-C-Terminal-thiol"	"a thiocarboxylated [SAMP] C-terminal glycine"	["a [SAMP]-Gly-NH-CH<sub>2</sub>-C(O)SH"]	null	null	0	"C(N[a small archaeal modifier protein])C(=O)S"
+"Sapogenins"	"a sapogenin"	[]	null	null	0	null
 "Saponins"	"a saponin"	[]	null	null	0	null
 "SARCOSINE"	"sarcosine"	["<i>N</i>-methylglycine"]	"C3H7NO2"	89.094	0	"C[NH2+]CC(=O)[O-]"
 "Saturated-2-Lysophosphatidates"	"a 2,3,4-saturated 2-lysophosphatidate"	["1-acyl-sn-glycerol 3-phosphate", "acyl-sn-glycerol-3P", "acyl-sn-glycerol 3-phosphate", "a 1-acyl-<i>sn</i>-glycero 3-phosphate", "an acyl-<i>sn</i>-glycerol-3P", "an acyl-<i>sn</i>-glycerol 3-phosphate", "a 1-acyl-<i>sn</i>-glycerol-3P"]	null	null	-2	"C([R])CCC(=O)OC[C@H](COP([O-])(=O)[O-])O"
@@ -7017,6 +7077,7 @@
 "sialyl-28-sialyl-glycoside"	"an <i>N</i>-&alpha;-D-acetylneuraminate-(2&rarr;8)-<i>N</i>-acetyl-&alpha;-D-neuraminate-glycoside"	["an &alpha;-<i>N</i>-acetylneuraminate-(2&rarr;8)-&alpha;-<i>N</i>-acetylneuraminate-glycoside"]	null	null	-2	"CC(=O)N[C@@H]2([C@@H](O)C[C@](O[R])(C(=O)[O-])O[C@@H]([C@H](O)[C@@H](CO)O[C@@]1(C[C@H](O)[C@@H](NC(=O)C)[C@H]([C@H](O)[C@@H](CO)O)O1)(C(=O)[O-]))2)"
 "Sialyl-Tn-Antigen"	"a sialyl-Tn antigen"	["an sTn antigen", "an <i>N</i>-acetyl-&alpha;-neuraminyl-(2&rarr;6)-<i>N</i>-acetyl-&alpha;-D-galactosalaminyl-[glycoprotein]"]	null	null	-1	"CC(=O)N[C@@H]2([C@H](C[C@](OC[C@@H]1([C@H](O)[C@H](O)[C@@H](NC(C)=O)[C@H](O1)OC([R])[C@@H](C(=O)[a protein])N[a protein]))(C([O-])=O)O[C@H]2[C@H](O)[C@H](O)CO)O)"
 "Sialyloligosaccharides"	"a sialyloligosaccharide"	[]	null	null	-1	"CC(=O)N[C@@H]1([C@@H](O)CC(O[R])(C([O-])=O)O[C@@H]([C@H](O)[C@H](O)CO)1)"
+"Siderophore"	"a siderophore"	[]	null	null	0	"[a siderophore]"
 "signal-peptide"	"a signal peptide"	[]	null	null	0	null
 "Simple-Groups"	"a simple group"	[]	null	null	0	null
 "SINEFUNGIN"	"sinefungin"	[]	"C15H24N7O5"	382.398	1	"c1(nc2(c(c(n1)N)ncn2C3([C@@H]([C@@H]([C@H](O3)C[C@H](CC[C@@H](C(=O)[O-])[NH3+])[NH3+])O)O)))"
@@ -7066,6 +7127,7 @@
 "SS-Oligodeoxyribonucleotides"	"a single-stranded oligodeoxyribonucleotide"	[]	null	null	-3	"C(OP(O[C@H]2(C[C@H]([a nucleobase])O[C@H](COP(O[C@H]1(C[C@H]([a nucleobase])O[C@H](COP(O[R1])([O-])=O)1))([O-])=O)2))([O-])=O)[C@H]3(O[C@@H]([a nucleobase])C[C@H](O[R2])3)"
 "SS-Oligoribonucleotides"	"a single-stranded oligoribonucleotide"	[]	null	null	-3	"C(OP([O-])(O[a ribonucleic acid])=O)[C@H]3(O[C@@H]([a nucleobase])[C@H](O)[C@H](OP(OC[C@H]2(O[C@@H]([a nucleobase])[C@H](O)[C@H](OP([O-])(OC[C@H]1(O[C@@H]([a nucleobase])[C@H](O)[C@H](OP(O)(O[a ribonucleic acid])=O)1))=O)2))([O-])=O)3)"
 "ssDNA-Holder"	"a single-stranded DNA"	["a ssDNA"]	null	null	-4	"C(OP(=O)([O-])O[a deoxyribonucleic acid])[C@H]3(O[C@@H]([a nucleobase])C[C@H](OP(OC[C@H]2(O[C@@H]([a nucleobase])C[C@H](OP(OC[C@H]1(O[C@@H]([a nucleobase])C[C@H](OP(O[a deoxyribonucleic acid])(=O)[O-])1))(=O)[O-])2))(=O)[O-])3)"
+"ssRNA-Holder"	"a single-stranded RNA"	[]	null	null	-4	"C(OP(=O)([O-])O[R1])[C@H]3(O[C@@H]([a nucleobase])[C@H](O)[C@H](OP(OC[C@H]2(O[C@@H]([a nucleobase])[C@H](O)[C@H](OP(OC[C@H]1(O[C@@H]([a nucleobase])[C@H](O)[C@H](OP(=O)(O[R2])[O-])1))(=O)[O-])2))(=O)[O-])3)"
 "Stabilized-RecA-Filament-DNA-Complex"	"a stabilized RecA filament-DNA complex"	[]	null	null	0	null
 "Starch"	"starch"	[]	null	null	0	null
 "STEARIC_ACID"	"stearate"	["octadecanoate", "stearic acid", "octadecanoic acid", "n-C18:0"]	"C18H35O2"	283.473	-1	"CCCCCCCCCCCCCCCCCC(=O)[O-]"
@@ -7126,7 +7188,7 @@
 "SULFUR-DIOXIDE"	"sulfur dioxide"	["SO2", "sulphur dioxide"]	"O2S"	64.059	0	"O=S=O"
 "Sulfur-Molecular-Entities"	"a sulfur molecular entity"	[]	null	null	0	null
 "SUPER-OXIDE"	"superoxide"	["superoxide anion", "peroxide radical"]	"O2"	31.999	-1	"[O-]O"
-"Syringyl-Monolignols"	"a syringyl-type monolignol"	[]	null	null	0	"COc1(cc([R])cc(OC)c(O)1)"
+"Syringyl-Monolignols"	"a para-substituted 2,6-dimethoxyphenol"	["a syringyl-type monolignol"]	null	null	0	"COc1(cc([R])cc(OC)c(O)1)"
 "T2-C4-DECADIENYL-COA"	"(2E,4Z)-deca-2,4-dienoyl-CoA"	["trans-&Delta;<SUP>2</SUP>, cis-&Delta;<SUP>4</SUP>-decadienoyl-CoA"]	"C31H46N7O17P3S"	913.722	-4	"CCCCC\C=C/C=C/C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
 "T2-DECENOYL-COA"	"(2E)-dec-2-enoyl-CoA"	["2E-decenoyl-CoA", "2-<i>trans</i>-decenoyl-CoA", "trans-&Delta;<SUP>2</SUP>-decenoyl-CoA", "<i>trans</i>-dec-2-enoyl-CoA"]	"C31H48N7O17P3S"	915.738	-4	"CCCCCCC/C=C/C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1([C@@H](OP([O-])(=O)[O-])[C@@H](O)[C@@H](O1)n3(c2(c(c(N)ncn2)nc3))))[O-])[O-]"
 "TAG-18-2-32-0s"	"a TAG(18:2/32:0)"	["an 18:2/32:0-TAG", "a triacylglyceride(18:2/32:0)", "a TAG(50:2)"]	null	null	0	"C([C@H](OC([R2])=O)COC(=O)[R1])OC([R3])=O"
@@ -7244,7 +7306,7 @@
 "Thioesters"	"a thioester"	[]	null	null	0	null
 "Thioglucosides"	"a thioglucoside"	[]	null	null	0	"C(O)[C@@H]1([C@@H](O)[C@H](O)[C@@H](O)C(S[R])O1)"
 "THIOGLYCOLATE"	"thioglycolate"	["mercaptoacetate", "thioglycolic acid", "mercaptoacetic acid"]	"C2H3O2S"	91.104	-1	"C(C([O-])=O)S"
-"THIOHYDROXIMATE-O-SULFATES"	"an <i>N</i>-(sulfonatooxy)alkanimidothioic acid"	["a thiohydroximate-O-sulfate"]	null	null	-1	"C(S)([R])=NOS(=O)(=O)[O-]"
+"THIOHYDROXIMATE-O-SULFATES"	"an <i>N</i>-(sulfonatooxy)alkanimidothioate"	["a thiohydroximate-O-sulfate", "an <i>N</i>-(sulfonatooxy)alkanimidothioic acid"]	null	null	-1	"C(S)([R])=NOS(=O)(=O)[O-]"
 "THIOL-GROUP"	"a thiol group"	[]	null	null	0	"[R]S"
 "Thiols"	"a thiol"	["a mercaptan"]	null	null	0	"S[R]"
 "Thiophenes"	"a thiophene"	[]	null	null	0	null
@@ -7398,6 +7460,7 @@
 "tRNAs-with-N7-methyl-guanine"	"an <i>N</i><sup>7</sup>-methylguanine in tRNA"	["a tRNA containing <i>N</i><sup>7</sup>-methylguanine"]	null	null	-1	"C[n+]1(c3(c(=O)[nH]c(N)nc(n(c1)[C@@H]2(O[C@H](COP(=O)([O-])O[a transfer RNA])[C@@H](OP(=O)(O[a transfer RNA])[O-])[C@@H](O)2))3))"
 "tRNAs-with-O-methyl-C-or-U"	"a tRNA containing 2'-<i>O</i>-methylcytosine or 2'-<i>O</i>-methyluridine"	[]	null	null	0	null
 "tRNAs-with-queuine"	"a queuosine in tRNA"	["a tRNA containing queuosine"]	null	null	-1	"C([NH2+]C1(\C=C/[C@H](O)[C@H](O)1))c2(c4(c(=O)[nH]c(N)nc(n(c2)[C@@H]3(O[C@H](COP(=O)([O-])O[a transfer RNA])[C@@H](OP(=O)(O[a transfer RNA])[O-])[C@@H](O)3))4))"
+"Tropane-Alkaloids"	"a tropane alkaloid"	[]	null	null	0	null
 "TRP"	"L-tryptophan"	["W", "tryptacin", "trofan", "tryptophan", "2-amino-3-indolylpropanic acid", "L-trp", "trp"]	"C11H12N2O2"	204.228	0	"c2([nH]c1(ccccc1c(C[C@H]([NH3+])C(=O)[O-])2))"
 "Truncated-Limit-Dextrins"	"a &alpha;-limit dextrin with short branches"	[]	null	null	0	"C([C@H]%12(O[C@H](OC[C@H]1(O[C@@H]([C@@H]([C@@H](O)[C@@H]1O[C@H]2(O[C@@H]([C@H]([C@@H]([C@H]2O)O)O[R1])CO))O)O[C@@H]3([C@H](O[C@@H]([C@@H]([C@@H](O)3)O)O[C@@H]4([C@H](O[C@@H]([C@@H]([C@@H](O)4)O)O[C@@H]5([C@H](O[C@@H]([C@@H]([C@@H](O)5)O)O[C@@H]6([C@H](O[C@@H]([C@@H]([C@@H](O)6)O)O[C@@H]%11([C@H](O[C@H](O[C@@H]%10([C@H](O[C@H](O[C@@H]8([C@H](O[C@H](O[C@@H]7([C@H](OC(O[R2])[C@@H]([C@H]7O)O)CO))[C@@H]([C@H]8O)O)CO[C@H]9(O[C@@H]([C@@H](O)[C@@H]([C@H]9O)O)CO)))[C@@H]([C@H]%10O)O)CO))[C@@H]([C@@H](O)%11)O)CO))CO))CO))CO))CO)))[C@@H]([C@@H](O)[C@@H]%12O)O))O"
 "TTP"	"dTTP"	["thymidine triphosphate", "thymidine 5'-triphosphate", "TTP"]	"C10H13N2O14P3"	478.139	-4	"Cc1(cn(c(=O)[nH]c(=O)1)[C@H]2(C[C@H](O)[C@@H](COP(=O)([O-])OP(=O)([O-])OP(=O)([O-])[O-])O2))"
@@ -7541,6 +7604,7 @@
 "Vitamins-B6"	"a vitamin B6"	[]	null	null	0	null
 "VLC-alcohol-LC-acyl-ester"	"a very-long-chain alcohol--long-chain acyl wax ester"	[]	null	null	0	"C(CCCCCCCCCCCCCCCCCCCCCCOC(=O)CCCCCCCCCCCC[R2])[R]"
 "VLC-alcohol-VLC-acyl-ester"	"a very-long-chain alcohol--very-long-chain acyl wax ester"	[]	null	null	0	"C(CCCCCCCCCCCCCCCCCCCCCCC(=O)OCCCCCCCCCCCCCCCCCCCCCCC[R])[R]"
+"VLC-alcohol-Wax-Esters"	"a very-long-chain alcohol--acyl wax ester"	[]	null	null	0	"C(CCCCCCCCCCCCCCCCCCCCCCOC(=O)CC[R2])[R]"
 "WATER"	"H<sub>2</sub>O"	["H2O", "hydrogen oxide", "water"]	"H2O"	18.015	0	"O"
 "Wax-Esters"	"a wax ester"	[]	null	null	0	"C([R1])CCCCCCCCCCCCOC(=O)CCCCCCCCCCCC[R2]"
 "Wnt-Protein-L-serine"	"a [Wnt protein]-L-serine"	[]	null	null	0	"C([C@@H](N[a Wnt protein])CO)([a Wnt protein])=O"
