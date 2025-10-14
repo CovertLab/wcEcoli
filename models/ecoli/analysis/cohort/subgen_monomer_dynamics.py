@@ -57,7 +57,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('Skipping analysis - not enough generations run.')
 			return
 		cell_paths = self.ap.get_cells(
-			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
+			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEEDS,
 			only_successful=True)
 
 		# There are 4346 mRNA ids with counts
