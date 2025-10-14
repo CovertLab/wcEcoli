@@ -21,7 +21,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = 8
-SEEDS = np.arange(12, 20)
+SEEDS = np.arange(0, 20)
 COLOR_LINE = 'mediumseagreen' # 'skyblue'
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
@@ -137,7 +137,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				if i < len(molecules_of_interest):  # Check if there's a molecule for this subplot
 					molecule_id = molecules_of_interest[i]
 
-					interest_counts = counts[time, i]
+					interest_counts = counts[:, i]
 
 					ax.plot(time / 60, interest_counts, color=color, linewidth=6,
 							label=molecule_id)
