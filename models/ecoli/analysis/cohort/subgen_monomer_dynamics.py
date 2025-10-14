@@ -22,6 +22,7 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = 8
 SEEDS = np.arange(7, 10)
+COLOR_LINE = 'skyblue'
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
 						'BETAGALACTOSID-MONOMER[c]',  # lacZ
@@ -168,7 +169,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				fig.delaxes(axes.flat[i])
 
 			plt.tight_layout()
-			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_{seed}', metadata)
+			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_{seed}_{color}', metadata)
 
 
 		for seed in SEEDS:
@@ -184,11 +185,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			if monomers_of_interest is not None:
 
-				plot_counts_dynamics(monomer_counts, 'mediumseagreen', gene_names_in_order, 'monomer', time,
+				plot_counts_dynamics(monomer_counts, COLOR_LINE, gene_names_in_order, 'monomer', time,
 									 end_generation_times, seed)
 
 
-				plot_counts_dynamics(cistron_counts, 'mediumseagreen', gene_names_in_order, 'mRNA', time,
+				plot_counts_dynamics(cistron_counts, COLOR_LINE, gene_names_in_order, 'mRNA', time,
 									 end_generation_times, seed)
 
 
