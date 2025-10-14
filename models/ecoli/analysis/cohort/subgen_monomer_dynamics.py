@@ -21,8 +21,8 @@ from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = 8
-SEEDS = np.arange(7, 10)
-COLOR_LINE = 'skyblue'
+SEEDS = np.arange(12, 20)
+COLOR_LINE = 'mediumseagreen' # 'skyblue'
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
 						'BETAGALACTOSID-MONOMER[c]',  # lacZ
