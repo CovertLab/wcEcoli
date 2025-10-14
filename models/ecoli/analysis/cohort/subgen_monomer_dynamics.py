@@ -20,7 +20,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 2
+IGNORE_FIRST_N_GENS = 8
+SEEDS = np.arange(7, 10)
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
 						'BETAGALACTOSID-MONOMER[c]',  # lacZ
@@ -125,7 +126,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			end_generation_indices = start_generation_indices + doubling_times
 			return time.astype(int), doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
-		def plot_counts_dynamics(counts, molecules_of_interest, molecule_type, time, end_generation_times, seed):
+		def plot_counts_dynamics(counts, color, molecules_of_interest, molecule_type, time, end_generation_times, seed):
 
 			# Counts Plot
 			num_groups = len(molecules_of_interest)
@@ -146,7 +147,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 					interest_counts = counts[time, i]
 
-					ax.plot(time / 60, interest_counts, color='royalblue', linewidth=6,
+					ax.plot(time / 60, interest_counts, color=color, linewidth=6,
 							label=molecule_id)
 
 					ax.set_xlabel('Time (min)', fontsize=30);
@@ -170,7 +171,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_{seed}', metadata)
 
 
-		for seed in self.ap.get_seeds():
+		for seed in SEEDS:
 			cell_paths_per_seed = self.ap.get_cells(
 				generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
 				only_successful=True)
@@ -183,11 +184,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			if monomers_of_interest is not None:
 
-				plot_counts_dynamics(monomer_counts, gene_names_in_order, 'monomer', time,
+				plot_counts_dynamics(monomer_counts, 'mediumseagreen', gene_names_in_order, 'monomer', time,
 									 end_generation_times, seed)
 
 
-				plot_counts_dynamics(cistron_counts, gene_names_in_order, 'mRNA', time,
+				plot_counts_dynamics(cistron_counts, 'mediumseagreen', gene_names_in_order, 'mRNA', time,
 									 end_generation_times, seed)
 
 
