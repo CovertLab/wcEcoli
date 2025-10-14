@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECTED_PDR_COMBO = "PDR_combo_2022" # maybe I can just have it be a raw_data.variable thing?
+SELECTED_PDR_COMBO = "PDR_combo_2025" # maybe I can just have it be a raw_data.variable thing?
 
 
 class Translation(object):
