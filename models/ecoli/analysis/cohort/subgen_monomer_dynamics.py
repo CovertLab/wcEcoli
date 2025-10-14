@@ -71,7 +71,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			in enumerate(mRNA_ids)
 		}
 
-
 		# There are 4310 mRNA ids with associated protein/monomer ids
 		protein_id_to_cistron_id = {
 			protein['id']:protein['cistron_id']
@@ -108,13 +107,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			in cistron_ids_in_order
 		])
 
-		monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]
-
-
-		cistron_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts')[:, mRNA_ids_indices]
-
 
 		def extract_doubling_times(cell_paths):
 			# Load data
@@ -128,7 +120,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return time.astype(int), doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
 		def plot_counts_dynamics(counts, color, molecules_of_interest, molecule_type, time, end_generation_times, seed):
-
 			# Counts Plot
 			num_groups = len(molecules_of_interest)
 			cols = min(num_groups, 4)  # Number of columns for the grid
@@ -179,6 +170,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
 				continue
+			
+			monomer_counts = read_stacked_columns(cell_paths_per_seed, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]
+			cistron_counts = read_stacked_columns(cell_paths_per_seed, 'RNACounts', 'mRNA_cistron_counts')[:, mRNA_ids_indices]
 
 			time, _, end_generation_times, _, _ = extract_doubling_times(
 				cell_paths_per_seed)
