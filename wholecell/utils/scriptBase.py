@@ -52,6 +52,7 @@ PARCA_KEYS = (
 	'rnapoly_fitting',
 	'operons',
 	'new_genes',
+	'protein_degradation_combo',
 	'cpus',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -382,6 +383,13 @@ class ScriptBase(metaclass=abc.ABCMeta):
 			default=constants.DEFAULT_NEW_GENES_OPTION,
 			help='Turn new genes off or specify a new_gene_data subdirectory name.')
 
+	def define_parameter_protein_degradation_combo(self, parser: argparse.ArgumentParser) -> None:
+		self.define_option(parser,
+			'protein_degradation_combo', str,
+			default=constants.DEFAULT_PROTEIN_DEGRADATION_COMBO,
+			choices=constants.PROTEIN_DEGRADATION_COMBO_OPTIONS,
+			help='Select desired protein degradation rate combination to map simuated proteins to.')
+
 	def define_parca_options(self, parser, run_parca_option=False):
 		# type: (argparse.ArgumentParser, bool) -> None
 		"""Define Parca task options EXCEPT the elongation options."""
@@ -399,6 +407,7 @@ class ScriptBase(metaclass=abc.ABCMeta):
 
 		self.define_parameter_operons(parser)
 		self.define_parameter_new_genes(parser)
+		self.define_parameter_protein_degradation_combo(parser)
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,
