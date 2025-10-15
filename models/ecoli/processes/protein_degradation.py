@@ -30,6 +30,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.metabolites = None
 		self.h2o = None
 		self.proteins = None
+		self.complexes = None
 
 		super(ProteinDegradation, self).__init__()
 
@@ -62,6 +63,10 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
 		self.proteins = self.bulkMoleculesView(proteinIds)
 
+		# Complex view for future use
+		complexIds = np.array(sim_data.process.complexation.ids_complexes)
+		self.complexes = self.bulkMoleculesView(complexIds)
+
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 	def calculateRequest(self):
@@ -90,6 +95,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.proteins.counts()
 			))
 		self.proteins.countsIs(0)
+
+
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()
