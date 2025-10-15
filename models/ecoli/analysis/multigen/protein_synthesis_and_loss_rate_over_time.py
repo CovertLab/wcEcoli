@@ -45,7 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Extract the free monomer counts using the monomer counts listener:
         fmcs = read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
         (free_monomer_counts,) = read_stacked_bulk_molecules(
-            cell_paths, monomerIDs)  # todo: check if this is equal to the above!
+            cell_paths, monomerIDs)  # todo: check if this is equal to the above! so that way only one method for calling in the data is needed.
 
 
         # doubling time function from nora (note the normal doubling time extraction is not working):
