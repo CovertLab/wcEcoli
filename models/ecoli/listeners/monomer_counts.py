@@ -98,6 +98,11 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 			)
 
+		self.freeMonomerCounts = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
 		self.freeMonomerConcentrations = np.zeros(
 			len(self.monomer_ids),
 			np.float64
@@ -117,22 +122,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			len(self.monomer_ids),
 			np.int64
 		)
-
-		self.monomersTotal_ES = np.zeros(
-			len(self.monomer_ids),
-			np.int64
-		)
-
-		self.monomersTotal_CR = np.zeros(
-			len(self.monomer_ids),
-			np.int64
-		)
-
-		self.counts_to_molar_ES = np.zeros(
-			1,
-			np.int64
-		)
-
 
 
 	def update(self):
@@ -163,25 +152,19 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 
-		# Update monomerCounts:
-		hi = 5
+		# Update monomerCounts for the start of the next time step:
+		# todo: confirm which time step this updates with!
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx] # it appears that the total monomer counts are updated within the listener?
 
-		# Update monomerConcentrations and counts_to_molar:
-
-
-		hello = 5
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'monomerCounts': 'monomerIds',
+			'freeMonomerCounts': 'monomerIds',
 			'freeMonomerConcentrations': 'monomerIds',
 			'counts_to_molar': 'counts_to_molar',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
-			'monomersTotal_ES': 'monomerIds',
-			'monomersTotal_CR': 'monomerIds',
-			'counts_to_molar_ES': 'counts_to_molar_ES'
 			}
 
 		tableWriter.writeAttributes(
@@ -193,12 +176,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
+			freeMonomerCounts=self.freeMonomerCounts,
 			freeMonomerConcentrations=self.freeMonomerConcentrations,
 			counts_to_molar=self.counts_to_molar,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
-			monomersTotal_ES = self.monomersTotal_ES,
-			monomersTotal_CR = self.monomersTotal_CR,
-			counts_to_molar_ES = self.counts_to_molar_ES
-
 			)
