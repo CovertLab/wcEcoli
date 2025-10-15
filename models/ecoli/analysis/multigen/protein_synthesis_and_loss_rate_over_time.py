@@ -45,8 +45,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Extract the free monomer counts using the monomer counts listener:
         fmcs = read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
         (free_monomer_counts,) = read_stacked_bulk_molecules(
-            cell_paths, monomerIDs)  # todo: check if this is equal to the above
-        total_monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "monomerCounts")
+            cell_paths, monomerIDs)  # todo: check if this is equal to the above!
 
 
         # doubling time function from nora (note the normal doubling time extraction is not working):
@@ -184,7 +183,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Plot specifics:
             sim_name = metadata["description"]
-            hi = 5
             degradation_rate_combo = sim_data.protein_degradation_combo_selection
             ax1.legend(fontsize=5)
             ax1.set_ylabel("Free Monomer Counts")
