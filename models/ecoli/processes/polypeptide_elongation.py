@@ -264,6 +264,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
 
+		# write the number of elongated proteins to the listener
+		self.writeToListener('MonomerCounts', 'monomersElongated', self.bulkMonomers.counts())
+
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
 

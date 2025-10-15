@@ -67,9 +67,31 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		complexIds = np.array(sim_data.process.complexation.ids_complexes)
 		self.complexes = self.bulkMoleculesView(complexIds)
 
+		# Add the IDs for proteins and complexes to self:
+		self.protein_IDs = proteinIds
+		self.complex_IDs = complexIds
+
+		# Obtain Avogadro's number for conversion of counts to molar concentration:
+		self.n_avogadro = sim_data.constants.n_avogadro.asNumber(units.mol ** -1)
+
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 	def calculateRequest(self):
+
+		# TODO: read in the current/previous time step's monomer counts/concentration.
+		# for the first time step, this will be the initial conditions, but you should be able to read from the listener for eferything after?
+
+		hi = 5
+		# Calculate the counts_to_molar conversion and subsequently the concentration of each protein at the end of the time step:
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		cell_mass_g = cell_mass.asNumber(units.g)  # now in units of g
+		cell_density = self.readFromListener("Mass", "cellDensity")
+		cell_volume = cell_mass_g / cell_density  # L
+		counts_to_molar = 1 / (self.n_avogadro * cell_volume)  # mol/L
+		CR_total_counts = self.proteins._totalCount.copy()
+		self.writeToListener("MonomerCounts", "monomersTotal_CR", CR_total_counts)
+		self.writeToListener("MonomerCounts", "counts_to_molar", counts_to_molar)
+
 
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
 		nProteinsToDegrade = np.fmin(
@@ -94,8 +116,26 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.proteinDegSMatrix,
 			self.proteins.counts()
 			))
-		self.proteins.countsIs(0)
 
+
+		counts_degraded = self.proteins.counts()
+		self.writeToListener("MonomerCounts", "monomersDegraded", counts_degraded)
+
+		# Calculate the counts_to_molar conversion and subsequently the concentration of each protein at the end of the time step:
+		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
+		# convert cell_mass to g:
+		cell_mass_g = cell_mass.asNumber(units.g)  # now in units of g
+		cell_density = self.readFromListener("Mass", "cellDensity")
+		cell_volume = cell_mass_g / cell_density  # L
+		counts_to_molar_ES = 1 / (self.n_avogadro * cell_volume)  # mol/L
+		ES_total_counts = self.proteins._totalCount.copy()
+		self.monomerConcentrations = self.proteins._totalCount.copy() * ES_total_counts  # mol/L
+		self.writeToListener("MonomerCounts", "monomersTotal_ES", ES_total_counts)
+		self.writeToListener("MonomerCounts", "counts_to_molar_ES", counts_to_molar_ES)
+		self.writeToListener("MonomerCounts", "monomerConcentrations", self.monomerConcentrations)
+
+		# reset the degraded protein counts:
+		self.proteins.countsIs(0)
 
 
 	def _proteinDegRates(self):
