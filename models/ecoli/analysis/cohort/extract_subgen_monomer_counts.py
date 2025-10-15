@@ -115,7 +115,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				# 'expression_status'
 			])
 
-			for i,_ in enumerate(sub_gen_monomer_indices):
+			for i in monomer_indices:
 				writer.writerow([
 					gene_ids_in_order[i], cistron_ids_in_order[i], monomer_ids[i],
 					max_mRNA_counts[i], 
