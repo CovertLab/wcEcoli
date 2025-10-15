@@ -12,7 +12,6 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-SELECTED_PDR_COMBO = "PDR_combo_2025" # maybe I can just have it be a raw_data.variable thing?
 
 
 class Translation(object):
@@ -139,8 +138,13 @@ class Translation(object):
 		# Initialize degradation rates array:
 		deg_rate = np.zeros(len(all_proteins))
 
-		# Assign degradation rates based on selected combination:
-		if SELECTED_PDR_COMBO == "PDR_combo_2020":
+		# Obtain the selected protein degradation rate combination from raw_data:
+		selected_PDR_combination = raw_data.protein_degradation_combo_option
+		# NOTE: the default option is listed as
+		# DEFAULT_PROTEIN_DEGRADATION_COMBO in wholecell/utils/constants.py
+
+		# Assign proteins to degradation rates based on the selected combination:
+		if selected_PDR_combination == "PDR_combo_2020":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# the N-end rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
@@ -156,9 +160,7 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
-		# NOTE: this combo is the current model defualt (must change the -h
-		# flag if the default is to be changed):
-		if SELECTED_PDR_COMBO == "PDR_combo_2022":
+		if selected_PDR_combination == "PDR_combo_2022":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
 			# from Tobias et al., 1991
@@ -178,7 +180,7 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 
-		if SELECTED_PDR_COMBO == "PDR_combo_2025":
+		if selected_PDR_combination == "PDR_combo_2025":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# Carbon limited rates from Gupta et al., 2024, and finally N-end
 			# rule from Tobias et al., 1991
