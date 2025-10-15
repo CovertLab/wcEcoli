@@ -77,20 +77,6 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 	def calculateRequest(self):
-
-		# Calculate the counts_to_molar conversion and subsequently the concentration of each protein at the end of the time step:
-		cell_mass = self.readFromListener("Mass", "cellMass") * units.fg
-		cell_mass_g = cell_mass.asNumber(units.g)  # now in units of g
-		cell_density = self.readFromListener("Mass", "cellDensity")
-		cell_volume = cell_mass_g / cell_density  # L
-		counts_to_molar = 1 / (self.n_avogadro * cell_volume)  # mol/L
-		free_monomer_counts = self.proteins._totalCount.copy()
-		free_monomer_concentrations = free_monomer_counts * counts_to_molar  # mol/L
-		self.writeToListener("MonomerCounts", "freeMonomerCounts", free_monomer_counts)
-		self.writeToListener("MonomerCounts", "freeMonomerConcentrations", free_monomer_concentrations)
-		self.writeToListener("MonomerCounts", "counts_to_molar", counts_to_molar)
-
-
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
 		nProteinsToDegrade = np.fmin(
 			self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
