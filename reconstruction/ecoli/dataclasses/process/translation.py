@@ -12,7 +12,7 @@ from wholecell.utils.random import make_elongation_rates
 
 
 PROCESS_MAX_TIME_STEP = 2.
-test= 4
+test=3
 
 class Translation(object):
 	""" Translation """
