@@ -98,6 +98,11 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 			)
 
+		self.monomersDegraded = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
 	def update(self):
 		# Get current counts of bulk and unique molecules
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
@@ -131,7 +136,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'monomerCounts': 'monomerIds'}
+			'monomerCounts': 'monomerIds',
+			'monomersDegraded' : 'monomerIds'}
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomer_ids,
@@ -142,4 +148,5 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
+			monomersDegraded = self.monomersDegraded
 			)
