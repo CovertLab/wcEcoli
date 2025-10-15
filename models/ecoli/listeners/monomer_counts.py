@@ -103,14 +103,14 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 		)
 
+		self.totalMonomerConcentrations = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
 		self.freeMonomerConcentrations = np.zeros(
 			len(self.monomer_ids),
 			np.float64
-		)
-
-		self.counts_to_molar = np.zeros(
-			1,
-			np.int64
 		)
 
 		self.monomersDegraded = np.zeros(
@@ -152,17 +152,26 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 
-		# Update monomerCounts for the start of the next time step:
-		# todo: confirm which time step this updates with!
-		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx] # it appears that the total monomer counts are updated within the listener?
+		# Update monomerCounts and free monomer counts at the start of the time step:
+		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
+		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx]
+
+		# Calculate the free monomer and total monomer concentrations
+		cell_volume = self._sim.listeners['Mass'].volume
+		avogadro_number = self._sim._simData.constants.n_avogadro
+		counts_to_molar = 1 / (avogadro_number * cell_volume)
+		self.counts_to_molar = counts_to_molar.asNumber()
+		self.totalMonomerConcentrations = self.monomerCounts * self.counts_to_molar
+		self.freeMonomerConcentrations = self.freeMonomerCounts * self.counts_to_molar
 
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'monomerCounts': 'monomerIds',
 			'freeMonomerCounts': 'monomerIds',
-			'freeMonomerConcentrations': 'monomerIds',
 			'counts_to_molar': 'counts_to_molar',
+			'totalMonomerConcentrations': 'monomerIds',
+			'freeMonomerConcentrations': 'monomerIds',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
 			}
@@ -177,8 +186,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
 			freeMonomerCounts=self.freeMonomerCounts,
-			freeMonomerConcentrations=self.freeMonomerConcentrations,
 			counts_to_molar=self.counts_to_molar,
+			totalMonomerConcentrations=self.totalMonomerConcentrations,
+			freeMonomerConcentrations=self.freeMonomerConcentrations,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
 			)
