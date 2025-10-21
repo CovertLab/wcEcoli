@@ -6,7 +6,7 @@ EnzymeKinetics listener. Tracks information about enzyme kinetics.
 """
 
 import numpy as np
-
+import wholecell.utils.units as units
 import wholecell.listeners.listener
 
 
@@ -49,7 +49,15 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.targetAAConc = np.zeros(len(self.aa_ids), np.float64)
 
 	def update(self):
-		pass
+		# Obtain  countsToMolar value at each timestep (including the initial time step)
+		COUNTS_UNITS = units.mmol
+		MASS_UNITS = units.fg
+		VOLUME_UNITS = units.L
+		CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
+		cell_mass = self._sim.listeners['Mass'].cellMass * MASS_UNITS  # cell mass in g
+		cell_volume = cell_mass / self._sim._simData.constants.cell_density
+		self.nAvogadro = self._sim._simData.constants.n_avogadro  # cell_density g/L
+		self.countsToMolar = (1 / (self.nAvogadro * cell_volume)).asUnit(CONC_UNITS)
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
