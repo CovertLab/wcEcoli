@@ -129,7 +129,7 @@ class Translation(object):
 		}
 
 		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
-		Clim_deg_rates = {
+		clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
 			for p in raw_data.protein_half_lives_Clim3a
 		}
@@ -187,8 +187,8 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
-				elif protein['id'] in Clim_deg_rates:
-					deg_rate[i] = Clim_deg_rates[protein['id']]
+				elif protein['id'] in clim_deg_rates:
+					deg_rate[i] = clim_deg_rates[protein['id']]
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
