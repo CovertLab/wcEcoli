@@ -48,8 +48,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             cell_paths, monomerIDs)  # todo: check if this is equal to the above! so that way only one method for calling in the data is needed.
 
         hi = 5
-        ctm = read_stacked_columns(cell_paths, 'MonomerCounts', "counts_to_molar")
-        ectm = read_stacked_columns(cell_paths, 'EnzymeKinetics', "countsToMolar")
+        ezk_reader = TableReader(
+            os.path.join(simOutDir, "EnzymeKinetics"))
+        #ctm = read_stacked_columns(cell_paths, 'MonomerCounts', "counts_to_molar")
+        #ectm = read_stacked_columns(cell_paths, 'EnzymeKinetics', "countsToMolar", remove_first=True).squeeze()
         vol = read_stacked_columns(cell_paths, 'Mass', "cellVolume")
         hi = 55
         # doubling time function from nora (note the normal doubling time extraction is not working):
