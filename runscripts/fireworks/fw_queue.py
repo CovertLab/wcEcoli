@@ -88,9 +88,9 @@ Modeling options:
 		or polycistronic), or "both" (into adjacent output directories)
 	NEW_GENES (str,"off"): run with new genes "off" or specify a new_gene_data
 		subdirectory name to add those genes to the chromosome.
-	PDR_COMBOS (str, "default"): specifies which protein degradation
-		combinations to use; options are 'PDR_combo_2020', 'PDR_combo_2022',
-		'PDR_combo_2025'
+	PDR_COMBOS (str, "PDR_combo_2022"): specifies which protein degradation
+		combination to use; options are "PDR_combo_2020", "PDR_combo_2022",
+		"PDR_combo_2025"
 	REMOVE_RRNA_OPERONS (int, "0"): if nonzero, remove the seven rRNA operons
 		from the simulation, and express each rRNA as individual transcription
 		units. Does not have any effect if OPERONS is set to "off".
