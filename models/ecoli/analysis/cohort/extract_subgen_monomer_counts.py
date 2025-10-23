@@ -95,10 +95,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		mean_monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True).median(axis=0)[monomer_indices]
+				ignore_exception=True).mean(axis=0)[monomer_indices]
 		mean_mRNA_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-				ignore_exception=True).median(axis=0)[mRNA_ids_indices]
+				ignore_exception=True).mean(axis=0)[mRNA_ids_indices]
 
 		
 		# import ipdb; ipdb.set_trace()
