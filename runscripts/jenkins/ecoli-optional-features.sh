@@ -32,6 +32,18 @@ DESC="New Gene Expression and Translation Efficiency Internal Shift" \
   FIRST_VARIANT_INDEX=2 LAST_VARIANT_INDEX=2 N_GENS=4 NEW_GENES="gfp" \
   PLOTS=ACTIVE COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
   python runscripts/fireworks/fw_queue.py
+DESC="Protein Degradation Combo 2020" \
+  PDR_COMBOS="PDR_combo_2020" N_GENS=4 PLOTS=ACTIVE \
+  COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
+  python runscripts/fireworks/fw_queue.py
+DESC="Protein Degradation Combo 2022" \
+  PDR_COMBOS="PDR_combo_2022" N_GENS=4 PLOTS=ACTIVE \
+  COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
+  python runscripts/fireworks/fw_queue.py
+DESC="Protein Degradation Combo 2025" \
+  PDR_COMBOS="PDR_combo_2025" N_GENS=4 PLOTS=ACTIVE \
+  COMPRESS_OUTPUT=1 RAISE_ON_TIME_LIMIT=1 WC_ANALYZE_FAST=1 \
+  python runscripts/fireworks/fw_queue.py
 
 bash runscripts/jenkins/run-fireworks.sh
 
