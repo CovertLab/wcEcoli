@@ -41,7 +41,6 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.metaboliteCountsFinal = np.zeros(self.n_metabolites, np.float64)
 		self.enzymeIDs = self.metabolism.kinetic_constraint_enzymes
 		self.enzymeCountsInit = np.zeros(len(self.metabolism.kinetic_constraint_enzymes), np.float64)
-		#self.countsToMolar = np.zeros(1, np.float64)
 		self.targetFluxes = np.zeros(self.n_constrained_reactions, np.float64)
 		self.targetFluxesUpper = np.zeros(self.n_constrained_reactions, np.float64)
 		self.targetFluxesLower = np.zeros(self.n_constrained_reactions, np.float64)
@@ -59,7 +58,6 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.nAvogadro = self._sim._simData.constants.n_avogadro  # cell_density g/L
 		counts_to_molar = (1 / (self.nAvogadro * cell_volume)).asUnit(CONC_UNITS) # mmol/L
 		self.countsToMolar = counts_to_molar.asNumber()
-		h = 5
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
