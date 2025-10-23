@@ -93,10 +93,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		])
 
 
-		median_monomer_counts = read_stacked_columns(
+		mean_monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts',
 				ignore_exception=True).median(axis=0)[monomer_indices]
-		median_mRNA_counts = read_stacked_columns(
+		mean_mRNA_counts = read_stacked_columns(
 				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
 				ignore_exception=True).median(axis=0)[mRNA_ids_indices]
 
@@ -108,21 +108,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow([
 				'gene_name', 'cistron_name', 'monomer_name',
-				'median_mRNA_count', 
-				# 'mean_mRNA_count',
-				'median_protein_count', 
-				# 'mean_protein_count', 
-				# 'expression_status'
+				'mean_mRNA_count', 
+				'mean_protein_count', 
 			])
 
 			for i in monomer_indices:
 				writer.writerow([
 					gene_ids_in_order[i], cistron_ids_in_order[i], monomer_ids[i],
-					median_mRNA_counts[i], 
-					# mean_mRNA_counts_all[i],
-					median_monomer_counts[i],
-					# mean_monomer_counts_all[i], 
-					
+					mean_mRNA_counts[i], 
+					mean_monomer_counts[i],					
 				])
 
 
