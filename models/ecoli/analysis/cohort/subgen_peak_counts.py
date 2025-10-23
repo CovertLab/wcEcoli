@@ -118,28 +118,33 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             only_successful=True)
 
 
-        #monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]
-        bool_cistron_counts_per_gen = read_stacked_columns(cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-            ignore_exception=True, fun=lambda x: (x > 0).sum(axis=0))[:, mRNA_ids_indices]
+        # should only be capturing the deltas from 0 to >0 transcripts, otherwise tracking transcript by second
+        def count_peaks(time_series_data):
+            # Convert counts to a boolean array: True if count > 0, False otherwise
+            is_present = time_series_data > 0
 
-        cistron_counts_in_gen = read_stacked_columns(
-            cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-            ignore_exception=True, fun=lambda x: x.sum(axis=0))[
-                            :, mRNA_ids_indices]
+            # Use np.diff to find the difference between adjacent time steps (rows, axis=0).
+            transition_deltas = np.diff(is_present.astype(int), axis=0)
+
+            # Count only the '1's (the False -> True transitions) along the time axis (axis=0).
+            on_event_count = (transition_deltas == 1).sum(axis=0)
+            return on_event_count
+
+        # Apply the function in your call:
+        cistron_peaks_per_gen = read_stacked_columns(
+            cell_paths, 
+            'RNACounts', 
+            'mRNA_cistron_counts',
+            ignore_exception=True, 
+            fun=count_peaks)[:, mRNA_ids_indices]
+
         # Write data to table
-        with open(os.path.join(plotOutDir, plotOutFileName + '_bool_presence.tsv'), 'w') as f:
+        with open(os.path.join(plotOutDir, plotOutFileName + '_count_transcipt_peaks.tsv'), 'w') as f:
             writer = csv.writer(f, delimiter='\t')
             writer.writerow(monomers_of_interest)
 
             for i in np.arange(0, len(cell_paths)):
-                writer.writerow(bool_cistron_counts_per_gen[i])
-        # Write data to table
-        with open(os.path.join(plotOutDir, plotOutFileName + '_mRNA_counts.tsv'), 'w') as f:
-            writer = csv.writer(f, delimiter='\t')
-            writer.writerow(monomers_of_interest)
-
-            for i in np.arange(0, len(cell_paths)):
-                writer.writerow(cistron_counts_in_gen[i])
+                writer.writerow(cistron_peaks_per_gen[i])
 
 
 if __name__ == '__main__':
