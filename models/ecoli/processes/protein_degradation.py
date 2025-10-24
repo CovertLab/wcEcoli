@@ -64,6 +64,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.proteins = self.bulkMoleculesView(proteinIds)
 
 		# Complex view for future use
+		# TODO: integrate complexes into degradation
 		complexIds = np.array(sim_data.process.complexation.ids_complexes)
 		self.complexes = self.bulkMoleculesView(complexIds)
 
