@@ -49,27 +49,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         (free_monomer_counts,) = read_stacked_bulk_molecules(
             cell_paths, monomerIDs)  # todo: check if this is equal to the above! so that way only one method for calling in the data is needed.
 
-        hi = 5
-        ezk_reader = TableReader(
-            os.path.join(simOutDir, "EnzymeKinetics"))
 
         ectm = read_stacked_columns(cell_paths, 'EnzymeKinetics', "countsToMolar")
-        ctm = ezk_reader.readColumn('countsToMolar')
 
         # calculate the free monomer concentrations:
         free_monomer_concentrations = fmcs * ectm # mmol/L
-        time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
-
-
-
-
-
-
-
-
-
-
-
 
         # doubling time function from nora (note the normal doubling time extraction is not working):
         def extract_doubling_times(cell_paths):
@@ -106,8 +90,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Make sure the proteins inputted are valid and have a compartment tag:
         PLOT_PROTEINS_revised = check_validity_and_get_compartment(PLOT_PROTEINS)
         n_gens = metadata["generations"]
-        # find the maximum generation length for plotting purposes:
-        max_gen_length = np.max(doubling_times)
 
         def make_generation_mask(cell_paths, n_gens):
             time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices = extract_doubling_times(
@@ -152,8 +134,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         gen_mask = make_generation_mask(cell_paths, n_gens)
         gen_time_mask = generation_time_mask(cell_paths, n_gens)
 
-
-
         # plot the loss rate and the production rate:
         for protein in PLOT_PROTEINS_revised:
             # Gather the relevant data:
@@ -167,21 +147,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             p_df = pd.DataFrame(data)
 
             # Generate the plots:
-            fig = plt.figure(figsize=(5*n_gens,6))
-
             sns.violinplot(x='generation', y='fmconc', data=p_df, inner="points",
                            color='lightgray', alpha=0.7)
-            # Overlay the individual points
-            palette = sns.color_palette("husl", len(p_df['Time (s)'].unique()))
 
             sns.stripplot(x='generation',
                           y='fmconc',
                           data=p_df,
                           size=3,
-                          hue='Time (s)',  # Color of the points
-                          alpha=0.3,  # Transparency of the points
+                          hue='Time (s)',
+                          palette='crest',
+                          alpha=0.3,
                           jitter=0.3,
-                          )  # Add jittering to the points for better visibility
+                          #dodge=True # this makes the code take forever
+                          )
+
+            # Color mapping and normalization
+            norm = Normalize(vmin=p_df['Time (s)'].min(), vmax=p_df['Time (s)'].max())
+            sm = ScalarMappable(cmap='crest', norm=norm)  # Create a ScalarMappable
+
+            # Create a color bar
+            cbar = plt.colorbar(sm)
+            cbar.set_label('Time (s)')
 
             # Plot specifics:
             sim_name = metadata["description"]
@@ -196,6 +182,74 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # save the plot:
             file_name = plotOutFileName + "_" + protein
+            exportFigure(plt, plotOutDir, file_name, metadata)
+
+        # also make a plot of the free monomer counts under it:
+        for protein in PLOT_PROTEINS_revised:
+            # Gather the relevant data:
+            protein_idx = monomer_idx_dict[protein]
+            protein_FMC = free_monomer_counts[:, protein_idx]
+
+            fmconc = free_monomer_concentrations[:, protein_idx]
+            data = {'generation': gen_mask,
+                    'fmconc': fmconc,
+                    'all_time': time,
+                    'Time (s)': gen_time_mask}
+            p_df = pd.DataFrame(data)
+
+            # Generate the plots:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6*n_gens,10))
+
+            # Monomer Counts plot
+            ax1.plot(time, protein_FMC, color='lightseagreen', label='Free Monomer Counts')
+            for i in range(len(end_generation_times)):
+                dt = end_generation_times[i]
+                ax1.axvline(x=dt, linestyle='--', color="yellowgreen")
+
+            # Plot specifics:
+            sim_name = metadata["description"]
+            degradation_rate_combo = sim_data.protein_degradation_combo_selection
+            ax1.legend(fontsize=5)
+            ax1.set_ylabel("Free Monomer Counts")
+            ax1.set_xlabel("Time (s)")
+            ax1.set_title(
+                f"Sim ID: {sim_name}; Degradation rate combo: {degradation_rate_combo}")
+
+            # violin plot:
+            sns.violinplot(x='generation', y='fmconc', data=p_df, inner="points",
+                           color='lightgray', alpha=0.7, ax=ax2)
+
+            sns.stripplot(x='generation',
+                          y='fmconc',
+                          data=p_df,
+                          size=2,
+                          hue='Time (s)',
+                          palette='viridis',
+                          alpha=0.2,
+                          jitter=0.3,
+                          #dodge=True # this makes the code take forever
+                          ax=ax2)
+
+            # Color mapping and normalization
+            norm = Normalize(vmin=p_df['Time (s)'].min(), vmax=p_df['Time (s)'].max())
+            sm = ScalarMappable(cmap='viridis', norm=norm)  # Create a ScalarMappable
+
+            # Create a color bar
+            cbar = fig.colorbar(sm, ax=ax2)
+            cbar.set_label('Time (s)')
+
+            # Plot specifics:
+            ax2.set_xlabel('Generation')
+            ax2.set_ylabel('Free Monomer Concentration (mmol/L)', size=10)
+            ax2.legend().remove()
+
+            plt.suptitle(
+                f"Free monomer counts over time & concentration violin plot for {protein}",
+                size=12)
+            plt.tight_layout()
+
+            # save the plot:
+            file_name = plotOutFileName + "_and_free_monomer_counts_" + protein
             exportFigure(plt, plotOutDir, file_name, metadata)
 
 
