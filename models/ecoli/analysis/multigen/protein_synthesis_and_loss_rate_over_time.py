@@ -43,20 +43,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         monomerIDs = monomer_counts_reader.readAttribute("monomerIds")
 
         # Extract the free monomer counts using the monomer counts listener:
-        fmcs = read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
+        #fmcs = read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
         (free_monomer_counts,) = read_stacked_bulk_molecules(
             cell_paths, monomerIDs)  # todo: check if this is equal to the above! so that way only one method for calling in the data is needed.
 
-        hi = 5
-        ezk_reader = TableReader(
-            os.path.join(simOutDir, "EnzymeKinetics"))
-        #ctm = read_stacked_columns(cell_paths, 'MonomerCounts', "counts_to_molar")
-        ectm = read_stacked_columns(cell_paths, 'EnzymeKinetics', "countsToMolar")
-        hi = ezk_reader.readColumn('countsToMolar')
-        #ectm = read_stacked_columns(cell_paths, 'EnzymeKinetics', "countsToMolar", remove_first=True).squeeze()
-        vol = read_stacked_columns(cell_paths, 'Mass', "cellVolume")
-        #ectm = read_stacked_columns(cell_paths, 'EnzymeKinetics', "countsToMolar", squeeze=True).squeeze()
-        hi = 55
+        def check_validity_and_get_compartment(protein_list):
+            revised_protein_list = []
+            for protein in protein_list:
+                if "[" in protein:
+                    protein = protein[:-3] # remove compartment
+                if sim_data.getter.is_valid_molecule(protein):
+                    revised_name = protein + sim_data.getter.get_compartment_tag(protein)
+                    revised_protein_list.append(revised_name)
+
+            return revised_protein_list
+
+
         # doubling time function from nora (note the normal doubling time extraction is not working):
         def extract_doubling_times(cell_paths):
             # Load simulation time span data
@@ -73,9 +75,33 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             end_generation_indices = start_generation_indices + doubling_times
             return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
+        # Make sure the proteins inputted are valid and have a compartment tag:
+        PLOT_PROTEINS_revised = check_validity_and_get_compartment(PLOT_PROTEINS)
+
         # extract the doubling times:
         time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices = extract_doubling_times(
             cell_paths)
+
+        # make a quick plot of just the free monomer counts over time for each protein:
+        for protein in PLOT_PROTEINS_revised:
+            protein_idx = monomer_idx_dict[protein]
+            protein_FMC = free_monomer_counts[:, protein_idx]
+            monomer_data = sim_data.process.translation.monomer_data[protein_idx]
+            deg_rate = monomer_data["deg_rate"]
+            measured_HL = (np.log(2) / deg_rate) / 60
+            degradation_rate_combo = sim_data.protein_degradation_combo_selection
+
+            plt.figure(figsize=(8, 4))
+            plt.plot(time, protein_FMC, color='lightseagreen', label='Free Monomer Counts')
+            plt.xlabel("Time (s)")
+            plt.ylabel("Free Monomer Counts")
+            plt.title(
+                f"Free monomer counts over time for {protein}\n Sim ID: {metadata['description']} \nDegradation rate combo: {degradation_rate_combo}\nMeasured HL: {measured_HL:.1f} min", fontsize=5)
+            plt.legend()
+            file_name = "free_monomer_counts" + "_" + protein
+            exportFigure(plt, plotOutDir, file_name, metadata)
+            plt.close()
+
 
 
         # find how many proteins were removed via dilution for each doubling time:
@@ -110,20 +136,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # calculate the net change per time:
         net_rate = degraded_counts + diluted_counts_over_time + elongated_counts
-
-        def check_validity_and_get_compartment(protein_list):
-            revised_protein_list = []
-            for protein in protein_list:
-                if "[" in protein:
-                    protein = protein[:-3] # remove compartment
-                if sim_data.getter.is_valid_molecule(protein):
-                    revised_name = protein + sim_data.getter.get_compartment_tag(protein)
-                    revised_protein_list.append(revised_name)
-
-            return revised_protein_list
-
-        # Make sure the proteins inputted are valid and have a compartment tag:
-        PLOT_PROTEINS_revised = check_validity_and_get_compartment(PLOT_PROTEINS)
 
         # plot the loss rate and the production rate:
         for protein in PLOT_PROTEINS_revised:
