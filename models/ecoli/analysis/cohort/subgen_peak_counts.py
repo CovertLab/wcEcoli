@@ -19,8 +19,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 64)
+IGNORE_FIRST_N_GENS = 2
+SEED_RANGE = np.arange(1, 3)
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
                         'RIBULOKIN-MONOMER[c]',  # araB
@@ -130,21 +130,25 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             on_event_count = (transition_deltas == 1).sum(axis=0)
             return on_event_count
 
-        # Apply the function in your call:
-        cistron_peaks_per_gen = read_stacked_columns(
+        
+        cistron_peaks_per_gen_full = read_stacked_columns(
             cell_paths, 
             'RNACounts', 
             'mRNA_cistron_counts',
             ignore_exception=True, 
             fun=count_peaks)[:, mRNA_ids_indices]
 
-        # Write data to table
+        tabel_cols = ['cell_id'] + monomers_of_interest
+        # Write data to table so that the first col is the cell id and the rest are the counts per monomer
         with open(os.path.join(plotOutDir, plotOutFileName + '_count_transcipt_peaks.tsv'), 'w') as f:
             writer = csv.writer(f, delimiter='\t')
-            writer.writerow(monomers_of_interest)
+            writer.writerow(tabel_cols)
 
             for i in np.arange(0, len(cell_paths)):
-                writer.writerow(cistron_peaks_per_gen[i])
+                cell_id = cell_paths[i]
+                counts_row = cistron_peaks_per_gen_full[i]
+                full_row = [cell_id] + counts_row.tolist()
+                writer.writerow(full_row)
 
 
 if __name__ == '__main__':
