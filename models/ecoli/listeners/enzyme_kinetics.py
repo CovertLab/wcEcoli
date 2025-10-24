@@ -53,9 +53,9 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		MASS_UNITS = units.fg
 		VOLUME_UNITS = units.L
 		CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
-		cell_mass = self._sim.listeners['Mass'].cellMass * MASS_UNITS  # cell mass in g
-		cell_volume = cell_mass / self._sim._simData.constants.cell_density
-		self.nAvogadro = self._sim._simData.constants.n_avogadro  # cell_density g/L
+		cell_mass = self._sim.listeners['Mass'].cellMass * MASS_UNITS  # cell mass in fg
+		cell_volume = cell_mass / self._sim._simData.constants.cell_density # cell_density g/L
+		self.nAvogadro = self._sim._simData.constants.n_avogadro # 1/mol
 		counts_to_molar = (1 / (self.nAvogadro * cell_volume)).asUnit(CONC_UNITS) # mmol/L
 		self.countsToMolar = counts_to_molar.asNumber()
 
