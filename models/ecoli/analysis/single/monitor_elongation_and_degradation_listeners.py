@@ -7,11 +7,10 @@ import os
 
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
-from ecoli.library.parquet_emitter import read_stacked_bulk_molecules, read_stacked_columns
 import numpy as np
-
+from wholecell.analysis.analysis_tools import (exportFigure,
+    read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from models.ecoli.analysis import singleAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_bulk_molecule_counts
 from wholecell.io.tablereader import TableReader
 
 
@@ -20,8 +19,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 		cell_paths = self.ap.get_cells()
-		sim_dir = cell_paths[0]
-		simOutDir = os.path.join(sim_dir, 'simOut')
 
 		# Extract protein indexes for each new gene
 		monomer_counts_reader = TableReader(
@@ -54,7 +51,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 		# then terminated and elongated counts should be equal.
 
 		# Extract the sim time:
-		time = read_stacked_bulk_molecules(cell_paths, 'Time', 'time')
+		time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
 
 		# first comparison:
 		def simple_compare(elongated_counts, terminated_counts):
