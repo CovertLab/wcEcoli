@@ -264,9 +264,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.active_ribosomes.delByIndexes(np.where(didTerminate)[0])
 		self.bulkMonomers.countsInc(terminatedProteins)
 
-		# write the number of elongated proteins to the listener
-		self.writeToListener('MonomerCounts', 'monomersElongated', self.bulkMonomers.counts())
-
 		nTerminated = didTerminate.sum()
 		nInitialized = didInitialize.sum()
 
@@ -283,6 +280,9 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtp_to_hydrolyze = self.gtpPerElongation * nElongations
 
 		# Write data to listeners
+		self.writeToListener("MonomerCounts", "monomersTerminated", terminatedProteins)
+		self.writeToListener('MonomerCounts', 'monomersElongated', self.bulkMonomers.counts())
+
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
 		self.writeToListener("GrowthLimits", "aaCountDiff", [self.aa_count_diff.get(id_, 0) for id_ in self.aaNames])
