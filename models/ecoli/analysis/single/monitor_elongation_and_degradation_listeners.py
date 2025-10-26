@@ -134,6 +134,7 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 				compare_fmcs_to_previous_timepoint.append(delta_fmc)
 
 		# understand how complexation has a role in changing free monomer counts:
+		# TODO: investigate why compmlexation has seemingly no impact???
 		terminated_minus_degraded = terminated_counts - degraded_counts
 		complexation_impact = compare_fmcs_to_previous_timepoint - terminated_minus_degraded
 		if np.allclose(complexation_impact, 0):
