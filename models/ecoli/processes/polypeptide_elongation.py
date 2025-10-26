@@ -280,8 +280,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.gtp_to_hydrolyze = self.gtpPerElongation * nElongations
 
 		# Write data to listeners
-		self.writeToListener("MonomerCounts", "monomersTerminated", terminatedProteins)
-		self.writeToListener('MonomerCounts', 'monomersElongated', self.bulkMonomers.counts())
+		self.writeToListener('MonomerCounts', 'monomersElongated', terminatedProteins)
 
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
