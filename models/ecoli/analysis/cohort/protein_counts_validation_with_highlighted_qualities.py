@@ -843,11 +843,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		wisniewski_idxs = [wisniewski_map[n] for n in validation_overlap]
 
 
-
 		# extract the overlapping counts:
 		x = self.get_LogData(list(range(len(validation_overlap))), val_schmidt_counts, schmidt_idxs)
 		y = self.get_LogData(list(range(len(validation_overlap))), val_wisniewski_counts, wisniewski_idxs)
-
 
 		# Compute linear trendline
 		z = np.polyfit(x, y, 1)
