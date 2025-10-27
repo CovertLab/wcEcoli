@@ -13,7 +13,6 @@ from wholecell.utils.random import make_elongation_rates
 
 PROCESS_MAX_TIME_STEP = 2.
 
-
 class Translation(object):
 	""" Translation """
 
@@ -111,40 +110,95 @@ class Translation(object):
 		# Get molecular weights
 		mws = sim_data.getter.get_masses(protein_ids).asNumber(units.g / units.mol)
 
-		# Calculate degradation rates based on N-rule
+		# Calculate degradation rates based on N-rule (Tobias et al., 1991)
 		deg_rate_units = 1 / units.s
 		n_end_rule_deg_rates = {
 			row['aa_code']: (np.log(2)/(row['half life'])).asNumber(deg_rate_units)
 			for row in raw_data.protein_half_lives_n_end_rule}
 
-		# Get degradation rates from measured protein half lives
+		# Get degradation rates from measured data (Macklin et al., 2020)
 		measured_deg_rates = {
 			p['id']: (np.log(2) / p['half life']).asNumber(deg_rate_units)
 			for p in raw_data.protein_half_lives_measured
 			}
 
-		# Get degradation rates from Nagar (2022) pulsed-SILAC half lives
+		# Get degradation rates from pulsed-SILAC data (Nagar et al., 2021)
 		pulsed_silac_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
 			for p in raw_data.protein_half_lives_pulsed_silac
 		}
 
-		deg_rate = np.zeros(len(all_proteins))
-		for i, protein in enumerate(all_proteins):
-			# Use measured degradation rates if available
-			if protein['id'] in measured_deg_rates:
-				deg_rate[i] = measured_deg_rates[protein['id']]
-			elif protein['id'] in pulsed_silac_deg_rates:
-				deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
-			# If measured rates are unavailable, use N-end rule
-			else:
-				seq = protein['seq']
-				assert seq[0] == 'M'  # All protein sequences should start with methionine
+		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
+		clim_deg_rates = {
+			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
+			for p in raw_data.protein_half_lives_Clim3a
+		}
 
-				# Set N-end residue as second amino acid if initial methionine
-				# is cleaved
-				n_end_residue = seq[protein['cleavage_of_initial_methionine']]
-				deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+		# Initialize degradation rates array:
+		deg_rate = np.zeros(len(all_proteins))
+
+		# Obtain the selected protein degradation rate combination from raw_data:
+		selected_PDR_combination = raw_data.protein_degradation_combo_option
+		# NOTE: the default option is listed as
+		# DEFAULT_PROTEIN_DEGRADATION_COMBO in wholecell/utils/constants.py
+
+		# Assign proteins to degradation rates based on the selected combination:
+		if selected_PDR_combination == "PDR_combo_2020":
+			# Uses measured rates from Macklin et al., 2020 first, followed by
+			# the N-end rule from Tobias et al., 1991
+			for i, protein in enumerate(all_proteins):
+				# Use measured degradation rates if available
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+				# If measured rates are unavailable, use N-end rule
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'  # All protein sequences should start with methionine
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+
+		if selected_PDR_combination == "PDR_combo_2022":
+			# Uses measured rates from Macklin et al., 2020 first, followed by
+			# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
+			# from Tobias et al., 1991
+			for i, protein in enumerate(all_proteins):
+				# Use measured degradation rates if available
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+				elif protein['id'] in pulsed_silac_deg_rates:
+					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+				# If measured rates are unavailable, use N-end rule
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'  # All protein sequences should start
+					# with methionine
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+
+		if selected_PDR_combination == "PDR_combo_2025":
+			# Uses measured rates from Macklin et al., 2020 first, followed by
+			# Carbon limited rates from Gupta et al., 2024, and finally N-end
+			# rule from Tobias et al., 1991
+			for i, protein in enumerate(all_proteins):
+				# Use measured degradation rates if available
+				if protein['id'] in measured_deg_rates:
+					deg_rate[i] = measured_deg_rates[protein['id']]
+				elif protein['id'] in clim_deg_rates:
+					deg_rate[i] = clim_deg_rates[protein['id']]
+				# If measured rates are unavailable, use N-end rule
+				else:
+					seq = protein['seq']
+					assert seq[0] == 'M'  # All protein sequences should start
+					# with methionine
+					# Set N-end residue as second amino acid if initial methionine
+					# is cleaved
+					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)

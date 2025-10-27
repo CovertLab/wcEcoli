@@ -13,6 +13,7 @@ import warnings
 from reconstruction.spreadsheets import read_tsv
 from wholecell.io import tsv
 from wholecell.utils import units  # used by eval()
+from wholecell.utils.constants import DEFAULT_PROTEIN_DEGRADATION_COMBO
 
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
 LIST_OF_DICT_FILENAMES = [
@@ -57,6 +58,7 @@ LIST_OF_DICT_FILENAMES = [
 	"ppgpp_regulation.tsv",
 	"ppgpp_regulation_added.tsv",
 	"ppgpp_regulation_removed.tsv",
+	"protein_half_lives_Clim3a.tsv",
 	"protein_half_lives_measured.tsv",
 	"protein_half_lives_n_end_rule.tsv",
 	"protein_half_lives_pulsed_silac.tsv",
@@ -167,10 +169,11 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off"):
+	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off", protein_degradation_combo_option: str=DEFAULT_PROTEIN_DEGRADATION_COMBO):
 		self.operons_on = operons_on
 		self.stable_rrna = stable_rrna
 		self.new_genes_option = new_genes_option
+		self.protein_degradation_combo_option = protein_degradation_combo_option
 
 		if not operons_on and remove_rrna_operons:
 			warnings.warn("Setting the 'remove_rrna_operons' option to 'True'"
