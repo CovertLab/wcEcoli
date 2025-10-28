@@ -76,9 +76,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		avg_free_counts = np.mean(free_counts, axis=0)
 
 		# Get the average complex counts for each monomer:
-		avg_counts_for_monomers_in_complexs = avg_total_counts - avg_free_counts
+		avg_counts_for_monomers_in_complexes = avg_total_counts - avg_free_counts
 
-		return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexs
+		return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes
 
 	def get_validation_data(self, simDataFile, validationDataFile):
 		# adapted from multigen and single/proteinCountsValidation.py
@@ -127,8 +127,273 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	# extract the validation data from Schmidt et al. 2016 supplementary table 9:
 	# two ways to do this: make a validation data set that is literally the same as the schmidt set by going
-	def get_schmidt_validation_data_from_ST9(self):
-		pass
+	def get_schmidt_MG_validation_data_from_ST9(self):
+		"""
+		Extracts the protein counts from Schmidt et al. 2016 supplementary
+		table 9
+		Returns: a dictionary mapping gene symbols to their average protein
+		counts
+		"""
+		schmidt_st9_file = os.path.join(
+			ROOT_PATH, 'reconstruction', 'ecoli',
+									 'flat', 'Schmidt_2016_ST9.csv')
+		gene_symbol_to_avg_counts = {}
+		with io.open(schmidt_st9_file, 'r') as f:
+			reader = csv.reader(f, delimiter=',')
+			headers = next(reader)
+			gene_symbol_index = headers.index('Gene')
+			avg_counts_index = headers.index('Copies/Cell_MG1655.Glucose')
+
+			for line in reader:
+				gene_symbol = line[gene_symbol_index]
+				avg_counts = line[avg_counts_index]
+				gene_symbol_to_avg_counts[gene_symbol] = avg_counts
+
+		# Clean ST9_dict: convert counts to int and remove bogus entries
+		for gene, count in list(gene_symbol_to_avg_counts.items()):
+			if count == '' or count is None:
+				del gene_symbol_to_avg_counts[gene]  # Remove bogus entries
+			else:
+				gene_symbol_to_avg_counts[gene] = int(count)  # Convert counts to integers
+
+		return gene_symbol_to_avg_counts
+
+	# get the ST9 BW counts dictonary:
+	def get_schmidt_BW_validation_data_from_ST9(self):
+		"""
+		Extracts the protein counts from Schmidt et al. 2016 supplementary
+		table 9 data for BW25
+		Returns: a dictionary mapping gene symbols to their average protein
+		counts
+		"""
+		schmidt_st9_file = os.path.join(
+			ROOT_PATH, 'reconstruction', 'ecoli',
+									 'flat', 'Schmidt_2016_ST9.csv')
+		gene_symbol_to_avg_counts = {}
+		with io.open(schmidt_st9_file, 'r') as f:
+			reader = csv.reader(f, delimiter=',')
+			headers = next(reader)
+			gene_symbol_index = headers.index('Gene')
+			avg_counts_index = headers.index('Copies/Cell_BW25113.Glucose')
+
+			for line in reader:
+				gene_symbol = line[gene_symbol_index]
+				avg_counts = line[avg_counts_index]
+				gene_symbol_to_avg_counts[gene_symbol] = avg_counts
+
+		# Clean ST9_dict: convert counts to int and remove bogus entries
+		for gene, count in list(gene_symbol_to_avg_counts.items()):
+			if count == '' or count is None:
+				del gene_symbol_to_avg_counts[gene]  # Remove bogus entries
+			else:
+				gene_symbol_to_avg_counts[gene] = int(count)  # Convert counts to integers
+
+		return gene_symbol_to_avg_counts
+
+
+	# get the ST6 BW counts dictonary:
+	def get_schmidt_BW_validation_data_from_ST6(self):
+		"""
+        Extracts the protein counts from Schmidt et al. 2016 supplementary
+        table 6 data for BW25
+        Returns: a dictionary mapping gene symbols to their average protein
+        counts
+        """
+		schmidt_st6_file = os.path.join(
+			ROOT_PATH, 'validation', 'ecoli',
+			'flat', 'schmidt2015_javier_table.tsv')
+		gene_symbol_to_avg_counts = {}
+		with io.open(schmidt_st6_file, 'r') as f:
+			reader = csv.reader(f, delimiter='\t')
+			headers = next(reader)
+			gene_symbol_index = headers.index('GeneName')
+			avg_counts_index = headers.index('Glucose')
+
+			for line in reader:
+				gene_symbol = line[gene_symbol_index]
+				avg_counts = line[avg_counts_index]
+				gene_symbol_to_avg_counts[gene_symbol] = avg_counts
+
+		# Clean ST9_dict: convert counts to int and remove bogus entries
+		for gene, count in list(gene_symbol_to_avg_counts.items()):
+			if count == '' or count is None:
+				del gene_symbol_to_avg_counts[gene]  # Remove bogus entries
+			else:
+				gene_symbol_to_avg_counts[gene] = int(count)  # Convert counts to integers
+
+		return gene_symbol_to_avg_counts
+
+	# make a function that makes a table with the protein IDs, gene symbols, descriptive names, schmidt validation data, and schmidt validation data from ST9:
+	def make_schmidt_validation_table(self, simDataFile, validationDataFile):
+		# Get the dictionary of gene symbols to avg counts from ST9:
+		ST9_dict = self.get_schmidt_BW_validation_data_from_ST9()
+
+		# Get the validation data:
+		(sim_schmidt_counts, val_schmidt_counts,
+		schmidt_overlap_ids, sim_wisniewski_counts,
+		val_wisniewski_counts, wisniewski_overlap_ids) = self.get_validation_data(simDataFile, validationDataFile)
+
+		# Make a dictionary of Schmidt ST6 gene_symbols to protein IDs:
+		ST6_dict = {}
+
+		# Create a dictonary of each ST6 gene Id to its descriptive name:
+		ST6_descriptive_dict = {}
+
+		# Create a dictonary of each ST6 gene ID to its simulation counts:
+		ST6_sim_counts_dict = {}
+
+		# Create a dictonary of each ST6 gene ID to the validation counts:
+		ST6_val_counts_dict = {}
+
+		# Create all dictionaries:
+		#NOTE: this is not directly taking from ST6, rather it is taking from the validationDataFile proteins that "overlap" with schmidt data.
+		for idx, protein_id in enumerate(schmidt_overlap_ids):
+			gene_symbol = self.get_common_name(protein_id)
+			ST6_dict[gene_symbol] = protein_id
+
+			descriptive_name = self.get_descriptive_name(protein_id)
+			ST6_descriptive_dict[gene_symbol] = descriptive_name
+
+			sim_counts = sim_schmidt_counts[idx]
+			ST6_sim_counts_dict[gene_symbol] = sim_counts
+
+			val_counts = val_schmidt_counts[idx]
+			ST6_val_counts_dict[gene_symbol] = val_counts
+
+		# Create a DataFrame to hold the combined data
+		SDF = []
+
+		for gene in ST6_dict.keys():
+			if gene in ST9_dict:
+				row = {
+					'Gene_Symbol': gene,
+					'Protein_ID': ST6_dict[gene],
+					'Descriptive_Name': ST6_descriptive_dict[gene],
+					'Sim_Counts': ST6_sim_counts_dict[gene],
+					'Val_BW_Counts': ST6_val_counts_dict[gene],
+					'Val_MG_Counts': ST9_dict[gene]
+				}
+				SDF.append(row)
+
+		# Convert the combined data into a DataFrame
+		SDF_df = pd.DataFrame(SDF)
+
+		return SDF_df
+
+	# make a Schmit comparison data for validation file schmidt data vs ST6 BW data:
+	def make_schmidt_validation_table_comparing_val_BW_to_direct_ST6(self, simDataFile, validationDataFile):
+		# Get the dictionary of gene symbols to avg counts from ST9:
+		ST6_dict = self.get_schmidt_BW_validation_data_from_ST6()
+
+		# Get the validation data:
+		(sim_schmidt_counts, val_schmidt_counts,
+		schmidt_overlap_ids, sim_wisniewski_counts,
+		val_wisniewski_counts, wisniewski_overlap_ids) = self.get_validation_data(simDataFile, validationDataFile)
+
+		# Make a dictionary of Schmidt ST6 gene_symbols to protein IDs:
+		val_dict = {}
+
+		# Create a dictonary of each ST6 gene Id to its descriptive name:
+		val_descriptive_dict = {}
+
+		# Create a dictonary of each ST6 gene ID to its simulation counts:
+		val_sim_counts_dict = {}
+
+		# Create a dictonary of each ST6 gene ID to the validation counts:
+		val_val_counts_dict = {}
+
+		# Create all dictionaries:
+		#NOTE: this is not directly taking from ST6, rather it is taking from the validationDataFile proteins that "overlap" with schmidt data.
+		for idx, protein_id in enumerate(schmidt_overlap_ids):
+			gene_symbol = self.get_common_name(protein_id)
+			val_dict[gene_symbol] = protein_id
+
+			descriptive_name = self.get_descriptive_name(protein_id)
+			val_descriptive_dict[gene_symbol] = descriptive_name
+
+			sim_counts = sim_schmidt_counts[idx]
+			val_sim_counts_dict[gene_symbol] = sim_counts
+
+			val_counts = val_schmidt_counts[idx]
+			val_val_counts_dict[gene_symbol] = val_counts
+
+		# Create a DataFrame to hold the combined data
+		SDF = []
+
+		for gene in val_dict.keys():
+			if gene in ST6_dict:
+				row = {
+					'Gene_Symbol': gene,
+					'Protein_ID': val_dict[gene],
+					'Descriptive_Name': val_descriptive_dict[gene],
+					'Sim_Counts': val_sim_counts_dict[gene],
+					'Val_BW_Counts': val_val_counts_dict[gene],
+					'ST6_BW_Counts': ST6_dict[gene]
+				}
+				SDF.append(row)
+
+		# Convert the combined data into a DataFrame
+		SDF_df = pd.DataFrame(SDF)
+
+		return SDF_df
+
+	# make comparison between ST9 and validatoin file data:
+	def make_schmidt_validation_table_comparing_val_BW_to_direct_ST9(self, simDataFile, validationDataFile):
+		# Get the dictionary of gene symbols to avg counts from ST9:
+		ST9_dict = self.get_schmidt_BW_validation_data_from_ST9()
+
+		# Get the validation data:
+		(sim_schmidt_counts, val_schmidt_counts,
+		schmidt_overlap_ids, sim_wisniewski_counts,
+		val_wisniewski_counts, wisniewski_overlap_ids) = self.get_validation_data(simDataFile, validationDataFile)
+
+		# Make a dictionary of Schmidt ST6 gene_symbols to protein IDs:
+		val_dict = {}
+
+		# Create a dictonary of each ST6 gene Id to its descriptive name:
+		val_descriptive_dict = {}
+
+		# Create a dictonary of each ST6 gene ID to its simulation counts:
+		val_sim_counts_dict = {}
+
+		# Create a dictonary of each ST6 gene ID to the validation counts:
+		val_val_counts_dict = {}
+
+		# Create all dictionaries:
+		#NOTE: this is not directly taking from ST6, rather it is taking from the validationDataFile proteins that "overlap" with schmidt data.
+		for idx, protein_id in enumerate(schmidt_overlap_ids):
+			gene_symbol = self.get_common_name(protein_id)
+			val_dict[gene_symbol] = protein_id
+
+			descriptive_name = self.get_descriptive_name(protein_id)
+			val_descriptive_dict[gene_symbol] = descriptive_name
+
+			sim_counts = sim_schmidt_counts[idx]
+			val_sim_counts_dict[gene_symbol] = sim_counts
+
+			val_counts = val_schmidt_counts[idx]
+			val_val_counts_dict[gene_symbol] = val_counts
+
+		# Create a DataFrame to hold the combined data
+		SDF = []
+
+		for gene in val_dict.keys():
+			if gene in ST9_dict:
+				row = {
+					'Gene_Symbol': gene,
+					'Protein_ID': val_dict[gene],
+					'Descriptive_Name': val_descriptive_dict[gene],
+					'Sim_Counts': val_sim_counts_dict[gene],
+					'Val_BW_Counts': val_val_counts_dict[gene],
+					'ST9_BW_Counts': ST9_dict[gene]
+				}
+				SDF.append(row)
+
+		# Convert the combined data into a DataFrame
+		SDF_df = pd.DataFrame(SDF)
+
+		return SDF_df
+
 
 
 
@@ -478,7 +743,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	def hover_text_info(self, dataframe):
 		hovertext = dataframe.apply(lambda
-					row: f"Monomer ID: {row['protein_id']}<br>Common Name: {row['common_name']}<br>Description: {row['descriptive_name']}<br>HL Value: {row['half_life']}<br>HL Source: {row['half_life_source']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+					row: f"Monomer ID: {row['protein_id']}<br>Common Name: {row['common_name']}<br>Description: {row['descriptive_name']}<br>HL Value: {row['half_life']}<br>validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
 									axis=1)
 		return hovertext
 	def plot_by_complex_fraction_plotly(self, simDataFile, plotOutDir, simulationCounts, validationCounts,
@@ -762,7 +1027,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		fig.update_traces(marker_size=3)
 		fig.update_layout(
 			title=f"Validation Protein Counts Comparison: {wisniewski_name} et al. "
-				  f"vs. {schmidt_name} et al. (n={len(validation_overlap)} plotted)",
+				  f"vs. {schmidt_name} et al.<br> (n={len(validation_overlap)} plotted)",
 			xaxis_title=f"log10({schmidt_name} et al. Counts + 1))",
 			yaxis_title=f"log10({wisniewski_name} et al. Counts + 1))",
 			autosize=False, width=900, height=600)
@@ -774,8 +1039,591 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					   opacity=0.2, name="y=x"));
 
 		# save the figure as an html:
-		plot_name = "proteinCountsValidation_cohortPlot_validation_source_comparison.html"
+		plot_name = f"proteinCountsValidation_cohortPlot_validation_source_comparison_{schmidt_name}_vs_{wisniewski_name}.html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+	# compare the Schmidt validation sources to each other:
+	def compare_Schmidt_BW_to_MG(self, simDataFile, validationDataFile, plotOutDir):
+		# Obtain Schmit validation table:
+		SDF = self.make_schmidt_validation_table(simDataFile, validationDataFile)
+
+		# obtain the protein IDs:
+		schmidt_IDs = SDF['Protein_ID'].values
+
+		# obtain the BW and MG counts:
+		val_schmidt_counts_bw = SDF['Val_BW_Counts'].values
+		val_schmidt_counts_mg = SDF['Val_MG_Counts'].values
+		sim_counts = SDF['Sim_Counts'].values
+
+
+		# plot the comparison of the validation counts:
+		self.validation_data_source_comparison_plot(sim_counts, val_schmidt_counts_bw,
+													schmidt_IDs, "BW25113 Schmidt from validation file",
+													sim_counts,
+													val_schmidt_counts_mg, schmidt_IDs,
+													"MG1655 Schmidt", plotOutDir)
+
+
+	# Make a plotly of the ST9 counts vs the sim counts:
+	def compare_ST9_MG_to_simulation(self, simDataFile, plotOutDir):
+		# Obtain ST9 validation table:
+		ST9_dict = self.get_schmidt_MG_validation_data_from_ST9()
+
+		# Generate the simulation data:
+		avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = self.generate_data(
+			simDataFile)
+
+		# Make dictonaries for mapping:
+		sim_genes_to_counts = {}
+		sim_genes_to_protein_ids = {}
+		sim_genes_to_descriptions = {}
+		for i, monomer_id in enumerate(self.all_monomer_ids):
+			gene_name = self.get_common_name(monomer_id)
+			sim_genes_to_counts[gene_name] = avg_total_counts[i]
+			sim_genes_to_protein_ids[gene_name] = monomer_id
+			sim_genes_to_descriptions[gene_name] = self.get_descriptive_name(monomer_id)
+
+		# Create a dataframe for ST9 data with simulation counts:
+		SDF = []
+		for gene in sim_genes_to_protein_ids.keys():
+			if gene in ST9_dict:
+				row = {
+					'Gene_Symbol': gene,
+					'Protein_ID': sim_genes_to_protein_ids[gene],
+					'Descriptive_Name': sim_genes_to_descriptions[gene],
+					'Sim_Counts': sim_genes_to_counts[gene],
+					'Val_MG_Counts': ST9_dict[gene]
+				}
+				SDF.append(row)
+
+		# Convert the combined data into a DataFrame
+		SDF_df = pd.DataFrame(SDF)
+
+		# create a plotly comparing the ST9 counts (MG1655 Schmidt et al.) to the simulation counts:
+		simulationCounts = SDF_df['Sim_Counts'].values
+		validationCounts = SDF_df['Val_MG_Counts'].values
+		overlapIDs = SDF_df['Protein_ID'].values
+		sim_name = "Simulation"
+		val_name = "ST9 MG1655 Glucose Schmidt et al."
+
+		# Generate the plotly:
+		fig = go.Figure()
+
+		# Compute log10 values
+		x = self.get_LogData(overlapIDs, validationCounts)
+		y = self.get_LogData(overlapIDs, simulationCounts)
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the pearsonr and R2:
+		r_value, p_val = pearsonr(x_above_30, y_above_30)
+		pr2 = r_value ** 2
+		# compute the coefficent of determination rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		# have the monomer IDs be the overlap text
+		monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts = self.determine_fraction_table(
+			simDataFile)
+		monomer_to_half_life = self.get_half_lives(simDataFile)
+
+		# retreive the common names and the descriptions:
+		common_names = [self.get_common_name(protein_id) for protein_id in overlapIDs]
+		descriptive_names = [self.get_descriptive_name(protein_id) for protein_id in overlapIDs]
+
+		# create a dataframe of the protein ids and their half life sources:
+		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   "common_name": common_names,
+								   "descriptive_name": descriptive_names,
+								   'simulation_protein_counts': y,
+								   'validation_protein_counts': x})
+		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(
+			monomer_id_to_complex_fraction)
+		protein_df['complex_counts'] = protein_df['protein_id'].map(monomer_id_to_complex_counts)
+		protein_df['half_life'] = protein_df['protein_id'].map(monomer_to_half_life)
+		hovertext = protein_df.apply(lambda
+										 row: f"Monomer ID: {row['protein_id']}<br>Common Name: {row['common_name']}<br>Description: {row['descriptive_name']}<br>HL Value: {row['half_life']}<br>Validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+									 axis=1)
+
+		# Add scatter trace
+		fig.add_trace(
+			go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+					   name=f"Average Monomer Counts"))
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Simulation Protein Counts ({sim_name}) "
+				  f"vs. Validation Protein Counts ({val_name}) <br> Pearson R<sup>2</sup> counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(overlapIDs)} total)",
+			title_font=dict(size=12),  # Make the title font smaller
+			xaxis_title="log10(Validation Protein Counts)",
+			yaxis_title="log10(Simulation Protein Counts)",
+			autosize=False,
+			width=900,  # Set equal width and height for a square graph
+			height=600,
+			plot_bgcolor='white',  # Set the plot area background color to white
+			paper_bgcolor='white'  # Set the entire graph background to white
+		)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# Define the text to display
+		text = (
+			f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+			f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+			f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(r_squared_30_above, 3)}'
+		)
+
+		# Get the maximum x and minimum y to position the text in the bottom-right
+		x_max = x.max()
+		y_min = y.min()
+
+		# Adding text annotation just outside the graph
+		# Adjust x_max and y_min slightly outside the actual graph boundaries
+		text_offset_x = 0.05  # Offset to place the text box outside the graph
+		text_offset_y = 0.05  # Adjust according to your needs
+
+		# Adding text annotation to the bottom right
+		fig.add_annotation(
+			x=x_max + text_offset_x,  # Move the x position slightly to the right
+			y=y_min - text_offset_y,  # Move the y position slightly below
+			text=text,  # Your custom multi-line text
+			showarrow=False,  # No arrow
+			bgcolor='rgba(255, 255, 255, 0.8)',
+			# Slightly less transparent white background for better visibility
+			bordercolor='rgba(0, 0, 0, 0.5)',  # Optional border color
+			borderwidth=1,  # Optional border width
+			borderpad=4,  # Padding around the text
+			align='right',  # Align the text to the right
+			font=dict(size=10, color='gray'),  # Font properties
+			xref='x',  # Reference for x-coordinate
+			yref='y',  # Reference for y-coordinate
+		)
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
+	# compare ST9 BW25113 to sim data:
+	def compare_ST9_BW_to_simulation(self, simDataFile, plotOutDir):
+		# Obtain ST9 validation table:
+		ST9_BW_dict = self.get_schmidt_BW_validation_data_from_ST9()
+
+		# Generate the simulation data:
+		avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = self.generate_data(
+			simDataFile)
+
+		# Make dictonaries for mapping:
+		sim_genes_to_counts = {}
+		sim_genes_to_protein_ids = {}
+		sim_genes_to_descriptions = {}
+		for i, monomer_id in enumerate(self.all_monomer_ids):
+			gene_name = self.get_common_name(monomer_id)
+			sim_genes_to_counts[gene_name] = avg_total_counts[i]
+			sim_genes_to_protein_ids[gene_name] = monomer_id
+			sim_genes_to_descriptions[gene_name] = self.get_descriptive_name(monomer_id)
+
+		# Create a dataframe for ST9 data with simulation counts:
+		SDF = []
+		for gene in sim_genes_to_protein_ids.keys():
+			if gene in ST9_BW_dict:
+				row = {
+					'Gene_Symbol': gene,
+					'Protein_ID': sim_genes_to_protein_ids[gene],
+					'Descriptive_Name': sim_genes_to_descriptions[gene],
+					'Sim_Counts': sim_genes_to_counts[gene],
+					'Val_BW_Counts': ST9_BW_dict[gene]
+				}
+				SDF.append(row)
+
+		# Convert the combined data into a DataFrame
+		SDF_df = pd.DataFrame(SDF)
+
+		# create a plotly comparing the ST9 counts (MG1655 Schmidt et al.) to the simulation counts:
+		simulationCounts = SDF_df['Sim_Counts'].values
+		validationCounts = SDF_df['Val_BW_Counts'].values
+		overlapIDs = SDF_df['Protein_ID'].values
+		sim_name = self.sim_name
+		val_name = "ST9 BW25113 Glucose Schmidt et al."
+
+		# Generate the plotly:
+		fig = go.Figure()
+
+		# Compute log10 values
+		x = self.get_LogData(overlapIDs, validationCounts)
+		y = self.get_LogData(overlapIDs, simulationCounts)
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the pearsonr and R2:
+		r_value, p_val = pearsonr(x_above_30, y_above_30)
+		pr2 = r_value ** 2
+		# compute the coefficent of determination rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		# have the monomer IDs be the overlap text
+		monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts = self.determine_fraction_table(
+			simDataFile)
+		monomer_to_half_life = self.get_half_lives(simDataFile)
+
+		# retreive the common names and the descriptions:
+		common_names = [self.get_common_name(protein_id) for protein_id in overlapIDs]
+		descriptive_names = [self.get_descriptive_name(protein_id) for protein_id in overlapIDs]
+
+		# create a dataframe of the protein ids and their half life sources:
+		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   "common_name": common_names,
+								   "descriptive_name": descriptive_names,
+								   'simulation_protein_counts': y,
+								   'validation_protein_counts': x})
+		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(
+			monomer_id_to_complex_fraction)
+		protein_df['complex_counts'] = protein_df['protein_id'].map(monomer_id_to_complex_counts)
+		protein_df['half_life'] = protein_df['protein_id'].map(monomer_to_half_life)
+		hovertext = protein_df.apply(lambda
+					row: f"Monomer ID: {row['protein_id']}<br>Common Name: {row['common_name']}<br>Description: {row['descriptive_name']}<br>HL Value: {row['half_life']}<br>Validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+									axis=1)
+
+		# Add scatter trace
+		fig.add_trace(
+			go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+					   name=f"Average Monomer Counts"))
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Simulation Protein Counts ({sim_name}) "
+				  f"vs. Validation Protein Counts ({val_name}) <br> Pearson R<sup>2</sup> counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(overlapIDs)} total)",
+			title_font=dict(size=12),  # Make the title font smaller
+			xaxis_title="log10(Validation Protein Counts)",
+			yaxis_title="log10(Simulation Protein Counts)",
+			autosize=False,
+			width=900,  # Set equal width and height for a square graph
+			height=600,
+			plot_bgcolor='white',  # Set the plot area background color to white
+			paper_bgcolor='white'  # Set the entire graph background to white
+		)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# Define the text to display
+		text = (
+			f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+			f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+			f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(r_squared_30_above, 3)}'
+		)
+
+		# Get the maximum x and minimum y to position the text in the bottom-right
+		x_max = x.max()
+		y_min = y.min()
+
+		# Adding text annotation just outside the graph
+		# Adjust x_max and y_min slightly outside the actual graph boundaries
+		text_offset_x = 0.05  # Offset to place the text box outside the graph
+		text_offset_y = 0.05  # Adjust according to your needs
+
+		# Adding text annotation to the bottom right
+		fig.add_annotation(
+			x=x_max + text_offset_x,  # Move the x position slightly to the right
+			y=y_min - text_offset_y,  # Move the y position slightly below
+			text=text,  # Your custom multi-line text
+			showarrow=False,  # No arrow
+			bgcolor='rgba(255, 255, 255, 0.8)',
+			# Slightly less transparent white background for better visibility
+			bordercolor='rgba(0, 0, 0, 0.5)',  # Optional border color
+			borderwidth=1,  # Optional border width
+			borderpad=4,  # Padding around the text
+			align='right',  # Align the text to the right
+			font=dict(size=10, color='gray'),  # Font properties
+			xref='x',  # Reference for x-coordinate
+			yref='y',  # Reference for y-coordinate
+		)
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+	# compare ST6 BW Schmidt data to sim data:
+	def compare_ST6_BW_to_simulation(self, simDataFile, plotOutDir):
+		# Obtain ST9 validation table:
+		ST6_BW_dict = self.get_schmidt_BW_validation_data_from_ST6()
+
+		# Generate the simulation data:
+		avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = self.generate_data(
+			simDataFile)
+
+		# Make dictonaries for mapping:
+		sim_genes_to_counts = {}
+		sim_genes_to_protein_ids = {}
+		sim_genes_to_descriptions = {}
+		for i, monomer_id in enumerate(self.all_monomer_ids):
+			gene_name = self.get_common_name(monomer_id)
+			sim_genes_to_counts[gene_name] = avg_total_counts[i]
+			sim_genes_to_protein_ids[gene_name] = monomer_id
+			sim_genes_to_descriptions[gene_name] = self.get_descriptive_name(monomer_id)
+
+		# Create a dataframe for ST9 data with simulation counts:
+		SDF = []
+		for gene in sim_genes_to_protein_ids.keys():
+			if gene in ST6_BW_dict:
+				row = {
+					'Gene_Symbol': gene,
+					'Protein_ID': sim_genes_to_protein_ids[gene],
+					'Descriptive_Name': sim_genes_to_descriptions[gene],
+					'Sim_Counts': sim_genes_to_counts[gene],
+					'Val_BW_Counts': ST6_BW_dict[gene]
+				}
+				SDF.append(row)
+
+		# Convert the combined data into a DataFrame
+		SDF_df = pd.DataFrame(SDF)
+
+		# create a plotly comparing the ST9 counts (MG1655 Schmidt et al.) to the simulation counts:
+		simulationCounts = SDF_df['Sim_Counts'].values
+		validationCounts = SDF_df['Val_BW_Counts'].values
+		overlapIDs = SDF_df['Protein_ID'].values
+		sim_name = self.sim_name
+		val_name = "ST6 BW25113 Glucose Schmidt et al."
+
+		# Generate the plotly:
+		fig = go.Figure()
+
+		# Compute log10 values
+		x = self.get_LogData(overlapIDs, validationCounts)
+		y = self.get_LogData(overlapIDs, simulationCounts)
+
+		# Compute linear trendline
+		z = np.polyfit(x, y, 1)
+		p = np.poly1d(z)
+		trendline_y = p(x)
+
+		# Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+		above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+		x_above_30 = x[above_30_idx]
+		y_above_30 = y[above_30_idx]
+		z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+		p_above_30 = np.poly1d(z_above_30)
+		trendline_y_above_30 = p_above_30(x)
+
+		# compute the pearsonr and R2:
+		r_value, p_val = pearsonr(x_above_30, y_above_30)
+		pr2 = r_value ** 2
+		# compute the coefficent of determination rsquared value:
+		r_squared_30_above = r2_score(x_above_30, y_above_30)
+
+		# have the monomer IDs be the overlap text
+		monomer_counts_table, monomer_id_to_complex_fraction, monomer_id_to_complex_counts = self.determine_fraction_table(
+			simDataFile)
+		monomer_to_half_life = self.get_half_lives(simDataFile)
+
+		# retreive the common names and the descriptions:
+		common_names = [self.get_common_name(protein_id) for protein_id in overlapIDs]
+		descriptive_names = [self.get_descriptive_name(protein_id) for protein_id in overlapIDs]
+
+		# create a dataframe of the protein ids and their half life sources:
+		protein_df = pd.DataFrame({"protein_id": overlapIDs,
+								   "common_name": common_names,
+								   "descriptive_name": descriptive_names,
+								   'simulation_protein_counts': y,
+								   'validation_protein_counts': x})
+		protein_df['fraction_in_complex'] = protein_df['protein_id'].map(
+			monomer_id_to_complex_fraction)
+		protein_df['complex_counts'] = protein_df['protein_id'].map(monomer_id_to_complex_counts)
+		protein_df['half_life'] = protein_df['protein_id'].map(monomer_to_half_life)
+		hovertext = protein_df.apply(lambda
+					row: f"Monomer ID: {row['protein_id']}<br>Common Name: {row['common_name']}<br>Description: {row['descriptive_name']}<br>HL Value: {row['half_life']}<br>Validation AMC: {10 ** (row['validation_protein_counts'])}<br>Simulation AMC: {10 ** (row['simulation_protein_counts'])}<br>Avg. Complexed Monomer Counts: {row['complex_counts']} Complexed Fraction: {row['fraction_in_complex']}<br>",
+									axis=1)
+
+		# Add scatter trace
+		fig.add_trace(
+			go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+					   name=f"Average Monomer Counts"))
+
+		# Add trendline trace
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y, mode='lines',
+					   name=f'Linear fit: {p}',
+					   line=dict(color='green')))
+		fig.add_trace(
+			go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+					   name=f'Linear fit (counts > 30): {p_above_30}',
+					   line=dict(color='pink')))
+
+		# Update layout
+		fig.update_traces(marker_size=3)
+		fig.update_layout(
+			title=f"Simulation Protein Counts ({sim_name}) "
+				  f"vs. Validation Protein Counts ({val_name}) <br> Pearson R<sup>2</sup> counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(overlapIDs)} total)",
+			title_font=dict(size=12),  # Make the title font smaller
+			xaxis_title="log10(Validation Protein Counts)",
+			yaxis_title="log10(Simulation Protein Counts)",
+			autosize=False,
+			width=900,  # Set equal width and height for a square graph
+			height=600,
+			plot_bgcolor='white',  # Set the plot area background color to white
+			paper_bgcolor='white'  # Set the entire graph background to white
+		)
+
+		# add a y=x line
+		fig.add_trace(
+			go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+					   line=go.scatter.Line(color="black", dash="dash"),
+					   opacity=0.2, name="y=x"));
+
+		# Define the text to display
+		text = (
+			f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+			f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+			f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(r_squared_30_above, 3)}'
+		)
+
+		# Get the maximum x and minimum y to position the text in the bottom-right
+		x_max = x.max()
+		y_min = y.min()
+
+		# Adding text annotation just outside the graph
+		# Adjust x_max and y_min slightly outside the actual graph boundaries
+		text_offset_x = 0.05  # Offset to place the text box outside the graph
+		text_offset_y = 0.05  # Adjust according to your needs
+
+		# Adding text annotation to the bottom right
+		fig.add_annotation(
+			x=x_max + text_offset_x,  # Move the x position slightly to the right
+			y=y_min - text_offset_y,  # Move the y position slightly below
+			text=text,  # Your custom multi-line text
+			showarrow=False,  # No arrow
+			bgcolor='rgba(255, 255, 255, 0.8)',
+			# Slightly less transparent white background for better visibility
+			bordercolor='rgba(0, 0, 0, 0.5)',  # Optional border color
+			borderwidth=1,  # Optional border width
+			borderpad=4,  # Padding around the text
+			align='right',  # Align the text to the right
+			font=dict(size=10, color='gray'),  # Font properties
+			xref='x',  # Reference for x-coordinate
+			yref='y',  # Reference for y-coordinate
+		)
+
+		# save the figure as an html:
+		plot_name = f"proteinCountsValidation_cohortPlot_{sim_name}_vs_{val_name}.html"
+		fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
+	# finally, compare ST6 BW to ST9 BW:
+	def compare_ST6_BW_to_ST9_BW(self, validationDataFile, plotOutDir):
+		# Obtain ST9 and ST6 BW validation tables:
+		ST9_BW_dict = self.get_schmidt_BW_validation_data_from_ST9()
+		ST6_BW_dict = self.get_schmidt_BW_validation_data_from_ST6()
+
+		# find overlapping genes:
+		overlap_genes = set(ST9_BW_dict.keys()).intersection(set(ST6_BW_dict.keys()))
+
+		# obtain the counts for the overlapping genes:
+		ST9_counts = [ST9_BW_dict[gene] for gene in overlap_genes]
+		ST6_counts = [ST6_BW_dict[gene] for gene in overlap_genes]
+
+		# plot the comparison of the validation counts:
+		self.validation_data_source_comparison_plot(ST9_counts, ST6_counts,
+													list(overlap_genes), "ST9 BW25113 Schmidt",
+													ST9_counts,
+													ST6_counts, list(overlap_genes),
+													"ST6 BW25113 Schmidt", plotOutDir)
+
+
+	# compare the validation BW output to the direct read in of ST6 BW data:
+	def compare_validation_file_data_to_direct_ST6_BW(self, simDataFile, validationDataFile, plotOutDir):
+		# Obtain Schmit validation table:
+		SDF = self.make_schmidt_validation_table_comparing_val_BW_to_direct_ST6(simDataFile, validationDataFile)
+
+		# obtain the protein IDs:
+		schmidt_IDs = SDF['Protein_ID'].values
+
+		# obtain the BW and MG counts:
+		val_schmidt_counts_bw = SDF['Val_BW_Counts'].values
+		val_schmidt_counts_bw_from_ST6 = SDF['ST6_BW_Counts'].values
+		sim_counts = SDF['Sim_Counts'].values
+
+
+		# plot the comparison of the validation counts:
+		self.validation_data_source_comparison_plot(sim_counts, val_schmidt_counts_bw,
+													schmidt_IDs, "BW25113 Schmidt from validation file",
+													sim_counts,
+													val_schmidt_counts_bw_from_ST6, schmidt_IDs,
+													"BW25113 Schmidt from ST6", plotOutDir)
+
+	# plot the ST9 BW data against the validation file BW data:
+	def compare_validation_file_data_to_direct_ST9_BW(self, simDataFile, validationDataFile, plotOutDir):
+		# Obtain Schmit validation table:
+		SDF = self.make_schmidt_validation_table_comparing_val_BW_to_direct_ST9(simDataFile, validationDataFile)
+
+		# obtain the protein IDs:
+		schmidt_IDs = SDF['Protein_ID'].values
+
+		# obtain the BW and MG counts:
+		val_schmidt_counts_bw = SDF['Val_BW_Counts'].values
+		val_schmidt_counts_bw_from_ST9 = SDF['ST9_BW_Counts'].values
+		sim_counts = SDF['Sim_Counts'].values
+
+
+		# plot the comparison of the validation counts:
+		self.validation_data_source_comparison_plot(sim_counts, val_schmidt_counts_bw,
+													schmidt_IDs, "BW25113 Schmidt from validation file",
+													sim_counts,
+													val_schmidt_counts_bw_from_ST9, schmidt_IDs,
+													"BW25113 Schmidt from ST9", plotOutDir)
+
+
 
 
 	def plot_validation_comparison(self, simDataFile, validationDataFile,plotOutDir, sim_name):
@@ -793,7 +1641,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 													val_wisniewski_counts, wisniewski_overlap_ids,
 													"Wisniewski", plotOutDir)
 
-
+		#self.compare_Schmidt_BW_to_MG(simDataFile, validationDataFile, plotOutDir)
+		#self.compare_ST9_BW_to_simulation(simDataFile, plotOutDir)
+		#self.compare_ST9_MG_to_simulation(simDataFile, plotOutDir)
+		#self.compare_ST6_BW_to_simulation(simDataFile, plotOutDir)
+		#self.compare_validation_file_data_to_direct_ST6_BW(simDataFile, validationDataFile, plotOutDir)
+		self.compare_validation_file_data_to_direct_ST9_BW(simDataFile, validationDataFile, plotOutDir)
+		#self.compare_ST6_BW_to_ST9_BW(validationDataFile, plotOutDir)
+		hi8 = 5
 
 
 		# generate interactive validation plotlys:
@@ -824,13 +1679,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 
+
+
+
+
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
 
 		# Generate the data for the simulation:
-		sim_name = metadata["description"]
+		self.sim_name = metadata["description"]
 		self.n_total_gens = self.ap.n_generation
-		self.plot_validation_comparison(simDataFile, validationDataFile, plotOutDir, sim_name)
+		self.plot_validation_comparison(simDataFile, validationDataFile, plotOutDir, self.sim_name)
 
 
 
