@@ -144,8 +144,72 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         return revised_molecule_list
 
-    # extract the validation data from Schmidt et al. 2016 supplementary table 9:
-    # two ways to do this: make a validation data set that is literally the same as the schmidt set by going
+    # Function to extract the validation data from Schmidt et al. 2016 ST6:
+    def get_schmidt_BW_validation_data_from_ST6(self):
+        """
+        Extracts the protein counts from Schmidt et al. 2016 supplementary
+        table 6 BW25113 strain in Glucose media
+        Returns: a dictionary mapping gene symbols to their average protein
+        counts
+        """
+        schmidt_st6_file = os.path.join(
+            ROOT_PATH, 'reconstruction', 'ecoli',
+                                     'flat', 'Schmidt_2016_ST6.csv')
+        gene_symbol_to_avg_counts = {}
+        with io.open(schmidt_st6_file, 'r') as f:
+            reader = csv.reader(f, delimiter=',')
+            headers = next(reader)
+            gene_symbol_index = headers.index('Gene')
+            avg_counts_index = headers.index('Glucose')
+
+            for line in reader:
+                gene_symbol = line[gene_symbol_index]
+                avg_counts = line[avg_counts_index]
+                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
+
+        # Convert counts to int and remove empty entries
+        for gene, count in list(gene_symbol_to_avg_counts.items()):
+            if count == '' or count is None:
+                del gene_symbol_to_avg_counts[gene]
+            else:
+                gene_symbol_to_avg_counts[gene] = int(count)
+
+        return gene_symbol_to_avg_counts
+
+    # Function to extract the BW validation data from Schmidt et al. 2016 ST9:
+    def get_schmidt_BW_validation_data_from_ST9(self):
+        """
+        Extracts the protein counts from Schmidt et al. 2016 supplementary
+        table 9 strain BW25113 in Glucose media
+        Returns: a dictionary mapping gene symbols to their average protein
+        counts
+        """
+        schmidt_st9_file = os.path.join(
+            ROOT_PATH, 'reconstruction', 'ecoli',
+                                     'flat', 'Schmidt_2016_ST9.csv')
+        gene_symbol_to_avg_counts = {}
+        with io.open(schmidt_st9_file, 'r') as f:
+            reader = csv.reader(f, delimiter=',')
+            headers = next(reader)
+            gene_symbol_index = headers.index('Gene')
+            avg_counts_index = headers.index('Copies/Cell_BW25113.Glucose')
+
+            for line in reader:
+                gene_symbol = line[gene_symbol_index]
+                avg_counts = line[avg_counts_index]
+                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
+
+        # Convert counts to int and remove empty entries
+        for gene, count in list(gene_symbol_to_avg_counts.items()):
+            if count == '' or count is None:
+                del gene_symbol_to_avg_counts[gene]
+            else:
+                gene_symbol_to_avg_counts[gene] = int(count)
+
+        return gene_symbol_to_avg_counts
+
+
+    # Function to extract the validation data from Schmidt et al. 2016 ST9:
     def get_schmidt_MG_validation_data_from_ST9(self):
         """
         Extracts the protein counts from Schmidt et al. 2016 supplementary
@@ -168,79 +232,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 avg_counts = line[avg_counts_index]
                 gene_symbol_to_avg_counts[gene_symbol] = avg_counts
 
-        # Clean ST9_dict: convert counts to int and remove bogus entries
+        # Convert counts to int and remove empty entries
         for gene, count in list(gene_symbol_to_avg_counts.items()):
             if count == '' or count is None:
-                del gene_symbol_to_avg_counts[gene]  # Remove bogus entries
+                del gene_symbol_to_avg_counts[gene]
             else:
-                gene_symbol_to_avg_counts[gene] = int(count)  # Convert counts to integers
+                gene_symbol_to_avg_counts[gene] = int(count)
 
         return gene_symbol_to_avg_counts
 
-    # get the ST9 BW counts dictonary:
-    def get_schmidt_BW_validation_data_from_ST9(self):
-        """
-        Extracts the protein counts from Schmidt et al. 2016 supplementary
-        table 9 data for BW25
-        Returns: a dictionary mapping gene symbols to their average protein
-        counts
-        """
-        schmidt_st9_file = os.path.join(
-            ROOT_PATH, 'reconstruction', 'ecoli',
-                                     'flat', 'Schmidt_2016_ST9.csv')
-        gene_symbol_to_avg_counts = {}
-        with io.open(schmidt_st9_file, 'r') as f:
-            reader = csv.reader(f, delimiter=',')
-            headers = next(reader)
-            gene_symbol_index = headers.index('Gene')
-            avg_counts_index = headers.index('Copies/Cell_BW25113.Glucose')
-
-            for line in reader:
-                gene_symbol = line[gene_symbol_index]
-                avg_counts = line[avg_counts_index]
-                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
-
-        # Clean ST9_dict: convert counts to int and remove bogus entries
-        for gene, count in list(gene_symbol_to_avg_counts.items()):
-            if count == '' or count is None:
-                del gene_symbol_to_avg_counts[gene]  # Remove bogus entries
-            else:
-                gene_symbol_to_avg_counts[gene] = int(count)  # Convert counts to integers
-
-        return gene_symbol_to_avg_counts
-
-
-    # get the ST6 BW counts dictonary:
-    def get_schmidt_BW_validation_data_from_ST6(self):
-        """
-        Extracts the protein counts from Schmidt et al. 2016 supplementary
-        table 6 data for BW25
-        Returns: a dictionary mapping gene symbols to their average protein
-        counts
-        """
-        schmidt_st6_file = os.path.join(
-            ROOT_PATH, 'validation', 'ecoli',
-            'flat', 'schmidt2015_javier_table.tsv')
-        gene_symbol_to_avg_counts = {}
-        with io.open(schmidt_st6_file, 'r') as f:
-            reader = csv.reader(f, delimiter='\t')
-            headers = next(reader)
-            gene_symbol_index = headers.index('GeneName')
-            avg_counts_index = headers.index('Glucose')
-
-            for line in reader:
-                gene_symbol = line[gene_symbol_index]
-                avg_counts = line[avg_counts_index]
-                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
-
-        # Clean ST9_dict: convert counts to int and remove bogus entries
-        for gene, count in list(gene_symbol_to_avg_counts.items()):
-            if count == '' or count is None:
-                del gene_symbol_to_avg_counts[gene]  # Remove bogus entries
-            else:
-                gene_symbol_to_avg_counts[gene] = int(count)  # Convert counts to integers
-
-        return gene_symbol_to_avg_counts
 
     # Obtain a dictionary of the common names associated with multiple monomer IDs:
     def check_common_name_to_gene_id_map(self, simDataFile):
@@ -283,11 +283,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         print(multiple_monomer_ids_df)
 
         # Check which IDs end up in the simulation...
+        print("Checking if any of the monomer IDs belonging to the same gene common name are in the simulation...")
         common_names_with_multiple_monomer_ids_narrowed_dict = {}
         for common_name in common_names_with_multiple_monomer_ids_dict.keys():
             monomer_ids = common_names_with_multiple_monomer_ids_dict[common_name]
             monomer_ids_in_sim = []
-            print("Checking which monomer IDs for", common_name, "are in the simulation...")
+            print("Checking if any monomer IDs for", common_name, "are in the simulation...")
             for monomer_id in monomer_ids:
                 monomer_ID = self.check_validity_and_get_compartment(simDataFile, [monomer_id])[0]
                 if monomer_ID in self.all_monomer_ids:
@@ -324,6 +325,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         rnas_data['monomer_ids'] = rnas_data['monomer_ids'].apply(parse_monomer_ids)
 
         # Create a dictionary mapping common names to monomer IDs and vice versa:
+        print("Mapping simulation monomer IDs to common names...")
         common_name_to_monomer_id = {}
         monomer_id_to_common_name = {}
         for i in range(len(rnas_data)):
@@ -345,7 +347,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 # find the monomer ID that is actually in the simulation:
                 monomer_IDs_in_sim = self.common_names_with_multiple_monomer_ids_narrowed_dict[common_name]
                 if len(monomer_IDs_in_sim) == 1:
-                    print("This can mess up later mappings! Mapping to the "
+                    print("Mapping to the "
                           "monomer ID that appears in the simulation by default:",
                           monomer_IDs_in_sim)
                     # map to first monomer ID by default
@@ -397,6 +399,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         rnas_data = rnas_synonyms.copy(deep=True)
         rnas_data['monomer_ids'] = rnas_data['monomer_ids'].apply(parse_rows)
         rnas_data['synonyms'] = rnas_data['synonyms'].apply(parse_rows)
+        # TODO: might need to delete synonyms that match the gene_symbol itself if this occurs
 
         # Create a dictionary mapping monomer IDs to synonyms:
         synonyms_to_monomer_ids = {}
@@ -421,7 +424,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                   "has synonyms that map to the following monomer IDs:",
                   monomer_ids)
             # check which (if any) of these monomer IDs are in the simulation:
-            print("Checking which of these monomer IDs are in the simulation...")
+            print("Checking if any of these monomer IDs are in the simulation...")
             for monomer_id in monomer_ids:
                 monomer_ID = self.check_validity_and_get_compartment(
                     simDataFile, [monomer_id])[0]
@@ -453,7 +456,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         sim_monomer_ids_to_descriptions_dict = {}
         # retrieve the monomer ID to common name description mapping from proteins.tsv:
         monomer_id_to_common_name_description = self.get_monomer_descriptions_from_flat_file()
-        for base_monomer_id in self.all_monomer_ids:
+        for monomer_id in self.all_monomer_ids:
+            base_monomer_id = monomer_id[:-3]
             description = monomer_id_to_common_name_description[base_monomer_id]
             sim_monomer_ids_to_descriptions_dict[base_monomer_id] = description
 
@@ -494,25 +498,44 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         # define a dictionary mapping the comparison dataset's common names to the simulation monomer IDs:
         comparison_dataset_common_name_to_sim_monomer_id_dict = {}
 
-        # define a dictionary that shows what the mapping was for dataset common names that get reassigned to a new common name based on synonyms:
+        # define a list of common names not directly found in the sim data common names:
+        comparison_dataset_common_names_not_mapped_directly_to_sim_common_names_list = []
+
+        # define a dictionary that shows what the mapping was for dataset common names that mapped
+        # to a monomer ID via an rnas.tsv synonyms match:
         comparison_dataset_common_name_to_simulation_common_name_dict = {}
 
         # define a dictionary that records which common names could not be mapped to simulation monomer IDs:
         comparison_dataset_common_names_not_mapped_to_sim_ids_list = []
 
+        print("Mapping common names from the validaiton comparison dataset to simulation monomer IDs...")
         for common_name in common_name_list:
             if common_name in self.sim_common_names_to_monomer_ids_dict.keys():
                 monomer_id = self.sim_common_names_to_monomer_ids_dict[common_name]
                 comparison_dataset_common_name_to_sim_monomer_id_dict[common_name] = monomer_id
 
+            else:
+                comparison_dataset_common_names_not_mapped_directly_to_sim_common_names_list.append(common_name)
+
+        initial_mapping_count = len(comparison_dataset_common_name_to_sim_monomer_id_dict.keys())
+        print(initial_mapping_count, "common names from the comparison dataset were mapped directly to simulation monomer IDs based on matching common names.")
+        print(f"Now checking if any of the remaining {int(len(common_name_list)) - int(initial_mapping_count)} common names from the comparison dataset map to simulation monomer IDs via synonyms in rnas.tsv...")
+
+        # For those common names that were not direct match with simulation
+        # common name ids, check if they match with a synonym in rnas.tsv that maps
+        # to a simulation monomer id (note: split up the for loops this way
+        # because some "common names" in rnas.tsv are also listed in "synonyms"):
+        for common_name in comparison_dataset_common_names_not_mapped_directly_to_sim_common_names_list:
             # if it is not in the sim_common_names_to_monomer_ids_dict, check if it is anywhere in the common_name column of the rnas.tsv file:
-            elif common_name in self.common_name_to_monomer_id:
+            if common_name in self.common_name_to_monomer_id:
                 monomer_id = self.common_name_to_monomer_id[common_name]
-                print("The monomer ", monomer_id, "(common name: ",
+                print("The monomer", monomer_id, "(common name:",
                     common_name, ") from the comparison dataset is in rnas.tsv "
-                    "but not in the simulation common names mapping. Adding it "
-                    "to the sim monomer ID list.")
-            # if it is not in the rnas.tsv common name column, check if it is in the synonyms column of rnas.tsv:
+                    "but is not a protein that matches to a simulation common "
+                                 "name mapping, so it won't be included in the mapping.")
+                comparison_dataset_common_names_not_mapped_to_sim_ids_list.append(common_name)
+
+            # if it is not in the rnas.tsv "common name" column, check if it is in the synonyms column of rnas.tsv:
             elif common_name in synonyms_to_monomer_ids.keys():
                 matching_proteins = self.check_for_synonym_match_in_sim_monomer_ids(simDataFile, common_name)
                 if len(matching_proteins) == 1:
@@ -521,9 +544,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                     corresponding_sim_common_name = self.sim_monomer_ids_to_common_names_dict[monomer_id]
                     comparison_dataset_common_name_to_simulation_common_name_dict[common_name] = corresponding_sim_common_name
                     print("The common name", common_name,
-                          "from the comparison dataset maps to the simulation monomer ID",
-                          monomer_id, "via synonyms in rnas.tsv. Adding it to "
-                          "the sim monomer ID list.")
+                          "from the validation comparison dataset maps to the "
+                          "simulation monomer ID", monomer_id, "via synonyms in rnas.tsv, so it will be included in the mapping.")
                 if len(matching_proteins) > 1:
                     print("The common name", common_name,
                           "from the comparison dataset maps to multiple "
@@ -538,7 +560,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
             else:
                 comparison_dataset_common_names_not_mapped_to_sim_ids_list.append(common_name)
-                print(common_name, "was not found in the simulation common names or synonyms mapping. Skipping this protein.")
+                print(common_name, "did not map to a simulation monomer name via the simulation common names or rnas.tsv synonyms, and thus, will not be included in the mapping.")
+
+        # Share final stats:
+        final_mapping_count = len(comparison_dataset_common_name_to_sim_monomer_id_dict)
+        mapped_via_synonyms_count = len(comparison_dataset_common_name_to_simulation_common_name_dict.keys())
+        print(mapped_via_synonyms_count, f"common names from the comparison dataset were mapped to simulation monomer IDs after checking synonyms in rnas.tsv ({final_mapping_count} mapped total).")
+        print("A total of", len(comparison_dataset_common_names_not_mapped_to_sim_ids_list),
+              "common names from the comparison dataset could not be mapped to simulation monomer IDs.")
 
         if record_extra_mappings:
             return (comparison_dataset_common_name_to_sim_monomer_id_dict,
@@ -589,7 +618,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
     # With the matching simulation and validation data obtained, make appropreite comparison plots:
-    def compare_simulation_counts_to_raw_validation_source(self, simDataFile, raw_validation_source_common_name_to_counts_dict, plotOutDir, validation_source_name, validation_source_name_short):
+    def compare_simulation_counts_to_raw_validation_source(self, simDataFile, plotOutDir, raw_validation_source_common_name_to_counts_dict, validation_source_name, validation_source_name_short):
         # create a table of relevant simulation protein info for the overlapping proteins:
         RVS_sim_data_df = self.create_simulation_protein_info_table(simDataFile, raw_validation_source_common_name_to_counts_dict)
 
@@ -597,8 +626,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         fig = go.Figure()
 
         # Compute log10 values for simulation and validation protein counts:
-        x = np.log10(RVS_sim_data_df['RVS_count'] + 1)
-        y = np.log10(RVS_sim_data_df['avg_total_count'] + 1)
+        x = np.log10(RVS_sim_data_df['RVS_count'].values + 1)
+        y = np.log10(RVS_sim_data_df['avg_total_count'].values + 1)
 
         # Compute linear trendline
         z = np.polyfit(x, y, 1)
@@ -623,10 +652,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                                          row:
                                           f"Monomer ID: {row['monomer_id']}"
                                           f"<br>Simulation common name: {row['common_name']}"
+                                          f"<br>Validation source common name: {row['RVS_common_name']}"
                                           f"<br>Description: {row['description']}"
                                           f"<br>Simulation half life (min): {row['simulation_half_life']}"
-                                          f"<br> Raw data validation count: {10 ** (row['RVS_count'])}"
-                                          f"<br>Avg. total simulation count: {10 ** (row['avg_total_count'])}"
+                                          f"<br>Validation source count: {row['RVS_count']}"
+                                          f"<br>Avg. total simulation count: {row['avg_total_count']}"
                                           f"<br>Avg. complexed count: {row['avg_complex_count']}"
                                           f"<br>Avg. free count: {row['avg_free_count']}",
                                      axis=1)
@@ -634,7 +664,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         # Add total counts scatter data:
         fig.add_trace(
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
-                       name=f"Average Monomer Counts"))
+                       name=f"Monomer Counts"))
 
         # Add linear trendline:
         fig.add_trace(
@@ -659,12 +689,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         fig.update_traces(marker_size=3)
         fig.update_layout(
             title=f"Simulation Protein Counts vs. Validation Protein Counts<br>"
-                  f"Sim ID: {self.sim_name} ({self.total_cells}), "
+                  f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
                   f"Validation dataset: {validation_source_name}<br>"
                   f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
             title_font=dict(size=8),
-            xaxis_title=r"$\log_{10}(x)$(Validation Protein Counts)",
-            yaxis_title=r"$\log_{10}(x)$(Simulation Protein Counts)",
+            xaxis_title="log₁₀(Validation Protein Counts)",
+            yaxis_title="log₁₀(Simulation Protein Counts)",
             autosize=False,
             width=900,  # Set equal width and height for a square graph
             height=600,
@@ -692,6 +722,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             x=x_max + text_offset_x,  # Move the x position slightly to the right
             y=y_min - text_offset_y,  # Move the y position slightly below
             text=text,
+            showarrow=False,
             bgcolor='rgba(255, 255, 255, 0.8)',
             bordercolor='rgba(0, 0, 0, 0.5)',
             borderwidth=1,
@@ -728,8 +759,26 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             simDataFile, avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes)
 
         # Get the raw validation source data dictionaries:
+        SMGST9_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST9()
 
+        # (comparison_dataset_common_name_to_sim_monomer_id_dict,
+        # comparison_dataset_common_name_to_simulation_common_name_dict,
+        # comparison_dataset_common_names_not_mapped_to_sim_ids_list) = self.map_common_names_to_sim_monomer_ids(
+        #     simDataFile, list(SMGST9_common_names_to_counts_dict.keys()),
+        #     record_extra_mappings=True)
 
+        # Get the raw validation source data dictionaries:
+        SMGST9_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST9()
+        # Compare simulation data to Schmidt et al. 2016 ST9 MG data:
+        self.compare_simulation_counts_to_raw_validation_source(
+            simDataFile, plotOutDir, SMGST9_common_names_to_counts_dict,
+            "Schmidt et al. 2016 ST9 MG1655 data", "Schmidt2016_ST9_MG")
+
+        # Compare simulation data to Schmidt et al. 2016 ST6 MG data:
+        SMGST6_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST6()
+        self.compare_simulation_counts_to_raw_validation_source(
+            simDataFile, plotOutDir, SMGST6_common_names_to_counts_dict,
+            "Schmidt et al. 2016 ST6 MG1655 data", "Schmidt2016_ST6_MG")
         hi = 5
 
 
