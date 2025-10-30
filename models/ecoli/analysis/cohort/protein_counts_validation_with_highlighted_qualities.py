@@ -24,7 +24,11 @@ from wholecell.utils.filepath import ROOT_PATH
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # input proteins to highlight:
-HIGHLIGHT_PROTEINS = ["EG10542-MONOMER[c]"]
+HIGHLIGHT_PROTEINS =[] #["TRYPSYN-APROTEIN[c]", 'TRYPSYN-BPROTEIN[c]', 'ANTHRANSYNCOMPI-MONOMER[c]', 'CYCLASE-MONOMER[c]', 'EG11274-MONOMER[m]', 'PRAI-IGPS[c]', 'ASPKINIHOMOSERDEHYDROGI-MONOMER[c]',
+					  #'ATPPHOSRIBOSTRANS-MONOMER[c]', 'GLUTAMIDOTRANS-MONOMER[c]', 'HISTCYCLOPRATPPHOS[c]', 'HISTDEHYD-MONOMER[c]', 'HISTPHOSTRANS-MONOMER[c]','HOMOSERKIN-MONOMER[c]',
+					  #'IMIDPHOSPHADEHYDHISTIDPHOSPHA-MONOMER[c]', 'PRIBFAICARPISOM-MONOMER[c]', 'THRESYN-MONOMER[c]']
+
+
 
 # threshold for complex fraction:
 COMPLEX_FRACTION_THRESHOLD = 0.9
@@ -1647,9 +1651,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		#self.compare_ST9_MG_to_simulation(simDataFile, plotOutDir)
 		#self.compare_ST6_BW_to_simulation(simDataFile, plotOutDir)
 		#self.compare_validation_file_data_to_direct_ST6_BW(simDataFile, validationDataFile, plotOutDir)
-		self.compare_validation_file_data_to_direct_ST9_BW(simDataFile, validationDataFile, plotOutDir)
+		#self.compare_validation_file_data_to_direct_ST9_BW(simDataFile, validationDataFile, plotOutDir)
 		#self.compare_ST6_BW_to_ST9_BW(validationDataFile, plotOutDir)
-		hi8 = 5
 
 
 		# generate interactive validation plotlys:
@@ -1676,7 +1679,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			val_schmidt_counts, schmidt_overlap_ids, sim_name, "Schmidt")
 		self.plot_by_complex_fraction_with_proteins_highlighted_plotly(simDataFile, plotOutDir, sim_wisniewski_counts,
 			val_wisniewski_counts, wisniewski_overlap_ids, sim_name, "Wisniewski")
-
+		hi = 6
 
 
 
