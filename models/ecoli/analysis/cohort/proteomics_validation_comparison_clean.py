@@ -14,6 +14,11 @@
 # 5. Make a plot comparing the four validation data sets to the simulated data
 # 6. Make plots comparing each validation data set to each other
 
+# TODO: change the pulling of the data in the flat files to reroute through the Uniprot names because there might be some odd gene names (I think I saw an "NA") that do not match properly. However, this way is fastest for bypassing the Biocyc log in method right now.
+#  In the future, get the validation data to update to use the Uniprot names directly at each Ecocyc update (right now I think the proteomics comparison comes from the manually translated Schmidt et al. 2015 gene names which might not be up to date.
+
+
+
 
 import pickle
 import os
@@ -958,7 +963,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         self.generate_sim_monomer_id_to_info_dicts(
             simDataFile, avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes)
 
-        # Call all three below (instead of within nested functions to reduce run time):
+        # Call all below to compare sim count sto validation data (instead of within nested functions to reduce run time later):
 
         # Map the common names from the Schmidt et al. 2016 ST9 MG data to simulation monomer IDs:
         SMGST9_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST9()
@@ -988,7 +993,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 SBWST9_common_names_to_counts_dict.keys()), record_extra_mappings=True))
         self.compare_simulation_counts_to_raw_validation_source(plotOutDir, SBWST9_common_names_to_counts_dict, SBWST9_dataset_common_name_to_sim_monomer_id_dict,
             "Schmidt et al. 2016 ST9 BW25113 data", "Schmidt2016_ST9_BW")
-
 
         # Generate comparison of simulation data to simulation saved validation data (Schmidt et al. 2015 BW25113):
         (sim_validation_common_names_to_counts_dict,
