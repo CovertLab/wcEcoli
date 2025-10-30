@@ -1002,6 +1002,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
         # Make the plots of the validation data source comparisons (against other validation sources):
+        # TODO: edit this so it is not filtered by what common names match with the simulation, rather just the full set of common name data available in each validation dataset.
 
         # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 MG1655 data:
         self.compare_validation_dataset_to_validation_dataset(plotOutDir,
