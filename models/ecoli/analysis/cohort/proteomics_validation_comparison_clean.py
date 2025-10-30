@@ -1008,7 +1008,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             "Simulation Validation Data from Schmidt et al. 2015 (BW25113)", "Schmidt2015_ST6_BW",
             sim_validation_common_names_to_counts_dict, sim_validation_common_names_to_monomer_ids_dict,
             "Schmidt et al. 2016 ST9 MG1655 data", "Schmidt2016_ST9_MG",
-            SBWST6_common_names_to_counts_dict, SBWST6_dataset_common_name_to_sim_monomer_id_dict)
+            SMGST9_common_names_to_counts_dict, SMGST9_dataset_common_name_to_sim_monomer_id_dict)
 
         # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST6 BW25113 data:
         #NOTE: this should be identical.... but differences will reflect how Ecocyc data has updated.
