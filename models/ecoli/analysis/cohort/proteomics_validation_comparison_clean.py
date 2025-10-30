@@ -129,6 +129,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 schmidt_overlap_ids, sim_wisniewski_counts,
                 val_wisniewski_counts, wisniewski_overlap_ids)
 
+    # Create a function preps the validation data saved with the sim data for the comparison:
+    def prep_validation_data_for_comparison(self, simDataFile, validationDataFile):
+        # Obtain the validation data saved with the sim data:
+        (sim_schmidt_counts, val_schmidt_counts,
+         schmidt_overlap_ids, sim_wisniewski_counts,
+         val_wisniewski_counts,
+         wisniewski_overlap_ids) = self.get_validation_data(
+            simDataFile, validationDataFile)
+
+        # Generate a validation data dictionary for easy access later:
+        sim_validation_common_names_to_counts_dict = {}
+        sim_validation_common_names_to_monomer_ids_dict = {}
+        for i in range(len(schmidt_overlap_ids)):
+            monomer_id = schmidt_overlap_ids[i][:-3]  # remove compartment tag
+            common_name = self.sim_monomer_ids_to_common_names_dict[monomer_id]
+            val_count = val_schmidt_counts[i]
+            sim_validation_common_names_to_counts_dict[common_name] = val_count
+            sim_validation_common_names_to_monomer_ids_dict[common_name] = monomer_id
+
+        return (sim_validation_common_names_to_counts_dict,
+                sim_validation_common_names_to_monomer_ids_dict)
+
+
 
     # create a function that checks if something is a vaild molecule in the sim:
     def check_validity_and_get_compartment(self, simDataFile, molecule_list):
@@ -153,7 +176,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         counts
         """
         schmidt_st6_file = os.path.join(
-            ROOT_PATH, 'reconstruction', 'ecoli',
+            ROOT_PATH, 'validation', 'ecoli',
                                      'flat', 'Schmidt_2016_ST6.csv')
         gene_symbol_to_avg_counts = {}
         with io.open(schmidt_st6_file, 'r') as f:
@@ -185,7 +208,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         counts
         """
         schmidt_st9_file = os.path.join(
-            ROOT_PATH, 'reconstruction', 'ecoli',
+            ROOT_PATH, 'validation', 'ecoli',
                                      'flat', 'Schmidt_2016_ST9.csv')
         gene_symbol_to_avg_counts = {}
         with io.open(schmidt_st9_file, 'r') as f:
@@ -218,7 +241,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         counts
         """
         schmidt_st9_file = os.path.join(
-            ROOT_PATH, 'reconstruction', 'ecoli',
+            ROOT_PATH, 'validation', 'ecoli',
                                      'flat', 'Schmidt_2016_ST9.csv')
         gene_symbol_to_avg_counts = {}
         with io.open(schmidt_st9_file, 'r') as f:
@@ -303,8 +326,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         # return a dictionary of these values in case it is helpful later:
         return common_names_with_multiple_monomer_ids_dict
 
-
-    # Create a dictionary mapping the monomer_IDs to common names (and vice versa):
+    # Create a dictionary mapping all monomer IDs in rnas.tsv to common names (and vice versa):
     def map_monomer_ids_to_common_names(self):
         # Retrieve the common name from rnas.tsv for each monomer ID
         rnasTable = pd.read_csv(
@@ -578,13 +600,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
     # Create a function that creates a table of relevant simulation protein info for a given list of monomer IDs:
-    def create_simulation_protein_info_table(self, simDataFile, raw_validation_source_common_name_to_counts_dict):
-        # obtain a list of the common names from the raw validation source (RVS):
-        RVS_common_name_list = list(raw_validation_source_common_name_to_counts_dict.keys())
-
-        # determine which of the RVS common names map to simulation monomer IDs:
-        RVS_common_name_to_sim_monomer_id_dict = self.map_common_names_to_sim_monomer_ids(simDataFile, RVS_common_name_list)
-
+    def create_simulation_protein_info_table(self, raw_validation_source_common_name_to_counts_dict, RVS_common_name_to_sim_monomer_id_dict):
         # generate a table contiaining data for each monomer ID that overlaps
         # between the simulation and RVS:
         RVS_sim_data_table = []
@@ -618,9 +634,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
     # With the matching simulation and validation data obtained, make appropreite comparison plots:
-    def compare_simulation_counts_to_raw_validation_source(self, simDataFile, plotOutDir, raw_validation_source_common_name_to_counts_dict, validation_source_name, validation_source_name_short):
+    def compare_simulation_counts_to_raw_validation_source(
+            self, plotOutDir, raw_validation_source_common_name_to_counts_dict,
+            RVS_common_name_to_sim_monomer_id_dict, validation_source_name,
+            validation_source_name_short):
         # create a table of relevant simulation protein info for the overlapping proteins:
-        RVS_sim_data_df = self.create_simulation_protein_info_table(simDataFile, raw_validation_source_common_name_to_counts_dict)
+        RVS_sim_data_df = self.create_simulation_protein_info_table(raw_validation_source_common_name_to_counts_dict, RVS_common_name_to_sim_monomer_id_dict)
 
         # Generate the plot:
         fig = go.Figure()
@@ -696,7 +715,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             xaxis_title="log₁₀(Validation Protein Counts)",
             yaxis_title="log₁₀(Simulation Protein Counts)",
             autosize=False,
-            width=900,  # Set equal width and height for a square graph
+            width=900,
             height=600,
             plot_bgcolor='white',  # Set the plot area background color to white
             paper_bgcolor='white'  # Set the entire graph background to white
@@ -738,7 +757,188 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                      f"{self.sim_name}_vs_{validation_source_name_short}.html")
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
-    def plot_validation_comparison(self, simDataFile, validationDataFile,plotOutDir, sim_name):
+
+    # Create a function that makes a table of the validation data against another validation data source:
+    def prep_validation_datasets_for_comparison_with_other_validation_data(
+            self, common_name_to_counts_dict_1, common_name_to_sim_monomer_id_1,
+            common_name_to_counts_dict_2, common_name_to_sim_monomer_id_2):
+        # Temporarily build monomer_id_to_common_name dict for dataset 1:
+        monomer_id_to_common_name_1 = {}
+        for common_name in common_name_to_sim_monomer_id_1.keys():
+            monomer_id = common_name_to_sim_monomer_id_1[common_name]
+            monomer_id_to_common_name_1[monomer_id] = common_name
+
+        # Temporarily build monomer_id_to_common_name dict for dataset 2:
+        monomer_id_to_common_name_2 = {}
+        for common_name in common_name_to_sim_monomer_id_2.keys():
+            monomer_id = common_name_to_sim_monomer_id_2[common_name]
+            monomer_id_to_common_name_2[monomer_id] = common_name
+
+        # Obtain overlapping protein counts between the two validation datasets
+        sim_monomer_ids_in_both_datasets = set(monomer_id_to_common_name_1.keys()).intersection(
+            set(monomer_id_to_common_name_2.keys()))
+        print("Number of shared monomer IDs between the two validation datasets:", len(sim_monomer_ids_in_both_datasets))
+
+        # Create dictionaries mapping the counts and common names to counts for the overlapping proteins
+        dataset1_common_names_to_counts_dict = {}
+        dataset1_common_names_to_sim_monomer_ids_dict = {}
+        dataset2_common_names_to_counts_dict = {}
+        dataset2_common_names_to_sim_monomer_ids_dict = {}
+        for monomer_id in sim_monomer_ids_in_both_datasets:
+            common_name_1 = monomer_id_to_common_name_1[monomer_id]
+            dataset1_common_names_to_counts_dict[common_name_1] = common_name_to_counts_dict_1[common_name_1]
+            dataset1_common_names_to_sim_monomer_ids_dict[common_name_1] = monomer_id
+
+            common_name_2 = monomer_id_to_common_name_2[monomer_id]
+            dataset2_common_names_to_counts_dict[common_name_2] = common_name_to_counts_dict_2[common_name_2]
+            dataset2_common_names_to_sim_monomer_ids_dict[common_name_2] = monomer_id
+
+        # Make a table with all the data:
+        validation_datasets_comparison_table = []
+        for monomer_id in sim_monomer_ids_in_both_datasets:
+            common_name_1 = monomer_id_to_common_name_1[monomer_id]
+            common_name_2 = monomer_id_to_common_name_2[monomer_id]
+            count_1 = common_name_to_counts_dict_1[common_name_1]
+            count_2 = common_name_to_counts_dict_2[common_name_2]
+
+            validation_datasets_comparison_table.append({
+                'monomer_id': monomer_id,
+                'dataset1_common_name': common_name_1,
+                'dataset2_common_name': common_name_2,
+                'dataset1_count': count_1,
+                'dataset2_count': count_2
+            })
+
+        # convert to a dataframe:
+        validation_datasets_comparison_df = pd.DataFrame(validation_datasets_comparison_table)
+
+        return validation_datasets_comparison_df
+
+    # Create the main function that generates the validation comparison plots:
+    def compare_validation_dataset_to_validation_dataset(
+            self, plotOutDir,
+            validation_source_name_1, validation_source_name_short_1,
+            common_name_to_counts_dict_1, common_name_to_sim_monomer_id_1,
+            validation_source_name_2, validation_source_name_short_2,
+            common_name_to_counts_dict_2, common_name_to_sim_monomer_id_2):
+
+        # Generate the comparison table between the two validation datasets:
+        validation_datasets_comparison_df = self.prep_validation_datasets_for_comparison_with_other_validation_data(
+            common_name_to_counts_dict_1, common_name_to_sim_monomer_id_1,
+            common_name_to_counts_dict_2, common_name_to_sim_monomer_id_2)
+
+        # Generate the plot:
+        fig = go.Figure()
+
+        # Compute log10 values for simulation validation and raw validation protein counts:
+        x = np.log10(validation_datasets_comparison_df['dataset1_count'].values + 1)
+        y = np.log10(validation_datasets_comparison_df['dataset2_count'].values + 1)
+
+        # Compute linear trendline
+        z = np.polyfit(x, y, 1)
+        p = np.poly1d(z)
+        trendline_y = p(x)
+
+        # Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+        above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+        x_above_30 = x[above_30_idx]
+        y_above_30 = y[above_30_idx]
+        z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+        p_above_30 = np.poly1d(z_above_30)
+        trendline_y_above_30 = p_above_30(x)
+
+        # Compute the pearson r, R2, and the coefficient of determination R2:
+        r_value, p_val = pearsonr(x_above_30, y_above_30)
+        pr2 = r_value ** 2
+        COD_r2 = r2_score(x_above_30, y_above_30)  # COD R2
+
+        # Define the hover text for the plot output:
+        hovertext = validation_datasets_comparison_df.apply(lambda
+                                              row:
+                                          f"Monomer ID: {row['monomer_id']}"
+                                          f"<br>{validation_source_name_short_1} common name: {row['dataset1_common_name']}"
+                                          f"<br>{validation_source_name_short_2} common name: {row['dataset2_common_name']}"
+                                          f"<br>{validation_source_name_short_1} count: {row['dataset1_count']}"
+                                          f"<br>{validation_source_name_short_2} count: {row['dataset2_count']}",
+                                          axis=1)
+
+        # Add total counts scatter data:
+        fig.add_trace(
+            go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+                       name=f"Monomer Counts"))
+
+        # Add linear trendline:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y, mode='lines',
+                       name=f'Linear fit (all data): {p}',
+                       line=dict(color='green')))
+
+        # Add linear trendline for counts above 30:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+                       name=f'Linear fit (counts > 30): {p_above_30}',
+                       line=dict(color='pink')))
+
+        # Add a y=x line:
+        fig.add_trace(
+            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+                       line=go.scatter.Line(color="black", dash="dash"),
+                       opacity=0.2, name="y=x"))
+
+        # Update layout
+        fig.update_traces(marker_size=3)
+        fig.update_layout(
+            title=f"{validation_source_name_1} ({validation_source_name_short_1}) vs. {validation_source_name_2} ({validation_source_name_short_2})<br>"
+                  f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
+                  f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
+            title_font=dict(size=8),
+            xaxis_title=f"log₁₀({validation_source_name_short_1} Protein Counts)",
+            yaxis_title=f"log₁₀({validation_source_name_short_2} Protein Counts)",
+            autosize=False,
+            width=900,
+            height=600,
+            plot_bgcolor='white',  # Set the plot area background color to white
+            paper_bgcolor='white'  # Set the entire graph background to white
+        )
+
+        # Define the text to display
+        text = (
+            f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+            f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+            f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(COD_r2, 3)}'
+        )
+
+        # Get the maximum x and minimum y to position the text in the bottom-right
+        x_max = x.max()
+        y_min = y.min()
+
+        # Adjust x_max and y_min slightly outside the actual graph boundaries
+        text_offset_x = 0.1
+        text_offset_y = 0.05
+
+        # Adding text annotation to the bottom right
+        fig.add_annotation(
+            x=x_max + text_offset_x,  # Move the x position slightly to the right
+            y=y_min - text_offset_y,  # Move the y position slightly below
+            text=text,
+            showarrow=False,
+            bgcolor='rgba(255, 255, 255, 0.8)',
+            bordercolor='rgba(0, 0, 0, 0.5)',
+            borderwidth=1,
+            borderpad=4,
+            align='right',
+            font=dict(size=10, color='gray'),
+            xref='x',
+            yref='y',
+        )
+
+        # save the figure as an html:
+        plot_name = (f"validation_to_validation_source_comparison_"
+                     f"{validation_source_name_short_1}_vs_{validation_source_name_short_2}.html")
+        fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
+    def plot_validation_comparison(self, simDataFile, validationDataFile, plotOutDir, sim_name):
         # Generate sim data and get self.all_monomer_ids defined:
         avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = self.generate_data(
             simDataFile)
@@ -758,33 +958,89 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         self.generate_sim_monomer_id_to_info_dicts(
             simDataFile, avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes)
 
-        # Get the raw validation source data dictionaries:
-        SMGST9_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST9()
+        # Call all three below (instead of within nested functions to reduce run time):
 
-        # (comparison_dataset_common_name_to_sim_monomer_id_dict,
-        # comparison_dataset_common_name_to_simulation_common_name_dict,
-        # comparison_dataset_common_names_not_mapped_to_sim_ids_list) = self.map_common_names_to_sim_monomer_ids(
-        #     simDataFile, list(SMGST9_common_names_to_counts_dict.keys()),
-        #     record_extra_mappings=True)
-
-        # Get the raw validation source data dictionaries:
+        # Map the common names from the Schmidt et al. 2016 ST9 MG data to simulation monomer IDs:
         SMGST9_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST9()
-        # Compare simulation data to Schmidt et al. 2016 ST9 MG data:
-        self.compare_simulation_counts_to_raw_validation_source(
-            simDataFile, plotOutDir, SMGST9_common_names_to_counts_dict,
+        (SMGST9_dataset_common_name_to_sim_monomer_id_dict,
+        SMGST9_dataset_common_name_to_simulation_common_name_dict,
+        SMGST9_dataset_common_names_not_mapped_to_sim_ids_list) = (
+            self.map_common_names_to_sim_monomer_ids(simDataFile, list(SMGST9_common_names_to_counts_dict.keys()), record_extra_mappings=True))
+        self.compare_simulation_counts_to_raw_validation_source(plotOutDir, SMGST9_common_names_to_counts_dict, SMGST9_dataset_common_name_to_sim_monomer_id_dict,
             "Schmidt et al. 2016 ST9 MG1655 data", "Schmidt2016_ST9_MG")
 
-        # Compare simulation data to Schmidt et al. 2016 ST6 MG data:
-        SMGST6_common_names_to_counts_dict = self.get_schmidt_MG_validation_data_from_ST6()
-        self.compare_simulation_counts_to_raw_validation_source(
-            simDataFile, plotOutDir, SMGST6_common_names_to_counts_dict,
-            "Schmidt et al. 2016 ST6 MG1655 data", "Schmidt2016_ST6_MG")
-        hi = 5
+        # Compare sim data with Schmidt et al. 2016 ST6 BW data:
+        SBWST6_common_names_to_counts_dict = self.get_schmidt_BW_validation_data_from_ST6()
+        (SBWST6_dataset_common_name_to_sim_monomer_id_dict,
+         SBWST6_dataset_common_name_to_simulation_common_name_dict,
+         SMGST6_dataset_common_names_not_mapped_to_sim_ids_list) = (
+            self.map_common_names_to_sim_monomer_ids(simDataFile, list(
+                SBWST6_common_names_to_counts_dict.keys()), record_extra_mappings=True))
+        self.compare_simulation_counts_to_raw_validation_source(plotOutDir, SBWST6_common_names_to_counts_dict, SBWST6_dataset_common_name_to_sim_monomer_id_dict,
+            "Schmidt et al. 2016 ST6 BW25113 data", "Schmidt2016_ST6_BW")
+
+        # Compare sim data with Schmidt et al. 2016 ST6 BW data:
+        SBWST9_common_names_to_counts_dict = self.get_schmidt_BW_validation_data_from_ST9()
+        (SBWST9_dataset_common_name_to_sim_monomer_id_dict,
+         SBWST9_dataset_common_name_to_simulation_common_name_dict,
+         SMGST9_dataset_common_names_not_mapped_to_sim_ids_list) = (
+            self.map_common_names_to_sim_monomer_ids(simDataFile, list(
+                SBWST9_common_names_to_counts_dict.keys()), record_extra_mappings=True))
+        self.compare_simulation_counts_to_raw_validation_source(plotOutDir, SBWST9_common_names_to_counts_dict, SBWST9_dataset_common_name_to_sim_monomer_id_dict,
+            "Schmidt et al. 2016 ST9 BW25113 data", "Schmidt2016_ST9_BW")
 
 
+        # Generate comparison of simulation data to simulation saved validation data (Schmidt et al. 2015 BW25113):
+        (sim_validation_common_names_to_counts_dict,
+         sim_validation_common_names_to_monomer_ids_dict) = self.prep_validation_data_for_comparison(simDataFile, validationDataFile)
+        self.compare_simulation_counts_to_raw_validation_source(plotOutDir, sim_validation_common_names_to_counts_dict, sim_validation_common_names_to_monomer_ids_dict,
+            "Saved Simulation Validation Data (Schmidt et al. 2015 BW25113)", "saved_validation_data_Schmidt2015_BW")
 
 
+        # Make the plots of the validation data source comparisons (against other validation sources):
 
+        # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 MG1655 data:
+        self.compare_validation_dataset_to_validation_dataset(plotOutDir,
+            "Simulation Validation Data from Schmidt et al. 2015 (BW25113)", "Schmidt2015_ST6_BW",
+            sim_validation_common_names_to_counts_dict, sim_validation_common_names_to_monomer_ids_dict,
+            "Schmidt et al. 2016 ST9 MG1655 data", "Schmidt2016_ST9_MG",
+            SBWST6_common_names_to_counts_dict, SBWST6_dataset_common_name_to_sim_monomer_id_dict)
+
+        # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST6 BW25113 data:
+        #NOTE: this should be identical.... but differences will reflect how Ecocyc data has updated.
+        self.compare_validation_dataset_to_validation_dataset(plotOutDir,
+            "Simulation Validation Data from Schmidt et al. 2015 (BW25113)", "Schmidt2015_ST6_BW",
+            sim_validation_common_names_to_counts_dict, sim_validation_common_names_to_monomer_ids_dict,
+            "Schmidt et al. 2016 ST6 BW25113 data", "Schmidt2016_ST6_BW",
+            SBWST6_common_names_to_counts_dict, SBWST6_dataset_common_name_to_sim_monomer_id_dict)
+
+        # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 BW25113 data:
+        self.compare_validation_dataset_to_validation_dataset(plotOutDir,
+            "Simulation Validation Data from Schmidt et al. 2015 (BW25113)", "Schmidt2015_ST6_BW",
+            sim_validation_common_names_to_counts_dict, sim_validation_common_names_to_monomer_ids_dict,
+            "Schmidt et al. 2016 ST9 BW25113 data", "Schmidt2016_ST9_BW",
+            SBWST9_common_names_to_counts_dict, SBWST9_dataset_common_name_to_sim_monomer_id_dict)
+
+        # Compare the Schmidt et al. 2016 ST9 MG1655 data to the Schmidt et al. 2016 ST6 BW25113 data:
+        self.compare_validation_dataset_to_validation_dataset(plotOutDir,
+            "Schmidt et al. 2016 ST9 MG1655 data", "Schmidt2016_ST9_MG",
+            SMGST9_common_names_to_counts_dict, SMGST9_dataset_common_name_to_sim_monomer_id_dict,
+            "Schmidt et al. 2016 ST6 BW25113 data", "Schmidt2016_ST6_BW",
+            SBWST6_common_names_to_counts_dict, SBWST6_dataset_common_name_to_sim_monomer_id_dict)
+
+        # Compare the Schmidt et al. 2016 ST9 MG1655 data to the Schmidt et al. 2016 ST9 BW25113 data:
+        self.compare_validation_dataset_to_validation_dataset(plotOutDir,
+            "Schmidt et al. 2016 ST9 MG1655 data", "Schmidt2016_ST9_MG",
+            SMGST9_common_names_to_counts_dict, SMGST9_dataset_common_name_to_sim_monomer_id_dict,
+            "Schmidt et al. 2016 ST9 BW25113 data", "Schmidt2016_ST9_BW",
+            SBWST9_common_names_to_counts_dict, SBWST9_dataset_common_name_to_sim_monomer_id_dict)
+
+        # Compare the Schmidt et al. 2016 ST6 BW25113 data to the Schmidt et al. 2016 ST9 BW25113 data:
+        self.compare_validation_dataset_to_validation_dataset(plotOutDir,
+            "Schmidt et al. 2016 ST6 BW25113 data", "Schmidt2016_ST6_BW",
+            SBWST6_common_names_to_counts_dict, SBWST6_dataset_common_name_to_sim_monomer_id_dict,
+            "Schmidt et al. 2016 ST9 BW25113 data", "Schmidt2016_ST9_BW",
+            SBWST9_common_names_to_counts_dict, SBWST9_dataset_common_name_to_sim_monomer_id_dict)
 
 
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile,
