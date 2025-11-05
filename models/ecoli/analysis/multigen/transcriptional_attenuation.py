@@ -185,7 +185,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		plot_suffixes = [""]
 		standard_xlim = (0,2000)
-		total_plots = 45 # TODO Modularize and get rid of this magic number
+		total_plots = 70 # TODO Modularize and get rid of this magic number
 
 		for i in range(len(plot_suffixes)):
 
@@ -194,7 +194,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			# Plotting
 			mpl.rcParams['axes.spines.right'] = False
 			mpl.rcParams['axes.spines.top'] = False
-			plt.figure(figsize = (8.5, 66))
+			plt.figure(figsize = (12, 80))
 			plot_num = 1
 			ax1 = plt.subplot(total_plots, 1, plot_num)
 
@@ -443,10 +443,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			for j, rna_id in enumerate(attenuated_rnas):
 				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
+				plt.plot(time / 60.0, counts_attenuated[:, j], label = "Attenuated")
+				plt.plot(time / 60.0, counts_synthesized[:, j], label = "Synthesized")
+				plt.xlabel("Time (min)")
+				plt.ylabel(f"RNA Counts:\n{rna_id}")
+				plt.legend(fontsize="x-small")
+				plot_num += 1
+
+				plt.subplot(total_plots, 1, plot_num, sharex=ax1)
 				plt.plot(time / 60.0, cum_attenuated[:, j], label = "Attenuated")
 				plt.plot(time / 60.0, cum_synthesized[:, j], label = "Synthesized")
 				plt.xlabel("Time (min)")
-				plt.ylabel(f"Cumulative RNA Counts: {rna_id}")
+				plt.ylabel(f"Cum. RNA Counts:\n{rna_id}")
 				plt.legend(fontsize="x-small")
 				plot_num += 1
 
@@ -454,11 +462,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				plt.plot(time / 60.0, expected_probability[:, j], label = "Expected")
 				plt.plot(time / 60.0, actual_probability[:, j], label = "Actual")
 				plt.xlabel("Time (min)")
-				plt.ylabel(f"Attenuation Probability: {rna_id}")
+				plt.ylabel(f"Attenuation Prob.:\n{rna_id}")
 				plt.legend(fontsize="x-small")
 				plot_num += 1
 
-			plt.subplots_adjust(hspace = 0.7, top = 0.95, bottom = 0.05)
+			plt.tight_layout()
+			plt.subplots_adjust(hspace = 3.0)
 			exportFigure(plt, plotOutDir, plotOutFileName + plot_suffix, metadata)
 			plt.close("all")
 
