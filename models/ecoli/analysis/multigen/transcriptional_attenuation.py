@@ -17,7 +17,8 @@ from numpy import inf
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.sim.variants.new_gene_internal_shift import determine_new_gene_ids_and_indices
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_bulk_molecules, read_stacked_columns, read_bulk_molecule_counts)
+	read_stacked_bulk_molecules, read_stacked_columns, read_bulk_molecule_counts,
+	stacked_cell_identification)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
@@ -430,10 +431,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				cell_paths, 'TranscriptElongationListener', 'counts_attenuated')
 			counts_synthesized = read_stacked_columns(
 				cell_paths, 'TranscriptElongationListener', 'countRnaSynthesized')[:, attenuated_mask]
+			cell_ids = stacked_cell_identification(cell_paths, 'TranscriptElongationListener', 'attenuation_probability')
 
-			cum_attenuated = np.cumsum(counts_attenuated, axis=0)
-			cum_synthesized = np.cumsum(counts_synthesized, axis=0)
-			actual_probability = cum_attenuated / (cum_attenuated + cum_synthesized)
+			gen_vector = cell_ids[:, 0]
+			cum_attenuated = np.zeros_like(counts_attenuated)
+			cum_synthesized = np.zeros_like(counts_synthesized)
+			actual_probability = np.zeros_like(counts_attenuated)
+			unique_gens = np.unique(gen_vector)
+			for gen in unique_gens:
+				mask = (gen_vector == gen)
+				cum_attenuated[mask] = np.cumsum(counts_attenuated[mask], axis=0)
+				cum_synthesized[mask] = np.cumsum(counts_synthesized[mask], axis=0)
+			cum_attenuated = cum_attenuated.astype(float)
+			cum_synthesized = cum_synthesized.astype(float)
+			with np.errstate(divide='ignore', invalid='ignore'):
+				actual_probability = cum_attenuated / (cum_attenuated + cum_synthesized)
 
 			# ids_of_interet = [
 			# 	"TU3[c]", # trp
