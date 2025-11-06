@@ -31,7 +31,7 @@ LIST_OF_DICT_FILENAMES = [
 	"Clim6_STD_cap_2.tsv",
 	"Clim7.tsv",
 	"Clim7_HL_cap_12.tsv",
-	"Clim7_STD10_HL12.tsv",
+	"Clim7_STD_cap_2.tsv",
 	"Clim8.tsv",
 	"Clim8_HL_cap_12.tsv",
 	"Clim8_STD10_HL12.tsv",
