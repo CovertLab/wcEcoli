@@ -121,10 +121,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         # should only be capturing the deltas from 0 to >0 transcripts, otherwise tracking transcript by second
         def count_peaks(time_series_data):
             # Convert counts to a boolean array: True if count > 0, False otherwise
-            is_present = time_series_data > 0
+            #is_present = time_series_data > 0
+            # look at all new mRNA appearances
 
             # Use np.diff to find the difference between adjacent time steps (rows, axis=0).
-            transition_deltas = np.diff(is_present.astype(int), axis=0)
+            transition_deltas = np.diff(time_series_data.astype(int), axis=0)
 
             # Count only the '1's (the False -> True transitions) along the time axis (axis=0).
             on_event_count = (transition_deltas == 1).sum(axis=0)
