@@ -33,7 +33,7 @@ USER INPUTS
 # Note: this file should have a column named "Protein ID" (formatted exactly as
 # it is in the original file: 41467_2024_49920_MOESM4_ESM_ST1.xlsx)
 # and a column named "half_life (units.min)"
-Clim_file = 'Clim11_STD2_HL12.tsv'
+Clim_file = 'Clim11_STD10_HL12.tsv'
 
 # SPECIFY THE ECOCYC COMPARISON FILE (in the Clim_EcoCyc_monomer_ID_matches folder)
 # Note: if a new EcoCyc update has been released, use
@@ -44,7 +44,7 @@ EcoCyc_file = \
 # SPECIFY THE OUTPUT FILE NAME (to be placed in the flat file list)
 # Note: this file name needs to be added to the list in "knowledge_base_raw.py"
 # to be used in the model
-OUTPUT_FILE_NAME = 'Clim11_STD2_HL12.tsv' # e.g. 'protein_half_lives_Clim#.tsv'
+OUTPUT_FILE_NAME = 'Clim11_STD10_HL12.tsv' # e.g. 'protein_half_lives_Clim#.tsv'
 
 """
 END OF USER INPUTS
@@ -94,7 +94,7 @@ def make_flat_file(Clim_file):
         writer.writerow(['id', 'half_life (units.min)'])
 
         for i in range(len(Clim_file)):
-            writer.writerow([f'"{Clim_file["Monomer ID"][i]}"', f'{Clim_file["HL_value"][i]}'])
+            writer.writerow([f'"{Clim_file["Monomer ID"][i]}"', f'{Clim_file["HL_value"][i]*60}'])
 
 # Get the monomer IDs for the proteins in the input file:
 Clim_file = get_monomer_ID(EcoCyc_file, Clim_file)
