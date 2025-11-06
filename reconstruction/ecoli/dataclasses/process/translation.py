@@ -131,7 +131,7 @@ class Translation(object):
 		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
 		clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
-			for p in raw_data.Clim5
+			for p in raw_data.Clim6
 		}
 
 		# Initialize degradation rates array:
