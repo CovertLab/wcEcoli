@@ -3,7 +3,7 @@ SimulationData for translation process
 """
 
 import numpy as np
-
+import pandas as pd
 from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import data, units
 from wholecell.utils.unit_struct_array import UnitStructArray
@@ -129,8 +129,12 @@ class Translation(object):
 		}
 
 		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
+		#edited_data = pd.DataFrame(raw_data.Clim11_HL_cap_12)
+		#clim_data = edited_data.rename(columns={'HL_value': 'half life (units.min)'})
+		raw_data.Clim11_HL_cap_12['half life'] = raw_data.Clim11_HL_cap_12.HL_value * units.min
+
 		clim_deg_rates = {
-			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
+			p['id']: (np.log(2) / p['half life']).asNumber(deg_rate_units)
 			for p in raw_data.Clim11_HL_cap_12
 		}
 
