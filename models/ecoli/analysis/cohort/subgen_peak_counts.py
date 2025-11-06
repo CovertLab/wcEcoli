@@ -19,8 +19,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 2
-SEED_RANGE = np.arange(1, 3)
+IGNORE_FIRST_N_GENS = 8
+SEED_RANGE = np.arange(0, 60)
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
                         'RIBULOKIN-MONOMER[c]',  # araB
