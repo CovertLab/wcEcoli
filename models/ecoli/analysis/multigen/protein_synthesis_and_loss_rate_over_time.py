@@ -20,7 +20,6 @@ PLOT_PROTEINS = ["G6890-MONOMER[c]",
                        "PD03938[c]",
                         "G6737-MONOMER[c]",
                         "RPOD-MONOMER[c]",
-                        "PD02936[c]",
                         "RED-THIOREDOXIN2-MONOMER[c]",
                         "EG10542-MONOMER[c]"]
 
