@@ -17,7 +17,7 @@ from wholecell.io.tablereader import TableReader
 
 
 PLOT_PROTEINS = ["G6890-MONOMER[c]",
-                       "PD03938[c]",
+                       "PD03938[c]", "PD02936[c]",
                         "G6737-MONOMER[c]",
                         "RPOD-MONOMER[c]",
                         "RED-THIOREDOXIN2-MONOMER[c]",
