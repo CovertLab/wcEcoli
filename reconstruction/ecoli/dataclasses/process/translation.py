@@ -216,7 +216,6 @@ class Translation(object):
 				]
 			)
 
-		hi = 6
 
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
