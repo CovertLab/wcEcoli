@@ -491,7 +491,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         # map simulation monomer IDs to half lifes:
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
-        half_lives = sim_data.process.translation.monomer_data["deg_rate"]
+        deg_rates = sim_data.process.translation.monomer_data["deg_rate"]
+        # convert deg_rate to half life in minutes:
+        half_lives = np.log(2) / deg_rates.asNumber() / 60  # convert to minutes
         monomer_ids_wo_compartment = [id[:-3] for id in self.all_monomer_ids]
         sim_monomer_ids_to_half_lifes_dict = dict(zip(monomer_ids_wo_compartment, half_lives))
 
@@ -624,7 +626,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 'common_name': sim_common_name,
                 'monomer_id': monomer_id_with_compartment_tag,
                 'description': description,
-                'simulation_half_life': half_life,
+                'simulation_half_life': f'{half_life} mins, {half_life/60:.2f} hrs',
                 'RVS_count': RVS_count,
                 'avg_total_count': avg_total_count,
                 'avg_free_count': avg_free_count,
