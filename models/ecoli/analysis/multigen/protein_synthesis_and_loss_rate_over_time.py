@@ -14,7 +14,7 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
     read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
-
+from matplotlib.backends.backend_pdf import PdfPages
 
 PLOT_PROTEINS = ["G6890-MONOMER[c]",
                        "PD03938[c]",
@@ -24,7 +24,7 @@ PLOT_PROTEINS = ["G6890-MONOMER[c]",
                         "RED-THIOREDOXIN2-MONOMER[c]",
                         "EG10542-MONOMER[c]"]
 
-
+ONE_PDF = True
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
@@ -83,6 +83,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             cell_paths)
 
         # make a quick plot of just the free monomer counts over time for each protein:
+        combo_pdf_path = os.path.join(plotOutDir, f"{plotOutFileName}_ALL.pdf")
+        pdf_all = PdfPages(combo_pdf_path) if ONE_PDF else None
+
         for protein in PLOT_PROTEINS_revised:
             protein_idx = monomer_idx_dict[protein]
             protein_FMC = free_monomer_counts[:, protein_idx]
@@ -228,8 +231,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
             #save the plot:
-            file_name = plotOutFileName + "_" +protein
-            exportFigure(plt, plotOutDir, file_name, metadata)
+            if pdf_all is not None:
+                pdf_all.savefig(plt.gcf(), bbox_inches='tight')
+            else:
+                file_name = plotOutFileName + "_" +protein
+                exportFigure(plt, plotOutDir, file_name, metadata)
+        if pdf_all is not None:
+            pdf_all.close()
 
 
 if __name__ == '__main__':

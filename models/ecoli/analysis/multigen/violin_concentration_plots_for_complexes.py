@@ -362,8 +362,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax2.set_xlabel('Generation')
             ax2.set_ylabel('Complex Concentration (mmol/L)', size=10)
             ax2.legend().remove()
+
+            avg_conc = np.mean(cconc)
+            std_conc = np.std(cconc)
+
+            ax2.axhline(y=avg_conc, linestyle='--', color="orange", label=f'Average Conc: {avg_conc:.2e} mmol/L')
+
             plt.suptitle(
-                f"Complex counts over time & concentration violin plot for {complex}",
+                f"Complex counts over time & concentration violin plot for {complex} \n"
+                   f"Avg Conc: {avg_conc:.2e} mmol/L; Std Dev: {std_conc:.2e} mmol/L",
                 size=12)
             plt.tight_layout()
             # save the plot:

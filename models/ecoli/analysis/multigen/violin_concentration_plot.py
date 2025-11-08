@@ -16,7 +16,7 @@ from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
     read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
-
+from matplotlib.backends.backend_pdf import PdfPages
 
 PLOT_PROTEINS = ["G6890-MONOMER[c]",
                        "PD03938[c]",
@@ -26,6 +26,8 @@ PLOT_PROTEINS = ["G6890-MONOMER[c]",
                         "RED-THIOREDOXIN2-MONOMER[c]",
                         "EG10542-MONOMER[c]"]
 
+STACK_PLOT_PROTEINS = True
+ONE_PDF = True
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -185,6 +187,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             exportFigure(plt, plotOutDir, file_name, metadata)
 
         # also make a plot of the free monomer counts under it:
+        combo_pdf_path = os.path.join(plotOutDir, f"{plotOutFileName}_ALL.pdf")
+        pdf_all = PdfPages(combo_pdf_path) if ONE_PDF else None
+
         for protein in PLOT_PROTEINS_revised:
             # Gather the relevant data:
             protein_idx = monomer_idx_dict[protein]
@@ -243,14 +248,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax2.set_ylabel('Free Monomer Concentration (mmol/L)', size=10)
             ax2.legend().remove()
 
+            # Show mean and std in plot title
+
+            avg_conc = np.mean(fmconc)
+            std_conc = np.std(fmconc)
+
+            ax2.axhline(y=avg_conc, linestyle='--', color="orange", label=f'Average Conc: {avg_conc:.2e} mmol/L')
+
             plt.suptitle(
-                f"Free monomer counts over time & concentration violin plot for {protein}",
+                f"Free monomer counts over time & concentration violin plot for {protein} \n"
+                   f"Avg Conc: {avg_conc:.2e} mmol/L; Std Dev: {std_conc:.2e} mmol/L",
                 size=12)
             plt.tight_layout()
 
-            # save the plot:
-            file_name = plotOutFileName + "_and_free_monomer_counts_" + protein
-            exportFigure(plt, plotOutDir, file_name, metadata)
+            if pdf_all is not None:
+                pdf_all.savefig(plt.gcf(), bbox_inches='tight')
+            else:
+                file_name = plotOutFileName + "_and_free_monomer_counts_" + protein
+                exportFigure(plt, plotOutDir, file_name, metadata)
+
+        if pdf_all is not None:
+            pdf_all.close()
 
 
 if __name__ == '__main__':
