@@ -44,7 +44,7 @@ INPUT = os.path.join(INPUT_FOLDER, file_to_convert)
 # Make the output file name and specify the output file location
 OUTPUT_FILE_NAME = file_to_convert[:-4] + '_EcoCyc_UniProt_to_monomer_ID_matches_'+ date + '.tsv'
 OUTPUT_FILE_PATH = os.path.join(
-    'validation/ecoli/scripts/uniprot_data_conversion/post_flat_conversion_files/', OUTPUT_FILE_NAME)
+    'validation/ecoli/scripts/uniprot_data_conversion/schmidt_uniprot_ids_to_monomer_ids/', OUTPUT_FILE_NAME)
 
 # read in the data from the table:
 FullTable = pd.read_csv(INPUT, header=0)
