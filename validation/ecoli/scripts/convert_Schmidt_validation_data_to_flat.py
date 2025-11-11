@@ -33,13 +33,14 @@ from wholecell.utils.filepath import ROOT_PATH
 USER INPUTS
 """
 
-# PATH TO THE SORTED INPUT FILE (in the pre_conversion_files folder)
-# Note: this file should have a column named "Monomer ID"
+# PATH TO THE SORTED INPUT FILE
+# (in validation/ecoli/flat/Schmidt_2016_uniprot_conversion_files/raw_files):
 validation_file = 'Schmidt_2016_ST6_raw.csv'
 
-# SPECIFY THE ECOCYC COMPARISON FILE (in the schmidt_uniprot_ids_to_monomer_ids folder)
+# SPECIFY THE ECOCYC COMPARISON FILE
+# (in validation/ecoli/flat/Schmidt_2016_uniprot_conversion_files/schmidt_uniprot_ids_to_monomer_ids)
 # Note: if a new EcoCyc update has been released, use
-# convert_Schmidt_UniProt_IDs_to_monomer_IDs.py to get an updated comparison file
+# convert_Schmidt_UniProt_IDs_to_monomer_IDs.py to get an updated comparison file!
 EcoCyc_file = \
     'Schmidt_2016_ST6_raw_EcoCyc_uniprot_ID_to_monomer_ID_matches_11112025.tsv'
 

@@ -21,8 +21,8 @@ from wholecell.utils.filepath import ROOT_PATH
 USER INPUTS
 """
 
-# CHANGE THIS TO THE SPECIFIC FILE YOU WANT TO FIND THE MONOMER IDS FOR
-# (in the 'pre_conversion_files' folder)
+# CHANGE THIS TO THE SPECIFIC RAW FILE YOU WANT TO FIND THE MONOMER IDS FOR
+# (in 'validation/ecoli/flat/Schmidt_2016_uniprot_conversion_files/raw_files')
 file_to_convert = 'Schmidt_2016_ST6_raw.csv'
 # CHANGE THIS TO THE CURRENT DATE (in the form of DDMMYYYY)
 date = input('Please enter the date in the form of MMDDYYYY, i.e.: "11102025":')
