@@ -20,6 +20,7 @@ LIST_OF_DICT_FILENAMES = (
 	"schmidt2015_javier_table.tsv",
 	"taniguichi2010_table_6.tsv",
 	"toya_2010_central_carbon_fluxes.tsv",
+	"Schmidt_2016_ST6.tsv",
 	"wisniewski2014_supp2.tsv",
 	)
 
