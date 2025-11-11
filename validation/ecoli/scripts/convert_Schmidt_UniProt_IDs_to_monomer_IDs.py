@@ -14,6 +14,8 @@ import io
 import time
 import os
 from wholecell.io import tsv
+from wholecell.utils.filepath import ROOT_PATH
+
 
 """
 USER INPUTS
@@ -38,13 +40,16 @@ USER INPUTS END
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
 
 # Directory to supplemental data files and data file of interest
-INPUT_FOLDER = os.path.join(FILE_LOCATION, 'pre_conversion_files')
+INPUT_FOLDER = os.path.join(ROOT_PATH, 'validation', 'ecoli','flat',
+                            'Schmidt_2016_uniprot_conversion_files',
+                            'raw_files')
 INPUT = os.path.join(INPUT_FOLDER, file_to_convert)
 
 # Make the output file name and specify the output file location
-OUTPUT_FILE_NAME = file_to_convert[:-4] + '_EcoCyc_UniProt_to_monomer_ID_matches_'+ date + '.tsv'
-OUTPUT_FILE_PATH = os.path.join(
-    'validation/ecoli/scripts/uniprot_data_conversion/schmidt_uniprot_ids_to_monomer_ids/', OUTPUT_FILE_NAME)
+OUTPUT_FILE_NAME = file_to_convert[:-4] + '_EcoCyc_uniprot_ID_to_monomer_ID_matches_'+ date + '.tsv'
+OUTPUT_FILE_PATH = os.path.join(ROOT_PATH, 'validation', 'ecoli', 'flat',
+                                'Schmidt_2016_uniprot_conversion_files',
+                                'schmidt_uniprot_ids_to_monomer_ids', OUTPUT_FILE_NAME)
 
 # read in the data from the table:
 FullTable = pd.read_csv(INPUT, header=0)
