@@ -136,6 +136,12 @@ class Translation(object):
 
 		# Initialize degradation rates array:
 		deg_rate = np.zeros(len(all_proteins))
+		deg_rate_source_id = np.full(len(all_proteins), None)
+		#protease_assignment = np.full(len(all_proteins), None)
+		#ClpP_contribution = np.full(len(all_proteins), None)
+		#Lon_contribution = np.full(len(all_proteins), None)
+		#HslV_contribution = np.full(len(all_proteins), None)
+		#Unexplained_contribution = np.full(len(all_proteins), None)
 
 		# Obtain the selected protein degradation rate combination from raw_data:
 		selected_PDR_combination = raw_data.protein_degradation_combo_option
