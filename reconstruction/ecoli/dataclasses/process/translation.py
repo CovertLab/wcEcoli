@@ -134,14 +134,38 @@ class Translation(object):
 			for p in raw_data.Clim4
 		}
 
+		# Get protease assignments and degradation contributions (in fraction) from Gupta et al.
+		protease_dict = {
+			p['id']: {'protease_assignment': p['protease_assignment'],
+					  'ClpP_fraction': p['ClpP'],
+					  'Lon_fraction': p['Lon'],
+					  'HslV_fraction': p['HslV'],
+					  'Unexplained_fraction': p['Unexplained']
+					  }
+			for p in raw_data.protease_assignments_Clim0_TEST
+		}
+
 		# Initialize degradation rates array:
 		deg_rate = np.zeros(len(all_proteins))
 		deg_rate_source_id = np.full(len(all_proteins), None)
-		#protease_assignment = np.full(len(all_proteins), None)
-		#ClpP_contribution = np.full(len(all_proteins), None)
-		#Lon_contribution = np.full(len(all_proteins), None)
-		#HslV_contribution = np.full(len(all_proteins), None)
-		#Unexplained_contribution = np.full(len(all_proteins), None)
+		protease_assignment = np.full(len(all_proteins), None)
+		ClpP_contribution = np.full(len(all_proteins), None)
+		Lon_contribution = np.full(len(all_proteins), None)
+		HslV_contribution = np.full(len(all_proteins), None)
+		Unexplained_contribution = np.full(len(all_proteins), None)
+
+		# Function that will map proteins to the protease assignment if there is one:
+		def determine_protease_involvement(protein_id):
+			if protein_id in protease_dict.keys():
+				if protein['id'] in protease_dict.keys():
+					protease_assignment[i] = protease_dict[protein['id']]['protease_assignment']
+					ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+					Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+					HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+					Unexplained_contribution[i] = protease_dict[protein['id']][
+						'Unexplained_fraction']
+			else:
+				pass
 
 		# Obtain the selected protein degradation rate combination from raw_data:
 		selected_PDR_combination = raw_data.protein_degradation_combo_option
@@ -156,6 +180,8 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
+					determine_protease_involvement(protein['id'])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -164,6 +190,8 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
+					determine_protease_involvement(protein['id'])
 
 		if selected_PDR_combination == "PDR_combo_2022":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
@@ -173,8 +201,12 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
+					determine_protease_involvement(protein['id'])
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'Nagar_et_al_ML_2021'
+					determine_protease_involvement(protein['id'])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -184,6 +216,8 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
+					determine_protease_involvement(protein['id'])
 
 		if selected_PDR_combination == "PDR_combo_2025":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
@@ -193,8 +227,13 @@ class Translation(object):
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
+					# Todo: see if this can be prelocated to outside the if statements
+					determine_protease_involvement(protein['id'])
 				elif protein['id'] in clim_deg_rates:
 					deg_rate[i] = clim_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'Gupta_et_al_MS_2024'
+					determine_protease_involvement(protein['id'])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -204,18 +243,32 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
+					determine_protease_involvement(protein['id'])
+
 
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
 		max_cistron_id_length = max(
 			len(cistron_id) for cistron_id in cistron_ids)
+		max_deg_source_id_length = max(
+			len(source_id) for source_id in deg_rate_source_id)
+		max_protease_length = max(
+			len(protease_id) for protease_id in protease_assignment if protease_id is not None)
+
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
 				('deg_rate', 'f8'),
+				('deg_rate_source', 'U{}'.format(max_deg_source_id_length)),
+				('protease_assignment', 'U{}'.format(max_protease_length)),
+				('ClpP_fraction', 'f8'),
+				('Lon_fraction', 'f8'),
+				('HslV_fraction', 'f8'),
+				('Unexplained_fraction', 'f8'),
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
@@ -226,6 +279,12 @@ class Translation(object):
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
 		monomer_data['deg_rate'] = deg_rate
+		monomer_data['deg_rate_source'] = deg_rate_source_id
+		monomer_data['protease_assignment'] = protease_assignment
+		monomer_data['ClpP_fraction'] = ClpP_contribution
+		monomer_data['Lon_fraction'] = Lon_contribution
+		monomer_data['HslV_fraction'] = HslV_contribution
+		monomer_data['Unexplained_fraction'] = Unexplained_contribution
 		monomer_data['length'] = lengths
 		monomer_data['aa_counts'] = aa_counts
 		monomer_data['mw'] = mws
