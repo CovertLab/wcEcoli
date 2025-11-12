@@ -18,33 +18,11 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
-from wholecell.utils.sparkline import whitePadSparklineAxis
 
-monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
-                        'BETAGALACTOSID-MONOMER[c]',  # lacZ
-                        'RIBULOKIN-MONOMER[c]',  # araB
-                        'BAES-MONOMER[i]',  # baeS
-                        'G6504-MONOMER[o]',  # gfcE
-                        'EG11250-MONOMER[c]',  # chpS
-                        'EG11222-MONOMER[c]',  # alkA
-                        'G7263-MONOMER[c]',  # murQ
-                        'EG11249-MONOMER[c]',  # mazF const
-                        'EG10466-MONOMER[c]'  # hupA const
-                        ]
 
-monomers_of_interest_name_dict = {'GLYCDEH-MONOMER[c]': 'gldA',
-                                  'BETAGALACTOSID-MONOMER[c]': 'lacZ',
-                                  'RIBULOKIN-MONOMER[c]': 'araB',
-                                  'BAES-MONOMER[i]': 'baeS',
-                                  'G6504-MONOMER[o]': 'gfcE',
-                                  'EG11250-MONOMER[c]': 'chpS',
-                                  'EG11222-MONOMER[c]': 'alkA',
-                                  'G7263-MONOMER[c]': 'murQ',
-                                  'EG11249-MONOMER[c]': 'mazF',
-                                  'EG10466-MONOMER[c]': 'hupA'
-                                  }
+IGNORE_FIRST_N_GENS = 8
+SEED_RANGE = np.arange(0, 60)
 
-IGNORE_FIRST_N_GENS = 2
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
@@ -62,7 +40,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             print('Skipping analysis - not enough generations run.')
             return
         cell_paths = self.ap.get_cells(
-            generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
+            generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),seed=SEED_RANGE,
             only_successful=True)
 
         print('Analyzing %d cells...' % len(cell_paths))
