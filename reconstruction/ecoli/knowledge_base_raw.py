@@ -80,6 +80,7 @@ LIST_OF_DICT_FILENAMES = [
 	"ppgpp_regulation.tsv",
 	"ppgpp_regulation_added.tsv",
 	"protease_assignments_Clim0_TEST.tsv",
+	"priority_protease_assignments_0.tsv",
 	"ppgpp_regulation_removed.tsv",
 	"protein_half_lives_Clim3a.tsv",
 	"protein_half_lives_measured.tsv",
