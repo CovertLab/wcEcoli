@@ -39,6 +39,9 @@ from wholecell.utils.filepath import ROOT_PATH
 # Indicate the number of generations to be ignored at the start of each seed:
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
+# TODO: add option to highlight specific proteins of interest in the plot
+# TODO: add option to match additional validation proteins to simulation proteins via common_names and or synomyms in rnas.tsv
+
 """ END USER INPUTS """
 
 # PRINT NOTE ABOUT UPDATING FLAT FILES
@@ -172,103 +175,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         return revised_molecule_list
 
-    # Function to extract the validation data from Schmidt et al. 2016 ST6:
-    def get_schmidt_BW_validation_data_from_ST6(self):
-        """
-        Extracts the protein counts from Schmidt et al. 2016 supplementary
-        table 6 BW25113 strain in Glucose media
-
-        Returns: a dictionary mapping gene symbols to their average protein
-        counts
-        """
-        schmidt_st6_file = os.path.join(
-            ROOT_PATH, 'validation', 'ecoli',
-                                     'flat', 'Schmidt_2016_ST6.tsv')
-        gene_symbol_to_avg_counts = {}
-        with io.open(schmidt_st6_file, 'r') as f:
-            reader = csv.reader(f, delimiter=',')
-            headers = next(reader)
-            gene_symbol_index = headers.index('Gene')
-            avg_counts_index = headers.index('Glucose')
-
-            for line in reader:
-                gene_symbol = line[gene_symbol_index]
-                avg_counts = line[avg_counts_index]
-                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
-
-        # Convert counts to int and remove empty entries
-        for gene, count in list(gene_symbol_to_avg_counts.items()):
-            if count == '' or count is None:
-                del gene_symbol_to_avg_counts[gene]
-            else:
-                gene_symbol_to_avg_counts[gene] = int(count)
-
-        return gene_symbol_to_avg_counts
-
-    # Function to extract the BW validation data from Schmidt et al. 2016 ST9:
-    def get_schmidt_BW_validation_data_from_ST9(self):
-        """
-        Extracts the protein counts from Schmidt et al. 2016 supplementary
-        table 9 strain BW25113 in Glucose media
-        Returns: a dictionary mapping gene symbols to their average protein
-        counts
-        """
-        schmidt_st9_file = os.path.join(
-            ROOT_PATH, 'validation', 'ecoli',
-                                     'flat', 'Schmidt_2016_ST9.csv')
-        gene_symbol_to_avg_counts = {}
-        with io.open(schmidt_st9_file, 'r') as f:
-            reader = csv.reader(f, delimiter=',')
-            headers = next(reader)
-            gene_symbol_index = headers.index('Gene')
-            avg_counts_index = headers.index('Copies/Cell_BW25113.Glucose')
-
-            for line in reader:
-                gene_symbol = line[gene_symbol_index]
-                avg_counts = line[avg_counts_index]
-                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
-
-        # Convert counts to int and remove empty entries
-        for gene, count in list(gene_symbol_to_avg_counts.items()):
-            if count == '' or count is None:
-                del gene_symbol_to_avg_counts[gene]
-            else:
-                gene_symbol_to_avg_counts[gene] = int(count)
-
-        return gene_symbol_to_avg_counts
-
-
-    # Function to extract the validation data from Schmidt et al. 2016 ST9:
-    def get_schmidt_MG_validation_data_from_ST9(self):
-        """
-        Extracts the protein counts from Schmidt et al. 2016 supplementary
-        table 9
-        Returns: a dictionary mapping gene symbols to their average protein
-        counts
-        """
-        schmidt_st9_file = os.path.join(
-            ROOT_PATH, 'validation', 'ecoli',
-                                     'flat', 'Schmidt_2016_ST9.csv')
-        gene_symbol_to_avg_counts = {}
-        with io.open(schmidt_st9_file, 'r') as f:
-            reader = csv.reader(f, delimiter=',')
-            headers = next(reader)
-            gene_symbol_index = headers.index('Gene')
-            avg_counts_index = headers.index('Copies/Cell_MG1655.Glucose')
-
-            for line in reader:
-                gene_symbol = line[gene_symbol_index]
-                avg_counts = line[avg_counts_index]
-                gene_symbol_to_avg_counts[gene_symbol] = avg_counts
-
-        # Convert counts to int and remove empty entries
-        for gene, count in list(gene_symbol_to_avg_counts.items()):
-            if count == '' or count is None:
-                del gene_symbol_to_avg_counts[gene]
-            else:
-                gene_symbol_to_avg_counts[gene] = int(count)
-
-        return gene_symbol_to_avg_counts
 
     # Extract the data from the Schmidt et al. ST6 (BW25113) dataset:
     def get_schmidt_BW_ST6_data(self,):
@@ -301,7 +207,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                       uniprot_ID, ", assigned to gene symbol", gene_symbol,
                       "in the Schmidt et al. 2016 dataset.")
 
-
         return (uniprot_IDs_to_schmidt_common_names,
                 uniprot_IDs_to_monomer_IDs,
                 uniprot_IDs_to_schmidt_glucose_counts)
@@ -311,8 +216,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     def check_common_name_to_gene_id_map(self, simDataFile):
         # Retrieve the common name from rnas.tsv for each monomer ID
         rnasTable = pd.read_csv(
-            '~/wcEcoli/reconstruction/ecoli/flat/rnas.tsv', sep='\t',
-            skiprows=[0, 1, 2, 3], header=1)
+            '~/wcEcoli/reconstruction/ecoli/flat/rnas.tsv',
+            sep='\t', skiprows=[0, 1, 2, 3], header=1)
         rnas_common_names = rnasTable[['monomer_ids', 'common_name']]
 
         # Function to evaluate strings as lists, as the format of the monomer_ids column in rnas.tsv is a string
@@ -349,7 +254,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         # Check which IDs end up in the simulation...
         print(
-            "Checking if any of the monomer IDs belonging to the same gene common name are in the simulation...")
+            "Checking which, if any, of the monomer IDs belonging to the same gene common name are in the simulation:")
         common_names_with_multiple_monomer_ids_narrowed_dict = {}
         for common_name in common_names_with_multiple_monomer_ids_dict.keys():
             monomer_ids = common_names_with_multiple_monomer_ids_dict[common_name]
@@ -1048,6 +953,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         self.generate_sim_monomer_id_to_info_dicts(
             simDataFile, avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes)
 
+        # Compare simulation data to the Schmidt et al. 2016 ST6 BW25113 proteomics data:
         (uniprot_IDs_to_schmidt_common_names,
          uniprot_IDs_to_monomer_IDs,
          uniprot_IDs_to_schmidt_glucose_counts) = self.get_schmidt_BW_ST6_data()
