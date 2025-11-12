@@ -19,8 +19,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 60)
+IGNORE_FIRST_N_GENS = 20
+SEED_RANGE = np.arange(0, 40)
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
                         'RIBULOKIN-MONOMER[c]',  # araB
@@ -124,12 +124,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             # Count only the '1's (the False -> True transitions) along the time axis (axis=0).
             on_event_count = (transition_deltas == 1).sum(axis=0)
             return on_event_count
-
+        
         
         new_monomer_per_gen = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts',
-			ignore_exception=True, 
-            fun=count_peaks)[monomer_indices]
+            cell_paths, 'MonomerCounts', 'monomerCounts',
+            ignore_exception=True, 
+            fun=count_peaks)[:, monomer_indices]
 
 
         tabel_cols = ['cell_id'] + monomers_of_interest
