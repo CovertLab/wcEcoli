@@ -40,7 +40,6 @@ LIST_OF_DICT_FILENAMES = [
 	"Clim8_STD_cap_2.tsv",
 	"Clim9.tsv",
 	"Clim11.tsv",
-	"Clim11_HL_cap_12.tsv",
 	"Clim11_STD2_HL12.tsv",
 	"Clim11_STD10_HL12.tsv",
 	"Clim11_STD_ratio_threshold_2.tsv",
