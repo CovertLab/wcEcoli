@@ -121,9 +121,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             # Use np.diff to find the difference between adjacent time steps (rows, axis=0).
             transition_deltas = np.diff(time_series_data.astype(int), axis=0)
 
-            # Count only the '1's (the False -> True transitions) along the time axis (axis=0).
-            on_event_count = (transition_deltas == 1).sum(axis=0)
-            return on_event_count
+            # Count newly formed monomers
+            new_proteins = transition_deltas[transition_deltas > 0].sum(axis=0)
+            return new_proteins
         
         
         new_monomer_per_gen = read_stacked_columns(
