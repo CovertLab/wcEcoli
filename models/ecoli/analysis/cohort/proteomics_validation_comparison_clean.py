@@ -680,7 +680,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                                           f"<br>Simulation common name: {row['common_name']}"
                                           f"<br>Validation source common name: {row['RVS_common_name']}"
                                           f"<br>Description: {row['description']}"
-                                          f"<br>Simulation half life (min): {row['simulation_half_life']}"
+                                          f"<br>Simulation half life: {row['simulation_half_life']}"
                                           f"<br>Validation source count: {row['RVS_count']}"
                                           f"<br>Avg. total simulation count: {row['avg_total_count']}"
                                           f"<br>Avg. complexed count: {row['avg_complex_count']}"
