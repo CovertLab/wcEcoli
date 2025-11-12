@@ -18,6 +18,7 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
+from wholecell.utils.sparkline import whitePadSparklineAxis
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
@@ -48,15 +49,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
-        # Get mRNA data
+
+        # Get mRNA cistron data
         transcription = sim_data.process.transcription
-        # 3269
-        rnaIds = transcription.rna_data["id"]
-        isMRna = transcription.rna_data['is_mRNA']
-        # 3126
-        mRnaIndexes = np.where(isMRna)[0]
-        # 3126
-        mRnaIds = np.array([rnaIds[x] for x in mRnaIndexes])
+        cistron_ids = transcription.cistron_data["id"]
+        is_mRNA = transcription.cistron_data['is_mRNA']
+        mRNA_cistron_indexes = np.where(is_mRNA)[0]
+        mRNA_cistron_ids = np.array([cistron_ids[x] for x in mRNA_cistron_indexes])
 
             # Ignore data from predefined number of generations per seed
         if self.ap.n_generation <= IGNORE_FIRST_N_GENS:
@@ -72,60 +71,35 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         RNA_reader = TableReader(
             os.path.join(cell_paths[0], 'simOut', 'RNACounts'))
         mRNA_cistron_ids_counts_table = RNA_reader.readAttribute('mRNA_cistron_ids')
-        #3126
-        mRNA_ids_counts_table = RNA_reader.readAttribute('mRNA_ids')
         RNA_reader.close()
 
-        # dictionary to map proteins of interest to cistron ids
-        protein_id_to_cistron_id = {
-            protein['id']: protein['cistron_id']
-            for protein in sim_data.process.translation.monomer_data
-        }
-
-        # corresponding cistron ids in order of monomers of interest
-        cistron_ids_in_order = np.array([
-            protein_id_to_cistron_id[monomer_id] for monomer_id in monomers_of_interest
-        ])
-
-
-        # corresponding TU IDs in order of monomers of interest
-        cistron_TU_index_dict = {
-            cistron_id: transcription.cistron_id_to_rna_indexes(cistron_id) 
-            for cistron_id in cistron_ids_in_order
-            }
-
-        all_TU_ids = np.array(mRNA_ids_counts_table)
-
-        cistron_TU_ids_dict = {
-            cistron_id: all_TU_ids[cistron_TU_index_dict[cistron_id]]
-            for cistron_id in cistron_ids_in_order
-        }
-        
-        # 3269
+        # 4346
         simulatedSynthProb = read_stacked_columns(
-            cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob',
-            remove_first=True).mean(axis=0)[mRnaIndexes]
-        # 3126, order of mrnas is the same as in mRnaIndexes/mRnaIds
-        mRNACounts_sumOverTime = read_stacked_columns(
-            cell_paths, 'RNACounts', 'full_mRNA_counts',
-            ignore_exception=True).sum(axis = 0)
+            cell_paths, 'RnaSynthProb', 'actual_rna_synth_prob_per_cistron',
+            remove_first=True).mean(axis=0) [mRNA_cistron_indexes]
 
-        mRnasTranscribed = np.array([x != 0 for x in mRNACounts_sumOverTime])
+        # 4346, order of mrnas is the same as in mRnaIndexes/mRnaIds
+        mRNA_exists_in_gen = read_stacked_columns(
+            cell_paths, 'RNACounts', 'mRNA_cistron_counts', 
+            ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)
+
+        # Divide by total number of cells to get probability
+        p_mRNA_exists_in_gen = (
+            mRNA_exists_in_gen.sum(axis=0) / mRNA_exists_in_gen.shape[0]
+        )
 
         # Write data to table
         with open(os.path.join(plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
             writer = csv.writer(f, delimiter='\t')
             writer.writerow([
-                'mRNA_name',
+                'mRNA_cistron_id',
                 'actual_rna_synth_prob',
-                'mRNA_counts_aggregated',
-                'transcribed'
+                'prob_mRNA_exists_in_gen',
             ])
 
-            for i in range(len(mRnaIds)):
+            for i in range(len(mRNA_cistron_ids_counts_table)):
                 writer.writerow([
-                    mRnaIds[i], simulatedSynthProb[i], mRNACounts_sumOverTime[i],
-                    mRnasTranscribed[i],
+                    mRNA_cistron_ids_counts_table[i], simulatedSynthProb[i], p_mRNA_exists_in_gen[i]
                 ])
 
 if __name__ == '__main__':
