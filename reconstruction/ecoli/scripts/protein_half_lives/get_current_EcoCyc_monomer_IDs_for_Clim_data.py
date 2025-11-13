@@ -224,6 +224,8 @@ with io.open(OUTPUT_FILE_PATH, 'wb') as f:
             [f'"{row[0]}"', f'{row[1]}', f'{row[2]}', f'{row[3]}', f'{row[4]}'])
 
 print("Done. File saved to: ", OUTPUT_FILE_PATH)
+print("Don't forget to use this file to convert the half life data files to flat files "
+      "using the script convert_clim_half_lives_to_flat.py (in the same folder).")
 
 
 
