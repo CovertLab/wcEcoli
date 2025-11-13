@@ -230,11 +230,11 @@ class Translation(object):
 			# the N-end rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				common_name[i] = get_common_name(protein['id'])
+				determine_protease_involvement(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
-					determine_protease_involvement(protein['id'])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -244,7 +244,6 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					deg_rate_source_id[i] = 'N_end_rule'
-					determine_protease_involvement(protein['id'])
 
 		if selected_PDR_combination == "PDR_combo_2022":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
@@ -252,15 +251,14 @@ class Translation(object):
 			# from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				common_name[i] = get_common_name(protein['id'])
+				determine_protease_involvement(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
-					determine_protease_involvement(protein['id'])
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
 					deg_rate_source_id[i] = 'Nagar_et_al_ML_2021'
-					determine_protease_involvement(protein['id'])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -271,7 +269,6 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					deg_rate_source_id[i] = 'N_end_rule'
-					determine_protease_involvement(protein['id'])
 
 		if selected_PDR_combination == "PDR_combo_2025":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
@@ -279,16 +276,14 @@ class Translation(object):
 			# rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				common_name[i] = get_common_name(protein['id'])
+				determine_protease_involvement(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
-					# Todo: see if this can be prelocated to outside the if statements
-					determine_protease_involvement(protein['id'])
 				elif protein['id'] in clim_deg_rates:
 					deg_rate[i] = clim_deg_rates[protein['id']]
 					deg_rate_source_id[i] = 'Gupta_et_al_MS_2024'
-					determine_protease_involvement(protein['id'])
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -299,7 +294,6 @@ class Translation(object):
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					deg_rate_source_id[i] = 'N_end_rule'
-					determine_protease_involvement(protein['id'])
 
 
 
