@@ -5,8 +5,8 @@
 # version matches the version used in the current model, otherwise there might
 # be a mismatch. Note that EcoCyc typically updates once a quarter, so one might
 # want to consider re-running it when the model updates accordingly.
-#
-# The previous monomer ID to Gupta et al. data can be can be found in
+
+# Previous monomer ID to Gupta et al. uniprot ID conversion files can be can be found in
 # reconstruction/ecoli/flat/clim_half_life_data/uniprot_id_to_ecocyc_monomer_id_matches
 # and past half life data sorts using the data in the folder above can be found
 # in reconstruction/ecoli/flat/clim_half_life_data/post_flat_conversion_clim_sorts.
@@ -45,15 +45,17 @@ USER INPUTS END
 """
 
 # Directory for this file
-root_path = 'reconstruction/ecoli/flat/clim_half_life_data'
+file_location = \
+    'reconstruction/ecoli/flat/clim_half_life_data/'
 
 # Directory to supplemental data files and data file of interest
-INPUT_FOLDER = os.path.join(root_path, 'raw_Gupta_et_al_data')
+INPUT_FOLDER = os.path.join(file_location, 'raw_Gupta_et_al_data')
 INPUT = os.path.join(INPUT_FOLDER, file_to_convert)
 
 # Make the output file name and specify the output file location
 OUTPUT_FILE_NAME = file_to_convert[:-5] + '_EcoCyc_monomer_ID_matches_'+ date + '.tsv'
-OUTPUT_FILE_PATH = os.path.join(root_path, OUTPUT_FILE_NAME)
+OUTPUT_FILE_PATH = os.path.join(
+    file_location, 'uniprot_id_to_ecocyc_monomer_id_matches/', OUTPUT_FILE_NAME)
 
 # read in the data from the table:
 FullTable = pd.read_excel(INPUT, skiprows=[0, 1, 2, 3])
