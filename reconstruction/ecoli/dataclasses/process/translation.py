@@ -9,7 +9,10 @@ from wholecell.utils import data, units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
-
+from wholecell.utils.filepath import ROOT_PATH
+import os
+import io
+from wholecell.io import tsv
 
 PROCESS_MAX_TIME_STEP = 2.
 
@@ -131,7 +134,7 @@ class Translation(object):
 		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
 		clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
-			for p in raw_data.Clim4
+			for p in raw_data.Clim4_STD_ratio_threshold_2_keep_NaNs
 		}
 
 		# Get protease assignments and degradation contributions (in fraction) from Gupta et al.
@@ -142,10 +145,11 @@ class Translation(object):
 					  'HslV_fraction': p['HslV'],
 					  'Unexplained_fraction': p['Unexplained']
 					  }
-			for p in raw_data.protease_assignments_Clim0_TEST
+			for p in raw_data.protease_assignments
 		}
 
-		# Initialize degradation rates array:
+		# Initialize information array:
+		common_name = np.full(len(all_proteins), None)
 		deg_rate = np.zeros(len(all_proteins))
 		deg_rate_source_id = np.full(len(all_proteins), None)
 		protease_assignment = np.full(len(all_proteins), None)
@@ -167,6 +171,54 @@ class Translation(object):
 			else:
 				pass
 
+		# Function that generates a mapping from monomer ids to gene symbols:
+		def get_gene_symbols_for_monomer_ids():
+			"""
+			Extracts the gene symbols for each monomer id in the model.
+			Returns: a dictionary mapping monomer ids to gene symbols.
+			Code adapted from convert_to_flat.py.
+			"""
+			RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+									 'flat', 'rnas.tsv')
+			with (io.open(RNAS_FILE, 'rb') as f):
+				reader = tsv.reader(f, delimiter='\t')
+				headers = next(reader)
+				while headers[0].startswith('#'):
+					headers = next(reader)
+
+				# extract relevant information
+				gene_symbol_index = headers.index('common_name')
+				protein_id_index = headers.index('monomer_ids')
+				monomer_ids_to_gene_symbols = {}
+				for line in reader:
+					gene_symbol = line[gene_symbol_index]
+					protein_id = list(
+						line[protein_id_index][2:-2].split('", "'))[0]
+					monomer_ids_to_gene_symbols[protein_id] = gene_symbol
+
+			return monomer_ids_to_gene_symbols
+
+		def get_common_name(protein_id):
+			"""
+            Get the common name of a protein given its monomer id.
+            Args:
+                protein_id: the name of the monomer
+
+            Returns:
+                common_name: The common name of the protein.
+
+            """
+			# Remove the compartment tag first if it exists:
+			if '[' in protein_id:
+				protein_id = protein_id[:-3]  # subtract the compartment
+				common_name = get_gene_symbols_for_monomer_ids()[protein_id]
+			# If the protein id is not found in the mapping, return None
+			elif protein_id not in get_gene_symbols_for_monomer_ids().keys():
+				common_name = None
+			else:
+				common_name = get_gene_symbols_for_monomer_ids()[protein_id]
+			return common_name
+
 		# Obtain the selected protein degradation rate combination from raw_data:
 		selected_PDR_combination = raw_data.protein_degradation_combo_option
 		# NOTE: the default option is listed as
@@ -177,6 +229,7 @@ class Translation(object):
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# the N-end rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				common_name[i] = get_common_name(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -198,6 +251,7 @@ class Translation(object):
 			# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
 			# from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				common_name[i] = get_common_name(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -224,6 +278,7 @@ class Translation(object):
 			# Carbon limited rates from Gupta et al., 2024, and finally N-end
 			# rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				common_name[i] = get_common_name(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -256,12 +311,15 @@ class Translation(object):
 			len(source_id) for source_id in deg_rate_source_id)
 		max_protease_length = max(
 			len(protease_id) for protease_id in protease_assignment if protease_id is not None)
+		max_common_name_length = max(
+			len(name) for name in common_name if name is not None)
 
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
+				('common_name', 'U{}'.format(max_common_name_length)),
 				('deg_rate', 'f8'),
 				('deg_rate_source', 'U{}'.format(max_deg_source_id_length)),
 				('protease_assignment', 'U{}'.format(max_protease_length)),
@@ -278,6 +336,7 @@ class Translation(object):
 
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
+		monomer_data['common_name'] = common_name
 		monomer_data['deg_rate'] = deg_rate
 		monomer_data['deg_rate_source'] = deg_rate_source_id
 		monomer_data['protease_assignment'] = protease_assignment
@@ -292,6 +351,7 @@ class Translation(object):
 		field_units = {
 			'id': None,
 			'cistron_id': None,
+			'common_name': None,
 			'deg_rate': deg_rate_units,
 			'deg_rate_source': None,
 			'protease_assignment': None,
