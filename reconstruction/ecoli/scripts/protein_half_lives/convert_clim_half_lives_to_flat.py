@@ -54,7 +54,7 @@ OUTPUT_FILE_NAME = 'Clim4_STD_ratio_threshold_2_keep_NaNs.tsv' # e.g. 'protein_h
 END OF USER INPUTS
 """
 
-# Current file location:
+# file folder location:
 raw_data_file_location = 'reconstruction/ecoli/flat/clim_half_life_data/'
 
 # Path to the input file location:
