@@ -79,7 +79,6 @@ class FBAResults(wholecell.listeners.listener.Listener):
 		self.reactionFluxes = np.zeros(len(self.fba_reaction_ids), np.float64)
 		self.base_reaction_fluxes = np.zeros(len(self.base_reaction_ids), np.float64)
 		self.externalExchangeFluxes = np.zeros(len(self.externalMoleculeIDs), np.float64)
-		self.biomass_reaction_flux = 0.0
 		self.objective_type = ""
 		self.shadowPrices = np.zeros(len(self.outputMoleculeIDs), np.float64)
 		self.reducedCosts = np.zeros(len(self.fba_reaction_ids), np.float64)
@@ -141,7 +140,6 @@ class FBAResults(wholecell.listeners.listener.Listener):
 			reactionFluxes=self.reactionFluxes,
 			base_reaction_fluxes=self.base_reaction_fluxes,
 			externalExchangeFluxes=self.externalExchangeFluxes,
-			biomass_reaction_flux=self.biomass_reaction_flux,
 			objective_type=self.objective_type,
 			shadowPrices=self.shadowPrices,
 			reducedCosts=self.reducedCosts,

@@ -9,9 +9,11 @@ Expected variant indices (dependent on KINETIC_OBJECTIVE_WEIGHT):
 	3: control
 	0 (no kinetics) - 9 (only kinetics)
 """
+# Default is 1e-6
 
-KINETIC_OBJECTIVE_WEIGHT = [0, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 0.01, 0.1, 1]
+# KINETIC_OBJECTIVE_WEIGHT = [0, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 0.01, 0.1, 1]
 
+KINETIC_OBJECTIVE_WEIGHT = [0, 1e-7, 2.5e-7, 5e-7, 7.5e-7, 1e-6, 2.5e-6, 5e-6, 7.5e-6, 1e-5, 2.5e-5, 5e-5, 7.5e-5, 1e-4]
 
 def metabolism_kinetic_objective_weight(sim_data, index):
 	weight = KINETIC_OBJECTIVE_WEIGHT[index]

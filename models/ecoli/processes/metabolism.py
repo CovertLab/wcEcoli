@@ -230,7 +230,6 @@ class Metabolism(wholecell.processes.process.Process):
 		self.writeToListener("FBAResults", "targetConcentrations", [self.model.homeostatic_objective[mol] for mol in fba.getHomeostaticTargetMolecules()])
 		self.writeToListener("FBAResults", "homeostaticObjectiveValues", fba.getHomeostaticObjectiveValues())
 		self.writeToListener("FBAResults", "kineticObjectiveValues", fba.getKineticObjectiveValues())
-		self.writeToListener("FBAResults", "biomass_reaction_flux", fba.getBiomassReactionFlux())
 		self.writeToListener("FBAResults", "objective_type", fba.objectiveType)
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsInit", metabolite_counts_init)
 		self.writeToListener("EnzymeKinetics", "metaboliteCountsFinal", metabolite_counts_final)

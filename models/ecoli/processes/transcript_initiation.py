@@ -274,6 +274,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		is_overcrowded = (self.promoter_init_probs > max_p)
 
 		TU_of_interest_list = ["TU3[c]", "TU00285[c]", "TU00178[c]", "NG001_RNA[c]"]
+		TU_of_interest_list = ["TU3[c]", "TU00285[c]", "TU00178[c]"]
 		# TU_index_dict = {TU_id: np.where(self.TU_ids == TU_id)[0][0] for TU_id in TU_of_interest_list}
 		TU_of_interest_idx = [np.where(self.TU_ids == TU_id)[0][0] for TU_id in TU_of_interest_list]
 		TU_of_interest_dict = {TU_id: np.where(self.TU_ids == TU_id)[0][0] for TU_id in TU_of_interest_list}
