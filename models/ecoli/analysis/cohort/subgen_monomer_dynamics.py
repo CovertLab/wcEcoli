@@ -20,7 +20,7 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
+IGNORE_FIRST_N_GENS = 27
 SEEDS = np.arange(0, 20)
 COLOR_LINE = 'mediumseagreen' # 'skyblue'
 
@@ -161,7 +161,71 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			plt.tight_layout()
 			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_{seed}_{color}', metadata)
+			
+		def plot_counts_dynamics_gen(counts, color, molecules_of_interest, molecule_type, time, start_generation_indices,
+                         end_generation_indices, end_generation_times, seed):
+			# Counts Plot
+			num_groups = len(molecules_of_interest)
+			cols = min(num_groups, 4)  # Number of columns for the grid
+			rows = (num_groups + cols - 1) // cols  # Calculate the number of rows
+			fig_width = cols * 10
+			fig_height = fig_width / 2
+			fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(fig_width, fig_height), sharex=False)
 
+			if cols == 1:
+				axes = [axes]
+			axes = axes.flatten()
+			
+
+			for i, ax in enumerate(axes):
+				if i < len(molecules_of_interest):  # Check if there's a molecule for this subplot
+					molecule_id = molecules_of_interest[i]
+					interest_counts = counts[:, i]
+
+					gen_number = 0
+
+					# Iterate over each generation and plot the segment separately
+					for start_idx, end_idx in zip(start_generation_indices, end_generation_indices):
+						
+						# Select the time and counts data for the current generation
+						# Note: We use end_idx + 1 to include the last point of the generation
+						gen_time = time[start_idx : end_idx + 1]
+						gen_counts = interest_counts[start_idx : end_idx + 1]
+						time_start = gen_time[0]
+						time_end = gen_time[-1]
+						generation_duration = time_end - time_start
+						normalized_gen_time = (gen_time - time_start)/generation_duration
+						x_axis_data = gen_number + normalized_gen_time
+
+						# Plot the segment. The use of multiple ax.plot calls creates disconnected lines.
+						ax.plot(x_axis_data, gen_counts, color=color, linewidth=6, label=molecule_id if start_idx == 0 else None)
+						gen_number += 1
+
+					ax.set_xlabel('Generation number', fontsize=30);
+					ax.set_ylabel(f'{molecule_type} counts', fontsize=30)
+					ax.set_title(molecule_id, fontsize=30)
+					ax.tick_params(axis='x', labelsize=30)
+					ax.tick_params(axis='y', labelsize=30)
+					max_gen = len(start_generation_indices)
+					ax.set_xticks(range(max_gen + 1))
+					ax.set_xlim(0, max_gen) # Set limit from 0 to the total number of generations
+
+					ax.spines['right'].set_visible(False)
+					ax.spines['top'].set_visible(False)
+					
+					# Add vertical lines for generation boundaries
+					for x in end_generation_times / 60:
+						ax.axvline(x=x,
+								color='grey',
+								linestyle='dashed')
+
+			# Remove any empty subplots
+			for i in range(num_groups, rows * cols):
+				fig.delaxes(axes.flat[i])
+
+			plt.tight_layout()
+			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_gen_{seed}_{color}', metadata)
+			
 
 		for seed in SEEDS:
 			cell_paths_per_seed = self.ap.get_cells(
@@ -174,17 +238,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			monomer_counts = read_stacked_columns(cell_paths_per_seed, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]
 			cistron_counts = read_stacked_columns(cell_paths_per_seed, 'RNACounts', 'mRNA_cistron_counts')[:, mRNA_ids_indices]
 
-			time, _, end_generation_times, _, _ = extract_doubling_times(
+			time, doubling_times, end_generation_times,start_generation_indices, end_generation_indices = extract_doubling_times(
 				cell_paths_per_seed)
 
 			if monomers_of_interest is not None:
 
-				plot_counts_dynamics(monomer_counts, COLOR_LINE, gene_names_in_order, 'monomer', time,
-									 end_generation_times, seed)
+				plot_counts_dynamics_gen(monomer_counts, COLOR_LINE, gene_names_in_order, 'monomer', time, start_generation_indices,
+											end_generation_indices, end_generation_times, seed)
 
-
-				plot_counts_dynamics(cistron_counts, COLOR_LINE, gene_names_in_order, 'mRNA', time,
-									 end_generation_times, seed)
+				plot_counts_dynamics_gen(cistron_counts, COLOR_LINE, gene_names_in_order, 'mRNA', time, start_generation_indices,
+										end_generation_indices, end_generation_times, seed)
 
 
 
