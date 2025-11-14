@@ -45,10 +45,12 @@ IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 """ END USER INPUTS """
 
 # PRINT NOTE ABOUT UPDATING FLAT FILES
-print("NOTE: If ECOCYC has been updated, please update the flat files in "
+print("NOTE: Check for recent EcoCyc updates for the most up-to-date plots. "
+      "Please update the flat files in "
       "models/ecoli/data/ecoli/flat/ accordingly using the "
       "convert_Schmidt_UniProt_IDs_to_monomer_IDs.py script and "
-      "convert_Schmidt_validation_data_to_flat.py scripts in validation/ecoli/scripts.")
+      "convert_Schmidt_validation_data_to_flat.py scripts in "
+      "validation/ecoli/scripts if needed.")
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -626,13 +628,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     # With the matching simulation and validation data obtained, make appropreite comparison plots:
     def compare_simulation_counts_to_raw_validation_source(
             self, plotOutDir, validation_source_name, validation_source_name_short,
-            RVS_uniprot_ids_to_sim_monomer_ids_dict,
+            RVS_uniprot_ids_to_monomer_IDs,
             RVS_uniprot_ids_to_schmidt_common_names,
             RVS_uniprot_ids_to_counts_dict):
+
+        # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
+        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_schmidt_common_names,
+                                                                    RVS_uniprot_ids_to_monomer_IDs)
+
+
         # create a table of relevant simulation protein info for the overlapping proteins:
-        RVS_sim_data_df = self.create_simulation_protein_info_table(RVS_uniprot_ids_to_sim_monomer_ids_dict,
-                                                                    RVS_uniprot_ids_to_schmidt_common_names,
-                                                                    RVS_uniprot_ids_to_counts_dict)
+        RVS_sim_data_df = (
+            self.create_simulation_protein_info_table(
+                RVS_uniprot_ids_to_sim_monomer_ids_dict,
+                RVS_uniprot_ids_to_schmidt_common_names,
+                RVS_uniprot_ids_to_counts_dict))
 
         # Generate the plot:
         fig = go.Figure()
@@ -646,7 +656,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         p = np.poly1d(z)
         trendline_y = p(x)
 
-        # Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+        # Compute linear trendline for counts above log10(30) as done in Macklin et al. 2020:
+        # NOTE: (+1 bc log(0) is undefined)
         above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
         x_above_30 = x[above_30_idx]
         y_above_30 = y[above_30_idx]
@@ -934,8 +945,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
     def plot_validation_comparison(self, simDataFile, validationDataFile, plotOutDir, sim_name):
         # Generate sim data and get self.all_monomer_ids defined:
-        avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = self.generate_data(
-            simDataFile)
+        avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = (
+            self.generate_data(simDataFile))
 
         # Obtain overlapping protein counts between the simulation and validation data
         self.common_names_with_multiple_monomer_ids_dict = self.check_common_name_to_gene_id_map(
@@ -954,21 +965,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             simDataFile, avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes)
 
         # Compare simulation data to the Schmidt et al. 2016 ST6 BW25113 proteomics data:
-        (uniprot_IDs_to_schmidt_common_names,
-         uniprot_IDs_to_monomer_IDs,
-         uniprot_IDs_to_schmidt_glucose_counts) = self.get_schmidt_BW_ST6_data()
-
-        uniprot_IDs_matches_to_sim_monomer_IDs = (
-            self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(
-            uniprot_IDs_to_schmidt_common_names, uniprot_IDs_to_monomer_IDs))
+        (SBWST6_uniprot_IDs_to_schmidt_common_names,
+         SBWST6_uniprot_IDs_to_monomer_IDs,
+         SBWST6_uniprot_IDs_to_schmidt_glucose_counts) = self.get_schmidt_BW_ST6_data()
 
         # Create comparison plots between the simulation and the raw validation data:
         self.compare_simulation_counts_to_raw_validation_source(
             plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
             "Schmidt2016_ST6_BW",
-            uniprot_IDs_matches_to_sim_monomer_IDs,
-            uniprot_IDs_to_schmidt_common_names,
-            uniprot_IDs_to_schmidt_glucose_counts)
+            SBWST6_uniprot_IDs_to_monomer_IDs,
+            SBWST6_uniprot_IDs_to_schmidt_common_names,
+            SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
 
 
