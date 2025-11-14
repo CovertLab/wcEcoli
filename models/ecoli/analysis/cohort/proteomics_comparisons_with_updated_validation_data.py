@@ -41,7 +41,7 @@ IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # TODO: add option to highlight specific proteins of interest in the plot
 # TODO: add option to match additional validation proteins to simulation proteins via common_names and or synomyms in rnas.tsv
-
+# TODO: add option to output validation comparison plots as well
 """ END USER INPUTS """
 
 # PRINT NOTE ABOUT UPDATING FLAT FILES
