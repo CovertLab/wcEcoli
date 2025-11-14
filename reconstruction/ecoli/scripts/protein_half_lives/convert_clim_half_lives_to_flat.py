@@ -35,7 +35,7 @@ USER INPUTS
 # Note: this file should have a column named "Protein ID" (formatted exactly as
 # it is in the original file: 41467_2024_49920_MOESM4_ESM_ST1.xlsx)
 # and a column named "half_life (units.min)"
-Clim_file = 'Clim4_STD_ratio_threshold_2_keep_NaNs.tsv'
+Clim_file = 'Clim12.tsv'
 
 # SPECIFY THE ECOCYC COMPARISON FILE
 # (in reconstruction/ecoli/flat/clim_half_life_data/uniprot_id_to_ecocyc_monomer_id_matches)
@@ -47,7 +47,7 @@ EcoCyc_file = \
 # SPECIFY THE OUTPUT FILE NAME (to be placed in the flat file list)
 # Note: this file name needs to be added to the list in "knowledge_base_raw.py"
 # to be used in translation.py within the model!
-OUTPUT_FILE_NAME = 'Clim4_STD_ratio_threshold_2_keep_NaNs.tsv' # e.g. 'protein_half_lives_Clim#.tsv'
+OUTPUT_FILE_NAME = 'Clim12.tsv' # e.g. 'protein_half_lives_Clim#.tsv'
 
 
 """

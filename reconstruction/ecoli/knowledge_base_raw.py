@@ -45,6 +45,7 @@ LIST_OF_DICT_FILENAMES = [
 	"Clim11_STD_ratio_threshold_2.tsv",
 	"Clim11_STD_ratio_threshold_2_keep_NaNs.tsv",
 	"Clim11_STD_ratio_threshold_2_keep_NaNs_HL_cap_12.tsv",
+	"Clim12.tsv",
 	"compartments.tsv",
 	"complexation_reactions.tsv",
 	"complexation_reactions_added.tsv",
