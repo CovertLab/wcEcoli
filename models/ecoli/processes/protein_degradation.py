@@ -90,7 +90,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
                 self.proteins.total_counts()
             ) # NOTE: this will be overwritten for some proteins below
 
-            self.raw_deg_rates = self._proteinDegRates()
+            self.raw_deg_rates = self._proteinDegRates().copy()
             self.raw_nProteinsToDegrade = nProteinsToDegrade
 
             # Extract the counts_to_molar conversion factor:
@@ -139,8 +139,8 @@ class ProteinDegradation(wholecell.processes.process.Process):
                     substrate_idx = np.where(self.protein_IDs == substrates[i])[0][0]
 
                     # Calculate the number of proteins degraded:
-                    LAMBDA_POSSION = k_actives[i] * substrate_concentrations[i]
-                    substrate_count = round(substrate_concentrations[i] / counts_to_molar)
+                    substrate_count = self.proteins.total_counts()[substrate_idx]
+                    LAMBDA_POSSION = k_actives[i] * substrate_count
 
                     # Determine how many proteins to degrade based on the degradation rates and counts of each protein
                     proteins_degraded = np.fmin(
@@ -204,7 +204,9 @@ class ProteinDegradation(wholecell.processes.process.Process):
                 # Define parameters for dynamic degradation model:
                 kcat = 0.071 # 1/s, https://jbioleng.biomedcentral.com/articles/10.1186/1754-1611-6-9#Sec29
                 # from H.S.:
-                Kms = np.array([1.91911837e-04, 7.09372864e-05, 2.58914472e-04, 4.51861833e-04, 4.20130094e-04, 3.29292633e-04])# mol
+                # Kms_dep = np.array([1.91911837e-04, 7.09372864e-05, 2.58914472e-04, 4.51861833e-04, 4.20130094e-04, 3.29292633e-04])# mol
+                # Kms_iter1 = np.array([5.38903483e-04, 9.38281100e-05, 5.64644733e-04, 2.06701849e-03, 1.20191168e-03, 6.12312615e-04])# mol
+                Kms = np.array([3.56437412e-04, 6.20692794e-05, 3.73462598e-04, 1.36715105e-03, 7.95147320e-04, 4.04990814e-04]) # mol
                 # NOTE: pay attention to substrate order when inputting here too!
                 self.dynamic_PD_Kms = Kms
 
@@ -269,10 +271,11 @@ class ProteinDegradation(wholecell.processes.process.Process):
         # Record how many monomers were calculated to degrade:
         counts_degraded = self.proteins.counts()
         self.writeToListener("MonomerCounts", "monomersDegraded", counts_degraded)
-        self.writeToListener("MonomerCounts", "rawDegradationRate", self.raw_deg_rates)
-        self.writeToListener("MonomerCounts", "rawDegnProtein", self.raw_nProteinsToDegrade)
-        self.writeToListener("MonomerCounts", "activeDegradationRate", self.active_deg_rates)
-        self.writeToListener("MonomerCounts", "activeDegnProtein", self.active_nProteinsToDegrade)
+        if DYNAMIC_PD:
+            self.writeToListener("MonomerCounts", "rawDegradationRate", self.raw_deg_rates)
+            self.writeToListener("MonomerCounts", "rawDegnProtein", self.raw_nProteinsToDegrade)
+            self.writeToListener("MonomerCounts", "activeDegradationRate", self.active_deg_rates)
+            self.writeToListener("MonomerCounts", "activeDegnProtein", self.active_nProteinsToDegrade)
 
         # Reset the degraded protein counts:
         self.proteins.countsIs(0)
