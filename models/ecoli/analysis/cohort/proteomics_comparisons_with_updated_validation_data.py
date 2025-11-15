@@ -200,14 +200,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             monomer_ID = schmidt_ST6.iloc[i]['Monomer ID']
             glucose_counts = schmidt_ST6.iloc[i]['Glucose']
 
+            #uniprot_IDs_to_schmidt_common_names[uniprot_ID] = gene_symbol
+            #uniprot_IDs_to_monomer_IDs[uniprot_ID] = monomer_ID
+            #uniprot_IDs_to_schmidt_glucose_counts[uniprot_ID] = glucose_counts
+
+            if monomer_ID == None:
+                print("WARNING: No simulation monomer ID mapped for Uniprot ID",
+                      uniprot_ID, " (common name: ", gene_symbol,
+                      ") within the Schmidt et al. 2016 dataset.")
+
             uniprot_IDs_to_schmidt_common_names[uniprot_ID] = gene_symbol
             uniprot_IDs_to_monomer_IDs[uniprot_ID] = monomer_ID
             uniprot_IDs_to_schmidt_glucose_counts[uniprot_ID] = glucose_counts
-
-            if monomer_ID == None:
-                print("WARNING: No simulation monomer ID mapped to Uniprot ID",
-                      uniprot_ID, ", assigned to gene symbol", gene_symbol,
-                      "in the Schmidt et al. 2016 dataset.")
 
         return (uniprot_IDs_to_schmidt_common_names,
                 uniprot_IDs_to_monomer_IDs,
@@ -481,7 +485,46 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         return validation_dataset_uniprot_ids_to_sim_monomer_ids_dict
 
+    # Function that finds monomer ids for uniprot ids that were not mapped directly:
+    def find_monomer_ids_for_unmapped_uniprot_ids(self, uniprot_IDs_to_RVS_common_names,
+                uniprot_IDs_to_monomer_IDs):
+        # find the uniprot IDs that mapped to None monomer IDs:
+        unmapped_uniprot_IDs = []
+        for uniprot_ID in uniprot_IDs_to_monomer_IDs.keys():
+            monomer_ID = uniprot_IDs_to_monomer_IDs[uniprot_ID]
+            if pd.isna(monomer_ID):
+                unmapped_uniprot_IDs.append(uniprot_ID)
 
+        hi = 5
+
+        # Find the RVS common names for these unmapped uniprot IDs:
+        unmapped_uniprot_IDs_to_RVS_common_names = {}
+        for uniprot_ID in unmapped_uniprot_IDs:
+            RVS_common_name = uniprot_IDs_to_RVS_common_names[uniprot_ID]
+            unmapped_uniprot_IDs_to_RVS_common_names[uniprot_ID] = RVS_common_name
+
+        hi = 5
+        # Use these RVS common names to try to map to simulation monomer IDs:
+        monomer_id_to_common_name, common_name_to_monomer_id  = self.map_monomer_ids_to_common_names()
+
+        # define a dictionary mapping the unmapped uniprot IDs to simulation monomer IDs:
+        unmapped_uniprot_IDs_to_sim_monomer_IDs = {}
+        for uniprot_ID in unmapped_uniprot_IDs_to_RVS_common_names.keys():
+            RVS_common_name = unmapped_uniprot_IDs_to_RVS_common_names[uniprot_ID]
+            hi = 5
+            if RVS_common_name in common_name_to_monomer_id.keys():
+                sim_monomer_ID = common_name_to_monomer_id[RVS_common_name]
+                unmapped_uniprot_IDs_to_sim_monomer_IDs[uniprot_ID] = sim_monomer_ID
+                print("The unmapped UniProt ID", uniprot_ID,
+                      "maps to simulation monomer ID", sim_monomer_ID,
+                      "via the raw validation source's common name: ", RVS_common_name)
+            else:
+                print("The unmapped UniProt ID", uniprot_ID,
+                      "with RVS common name", RVS_common_name,
+                      "did not map to any simulation monomer ID via common names in rnas.tsv.")
+
+
+        return unmapped_uniprot_IDs_to_sim_monomer_IDs
 
 
 
@@ -976,6 +1019,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_monomer_IDs,
             SBWST6_uniprot_IDs_to_schmidt_common_names,
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
+
+        unmapped_uniprot_ids_to_simulation_monomer_ids = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
+         SBWST6_uniprot_IDs_to_monomer_IDs)
+
+        hi = 5
 
 
 
