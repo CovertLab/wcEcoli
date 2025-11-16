@@ -495,7 +495,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             if pd.isna(monomer_ID):
                 unmapped_uniprot_IDs.append(uniprot_ID)
 
-        hi = 5
 
         # Find the RVS common names for these unmapped uniprot IDs:
         unmapped_uniprot_IDs_to_RVS_common_names = {}
@@ -503,18 +502,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             RVS_common_name = uniprot_IDs_to_RVS_common_names[uniprot_ID]
             unmapped_uniprot_IDs_to_RVS_common_names[uniprot_ID] = RVS_common_name
 
-        hi = 5
         # Use these RVS common names to try to map to simulation monomer IDs:
         monomer_id_to_common_name, common_name_to_monomer_id  = self.map_monomer_ids_to_common_names()
 
         # define a dictionary mapping the unmapped uniprot IDs to simulation monomer IDs:
         unmapped_uniprot_IDs_to_sim_monomer_IDs = {}
+        unmapped_uniprot_IDs_to_sim_common_names = {}
         for uniprot_ID in unmapped_uniprot_IDs_to_RVS_common_names.keys():
             RVS_common_name = unmapped_uniprot_IDs_to_RVS_common_names[uniprot_ID]
-            hi = 5
             if RVS_common_name in common_name_to_monomer_id.keys():
                 sim_monomer_ID = common_name_to_monomer_id[RVS_common_name]
                 unmapped_uniprot_IDs_to_sim_monomer_IDs[uniprot_ID] = sim_monomer_ID
+                unmapped_uniprot_IDs_to_sim_common_names[uniprot_ID] = RVS_common_name
                 print("The unmapped UniProt ID", uniprot_ID,
                       "maps to simulation monomer ID", sim_monomer_ID,
                       "via the raw validation source's common name: ", RVS_common_name)
@@ -524,7 +523,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                       "did not map to any simulation monomer ID via common names in rnas.tsv.")
 
 
-        return unmapped_uniprot_IDs_to_sim_monomer_IDs
+        return unmapped_uniprot_IDs_to_sim_monomer_IDs, unmapped_uniprot_IDs_to_sim_common_names
 
 
 
@@ -1020,7 +1019,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_schmidt_common_names,
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
-        unmapped_uniprot_ids_to_simulation_monomer_ids = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
+        unmapped_uniprot_ids_to_simulation_monomer_ids, unmapped_uniprot_IDs_to_sim_common_names = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
          SBWST6_uniprot_IDs_to_monomer_IDs)
 
         hi = 5
