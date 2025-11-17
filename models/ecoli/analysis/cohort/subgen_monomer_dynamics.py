@@ -20,8 +20,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 27
-SEEDS = np.arange(0, 20)
+IGNORE_FIRST_N_GENS = 20
+SEEDS = np.arange(20, 25)
 COLOR_LINE = 'mediumseagreen' # 'skyblue'
 
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
