@@ -39,7 +39,10 @@ from wholecell.utils.filepath import ROOT_PATH
 # Indicate the number of generations to be ignored at the start of each seed:
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
-# TODO: add option to highlight specific proteins of interest in the plot
+# Indicate proteins of interest to highlight in the plot (these can include the compartment tag or not, it does not matter):
+PROTEINS_OF_INTEREST = []
+  # example Uniprot IDs
+# TODO: check If you can read in uniprot from ecyocyc and not biocyc
 # TODO: add option to match additional validation proteins to simulation proteins via common_names and or synomyms in rnas.tsv
 # TODO: add option to output validation comparison plots as well
 """ END USER INPUTS """
@@ -468,14 +471,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
     # Function that matches protein IDs from a given validation dataset to simulation monomer IDs:
     def match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(
-            self, uniprot_IDs_to_schmidt_common_names, uniprot_IDs_to_monomer_IDs):
+            self, uniprot_IDs_to_monomer_IDs, uniprot_IDs_to_schmidt_common_names):
 
         # Determine which Uniprot IDs correspond to an actual monomer ID in the simulation:
         validation_dataset_uniprot_ids_to_sim_monomer_ids_dict = {}
-        for uniprot_ID in uniprot_IDs_to_schmidt_common_names.keys():
+        for uniprot_ID in uniprot_IDs_to_monomer_IDs.keys():
             monomer_ID = uniprot_IDs_to_monomer_IDs[uniprot_ID]
             if monomer_ID is not None:
-                # check if this monomer ID is valid in the simulation:
+                # check if this monomer ID is valid:
                 if monomer_ID in self.sim_monomer_ids_to_monomer_ids_with_compartment_tags_dict.keys():
                     validation_dataset_uniprot_ids_to_sim_monomer_ids_dict[uniprot_ID] = monomer_ID
             else:
@@ -619,6 +622,36 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         else:
             return comparison_dataset_common_name_to_sim_monomer_id_dict
 
+    # Create a function for mapping input proteins to simulation monomer IDs:
+    def map_input_proteins_to_simulation_monomer_IDs(self, input_protein_list, full_dataframe):
+        # map the input protein list common names to simulation monomer IDs:
+        print("Mapping input protein list to simulation monomer IDs...")
+        sim_monomer_id_with_compartment_to_input_protein_dict = {}
+        for protein in input_protein_list:
+            if "[" in protein:
+                protein = protein[:-3]
+            if protein in self.sim_monomer_ids_to_monomer_ids_with_compartment_tags_dict.keys():
+                monomer_id = self.sim_monomer_ids_to_monomer_ids_with_compartment_tags_dict[protein]
+                sim_monomer_id_with_compartment_to_input_protein_dict[monomer_id] = protein
+            else:
+                print("The input protein", protein,
+                      "did not map to any simulation monomer IDs.")
+
+        # find the relevant rows in the full dataframe based on which proteins were mapped (this will filter out proteins there is no validation data for):
+        mapped_input_proteins_df = full_dataframe[
+            full_dataframe['monomer_id'].isin(
+                sim_monomer_id_with_compartment_to_input_protein_dict.keys())]
+
+        print("Mapped", len(sim_monomer_id_with_compartment_to_input_protein_dict.keys()),
+              f"input proteins (of {len(input_protein_list)} inputs total) to simulation monomer IDs."
+              f" Of those proteins, only {len(mapped_input_proteins_df)} showed up in the validation data as well.")
+
+        return mapped_input_proteins_df
+
+
+
+
+
 
     # Create a function that creates a table of relevant simulation protein info for a given list of monomer IDs:
     def create_simulation_protein_info_table(
@@ -666,6 +699,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         return RVS_sim_data_df
 
+    # Define a hovertext function:
+    def generate_hovertext (self, dataframe):
+        hovertext = dataframe.apply(lambda row:
+                                          f"Monomer ID: {row['monomer_id']}"
+                                          f"<br>UniProt ID: {row['uniprot_id']}"
+                                          f"<br>Simulation common name: {row['common_name']}"
+                                          f"<br>Validation source common name: {row['RVS_common_name']}"
+                                          f"<br>Description: {row['description']}"
+                                          f"<br>Simulation half life: {row['simulation_half_life']}"
+                                          f"<br>Validation source count: {row['RVS_count']}"
+                                          f"<br>Avg. total simulation count: {row['avg_total_count']}"
+                                          f"<br>Avg. complexed count: {row['avg_complex_count']}"
+                                          f"<br>Avg. free count: {row['avg_free_count']}",
+                                          axis=1)
+        return hovertext
 
     # With the matching simulation and validation data obtained, make appropreite comparison plots:
     def compare_simulation_counts_to_raw_validation_source(
@@ -675,8 +723,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             RVS_uniprot_ids_to_counts_dict):
 
         # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
-        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_schmidt_common_names,
-                                                                    RVS_uniprot_ids_to_monomer_IDs)
+        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_monomer_IDs, RVS_uniprot_ids_to_schmidt_common_names)
 
 
         # create a table of relevant simulation protein info for the overlapping proteins:
@@ -685,6 +732,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 RVS_uniprot_ids_to_sim_monomer_ids_dict,
                 RVS_uniprot_ids_to_schmidt_common_names,
                 RVS_uniprot_ids_to_counts_dict))
+
 
         # Generate the plot:
         fig = go.Figure()
@@ -712,25 +760,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         pr2 = r_value ** 2
         COD_r2 = r2_score(x_above_30, y_above_30) # COD R2
 
-        # Define the hover text for the plot output:
-        hovertext = RVS_sim_data_df.apply(lambda
-                                         row:
-                                          f"Monomer ID: {row['monomer_id']}"
-                                          f"<br>UniProt ID: {row['uniprot_id']}"
-                                          f"<br>Simulation common name: {row['common_name']}"
-                                          f"<br>Validation source common name: {row['RVS_common_name']}"
-                                          f"<br>Description: {row['description']}"
-                                          f"<br>Simulation half life: {row['simulation_half_life']}"
-                                          f"<br>Validation source count: {row['RVS_count']}"
-                                          f"<br>Avg. total simulation count: {row['avg_total_count']}"
-                                          f"<br>Avg. complexed count: {row['avg_complex_count']}"
-                                          f"<br>Avg. free count: {row['avg_free_count']}",
-                                     axis=1)
-
         # Add total counts scatter data:
+        hovertext = self.generate_hovertext(RVS_sim_data_df)
         fig.add_trace(
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
-                       name=f"Monomer Counts"))
+                       name=f"Monomer Counts", marker=dict(color='lightseagreen'), opacity=0.7))
+
+        if PROTEINS_OF_INTEREST != []:
+            proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
+                PROTEINS_OF_INTEREST, RVS_sim_data_df)
+            # Add proteins of interest scatter data:
+            hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
+            x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
+            y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
+            fig.add_trace(
+                go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
+                           name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+
 
         # Add linear trendline:
         fig.add_trace(
@@ -759,8 +805,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                   f"Validation dataset: {validation_source_name}<br>"
                   f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
             title_font=dict(size=8),
-            xaxis_title="log₁₀(Validation Protein Counts)",
-            yaxis_title="log₁₀(Simulation Protein Counts)",
+            xaxis_title="log₁₀(Validation Protein Counts + 1)",
+            yaxis_title="log₁₀(Simulation Protein Counts + 1)",
             autosize=False,
             width=900,
             height=600,
@@ -811,11 +857,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             RVS_uniprot_ids_to_monomer_IDs,
             RVS_uniprot_ids_to_schmidt_common_names,
             RVS_uniprot_ids_to_counts_dict,
-            unmapped_uniprot_ids_to_simulation_monomer_ids):
+            unmapped_uniprot_ids_to_monomer_ids):
 
         # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
-        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_schmidt_common_names,
-                                                                    RVS_uniprot_ids_to_monomer_IDs)
+        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_monomer_IDs, RVS_uniprot_ids_to_schmidt_common_names)
 
 
         # create a table of relevant simulation protein info for the overlapping proteins:
@@ -826,7 +871,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 RVS_uniprot_ids_to_counts_dict))
 
         # generate a table for the manually mapped proteins as well:
-        RVS_extra_data_df = self.create_simulation_protein_info_table(unmapped_uniprot_ids_to_simulation_monomer_ids,
+        RVS_unmapped_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(
+            unmapped_uniprot_ids_to_monomer_ids, RVS_uniprot_ids_to_schmidt_common_names)
+
+        RVS_extra_data_df = self.create_simulation_protein_info_table(RVS_unmapped_uniprot_ids_to_sim_monomer_ids_dict,
                                                   RVS_uniprot_ids_to_schmidt_common_names,
                                                   RVS_uniprot_ids_to_counts_dict)
 
@@ -864,29 +912,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         pr2 = r_value ** 2
         COD_r2 = r2_score(x_above_30, y_above_30) # COD R2
 
-        # Define the hover text for the plot output:
-        hovertext = RVS_sim_data_df.apply(lambda
-                                         row:
-                                          f"Monomer ID: {row['monomer_id']}"
-                                          f"<br>UniProt ID: {row['uniprot_id']}"
-                                          f"<br>Simulation common name: {row['common_name']}"
-                                          f"<br>Validation source common name: {row['RVS_common_name']}"
-                                          f"<br>Description: {row['description']}"
-                                          f"<br>Simulation half life: {row['simulation_half_life']}"
-                                          f"<br>Validation source count: {row['RVS_count']}"
-                                          f"<br>Avg. total simulation count: {row['avg_total_count']}"
-                                          f"<br>Avg. complexed count: {row['avg_complex_count']}"
-                                          f"<br>Avg. free count: {row['avg_free_count']}",
-                                     axis=1)
-
         # Add total counts scatter data:
+        hovertext = self.generate_hovertext(RVS_sim_data_df)
         fig.add_trace(
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
-                       name=f"Monomer Counts"))
+                       name=f"Monomer Counts (n={len(x)})", marker=dict(color='lightseagreen'), opacity=0.7))
 
-        fig.add_trace(go.Scatter(x=x2, y=y2, mode='markers',
-                                 name='Manually Mapped Proteins',
-                                 marker=dict(color='red', size=6, symbol='circle-open')))
+        if PROTEINS_OF_INTEREST != []:
+            proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
+                PROTEINS_OF_INTEREST, RVS_sim_data_df)
+            # Add proteins of interest scatter data:
+            hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
+            x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
+            y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
+            fig.add_trace(
+                go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
+                           name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+
+
+        # Add manually mapped proteins scatter data:
+        manual_data_hovertext = self.generate_hovertext(RVS_extra_data_df)
+        fig.add_trace(go.Scatter(x=x2, y=y2, hovertext=manual_data_hovertext, mode='markers',
+                                 name=f'Manually Mapped Proteins (n={len(x2)})',
+                                 marker=dict(color='orange', size=8, symbol='circle-open')))
 
         # Add linear trendline:
         fig.add_trace(
@@ -915,8 +963,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                   f"Validation dataset: {validation_source_name}<br>"
                   f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
             title_font=dict(size=8),
-            xaxis_title="log₁₀(Validation Protein Counts)",
-            yaxis_title="log₁₀(Simulation Protein Counts)",
+            xaxis_title="log₁₀(Validation Protein Counts + 1)",
+            yaxis_title="log₁₀(Simulation Protein Counts + 1)",
             autosize=False,
             width=900,
             height=600,
