@@ -805,6 +805,162 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
+    # generate the same graph as above but allow for the manually mapped proteins to show up:
+    def compare_simulation_counts_to_raw_validation_source_with_manual_mappings(
+            self, plotOutDir, validation_source_name, validation_source_name_short,
+            RVS_uniprot_ids_to_monomer_IDs,
+            RVS_uniprot_ids_to_schmidt_common_names,
+            RVS_uniprot_ids_to_counts_dict,
+            unmapped_uniprot_ids_to_simulation_monomer_ids):
+
+        # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
+        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_schmidt_common_names,
+                                                                    RVS_uniprot_ids_to_monomer_IDs)
+
+
+        # create a table of relevant simulation protein info for the overlapping proteins:
+        RVS_sim_data_df = (
+            self.create_simulation_protein_info_table(
+                RVS_uniprot_ids_to_sim_monomer_ids_dict,
+                RVS_uniprot_ids_to_schmidt_common_names,
+                RVS_uniprot_ids_to_counts_dict))
+
+        # generate a table for the manually mapped proteins as well:
+        RVS_extra_data_df = self.create_simulation_protein_info_table(unmapped_uniprot_ids_to_simulation_monomer_ids,
+                                                  RVS_uniprot_ids_to_schmidt_common_names,
+                                                  RVS_uniprot_ids_to_counts_dict)
+
+        # append the RVS_extra_data_df to the RVS_sim_data_df
+        RVS_sim_data_df = pd.concat([RVS_sim_data_df, RVS_extra_data_df], ignore_index=True)
+
+
+        # Generate the plot:
+        fig = go.Figure()
+
+        # Compute log10 values for simulation and validation protein counts:
+        x = np.log10(RVS_sim_data_df['RVS_count'].values + 1)
+        y = np.log10(RVS_sim_data_df['avg_total_count'].values + 1)
+
+        # Generate data with manual mappings highlighted
+        x2 = np.log10(RVS_extra_data_df['RVS_count'].values + 1)
+        y2 = np.log10(RVS_extra_data_df['avg_total_count'].values + 1)
+
+        # Compute linear trendline
+        z = np.polyfit(x, y, 1)
+        p = np.poly1d(z)
+        trendline_y = p(x)
+
+        # Compute linear trendline for counts above log10(30) as done in Macklin et al. 2020:
+        # NOTE: (+1 bc log(0) is undefined)
+        above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+        x_above_30 = x[above_30_idx]
+        y_above_30 = y[above_30_idx]
+        z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+        p_above_30 = np.poly1d(z_above_30)
+        trendline_y_above_30 = p_above_30(x)
+
+        # Compute the pearson r, R2, and the coefficient of determination R2:
+        r_value, p_val = pearsonr(x_above_30, y_above_30)
+        pr2 = r_value ** 2
+        COD_r2 = r2_score(x_above_30, y_above_30) # COD R2
+
+        # Define the hover text for the plot output:
+        hovertext = RVS_sim_data_df.apply(lambda
+                                         row:
+                                          f"Monomer ID: {row['monomer_id']}"
+                                          f"<br>UniProt ID: {row['uniprot_id']}"
+                                          f"<br>Simulation common name: {row['common_name']}"
+                                          f"<br>Validation source common name: {row['RVS_common_name']}"
+                                          f"<br>Description: {row['description']}"
+                                          f"<br>Simulation half life: {row['simulation_half_life']}"
+                                          f"<br>Validation source count: {row['RVS_count']}"
+                                          f"<br>Avg. total simulation count: {row['avg_total_count']}"
+                                          f"<br>Avg. complexed count: {row['avg_complex_count']}"
+                                          f"<br>Avg. free count: {row['avg_free_count']}",
+                                     axis=1)
+
+        # Add total counts scatter data:
+        fig.add_trace(
+            go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+                       name=f"Monomer Counts"))
+
+        fig.add_trace(go.Scatter(x=x2, y=y2, mode='markers',
+                                 name='Manually Mapped Proteins',
+                                 marker=dict(color='red', size=6, symbol='circle-open')))
+
+        # Add linear trendline:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y, mode='lines',
+                       name=f'Linear fit (all data): {p}',
+                       line=dict(color='green')))
+
+        # Add linear trendline for counts above 30:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+                       name=f'Linear fit (counts > 30): {p_above_30}',
+                       line=dict(color='pink')))
+
+        # Add a y=x line:
+        fig.add_trace(
+            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+                       line=go.scatter.Line(color="black", dash="dash"),
+                       opacity=0.2, name="y=x"))
+
+
+        # Update layout
+        fig.update_traces(marker_size=3)
+        fig.update_layout(
+            title=f"Simulation Protein Counts vs. Validation Protein Counts<br>"
+                  f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
+                  f"Validation dataset: {validation_source_name}<br>"
+                  f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
+            title_font=dict(size=8),
+            xaxis_title="log₁₀(Validation Protein Counts)",
+            yaxis_title="log₁₀(Simulation Protein Counts)",
+            autosize=False,
+            width=900,
+            height=600,
+            plot_bgcolor='white',  # Set the plot area background color to white
+            paper_bgcolor='white'  # Set the entire graph background to white
+        )
+
+        # Define the text to display
+        text = (
+            f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+            f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+            f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(COD_r2, 3)}'
+        )
+
+        # Get the maximum x and minimum y to position the text in the bottom-right
+        x_max = x.max()
+        y_min = y.min()
+
+        # Adjust x_max and y_min slightly outside the actual graph boundaries
+        text_offset_x = 0.1
+        text_offset_y = 0.05
+
+        # Adding text annotation to the bottom right
+        fig.add_annotation(
+            x=x_max + text_offset_x,  # Move the x position slightly to the right
+            y=y_min - text_offset_y,  # Move the y position slightly below
+            text=text,
+            showarrow=False,
+            bgcolor='rgba(255, 255, 255, 0.8)',
+            bordercolor='rgba(0, 0, 0, 0.5)',
+            borderwidth=1,
+            borderpad=4,
+            align='right',
+            font=dict(size=10, color='gray'),
+            xref='x',
+            yref='y',
+        )
+
+        # save the figure as an html:
+        plot_name = (f"proteomics_comparison_to_raw_validation_source_"
+                     f"{self.sim_name}_vs_{validation_source_name_short}_including_manually_mapped_proteins.html")
+        fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
     # Create a function that makes a table of the validation data against another validation data source:
     def prep_validation_datasets_for_comparison_with_other_validation_data(
             self, common_name_to_counts_dict_1, common_name_to_sim_monomer_id_1,
@@ -1021,6 +1177,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         unmapped_uniprot_ids_to_simulation_monomer_ids, unmapped_uniprot_IDs_to_sim_common_names = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
          SBWST6_uniprot_IDs_to_monomer_IDs)
+
+        self.compare_simulation_counts_to_raw_validation_source_with_manual_mappings(
+            plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+            "Schmidt2016_ST6_BW",
+            SBWST6_uniprot_IDs_to_monomer_IDs,
+            SBWST6_uniprot_IDs_to_schmidt_common_names,
+            SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
+            unmapped_uniprot_ids_to_simulation_monomer_ids)
 
         hi = 5
 
