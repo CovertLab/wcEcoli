@@ -43,6 +43,7 @@ IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 PROTEINS_OF_INTEREST = []
   # example Uniprot IDs
 # TODO: check If you can read in uniprot from ecyocyc and not biocyc
+# todo: add error bars to the proteins of interest on a separate plot
 # TODO: add option to match additional validation proteins to simulation proteins via common_names and or synomyms in rnas.tsv
 # TODO: add option to output validation comparison plots as well
 """ END USER INPUTS """
