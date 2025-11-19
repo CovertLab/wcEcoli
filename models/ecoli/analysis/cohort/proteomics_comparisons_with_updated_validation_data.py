@@ -1222,36 +1222,37 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         self.total_cells = len(all_cells)
 
-        # Get the average total protein counts for each monomer:
+        # Averaging over all time:
+        # read in the data:
         total_counts = (
             read_stacked_columns(all_cells, 'MonomerCounts',
                                  'monomerCounts', ignore_exception=True))
+        (free_counts,) = read_stacked_bulk_molecules(
+            all_cells, self.all_monomer_ids, ignore_exception=True)
+        complexed_counts = total_counts - free_counts
 
-        hi = 5
+        # calculate the STDs and the averges:
         avg_total_counts = np.mean(total_counts, axis=0)
-        total_protein_counts1 = (read_stacked_columns(
-            all_cells, 'MonomerCounts',
-            'monomerCounts')).mean(
-            axis=0)  # this is equivalent to avg_total_counts but kept for clarity
+        std_total_counts = np.std(total_counts, axis=0)
+        avg_free_counts = np.mean(free_counts, axis=0)
+        std_free_counts = np.std(free_counts, axis=0)
+        avg_complexed_counts = np.mean(complexed_counts, axis=0)
+        std_complexed_counts = np.std(complexed_counts, axis=0)
 
-
-        # This gives the average per generation (so it is still a df of size # cells x # monomers):
-        average_total_counts2 = (
+        # GENERATION AVERAGED:
+        total_counts_per_gen = (
             read_stacked_columns(all_cells, 'MonomerCounts',
                                  'monomerCounts',
                                  fun=lambda x: np.mean(x[:], axis=0)))
-        avg_total_monomer_counts = np.mean(average_total_counts2, axis=0) # so this is now 1D. hmmmm
+        # TODO: when lisener-update is pushed, also track the free and complexed counts reads
+
+        # calculate the STDs and the averages:
+        avg_total_counts_gen = np.mean(total_counts_per_gen, axis=0)
+        std_total_counts_gen = np.std(total_counts_per_gen, axis=0)
 
 
 
 
-        # Get the average free protein counts for each monomer:
-        (free_counts,) = read_stacked_bulk_molecules(
-            all_cells, self.all_monomer_ids, ignore_exception=True)
-        avg_free_counts = np.mean(free_counts, axis=0)
-
-        # Get the average complex counts for each monomer:
-        avg_counts_for_monomers_in_complexes = avg_total_counts - avg_free_counts
 
         return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes
 
