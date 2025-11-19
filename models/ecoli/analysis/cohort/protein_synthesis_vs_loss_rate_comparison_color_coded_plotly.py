@@ -199,7 +199,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		#save the plot:
 		seed = metadata['seed']
-		plot_name = plotOutFileName +"_"+ sim_id + "_seed_"+ seed +"_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE) + "_purple_" + str(HIGHLIGHT_IN_PURPLE) + ".html"
+		plot_name = plotOutFileName +"_"+ sim_id + "_seed_"+ str(seed) +"_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE) + "_purple_" + str(HIGHLIGHT_IN_PURPLE) + ".html"
 		fig.write_html(os.path.join(plotOutDir, plot_name))
 		#exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 
