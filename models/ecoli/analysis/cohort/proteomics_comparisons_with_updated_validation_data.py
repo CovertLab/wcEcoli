@@ -40,7 +40,7 @@ from wholecell.utils.filepath import ROOT_PATH
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # Indicate proteins of interest to highlight in the plot (these can include the compartment tag or not, it does not matter):
-PROTEINS_OF_INTEREST = []
+PROTEINS_OF_INTEREST = ["EG10241-MONOMER"]
   # example Uniprot IDs
 # TODO: check If you can read in uniprot from ecyocyc and not biocyc
 # todo: add error bars to the proteins of interest on a separate plot
@@ -1190,6 +1190,101 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
+    # Get the standard deviations of the simulation data:
+    def get_sim_data_standard_deviations(self, simDataFile, protein_df):
+        # get the data:
+        with open(simDataFile, 'rb') as f:
+            sim_data = pickle.load(f)
+        monomer_sim_data = (
+            sim_data.process.translation.monomer_data.struct_array)
+
+        # generate a dictionary mapping monomer IDs to their indices in the monomer_sim_data array:
+        monomer_id_to_index = {}
+        for index, monomer_id in enumerate(monomer_sim_data['id']):
+            monomer_id_to_index[monomer_id] = index
+
+        # find where each protein in the "monomer_id" column of protein_df is in the monomer_sim_data array:
+        protein_indices_in_sim_data = []
+        protein_indices_in_sim_data_dict = {}
+        for monomer_id in protein_df['monomer_id']:
+            if monomer_id in monomer_id_to_index:
+                protein_indices_in_sim_data.append(monomer_id_to_index[monomer_id])
+                protein_indices_in_sim_data_dict[monomer_id] = monomer_id_to_index[monomer_id]
+            else:
+                # only proteins that show up in the model should be present here so hopefully this isnt used
+                protein_indices_in_sim_data.append(None)
+
+        # Extract monomer count data for each protein:
+        self.all_monomer_ids = monomer_sim_data['id']
+        all_cells = self.ap.get_cells(
+            generation=np.arange(IGNORE_FIRST_N_GENS,self.n_total_gens),
+            only_successful=True)
+
+        self.total_cells = len(all_cells)
+
+        # Get the average total protein counts for each monomer:
+        total_counts = (
+            read_stacked_columns(all_cells, 'MonomerCounts',
+                                 'monomerCounts', ignore_exception=True))
+
+        hi = 5
+        avg_total_counts = np.mean(total_counts, axis=0)
+        total_protein_counts1 = (read_stacked_columns(
+            all_cells, 'MonomerCounts',
+            'monomerCounts')).mean(
+            axis=0)  # this is equivalent to avg_total_counts but kept for clarity
+
+
+        # This gives the average per generation (so it is still a df of size # cells x # monomers):
+        average_total_counts2 = (
+            read_stacked_columns(all_cells, 'MonomerCounts',
+                                 'monomerCounts',
+                                 fun=lambda x: np.mean(x[:], axis=0)))
+        avg_total_monomer_counts = np.mean(average_total_counts2, axis=0) # so this is now 1D. hmmmm
+
+
+
+
+        # Get the average free protein counts for each monomer:
+        (free_counts,) = read_stacked_bulk_molecules(
+            all_cells, self.all_monomer_ids, ignore_exception=True)
+        avg_free_counts = np.mean(free_counts, axis=0)
+
+        # Get the average complex counts for each monomer:
+        avg_counts_for_monomers_in_complexes = avg_total_counts - avg_free_counts
+
+        return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes
+
+    # Create a function that plots just the highlighted proteins of interest:
+    def plot_proteins_of_interest_only(self, simDataFile, plotOutDir, validation_source_name, validation_source_name_short,
+            RVS_uniprot_ids_to_monomer_IDs,
+            RVS_uniprot_ids_to_schmidt_common_names,
+            RVS_uniprot_ids_to_counts_dict):
+
+        # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
+        RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(
+            RVS_uniprot_ids_to_monomer_IDs, RVS_uniprot_ids_to_schmidt_common_names)
+
+        # create a table of relevant simulation protein info for the overlapping proteins:
+        RVS_sim_data_df = (
+            self.create_simulation_protein_info_table(
+                RVS_uniprot_ids_to_sim_monomer_ids_dict,
+                RVS_uniprot_ids_to_schmidt_common_names,
+                RVS_uniprot_ids_to_counts_dict))
+
+        if PROTEINS_OF_INTEREST != []:
+            proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
+                PROTEINS_OF_INTEREST, RVS_sim_data_df)
+            # Add proteins of interest scatter data:
+            hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
+            x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
+            y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
+            c2, c3, c4 = self.get_sim_data_standard_deviations(
+                simDataFile, proteins_of_interest_df)
+            hi = 5
+
+
+
     def plot_validation_comparison(self, simDataFile, validationDataFile, plotOutDir, sim_name):
         # Generate sim data and get self.all_monomer_ids defined:
         avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes = (
@@ -1235,6 +1330,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
             unmapped_uniprot_ids_to_simulation_monomer_ids)
 
+
+        self.plot_proteins_of_interest_only(simDataFile, plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+            "Schmidt2016_ST6_BW",
+            SBWST6_uniprot_IDs_to_monomer_IDs,
+            SBWST6_uniprot_IDs_to_schmidt_common_names,
+            SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
         hi = 5
 
 
