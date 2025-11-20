@@ -1252,8 +1252,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 
-
-
         return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes
 
     # Create a function that plots just the highlighted proteins of interest:
