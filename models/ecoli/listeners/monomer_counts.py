@@ -98,6 +98,21 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 			)
 
+		self.freeMonomerCounts = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.monomersDegraded = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.monomersElongated = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
 	def update(self):
 		# Get current counts of bulk and unique molecules
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
@@ -126,12 +141,17 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 
-		# Update monomerCounts
+		# Update the total and free monomer counts at the start of each time step:
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
+		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'monomerCounts': 'monomerIds'}
+			'monomerCounts': 'monomerIds',
+			'freeMonomerCounts': 'monomerIds',
+			'monomersElongated': 'monomerIds',
+			'monomersDegraded': 'monomerIds',
+			}
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomer_ids,
@@ -142,4 +162,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
+			freeMonomerCounts=self.freeMonomerCounts,
+			monomersElongated = self.monomersElongated,
+			monomersDegraded = self.monomersDegraded,
 			)
