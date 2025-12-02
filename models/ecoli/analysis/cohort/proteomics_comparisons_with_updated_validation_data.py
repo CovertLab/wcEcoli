@@ -1634,6 +1634,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
          SBWST6_uniprot_IDs_to_schmidt_glucose_counts) = self.get_schmidt_BW_ST6_data()
 
         # Create comparison plots between the simulation and the raw validation data:
+        print("Plotting simulation vs raw validation data...")
         self.compare_simulation_counts_to_raw_validation_source(
             plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
             "Schmidt2016_ST6_BW",
@@ -1641,6 +1642,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_schmidt_common_names,
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
+
+        # Find unmapped uniprot IDs and attempt to map them manually:
+        print("Plotting simulation vs raw validation data including manually mapped proteins...")
         unmapped_uniprot_ids_to_simulation_monomer_ids, unmapped_uniprot_IDs_to_sim_common_names = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
          SBWST6_uniprot_IDs_to_monomer_IDs)
 
@@ -1652,7 +1656,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
             unmapped_uniprot_ids_to_simulation_monomer_ids)
 
-
+        # Plot the proteins of interest only:
+        print("Plotting proteins of interest only...")
         self.plot_proteins_of_interest_only(simDataFile, plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
             "Schmidt2016_ST6_BW",
             SBWST6_uniprot_IDs_to_monomer_IDs,
