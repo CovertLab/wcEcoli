@@ -42,12 +42,16 @@ IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # Indicate proteins of interest to highlight in the plot (these can include the compartment tag or not, it does not matter):
 PROTEINS_OF_INTEREST = ["EG10241-MONOMER", "1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER", "EG10599-MONOMER", "EG10241-MONOMER", "EG10762-MONOMER", "G7320-MONOMER"]
+
+# Indicate if the proteins of interest should be specially highlighted on the plots:
+HIGHLIGHT_PROTEINS_OF_INTEREST = True # TODO: add some sort of assert statement
   # example Uniprot IDs
 # TODO: check If you can read in uniprot from ecyocyc and not biocyc
 # todo: add error bars to the proteins of interest on a separate plot
 # TODO: add option to match additional validation proteins to simulation proteins via common_names and or synomyms in rnas.tsv
 # TODO: add option to output validation comparison plots as well
 """ END USER INPUTS """
+
 
 # PRINT NOTE ABOUT UPDATING FLAT FILES
 print("NOTE: Check for recent EcoCyc updates for the most up-to-date plots. "
@@ -1663,16 +1667,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_monomer_IDs,
             SBWST6_uniprot_IDs_to_schmidt_common_names,
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
-        hi = 5
 
-
-
-
-
-
-
-
-
+    # TODO: add validation source to validation source comparison options
 
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile,
                 validationDataFile, metadata):
