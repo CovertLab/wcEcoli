@@ -30,6 +30,7 @@ from wholecell.utils.protein_counts import get_simulated_validation_counts
 import plotly.graph_objects as go
 from sklearn.metrics import r2_score
 from scipy.stats import pearsonr
+from plotly.subplots import make_subplots
 import io
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
@@ -40,7 +41,7 @@ from wholecell.utils.filepath import ROOT_PATH
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
 # Indicate proteins of interest to highlight in the plot (these can include the compartment tag or not, it does not matter):
-PROTEINS_OF_INTEREST = ["EG10241-MONOMER"]
+PROTEINS_OF_INTEREST = ["EG10241-MONOMER", "1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER", "EG10599-MONOMER", "EG10241-MONOMER", "EG10762-MONOMER", "G7320-MONOMER"]
   # example Uniprot IDs
 # TODO: check If you can read in uniprot from ecyocyc and not biocyc
 # todo: add error bars to the proteins of interest on a separate plot
@@ -701,7 +702,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         return RVS_sim_data_df
 
     # Define a hovertext function:
-    def generate_hovertext (self, dataframe):
+    def generate_hovertext (self, dataframe, include_STDs=False):
         hovertext = dataframe.apply(lambda row:
                                           f"Monomer ID: {row['monomer_id']}"
                                           f"<br>UniProt ID: {row['uniprot_id']}"
@@ -714,6 +715,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                                           f"<br>Avg. complexed count: {row['avg_complex_count']}"
                                           f"<br>Avg. free count: {row['avg_free_count']}",
                                           axis=1)
+        if include_STDs == True:
+            hovertext = dataframe.apply(lambda row:
+                                              f"Monomer ID: {row['monomer_id']}"
+                                              f"<br>UniProt ID: {row['uniprot_id']}"
+                                              f"<br>Simulation common name: {row['common_name']}"
+                                              f"<br>Validation source common name: {row['RVS_common_name']}"
+                                              f"<br>Description: {row['description']}"
+                                              f"<br>Simulation half life: {row['simulation_half_life']}"
+                                              f"<br>Validation source count: {row['RVS_count']}"
+                                              f"<br>Avg. total simulation count: {row['avg_total_count']} ± {row['std_total_count']}"
+                                              f"<br>Avg. complexed count: {row['avg_complex_count']} ± {row['std_complexed_count']}"
+                                              f"<br>Avg. free count: {row['avg_free_count']} ± {row['std_free_count']}",
+                                              axis=1)
         return hovertext
 
     # With the matching simulation and validation data obtained, make appropreite comparison plots:
@@ -1220,9 +1234,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS,self.n_total_gens),
             only_successful=True)
 
-        self.total_cells = len(all_cells)
-
-        # Averaging over all time:
+        # AVERAGED OVER ALL TIME POINTS:
         # read in the data:
         total_counts = (
             read_stacked_columns(all_cells, 'MonomerCounts',
@@ -1239,22 +1251,330 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         avg_complexed_counts = np.mean(complexed_counts, axis=0)
         std_complexed_counts = np.std(complexed_counts, axis=0)
 
+        # add the above entries to the protein_df using the protein indices:
+        avg_total_counts = avg_total_counts[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+        std_total_counts = std_total_counts[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+        avg_free_counts = avg_free_counts[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+        std_free_counts = std_free_counts[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+        avg_complexed_counts = avg_complexed_counts[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+        std_complexed_counts = std_complexed_counts[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+
+        # add to protein_df:
+        protein_df['avg_total_count'] = avg_total_counts
+        protein_df['std_total_count'] = std_total_counts
+        protein_df['avg_free_count'] = avg_free_counts
+        protein_df['std_free_count'] = std_free_counts
+        protein_df['avg_complexed_count'] = avg_complexed_counts
+        protein_df['std_complexed_count'] = std_complexed_counts
+
+
         # GENERATION AVERAGED:
         total_counts_per_gen = (
             read_stacked_columns(all_cells, 'MonomerCounts',
                                  'monomerCounts',
                                  fun=lambda x: np.mean(x[:], axis=0)))
-        # TODO: when lisener-update is pushed, also track the free and complexed counts reads
+        # TODO: when lisener-update is pushed, also track the free and complexed count reads
 
         # calculate the STDs and the averages:
         avg_total_counts_gen = np.mean(total_counts_per_gen, axis=0)
         std_total_counts_gen = np.std(total_counts_per_gen, axis=0)
 
+        # use the dictionary of protein indices to get only the relevant proteins:
+        avg_total_counts_gen = avg_total_counts_gen[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+        std_total_counts_gen = std_total_counts_gen[[protein_indices_in_sim_data_dict[monomer_id] for monomer_id in protein_df['monomer_id']]]
+
+        # add to protein_df:
+        protein_df['avg_total_count_gen'] = avg_total_counts_gen
+        protein_df['std_total_count_gen'] = std_total_counts_gen
+
+        return protein_df
+
+    def plot_proteins_of_interest_averaged_over_all_time(self, simDataFile, plotOutDir,
+                                           proteins_of_interest_df,
+                                           validation_source_name,
+                                           validation_source_name_short):
+
+        protein_df = self.get_sim_data_standard_deviations(
+            simDataFile, proteins_of_interest_df)
+
+        # Extract the right transformation of the error bars:
+        def log_error_bars(avg, std):
+            avg_log = np.log10(np.clip(avg + 1, 1, None))  # Ensure input is at least 1
+
+            # Verify there are no negative values before calculating lower bounds
+            valid_mask = (avg - std) > 0
+
+            # Calculate lower bounds while avoiding invalid log operations
+            lower = np.where(valid_mask, np.log10(np.clip(avg + 1 - std, 1, None)),
+                             avg_log)  # using clip to avoid taking log(0)
+            upper = np.log10(np.clip(avg + 1 + std, 1, None))
+
+            return avg_log, lower, upper
 
 
-        return avg_total_counts, avg_free_counts, avg_counts_for_monomers_in_complexes
+        # Get average logs and bounds for error bars
+        total_avg_log, total_lower, total_upper = log_error_bars(protein_df['avg_total_count'].values,
+                                                                 protein_df['std_total_count'].values)
+        free_avg_log, free_lower, free_upper = log_error_bars(protein_df['avg_free_count'].values,
+                                                              protein_df['std_free_count'].values)
+        complexed_avg_log, complexed_lower, complexed_upper = log_error_bars(protein_df['avg_complexed_count'].values,
+                                                                        protein_df['std_complexed_count'].values)
 
-    # Create a function that plots just the highlighted proteins of interest:
+        # Create plot
+        plt.figure(figsize=(8, 6), dpi=300)
+
+        # Designate the x data as the validation counts and y data as the simulation counts:
+        x_data = np.log10(protein_df['RVS_count'].values + 1)
+        y_data = np.log10(protein_df['avg_total_count'].values + 1)
+
+        # Now, calculate yerr for the error bars
+        yerr_upper = total_upper - total_avg_log
+        yerr_lower = total_avg_log - total_lower
+
+        # Ensure yerr does not contain negative values
+        yerr_lower = np.maximum(yerr_lower, 0)  # Replace negative errors with 0
+
+        # Combine into a 2D array with shape (2, n)
+        yerr = np.array([yerr_lower, yerr_upper])
+
+        # Use plt.errorbar to create scatter plot with error bars
+        plt.scatter(x_data, y_data, color='lightblue')
+        plt.errorbar(x_data, y_data, yerr=yerr, fmt='o', color='lightblue', capsize=5)
+
+        # Plot the common name next to each point
+        for i in range(len(protein_df)):
+            plt.text(x_data[i] + np.log10(1), y_data[i], protein_df['common_name'].values[i],
+                     fontsize=6, ha='left', va='bottom')
+
+        # Add labels and title
+        plt.title(f"Simulation Protein Counts vs. Validation Protein Counts\n"
+                  f"Sim ID: {self.sim_name} (averaged over all time points spanned by {self.total_cells} cells)\n "
+                  f"Validation dataset: {validation_source_name}")
+        plt.ylabel('Log10(Total Simulation Counts + 1)')
+        plt.xlabel('Log10(Validation Counts + 1)')
+        plt.grid(True)
+
+        # Adjust y-axis to show log scale
+        plt.ylim(0, max(total_avg_log) + 0.5)  # Add some space above the upper limit
+
+        # add a y=x line:
+        max_limit = max(max(x_data), max(y_data)) + 0.5
+        plt.plot([0, max_limit], [0, max_limit], 'k--', lw=1)
+
+        # save the plot as a png:
+        plot_name = (f"proteins_of_interest_time_averaged_scatter_"
+                     f"{self.sim_name}_vs_{validation_source_name_short}.png")
+        plt.savefig(os.path.join(plotOutDir, plot_name))
+
+        # also generate a plotly version of the same plot:
+        fig = go.Figure()
+
+        hovertext = self.generate_hovertext(protein_df, include_STDs=True)
+
+        fig.add_trace(
+            go.Scatter(x=x_data, y=y_data, hovertext=hovertext, mode='markers',
+                error_y=dict(
+                    type='data',
+                    symmetric=False,
+                    array=yerr_upper,
+                    arrayminus=yerr_lower,
+                    thickness=1.5,
+                    width=5,
+                    color='lightseagreen'
+                ),
+                name='Total Counts',
+                marker=dict(color='lightseagreen', size=10)
+            )
+        )
+
+
+        # also add the free and complexed counts as separate points:
+        y_data_free = np.log10(protein_df['avg_free_count'].values + 1)
+        free_err_upper = free_upper - free_avg_log
+        free_err_lower = free_avg_log - free_lower
+        fig.add_trace(
+            go.Scatter(x=x_data, y=y_data_free, hovertext=hovertext, mode='markers',
+                error_y=dict(
+                    type='data',
+                    symmetric=False,
+                    array=free_err_upper,
+                    arrayminus=free_err_lower,
+                    thickness=1,
+                    width=2,
+                    color='purple'
+                ),
+                name='Free Counts',
+                marker=dict(color='purple', size=5)
+            )
+        )
+
+        y_data_complexed = np.log10(protein_df['avg_complexed_count'].values + 1)
+        complexed_err_upper = complexed_upper - complexed_avg_log
+        complexed_err_lower = complexed_avg_log - complexed_lower
+        fig.add_trace(
+            go.Scatter(x=x_data, y=y_data_complexed, hovertext=hovertext, mode='markers',
+                error_y=dict(
+                    type='data',
+                    symmetric=False,
+                    array=complexed_err_upper,
+                    arrayminus=complexed_err_lower,
+                    thickness=1,
+                    width=2,
+                    color='orange'
+                ),
+                name='Complexed Counts',
+                marker=dict(color='orange', size=5)
+            )
+        )
+
+        # Update layout
+        fig.update_layout(
+            title=f"Simulation Protein Counts vs. Validation Protein Counts<br>"
+                  f"Sim ID: {self.sim_name} (averaged over all total time points spanned by {self.total_cells} cells)<br> "
+                  f"Validation dataset: {validation_source_name}",
+            xaxis_title='Log10(Validation Counts + 1)',
+            yaxis_title='Log10(Simulation Counts + 1)',
+            autosize=False,
+            width=800,
+            height=600,
+            plot_bgcolor='white',  # Set the plot area background color to white
+            paper_bgcolor='white'  # Set the entire graph background to white
+        )
+
+        # add a y=x line:
+        fig.add_trace(
+            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+                       line=go.scatter.Line(color="black", dash="dash"),
+                          opacity=0.2, name="y=x"))
+
+        # save the figure as an html:
+        plot_name = (f"proteins_of_interest_plotly_time_averaged_scatter_"
+                     f"{self.sim_name}_vs_{validation_source_name_short}.html")
+        fig.write_html(os.path.join(plotOutDir, plot_name))
+
+    def plot_proteins_of_interest_averaged_over_generations(self, simDataFile, plotOutDir,
+                                           proteins_of_interest_df,
+                                           validation_source_name,
+                                           validation_source_name_short):
+
+        protein_df = self.get_sim_data_standard_deviations(
+            simDataFile, proteins_of_interest_df)
+
+        # Extract the right transformation of the error bars:
+        def log_error_bars(avg, std):
+            avg_log = np.log10(np.clip(avg + 1, 1, None))  # Ensure input is at least 1
+
+            # Verify there are no negative values before calculating lower bounds
+            valid_mask = (avg - std) > 0
+
+            # Calculate lower bounds while avoiding invalid log operations
+            lower = np.where(valid_mask, np.log10(np.clip(avg + 1 - std, 1, None)),
+                             avg_log)  # using clip to avoid taking log(0)
+            upper = np.log10(np.clip(avg + 1 + std, 1, None))
+
+            return avg_log, lower, upper
+
+
+        # Get average logs and bounds for error bars
+        total_avg_log, total_lower, total_upper = log_error_bars(protein_df['avg_total_count_gen'].values,
+                                                                 protein_df['std_total_count_gen'].values)
+        # TODO: add free and complexed generation-averaged counts when lisener-update is pushed
+
+        # Create plot
+        plt.figure(figsize=(8, 6), dpi=300)
+
+        # Designate the x data as the validation counts and y data as the simulation counts:
+        x_data = np.log10(protein_df['RVS_count'].values + 1)
+        y_data = np.log10(protein_df['avg_total_count'].values + 1)
+
+        # Now, calculate yerr for the error bars
+        yerr_upper = total_upper - total_avg_log
+        yerr_lower = total_avg_log - total_lower
+
+        # Ensure yerr does not contain negative values
+        yerr_lower = np.maximum(yerr_lower, 0)  # Replace negative errors with 0
+
+        # Combine into a 2D array with shape (2, n)
+        yerr = np.array([yerr_lower, yerr_upper])
+
+        # Use plt.errorbar to create scatter plot with error bars
+        plt.scatter(x_data, y_data, color='lightblue')
+        plt.errorbar(x_data, y_data, yerr=yerr, fmt='o', color='lightblue', capsize=5)
+
+        # Plot the common name next to each point
+        for i in range(len(protein_df)):
+            plt.text(x_data[i] + np.log10(1), y_data[i], protein_df['common_name'].values[i],
+                     fontsize=6, ha='left', va='bottom')
+
+        # Add labels and title
+        plt.title(f"Simulation Protein Counts vs. Validation Protein Counts\n"
+                  f"Sim ID: {self.sim_name} (averaged over the average cell count of {self.total_cells} cells)\n "
+                  f"Validation dataset: {validation_source_name}")
+        plt.ylabel('Log10(Total Simulation Counts + 1)')
+        plt.xlabel('Log10(Validation Counts + 1)')
+        plt.grid(True)
+
+        # Adjust y-axis to show log scale
+        plt.ylim(0, max(total_avg_log) + 0.5)  # Add some space above the upper limit
+
+        # add a y=x line:
+        max_limit = max(max(x_data), max(y_data)) + 0.5
+        plt.plot([0, max_limit], [0, max_limit], 'k--', lw=1)
+
+        # save the plot as a png:
+        plot_name = (f"proteins_of_interest_generation_averaged_scatter_"
+                     f"{self.sim_name}_vs_{validation_source_name_short}.png")
+        plt.savefig(os.path.join(plotOutDir, plot_name))
+
+        # also generate a plotly version of the same plot:
+        fig = go.Figure()
+
+        hovertext = self.generate_hovertext(protein_df, include_STDs=True)
+
+        fig.add_trace(
+            go.Scatter(x=x_data, y=y_data, hovertext=hovertext, mode='markers',
+                error_y=dict(
+                    type='data',
+                    symmetric=False,
+                    array=yerr_upper,
+                    arrayminus=yerr_lower,
+                    thickness=1.5,
+                    width=5,
+                    color='lightseagreen'
+                ),
+                name='Total Counts',
+                marker=dict(color='lightseagreen', size=10)
+            )
+        )
+
+
+        # Update layout
+        fig.update_layout(
+            title=f"Simulation Protein Counts vs. Validation Protein Counts<br>"
+                  f"Sim ID: {self.sim_name} (averaged over the average cell count of {self.total_cells} cells)<br> "
+                  f"Validation dataset: {validation_source_name}",
+            xaxis_title='Log10(Validation Counts + 1)',
+            yaxis_title='Log10(Simulation Counts + 1)',
+            autosize=False,
+            width=800,
+            height=600,
+            plot_bgcolor='white',  # Set the plot area background color to white
+            paper_bgcolor='white'  # Set the entire graph background to white
+        )
+
+        # add a y=x line:
+        fig.add_trace(
+            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+                       line=go.scatter.Line(color="black", dash="dash"),
+                          opacity=0.2, name="y=x"))
+
+        # save the figure as an html:
+        plot_name = (f"proteins_of_interest_plotly_generation_averaged_scatter_"
+                     f"{self.sim_name}_vs_{validation_source_name_short}.html")
+        fig.write_html(os.path.join(plotOutDir, plot_name))
+
+
+# Create a function that plots just the highlighted proteins of interest:
     def plot_proteins_of_interest_only(self, simDataFile, plotOutDir, validation_source_name, validation_source_name_short,
             RVS_uniprot_ids_to_monomer_IDs,
             RVS_uniprot_ids_to_schmidt_common_names,
@@ -1274,12 +1594,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         if PROTEINS_OF_INTEREST != []:
             proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
                 PROTEINS_OF_INTEREST, RVS_sim_data_df)
-            # Add proteins of interest scatter data:
-            hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
-            x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
-            y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
-            c2, c3, c4 = self.get_sim_data_standard_deviations(
-                simDataFile, proteins_of_interest_df)
+            # generate the plot that averages over generations:
+            self.plot_proteins_of_interest_averaged_over_generations(simDataFile, plotOutDir,
+                                                                     proteins_of_interest_df,
+                                                                     validation_source_name,
+                                                                     validation_source_name_short)
+
+            # generate the plot with averages over all time points:
+            self.plot_proteins_of_interest_averaged_over_all_time(simDataFile, plotOutDir,
+                                               proteins_of_interest_df, validation_source_name,
+                                               validation_source_name_short)
+
+
+
+
+
+
             hi = 5
 
 
