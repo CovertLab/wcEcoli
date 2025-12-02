@@ -1584,13 +1584,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(
             RVS_uniprot_ids_to_monomer_IDs, RVS_uniprot_ids_to_schmidt_common_names)
 
-        # create a table of relevant simulation protein info for the overlapping proteins:
+        # Create a table of relevant simulation protein info for the overlapping proteins:
         RVS_sim_data_df = (
             self.create_simulation_protein_info_table(
                 RVS_uniprot_ids_to_sim_monomer_ids_dict,
                 RVS_uniprot_ids_to_schmidt_common_names,
                 RVS_uniprot_ids_to_counts_dict))
 
+        # If proteins of interest are defined in the simulation and validation data, plot them:
         if PROTEINS_OF_INTEREST != []:
             proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
                 PROTEINS_OF_INTEREST, RVS_sim_data_df)
@@ -1604,14 +1605,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             self.plot_proteins_of_interest_averaged_over_all_time(simDataFile, plotOutDir,
                                                proteins_of_interest_df, validation_source_name,
                                                validation_source_name_short)
-
-
-
-
-
-
-            hi = 5
-
 
 
     def plot_validation_comparison(self, simDataFile, validationDataFile, plotOutDir, sim_name):
