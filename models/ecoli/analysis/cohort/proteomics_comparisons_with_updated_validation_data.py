@@ -30,26 +30,35 @@ from wholecell.utils.protein_counts import get_simulated_validation_counts
 import plotly.graph_objects as go
 from sklearn.metrics import r2_score
 from scipy.stats import pearsonr
-from plotly.subplots import make_subplots
-import io
-from wholecell.io import tsv
-from wholecell.utils.filepath import ROOT_PATH
 
 """ USER INPUTS """
 
 # Indicate the number of generations to be ignored at the start of each seed:
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
-# Indicate proteins of interest to highlight in the plot (these can include the compartment tag or not, it does not matter):
+# Indicate any proteins that you want to highlight on the plots (these can include the compartment tag or not, it does not matter):
 PROTEINS_OF_INTEREST = ["EG10241-MONOMER", "1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER", "EG10599-MONOMER", "EG10241-MONOMER", "EG10762-MONOMER", "G7320-MONOMER"]
 
-# Indicate if the proteins of interest should be specially highlighted on the plots:
-HIGHLIGHT_PROTEINS_OF_INTEREST = True # TODO: add some sort of assert statement
+# Indicate whether to highlight the proteins listed in PROTEINS_OF_INTEREST on the plots:
+HIGHLIGHT_PROTEINS_OF_INTEREST = True
+
+# Indicate whether to generate a plot with some manually mapped proteins included
+# (not all Uniprot IDs successfully match to protein IDs via the BioCyc mapping
+# completed in validation/ecoli/scripts/convert_Schmidt_UniProt_IDs_to_monomer_IDs.py,
+# so the proteins that could not be mapped via their uniprot ID are manually
+# mapped using their common name and finding the match within rnas.tsv.
+# This option was added because it appeared that at least a few of these
+# unmapped Uniprot IDs did match to proteins with common names that matched the
+# one listed on the raw validation file when manually searched in EcoCyc.
+# However, it should be noted that not all unmapped proteins have been checked
+# for this, so keep that in mind when analyzing results.)
+INCLUDE_MANUALLY_MAPPED_PROTEINS = True
+
+
   # example Uniprot IDs
 # TODO: check If you can read in uniprot from ecyocyc and not biocyc
-# todo: add error bars to the proteins of interest on a separate plot
-# TODO: add option to match additional validation proteins to simulation proteins via common_names and or synomyms in rnas.tsv
 # TODO: add option to output validation comparison plots as well
+# TODO: add "Glucose" to the long name of the data
 """ END USER INPUTS """
 
 
@@ -706,7 +715,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         return RVS_sim_data_df
 
     # Define a hovertext function:
-    def generate_hovertext (self, dataframe, include_STDs=False):
+    def generate_hovertext(self, dataframe, include_STDs=False, generation_averaged=False):
         hovertext = dataframe.apply(lambda row:
                                           f"Monomer ID: {row['monomer_id']}"
                                           f"<br>UniProt ID: {row['uniprot_id']}"
@@ -732,6 +741,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                                               f"<br>Avg. complexed count: {row['avg_complex_count']} ± {row['std_complexed_count']}"
                                               f"<br>Avg. free count: {row['avg_free_count']} ± {row['std_free_count']}",
                                               axis=1)
+        if generation_averaged == True:
+            hovertext = dataframe.apply(lambda row:
+                                        f"Monomer ID: {row['monomer_id']}"
+                                        f"<br>UniProt ID: {row['uniprot_id']}"
+                                        f"<br>Simulation common name: {row['common_name']}"
+                                        f"<br>Validation source common name: {row['RVS_common_name']}"
+                                        f"<br>Description: {row['description']}"
+                                        f"<br>Simulation half life: {row['simulation_half_life']}"
+                                        f"<br>Validation source count: {row['RVS_count']}"
+                                        f"<br>Avg. total simulation count: {row['avg_total_count_gen']} ± {row['std_total_count_gen']}",
+                                        axis=1)
         return hovertext
 
     # With the matching simulation and validation data obtained, make appropreite comparison plots:
@@ -740,6 +760,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             RVS_uniprot_ids_to_monomer_IDs,
             RVS_uniprot_ids_to_schmidt_common_names,
             RVS_uniprot_ids_to_counts_dict):
+
+        print(f"Generating comparison plot for {self.sim_name} vs. {validation_source_name_short}.")
 
         # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
         RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_monomer_IDs, RVS_uniprot_ids_to_schmidt_common_names)
@@ -785,16 +807,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
                        name=f"Monomer Counts", marker=dict(color='lightseagreen'), opacity=0.7))
 
-        if PROTEINS_OF_INTEREST != []:
-            proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
-                PROTEINS_OF_INTEREST, RVS_sim_data_df)
-            # Add proteins of interest scatter data:
-            hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
-            x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
-            y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
-            fig.add_trace(
-                go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
-                           name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+        if HIGHLIGHT_PROTEINS_OF_INTEREST == True:
+            if PROTEINS_OF_INTEREST != []:
+                proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
+                    PROTEINS_OF_INTEREST, RVS_sim_data_df)
+                # Add proteins of interest scatter data:
+                hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
+                x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
+                y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
+                fig.add_trace(
+                    go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
+                               name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+            else:
+                print("HIGHLIGHT_PROTEINS_OF_INTEREST is set to True but no "
+                      "proteins were listed in PROTEINS_OF_INTEREST, "
+                      "so individual proteins will not be highlighted.")
 
 
         # Add linear trendline:
@@ -878,9 +905,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             RVS_uniprot_ids_to_counts_dict,
             unmapped_uniprot_ids_to_monomer_ids):
 
+        print(f"Generating comparison plot for {self.sim_name} vs. {validation_source_name_short} (including manual mappings).")
+
         # Obtain the mapping of uniprot IDs to simulation monomer IDs for the overlapping proteins:
         RVS_uniprot_ids_to_sim_monomer_ids_dict = self.match_validation_dataset_monomer_IDs_to_simulation_monomer_IDs(RVS_uniprot_ids_to_monomer_IDs, RVS_uniprot_ids_to_schmidt_common_names)
-
 
         # create a table of relevant simulation protein info for the overlapping proteins:
         RVS_sim_data_df = (
@@ -936,17 +964,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         fig.add_trace(
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
                        name=f"Monomer Counts (n={len(x)})", marker=dict(color='lightseagreen'), opacity=0.7))
-
-        if PROTEINS_OF_INTEREST != []:
-            proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
-                PROTEINS_OF_INTEREST, RVS_sim_data_df)
-            # Add proteins of interest scatter data:
-            hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
-            x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
-            y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
-            fig.add_trace(
-                go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
-                           name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+        if HIGHLIGHT_PROTEINS_OF_INTEREST == True:
+            if PROTEINS_OF_INTEREST != []:
+                proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
+                    PROTEINS_OF_INTEREST, RVS_sim_data_df)
+                # Add proteins of interest scatter data:
+                hovertext_poi = self.generate_hovertext(proteins_of_interest_df)
+                x_poi = np.log10(proteins_of_interest_df['RVS_count'].values + 1)
+                y_poi = np.log10(proteins_of_interest_df['avg_total_count'].values + 1)
+                fig.add_trace(
+                    go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
+                               name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+            else:
+                print("HIGHLIGHT_PROTEINS_OF_INTEREST is set to True but no "
+                      "proteins were listed in PROTEINS_OF_INTEREST, "
+                      "so individual proteins will not be highlighted.")
 
 
         # Add manually mapped proteins scatter data:
@@ -1238,7 +1270,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS,self.n_total_gens),
             only_successful=True)
 
-        # AVERAGED OVER ALL TIME POINTS:
+        # AVERAGE OVER TOTAL SIMULATION DURATION, GIVING EACH TIME POINT EQUAL WEIGHT:
         # read in the data:
         total_counts = (
             read_stacked_columns(all_cells, 'MonomerCounts',
@@ -1272,7 +1304,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         protein_df['std_complexed_count'] = std_complexed_counts
 
 
-        # GENERATION AVERAGED:
+        # AVERAGE BY GENERATION, GIVING EACH CELL EQUAL WEIGHT:
         total_counts_per_gen = (
             read_stacked_columns(all_cells, 'MonomerCounts',
                                  'monomerCounts',
@@ -1365,9 +1397,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         max_limit = max(max(x_data), max(y_data)) + 0.5
         plt.plot([0, max_limit], [0, max_limit], 'k--', lw=1)
 
+        # obtain a string list of the common names to include in the title:
+        protein_string = '_'
+        for p in range(len(protein_df)):
+            common_name = protein_df.iloc[p]["common_name"]
+            protein_string = protein_string + '_' + str(common_name)
+
         # save the plot as a png:
         plot_name = (f"proteins_of_interest_time_averaged_scatter_"
-                     f"{self.sim_name}_vs_{validation_source_name_short}.png")
+                     f"{self.sim_name}_vs_{validation_source_name_short}{protein_string}.png")
         plt.savefig(os.path.join(plotOutDir, plot_name))
 
         # also generate a plotly version of the same plot:
@@ -1453,7 +1491,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         # save the figure as an html:
         plot_name = (f"proteins_of_interest_plotly_time_averaged_scatter_"
-                     f"{self.sim_name}_vs_{validation_source_name_short}.html")
+                     f"{self.sim_name}_vs_{validation_source_name_short}{protein_string}.html")
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
     def plot_proteins_of_interest_averaged_over_generations(self, simDataFile, plotOutDir,
@@ -1482,7 +1520,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         # Get average logs and bounds for error bars
         total_avg_log, total_lower, total_upper = log_error_bars(protein_df['avg_total_count_gen'].values,
                                                                  protein_df['std_total_count_gen'].values)
-        # TODO: add free and complexed generation-averaged counts when lisener-update is pushed
+        # TODO: add free and complexed generation-averaged counts when lisener-update is pushed and edit hovertext function to have the right STDs and averages remported
 
         # Create plot
         plt.figure(figsize=(8, 6), dpi=300)
@@ -1525,15 +1563,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         max_limit = max(max(x_data), max(y_data)) + 0.5
         plt.plot([0, max_limit], [0, max_limit], 'k--', lw=1)
 
+        # obtain a string list of the common names to include in the title:
+        protein_string = '_'
+        for p in range(len(protein_df)):
+            common_name = protein_df.iloc[p]["common_name"]
+            protein_string = protein_string + '_' + str(common_name)
+
         # save the plot as a png:
         plot_name = (f"proteins_of_interest_generation_averaged_scatter_"
-                     f"{self.sim_name}_vs_{validation_source_name_short}.png")
+                     f"{self.sim_name}_vs_{validation_source_name_short}{protein_string}.png")
         plt.savefig(os.path.join(plotOutDir, plot_name))
 
         # also generate a plotly version of the same plot:
         fig = go.Figure()
 
-        hovertext = self.generate_hovertext(protein_df, include_STDs=True)
+        hovertext = self.generate_hovertext(protein_df, include_STDs=True, generation_averaged=True)
 
         fig.add_trace(
             go.Scatter(x=x_data, y=y_data, hovertext=hovertext, mode='markers',
@@ -1574,7 +1618,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         # save the figure as an html:
         plot_name = (f"proteins_of_interest_plotly_generation_averaged_scatter_"
-                     f"{self.sim_name}_vs_{validation_source_name_short}.html")
+                     f"{self.sim_name}_vs_{validation_source_name_short}{protein_string}.html")
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
@@ -1609,6 +1653,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             self.plot_proteins_of_interest_averaged_over_all_time(simDataFile, plotOutDir,
                                                proteins_of_interest_df, validation_source_name,
                                                validation_source_name_short)
+
+        else:
+            print("HIGHLIGHT_PROTEINS_OF_INTEREST is set to TRUE but no proteins "
+                  "were included in PROTEINS_OF_INTEREST, so plots highlighting "
+                  "individual proteins will not be generated. ")
 
 
     def plot_validation_comparison(self, simDataFile, validationDataFile, plotOutDir, sim_name):
@@ -1646,27 +1695,28 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             SBWST6_uniprot_IDs_to_schmidt_common_names,
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
+        if INCLUDE_MANUALLY_MAPPED_PROTEINS == True:
+            # Find unmapped uniprot IDs and attempt to map them manually:
+            print("Plotting simulation vs raw validation data (including manually mapped proteins) ...")
+            unmapped_uniprot_ids_to_simulation_monomer_ids, unmapped_uniprot_IDs_to_sim_common_names = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
+             SBWST6_uniprot_IDs_to_monomer_IDs)
 
-        # Find unmapped uniprot IDs and attempt to map them manually:
-        print("Plotting simulation vs raw validation data including manually mapped proteins...")
-        unmapped_uniprot_ids_to_simulation_monomer_ids, unmapped_uniprot_IDs_to_sim_common_names = self.find_monomer_ids_for_unmapped_uniprot_ids(SBWST6_uniprot_IDs_to_schmidt_common_names,
-         SBWST6_uniprot_IDs_to_monomer_IDs)
+            self.compare_simulation_counts_to_raw_validation_source_with_manual_mappings(
+                plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+                "Schmidt2016_ST6_BW",
+                SBWST6_uniprot_IDs_to_monomer_IDs,
+                SBWST6_uniprot_IDs_to_schmidt_common_names,
+                SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
+                unmapped_uniprot_ids_to_simulation_monomer_ids)
 
-        self.compare_simulation_counts_to_raw_validation_source_with_manual_mappings(
-            plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
-            "Schmidt2016_ST6_BW",
-            SBWST6_uniprot_IDs_to_monomer_IDs,
-            SBWST6_uniprot_IDs_to_schmidt_common_names,
-            SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
-            unmapped_uniprot_ids_to_simulation_monomer_ids)
-
-        # Plot the proteins of interest only:
-        print("Plotting proteins of interest only...")
-        self.plot_proteins_of_interest_only(simDataFile, plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
-            "Schmidt2016_ST6_BW",
-            SBWST6_uniprot_IDs_to_monomer_IDs,
-            SBWST6_uniprot_IDs_to_schmidt_common_names,
-            SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
+        if HIGHLIGHT_PROTEINS_OF_INTEREST == True:
+            # Plot the proteins of interest only:
+            print("Plotting proteins of interest only...")
+            self.plot_proteins_of_interest_only(simDataFile, plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+                "Schmidt2016_ST6_BW",
+                SBWST6_uniprot_IDs_to_monomer_IDs,
+                SBWST6_uniprot_IDs_to_schmidt_common_names,
+                SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
     # TODO: add validation source to validation source comparison options
 
