@@ -40,7 +40,7 @@ IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 PROTEINS_OF_INTEREST = ["EG10241-MONOMER", "1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER", "EG10599-MONOMER", "EG10241-MONOMER", "EG10762-MONOMER", "G7320-MONOMER"]
 
 # Indicate whether to highlight the proteins listed in PROTEINS_OF_INTEREST on the plots:
-HIGHLIGHT_PROTEINS_OF_INTEREST = True
+HIGHLIGHT_PROTEINS_OF_INTEREST = False
 
 # Indicate whether to generate a plot with some manually mapped proteins included
 # (not all Uniprot IDs successfully match to protein IDs via the BioCyc mapping
@@ -52,8 +52,10 @@ HIGHLIGHT_PROTEINS_OF_INTEREST = True
 # one listed on the raw validation file when manually searched in EcoCyc.
 # However, it should be noted that not all unmapped proteins have been checked
 # for this, so keep that in mind when analyzing results.)
-INCLUDE_MANUALLY_MAPPED_PROTEINS = True
+INCLUDE_MANUALLY_MAPPED_PROTEINS = False
 
+# Indicate if comparisons of validation source to validation source should be plotted:
+PLOT_VALIDATION_SOURCE_COMPARISONS = True
 
   # example Uniprot IDs
 # TODO: check If you can read in uniprot from ecyocyc and not biocyc
@@ -1116,6 +1118,183 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         return validation_datasets_comparison_df
 
+    # Function for comparing validaiton dataset to validation dataset:
+    def compare_validation_datasets(self, plotOutDir, validation_source_name_1, validation_source_name_short_1,
+            uniprot_IDs_to_common_names_1, uniprot_IDs_to_monomer_IDs_1, uniprot_IDs_to_counts_1,
+            validation_source_name_2, validation_source_name_short_2,
+            uniprot_IDs_to_common_names_2, uniprot_IDs_to_monomer_IDs_2, uniprot_IDs_to_counts_2):
+
+        print(f"Plotting validation source comparison between "
+              f"{validation_source_name_1} and {validation_source_name_2}.")
+
+        # Determine which proteins overlap between the datasets:
+        overlapping_uniprot_ids = set(uniprot_IDs_to_common_names_1.keys()).intersection(uniprot_IDs_to_common_names_2.keys())
+
+        # Determine if the monomer also shows up in the simulation data:
+        uniprot_IDs_to_sim_monomer_IDs_existance = {}
+        uniprot_IDs_to_sim_common_name = {}
+        uniprot_IDs_to_sim_monomer_counts = {}
+        uniprot_IDs_to_sim_monomer_description = {}
+        for id in overlapping_uniprot_ids:
+            monomer_id = uniprot_IDs_to_monomer_IDs_1[id]
+            if monomer_id in self.all_monomer_ids:
+                uniprot_IDs_to_sim_monomer_IDs_existance[id] = True
+                uniprot_IDs_to_sim_common_name[id] = self.sim_monomer_ids_to_common_names_dict[monomer_id]
+                uniprot_IDs_to_sim_monomer_counts[id] = self.sim_monomer_ids_to_avg_total_protein_counts_dict[monomer_id]
+                uniprot_IDs_to_sim_monomer_description[id] = self.sim_monomer_ids_to_descriptions_dict[monomer_id]
+            else:
+                uniprot_IDs_to_sim_monomer_IDs_existance[id] = False
+                uniprot_IDs_to_sim_common_name[id] = "NA"
+                uniprot_IDs_to_sim_monomer_counts[id] = "NA"
+                uniprot_IDs_to_sim_monomer_description[id] = "NA"
+
+        # Generate a large table with all the relevant info:
+        validation_dataset_comparison_table = []
+        for id in overlapping_uniprot_ids:
+            monomer_id_1 = uniprot_IDs_to_monomer_IDs_1[id]
+            monomer_id_2 = uniprot_IDs_to_monomer_IDs_2[id]
+            monomer_id_existance_in_sim_data = uniprot_IDs_to_sim_monomer_IDs_existance[id]
+            common_name_1 = uniprot_IDs_to_common_names_1[id]
+            common_name_2 = uniprot_IDs_to_common_names_2[id]
+            sim_common_name = uniprot_IDs_to_sim_common_name[id]
+            count_1 = uniprot_IDs_to_counts_1[id]
+            count_2 = uniprot_IDs_to_counts_2[id]
+            sim_count = uniprot_IDs_to_sim_monomer_counts[id]
+            sim_description = uniprot_IDs_to_sim_monomer_description[id]
+
+            validation_dataset_comparison_table.append({
+                'uniprot_id': id,
+                'monomer_id_1': monomer_id_1,
+                'monomer_id_2': monomer_id_2,
+                'monomer_id_in_sim': monomer_id_existance_in_sim_data,
+                'dataset1_common_name': common_name_1,
+                'dataset2_common_name': common_name_2,
+                'sim_common_name': sim_common_name,
+                'dataset1_count': count_1,
+                'dataset2_count': count_2,
+                'sim_count': sim_count,
+                'sim_description': sim_description
+            })
+
+        # convert to a dataframe:
+        validation_dataset_comparison_df = pd.DataFrame(validation_dataset_comparison_table)
+
+        # Generate the plot:
+        fig = go.Figure()
+
+        # Compute log10 values for simulation validation and raw validation protein counts:
+        x = np.log10(validation_dataset_comparison_df['dataset1_count'].values + 1)
+        y = np.log10(validation_dataset_comparison_df['dataset2_count'].values + 1)
+
+        # Compute linear trendline
+        z = np.polyfit(x, y, 1)
+        p = np.poly1d(z)
+        trendline_y = p(x)
+
+        # Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+        above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+        x_above_30 = x[above_30_idx]
+        y_above_30 = y[above_30_idx]
+        z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+        p_above_30 = np.poly1d(z_above_30)
+        trendline_y_above_30 = p_above_30(x)
+
+        # Compute the pearson r, R2, and the coefficient of determination R2:
+        r_value, p_val = pearsonr(x_above_30, y_above_30)
+        pr2 = r_value ** 2
+        COD_r2 = r2_score(x_above_30, y_above_30)  # COD R2
+
+        # Define the hover text for the plot output:
+        hovertext = validation_dataset_comparison_df.apply(lambda
+                                                                row:
+                                                            f"Uniprot ID: {row['uniprot_id']}"
+                                                            f"<br>{validation_source_name_short_1} Monomer ID: {row['monomer_id_1']}"
+                                                            f"<br>{validation_source_name_short_2} Monomer ID: {row['monomer_id_2']}"
+                                                            f"<br>Monomer found in {self.sim_name}: {row['monomer_id_in_sim']}"
+                                                            f"<br>{validation_source_name_short_1} common name: {row['dataset1_common_name']}"
+                                                            f"<br>{validation_source_name_short_2} common name: {row['dataset2_common_name']}"
+                                                            f"<br>{self.sim_name} common name: {row['sim_common_name']}"
+                                                            f"<br>{validation_source_name_short_1} count: {row['dataset1_count']}"
+                                                            f"<br>{validation_source_name_short_2} count: {row['dataset2_count']}"
+                                                            f"<br>{self.sim_name} average total count: {row['sim_count']}"
+                                                            f"<br>{self.sim_name} monomer description: {row['sim_description']}",
+                                                            axis=1)
+
+        # Add total counts scatter data:
+        fig.add_trace(
+            go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+                       name=f"Monomer Counts"))
+
+        # Add linear trendline:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y, mode='lines',
+                       name=f'Linear fit (all data): {p}',
+                       line=dict(color='green')))
+
+        # Add linear trendline for counts above 30:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+                       name=f'Linear fit (counts > 30): {p_above_30}',
+                       line=dict(color='pink')))
+
+        # Add a y=x line:
+        fig.add_trace(
+            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+                       line=go.scatter.Line(color="black", dash="dash"),
+                       opacity=0.2, name="y=x"))
+
+        # Update layout
+        fig.update_traces(marker_size=3)
+        fig.update_layout(
+            title=f"{validation_source_name_1} ({validation_source_name_short_1}) vs. {validation_source_name_2} ({validation_source_name_short_2})<br>"
+                  f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
+                  f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
+            title_font=dict(size=8),
+            xaxis_title=f"log₁₀({validation_source_name_short_1} Protein Counts)",
+            yaxis_title=f"log₁₀({validation_source_name_short_2} Protein Counts)",
+            autosize=False,
+            width=900,
+            height=600,
+            plot_bgcolor='white',  # Set the plot area background color to white
+            paper_bgcolor='white'  # Set the entire graph background to white
+        )
+
+        # Define the text to display
+        text = (
+            f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+            f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+            f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(COD_r2, 3)}'
+        )
+
+        # Get the maximum x and minimum y to position the text in the bottom-right
+        x_max = x.max()
+        y_min = y.min()
+
+        # Adjust x_max and y_min slightly outside the actual graph boundaries
+        text_offset_x = 0.1
+        text_offset_y = 0.05
+
+        # Adding text annotation to the bottom right
+        fig.add_annotation(
+            x=x_max + text_offset_x,  # Move the x position slightly to the right
+            y=y_min - text_offset_y,  # Move the y position slightly below
+            text=text,
+            showarrow=False,
+            bgcolor='rgba(255, 255, 255, 0.8)',
+            bordercolor='rgba(0, 0, 0, 0.5)',
+            borderwidth=1,
+            borderpad=4,
+            align='right',
+            font=dict(size=10, color='gray'),
+            xref='x',
+            yref='y',
+        )
+
+        # save the figure as an html:
+        plot_name = (f"validation_to_validation_source_comparison_"
+                     f"{validation_source_name_short_1}_vs_{validation_source_name_short_2}.html")
+        fig.write_html(os.path.join(plotOutDir, plot_name))
+
     # Create the main function that generates the validation comparison plots:
     def compare_validation_dataset_to_validation_dataset(
             self, plotOutDir,
@@ -1719,6 +1898,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
     # TODO: add validation source to validation source comparison options
+    # TODO: decide if it makes sense to have validation data compare against all validation data available or just the data that matches the simulation data?
+        if PLOT_VALIDATION_SOURCE_COMPARISONS == True:
+            # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 MG1655 data:
+            self.compare_validation_datasets(plotOutDir,
+                                                                  "Simulation Validation Data from Schmidt et al. 2015 (BW25113)",
+                                                                  "Schmidt2015_ST6_BW",
+                                             SBWST6_uniprot_IDs_to_schmidt_common_names,
+                                             SBWST6_uniprot_IDs_to_monomer_IDs,
+                                             SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
+                                                             "Schmidt et al. 2016 ST9 MG1655 data",
+                                                                  "Schmidt2016_ST9_MG",
+                                             SMGST9_uniprot_IDs_to_schmidt_common_names,
+                                             SMGST9_uniprot_IDs_to_monomer_IDs,
+                                             SMGST9_uniprot_IDs_to_schmidt_glucose_counts)
+
+
+
 
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile,
                 validationDataFile, metadata):
