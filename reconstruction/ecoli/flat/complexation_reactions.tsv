@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655
+# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 29.1
+# Version: 30.0
 # Orthologs: true
-# Date and time generated: October 2, 2025, 15:07:28
+# Date and time generated: December 3, 2025, 10:41:48
 "id"	"stoichiometry"	"common_name"	"cofactors"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null	{"MG+2": 1}
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"	{"LIPOIC-ACID": 1, "THIAMINE-PYROPHOSPHATE": 2, "FAD": 3, "MG+2": 2}
@@ -230,8 +230,13 @@
 "CPLX0-13264_RXN"	{"CPLX0-13264": 1, "EG11320-MONOMER": -4}	"NrdR transcriptional Repressor"	{}
 "CPLX0-13310_RXN"	{"CPLX0-13310": 1, "FORMATEDEHYDROGO-CPLX": -3}	"formate dehydrogenase O"	{"Heme-b": 1, "CPD-7": 1, "CPD-15873": 1}
 "CPLX0-13311_RXN"	{"CPLX0-13311": 1, "MGTA-MONOMER": -2}	null	{}
-"CPLX0-13320_RXN"	{"CPLX0-13320": 1, "CPLX0-8165": null, "MONOMER0-4594": null, "CPLX0-3621": null, "CPLX0-3803": null}	"replisome"	{}
+"CPLX0-13320_RXN"	{"CPLX0-13320": 1, "CPLX0-8165": null, "EG10239-MONOMER": -1, "CPLX0-3621": null, "CPLX0-3803": null}	"replisome"	{"MG+2": 1}
+"CPLX0-13341_RXN"	{"CPLX0-13341": 1, "EG11007-MONOMER": -1, "EG11011-MONOMER": -2, "EG11010-MONOMER": -5}	"energy transducing Tol complex"	{}
+"CPLX0-13346_RXN"	{"CPLX0-13346": 1, "G7595-MONOMER": -2}	"aerotaxis receptor"	{}
+"CPLX0-13399_RXN"	{"CPLX0-13399": 1, "EG12691-MONOMER": -2}	"lipopolysaccharide assembly protein B"	{}
 "CPLX0-1341_RXN"	{"CPLX0-1341": 1, "G6909-MONOMER": -1, "G6908-MONOMER": -2, "G6907-MONOMER": -1}	"SufBC<sub>2</sub>D Fe-S cluster scaffold complex"	{}
+"CPLX0-13742_RXN"	{"CPLX0-13742": 1, "TREHALOSE6PSYN-MONOMER": -2}	null	{}
+"CPLX0-13749_RXN"	{"CPLX0-13749": 1, "CPLX0-13742": -2}	null	{}
 "CPLX0-1401_RXN"	{"CPLX0-1401": 1, "G7490-MONOMER": -2}	null	{"PYRIDOXAL_PHOSPHATE": 1}
 "CPLX0-1421_RXN"	{"CPLX0-1421": 1, "EG10113-MONOMER": -24}	"bacterioferritin"	{}
 "CPLX0-1441_RXN"	{"CPLX0-1441": 1, "EG10255-MONOMER": -2}	"serine protease inhibitor ecotin"	{}
@@ -263,7 +268,7 @@
 "CPLX0-2121_RXN"	{"CPLX0-2121": 1, "CPLX0-7964": null, "EG11354-MONOMER": null, "EMRB-MONOMER": null}	"multidrug efflux pump EmrAB-TolC"	{}
 "CPLX0-2141_RXN"	{"CPLX0-2141": 1, "CPLX0-7964": -1, "EG10266-MONOMER": -6, "ACRF-MONOMER": -3}	"multidrug efflux pump AcrEF-TolC"	{}
 "CPLX0-2161_RXN"	{"CPLX0-2161": 1, "CPLX0-7964": null, "G7233-MONOMER": null, "EMRY-MONOMER": null}	"tripartite efflux pump EmrKY-TolC"	{}
-"CPLX0-2201_RXN"	{"CPLX0-2201": 1, "EG10684-MONOMER": null, "EG11007-MONOMER": null, "EG11008-MONOMER": null, "EG11011-MONOMER": null, "EG11010-MONOMER": null}	"Tol-Pal Cell Envelope Complex"	{}
+"CPLX0-2201_RXN"	{"CPLX0-2201": 1, "EG10684-MONOMER": null, "CPLX0-13341": null, "EG11008-MONOMER": null}	"Tol-Pal Cell Envelope Complex"	{}
 "CPLX0-221_RXN"	{"CPLX0-221": 1, "APORNAP-CPLX": -1, "PD00440": -1}	"RNA polymerase sigma 19"	{}
 "CPLX0-222_RXN"	{"CPLX0-222": 1, "EG11355-MONOMER": -1, "APORNAP-CPLX": -1}	"RNA polymerase sigma 28"	{}
 "CPLX0-224_RXN"	{"CPLX0-224": 1, "MONOMER0-146": -2}	"NADPH-dependent FMN reductase"	{}
@@ -331,7 +336,7 @@
 "CPLX0-321_RXN"	{"CPLX0-321": 1, "PDXJ-MONOMER": -8}	null	{}
 "CPLX0-3221_RXN"	{"CPLX0-3221": 1, "YRAO-MONOMER": -4}	"DnaA initiator-associating protein DiaA"	{}
 "CPLX0-322_RXN"	{"CPLX0-322": 1, "GSK-MONOMER": -2}	"inosine/guanosine kinase"	{"K+": 1, "MG+2": 1, "K+": 1, "MG+2": 1}
-"CPLX0-3241_RXN"	{"CPLX0-3241": 1, "NAPG-MONOMER": -1, "NAPH-MONOMER": -1}	"ubiquinol&mdash;[NapC cytochrome <i>c</i>] reductase NapGH"	{"CPD-7": 1}
+"CPLX0-3241_RXN"	{"CPLX0-3241": 1, "NAPG-MONOMER": -1, "NAPH-MONOMER": -1}	"ubiquinol&mdash;[NapC cytochrome <i>c</i>] reductase"	{"CPD-7": 1}
 "CPLX0-3281_RXN"	{"CPLX0-3281": 1, "EG10857-MONOMER": -2}	"RNase III"	{"MG+2": 1}
 "CPLX0-3301_RXN"	{"CPLX0-3301": 1, "EG11111-MONOMER": -2}	"DNA replication inhibitor CspD"	{}
 "CPLX0-3361_RXN"	{"CPLX0-3361": 1, "NUOB-MONOMER": -1, "NUOC-MONOMER": -1, "NUOE-MONOMER": -1, "NUOF-MONOMER": -1, "NUOG-MONOMER": -1, "NUOI-MONOMER": -1}	"NADH:quinone oxidoreductase I, peripheral arm"	{}
@@ -357,7 +362,7 @@
 "CPLX0-3781_RXN"	{"CPLX0-3781": 1, "MONOMER0-1041": -1, "EG12844-MONOMER": -2}	"YefM-YoeB antitoxin/toxin complex / DNA-binding transcriptional repressor"	{}
 "CPLX0-3801_RXN"	{"CPLX0-3801": 1, "MONOMER0-2383": -3, "EG11500-MONOMER": -1, "EG11412-MONOMER": -1, "CPLX0-7910": null}	"DNA polymerase III, clamp-loader complex"	{}
 "CPLX0-3802_RXN"	{"CPLX0-3802": 1, "EG10245-MONOMER": -2}	"DNA polymerase III &tau; dimer"	{}
-"CPLX0-3803_RXN"	{"CPLX0-3803": 1, "CPLX0-2361": -3, "CPLX0-3801": -1, "CPLX0-3761": -2, "CPLX0-3802": -1, "CPLX0-7910": -4}	"DNA polymerase III, holoenzyme"	{}
+"CPLX0-3803_RXN"	{"CPLX0-3803": 1, "CPLX0-2361": -3, "CPLX0-3801": -1, "CPLX0-3761": -2, "CPLX0-3802": -1, "CPLX0-7910": -2}	"DNA polymerase III, holoenzyme"	{}
 "CPLX0-3821_RXN"	{"CPLX0-3821": 1, "EG10483-MONOMER": -1, "EG10484-MONOMER": -1}	"HypA-HypB heterodimer"	{}
 "CPLX0-3841_RXN"	{"CPLX0-3841": 1, "EG11294-MONOMER": -2}	null	{"MG+2": 1}
 "CPLX0-3861_RXN"	{"CPLX0-3861": 1, "G7724-MONOMER": -8}	null	{}
@@ -412,7 +417,7 @@
 "CPLX0-7426_RXN"	{"CPLX0-7426": 1, "OPPSYN-MONOMER": -2}	"<i>all-trans</i>-octaprenyl-diphosphate synthase"	{"MG+2": 1}
 "CPLX0-743_RXN"	{"CPLX0-743": 1, "DXS-MONOMER": -2}	null	{"THIAMINE-PYROPHOSPHATE": 1}
 "CPLX0-7444_RXN"	{"CPLX0-7444": 1, "EG11126-MONOMER": -2}	"DUF892 domain-containing protein YciF"	{}
-"CPLX0-7451_RXN"	{"CPLX0-7451": 1, "G370-MONOMER": null, "G7028-MONOMER": null, "EG11224-MONOMER": null, "EG11975-MONOMER": null, "EG11976-MONOMER": null, "EG11977-MONOMER": null, "EG11656-MONOMER": -12, "G377-MONOMER": -6, "G378-MONOMER": null}	"flagellar export apparatus"	{}
+"CPLX0-7451_RXN"	{"CPLX0-7451": 1, "G370-MONOMER": null, "G7028-MONOMER": null, "EG11224-MONOMER": null, "EG11975-MONOMER": null, "EG11976-MONOMER": null, "EG11977-MONOMER": null, "EG11656-MONOMER": -12, "G377-MONOMER": -6, "G378-MONOMER": null}	"flagellar export assembly apparatus"	{}
 "CPLX0-7452_RXN"	{"CPLX0-7452": 1, "FLAGELLAR-MOTOR-COMPLEX": null, "G361-MONOMER": -120, "EG11967-MONOMER": null, "EG11545-MONOMER": null, "EG10321-MONOMER": null, "EG10841-MONOMER": -6}	"flagellum"	{}
 "CPLX0-7458_RXN"	{"CPLX0-7458": 1, "G7545-MONOMER": null, "G7544-MONOMER": null, "MONOMER0-561": null}	"glycolate dehydrogenase"	{}
 "CPLX0-7462_RXN"	{"CPLX0-7462": 1, "EG11234-MONOMER": -2}	null	{}
@@ -703,7 +708,7 @@
 "CPLX0-8160_RXN"	{"CPLX0-8160": 1, "SUCC-DEHASE": -3}	null	{"Heme-b": 1, "CPD-6": 1, "3FE-4S": 1, "CPD-7": 1, "FAD": 1}
 "CPLX0-8163_RXN"	{"CPLX0-8163": 1, "EG11511-MONOMER": -3}	null	{"MG+2": 1}
 "CPLX0-8164_RXN"	{"CPLX0-8164": 1, "EG10154-MONOMER": -2}	null	{}
-"CPLX0-8165_RXN"	{"CPLX0-8165": 1, "EG10976-MONOMER": -4}	"ssDNA-binding protein"	{}
+"CPLX0-8165_RXN"	{"CPLX0-8165": 1, "EG10976-MONOMER": -7}	"ssDNA-binding protein"	{}
 "CPLX0-8167_RXN"	{"CPLX0-8167": 1, "FORMHYDROGI-CPLX": -2}	"hydrogenase 1, oxygen tolerant hydrogenase"	{"CPD-24862": 1, "Heme-b": 1, "CPD-17649": 1, "3FE-4S": 1, "CPD-7": 1}
 "CPLX0-8168_RXN"	{"CPLX0-8168": 1, "PHOQ-MONOMER": -2}	"bifunctional sensor histidine kinase PhoQ"	{}
 "CPLX0-8173_RXN"	{"CPLX0-8173": 1, "EG12845-MONOMER": -2}	"CRISPR-associated endoribonuclease Cas2"	{}
@@ -799,7 +804,7 @@
 "CPLX0-8537_RXN"	{"CPLX0-8537": 1, "GALACTARDEHYDRA-MONOMER": -2}	"galactarate dehydratase"	{"FE+2": 1}
 "CPLX0-8538_RXN"	{"CPLX0-8538": 1, "G6708-MONOMER": -6}	null	{}
 "CPLX0-8539_RXN"	{"CPLX0-8539": 1, "G7689-MONOMER": -1, "EG10741-MONOMER": -1}	"metalloprotease TldDE"	{"FE+2": 1, "ZN+2": 1}
-"CPLX0-8541_RXN"	{"CPLX0-8541": 1, "G6414-MONOMER": null, "CPLX0-1923": null}	"Fe-catecholate outer membrane transport complex I"	{}
+"CPLX0-8541_RXN"	{"CPLX0-8541": 1, "G6414-MONOMER": null, "CPLX0-1923": null}	"ferric catecholate outer membrane transport complex I"	{}
 "CPLX0-8542_RXN"	{"CPLX0-8542": 1, "G6174-MONOMER": -2}	"cupric reductase RclA"	{}
 "CPLX0-8544_RXN"	{"CPLX0-8544": 1, "G7901-MONOMER": -2}	"KpLE2 phage-like element; 2,7-anhydro-<i>N</i>-acetylneuraminate hydratase"	{"NAD": 1, "NAD": 1}
 "CPLX0-8545_RXN"	{"CPLX0-8545": 1, "EG10202-MONOMER": -2}	"peptidoglycan DD endopeptidase DacB"	{}
@@ -808,7 +813,7 @@
 "CPLX0-8549_RXN"	{"CPLX0-8549": 1, "EG11436-MONOMER": -2}	"NADPH-dependent aldehyde reductase Ahr"	{"ZN+2": 1}
 "CPLX0-8550_RXN"	{"CPLX0-8550": 1, "G6577-MONOMER": -2}	"protein-lysine deacetylase/desuccinylase/delipoylase"	{"NAD": 1}
 "CPLX0-8551_RXN"	{"CPLX0-8551": 1, "G7007-MONOMER": -6}	"lipophilic envelope spanning tunnel"	{}
-"CPLX0-8553_RXN"	{"CPLX0-8553": 1, "CPLX0-1923": null, "EG10155-MONOMER": -1}	"Fe-catecholate outer membrane transport complex II"	{}
+"CPLX0-8553_RXN"	{"CPLX0-8553": 1, "CPLX0-1923": null, "EG10155-MONOMER": -1}	"ferric catecholate outer membrane transport complex II"	{}
 "CPLX0-8554_RXN"	{"CPLX0-8554": 1, "G6652-MONOMER": -4}	null	{"MN+2": 1}
 "CPLX0-8555_RXN"	{"CPLX0-8555": 1, "EG12256-MONOMER": -2}	"cyclic di-GMP phosphodiesterase PdeK"	{}
 "CPLX0-8556_RXN"	{"CPLX0-8556": 1, "EG11257-MONOMER": -2}	"diguanylate cyclase DgcC"	{"MN+2": 1}
