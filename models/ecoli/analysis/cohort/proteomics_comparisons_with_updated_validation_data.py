@@ -763,7 +763,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             self, plotOutDir, validation_source_name, validation_source_name_short,
             RVS_uniprot_ids_to_monomer_IDs,
             RVS_uniprot_ids_to_schmidt_common_names,
-            RVS_uniprot_ids_to_counts_dict):
+            RVS_uniprot_ids_to_counts_dict,
+            plot_proteins_of_interest=False):
 
         print(f"Generating comparison plot for {self.sim_name} vs. {validation_source_name_short}.")
 
@@ -811,7 +812,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
                        name=f"Monomer Counts", marker=dict(color='lightseagreen'), opacity=0.7))
 
-        if HIGHLIGHT_PROTEINS_OF_INTEREST == True:
+        protein_string = ''
+        if plot_proteins_of_interest == True:
             if PROTEINS_OF_INTEREST != []:
                 proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
                     PROTEINS_OF_INTEREST, RVS_sim_data_df)
@@ -822,6 +824,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 fig.add_trace(
                     go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
                                name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+                protein_string = '_'
+                for p in range(len(proteins_of_interest_df)):
+                    common_name = proteins_of_interest_df.iloc[p]["common_name"]
+                    protein_string = protein_string + '_' + str(common_name)
             else:
                 print("HIGHLIGHT_PROTEINS_OF_INTEREST is set to True but no "
                       "proteins were listed in PROTEINS_OF_INTEREST, "
@@ -897,7 +903,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         # save the figure as an html:
         plot_name = (f"proteomics_comparison_to_raw_validation_source_"
-                     f"{self.sim_name}_vs_{validation_source_name_short}.html")
+                     f"{self.sim_name}_vs_{validation_source_name_short}{protein_string}.html")
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
@@ -907,7 +913,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             RVS_uniprot_ids_to_monomer_IDs,
             RVS_uniprot_ids_to_schmidt_common_names,
             RVS_uniprot_ids_to_counts_dict,
-            unmapped_uniprot_ids_to_monomer_ids):
+            unmapped_uniprot_ids_to_monomer_ids, plot_proteins_of_interest=False):
 
         print(f"Generating comparison plot for {self.sim_name} vs. {validation_source_name_short} (including manual mappings).")
 
@@ -968,7 +974,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         fig.add_trace(
             go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
                        name=f"Monomer Counts (n={len(x)})", marker=dict(color='lightseagreen'), opacity=0.7))
-        if HIGHLIGHT_PROTEINS_OF_INTEREST == True:
+
+        protein_string = ''
+        if plot_proteins_of_interest == True:
             if PROTEINS_OF_INTEREST != []:
                 proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
                     PROTEINS_OF_INTEREST, RVS_sim_data_df)
@@ -979,6 +987,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 fig.add_trace(
                     go.Scatter(x=x_poi, y=y_poi, hovertext=hovertext_poi, mode='markers',
                                name=f"Proteins of Interest (n={len(proteins_of_interest_df)})", marker=dict(color='red', size=6)))
+                protein_string = '_'
+                for p in range(len(proteins_of_interest_df)):
+                    common_name = proteins_of_interest_df.iloc[p]["common_name"]
+                    protein_string = protein_string + '_' + str(common_name)
             else:
                 print("HIGHLIGHT_PROTEINS_OF_INTEREST is set to True but no "
                       "proteins were listed in PROTEINS_OF_INTEREST, "
@@ -1060,7 +1072,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         # save the figure as an html:
         plot_name = (f"proteomics_comparison_to_raw_validation_source_"
-                     f"{self.sim_name}_vs_{validation_source_name_short}_including_manually_mapped_proteins.html")
+                     f"{self.sim_name}_vs_{validation_source_name_short}_with_manual_mappings{protein_string}.html")
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
@@ -1422,8 +1434,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                       f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
                       f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
                 title_font=dict(size=8),
-                xaxis_title=f"log₁₀({validation_source_name_short_1} Protein Counts)",
-                yaxis_title=f"log₁₀({validation_source_name_short_2} Protein Counts)",
+                xaxis_title=f"log₁₀(Schmidt2015_ST6_BW Protein Counts + 1)",
+                yaxis_title=f"log₁₀({validation_source_name_short} Protein Counts + 1)",
                 autosize=False,
                 width=900,
                 height=600,
@@ -1464,123 +1476,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
             # save the figure as an html:
             plot_name = (f"validation_to_validation_source_comparison_"
-                         f"{validation_source_name_short_1}_vs_{validation_source_name_short_2}.html")
+                         f"{validation_source_name_short}_vs_saved_Schmidt2015_ST6_BW.html")
             fig.write_html(os.path.join(plotOutDir, plot_name))
-
-        # Generate the comparison table between the two validation datasets:
-        validation_datasets_comparison_df = self.prep_validation_datasets_for_comparison_with_other_validation_data(
-            common_name_to_counts_dict_1, common_name_to_sim_monomer_id_1,
-            common_name_to_counts_dict_2, common_name_to_sim_monomer_id_2)
-
-        # Generate the plot:
-        fig = go.Figure()
-
-        # Compute log10 values for simulation validation and raw validation protein counts:
-        x = np.log10(validation_datasets_comparison_df['dataset1_count'].values + 1)
-        y = np.log10(validation_datasets_comparison_df['dataset2_count'].values + 1)
-
-        # Compute linear trendline
-        z = np.polyfit(x, y, 1)
-        p = np.poly1d(z)
-        trendline_y = p(x)
-
-        # Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
-        above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
-        x_above_30 = x[above_30_idx]
-        y_above_30 = y[above_30_idx]
-        z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
-        p_above_30 = np.poly1d(z_above_30)
-        trendline_y_above_30 = p_above_30(x)
-
-        # Compute the pearson r, R2, and the coefficient of determination R2:
-        r_value, p_val = pearsonr(x_above_30, y_above_30)
-        pr2 = r_value ** 2
-        COD_r2 = r2_score(x_above_30, y_above_30)  # COD R2
-
-        # Define the hover text for the plot output:
-        hovertext = validation_datasets_comparison_df.apply(lambda
-                                              row:
-                                          f"Monomer ID: {row['monomer_id']}"
-                                          f"<br>{validation_source_name_short_1} common name: {row['dataset1_common_name']}"
-                                          f"<br>{validation_source_name_short_2} common name: {row['dataset2_common_name']}"
-                                          f"<br>{validation_source_name_short_1} count: {row['dataset1_count']}"
-                                          f"<br>{validation_source_name_short_2} count: {row['dataset2_count']}",
-                                          axis=1)
-
-        # Add total counts scatter data:
-        fig.add_trace(
-            go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
-                       name=f"Monomer Counts"))
-
-        # Add linear trendline:
-        fig.add_trace(
-            go.Scatter(x=x, y=trendline_y, mode='lines',
-                       name=f'Linear fit (all data): {p}',
-                       line=dict(color='green')))
-
-        # Add linear trendline for counts above 30:
-        fig.add_trace(
-            go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
-                       name=f'Linear fit (counts > 30): {p_above_30}',
-                       line=dict(color='pink')))
-
-        # Add a y=x line:
-        fig.add_trace(
-            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
-                       line=go.scatter.Line(color="black", dash="dash"),
-                       opacity=0.2, name="y=x"))
-
-        # Update layout
-        fig.update_traces(marker_size=3)
-        fig.update_layout(
-            title=f"{validation_source_name_1} ({validation_source_name_short_1}) vs. {validation_source_name_2} ({validation_source_name_short_2})<br>"
-                  f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
-                  f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
-            title_font=dict(size=8),
-            xaxis_title=f"log₁₀({validation_source_name_short_1} Protein Counts)",
-            yaxis_title=f"log₁₀({validation_source_name_short_2} Protein Counts)",
-            autosize=False,
-            width=900,
-            height=600,
-            plot_bgcolor='white',  # Set the plot area background color to white
-            paper_bgcolor='white'  # Set the entire graph background to white
-        )
-
-        # Define the text to display
-        text = (
-            f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
-            f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
-            f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(COD_r2, 3)}'
-        )
-
-        # Get the maximum x and minimum y to position the text in the bottom-right
-        x_max = x.max()
-        y_min = y.min()
-
-        # Adjust x_max and y_min slightly outside the actual graph boundaries
-        text_offset_x = 0.1
-        text_offset_y = 0.05
-
-        # Adding text annotation to the bottom right
-        fig.add_annotation(
-            x=x_max + text_offset_x,  # Move the x position slightly to the right
-            y=y_min - text_offset_y,  # Move the y position slightly below
-            text=text,
-            showarrow=False,
-            bgcolor='rgba(255, 255, 255, 0.8)',
-            bordercolor='rgba(0, 0, 0, 0.5)',
-            borderwidth=1,
-            borderpad=4,
-            align='right',
-            font=dict(size=10, color='gray'),
-            xref='x',
-            yref='y',
-        )
-
-        # save the figure as an html:
-        plot_name = (f"validation_to_validation_source_comparison_"
-                     f"{validation_source_name_short_1}_vs_{validation_source_name_short_2}.html")
-        fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
     # Get the standard deviations of the simulation data:
@@ -1987,13 +1884,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             proteins_of_interest_df = self.map_input_proteins_to_simulation_monomer_IDs(
                 PROTEINS_OF_INTEREST, RVS_sim_data_df)
             # generate the plot that averages over generations:
-            self.plot_proteins_of_interest_averaged_over_generations(simDataFile, plotOutDir,
+            generation_averaged_outpath = os.path.join(plotOutDir,
+                                                              "generation_averaged_proteins_of_interest_plots")
+            if not os.path.exists(generation_averaged_outpath):
+                os.mkdir(generation_averaged_outpath)
+            self.plot_proteins_of_interest_averaged_over_generations(simDataFile, generation_averaged_outpath,
                                                                      proteins_of_interest_df,
                                                                      validation_source_name,
                                                                      validation_source_name_short)
 
             # generate the plot with averages over all time points:
-            self.plot_proteins_of_interest_averaged_over_all_time(simDataFile, plotOutDir,
+            time_averaged_outpath = os.path.join(plotOutDir,
+                                                       "time_averaged_proteins_of_interest_plots")
+            if not os.path.exists(time_averaged_outpath):
+                os.mkdir(time_averaged_outpath)
+            self.plot_proteins_of_interest_averaged_over_all_time(simDataFile, time_averaged_outpath,
                                                proteins_of_interest_df, validation_source_name,
                                                validation_source_name_short)
 
@@ -2034,10 +1939,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
          SMGST9_uniprot_IDs_to_monomer_IDs,
          SMGST9_uniprot_IDs_to_schmidt_glucose_counts) = self.get_schmidt_BW_ST6_data()
 
+        # Create a validation comparison output directory if it does not already exist:
+        comparison_outpath = os.path.join(plotOutDir, "proteomics_validation_comparisons")
+        if not os.path.exists(comparison_outpath):
+            os.mkdir(comparison_outpath)
+
         # Create comparison plots between the simulation and the raw validation data:
         print("Plotting simulation vs raw validation data...")
         self.compare_simulation_counts_to_raw_validation_source(
-            plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+            comparison_outpath, "Schmidt et al. 2016 ST6 BW25113 data",
             "Schmidt2016_ST6_BW",
             SBWST6_uniprot_IDs_to_monomer_IDs,
             SBWST6_uniprot_IDs_to_schmidt_common_names,
@@ -2050,7 +1960,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
              SBWST6_uniprot_IDs_to_monomer_IDs)
 
             self.compare_simulation_counts_to_raw_validation_source_with_manual_mappings(
-                plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+                comparison_outpath, "Schmidt et al. 2016 ST6 BW25113 data",
                 "Schmidt2016_ST6_BW",
                 SBWST6_uniprot_IDs_to_monomer_IDs,
                 SBWST6_uniprot_IDs_to_schmidt_common_names,
@@ -2058,9 +1968,37 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 unmapped_uniprot_ids_to_simulation_monomer_ids)
 
         if HIGHLIGHT_PROTEINS_OF_INTEREST == True:
-            # Plot the proteins of interest only:
-            print("Plotting proteins of interest only...")
-            self.plot_proteins_of_interest_only(simDataFile, plotOutDir, "Schmidt et al. 2016 ST6 BW25113 data",
+            # Plot the the proteins of interest on the plot too:
+            print("Plotting proteins of interest...")
+            # Generate a file path for the plots:
+            proteins_of_interest_plot_outpaths = os.path.join(comparison_outpath, "comparisons_with_proteins_of_interest_only")
+            if not os.path.exists(proteins_of_interest_plot_outpaths):
+                os.mkdir(proteins_of_interest_plot_outpaths)
+
+            # Create comparison plots between the simulation and the raw validation data:
+            self.compare_simulation_counts_to_raw_validation_source(
+                comparison_outpath, "Schmidt et al. 2016 ST6 BW25113 data",
+                "Schmidt2016_ST6_BW",
+                SBWST6_uniprot_IDs_to_monomer_IDs,
+                SBWST6_uniprot_IDs_to_schmidt_common_names,
+                SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
+                plot_proteins_of_interest=True)
+
+            # Create the comparison plots including manually mapped proteins:
+            unmapped_uniprot_ids_to_simulation_monomer_ids, unmapped_uniprot_IDs_to_sim_common_names = self.find_monomer_ids_for_unmapped_uniprot_ids(
+                SBWST6_uniprot_IDs_to_schmidt_common_names,
+                SBWST6_uniprot_IDs_to_monomer_IDs)
+            self.compare_simulation_counts_to_raw_validation_source_with_manual_mappings(
+                comparison_outpath, "Schmidt et al. 2016 ST6 BW25113 data",
+                "Schmidt2016_ST6_BW",
+                SBWST6_uniprot_IDs_to_monomer_IDs,
+                SBWST6_uniprot_IDs_to_schmidt_common_names,
+                SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
+                unmapped_uniprot_ids_to_simulation_monomer_ids,
+                plot_proteins_of_interest=True)
+
+            # Generate plots of just the proteins of interest:
+            self.plot_proteins_of_interest_only(simDataFile, proteins_of_interest_plot_outpaths, "Schmidt et al. 2016 ST6 BW25113 data",
                 "Schmidt2016_ST6_BW",
                 SBWST6_uniprot_IDs_to_monomer_IDs,
                 SBWST6_uniprot_IDs_to_schmidt_common_names,
@@ -2069,8 +2007,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     # TODO: add validation source to validation source comparison options
     # TODO: decide if it makes sense to have validation data compare against all validation data available or just the data that matches the simulation data?
         if PLOT_VALIDATION_SOURCE_COMPARISONS == True:
+            print("Plotting validation source comparisons...")
+            # generate a validation dataset outpath:
+            validation_outpath = os.path.join(comparison_outpath, "validation_source_comparisons")
+            if not os.path.exists(validation_outpath):
+                os.mkdir(validation_outpath)
             # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 MG1655 data:
-            self.compare_validation_datasets(plotOutDir,
+            self.compare_validation_datasets(validation_outpath,
                                                                   "Simulation Validation Data from Schmidt et al. 2015 (BW25113)",
                                                                   "Schmidt2015_ST6_BW",
                                              SBWST6_uniprot_IDs_to_schmidt_common_names,
@@ -2083,6 +2026,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                                              SMGST9_uniprot_IDs_to_schmidt_glucose_counts)
 
             # plot the data saved with the sim
+            self.compare_raw_validation_dataset_to_saved_simulation_validation_dataset(simDataFile, validationDataFile, validation_outpath, "Simulation Validation Data from Schmidt et al. 2015 (BW25113)",
+                                                                  "Schmidt2015_ST6_BW", SBWST6_uniprot_IDs_to_schmidt_common_names,
+                                             SBWST6_uniprot_IDs_to_monomer_IDs,
+                                             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
 
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile,
