@@ -1315,7 +1315,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             validation_source_name, validation_source_name_short, uniprot_IDs_to_common_names,
             uniprot_IDs_to_monomer_IDs, uniprot_IDs_to_counts):
 
-        print(f"Plotting comparison plot of the validation data saved with the simulation data (Schmidt et al. 2015 BW25113 Glucose data) with {validation_source_name}")
+        print(f"Plotting comparison plot of the validation data saved with the simulation data (Schmidt et al. 2015 BW25113 Glucose data) with raw {validation_source_name}")
 
         # Extract the validation data automatically saved with the simulation  (Schmidt et al. 2015 BW25113):
         (sim_validation_common_names_to_counts_dict,
@@ -1363,36 +1363,37 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 'sim_monomer_description': sim_monomer_description
             })
 
-            # Convert to a dataframe:
-            validation_dataset_comparison_df = pd.DataFrame(validation_dataset_comparison_table)
+        # Convert to a dataframe:
+        validation_dataset_comparison_df = pd.DataFrame(validation_dataset_comparison_table)
 
-            # Generate the plot:
-            fig = go.Figure()
+        # Generate the plot:
+        fig = go.Figure()
 
-            # Compute log10 values for simulation validation and raw validation protein counts:
-            x = np.log10(validation_dataset_comparison_df['sim_validation_counts'].values + 1)
-            y = np.log10(validation_dataset_comparison_df['RVS_counts'].values + 1)
 
-            # Compute linear trendline
-            z = np.polyfit(x, y, 1)
-            p = np.poly1d(z)
-            trendline_y = p(x)
+        # Compute log10 values for simulation validation and raw validation protein counts:
+        x = np.log10(validation_dataset_comparison_df['sim_validation_counts'].values + 1)
+        y = np.log10(validation_dataset_comparison_df['RVS_counts'].values + 1)
 
-            # Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
-            above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
-            x_above_30 = x[above_30_idx]
-            y_above_30 = y[above_30_idx]
-            z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
-            p_above_30 = np.poly1d(z_above_30)
-            trendline_y_above_30 = p_above_30(x)
+        # Compute linear trendline
+        z = np.polyfit(x, y, 1)
+        p = np.poly1d(z)
+        trendline_y = p(x)
 
-            # Compute the pearson r, R2, and the coefficient of determination R2:
-            r_value, p_val = pearsonr(x_above_30, y_above_30)
-            pr2 = r_value ** 2
-            COD_r2 = r2_score(x_above_30, y_above_30)  # COD R2
+        # Compute linear trendline for counts above log10(30+1): (+1 bc log(0) is undefined)
+        above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+        x_above_30 = x[above_30_idx]
+        y_above_30 = y[above_30_idx]
+        z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+        p_above_30 = np.poly1d(z_above_30)
+        trendline_y_above_30 = p_above_30(x)
 
-            # Define the hover text for the plot output:
-            hovertext = validation_dataset_comparison_df.apply(lambda
+        # Compute the pearson r, R2, and the coefficient of determination R2:
+        r_value, p_val = pearsonr(x_above_30, y_above_30)
+        pr2 = r_value ** 2
+        COD_r2 = r2_score(x_above_30, y_above_30)  # COD R2
+
+        # Define the hover text for the plot output:
+        hovertext = validation_dataset_comparison_df.apply(lambda
                                                                    row:
                                                                f"{validation_source_name_short} Uniprot ID: {row['uniprot_id']}"
                                                                f"<br>Monomer ID: {row['monomer_id']}"
@@ -1401,35 +1402,35 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                                                                f"<br>{validation_source_name_short} counts: {row['RVS_counts']}"
                                                                f"<br>Saved validation data (Schmidt2015_ST6_BW) counts: {row['sim_validation_counts']}"
                                                                f"<br>{self.sim_name} average total counts: {row['sim_counts']}"
-                                                               f"<br>{self.sim_name} monomer description: {row['sim_description']}",
+                                                               f"<br>{self.sim_name} monomer description: {row['sim_monomer_description']}",
                                                                axis=1)
 
-            # Add total counts scatter data:
-            fig.add_trace(
-                go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
+        # Add total counts scatter data:
+        fig.add_trace(
+            go.Scatter(x=x, y=y, hovertext=hovertext, mode='markers',
                            name=f"Monomer Counts"))
 
-            # Add linear trendline:
-            fig.add_trace(
-                go.Scatter(x=x, y=trendline_y, mode='lines',
+        # Add linear trendline:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y, mode='lines',
                            name=f'Linear fit (all data): {p}',
                            line=dict(color='green')))
 
-            # Add linear trendline for counts above 30:
-            fig.add_trace(
-                go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
+        # Add linear trendline for counts above 30:
+        fig.add_trace(
+            go.Scatter(x=x, y=trendline_y_above_30, mode='lines',
                            name=f'Linear fit (counts > 30): {p_above_30}',
                            line=dict(color='pink')))
 
-            # Add a y=x line:
-            fig.add_trace(
-                go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
+        # Add a y=x line:
+        fig.add_trace(
+            go.Scatter(x=[0, 6], y=[0, 6], mode="lines",
                            line=go.scatter.Line(color="black", dash="dash"),
                            opacity=0.2, name="y=x"))
 
-            # Update layout
-            fig.update_traces(marker_size=3)
-            fig.update_layout(
+        # Update layout
+        fig.update_traces(marker_size=3)
+        fig.update_layout(
                 title=f"{validation_source_name} ({validation_source_name_short}) vs. Schmidt et al. 2015 BW25113 Glucose validation data saved with the simulation (Schmidt2015_ST6_BW)<br>"
                       f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
                       f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
@@ -1443,23 +1444,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 paper_bgcolor='white'  # Set the entire graph background to white
             )
 
-            # Define the text to display
-            text = (
+        # Define the text to display
+        text = (
                 f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
                 f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
                 f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(COD_r2, 3)}'
             )
 
-            # Get the maximum x and minimum y to position the text in the bottom-right
-            x_max = x.max()
-            y_min = y.min()
+        # Get the maximum x and minimum y to position the text in the bottom-right
+        x_max = x.max()
+        y_min = y.min()
 
-            # Adjust x_max and y_min slightly outside the actual graph boundaries
-            text_offset_x = 0.1
-            text_offset_y = 0.05
+        # Adjust x_max and y_min slightly outside the actual graph boundaries
+        text_offset_x = 0.1
+        text_offset_y = 0.05
 
-            # Adding text annotation to the bottom right
-            fig.add_annotation(
+        # Adding text annotation to the bottom right
+        fig.add_annotation(
                 x=x_max + text_offset_x,  # Move the x position slightly to the right
                 y=y_min - text_offset_y,  # Move the y position slightly below
                 text=text,
@@ -1475,9 +1476,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             )
 
             # save the figure as an html:
-            plot_name = (f"validation_to_validation_source_comparison_"
+        plot_name = (f"validation_to_validation_source_comparison_"
                          f"{validation_source_name_short}_vs_saved_Schmidt2015_ST6_BW.html")
-            fig.write_html(os.path.join(plotOutDir, plot_name))
+        fig.write_html(os.path.join(plotOutDir, plot_name))
 
 
     # Get the standard deviations of the simulation data:
@@ -2014,19 +2015,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 os.mkdir(validation_outpath)
             # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 MG1655 data:
             self.compare_validation_datasets(validation_outpath,
-                                                                  "Simulation Validation Data from Schmidt et al. 2015 (BW25113)",
+                                                                  "Schmidt et al. 2015 BW25113 Glucose data from saved simulation",
                                                                   "Schmidt2015_ST6_BW",
                                              SBWST6_uniprot_IDs_to_schmidt_common_names,
                                              SBWST6_uniprot_IDs_to_monomer_IDs,
                                              SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
-                                                             "Schmidt et al. 2016 ST9 MG1655 data",
+                                                             "Schmidt et al. 2016 ST9 MG1655 Glucose data",
                                                                   "Schmidt2016_ST9_MG",
                                              SMGST9_uniprot_IDs_to_schmidt_common_names,
                                              SMGST9_uniprot_IDs_to_monomer_IDs,
                                              SMGST9_uniprot_IDs_to_schmidt_glucose_counts)
 
             # plot the data saved with the sim
-            self.compare_raw_validation_dataset_to_saved_simulation_validation_dataset(simDataFile, validationDataFile, validation_outpath, "Simulation Validation Data from Schmidt et al. 2015 (BW25113)",
+            self.compare_raw_validation_dataset_to_saved_simulation_validation_dataset(simDataFile, validationDataFile, validation_outpath, "Schmidt et al. 2016 ST9 MG1655 Glucose data",
                                                                   "Schmidt2015_ST6_BW", SBWST6_uniprot_IDs_to_schmidt_common_names,
                                              SBWST6_uniprot_IDs_to_monomer_IDs,
                                              SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
