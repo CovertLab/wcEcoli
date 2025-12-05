@@ -2015,8 +2015,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 os.mkdir(validation_outpath)
             # Compare the validation data generated from the sim (Schmidt et al. 2015 BW25113) to the Schmidt et al. 2016 ST9 MG1655 data:
             self.compare_validation_datasets(validation_outpath,
-                                                                  "Schmidt et al. 2015 BW25113 Glucose data from saved simulation",
-                                                                  "Schmidt2015_ST6_BW",
+                                                                  "Schmidt et al. 2016 BW25113 Glucose data",
+                                                                  "Schmidt2016_ST6_BW",
                                              SBWST6_uniprot_IDs_to_schmidt_common_names,
                                              SBWST6_uniprot_IDs_to_monomer_IDs,
                                              SBWST6_uniprot_IDs_to_schmidt_glucose_counts,
@@ -2028,7 +2028,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
             # plot the data saved with the sim
             self.compare_raw_validation_dataset_to_saved_simulation_validation_dataset(simDataFile, validationDataFile, validation_outpath, "Schmidt et al. 2016 ST9 MG1655 Glucose data",
-                                                                  "Schmidt2015_ST6_BW", SBWST6_uniprot_IDs_to_schmidt_common_names,
+                                                                  "Schmidt2016_ST6_BW", SBWST6_uniprot_IDs_to_schmidt_common_names,
                                              SBWST6_uniprot_IDs_to_monomer_IDs,
                                              SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
 
