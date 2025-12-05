@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655
+# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 29.1
+# Version: 30.0
 # Orthologs: true
-# Date and time generated: October 2, 2025, 15:08:19
+# Date and time generated: December 3, 2025, 10:42:29
 "id"	"common_name"	"synonyms"	"type"	"modified_forms"	"gene_id"	"monomer_ids"	"anticodon"	"coding_segments"
 "EG10001_RNA"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	"mRNA"	[]	"EG10001"	["ALARACEBIOSYN-MONOMER"]	null	[]
 "EG10002_RNA"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	"mRNA"	[]	"EG10002"	["MODB-MONOMER"]	null	[]
@@ -1259,7 +1259,7 @@
 "EG11280_RNA"	"leuL"	["leuL", "leuLP", "leulL", "leulLP", "leuIP", "b0075", "ECK0077"]	"mRNA"	[]	"EG11280"	["EG11280-MONOMER"]	null	[]
 "EG11281_RNA"	"mutL"	["mutL", "b4170", "ECK4166"]	"mRNA"	[]	"EG11281"	["EG11281-MONOMER"]	null	[]
 "EG11282_RNA"	"hyfB"	["hyfB", "yffF", "b2482", "ECK2478"]	"mRNA"	[]	"EG11282"	["MONOMER0-153"]	null	[]
-"EG11283_RNA"	"phnE1"	["phnE1", "ECK4097", "b4103", "b4104", "b4583", "ECK4096"]	"pseudo"	[]	"EG11283"	["PHNE-MONOMER"]	null	[]
+"EG11283_RNA"	"phnE1"	["phnE1", "ECK4097", "b4103", "b4104", "b4583", "ECK4096"]	"mRNA"	[]	"EG11283"	["PHNE-MONOMER"]	null	[]
 "EG11284_RNA"	"fabZ"	["fabZ", "sfhC21", "sabA1", "sefA", "yaeA", "b0180", "ECK0179"]	"mRNA"	[]	"EG11284"	["FABZ-MONOMER"]	null	[]
 "EG11285_RNA"	"glrR"	["glrR", "yfhA", "qseF", "b2554", "ECK2551"]	"mRNA"	[]	"EG11285"	["EG11285-MONOMER"]	null	[]
 "EG11286_RNA"	"argE"	["argE", "b3957", "ECK3948"]	"mRNA"	[]	"EG11286"	["ACETYLORNDEACET-MONOMER"]	null	[]
@@ -2901,6 +2901,7 @@
 "RNA0-440"	"small antisense RNA aMEF"	["aMEF"]	"miscRNA"	[]	"G0-17125"	[]	null	[]
 "G0-17126_RNA"	"xtpA"	["xtpA", "b4845", "ECK4702"]	"mRNA"	[]	"G0-17126"	["MONOMER0-4561"]	null	[]
 "RNA0-441"	"<i>arfA</i>-derived small regulatory RNA"	[]	"miscRNA"	[]	"G0-17130"	[]	null	[]
+"G0-17139_RNA"	"otsa"	["otsa"]	"mRNA"	[]	"G0-17139"	["MONOMER0-4595"]	null	[]
 "G0-41_RNA"	"ecnA"	["ecnA", "b4410", "ECK4142"]	"mRNA"	[]	"G0-41"	["MONOMER0-1562"]	null	[]
 "G0-8601_RNA"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	"mRNA"	[]	"G0-8601"	["MONOMER0-561"]	null	[]
 "CSRB-RNA"	"small regulatory RNA CsrB"	["CsrB"]	"miscRNA"	[]	"G0-8785"	[]	null	[]
