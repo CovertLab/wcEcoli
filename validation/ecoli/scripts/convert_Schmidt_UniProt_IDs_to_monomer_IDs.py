@@ -23,7 +23,13 @@ USER INPUTS
 
 # CHANGE THIS TO THE SPECIFIC RAW FILE YOU WANT TO FIND THE MONOMER IDS FOR
 # (in 'validation/ecoli/flat/Schmidt_2016_uniprot_conversion_files/raw_files')
-file_to_convert = 'Schmidt_2016_ST6_raw.csv'
+file_to_convert = 'Schmidt_2016_ST9_raw.csv'
+
+
+"""
+USER INPUTS END
+"""
+# Collect user inputs for date, username, and password:
 # CHANGE THIS TO THE CURRENT DATE (in the form of DDMMYYYY)
 date = input('Please enter the date in the form of MMDDYYYY, i.e.: "11102025":')
 # CHANGE THIS TO YOUR ECOCYC USERNAME
@@ -31,12 +37,8 @@ username = input('Please enter your EcoCyc username/email:') # typically a user'
 # CHANGE THIS TO YOUR ECOCYC PASSWORD
 password = input('Please enter your EcoCyc password:')
 
-"""
-USER INPUTS END
-"""
 
-
-# Directory for this file
+# Directory to this file:
 FILE_LOCATION = os.path.realpath(os.path.dirname(__file__))
 
 # Directory to supplemental data files and data file of interest
@@ -46,10 +48,12 @@ INPUT_FOLDER = os.path.join(ROOT_PATH, 'validation', 'ecoli','flat',
 INPUT = os.path.join(INPUT_FOLDER, file_to_convert)
 
 # Make the output file name and specify the output file location
-OUTPUT_FILE_NAME = file_to_convert[:-4] + '_EcoCyc_uniprot_ID_to_monomer_ID_matches_'+ date + '.tsv'
-OUTPUT_FILE_PATH = os.path.join(ROOT_PATH, 'validation', 'ecoli', 'flat',
-                                'Schmidt_2016_uniprot_conversion_files',
-                                'schmidt_uniprot_ids_to_monomer_ids', OUTPUT_FILE_NAME)
+OUTPUT_FILE_NAME = (
+        file_to_convert[:-4] + '_EcoCyc_uniprot_ID_to_monomer_ID_matches_'+ date + '.tsv')
+OUTPUT_FILE_PATH = os.path.join(
+    ROOT_PATH, 'validation', 'ecoli', 'flat',
+    'Schmidt_2016_uniprot_conversion_files',
+    'schmidt_uniprot_ids_to_monomer_ids', OUTPUT_FILE_NAME)
 
 # read in the data from the table:
 FullTable = pd.read_csv(INPUT, header=0)
@@ -59,11 +63,12 @@ FullTable = FullTable[['Uniprot Accession', 'Gene']]
 InputTable = FullTable.copy(deep=True)
 InputTable = InputTable.rename(columns={'Gene': 'Schmidt et al. Gene Name'})
 
-# Create a session for accessing the EcoCyc database
+# Create a session for accessing the BioCyc database
+# (via https://biocyc.org/web-services.shtml#sessionSetup instructions)
 s = requests.Session()
 s.post('https://websvc.biocyc.org/credentials/login/',
        data={'email':username, 'password':password})
-# if this prints, the session was created successfully:
+# Notify the user that the session was created successfully:
 print("Session created successfully. Code is running (& may take a few minutes to complete).")
 
 # Function to grab the EcoCyc monomer ID for a given UniProt ID
@@ -186,6 +191,7 @@ for common_name in range(len(Interest_InputTable['Common Name'])):
     common_name = Interest_InputTable.iloc[common_name]['Common Name']
     if len(Interest_InputTable[Interest_InputTable['Common Name'] == common_name]) > 1:
         non_unique_common_names.append(common_name)
+
 # NOTE: this should come out to zero if the code is working correctly
 print("# of common names that show up for more than one monomer ID in the dataset: ",
       len(non_unique_common_names))
@@ -201,23 +207,21 @@ print("# of monomer IDs that do not share a common name with another monomer ID:
 
 # Check how many monomer IDs do not have a common name:
 none_common_names = 0
-for common_name in range(len(Interest_InputTable['Common Name'])):
-    common_name_value = Interest_InputTable.iloc[common_name]['Common Name']
+for i in range(len(Interest_InputTable['Common Name'])):
+    common_name_value = Interest_InputTable.iloc[i]['Common Name']
     if common_name_value == None:
         none_common_names += 1
-        print(common_name)
-        print("protein that matched to no common name:",Interest_InputTable.iloc[common_name]['Monomer ID'])
-print("# of monomer IDs that did not get assigned a common name (using rnas.tsv):", none_common_names)
+        # TODO: all the monomer names of these look to be None, not sure why?
+print("# of Schmidt et al. monomer IDs that did not get assigned a common name (via rnas.tsv):", none_common_names)
 
 # Where the common name is None, print the corresponding UniProt Accession and Schmidt et al. Gene Name
 for i in range(len(Interest_InputTable)):
     if Interest_InputTable.iloc[i]['Common Name'] == None:
-        print("UniProt Accession with no common name:", Interest_InputTable.iloc[i]['Uniprot Accession'])
-        print("Schmidt et al. Gene Name with no common name:", Interest_InputTable.iloc[i]['Schmidt et al. Gene Name'])
+        print(f"Schmidt et al. UniProt Accession ID with no common name: {Interest_InputTable.iloc[i]['Uniprot Accession']} (listed gene name: {Interest_InputTable.iloc[i]['Schmidt et al. Gene Name']})")
         # Check if the Gene Name exists in the rnas.tsv file Common Name column:
         gene_name = Interest_InputTable.iloc[i]['Schmidt et al. Gene Name']
         if gene_name in rnas_common_names['common_name'].values:
-            print("The Schmidt et al. Gene Name exists in the rnas.tsv common name list.")
+            print("The Schmidt et al. Gene Name DOES exist in the rnas.tsv common name list.")
             # Find the corresponding monomer IDs from rnas.tsv:
             corresponding_monomer_ids = rnas_common_names[
                 rnas_common_names['common_name'] == gene_name]['monomer_ids'].values
@@ -227,9 +231,9 @@ for i in range(len(Interest_InputTable)):
             Interest_InputTable.loc[i, 'Other possible monomer IDs from rnas.tsv'] = str(corresponding_monomer_ids)
             # Add special info about this case saying it does not have a UniProt match but the gene name exists in rnas.tsv
             Interest_InputTable.loc[i, 'Special Info'] = (
-                "No UniProt match, but Schmidt et al. Gene Name exists in rnas.tsv common name list")
+                "No UniProt match, but the Gene name listed in the Schmidt et al. raw file exists in rnas.tsv common name list")
         else:
-            print("The Schmidt et al. Gene Name does NOT exist in the rnas.tsv common name list.")
+            print("The Schmidt et al. Gene Name DOES NOT exist in the rnas.tsv common name list.")
 
 
 
