@@ -59,6 +59,7 @@ PLOT_VALIDATION_SOURCE_COMPARISONS = True
 
   # example Uniprot IDs
 # TODO: add option to output validation comparison plots as well
+# TODO: merge master into this branch and re-do the matching to make sure everything is up to date
 # TODO: add "Glucose" to the long name of the data
 # TODO: add the ST9 BW and MG data
 # TODO: add the saved validation data vs sim data plot (at least here it is different from the other proteomics script plot because it will be a plotly)
