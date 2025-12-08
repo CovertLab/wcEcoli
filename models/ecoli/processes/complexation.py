@@ -44,26 +44,40 @@ class Complexation(wholecell.processes.process.Process):
 		moleculeNames = sim_data.process.complexation.molecule_names
 		self.molecules = self.bulkMoleculesView(moleculeNames)
 
+		hi = 5
+
 
 	def calculateRequest(self):
 		moleculeCounts = self.molecules.total_counts()
+
+		hi = 6
 
 		result = self.system.evolve(
 			self._sim.timeStepSec(), moleculeCounts, self.rates)
 		updatedMoleculeCounts = result['outcome']
 
+		hi = 8
+
 		self.molecules.requestIs(np.fmax(moleculeCounts - updatedMoleculeCounts, 0))
+
+		hi = 7
 
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
+
+		hi = 5
 
 		result = self.system.evolve(
 			self._sim.timeStepSec(), moleculeCounts, self.rates)
 		updatedMoleculeCounts = result['outcome']
 		events = result['occurrences']
 
+		hi = 5
+
 		self.molecules.countsIs(updatedMoleculeCounts)
+
+		hi = 6
 
 		# Write outputs to listeners
 		self.writeToListener("ComplexationListener", "complexationEvents", events)
