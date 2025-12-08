@@ -58,9 +58,10 @@ INCLUDE_MANUALLY_MAPPED_PROTEINS = False
 PLOT_VALIDATION_SOURCE_COMPARISONS = True
 
   # example Uniprot IDs
-# TODO: check If you can read in uniprot from ecyocyc and not biocyc
 # TODO: add option to output validation comparison plots as well
 # TODO: add "Glucose" to the long name of the data
+# TODO: add the ST9 BW and MG data
+# TODO: add the saved validation data vs sim data plot (at least here it is different from the other proteomics script plot because it will be a plotly)
 """ END USER INPUTS """
 
 
