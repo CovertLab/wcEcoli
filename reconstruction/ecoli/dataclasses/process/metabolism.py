@@ -286,9 +286,12 @@ class Metabolism(object):
 
 		# Load kinetic reaction constraints from raw_data
 		known_metabolites = set(self.conc_dict)
-		raw_constraints = self.extract_kinetic_constraints(raw_data, sim_data,
+		raw_constraints, subunit_id_to_parent_complexes_dict = self.extract_kinetic_constraints(raw_data, sim_data,
 			stoich=reaction_stoich, catalysts=catalysts,
 			known_metabolites=known_metabolites)
+
+		# Save the subunit to complex mapping for use in complexation process
+		self.subunit_id_to_parent_complexes_dict = subunit_id_to_parent_complexes_dict
 
 		# Make modifications from kinetics data
 		(constraints, reaction_stoich, catalysts, reversible_reactions,
@@ -1538,7 +1541,8 @@ class Metabolism(object):
 
 		base_rxn_ids = sorted(list(all_base_rxns))
 
-		return base_rxn_ids, reaction_stoich, reversible_reactions, reaction_catalysts, rxn_id_to_base_rxn_id
+		return (base_rxn_ids, reaction_stoich, reversible_reactions,
+				reaction_catalysts, rxn_id_to_base_rxn_id, subunit_id_to_parent_complexes)
 
 	@staticmethod
 	def match_reaction(stoich, catalysts, rxn_to_match, enz, mets, direction=None):
@@ -1857,7 +1861,7 @@ class Metabolism(object):
 
 		# Load data for optional args if needed
 		if stoich is None or catalysts is None:
-			_, loaded_stoich, _, loaded_catalysts, _ = Metabolism.extract_reactions(raw_data, sim_data)
+			_, loaded_stoich, _, loaded_catalysts, _, subunit_id_to_parent_complexes = Metabolism.extract_reactions(raw_data, sim_data)
 
 			if stoich is None:
 				stoich = loaded_stoich
@@ -1936,7 +1940,7 @@ class Metabolism(object):
 				entries['saturation'] = entries.get('saturation', []) + saturation
 				constraints[key] = entries
 
-		return constraints
+		return constraints, subunit_id_to_parent_complexes
 
 	@staticmethod
 	def _replace_enzyme_reactions(constraints, stoich, rxn_catalysts, reversible_rxns, rxn_id_to_compiled_id):
