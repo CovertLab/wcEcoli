@@ -120,40 +120,53 @@ class Complexation(object):
 			# find the matrix index where this subunit is as a molecule:
 			subunit_index = self.molecule_names.index(subunit)
 
-			# find the reaction indexes where this subunit is involved as a reactant:
+			# find the indicies of self._stoich_matrix_J where the value will
+			# correspond to the index of the correct reaction in self.ids_reactions
 			reaction_indicies = np.where(
 				(self._stoich_matrix_I == subunit_index) &
 				(self._stoich_matrix_V < 0))[0]
 
-			import ipdb; ipdb.set_trace()
-
+			# for each reaction index, find the complex(es) that is(are) formed:
 			parent_complexes = {}
 			for reaction_idx in reaction_indicies:
+				# find the value of the reaction index (which will be the index
+				# that corresponds to the index of the reaction in self.ids_reactions):
+				rxn_idx = self._stoich_matrix_J[reaction_idx]
+
+				# Initialize data structures to hold complex information
 				complex_information = []
 				stoich = {}
 				stoich_known = {}
 				reaction_name = {}
+
 				# find the complex formed in this reaction:
 				complex_index = np.where(
-					(self._stoich_matrix_J == reaction_idx) &
+					(self._stoich_matrix_J == rxn_idx) &
 					(self._stoich_matrix_V > 0))[0]
 
 				if len(complex_index) == 0:
+					print("Warning: no complex formed in reaction {}".format(
+						self.ids_reactions[rxn_idx]))
 					continue
 
+				# Add complex information to lists
 				complex_name = self.molecule_names[self._stoich_matrix_I[complex_index][0]]
-				reaction_name['reaction_id'] = self.ids_reactions[reaction_idx]
+				reaction_name['reaction_id'] = self.ids_reactions[rxn_idx]
 				stoich['stoichiometry'] = -self._stoich_matrix_V[reaction_idx]
-				stoich_known['stoich_known'] = self.reaction_stoichiometry_unknown[reaction_idx]
+				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
 				complex_information.append(reaction_name)
 				complex_information.append(stoich)
 				complex_information.append(stoich_known)
 
-				# append the complex name and stoich as a dictionary entry
+				# Append the complex name and stoich as a dictionary entry
 				parent_complexes[complex_name] = complex_information
-				import ipdb; ipdb.set_trace()
+
 
 			subunit_id_to_parent_complexes[subunit] = parent_complexes
+
+		import ipdb; ipdb.set_trace()
+
+
 
 
 
