@@ -23,6 +23,8 @@ class Complexation(object):
 		stoichMatrixJ = []  # Reaction indices
 		stoichMatrixV = []  # Stoichiometric coefficients
 		stoichMatrixMass = []  # Molecular masses of molecules in stoichMatrixI
+		monomer_to_downstream_complexes_to_stoich_dict = {}
+		complex_to_monomer_subunits_to_stoich_dict = {}
 
 		self.ids_reactions = []
 		self.reaction_stoichiometry_unknown = []
@@ -111,6 +113,55 @@ class Complexation(object):
 		# Add boolean array to mark reactions with unknown stoichiometries
 		self.reaction_stoichiometry_unknown = np.array(
 			self.reaction_stoichiometry_unknown)
+
+		# Generate dictionary mapping complexes to their monomer subunits
+		subunit_id_to_parent_complexes = {}
+		for subunit in self.subunit_names:
+			# find the matrix index where this subunit is as a molecule:
+			subunit_index = self.molecule_names.index(subunit)
+
+			# find the reaction indexes where this subunit is involved as a reactant:
+			reaction_indicies = np.where(
+				(self._stoich_matrix_I == subunit_index) &
+				(self._stoich_matrix_V < 0))[0]
+
+			import ipdb; ipdb.set_trace()
+
+			parent_complexes = {}
+			for reaction_idx in reaction_indicies:
+				complex_information = []
+				stoich = {}
+				stoich_known = {}
+				reaction_name = {}
+				# find the complex formed in this reaction:
+				complex_index = np.where(
+					(self._stoich_matrix_J == reaction_idx) &
+					(self._stoich_matrix_V > 0))[0]
+
+				if len(complex_index) == 0:
+					continue
+
+				complex_name = self.molecule_names[self._stoich_matrix_I[complex_index][0]]
+				reaction_name['reaction_id'] = self.ids_reactions[reaction_idx]
+				stoich['stoichiometry'] = -self._stoich_matrix_V[reaction_idx]
+				stoich_known['stoich_known'] = self.reaction_stoichiometry_unknown[reaction_idx]
+				complex_information.append(reaction_name)
+				complex_information.append(stoich)
+				complex_information.append(stoich_known)
+
+				# append the complex name and stoich as a dictionary entry
+				parent_complexes[complex_name] = complex_information
+				import ipdb; ipdb.set_trace()
+
+			subunit_id_to_parent_complexes[subunit] = parent_complexes
+
+
+
+
+
+
+
+
 
 	def stoich_matrix(self):
 		"""
