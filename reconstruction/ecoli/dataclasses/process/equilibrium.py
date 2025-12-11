@@ -251,8 +251,7 @@ class Equilibrium(object):
 				(self._stoichMatrixMonomersI == subunit_index) &
 				(self._stoichMatrixMonomersV < 0))[
 				0]  # equivalently, can find the complex indices with (self._stoichMatrixMonomersJ > 0) as the second argument
-			if len(complex_indicies) > 1:
-				print(f'Subunit: {subunit}, Complex Indices: {complex_indicies}')
+
 			# For each complex formed by this subunit, find relevant information about its complexes:
 			downstream_complexes = {}
 			for complex_idx in complex_indicies:
