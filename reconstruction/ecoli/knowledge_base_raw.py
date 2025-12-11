@@ -23,6 +23,7 @@ LIST_OF_DICT_FILENAMES = [
 	"amino_acid_uptake_rates.tsv",
 	"amino_acid_uptake_rates_removed.tsv",
 	"biomass.tsv",
+	"Clim4_STD_ratio_threshold_2_keep_NaNs.tsv",
 	"compartments.tsv",
 	"complexation_reactions.tsv",
 	"complexation_reactions_added.tsv",
