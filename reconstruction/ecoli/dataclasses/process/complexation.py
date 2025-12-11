@@ -23,12 +23,12 @@ class Complexation(object):
 		stoichMatrixJ = []  # Reaction indices
 		stoichMatrixV = []  # Stoichiometric coefficients
 		stoichMatrixMass = []  # Molecular masses of molecules in stoichMatrixI
-		molecules_to_parent_complexes_dict = {}
-		molecules_to_all_downstream_complexes_dict = {}
 
 
 		self.ids_reactions = []
 		self.reaction_stoichiometry_unknown = []
+		self.molecules_to_parent_complexes_dict = {}
+		self.molecules_to_all_downstream_complexes_dict = {}
 		reaction_index = 0
 		miscrnas_with_singleton_tus = sim_data.getter.get_miscrnas_with_singleton_tus()
 
@@ -169,7 +169,7 @@ class Complexation(object):
 				# Append the complex name and stoich as a dictionary entry
 				parent_complexes[complex_name] = complex_information
 
-			molecules_to_parent_complexes_dict[subunit] = parent_complexes
+			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
 
 		# Make a dictionary mapping molecules to all downstream complexes they form
 		# (both directly and indirectly via another complex):
@@ -231,7 +231,7 @@ class Complexation(object):
 				# Append the complex name and stoich as a dictionary entry
 				downstream_complexes[complex_name] = downstream_complex_information
 
-			molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
+			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
 
 
 	def stoich_matrix(self):
