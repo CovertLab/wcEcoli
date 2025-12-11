@@ -1417,6 +1417,7 @@ class Metabolism(object):
 				elif mol_id in subunit_id_to_parent_complexes:
 					subunit_id_to_parent_complexes[mol_id].append(complex_id)
 				else:
+					# TODO: figure out if this gets overwritten if a subunit is in multiple complexes
 					subunit_id_to_parent_complexes[mol_id] = [complex_id]
 
 		# Recursive function that returns a list of all downstream complexes
