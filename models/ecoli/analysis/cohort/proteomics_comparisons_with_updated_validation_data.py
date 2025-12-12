@@ -55,7 +55,7 @@ HIGHLIGHT_PROTEINS_OF_INTEREST = False
 INCLUDE_MANUALLY_MAPPED_PROTEINS = False
 
 # Indicate if comparisons of validation source to validation source should be plotted:
-PLOT_VALIDATION_SOURCE_COMPARISONS = True
+PLOT_VALIDATION_SOURCE_COMPARISONS = False
 
   # example Uniprot IDs
 # TODO: add option to output validation comparison plots as well
