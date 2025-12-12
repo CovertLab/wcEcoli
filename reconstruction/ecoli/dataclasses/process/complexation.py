@@ -212,9 +212,9 @@ class Complexation(object):
 					(self._stoich_matrix_V < 0))[0]
 				num_unique_subunits = len(unique_subunits_in_complex)
 				if num_unique_subunits > 1:
-					cplx_type = 'heterogenious'
+					cplx_type = 'heterogeneous'
 				elif num_unique_subunits == 1:
-					cplx_type = 'homogenious'
+					cplx_type = 'homogeneous'
 				else:
 					cplx_type = 'unknown'
 

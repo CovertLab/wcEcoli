@@ -218,9 +218,9 @@ class Equilibrium(object):
 					(self._stoichMatrixV < 0))[0]
 				num_unique_subunits = len(unique_subunits_in_complex)
 				if num_unique_subunits > 1:
-					cplx_type = 'heterogenious'
+					cplx_type = 'heterogeneous'
 				else:
-					cplx_type = 'homogenious'
+					cplx_type = 'homogeneous'
 
 				# Add complex information to lists
 				complex_name = self.molecule_names[self._stoichMatrixI[complex_index][0]]
