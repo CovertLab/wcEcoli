@@ -27,7 +27,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 
 		self.complexIDs = sim_data.process.complexation.ids_complexes
 		self.reactionIDs = sim_data.process.complexation.ids_reactions
-
 		hi = 6
 
 
@@ -37,13 +36,16 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 
 		self.complexationEvents = np.zeros(len(self.reactionIDs), np.int64)
 
-		hi = 5
+		self.complexCounts = np.zeros(len(self.complexIDs), np.int64)
 
+		self.complexesGenerated = np.zeros(len(self.complexIDs), np.int64)
 
 	def tableCreate(self, tableWriter):
 		# TODO: add subcolumns for monomer ids in each complex, as well as counts?
 		subcolumns = {
-			'complexationEvents': 'reactionIDs'}
+			'complexationEvents': 'reactionIDs',
+			'complexCounts': 'complexIDs',
+			'complexesGenerated': 'complexIDs'}
 
 
 		tableWriter.writeAttributes(
@@ -57,4 +59,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			complexationEvents = self.complexationEvents,
+			complexCounts = self.complexCounts,
+			complexesGenerated = self.complexesGenerated
 			)
