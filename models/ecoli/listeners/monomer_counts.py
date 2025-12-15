@@ -55,6 +55,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# Get stoichiometric matrices for complexation, equilibrium, two component system and the
 		# assembly of unique molecules
 		self.complexation_stoich = sim_data.process.complexation.stoich_matrix_monomers()
+		# TODO: should probably make the equilibrium equation normal like before and make a copy of the _ equation like in complexation.py
 		self.equilibrium_stoich, _, _, _, _ = sim_data.process.equilibrium.stoich_matrix_monomers()
 		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers()
 		self.ribosome_stoich = np.hstack(
@@ -89,6 +90,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.ribosome_idx = unique_molecule_ids.index('active_ribosome')
 		self.rnap_idx = unique_molecule_ids.index('active_RNAP')
 		self.replisome_idx = unique_molecule_ids.index("active_replisome")
+
+		hi = 5
 
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
@@ -134,6 +137,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.two_component_system_molecule_idx] += two_component_monomer_counts.astype(int)
 
 		# Account for monomers in unique molecule complexes
+		# TODO: consider making a unique molecule complex listener
 		n_ribosome_subunit = n_active_ribosome * self.ribosome_stoich
 		n_rnap_subunit = n_active_rnap * self.rnap_stoich
 		n_replisome_subunit = n_active_replisome * self.replisome_stoich
@@ -141,9 +145,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 
-		# Update the total and free monomer counts at the start of each time step:
+		# Update the total monomer counts now that all the monomers within complexes have been added to the free monomer counts in bulkMoleculeCounts:
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
-		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx]
+		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx] # todo: consider prelocating this near the top of update() since it is pulling directly from BulkMolecules, not BulkMoleculeCounts
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
@@ -162,7 +166,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			monomerCounts = self.monomerCounts,
-			freeMonomerCounts=self.freeMonomerCounts,
+			freeMonomerCounts = self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
 			)
