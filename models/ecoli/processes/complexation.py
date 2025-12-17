@@ -55,7 +55,8 @@ class Complexation(wholecell.processes.process.Process):
 		# Find where the complex IDs are within the molecule IDs:
 		self.complex_IDs_within_molecule_IDs = []
 		for complex in complexation_complex_ids:
-			matching_index = np.where(complexation_molecule_ids == complex)
+			matching_index = complexation_molecule_ids.index(complex)
+			# try this instead: np.any(self.stoich_matrix() > 0, axis=1)
 			self.complex_IDs_within_molecule_IDs.append(matching_index)
 
 		# extract all monomer IDs so that matches within moleculeNames can be tracked:
@@ -112,6 +113,7 @@ class Complexation(wholecell.processes.process.Process):
 		# Write outputs to listeners
 		self.writeToListener("ComplexationListener", "complexationEvents", events)
 		hi = 5
+
 		# Determine the total counts of the complexes:
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 		complex_counts = bulkMoleculeCounts[self.complexation_complex_idx]
@@ -121,6 +123,11 @@ class Complexation(wholecell.processes.process.Process):
 		molecule_changes = np.dot(self.stoichMatrix, events)
 
 		hi = 5
+
+		# TODO: find where the complex indicies are within molecule changes and separate those out from monomers and save each separately
+
+
+
 
 
 
