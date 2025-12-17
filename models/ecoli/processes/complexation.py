@@ -120,9 +120,13 @@ class Complexation(wholecell.processes.process.Process):
 		# Determine how the counts of each molecule involvd in complexation changed this timestep:
 		molecule_changes = np.dot(self.stoichMatrix, events)
 
+		hi = 5
+
+
+
 		# Determine how many complexes were generated this time step:
 		# find where complex indexes match molecule indexes:
-		complex_indexes = set(self.complexation_complex_idx, self.complexation_molecule_idx)
+		#complex_indexes = set(self.complexation_complex_idx, self.complexation_molecule_idx)
 		# Next, use this to figure out where the complexes must be within the events matrix using these overlapps?
 
 		# Determine the number of each monomer within the total complexes:
