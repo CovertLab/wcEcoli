@@ -91,8 +91,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.rnap_idx = unique_molecule_ids.index('active_RNAP')
 		self.replisome_idx = unique_molecule_ids.index("active_replisome")
 
-		hi = 5
-
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
 
