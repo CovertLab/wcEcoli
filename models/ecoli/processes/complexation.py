@@ -59,6 +59,8 @@ class Complexation(wholecell.processes.process.Process):
 			# try this instead: np.any(self.stoich_matrix() > 0, axis=1)
 			self.complex_IDs_within_molecule_IDs.append(matching_index)
 
+		# todo: do the same as above for monomers
+
 		# extract all monomer IDs so that matches within moleculeNames can be tracked:
 		self.monomer_ids = sim_data.process.translation.monomer_data["id"].tolist()
 
@@ -125,7 +127,6 @@ class Complexation(wholecell.processes.process.Process):
 		hi = 5
 
 		# TODO: find where the complex indicies are within molecule changes and separate those out from monomers and save each separately
-
 
 
 
