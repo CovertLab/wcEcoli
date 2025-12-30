@@ -78,7 +78,6 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.complexation_complex_idx = np.array(
 			[molecule_dict[x] for x in equilibrium_complex_IDs])
 
-		hi =5
 
 	def calculateRequest(self):
 		# Get molecule counts
