@@ -25,6 +25,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(EquilibriumListener, self).initialize(sim, sim_data)
 
+		self.monomerIDs = sim_data.process.translation.monomer_data["id"].tolist()
 		self.complexIDs = sim_data.process.equilibrium.ids_complexes
 		self.reactionIDs = sim_data.process.equilibrium.rxn_ids
 
