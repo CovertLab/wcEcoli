@@ -79,9 +79,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			bulkMolecules.close()
 
 			# Dissociate protein-protein complexes
+			# TODO: check this function still works as expected with the changes made
 			bulkCounts[:, complexationIdx] += np.dot(sim_data.process.complexation.stoich_matrix_monomers(), bulkCounts[:, complexation_complexesIdx].transpose() * -1).transpose()
 
 			# Dissociate protein-small molecule complexes
+			# TODO: check this function still works as expected with the changes made
+			# todo: especially double check here, I do not think this should work right
 			bulkCounts[:, equilibriumIdx] += np.dot(sim_data.process.equilibrium.stoich_matrix_monomers(), bulkCounts[:, equilibrium_complexesIdx].transpose() * -1).transpose()
 
 			# Load unique molecule data for RNAP and ribosomes

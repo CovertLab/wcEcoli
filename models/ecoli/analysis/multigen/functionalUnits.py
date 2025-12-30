@@ -117,6 +117,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			bulkContainer.countsInc(nActiveRibosome.mean(), [sim_data.molecule_ids.s30_full_complex, sim_data.molecule_ids.s50_full_complex])
 			bulkContainer.countsInc(nActiveRnaPoly.mean(), [sim_data.molecule_ids.full_RNAP])
 			# Account for small-molecule bound complexes
+			# TODO: double check this still works properly with the changes made to the function
+			# todo: might need to change this to the _BuildStoichMatrix function?
 			view_equilibrium.countsInc(np.dot(sim_data.process.equilibrium.stoich_matrix_monomers(), view_equilibrium_complexes.counts() * -1))
 
 			# Minimum monomer counts

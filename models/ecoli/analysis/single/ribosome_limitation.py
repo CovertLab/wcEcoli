@@ -30,6 +30,7 @@ def calculate_ribosome_excesses(sim_data, paths):
 	mature_rna_data = sim_data.process.transcription.mature_rna_data
 
 	# Get complexation data
+	# TODO: double check this still works properly with the function changes implemented
 	complex_stoich = -complexation.stoich_matrix_monomers().astype(int)
 	monomer_ids = {id_: i for i, id_ in enumerate(complexation.molecule_names)}
 	complex_ids = {id_: i for i, id_ in enumerate(complexation.ids_complexes)}

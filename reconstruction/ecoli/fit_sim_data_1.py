@@ -1954,6 +1954,8 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 	# Data for complexation
 	complexationStoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64, order ="F")
 	# Data for equilibrium binding
+	# TODO: see if this fixes the recognization
+	equilibriumStoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64, order ="F")
 	# equilibriumDerivatives = sim_data.process.equilibrium.derivatives
 	# equilibriumDerivativesJacobian = sim_data.process.equilibrium.derivativesJacobian
 
@@ -2031,6 +2033,7 @@ def calculateBulkDistributions(sim_data, expression, concDict, avgCellDryMassIni
 				sim_data.constants.n_avogadro.asNumber(1 / units.mol),
 				random_state, jit=False,
 				)
+			# TODO: figure out how this changed
 			equilibriumMoleculesView.countsInc(
 				np.dot(sim_data.process.equilibrium.stoich_matrix().astype(np.int64), rxnFluxes)
 				)

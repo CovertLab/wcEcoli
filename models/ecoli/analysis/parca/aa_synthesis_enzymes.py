@@ -52,6 +52,7 @@ class Plot(parcaAnalysisPlot.ParcaAnalysisPlot):
 			if monomer in monomer_to_cistron
 			]
 
+		# TODO: confirm this still works as expected
 		complexation_stoich = complexation.stoich_matrix_monomers()
 
 		wcm_basal_counts_ppgpp_atten = create_container(sim_data, complexation_stoich,
