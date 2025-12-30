@@ -34,7 +34,6 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Create matrix and method
 		self.stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
-		hi = 5
 		self._stoichMatrix = sim_data.process.equilibrium.stoich_matrix_monomers().astype(np.int64)
 		self.fluxesAndMoleculesToSS = sim_data.process.equilibrium.fluxes_and_molecules_to_SS
 		self.product_indices = [idx for idx in np.where(np.any(self.stoichMatrix > 0, axis=1))[0]]
@@ -75,8 +74,21 @@ class Equilibrium(wholecell.processes.process.Process):
 		molecule_dict = {mol: i for i, mol in enumerate(self.bulk_molecule_IDs)}
 
 		# Get indexes of all relevant bulk molecules:
-		self.complexation_complex_idx = np.array(
+		self.equilibrium_complex_idx = np.array(
 			[molecule_dict[x] for x in equilibrium_complex_IDs])
+
+		# find where molecules and complexes are within bulk IDs and match:
+		matching_complexes_mask = np.isin(equilibrium_molecule_IDs, equilibrium_complex_IDs)
+		matching_complex_indices = np.where(matching_complexes_mask)[0]
+		complex_indices = []
+		for i in matching_complex_indices:
+			molecule_ID = equilibrium_molecule_IDs[i]
+			if molecule_ID in equilibrium_complex_IDs:
+				complex_index = equilibrium_complex_IDs.index(molecule_ID)
+				complex_indices.append(complex_index)
+
+		self.matching_complex_indices = complex_indices
+		self.matching_complex_molecule_indices = matching_complex_indices
 
 
 	def calculateRequest(self):
@@ -135,6 +147,36 @@ class Equilibrium(wholecell.processes.process.Process):
 			deltaMolecules[self.product_indices] / self.timeStepSec()
 			))
 
+		# Determine the total counts of each complex:
+		bulkMoleculeCounts = self.bulkMolecules.container.counts()
+		complex_counts = bulkMoleculeCounts[self.equilibrium_complex_idx]
+		self.writeToListener("EquilibriumListener", "complexCounts", complex_counts)
+
+		# Determine how many free monomers were made into complexes:
+		opposite_deltaMolecules = np.negative(deltaMolecules)
+		monomer_changes = np.zeros(len(self.monomer_IDs), np.int64)
+		monomer_changes[self.matching_monomer_indices] = opposite_deltaMolecules[
+			self.matching_molecule_indices]
+		self.writeToListener("EquilibriumListener", "monomersComplexed", monomer_changes)
+		# TODO: it appears a monomer is being generated? not sure how that is happening? maybe a reverse reaction is generating one?
+
+
+		# Determine how the number of monomers in complexes exist for each monomer:
+		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
+												   complex_counts))  # np.negative makes the monomers within it turn positive
+		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
+		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
+			self.matching_molecule_indices]
+		self.writeToListener("EquilibriumListener", "complexedMonomerCounts", complexed_monomers)
+
 		hi = 5
+
+		# investigating:
+		# TODO: see how these complexes relate to the monomer changes above
+		# todo: pretty sure this has to be multiplied by -1 because as is, it is all negative, which does not make much sense?
+		complex_count_changes = deltaMolecules[self.matching_complex_molecule_indices]
+
+		h = 8
+
 
 
