@@ -116,11 +116,12 @@ class Complexation(wholecell.processes.process.Process):
 
 		# Determine how the number of monomers in complexes exist for each monomer:
 		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix, complex_counts)) # np.negative makes the monomers within it turn positive
-		complexedMonomers = np.zeros(len(self.monomer_IDs), np.int64)
-		complexedMonomers[self.matching_monomer_indices] = monomers_in_complexes[self.matching_molecule_indices]
-		self.writeToListener("ComplexationListener", "complexedMonomerCounts", complexedMonomers)
+		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
+		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[self.matching_molecule_indices]
+		self.writeToListener("ComplexationListener", "complexedMonomerCounts", complexed_monomers)
 
 		# TODO: add complexes generated?
+		hi = 5
 
 
 
