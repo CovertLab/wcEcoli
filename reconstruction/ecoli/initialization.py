@@ -12,6 +12,7 @@ from wholecell.containers.unique_objects_container import Access
 from wholecell.utils.fitting import normalize, countsFromMassAndExpression, masses_and_counts_for_homeostatic_target
 from wholecell.utils.polymerize import computeMassIncrease
 from wholecell.utils import units
+# TODO: determine what the prebuilt matricies and mc files are doing?
 from wholecell.utils.mc_complexation import mccFormComplexesWithPrebuiltMatrices
 from wholecell.utils.random import stochasticRound
 
@@ -269,6 +270,8 @@ def set_small_molecule_counts(bulkMolCntr, sim_data, media_id, import_molecules,
 def initializeComplexation(bulkMolCntr, sim_data, randomState):
 	moleculeNames = sim_data.process.complexation.molecule_names
 	moleculeView = bulkMolCntr.countsView(moleculeNames)
+	# TODO: ensure this is compatible with function changes
+	# TODO: CHECK IF THIS INITIALIZATION NEEDS TO BE COPIED FOR EQUILIBRIUM?
 	stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64, order='F')
 
 	moleculeCounts = moleculeView.counts()
