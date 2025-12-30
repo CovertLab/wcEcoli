@@ -38,8 +38,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 
 		self.complexCounts = np.zeros(len(self.complexIDs), np.int64)
 
-		self.complexesGenerated = np.zeros(len(self.complexIDs), np.int64)
-
 		self.monomersComplexed = np.zeros(len(self.monomerIDs), np.int64)
 
 		self.complexedMonomerCounts = np.zeros(len(self.monomerIDs), np.int64)
@@ -49,7 +47,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'complexationEvents': 'reactionIDs',
 			'complexCounts': 'complexIDs',
-			'complexesGenerated': 'complexIDs',
 			'monomersComplexed': 'monomerIDs',
 			'complexedMonomerCounts': 'monomerIDs'}
 
@@ -67,7 +64,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			complexationEvents = self.complexationEvents,
 			complexCounts = self.complexCounts,
-			complexesGenerated = self.complexesGenerated,
 			monomersComplexed = self.monomersComplexed,
 			complexedMonomerCounts = self.complexedMonomerCounts
 			)
