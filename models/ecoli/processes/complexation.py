@@ -32,6 +32,7 @@ class Complexation(wholecell.processes.process.Process):
 
 		# Create matrices and vectors that describe reaction stoichiometries
 		self.stoichMatrix = sim_data.process.complexation.stoich_matrix().astype(np.int64)
+		self._stoichMatrix = sim_data.process.complexation.stoich_matrix_monomers().astype(np.int64)
 
 		# semi-quantitative rate constants
 		self.rates = sim_data.process.complexation.rates
@@ -44,104 +45,82 @@ class Complexation(wholecell.processes.process.Process):
 		moleculeNames = sim_data.process.complexation.molecule_names
 		self.molecules = self.bulkMoleculesView(moleculeNames)
 
-		# Extract relevant monomer information:
+		# Extract relevant monomer information within the internal states:
 		self.bulkMolecules = sim.internal_states["BulkMolecules"]
-		bulk_molecule_ids = self.bulkMolecules.container.objectNames()
+		self.bulk_molecule_IDs = self.bulkMolecules.container.objectNames()
 
 		# Get IDs of molecules involved in complexation reactions:
-		complexation_molecule_ids = sim_data.process.complexation.molecule_names
-		complexation_complex_ids = sim_data.process.complexation.ids_complexes
+		complexation_molecule_IDs = sim_data.process.complexation.molecule_names
+		complexation_complex_IDs = sim_data.process.complexation.ids_complexes
 
-		# Find where the complex IDs are within the molecule IDs:
-		self.complex_IDs_within_molecule_IDs = []
-		for complex in complexation_complex_ids:
-			matching_index = complexation_molecule_ids.index(complex)
-			# try this instead: np.any(self.stoich_matrix() > 0, axis=1)
-			self.complex_IDs_within_molecule_IDs.append(matching_index)
+		# Extract all monomer IDs so that matches within moleculeNames can be tracked:
+		self.monomer_IDs = sim_data.process.translation.monomer_data["id"].tolist()
 
-		# todo: do the same as above for monomers
+		# Find where monomers IDs are within molecules:
+		matching_monomers_mask = np.isin(complexation_molecule_IDs, self.monomer_IDs)
 
-		# extract all monomer IDs so that matches within moleculeNames can be tracked:
-		self.monomer_ids = sim_data.process.translation.monomer_data["id"].tolist()
+		# Get the indices of the matching monomers (i.e. where it is nonzero):
+		matching_indices = np.where(matching_monomers_mask)[0]
 
-		# Find where monomers are within molecules so that its easy to calculate the number of proteins in the complexes per time step
-		# todo: implement this (or consider just doing this in an analysis script?) need to double check that the stoich matrix is saved first
+		# Obtain the indices of the monomer IDs within bulkIDs for each matching index:
+		monomer_indices = []
+		for i in matching_indices:
+			molecule_ID = complexation_molecule_IDs[i]
+			if molecule_ID in self.monomer_IDs:
+				monomer_index = self.monomer_IDs.index(molecule_ID)
+				monomer_indices.append(monomer_index)
 
-		# Construct dictionary to quickly find bulk molecule indexes from IDs
-		molecule_dict = {mol: i for i, mol in enumerate(bulk_molecule_ids)}
+		self.matching_monomer_indices = monomer_indices
+		self.matching_molecule_indices = matching_indices
 
-		def get_molecule_indexes(keys):
-			return np.array([molecule_dict[x] for x in keys])
+		# Construct dictionary to quickly find bulk molecule indexes from IDs:
+		molecule_dict = {mol: i for i, mol in enumerate(self.bulk_molecule_IDs)}
 
-		# Get indexes of all relevant bulk molecules
-		self.monomer_idx = get_molecule_indexes(self.monomer_ids)
-		self.complexation_molecule_idx = get_molecule_indexes(complexation_molecule_ids)
-		self.complexation_complex_idx = get_molecule_indexes(complexation_complex_ids)
-
+		# Get indexes of all relevant bulk molecules:
+		self.complexation_complex_idx = np.array([molecule_dict[x] for x in complexation_complex_IDs])
 
 
 	def calculateRequest(self):
 		moleculeCounts = self.molecules.total_counts()
 
-		hi = 6
-
 		result = self.system.evolve(
 			self._sim.timeStepSec(), moleculeCounts, self.rates)
 		updatedMoleculeCounts = result['outcome']
 
-		hi = 8
-
 		self.molecules.requestIs(np.fmax(moleculeCounts - updatedMoleculeCounts, 0))
-
-		hi = 7
 
 
 	def evolveState(self):
 		moleculeCounts = self.molecules.counts()
-
-		hi = 5
 
 		result = self.system.evolve(
 			self._sim.timeStepSec(), moleculeCounts, self.rates)
 		updatedMoleculeCounts = result['outcome']
 		events = result['occurrences']
 
-		hi = 5
-
 		self.molecules.countsIs(updatedMoleculeCounts)
-
-		hi = 6
 
 		# Write outputs to listeners
 		self.writeToListener("ComplexationListener", "complexationEvents", events)
-		hi = 5
 
-		# Determine the total counts of the complexes:
+		# Determine the total counts of each complex:
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 		complex_counts = bulkMoleculeCounts[self.complexation_complex_idx]
 		self.writeToListener("ComplexationListener", "complexCounts", complex_counts)
 
-		# Determine how the counts of each molecule involvd in complexation changed this timestep:
-		molecule_changes = np.dot(self.stoichMatrix, events)
+		# Determine how many free monomers were made into complexes:
+		downstream_molecule_changes = np.negative(np.dot(self._stoichMatrix, events)) # np.negative() makes the counts positive
+		monomer_changes = np.zeros(len(self.monomer_IDs), np.int64)
+		monomer_changes[self.matching_monomer_indices] = downstream_molecule_changes[self.matching_molecule_indices]
+		self.writeToListener("ComplexatoinListener", "monomersComplexed", monomer_changes)
 
-		hi = 5
+		# Determine how the number of monomers in complexes exist for each monomer:
+		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix, complex_counts)) # np.negative makes the monomers within it turn positive
+		complexedMonomers = np.zeros(len(self.monomer_IDs), np.int64)
+		complexedMonomers[self.matching_monomer_indices] = monomers_in_complexes[self.matching_molecule_indices]
+		self.writeToListener("ComplexatoinListener", "complexedMonomerCounts", complexedMonomers)
 
-		# TODO: find where the complex indicies are within molecule changes and separate those out from monomers and save each separately
-
-
-
-
-
-		# Determine how many complexes were generated this time step:
-		# find where complex indexes match molecule indexes:
-		#complex_indexes = set(self.complexation_complex_idx, self.complexation_molecule_idx)
-		# Next, use this to figure out where the complexes must be within the events matrix using these overlapps?
-
-		# Determine the number of each monomer within the total complexes:
-		# note, to do this, would need the other matrix ...
-
-
-		# TODO: write the number of molecules used to generate the monomers here, not to monomer_counts.
+		# TODO: add complexes generated?
 
 
 
