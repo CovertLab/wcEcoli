@@ -39,8 +39,8 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.product_indices = [idx for idx in np.where(np.any(self.stoichMatrix > 0, axis=1))[0]]
 
 		# Build views
-		moleculeNames = sim_data.process.equilibrium.molecule_names
-		self.molecules = self.bulkMoleculesView(moleculeNames)
+		self.moleculeNames = sim_data.process.equilibrium.molecule_names
+		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 		# Extract relevant monomer information within the internal states:
 		self.bulkMolecules = sim.internal_states["BulkMolecules"]
@@ -89,7 +89,7 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		self.matching_complex_indices = complex_indices
 		self.matching_complex_molecule_indices = matching_complex_indices
-
+		self.complex_IDs = equilibrium_complex_IDs # for checking
 
 	def calculateRequest(self):
 		# Get molecule counts
