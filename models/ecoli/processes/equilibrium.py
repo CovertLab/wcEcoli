@@ -159,8 +159,8 @@ class Equilibrium(wholecell.processes.process.Process):
 			self.matching_molecule_indices]
 		self.writeToListener("EquilibriumListener", "monomersComplexed", monomer_changes)
 		# TODO: it appears a monomer is being generated? not sure how that is happening? maybe a reverse reaction is generating one?
-		# TODO: watch PD00353[c], PD00413[c], and PD03831[c]
-
+		# TODO: watch PD00353[c] (MONOMER0-155) (-82), PD00413[c] (MONOMER0-162, MONOMER0-163) (-2), and PD03831[c] (MONOMER0-160, MONOMER0-4565) (-1)
+		# TODO: watch 'BASS-MONOMER[i] (PHOSPHO-BASS), PD04099[c] (CPLX0-7605_RXN, CPLX0-7606_RXN), PD01520[c] (MONOMER-51_3-OXOPALMITOYL-COA_RXN and many more)
 
 		# Determine how the number of monomers in complexes exist for each monomer:
 		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
@@ -176,7 +176,7 @@ class Equilibrium(wholecell.processes.process.Process):
 		# TODO: see how these complexes relate to the monomer changes above
 		# todo: pretty sure this has to be multiplied by -1 because as is, it is all negative, which does not make much sense?
 		complex_count_changes = deltaMolecules[self.matching_complex_molecule_indices]
-
+		# WATCH: MONOMER0-155[c] (-82), 'CPLX0-11744[c]' (-13), MONOMER0-163[c] (-2)
 		h = 8
 
 
