@@ -159,6 +159,7 @@ class Equilibrium(wholecell.processes.process.Process):
 			self.matching_molecule_indices]
 		self.writeToListener("EquilibriumListener", "monomersComplexed", monomer_changes)
 		# TODO: it appears a monomer is being generated? not sure how that is happening? maybe a reverse reaction is generating one?
+		# TODO: watch PD00353[c], PD00413[c], and PD03831[c]
 
 
 		# Determine how the number of monomers in complexes exist for each monomer:
