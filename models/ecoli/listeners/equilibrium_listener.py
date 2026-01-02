@@ -38,7 +38,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 		self.complexCounts = np.zeros(len(self.complexIDs), np.int64)
 
-		self.monomersComplexed = np.zeros(len(self.monomerIDs), np.int64)
+		self.freeMonomersComplexed = np.zeros(len(self.monomerIDs), np.int64)
 
 		self.complexedMonomerCounts = np.zeros(len(self.monomerIDs), np.int64)
 
@@ -47,7 +47,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		subcolumns = {
 			'reactionRates': 'reactionIDs',
 			'complexCounts': 'complexIDs',
-			'monomersComplexed': 'monomerIDs',
+			'freeMonomersComplexed': 'monomerIDs',
 			'complexedMonomerCounts': 'monomerIDs'}
 
 		tableWriter.writeAttributes(
@@ -63,6 +63,6 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 			simulationStep = self.simulationStep(),
 			reactionRates = self.reactionRates,
 			complexCounts = self.complexCounts,
-			monomersComplexed = self.monomersComplexed,
+			freeMonomersComplexed = self.freeMonomersComplexed,
 			complexedMonomerCounts = self.complexedMonomerCounts
 			)
