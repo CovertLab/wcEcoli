@@ -153,11 +153,11 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.writeToListener("EquilibriumListener", "complexCounts", complex_counts)
 
 		# Determine how many free monomers were made into complexes:
-		opposite_deltaMolecules = np.negative(deltaMolecules)
-		monomer_changes = np.zeros(len(self.monomer_IDs), np.int64)
-		monomer_changes[self.matching_monomer_indices] = opposite_deltaMolecules[
+		opposite_deltaMolecules = np.negative(deltaMolecules) # monomers that were used to form complexes will be positive here to stay consisent with the nomenclature used for monomersDegraded (in monomer_counts.py), and monomers that were generated from complex disassociation will be positive.
+		free_monomers_complexed = np.zeros(len(self.monomer_IDs), np.int64)
+		free_monomers_complexed[self.matching_monomer_indices] = opposite_deltaMolecules[
 			self.matching_molecule_indices]
-		self.writeToListener("EquilibriumListener", "monomersComplexed", monomer_changes)
+		self.writeToListener("EquilibriumListener", "monomersComplexed", free_monomers_complexed)
 		# TODO: it appears a monomer is being generated? not sure how that is happening? maybe a reverse reaction is generating one?
 		# TODO: watch PD00353[c] (MONOMER0-155) (-82), PD00413[c] (MONOMER0-162, MONOMER0-163) (-2), and PD03831[c] (MONOMER0-160, MONOMER0-4565) (-1)
 		# TODO: watch 'BASS-MONOMER[i] (PHOSPHO-BASS), PD04099[c] (CPLX0-7605_RXN, CPLX0-7606_RXN), PD01520[c] (MONOMER-51_3-OXOPALMITOYL-COA_RXN and many more)
@@ -173,11 +173,10 @@ class Equilibrium(wholecell.processes.process.Process):
 		hi = 5
 
 		# investigating:
-		# TODO: see how these complexes relate to the monomer changes above
-		# todo: pretty sure this has to be multiplied by -1 because as is, it is all negative, which does not make much sense?
 		complex_count_changes = deltaMolecules[self.matching_complex_molecule_indices]
 		# WATCH: MONOMER0-155[c] (-82), 'CPLX0-11744[c]' (-13), MONOMER0-163[c] (-2)
 		h = 8
+		# TODO: confirm that for the complexes that are generated, the monomer changes are also (+) in the free_monomer_count_changes variable
 
 
 
