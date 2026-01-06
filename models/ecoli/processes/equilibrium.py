@@ -157,7 +157,7 @@ class Equilibrium(wholecell.processes.process.Process):
 		free_monomers_complexed = np.zeros(len(self.monomer_IDs), np.int64)
 		free_monomers_complexed[self.matching_monomer_indices] = opposite_deltaMolecules[
 			self.matching_molecule_indices]
-		self.writeToListener("EquilibriumListener", "monomersComplexed", free_monomers_complexed)
+		self.writeToListener("EquilibriumListener", "freeMonomersComplexed", free_monomers_complexed)
 		# TODO: it appears a monomer is being generated? not sure how that is happening? maybe a reverse reaction is generating one?
 		# TODO: watch PD00353[c] (MONOMER0-155) (-82), PD00413[c] (MONOMER0-162, MONOMER0-163) (-2), and PD03831[c] (MONOMER0-160, MONOMER0-4565) (-1)
 		# TODO: watch 'BASS-MONOMER[i] (PHOSPHO-BASS), PD04099[c] (CPLX0-7605_RXN, CPLX0-7606_RXN), PD01520[c] (MONOMER-51_3-OXOPALMITOYL-COA_RXN and many more)
