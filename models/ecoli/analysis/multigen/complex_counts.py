@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["CPLX0-2881", "CPLX0-3101"]
+PLOT_COMPLEXES = ["CPLX0-2881", "CPLX0-3101", "MONOMER0-160", "MONOMER0-155"]
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -103,10 +103,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 reader = eq_complex_counts_listener
                 complex_idx = eq_complex_idx_dict[complex]
                 # find the complex and its consituent monomers:
-                molecules_to_all_downstream_complexes = sim_data.process.complexation.molecules_to_all_downstream_complexes_dict
+                molecules_to_all_downstream_complexes = sim_data.process.equilibrium.molecules_to_all_downstream_complexes_dict
                 # find where the complex shows up as a value in the dict:
-                monomers = {k: v for k, v in molecules_to_all_downstream_complexes.items() if
+                monomers_temp = {k: v for k, v in molecules_to_all_downstream_complexes.items() if
                             complex in v}
+                # remove any monomers that are not actually monomers (i.e. ATP):
+                for key in monomers_temp.keys():
+                    if key in monomerIDs:
+                        monomers[key] = monomers_temp[key]
+
                 complex_counts = read_stacked_columns(cell_paths, 'EquilibriumListener',
                                                       "complexCounts")[:, complex_idx]
                 complex_type = "equilibrium"
@@ -126,7 +131,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 monomer_complex_info = monomer_info[complex][1]
                 monomer_stoich = monomer_complex_info['stoichiometry']
                 monomer_complex_counts = complex_counts * monomer_stoich
-                ax1.plot(time, monomer_complex_counts, alpha=0.5, label=f'{monomer} counts within {complex} (6 per)')
+                ax1.plot(time, monomer_complex_counts, alpha=0.5, label=f'{monomer} counts within {complex} ({monomer_stoich} per)')
 
 
             for i in range(len(end_generation_times)):
