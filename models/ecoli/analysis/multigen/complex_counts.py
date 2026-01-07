@@ -91,16 +91,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Determine the complex type:
             monomers = {}
             if complex in complex_idx_dict:
-                reader = complex_counts_listener
                 complex_idx = complex_idx_dict[complex]
                 # find the complex and its consituent monomers:
                 molecules_to_all_downstream_complexes = sim_data.process.complexation.molecules_to_all_downstream_complexes_dict
                 # find where the complex shows up as a value in the dict:
                 monomers = {k: v for k, v in molecules_to_all_downstream_complexes.items() if complex in v}
                 complex_counts = read_stacked_columns(cell_paths, 'ComplexationListener', "complexCounts")[:, complex_idx]
+                complexation_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, complex_idx]
                 complex_type = "complexation"
+                hi = 5
             elif complex in eq_complex_idx_dict:
-                reader = eq_complex_counts_listener
                 complex_idx = eq_complex_idx_dict[complex]
                 # find the complex and its consituent monomers:
                 molecules_to_all_downstream_complexes = sim_data.process.equilibrium.molecules_to_all_downstream_complexes_dict
@@ -114,13 +114,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                 complex_counts = read_stacked_columns(cell_paths, 'EquilibriumListener',
                                                       "complexCounts")[:, complex_idx]
+                hi = 5
+                complexation_events = read_stacked_columns(cell_paths, 'EquilibriumListener', "complexationEvents")[:, complex_idx]
                 complex_type = "equilibrium"
 
             else:
                 raise ValueError(f"Complex {complex} not found in complexation complex or equilibrium complex  listeners.")
 
             # Generate the plots:
-            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(10, 6))
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(10, 6))
             # Complex Counts plot
             ax1.plot(time, complex_counts, color='lightseagreen', label='Complex Counts')
 
@@ -148,11 +150,32 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 protein_FMC = free_monomer_counts[:, protein_idx]
                 ax2.plot(time, protein_FMC, alpha=0.5, label=f'{monomer}')
 
+            # add vertical lines for the end of each generation:
+            for i in range(len(end_generation_times)):
+                dt = end_generation_times[i]
+                ax2.axvline(x=dt, linestyle='--', color="yellowgreen")
 
-            ax2.set_xlabel("Time (s)")
+
             ax2.set_ylabel("Free Monomer Counts")
             ax2.legend(fontsize=5)
+
+            # add a plot of the complexation events over time:
+            ax3.plot(time, complexation_events, color='lightseagreen', label=complex)
+            ax3.set_xlabel("Time (s)")
+            ax3.set_ylabel("Complexation Events")
+            ax3.legend(fontsize=5)
+
+            # add vertical lines for the end of each generation:
+            for i in range(len(end_generation_times)):
+                dt = end_generation_times[i]
+                ax3.axvline(x=dt, linestyle='--', color="yellowgreen")
+
+
+
+
             plt.tight_layout()
+
+
 
 
 
