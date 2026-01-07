@@ -101,6 +101,7 @@ class Complexation(wholecell.processes.process.Process):
 		self.molecules.countsIs(updatedMoleculeCounts)
 
 		# Write outputs to listeners
+		# TODO: check that the outputs here are for complexes and are in the same order as reaction IDs!
 		self.writeToListener("ComplexationListener", "complexationEvents", events)
 
 		# Determine the total counts of each complex:

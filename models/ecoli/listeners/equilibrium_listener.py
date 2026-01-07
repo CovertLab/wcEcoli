@@ -38,6 +38,10 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 		self.complexCounts = np.zeros(len(self.complexIDs), np.int64)
 
+
+		# TODO: decide if it shoudl be complexIDs or reaction IDs
+		self.complexationEvents = np.zeros(len(self.reactionIDs), np.int64)
+
 		self.freeMonomersComplexed = np.zeros(len(self.monomerIDs), np.int64)
 
 		self.complexedMonomerCounts = np.zeros(len(self.monomerIDs), np.int64)

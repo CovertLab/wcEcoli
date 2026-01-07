@@ -172,7 +172,7 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		hi = 5
 
-		# investigating:
+		# TODO: add complexationEvents here:
 		complex_count_changes = deltaMolecules[self.matching_complex_molecule_indices]
 		# WATCH: MONOMER0-155[c] (-82), 'CPLX0-11744[c]' (-13), MONOMER0-163[c] (-2)
 		h = 8
