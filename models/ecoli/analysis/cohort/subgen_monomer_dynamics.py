@@ -23,30 +23,108 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 IGNORE_FIRST_N_GENS = 20
 SEEDS = np.arange(20, 25)
 COLOR_LINE = 'mediumseagreen' # 'skyblue'
+monomers_of_interest = ['CYTOCHROMEC-MONOMER[p]', 
+						# 'CYTOCHROMEC552-MONOMER[p]',
+						'DMSA-MONOMER[i]', 
+						# 'DMSB-MONOMER[i]', 'DMSC-MONOMER[i]',
+						'EG11800-MONOMER[i]', 
+						'EG11815-MONOMER[p]', 
+						'EG12244-MONOMER[i]',
+						'FDNG-MONOMER[m]', 
+						# 'FDNH-MONOMER[m]', 'FDNI-MONOMER[m]',
+						'FDOG-MONOMER[c]', 
+						# 'FDOH-MONOMER[m]', 'FDOI-MONOMER[i]',
+						'FORMATEDEHYDROGH-MONOMER[c]', 
+						'FUM-FE-S[c]', 
+						# 'FUM-FLAVO[c]','FUM-MEMB1[m]', 'FUM-MEMB2[m]', 
+						'G6848-MONOMER[i]',
+						'G7022-MONOMER[p]', 
+						# 'G7023-MONOMER[m]', 
+						'HYAA-MONOMER[i]',
+						# 'HYAB-MONOMER[i]', 'HYAC-MONOMER[i]', 
+						'HYCBSMALL-MONOMER[c]',
+						# 'HYCC-MONOMER[i]', 'HYCD-MONOMER[i]', 'HYCELARGE-MONOMER[c]',
+						# 'HYCF-MONOMER[m]', 'HYCG-MONOMER[i]', 
+						'MONOMER0-141[i]',
+						# 'MONOMER0-142[i]', 
+						# 'MONOMER0-143[i]', 'MONOMER0-150[c]',
+						# 'MONOMER0-153[i]', 'MONOMER0-154[m]', 
+						'NARG-MONOMER[m]',
+						# 'NARH-MONOMER[m]', 'NARI-MONOMER[m]', 
+						'NARV-MONOMER[m]',
+						# 'NARY-MONOMER[m]', 'NARZ-MONOMER[m]', 
+						'NRFC-MONOMER[c]',
+						# 'NRFD-MONOMER[i]', 
+						'TORA-MONOMER[p]']
+monomers_of_interest_name_dict = {'CYTOCHROMEC-MONOMER[p]': 'nrfB',
+								'CYTOCHROMEC552-MONOMER[p]': 'nrfA',
+								'DMSA-MONOMER[i]': 'dmsA',
+								'DMSB-MONOMER[i]': 'dmsB',
+								'DMSC-MONOMER[i]': 'dmsC',
+								'EG11800-MONOMER[i]': 'hybB',
+								'EG11815-MONOMER[p]': 'torC',
+								'EG12244-MONOMER[i]': 'ccp',
+								'FDNG-MONOMER[m]': 'fdnG',
+								'FDNH-MONOMER[m]': 'fdnH',
+								'FDNI-MONOMER[m]': 'fdnI',
+								'FDOG-MONOMER[c]': 'fdoG',
+								'FDOH-MONOMER[m]': 'fdoH',
+								'FDOI-MONOMER[i]': 'fdoI',
+								'FORMATEDEHYDROGH-MONOMER[c]': 'fdhF',
+								'FUM-FE-S[c]': 'frdB',
+								'FUM-FLAVO[c]': 'frdA',
+								'FUM-MEMB1[m]': 'frdC',
+								'FUM-MEMB2[m]': 'frdD',
+								'G6848-MONOMER[i]': 'ynfH',
+								'G7022-MONOMER[p]': 'torZ',
+								'G7023-MONOMER[m]': 'torY',
+								'HYAA-MONOMER[i]': 'hyaA',
+								'HYAB-MONOMER[i]': 'hyaB',
+								'HYAC-MONOMER[i]': 'hyaC',
+								'HYCBSMALL-MONOMER[c]': 'hycB',
+								'HYCC-MONOMER[i]': 'hycC',
+								'HYCD-MONOMER[i]': 'hycD',
+								'HYCELARGE-MONOMER[c]': 'hycE',
+								'HYCF-MONOMER[m]': 'hycF',
+								'HYCG-MONOMER[i]': 'hycG',
+								'MONOMER0-141[i]': 'hyfD',
+								'MONOMER0-142[i]': 'hyfE',
+								'MONOMER0-143[i]': 'hyfF',
+								'MONOMER0-150[c]': 'hyfG',
+								'MONOMER0-153[i]': 'hyfB',
+								'MONOMER0-154[m]': 'hyfC',
+								'NARG-MONOMER[m]': 'narG',
+								'NARH-MONOMER[m]': 'narH',
+								'NARI-MONOMER[m]': 'narI',
+								'NARV-MONOMER[m]': 'narV',
+								'NARY-MONOMER[m]': 'narY',
+								'NARZ-MONOMER[m]': 'narZ',
+								'NRFC-MONOMER[c]': 'nrfC',
+								'NRFD-MONOMER[i]': 'nrfD',
+								'TORA-MONOMER[p]': 'torA'}
+# monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
+# 						'BETAGALACTOSID-MONOMER[c]',  # lacZ
+# 						'RIBULOKIN-MONOMER[c]',  # araB
+# 						'BAES-MONOMER[i]',  # baeS
+# 						'G6504-MONOMER[o]',  # gfcE
+# 						'EG11250-MONOMER[c]',  # chpS
+# 						'EG11222-MONOMER[c]',  # alkA
+# 						'G7263-MONOMER[c]',  # murQ
+# 						'EG11249-MONOMER[c]',  # mazF const
+# 						'EG10466-MONOMER[c]'  # hupA const
+# 						]
 
-monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
-						'BETAGALACTOSID-MONOMER[c]',  # lacZ
-						'RIBULOKIN-MONOMER[c]',  # araB
-						'BAES-MONOMER[i]',  # baeS
-						'G6504-MONOMER[o]',  # gfcE
-						'EG11250-MONOMER[c]',  # chpS
-						'EG11222-MONOMER[c]',  # alkA
-						'G7263-MONOMER[c]',  # murQ
-						'EG11249-MONOMER[c]',  # mazF const
-						'EG10466-MONOMER[c]'  # hupA const
-						]
-
-monomers_of_interest_name_dict = {'GLYCDEH-MONOMER[c]': 'gldA',
-						'BETAGALACTOSID-MONOMER[c]': 'lacZ',
-						'RIBULOKIN-MONOMER[c]': 'araB',
-						'BAES-MONOMER[i]': 'baeS',
-						'G6504-MONOMER[o]': 'gfcE',
-						'EG11250-MONOMER[c]': 'chpS',
-						'EG11222-MONOMER[c]': 'alkA',
-						'G7263-MONOMER[c]': 'murQ',
-						'EG11249-MONOMER[c]': 'mazF',
-						'EG10466-MONOMER[c]': 'hupA'
-								  }
+# monomers_of_interest_name_dict = {'GLYCDEH-MONOMER[c]': 'gldA',
+# 						'BETAGALACTOSID-MONOMER[c]': 'lacZ',
+# 						'RIBULOKIN-MONOMER[c]': 'araB',
+# 						'BAES-MONOMER[i]': 'baeS',
+# 						'G6504-MONOMER[o]': 'gfcE',
+# 						'EG11250-MONOMER[c]': 'chpS',
+# 						'EG11222-MONOMER[c]': 'alkA',
+# 						'G7263-MONOMER[c]': 'murQ',
+# 						'EG11249-MONOMER[c]': 'mazF',
+# 						'EG10466-MONOMER[c]': 'hupA'
+# 								  }
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
