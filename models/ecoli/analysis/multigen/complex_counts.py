@@ -100,6 +100,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 complexation_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, complex_idx]
                 complex_type = "complexation"
                 hi = 5
+                # TODO: find the correct way to index to these compelxation events from the reaction ids
+                complex_reactions = complex_counts_listener.readAttribute("reactionIDs")
+                # todo: fix alignment!
             elif complex in eq_complex_idx_dict:
                 complex_idx = eq_complex_idx_dict[complex]
                 # find the complex and its consituent monomers:
