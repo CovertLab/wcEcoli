@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["CPLX0-8223",] #
+PLOT_COMPLEXES = ["CPLX0-7740",] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
@@ -108,7 +108,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 for monomer in monomers:
                     monomer_info = monomers[monomer]
                     monomer_complex_info = monomer_info[complex][0]
-                    hi = 5
                     reaction_id = monomer_complex_info['reaction_id']
                     if reaction_id in complex_reactions:
                         reaction_idx = complex_reactions.index(reaction_id)
@@ -148,7 +147,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Generate the plots:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(10, 6))
             # Complex Counts plot
-            ax1.plot(time, complex_counts, color='lightseagreen', label='Complex Counts')
+            ax1.plot(time, complex_counts, color='lightseagreen', label='Complex Counts', linewidth=.75)
 
             # plot the counts of each monomer that makes up the complex:
             for monomer in monomers.keys():
@@ -157,12 +156,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 monomer_complex_info = monomer_info[complex][1] # use 1 to get the stoichiometry dict
                 monomer_stoich = monomer_complex_info['stoichiometry']
                 monomer_complex_counts = complex_counts * monomer_stoich
-                ax1.plot(time, monomer_complex_counts, alpha=0.5, label=f'{monomer} counts within {complex} ({monomer_stoich} per)')
-
-
-            for i in range(len(end_generation_times)):
-                dt = end_generation_times[i]
-                ax1.axvline(x=dt, linestyle='--', color="yellowgreen")
+                ax1.plot(time, monomer_complex_counts, alpha=0.5, label=f'{monomer} counts within {complex} ({monomer_stoich} per)', linewidth=0.75)
 
             ax1.legend(fontsize=5)
             ax1.set_ylabel("Complex Counts")
@@ -172,13 +166,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             for monomer in monomers.keys():
                 protein_idx = monomer_idx_dict[monomer]
                 protein_FMC = free_monomer_counts[:, protein_idx]
-                ax2.plot(time, protein_FMC, alpha=0.5, label=f'{monomer}')
-
-            # add vertical lines for the end of each generation:
-            for i in range(len(end_generation_times)):
-                dt = end_generation_times[i]
-                ax2.axvline(x=dt, linestyle='--', color="yellowgreen")
-
+                ax2.plot(time, protein_FMC, alpha=0.75, label=f'{monomer}', linewidth=0.75)
 
             ax2.set_ylabel("Free Monomer Counts")
             ax2.legend(fontsize=5)
@@ -187,7 +175,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             for rxn in reaction_to_idx_dict.keys():
                 rxn_idx = reaction_to_idx_dict[rxn]
                 rxn_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, rxn_idx]
-                ax3.plot(time, rxn_events, alpha=0.5, label=f'{rxn} events')
+                ax3.plot(time, rxn_events, alpha=0.75, label=f'{rxn}', linewidth=0.75)
             ax3.set_xlabel("Time (s)")
             ax3.set_ylabel("Complexation Events")
             ax3.legend(fontsize=5)
@@ -195,16 +183,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # add vertical lines for the end of each generation:
             for i in range(len(end_generation_times)):
                 dt = end_generation_times[i]
+                ax1.axvline(x=dt, linestyle='--', color="yellowgreen")
+                ax2.axvline(x=dt, linestyle='--', color="yellowgreen")
                 ax3.axvline(x=dt, linestyle='--', color="yellowgreen")
 
 
-
-
             plt.tight_layout()
-
-
-
-
 
             #save the plot:
             file_name = plotOutFileName + "_" +complex
