@@ -55,6 +55,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# Get stoichiometric matrices for complexation, equilibrium, two component system and the
 		# assembly of unique molecules
 		self.complexation_stoich = sim_data.process.complexation.stoich_matrix_monomers()
+		# TODO: verify that the complexation_stoich is correct here after changing these functions!
 		self.equilibrium_stoich = sim_data.process.equilibrium.stoich_matrix_monomers()
 		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers()
 		self.ribosome_stoich = np.hstack(
