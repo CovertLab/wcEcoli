@@ -104,6 +104,7 @@ class Complexation(wholecell.processes.process.Process):
 		# TODO: check that the outputs here are for complexes and are in the same order as reaction IDs!
 		self.writeToListener("ComplexationListener", "complexationEvents", events)
 
+		# TODO: I do not think that the reaction order and complex order are the same! figure out the mapping so the output of the graph is good
 		# Determine the total counts of each complex:
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 		complex_counts = bulkMoleculeCounts[self.complexation_complex_idx]
@@ -115,7 +116,7 @@ class Complexation(wholecell.processes.process.Process):
 		monomer_changes[self.matching_monomer_indices] = downstream_molecule_changes[self.matching_molecule_indices]
 		self.writeToListener("ComplexationListener", "monomersComplexed", monomer_changes)
 
-		# Determine how the number of monomers in complexes exist for each monomer:
+		# Determine how many free monomers are currently in complexes (for each monomer):
 		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix, complex_counts)) # np.negative makes the monomers within it turn positive
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
 		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[self.matching_molecule_indices]
