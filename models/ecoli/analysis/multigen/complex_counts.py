@@ -1,7 +1,7 @@
 """
-This plot allows one to visualize the protein synthesis and loss rates over
-then duration of a simulation, along with a plot of the protein's free monomer
-counts with a first order degradation rate equation fitted to it.
+This plot allows one to visualize the counts of a specified complex over time,
+along with the counts of the free monomers that make up that complex,
+and the complexation events that produce that complex.
 """
 import pickle
 import os
@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["CPLX0-7740",] #
+PLOT_COMPLEXES = ["CPLX0-2881", "MONOMER0-155"] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
@@ -73,16 +73,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices = extract_doubling_times(
             cell_paths)
 
-        def check_validity_and_get_compartment(protein_list):
-            revised_protein_list = []
-            for protein in protein_list:
-                if "[" in protein:
-                    protein = protein[:-3] # remove compartment
-                if sim_data.getter.is_valid_molecule(protein):
-                    revised_name = protein + sim_data.getter.get_compartment_tag(protein)
-                    revised_protein_list.append(revised_name)
+        def check_validity_and_get_compartment(molecule_list):
+            revised_molecule_list = []
+            for molecule in molecule_list:
+                if "[" in molecule:
+                    molecule = molecule[:-3] # remove compartment
+                if sim_data.getter.is_valid_molecule(molecule):
+                    revised_name = molecule + sim_data.getter.get_compartment_tag(molecule)
+                    revised_molecule_list.append(revised_name)
 
-            return revised_protein_list
+            return revised_molecule_list
 
         # Make sure the proteins inputted are valid and have a compartment tag:
         PLOT_COMPLEXES_revised = check_validity_and_get_compartment(PLOT_COMPLEXES)
@@ -147,7 +147,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Generate the plots:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(10, 6))
             # Complex Counts plot
-            ax1.plot(time, complex_counts, color='lightseagreen', label='Complex Counts', linewidth=.75)
+            ax1.plot(time, complex_counts, color='orange', label='Complex Counts', linewidth=.75)
 
             # plot the counts of each monomer that makes up the complex:
             for monomer in monomers.keys():
@@ -156,11 +156,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 monomer_complex_info = monomer_info[complex][1] # use 1 to get the stoichiometry dict
                 monomer_stoich = monomer_complex_info['stoichiometry']
                 monomer_complex_counts = complex_counts * monomer_stoich
-                ax1.plot(time, monomer_complex_counts, alpha=0.5, label=f'{monomer} counts within {complex} ({monomer_stoich} per)', linewidth=0.75)
+                ax1.plot(time, monomer_complex_counts, alpha=0.5, label=f'{monomer} counts within {complex} ({monomer_stoich} per)', linewidth=1)
 
             ax1.legend(fontsize=5)
             ax1.set_ylabel("Complex Counts")
-            ax1.set_title(f"Complex counts over time for {complex_type} {complex}\n Sim ID: {metadata['description']}")
+            ax1.set_title(f"Complex counts for {complex_type} complex {complex}\n Sim ID: {metadata['description']}")
 
             # Now plot the free monomer counts for each protein that makes up the complex:
             for monomer in monomers.keys():
@@ -174,7 +174,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # add a plot of the complexation events over time:
             for rxn in reaction_to_idx_dict.keys():
                 rxn_idx = reaction_to_idx_dict[rxn]
-                rxn_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, rxn_idx]
+                if complex_type == "equilibrium":
+                    # NOTE: equilibrium reactions can go negative (reverse reactions), so the events here may be negative
+                    rxn_events = read_stacked_columns(cell_paths, 'EquilibriumListener', "complexationEvents")[:, rxn_idx]
+                else:
+                    rxn_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, rxn_idx]
                 ax3.plot(time, rxn_events, alpha=0.75, label=f'{rxn}', linewidth=0.75)
             ax3.set_xlabel("Time (s)")
             ax3.set_ylabel("Complexation Events")
