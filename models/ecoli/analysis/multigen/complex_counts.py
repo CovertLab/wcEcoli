@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["CPLX0-2881", "MONOMER0-155"] #
+PLOT_COMPLEXES = ["MONOMER-54", "MONOMER-59", "MONOMER-55"] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
