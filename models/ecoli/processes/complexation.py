@@ -123,7 +123,7 @@ class Complexation(wholecell.processes.process.Process):
 		self.writeToListener("ComplexationListener", "complexedMonomerCounts", complexed_monomers)
 
 		# TODO: add complexes generated?
-		hi = 5
+		# TODO: change complex counts to free complex counts and make a total complex counts output to account for complexes within other complexes?
 
 
 
