@@ -5,7 +5,8 @@ Template for multigen analysis plots
 import pickle
 import os
 from wholecell.utils import units
-
+from sklearn.metrics import r2_score
+from scipy.stats import pearsonr
 from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
@@ -74,6 +75,67 @@ def get_common_name(protein_id):
         common_name = get_gene_symbols_for_monomer_ids()[protein]
 
     return common_name
+
+
+def get_plot_stats(x, y):
+    # filter out nan or inf values:
+    mask = np.isfinite(x) & np.isfinite(y)
+    x = x[mask]
+    y = y[mask]
+    n = len(x)
+    # Calculate pearson R:
+    pearson_r, pearson_p = pearsonr(x, y)
+    # Calculate pearson R^2:
+    pearson_r2 = pearson_r ** 2
+    # Calculate coefficent of determination R^2:
+    r2 = r2_score(x, y)
+
+    return pearson_r, pearson_r2, r2, n, mask
+
+
+def add_stats_to_plot(x, y, fig):
+    pearson_r, pearson_r2, r2, n, mask = get_plot_stats(x, y)
+    # Put the data on the plot:
+    plt.text(0.96, 0.03,
+             f'Pearson R: {round(pearson_r, 3)}\n Pearson $R^2$: '
+             f'{round(pearson_r2, 3)}\n'
+             f'Coefficent of Determination $R^2$: {round(r2, 3)}',
+             ha='right', va='bottom',
+             transform=plt.gca().transAxes,
+             fontsize=6, color='gray')
+
+    text = (
+        f'Stats for n={n} proteins (filtered out NaNs & infs):<br>'
+        f'Pearson R: {round(pearson_r, 3)}; Pearson R<sup>2</sup>: {round(pearson_r2, 3)}<br>'
+        f'Coefficient of determination R<sup>2</sup>: {round(r2, 3)}'
+    )
+
+    # Get the maximum x and minimum y to position the text in the bottom-right
+    x_max = x[mask].max()
+    y_min = y[mask].min()
+    hi = 5
+
+
+    # Adjust x_max and y_min slightly outside the actual graph boundaries:
+    text_offset_x = 0.05
+    text_offset_y = 0.75
+
+    # Adding text annotation to the bottom right
+    fig.add_annotation(
+        x=x_max + text_offset_x,
+        y=y_min - text_offset_y,
+        text=text,
+        showarrow=False,
+        bgcolor='rgba(255, 255, 255, 0.8)',
+        bordercolor='rgba(0, 0, 0, 0.5)',
+        borderwidth=1,
+        borderpad=4,
+        align='right',
+        font=dict(size=8, color='gray'),
+        xref='x',
+        yref='y',
+    )
+
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
@@ -246,7 +308,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     return 'No Complexation Info'
 
             for i in range(len(protein_ids)):
-                # Extracting complexation and equilibrium info:
+                # Extracting complexation and equilibrium complex info:
                 complexation_info_str = complex_info_formatter(complexation_complex_info[i])
                 equilibrium_info_str = complex_info_formatter(equilibrium_complex_info[i])
 
@@ -257,8 +319,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     f"Average Free Monomer Count: {average_free_monomer_counts[i]:.2f}<br>"
                     f"Half Life (mins): {half_lives[i]}<br>"
                     f"Common Name: {common_names[i]}<br>"
-                    f"<span style='font-size: 10px;'>Complexation Info (ID, rxn, stoich, stoich unknown, type): {complexation_info_str}<br>"
-                    f"<span style='font-size: 10px;'>Equilibrium Info (ID, rxn, stoich, stoich unknown, type): {equilibrium_info_str}</span>"
+                    f"<span style='font-size: 10px;'>Complexation Info (ID, rxn, stoich, stoich unknown, type):<br> {complexation_info_str}<br>"
+                    f"<span style='font-size: 10px;'>Equilibrium Info (ID, rxn, stoich, stoich unknown, type):<br> {equilibrium_info_str}</span>"
                 ))
 
             return texts
@@ -314,7 +376,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 marker=dict(size=5, color='hotpink', opacity=1),
                 name='Purple Proteins'
             ))
-        # Scater plot for purple proteins:
 
         # Generate line data
         x = np.linspace(-4, 3, 100)
@@ -337,9 +398,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             line=dict(color='green', width=2, dash='dash'), name='y = x - 1'
         ))
 
+        add_stats_to_plot(log_avg_production_rate, log_avg_loss_rate, fig)
+
         # Layout settings
         fig.update_layout(
-            title=f"Log10 Average Loss Rate vs Log10 Average Production Rate ({sim_id})",
+            title=f"Free Monomer Average Loss Rate vs Average Production Rate<br>Sim ID:{sim_id}, n={len(monomerIds)} proteins",
             xaxis_title="Log10 Average Production Rate",
             yaxis_title="Log10 Average Loss Rate",
             width=700, height=700,
@@ -427,7 +490,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             complexation_plot_name = "complexation_monomers_" + sim_id + ".html"
             fig_complexation.write_html(os.path.join(plotOutDir, complexation_plot_name))
 
-            # Create separate figure for equilibrium monomers
+            # Create separate figure for monomers in equilibrium complexes
             fig_equilibrium = go.Figure()
             equilibrium_monomer_indices = [monomer_idx_dict[monomer] for monomer in
                                            monomers_in_eq_complexes if
