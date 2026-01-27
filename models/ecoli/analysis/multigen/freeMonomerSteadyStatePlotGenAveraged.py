@@ -25,7 +25,7 @@ HIGHLIGHT_IN_PURPLE = ['ADHP-MONOMER[c]', 'G6988-MONOMER[c]', 'EG11111-MONOMER[c
 
 
 # lowest deg rates:  ['PD03867[c]', 'EG50004-MONOMER[c]','ADHP-MONOMER[c]', 'G6988-MONOMER[c]']
-
+# TODO: WIP! not finished with this yet!
 
 # function to match gene symbols to monomer ids
 def get_gene_symbols_for_monomer_ids():
@@ -87,7 +87,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Extract protein information (function from protein_half_lives.py)
         def get_protein_data(sim_data, remove_yibQ):
             protein_ids = sim_data.process.translation.monomer_data['id']
-            deg_rate_source = sim_data.process.translation.monomer_data['deg_rate_source']
+            #deg_rate_source = sim_data.process.translation.monomer_data['deg_rate_source']
             degradation_rates = sim_data.process.translation.monomer_data['deg_rate'].asNumber(
                 1 / units.s)
             half_lives = np.log(2) / degradation_rates / 60  # in minutes
