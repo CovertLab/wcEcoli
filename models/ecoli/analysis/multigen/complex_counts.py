@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["MONOMER0-160"] #
+PLOT_COMPLEXES = ["MONOMER0-160",] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
@@ -110,10 +110,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 # Find which reactions this complex is involved in:
                 complex_reactions = complex_counts_listener.readAttribute("reactionIDs")
                 reaction_to_idx_dict = {}
+                complex_makeup = ''
                 for monomer in monomers:
                     monomer_info = monomers[monomer]
                     monomer_complex_info = monomer_info[complex][0]
                     reaction_id = monomer_complex_info['reaction_id']
+                    complex_makeup = monomer_info[complex][3]['complex_type']
                     if reaction_id in complex_reactions:
                         reaction_idx = complex_reactions.index(reaction_id)
                         reaction_to_idx_dict[reaction_id] = reaction_idx
@@ -141,10 +143,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 # find which reactions this complex is involved in:
                 complex_reactions = eq_complex_counts_listener.readAttribute("reactionIDs")
                 reaction_to_idx_dict = {}
+                complex_makeup = ''
                 for monomer in monomers:
                     monomer_info = monomers[monomer]
                     monomer_complex_info = monomer_info[complex][0]
                     reaction_id = monomer_complex_info['reaction_id']
+                    complex_makeup = monomer_info[complex][3]['complex_type']
                     if reaction_id in complex_reactions:
                         reaction_idx = complex_reactions.index(reaction_id)
                         reaction_to_idx_dict[reaction_id] = reaction_idx
@@ -166,7 +170,23 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 monomer_complex_info = monomer_info[complex][1] # use 1 to get the stoichiometry dict
                 monomer_stoich = monomer_complex_info['stoichiometry']
                 monomer_complex_counts = complex_counts * monomer_stoich
-                ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within\n{complex} ({monomer_stoich} per)', linewidth=1, linestyle=":")
+                # check if the monomer is the result of the complex or a different parent complex:
+                monomer_parent_complexes = molecules_to_parent_complexes[monomer]
+                if complex in monomer_parent_complexes.keys():
+                    # if the complex is a parent complex of the monomer, plot with a different style:
+                    ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within\n{complex} ({monomer_stoich} per)', linewidth=1, linestyle=":")
+                else:
+                    for pc in monomer_parent_complexes.keys():
+                        gparent_complexes = molecules_to_parent_complexes[pc]
+                        if complex in gparent_complexes.keys():
+                            # if the complex is a parent complex of the monomer's parent complex, note that:
+                            ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within\n{complex} ({monomer_stoich} per, via {pc})', linewidth=.8, linestyle="-.")
+                            break
+                        else:
+                            # if the complex is not a parent complex of the monomer or its parent complexes:
+                            ax1.plot(time, monomer_complex_counts, alpha=1,
+                                     label=f'{monomer} counts within\n{complex} ({monomer_stoich} per, via an unknown intermediate)',
+                                     linewidth=.8, linestyle="-.")
 
             # Next, plot the free monomer counts for each protein that makes up the complex:
             for monomer in monomers.keys():
@@ -240,7 +260,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
             ax1.set_ylabel("Complex Counts")
             ax1.set_title(
-                f"Complex counts for {complex_type} complex {complex}\n Sim ID: {metadata['description']}")
+                f"Complex counts for the {complex_makeup} {complex_type} complex {complex}\n Sim ID: {metadata['description']}")
             ax3.set_xlabel("Time (s)")
             ax3.set_ylabel("Complexation Events")
             ax3.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
