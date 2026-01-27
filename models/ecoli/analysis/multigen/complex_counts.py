@@ -161,7 +161,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(10, 6))
 
             # First, make a plot of the complex itself and its subunits (as well as the complexes it forms)
-            ax1.plot(time, complex_counts, color='lightseagreen', label=f'{complex} Complex Counts', linewidth=.75, alpha=0.75)
+            ax1.plot(time, complex_counts, color='lightseagreen', label=f'{complex} free complex counts', linewidth=.75, alpha=0.75)
 
             # plot the counts of each monomer that makes up the complex:
             for monomer in monomers.keys():
