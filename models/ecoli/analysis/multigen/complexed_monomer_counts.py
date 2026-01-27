@@ -16,7 +16,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 
 # Specify proteins to plot (each protein will have its own plot):
-PLOT_PROTEINS = ["EG11088-MONOMER", "PD04032"]
+PLOT_PROTEINS = ["PD04032"]
 # TODO: replace common name functions with actual data in sim_data (added in translation.py) when available!
 def get_gene_symbols_for_monomer_ids():
     """
