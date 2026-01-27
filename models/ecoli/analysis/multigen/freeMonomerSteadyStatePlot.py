@@ -20,7 +20,7 @@ import io
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
 
-HIGHLIGHT_IN_RED = ["PD03867[c]", "EG11734-MONOMER[c]"]#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
+HIGHLIGHT_IN_RED = []#['EG10863-MONOMER[c]','DETHIOBIOTIN-SYN-MONOMER[c]','DCUR-MONOMER[c]']
 HIGHLIGHT_IN_BLUE = []#['CARBPSYN-SMALL[c]', 'CDPDIGLYSYN-MONOMER[i]','EG10743-MONOMER[c]','GLUTCYSLIG-MONOMER[c]']
 HIGHLIGHT_IN_PURPLE = []#['G6890-MONOMER[c]','PD03938[c]','G6737-MONOMER[c]','RPOD-MONOMER[c]','PD02936[c]','RED-THIOREDOXIN2-MONOMER[c]']
 
@@ -190,14 +190,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                      protein_ids]
         equilibrium_complex_info = [equilibrium_data.get(protein_id, "NA") for protein_id in
                                     protein_ids]
-        hi = 6
 
-
-
-        # extract the data over all generations:
         # Load data
-        time = read_stacked_columns(cell_paths, 'Main', 'time')
         free_monomer_counts =  read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
+        complexed_monomer_counts = read_stacked_columns(cell_paths, "ComplexationListener", "complexedMonomerCounts")
+        eq_complexed_monomer_counts = read_stacked_columns(cell_paths, "EquilibriumListener", "complexedMonomerCounts")
 
         # doubling time function from nora:
         def extract_doubling_times(cell_paths):
@@ -274,12 +271,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # compute how many counts were added via elongation over the entire sim length:
         log_avg_production_rate = np.log10(avg_elongated_counts) # todo: consider adding 1 to this to avoid log(0) and all and being able to see all proteins
-
-        hi = 5
         average_free_monomer_counts = np.mean(free_monomer_counts, axis=0)
+        average_complexed_monomer_counts = np.mean(complexed_monomer_counts, axis=0)
+        average_eq_complexed_monomer_counts = np.mean(eq_complexed_monomer_counts, axis=0)
 
         def hover_text(protein_ids, x, y, half_lives, common_names, complexation_complex_info,
-                       equilibrium_complex_info, average_free_monomer_counts):
+                       equilibrium_complex_info, average_free_monomer_counts,
+                       average_complexed_monomer_counts, average_eq_complexed_monomer_counts):
             texts = []
 
             def complex_info_formatter(complexation_info_entry):
@@ -314,25 +312,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                 texts.append((
                     f"{protein_ids[i]}<br>"
-                    f"Production Rate: {x[i]:.2f}<br>"
-                    f"Loss Rate: {y[i]:.2f}<br>"
-                    f"Average Free Monomer Count: {average_free_monomer_counts[i]:.2f}<br>"
                     f"Half Life (mins): {half_lives[i]}<br>"
                     f"Common Name: {common_names[i]}<br>"
+                    f"Average Production Rate: {x[i]:.2f}<br>"
+                    f"Average Loss Rate: {y[i]:.2f}<br>"
+                    f"Average Free Monomer Count: {average_free_monomer_counts[i]:.2f}<br>"
+                    f"Average Complexed Monomer Count: {average_complexed_monomer_counts[i]:.2f}<br>"
+                    f"Average Equilibrium Complexed Monomer Count: {average_eq_complexed_monomer_counts[i]:.2f}<br>"
                     f"<span style='font-size: 10px;'>Complexation Info (ID, rxn, stoich, stoich unknown, type):<br> {complexation_info_str}<br>"
                     f"<span style='font-size: 10px;'>Equilibrium Info (ID, rxn, stoich, stoich unknown, type):<br> {equilibrium_info_str}</span>"
                 ))
 
             return texts
 
-        # plot the loss rate vs the production rate:
         # Create figure
         fig = go.Figure()
         hover_info = hover_text(protein_ids, log_avg_production_rate, log_avg_loss_rate,
                                 half_lives, common_names, complexation_complex_info,
-                                equilibrium_complex_info, average_free_monomer_counts)
+                                equilibrium_complex_info, average_free_monomer_counts,
+                                average_complexed_monomer_counts,
+                                average_eq_complexed_monomer_counts)
 
-        # Scatter plot for all proteins (grey)
+        # Scatter plot for all proteins (lightseagreen)
         fig.add_trace(go.Scatter(
             x=log_avg_production_rate,
             y=log_avg_loss_rate,
@@ -465,7 +466,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     [common_names[i] for i in complexation_monomer_indices],
                     [complexation_complex_info[i] for i in complexation_monomer_indices],
                     [equilibrium_complex_info[i] for i in complexation_monomer_indices],
-                    average_free_monomer_counts[complexation_monomer_indices]
+                    average_free_monomer_counts[complexation_monomer_indices],
+                    average_complexed_monomer_counts[complexation_monomer_indices],
+                    average_eq_complexed_monomer_counts[complexation_monomer_indices]
                 )
 
                 fig_complexation.add_trace(go.Scatter(
@@ -483,7 +486,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 title=f"Free Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
                 xaxis_title="Log10 Average Production Rate",
                 yaxis_title="Log10 Average Loss Rate",
-                width=700, height=700
+                width=700, height=700,
+                showlegend=True,
             )
 
             # Save the complexation plot
@@ -505,7 +509,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     [common_names[i] for i in equilibrium_monomer_indices],
                     [complexation_complex_info[i] for i in equilibrium_monomer_indices],
                     [equilibrium_complex_info[i] for i in equilibrium_monomer_indices],
-                    average_free_monomer_counts[equilibrium_monomer_indices]
+                    average_free_monomer_counts[equilibrium_monomer_indices],
+                    average_complexed_monomer_counts[equilibrium_monomer_indices],
+                    average_eq_complexed_monomer_counts[equilibrium_monomer_indices]
                 )
 
                 fig_equilibrium.add_trace(go.Scatter(
@@ -546,7 +552,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     [common_names[i] for i in no_complex_monomer_indices],
                     [complexation_complex_info[i] for i in no_complex_monomer_indices],
                     [equilibrium_complex_info[i] for i in no_complex_monomer_indices],
-                    average_free_monomer_counts[no_complex_monomer_indices]
+                    average_free_monomer_counts[no_complex_monomer_indices],
+                    average_complexed_monomer_counts[no_complex_monomer_indices],
+                    average_eq_complexed_monomer_counts[no_complex_monomer_indices]
                 )
 
                 fig_no_complex.add_trace(go.Scatter(
@@ -607,16 +615,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             add_lines(fig_combined)
 
-            # TODO: fix where the legend falls on the plot!
 
             fig_combined.update_layout(
                 title=f"Free Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
                 xaxis_title="Log10 Average Production Rate",
                 yaxis_title="Log10 Average Loss Rate",
-                width=700, height=700,
-                margin=dict(l=40, r=40, t=50, b=40),
+                width=1000, height=700,
+                margin=dict(l=40, r=200, t=50, b=40),
                 legend=dict(
-                    x=.01,
+                    x=1.01,
                     y=0.99,
                     traceorder='normal',
                     font=dict(size=12),
