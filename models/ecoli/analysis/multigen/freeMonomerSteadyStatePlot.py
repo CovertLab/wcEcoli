@@ -193,6 +193,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Load data
         free_monomer_counts =  read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
+        total_monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "monomerCounts")
         complexed_monomer_counts = read_stacked_columns(cell_paths, "ComplexationListener", "complexedMonomerCounts")
         eq_complexed_monomer_counts = read_stacked_columns(cell_paths, "EquilibriumListener", "complexedMonomerCounts")
 
@@ -216,7 +217,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices = extract_doubling_times(
             cell_paths)
 
-        # find how many proteins were removed via dilution for each doubling time:
+        # Find how many proteins were removed via dilution for each doubling time:
         diluted_counts = np.zeros(((len(doubling_times) - 1), len(monomerIds)))
         diluted_counts_over_time = np.zeros(((len(time)), len(monomerIds)))
         for i in range(
@@ -226,7 +227,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             print(end_gen, start_gen)
 
             # find the protein counts at the end of the generation:
-            monomer_counts_at_gen_end = free_monomer_counts[end_gen,:]  # get this for each protein
+            monomer_counts_at_gen_end = free_monomer_counts[end_gen,:] # NOTE: use specifically the free counts here as this is for the free monomers plot:
 
             # find the protein counts at the start of the next generation:
             monomer_counts_at_gen_start = free_monomer_counts[start_gen, :]
@@ -272,11 +273,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # compute how many counts were added via elongation over the entire sim length:
         log_avg_production_rate = np.log10(avg_elongated_counts) # todo: consider adding 1 to this to avoid log(0) and all and being able to see all proteins
         average_free_monomer_counts = np.mean(free_monomer_counts, axis=0)
+        average_total_monomer_counts = np.mean(total_monomer_counts, axis=0)
         average_complexed_monomer_counts = np.mean(complexed_monomer_counts, axis=0)
         average_eq_complexed_monomer_counts = np.mean(eq_complexed_monomer_counts, axis=0)
 
         def hover_text(protein_ids, x, y, half_lives, common_names, complexation_complex_info,
-                       equilibrium_complex_info, average_free_monomer_counts,
+                       equilibrium_complex_info, total_monomer_counts, average_free_monomer_counts,
                        average_complexed_monomer_counts, average_eq_complexed_monomer_counts):
             texts = []
 
@@ -316,6 +318,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     f"Common Name: {common_names[i]}<br>"
                     f"Average Production Rate: {x[i]:.2f}<br>"
                     f"Average Loss Rate: {y[i]:.2f}<br>"
+                    f"Average Total Monomer Count: {total_monomer_counts[i]:.2f}<br>"
                     f"Average Free Monomer Count: {average_free_monomer_counts[i]:.2f}<br>"
                     f"Average Complexed Monomer Count: {average_complexed_monomer_counts[i]:.2f}<br>"
                     f"Average Equilibrium Complexed Monomer Count: {average_eq_complexed_monomer_counts[i]:.2f}<br>"
@@ -466,6 +469,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     [common_names[i] for i in complexation_monomer_indices],
                     [complexation_complex_info[i] for i in complexation_monomer_indices],
                     [equilibrium_complex_info[i] for i in complexation_monomer_indices],
+                    average_total_monomer_counts[complexation_monomer_indices],
                     average_free_monomer_counts[complexation_monomer_indices],
                     average_complexed_monomer_counts[complexation_monomer_indices],
                     average_eq_complexed_monomer_counts[complexation_monomer_indices]
@@ -509,6 +513,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     [common_names[i] for i in equilibrium_monomer_indices],
                     [complexation_complex_info[i] for i in equilibrium_monomer_indices],
                     [equilibrium_complex_info[i] for i in equilibrium_monomer_indices],
+                    average_total_monomer_counts[equilibrium_monomer_indices],
                     average_free_monomer_counts[equilibrium_monomer_indices],
                     average_complexed_monomer_counts[equilibrium_monomer_indices],
                     average_eq_complexed_monomer_counts[equilibrium_monomer_indices]
@@ -552,6 +557,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     [common_names[i] for i in no_complex_monomer_indices],
                     [complexation_complex_info[i] for i in no_complex_monomer_indices],
                     [equilibrium_complex_info[i] for i in no_complex_monomer_indices],
+                    average_total_monomer_counts[no_complex_monomer_indices],
                     average_free_monomer_counts[no_complex_monomer_indices],
                     average_complexed_monomer_counts[no_complex_monomer_indices],
                     average_eq_complexed_monomer_counts[no_complex_monomer_indices]
