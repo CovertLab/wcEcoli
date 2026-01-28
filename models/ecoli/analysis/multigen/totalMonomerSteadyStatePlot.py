@@ -116,8 +116,6 @@ def add_stats_to_plot(x, y, fig):
     # Get the maximum x and minimum y to position the text in the bottom-right
     x_max = x[mask].max()
     y_min = y[mask].min()
-    hi = 5
-
 
     # Adjust x_max and y_min slightly outside the actual graph boundaries:
     text_offset_x = 0.05
