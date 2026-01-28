@@ -30,8 +30,8 @@ PLOT_BY_COMPLEX_TYPE = True
 # Indicate if generations at the beginning should be skipped:
 SKIP_INITIAL_GENERATIONS = 0
 
-# TODO: add average complexed counts and average total counts!
-
+# TODO: edit the plot titles to be like the other plot
+# TODO: edit out the for loop
 
 # function to match gene symbols to monomer ids
 def get_gene_symbols_for_monomer_ids():
