@@ -78,11 +78,40 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 	def calculateRequest(self):
+
+		# First, determine how many complexes dissociate into proteins:
+		complex_dissociation_rates = np.zeros(len(self.complex_IDs))
+		# For now, only have one complex dissociating: CPLX0-7705 -> PD00196 + PD00196
+		complex_dissociation_rates[498] = self._proteinDegRates()[3798]
+		total_complex_counts = self.complexes.total_counts()
+
+
+		hi = 5
+
+		nComplexesToDissociate = np.fmin(
+			self.randomState.poisson(complex_dissociation_rates * total_complex_counts),
+			total_complex_counts
+			)
+
+		# TODO: add a dissociation listener in evolve state, just have it get passed through and read there
+
+		hi = 5
+		# Add dissociated proteins from complexes to the protein counts:
+		update_proteins = np.zeros(len(self.protein_IDs))
+		update_proteins[3798] = nComplexesToDissociate[498] * 2	# CPLX0-7705 dissociates into 2 PD00196 proteins
+		updated_counts = update_proteins + self.proteins.total_counts()
+		hi = 5
+		# TODO: FIGURE out what .countsInc() updates (does not seem to update protiens.total_counts(), but maybe it does update proteins.counts()?
+		# TODO: need to actually update the protein counts, cannot simply just temporarily add them here
+		# ^ could it be as simple as adding then subtracting them?
+
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
 		nProteinsToDegrade = np.fmin(
-			self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
-			self.proteins.total_counts()
+			self.randomState.poisson(self._proteinDegRates() * updated_counts),
+			updated_counts
 			)
+
+		# TODO: also update hydrolysis reactions to account for complexes dissociating
 
 		# Determine the number of hydrolysis reactions
 		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
@@ -91,6 +120,10 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Assuming one N-1 H2O is required per peptide chain length N
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 		self.proteins.requestIs(nProteinsToDegrade)
+
+		# carry the dissociatated complexes to the evolve state:
+		self.complexes.requestIs(nComplexesToDissociate) # does this need to be negative?
+		self.proteinsProduced = update_proteins
 
 
 	def evolveState(self):
@@ -108,6 +141,13 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		# Reset the degraded protein counts:
 		self.proteins.countsIs(0)
+
+		#
+
+		# TODO: since complexation happened already, update the complexedMonomers
+	#  count listener here, as well as the complexCounts listener and read the
+	#  complexes dissociated listener here (and maybe add monomersProducedViaDissociation listener?)
+
 
 
 	def _proteinDegRates(self):
