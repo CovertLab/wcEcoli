@@ -83,7 +83,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# Extract protein information (function from protein_half_lives.py)
 		def get_protein_data(sim_data, remove_yibQ):
 			protein_ids = sim_data.process.translation.monomer_data['id']
-			deg_rate_source = sim_data.process.translation.monomer_data['deg_rate_source']
+			deg_rate_source =  np.zeros(len(protein_ids)) #sim_data.process.translation.monomer_data['deg_rate_source']
 			degradation_rates = sim_data.process.translation.monomer_data['deg_rate'].asNumber(
 				1 / units.s)
 			half_lives = np.log(2) / degradation_rates / 60  # in minutes
@@ -162,7 +162,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 		# compute how many proteins were removed via degradation over the entire sim length:
-		degraded_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "protein_deg_ES1_counts") # take from evolve state counter!
+		degraded_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "monomersDegraded")
 
 		# find the average degradation for each protein over all generations:
 		generation_averages = np.zeros((len(cell_paths), len(monomerIds)))
@@ -195,7 +195,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 		# compute how many counts were added via elongation over the entire sim length:
 		elongated_counts = read_stacked_columns(cell_paths, 'MonomerCounts',
-												"peptide_elongate_ES1_counts")
+												"monomersElongated")
 		# find the average elongation for each protein over all generations:
 		generation_averages = np.zeros((len(cell_paths), len(monomerIds)))
 		for i in range(len(end_generation_indices)):
@@ -279,7 +279,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				hovertemplate=
 				"Monomer ID: %{customdata[0]}<br>" +
 				"half life: %{customdata[1]}<br>" +
-				"source: %{customdata[2]}<br>" +
+				#"source: %{customdata[2]}<br>" +
 				"avgerage free monomer counts: %{customdata[3]}<br>" +
 				"common name: %{customdata[4]}<br>" +
 				"<extra></extra>",
