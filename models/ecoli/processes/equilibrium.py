@@ -153,9 +153,8 @@ class Equilibrium(wholecell.processes.process.Process):
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
 		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
 			self.matching_molecule_indices]
-		hi = 5
 		self.writeToListener("EquilibriumListener", "complexedMonomerCounts", complexed_monomers)
-
+		# TODO: maybe add a free monomers generated listener output here? technically teh free monomers complexed variable should account for it
 		# TODO: confirm that for the complexes that are generated, the monomer changes are also (+) in the free_monomer_count_changes variable
 
 
