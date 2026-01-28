@@ -115,12 +115,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
 		# extract the data over all generations:
-		# Load data
-		time = read_stacked_columns(cell_paths, 'Main', 'time')
-		(free_monomer_counts,) = read_stacked_bulk_molecules(
-			cell_paths, monomerIds)
+		total_monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts',
+												 'monomerCounts')
+		free_monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts',
+												 'freeMonomerCounts')
 
-		# doubling time function from nora:
+		# Doubling time function from nora:
 		def extract_doubling_times(cell_paths):
 			# Load data
 			time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
@@ -140,7 +140,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices = extract_doubling_times(
 			cell_paths)
 
-		# find how many proteins were removed via dilution for each doubling time:
+		# Find how many proteins were removed via dilution for each doubling time:
 		diluted_counts = np.zeros(((len(doubling_times) - 1), len(monomerIds)))
 		diluted_counts_over_time = np.zeros(((len(time)), len(monomerIds)))
 		for i in range(
@@ -150,10 +150,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print(end_gen, start_gen)
 
 			# find the protein counts at the end of the generation:
-			monomer_counts_at_gen_end = free_monomer_counts[end_gen,:]  # get this for each protein
+			# NOTE: originally, this was with free_monomer_counts PRIOR to the existance of the degradation listener!
+			monomer_counts_at_gen_end = total_monomer_counts[end_gen,:]  # get this for each protein
 
 			# find the protein counts at the start of the next generation:
-			monomer_counts_at_gen_start = free_monomer_counts[start_gen, :]
+			monomer_counts_at_gen_start = total_monomer_counts[start_gen, :]
 
 			# find the difference between the two:
 			protein_counts_removed = monomer_counts_at_gen_end - monomer_counts_at_gen_start
@@ -190,7 +191,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		avg_degraded_counts = np.mean(generation_averages, axis=0)
 
 		# compute the average loss rate for each protein:
-		# todo: affirm this is the correct way to account for dilution
+		# todo: affirm this is the correct way to account for dilution (i.e., by not doing so to make it "generation" averaged)
+		# todo: I think this is wrong, I think to account for it correctly, I need to have dilution in it
 		avg_loss_rate = avg_degraded_counts
 
 		# compute how many counts were added via elongation over the entire sim length:
