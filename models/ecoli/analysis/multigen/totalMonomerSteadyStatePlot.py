@@ -31,7 +31,6 @@ PLOT_BY_COMPLEX_TYPE = True
 SKIP_INITIAL_GENERATIONS = 0
 
 # TODO: edit the plot titles to be like the other plot
-# TODO: edit out the for loop
 
 # function to match gene symbols to monomer ids
 def get_gene_symbols_for_monomer_ids():
@@ -351,6 +350,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Create figure
         fig = go.Figure()
+
+        # Indicate the plot title and name:
+        plot_title = 'Average Total Monomer Loss vs Production Rate (averaged by total time)'
+
         hover_info = hover_text(protein_ids, log_avg_production_rate, log_avg_loss_rate,
                                 half_lives, common_names, complexation_complex_info,
                                 equilibrium_complex_info, average_total_monomer_counts,
@@ -483,8 +486,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                             monomers_in_complexes if
                                             monomer in monomerIds]
             # Accessing attributes with proper indexing
-            if len(complexation_monomer_indices) > 0:
-                hover_info_complexation = hover_text(
+            hover_info_complexation = hover_text(
                     [monomerIds[i] for i in complexation_monomer_indices],
                     log_avg_production_rate[complexation_monomer_indices],
                     log_avg_loss_rate[complexation_monomer_indices],
@@ -500,7 +502,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     avg_degraded_counts[complexation_monomer_indices]
                 )
 
-                fig_complexation.add_trace(go.Scatter(
+            fig_complexation.add_trace(go.Scatter(
                     x=log_avg_production_rate[complexation_monomer_indices],
                     y=log_avg_loss_rate[complexation_monomer_indices],
                     mode='markers',
@@ -509,7 +511,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     name=f'Monomers in Complexation Complexes (n={len(complexation_monomer_indices)})'
                 ))
 
-                add_lines(fig_complexation)
+            add_lines(fig_complexation)
 
             fig_complexation.update_layout(
                 title=f"Total Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
@@ -670,7 +672,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Lock the aspect ratio to keep it square
             fig.update_yaxes(scaleanchor="x", scaleratio=1)
-
 
             # Save the combined plot
             combined_plot_name = "total_monomer_steady_state_" + "combined_monomers_" + sim_id + ".html"
