@@ -371,6 +371,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Create figure
         fig = go.Figure()
+
+        # Indicate the plot title and name:
+        plot_title = 'Average Total Monomer Loss vs Production Rate (averaged by generation)'
+
+        # Generate hover text:
         hover_info = hover_text(protein_ids, log_avg_production_rate, log_avg_loss_rate,
                                 half_lives, common_names, complexation_complex_info,
                                 equilibrium_complex_info, average_total_monomer_counts,
@@ -502,9 +507,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             complexation_monomer_indices = [monomer_idx_dict[monomer] for monomer in
                                             monomers_in_complexes if
                                             monomer in monomerIds]
-            # Accessing attributes with proper indexing
-            if len(complexation_monomer_indices) > 0:
-                hover_info_complexation = hover_text(
+            # Generate hover text for the complexation monomers:
+            hover_info_complexation = hover_text(
                     [monomerIds[i] for i in complexation_monomer_indices],
                     log_avg_production_rate[complexation_monomer_indices],
                     log_avg_loss_rate[complexation_monomer_indices],
@@ -520,7 +524,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     avg_degraded_counts[complexation_monomer_indices]
                 )
 
-                fig_complexation.add_trace(go.Scatter(
+            fig_complexation.add_trace(go.Scatter(
                     x=log_avg_production_rate[complexation_monomer_indices],
                     y=log_avg_loss_rate[complexation_monomer_indices],
                     mode='markers',
@@ -529,7 +533,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     name=f'Monomers in Complexation Complexes (n={len(complexation_monomer_indices)})'
                 ))
 
-                add_lines(fig_complexation)
+            add_lines(fig_complexation)
 
             fig_complexation.update_layout(
                 title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(complexation_monomer_indices)} proteins plotted",
@@ -541,7 +545,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             )
 
             # Save the complexation plot
-            complexation_plot_name = plotOutFileName+ "_complexation_monomers_" + sim_id + ".html"
+            complexation_plot_name = plotOutFileName + "_complexation_monomers_" + sim_id + ".html"
             fig_complexation.write_html(os.path.join(plotOutDir, complexation_plot_name))
 
             # Create separate figure for monomers in equilibrium complexes
@@ -550,8 +554,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                            monomers_in_eq_complexes if
                                            monomer in monomerIds]
 
-            if len(equilibrium_monomer_indices) > 0:
-                hover_info_equilibrium = hover_text(
+
+            hover_info_equilibrium = hover_text(
                     [monomerIds[i] for i in equilibrium_monomer_indices],
                     log_avg_production_rate[equilibrium_monomer_indices],
                     log_avg_loss_rate[equilibrium_monomer_indices],
@@ -567,7 +571,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     avg_degraded_counts[equilibrium_monomer_indices]
                 )
 
-                fig_equilibrium.add_trace(go.Scatter(
+            fig_equilibrium.add_trace(go.Scatter(
                     x=log_avg_production_rate[equilibrium_monomer_indices],
                     y=log_avg_loss_rate[equilibrium_monomer_indices],
                     mode='markers',
@@ -576,7 +580,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     name=f'Monomers in Equilibrium Complexes (n={len(equilibrium_monomer_indices)})'
                 ))
 
-                add_lines(fig_equilibrium)
+            add_lines(fig_equilibrium)
 
             fig_equilibrium.update_layout(
                 title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(equilibrium_monomer_indices)} proteins plotted",
@@ -647,7 +651,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 mode='markers',
                 hovertext=hover_info_no_complex,
                 marker=dict(size=3, color='salmon', opacity=.5),
-                name=f'Monomers never in Complexes (n={len(no_complex_monomer_indices)})'
+                name=f'Monomers never in complexes (n={len(no_complex_monomer_indices)})'
             ))
 
             # Monomers in complexation complexes

@@ -483,7 +483,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             complexation_monomer_indices = [monomer_idx_dict[monomer] for monomer in
                                             monomers_in_complexes if
                                             monomer in monomerIds]
-            # Accessing attributes with proper indexing
+            # Generate the hover text for the complexation monomers:
             hover_info_complexation = hover_text(
                     [monomerIds[i] for i in complexation_monomer_indices],
                     log_avg_production_rate[complexation_monomer_indices],
