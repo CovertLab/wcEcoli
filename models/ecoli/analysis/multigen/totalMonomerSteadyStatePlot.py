@@ -352,7 +352,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         fig = go.Figure()
 
         # Indicate the plot title and name:
-        plot_title = 'Average Total Monomer Loss vs Production Rate (averaged by total time)'
+        plot_title = 'Average Total Monomer Loss vs Production Rate (averaged over total time)'
 
         hover_info = hover_text(protein_ids, log_avg_production_rate, log_avg_loss_rate,
                                 half_lives, common_names, complexation_complex_info,
@@ -432,7 +432,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Layout settings
         fig.update_layout(
-            title=f"Total Monomer Average Loss Rate vs Average Production Rate<br>Sim ID:{sim_id}, n={len(monomerIds)} proteins",
+            title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(monomerIds)} proteins",
             xaxis_title="Log10 Average Production Rate",
             yaxis_title="Log10 Average Loss Rate",
             width=700, height=700,
@@ -514,7 +514,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             add_lines(fig_complexation)
 
             fig_complexation.update_layout(
-                title=f"Total Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
+                title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(complexation_monomer_indices)} proteins plotted",
                 xaxis_title="Log10 Average Production Rate",
                 yaxis_title="Log10 Average Loss Rate",
                 width=700, height=700,
@@ -522,7 +522,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             )
 
             # Save the complexation plot
-            complexation_plot_name = "total_monomer_steady_state_" +"complexation_monomers_" + sim_id + ".html"
+            complexation_plot_name = plotOutFileName + "_complexation_monomers_" + sim_id + ".html"
             fig_complexation.write_html(os.path.join(plotOutDir, complexation_plot_name))
 
             # Create separate figure for monomers in equilibrium complexes
@@ -531,8 +531,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                            monomers_in_eq_complexes if
                                            monomer in monomerIds]
 
-            if len(equilibrium_monomer_indices) > 0:
-                hover_info_equilibrium = hover_text(
+
+            hover_info_equilibrium = hover_text(
                     [monomerIds[i] for i in equilibrium_monomer_indices],
                     log_avg_production_rate[equilibrium_monomer_indices],
                     log_avg_loss_rate[equilibrium_monomer_indices],
@@ -548,7 +548,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     avg_degraded_counts[equilibrium_monomer_indices]
                 )
 
-                fig_equilibrium.add_trace(go.Scatter(
+            fig_equilibrium.add_trace(go.Scatter(
                     x=log_avg_production_rate[equilibrium_monomer_indices],
                     y=log_avg_loss_rate[equilibrium_monomer_indices],
                     mode='markers',
@@ -557,28 +557,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     name=f'Monomers in Equilibrium Complexes (n={len(equilibrium_monomer_indices)})'
                 ))
 
-                add_lines(fig_equilibrium)
+            add_lines(fig_equilibrium)
 
             fig_equilibrium.update_layout(
-                title=f"Total Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
+                title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(equilibrium_monomer_indices)} proteins plotted",
                 xaxis_title="Log10 Average Production Rate",
                 yaxis_title="Log10 Average Loss Rate",
                 width=700, height=700
             )
 
             # Save the equilibrium plot
-            equilibrium_plot_name = "total_monomer_steady_state_" + "equilibrium_monomers_" + sim_id + ".html"
+            equilibrium_plot_name = plotOutFileName + "_" + "equilibrium_monomers_" + sim_id + ".html"
             fig_equilibrium.write_html(os.path.join(plotOutDir, equilibrium_plot_name))
 
             # Create separate figure for the monomer that makes no complexes
             fig_no_complex = go.Figure()
 
-            if len(monomers_not_in_complexes) > 0:
-                no_complex_monomer_indices = [monomer_idx_dict[monomer] for monomer in
+
+            no_complex_monomer_indices = [monomer_idx_dict[monomer] for monomer in
                                               monomers_not_in_complexes if
                                               monomer in monomerIds]
 
-                hover_info_no_complex = hover_text(
+            hover_info_no_complex = hover_text(
                     [monomerIds[i] for i in no_complex_monomer_indices],
                     log_avg_production_rate[no_complex_monomer_indices],
                     log_avg_loss_rate[no_complex_monomer_indices],
@@ -594,26 +594,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     avg_degraded_counts[no_complex_monomer_indices]
                 )
 
-                fig_no_complex.add_trace(go.Scatter(
+            fig_no_complex.add_trace(go.Scatter(
                     x=log_avg_production_rate[no_complex_monomer_indices],
                     y=log_avg_loss_rate[no_complex_monomer_indices],
                     mode='markers',
                     hovertext=hover_info_no_complex,
                     marker=dict(size=4, color='salmon', opacity=.6),
-                    name=f'monomers in zero complexes (n={len(no_complex_monomer_indices)})'
+                    name=f'monomers that do not form \nany complexes (n={len(no_complex_monomer_indices)})'
                 ))
 
-                add_lines(fig_no_complex)
+            add_lines(fig_no_complex)
 
             fig_no_complex.update_layout(
-                title=f"Total Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
+                title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(no_complex_monomer_indices)} proteins plotted",
                 xaxis_title="Log10 Average Production Rate",
                 yaxis_title="Log10 Average Loss Rate",
                 width=700, height=700
             )
 
             # Save the no complex plot
-            no_complex_plot_name = "no_complex_monomer_" + sim_id + ".html"
+            no_complex_plot_name = plotOutFileName + "_non_complex_forming_monomers_" + sim_id + ".html"
             fig_no_complex.write_html(os.path.join(plotOutDir, no_complex_plot_name))
 
             # Create a combined figure for all three categories
@@ -626,7 +626,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 mode='markers',
                 hovertext=hover_info_no_complex,
                 marker=dict(size=3, color='salmon', opacity=.5),
-                name=f'Monomers never in Complexes (n={len(no_complex_monomer_indices)})'
+                name=f'Monomers never in complexes (n={len(no_complex_monomer_indices)})'
             ))
 
             # Monomers in complexation complexes
@@ -654,7 +654,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
             fig_combined.update_layout(
-                title=f"Total Monomer Average Loss Rate vs Average Production Rate<br>Sim ID: {sim_id}",
+                title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(monomerIds)} proteins plotted",
                 xaxis_title="Log10 Average Production Rate",
                 yaxis_title="Log10 Average Loss Rate",
                 width=1000, height=700,
@@ -674,7 +674,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
             # Save the combined plot
-            combined_plot_name = "total_monomer_steady_state_" + "combined_monomers_" + sim_id + ".html"
+            combined_plot_name = plotOutFileName + "_all_monomer_types_" + sim_id + ".html"
             fig_combined.write_html(os.path.join(plotOutDir, combined_plot_name))
 
 
