@@ -313,8 +313,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         average_complexed_monomer_counts = np.mean(complexed_monomer_counts, axis=0)
         average_eq_complexed_monomer_counts = np.mean(eq_complexed_monomer_counts, axis=0)
 
-        # Indicate the plot title and name:
-        plot_title = 'Average Total Monomer Loss vs Production Rate (averaged by generation)'
+        # Function for checking validity of an input protein:
+        def check_validity_and_get_compartment(simDataFile, molecule_list):
+            with open(simDataFile, 'rb') as f:
+                sim_data = pickle.load(f)
+            revised_molecule_list = []
+            for protein in molecule_list:
+                if "[" in protein:
+                    protein = protein[:-3]  # remove compartment
+                if sim_data.getter.is_valid_molecule(protein):
+                    revised_name = protein + sim_data.getter.get_compartment_tag(protein)
+                    revised_molecule_list.append(revised_name)
+
+            return revised_molecule_list
 
         def hover_text(protein_ids, x, y, half_lives, common_names, complexation_complex_info,
                        equilibrium_complex_info, average_total_monomer_counts,
@@ -396,35 +407,50 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         if len(HIGHLIGHT_IN_RED) > 0:
             # Scatter plot for red proteins
-            red_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_RED]
+            HIGHLIGHT_IN_RED_revised = check_validity_and_get_compartment(simDataFile,
+                                                                          HIGHLIGHT_IN_RED)
+            red_protein_indices = [monomer_idx_dict[protein] for protein in
+                                   HIGHLIGHT_IN_RED_revised]
+            # get the hover info for the red proteins
+            hover_info_red = [hover_info[idx] for idx in red_protein_indices]
             fig.add_trace(go.Scatter(
                 x=log_avg_production_rate[red_protein_indices],
                 y=log_avg_loss_rate[red_protein_indices],
                 mode='markers',
-                hovertext=HIGHLIGHT_IN_RED,
+                hovertext=hover_info_red,
                 marker=dict(size=5, color='red', opacity=1),
                 name='Red Proteins'
-        ))
+            ))
         if len(HIGHLIGHT_IN_BLUE) > 0:
             # Scatter plot for blue proteins
-            blue_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_BLUE]
+            HIGHLIGHT_IN_BLUE_revised = check_validity_and_get_compartment(simDataFile,
+                                                                           HIGHLIGHT_IN_BLUE)
+            blue_protein_indices = [monomer_idx_dict[protein] for protein in
+                                    HIGHLIGHT_IN_BLUE_revised]
+            # get the hover info for the blue proteins
+            hover_info_blue = [hover_info[idx] for idx in blue_protein_indices]
             fig.add_trace(go.Scatter(
                 x=log_avg_production_rate[blue_protein_indices],
                 y=log_avg_loss_rate[blue_protein_indices],
                 mode='markers',
-                hovertext=HIGHLIGHT_IN_BLUE,
+                hovertext=hover_info_blue,
                 marker=dict(size=5, color='blue', opacity=1),
                 name='Blue Proteins'
             ))
 
         if len(HIGHLIGHT_IN_PURPLE) > 0:
             # Scatter plot for purple proteins
-            purple_protein_indices = [monomer_idx_dict[protein] for protein in HIGHLIGHT_IN_PURPLE]
+            HIGHLIGHT_IN_PURPLE_revised = check_validity_and_get_compartment(simDataFile,
+                                                                             HIGHLIGHT_IN_PURPLE)
+            purple_protein_indices = [monomer_idx_dict[protein] for protein in
+                                      HIGHLIGHT_IN_PURPLE_revised]
+            # get the hover info for the purple proteins
+            hover_info_purple = [hover_info[idx] for idx in purple_protein_indices]
             fig.add_trace(go.Scatter(
                 x=log_avg_production_rate[purple_protein_indices],
                 y=log_avg_loss_rate[purple_protein_indices],
                 mode='markers',
-                hovertext=HIGHLIGHT_IN_PURPLE,
+                hovertext=hover_info_purple,
                 marker=dict(size=5, color='hotpink', opacity=1),
                 name='Purple Proteins'
             ))
@@ -434,27 +460,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # y = x line (black)
         fig.add_trace(go.Scatter(
-            x=x, y=x, mode='lines', line=dict(color='black', width=2,),
+            x=x, y=x, mode='lines', line=dict(color='black', width=.5,), opacity=0.5,
             name='y = x'
         ))
 
         # y = x + 1 line (green, dashed)
         fig.add_trace(go.Scatter(
             x=x, y=x + 1, mode='lines',
-            line=dict(color='green', width=2, dash='dash'), name='y = x + 1'
+            line=dict(color='green', width=.5, dash='dash'), name='y = x + 1'
         ))
 
         # y = x - 1 line (green, dashed)
         fig.add_trace(go.Scatter(
             x=x, y=x - 1, mode='lines',
-            line=dict(color='green', width=2, dash='dash'), name='y = x - 1'
+            line=dict(color='green', width=.5, dash='dash'), name='y = x - 1'
         ))
 
         add_stats_to_plot(log_avg_production_rate, log_avg_loss_rate, fig)
 
         # Layout settings
         fig.update_layout(
-            title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(monomerIds)} proteins",
+            title=f"{plot_title}<br>Sim ID:{sim_id} ({len(cell_paths)} cells analyzed), n={len(monomerIds)} proteins, averaged by generation",
+            title_font=dict(size=12),
             xaxis_title="Log10 Average Production Rate",
             yaxis_title="Log10 Average Loss Rate",
             width=700, height=700,
@@ -462,7 +489,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         )
 
         # Save the plot:
-        plot_name = plotOutFileName +"_"+ sim_id +"_red_" + str(HIGHLIGHT_IN_RED) + "_blue_" + str(HIGHLIGHT_IN_BLUE) + "_purple_" + str(HIGHLIGHT_IN_PURPLE) + ".html"
+        plot_name = plotOutFileName + sim_id +"_red_" + str(len(HIGHLIGHT_IN_RED)) + "_blue_" + str(len(HIGHLIGHT_IN_BLUE)) + "_purple_" + str(len(HIGHLIGHT_IN_PURPLE)) + ".html"
         fig.write_html(os.path.join(plotOutDir, plot_name))
 
         # Function to add lines:
@@ -472,20 +499,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # y = x line (black)
             fig.add_trace(go.Scatter(
-                x=x, y=x, mode='lines', line=dict(color='black', width=2, ),
+                x=x, y=x, mode='lines', line=dict(color='black', width=0.5,),opacity=0.5,
                 name='y = x'
             ))
 
             # y = x + 1 line (green, dashed)
             fig.add_trace(go.Scatter(
                 x=x, y=x + 1, mode='lines',
-                line=dict(color='green', width=2, dash='dash'), name='y = x + 1'
+                line=dict(color='green', width=.5, dash='dash'), name='y = x + 1'
             ))
 
             # y = x - 1 line (green, dashed)
             fig.add_trace(go.Scatter(
                 x=x, y=x - 1, mode='lines',
-                line=dict(color='green', width=2, dash='dash'), name='y = x - 1'
+                line=dict(color='green', width=.5, dash='dash'), name='y = x - 1'
             ))
 
         # Plot other plots if specified:
@@ -508,21 +535,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                             monomers_in_complexes if
                                             monomer in monomerIds]
             # Generate hover text for the complexation monomers:
-            hover_info_complexation = hover_text(
-                    [monomerIds[i] for i in complexation_monomer_indices],
-                    log_avg_production_rate[complexation_monomer_indices],
-                    log_avg_loss_rate[complexation_monomer_indices],
-                    half_lives[complexation_monomer_indices],
-                    [common_names[i] for i in complexation_monomer_indices],
-                    [complexation_complex_info[i] for i in complexation_monomer_indices],
-                    [equilibrium_complex_info[i] for i in complexation_monomer_indices],
-                    average_total_monomer_counts[complexation_monomer_indices],
-                    average_free_monomer_counts[complexation_monomer_indices],
-                    average_complexed_monomer_counts[complexation_monomer_indices],
-                    average_eq_complexed_monomer_counts[complexation_monomer_indices],
-                    avg_diluted_counts[complexation_monomer_indices],
-                    avg_degraded_counts[complexation_monomer_indices]
-                )
+            hover_info_complexation = [hover_info[idx] for idx in complexation_monomer_indices]
 
             fig_complexation.add_trace(go.Scatter(
                     x=log_avg_production_rate[complexation_monomer_indices],
@@ -555,21 +568,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                            monomer in monomerIds]
 
 
-            hover_info_equilibrium = hover_text(
-                    [monomerIds[i] for i in equilibrium_monomer_indices],
-                    log_avg_production_rate[equilibrium_monomer_indices],
-                    log_avg_loss_rate[equilibrium_monomer_indices],
-                    half_lives[equilibrium_monomer_indices],
-                    [common_names[i] for i in equilibrium_monomer_indices],
-                    [complexation_complex_info[i] for i in equilibrium_monomer_indices],
-                    [equilibrium_complex_info[i] for i in equilibrium_monomer_indices],
-                    average_total_monomer_counts[equilibrium_monomer_indices],
-                    average_free_monomer_counts[equilibrium_monomer_indices],
-                    average_complexed_monomer_counts[equilibrium_monomer_indices],
-                    average_eq_complexed_monomer_counts[equilibrium_monomer_indices],
-                    avg_diluted_counts[equilibrium_monomer_indices],
-                    avg_degraded_counts[equilibrium_monomer_indices]
-                )
+            hover_info_equilibrium = [hover_info[idx] for idx in equilibrium_monomer_indices]
 
             fig_equilibrium.add_trace(go.Scatter(
                     x=log_avg_production_rate[equilibrium_monomer_indices],
@@ -602,21 +601,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                               monomers_not_in_complexes if
                                               monomer in monomerIds]
 
-            hover_info_no_complex = hover_text(
-                    [monomerIds[i] for i in no_complex_monomer_indices],
-                    log_avg_production_rate[no_complex_monomer_indices],
-                    log_avg_loss_rate[no_complex_monomer_indices],
-                    half_lives[no_complex_monomer_indices],
-                    [common_names[i] for i in no_complex_monomer_indices],
-                    [complexation_complex_info[i] for i in no_complex_monomer_indices],
-                    [equilibrium_complex_info[i] for i in no_complex_monomer_indices],
-                    average_total_monomer_counts[no_complex_monomer_indices],
-                    average_free_monomer_counts[no_complex_monomer_indices],
-                    average_complexed_monomer_counts[no_complex_monomer_indices],
-                    average_eq_complexed_monomer_counts[no_complex_monomer_indices],
-                    avg_diluted_counts[no_complex_monomer_indices],
-                    avg_degraded_counts[no_complex_monomer_indices]
-                )
+            hover_info_no_complex = [hover_info[idx] for idx in no_complex_monomer_indices]
 
             fig_no_complex.add_trace(go.Scatter(
                     x=log_avg_production_rate[no_complex_monomer_indices],
