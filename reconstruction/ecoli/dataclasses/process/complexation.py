@@ -119,6 +119,7 @@ class Complexation(object):
 		for subunit in self.subunit_names:
 			# find the matrix index where this subunit is as a molecule:
 			subunit_index = self.molecule_names.index(subunit)
+			# TODO: verify that this is the correct methodology here, given that in the sim_data the length of the matrix attributes is 2933
 
 			# Find the indicies of self._stoich_matrix_J where the value will
 			# correspond to the index of the correct reaction in self.ids_reactions
@@ -151,9 +152,9 @@ class Complexation(object):
 					(self._stoich_matrix_V < 0))[0]
 				num_unique_subunits = len(unique_subunits_in_complex)
 				if num_unique_subunits > 1:
-					cplx_type = 'heterogenious'
+					cplx_type = 'heterogeneous'
 				else:
-					cplx_type = 'homogenious'
+					cplx_type = 'homogeneous'
 
 				# Add complex information to lists
 				complex_name = self.molecule_names[self._stoich_matrix_I[complex_index][0]]
