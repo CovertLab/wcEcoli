@@ -223,7 +223,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		hi = 5
 
-
+		# TODO: figure out how _countsAllocatedFinal works in EQ with both positive and negative numbers! maybe it doesnt use negatives?
 		# Update the counts of the complexes, the counts of the proteins (due to dissociation)
 		#self.complexes.countsDec(self.complexesDissociated) # todo: double check if the indexing is correct becuase I have no clue why this did not work. should not have been negative.
 		self.writeToListener("ComplexationListener", "complexesDissociated", self.complexesDissociated)
