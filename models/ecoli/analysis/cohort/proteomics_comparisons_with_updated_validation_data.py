@@ -40,7 +40,7 @@ IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 PROTEINS_OF_INTEREST = ["EG10241-MONOMER", "1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER", "EG10599-MONOMER", "EG10241-MONOMER", "EG10762-MONOMER", "G7320-MONOMER"]
 
 # Indicate whether to highlight the proteins listed in PROTEINS_OF_INTEREST on the plots:
-HIGHLIGHT_PROTEINS_OF_INTEREST = False
+HIGHLIGHT_PROTEINS_OF_INTEREST = True
 
 # Indicate whether to generate a plot with some manually mapped proteins included
 # (not all Uniprot IDs successfully match to protein IDs via the BioCyc mapping
