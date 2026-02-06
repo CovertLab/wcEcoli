@@ -179,6 +179,7 @@ class BulkObjectsContainer(object):
 			names (iterable of str): The names of the objects.  If None
 				(default), then all objects are accessed in their original ordering.
 		"""
+		# TODO: test with and without names!
 
 		values = np.asarray(values, dtype=self._dtype)
 		if names is None:
