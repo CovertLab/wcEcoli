@@ -33,6 +33,7 @@ from scipy.stats import pearsonr
 
 """ USER INPUTS """
 # TODO: figure out what is wrong with the linear fit of all data
+# TODO: fix the title for the individual proteins of interest output plots (it spills over in the html)
 # Indicate the number of generations to be ignored at the start of each seed:
 IGNORE_FIRST_N_GENS = 2 # 2 for local, 14 for Sherlock (w/ 24 total gens)
 
