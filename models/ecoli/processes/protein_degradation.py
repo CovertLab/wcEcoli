@@ -14,6 +14,10 @@ import wholecell.processes.process
 from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
 from wholecell.utils import units
 
+# COMPLEX DEGRADATION METHOD:
+METHOD = 2
+
+
 class ProteinDegradation(wholecell.processes.process.Process):
 	""" ProteinDegradation """
 
@@ -146,41 +150,68 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# TODO: TEST BOTH OPTIONS!
 		# TODO: also do a test with not doing the poisson and just do a dot product in case there is normalization happening
 
-		# METHOD 1:
 		# Add dissociated proteins from complexes to the protein counts:
 		update_proteins = np.zeros(len(self.protein_IDs))
 
 		# Use the matrix to calculate the number of proteins dissociated by multiplying the nComplexesToDissociate by the mini matrix:
-		proteins_dissociated = np.dot(self.mini_matrix, nComplexesToDissociate[self.matrix_complexes_j])
+		proteins_dissociated = np.dot(self.mini_matrix,
+									  nComplexesToDissociate[self.matrix_complexes_j])
 		for idx, protein_index in enumerate(self.matrix_monomers_i):
 			# todo: would it also be ok to just do idx and then find protein_index from self.matrix_monomers_i[idx]?
 			update_proteins[protein_index] += proteins_dissociated[idx]
 
-		# Record the counts of the complexes dissociated and the proteins produced:
-		self.proteinsProduced = update_proteins
-		self.complexesDissociated = nComplexesToDissociate
+		# METHOD 1:
+		if METHOD ==1:
+			# Record the counts of the complexes dissociated and the proteins produced:
+			self.proteinsProduced = update_proteins
+			self.complexesDissociated = nComplexesToDissociate
 
-		# Determine the updated protein counts after accounting for dissociated complexes:
-		updated_counts = update_proteins + self.proteins.total_counts()
+			# Determine the updated protein counts after accounting for dissociated complexes:
+			updated_counts = update_proteins + self.proteins.total_counts()
 
-		# Determine how many proteins to degrade based on the degradation rates and counts of each protein:
-		nProteinsToDegrade = np.fmin(
-			self.randomState.poisson(self._proteinDegRates() * updated_counts),
-			updated_counts
+			# Determine how many proteins to degrade based on the degradation rates and counts of each protein:
+			nProteinsToDegrade = np.fmin(
+				self.randomState.poisson(self._proteinDegRates() * updated_counts),
+				updated_counts
+				)
+
+			# TODO: Figure out what to deplete/increase to account for complexes dissociated
+			# Determine the number of hydrolysis reactions
+			nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
+
+			# Determine the amount of water required to degrade the selected proteins
+			# Assuming one N-1 H2O is required per peptide chain length N
+			self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
+
+			# Request proteins for degradation:
+			self.proteins.requestIs(nProteinsToDegrade)
+
+		# METHOD 2:
+		elif METHOD == 2:
+			# Record the counts of the complexes dissociated and the proteins produced:
+			self.proteinsProduced =  np.zeros(len(self.protein_IDs))
+			self.complexesDissociated = nComplexesToDissociate
+
+			# Determine how many proteins to degrade based on the degradation rates and counts of each protein:
+			nProteinsToDegrade = np.fmin(
+				self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
+				self.proteins.total_counts()
 			)
 
-		self.proteinsDegraded = nProteinsToDegrade
+			# Add update_counts to nProteinsToDegrade to account for the proteins produced from complex dissociation:
+			update_proteins = update_proteins.astype(int)
+			nProteinsToDegrade += update_proteins
 
-		# TODO: Figure out what to deplete/increase to account for complexes dissociated
-		# Determine the number of hydrolysis reactions
-		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
+			# TODO: Figure out what to deplete/increase to account for complexes dissociated
+			# Determine the number of hydrolysis reactions
+			nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
 
-		# Determine the amount of water required to degrade the selected proteins
-		# Assuming one N-1 H2O is required per peptide chain length N
-		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
+			# Determine the amount of water required to degrade the selected proteins
+			# Assuming one N-1 H2O is required per peptide chain length N
+			self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 
-		# Request proteins for degradation:
-		self.proteins.requestIs(nProteinsToDegrade) # there is no need to do a countsDec here since it will be accepted? I think not matter what?
+			# Request proteins for degradation:
+			self.proteins.requestIs(nProteinsToDegrade)
 
 
 
