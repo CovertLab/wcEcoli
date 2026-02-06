@@ -78,6 +78,8 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 
 		self.complexedMonomerCounts = np.zeros(len(self.monomerIDs), np.int64)
 
+		self.complexesDissociated = np.zeros(len(self.complexIDs), np.int64)
+
 	def initialUpdate(self):
 		# Get current counts of bulk and unique molecules
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
@@ -101,7 +103,8 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			'complexationEvents': 'reactionIDs',
 			'complexCounts': 'complexIDs',
 			'monomersComplexed': 'monomerIDs',
-			'complexedMonomerCounts': 'monomerIDs'}
+			'complexedMonomerCounts': 'monomerIDs',
+			'complexesDissociated': 'complexIDs'}
 
 
 		tableWriter.writeAttributes(
@@ -118,5 +121,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			complexationEvents = self.complexationEvents,
 			complexCounts = self.complexCounts,
 			monomersComplexed = self.monomersComplexed,
-			complexedMonomerCounts = self.complexedMonomerCounts
+			complexedMonomerCounts = self.complexedMonomerCounts,
+			complexesDissociated = self.complexesDissociated
 			)
