@@ -63,8 +63,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
 		self.proteins = self.bulkMoleculesView(proteinIds)
 
-		# Complex view for future use
-		# TODO: integrate complexes into degradation
+		# Complex views
 		complexIds = np.array(sim_data.process.complexation.ids_complexes)
 		self.complexes = self.bulkMoleculesView(complexIds)
 
@@ -76,6 +75,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.n_avogadro = sim_data.constants.n_avogadro.asNumber(units.mol ** -1)
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
+		# TODO: remove this post-testing
 		# proteins of interest:
 		the_proteins = ["EG12179-MONOMER[c]", "CFA-MONOMER[c]", "G7596-MONOMER[c]", "EG11111-MONOMER[c]", "ADHP-MONOMER[c]", "EG12177-MONOMER[c]"]
 		protein_ID_to_index = {p: i for i, p in enumerate(self.protein_IDs)}
@@ -100,16 +100,13 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		self.complex_indices = [complex_ID_to_index[c] for c in self.complex_IDs_to_index.keys()]
 
-		# Make a mini matrix? # TODO: determine if this is needed and how to scale up
+		# Make a mini matrix # TODO: determine if this is the best way to do this
 		self.matrix_monomers_i = np.array(self.protein_indices) # locations of the proteins of interest in self.protein_IDs
 		self.matrix_complexes_j = np.array(self.complex_indices) # locations of the complexes of interest in self.complex_IDs
 		self.matrix_stoich_v = np.array(self.proteins_to_complex_stoich.items()) # stoich values for the proteins of interest
 		i = len(self.matrix_monomers_i)
 		j = len(self.matrix_complexes_j)
 		mini_matrix = np.zeros((j, i))
-
-		#mini_matrix[j, i] = self.matrix_stoich_v
-		#self.mini_matrix = mini_matrix
 
 		for protein, stoich in self.proteins_to_complex_stoich.items():
 			protein_index = protein_ID_to_index[protein]
@@ -121,11 +118,11 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			if protein_index > 0 and complex_index > 0:
 				mini_matrix[matrix_c_idx, matrix_p_idx] = stoich  # Set the stoichiometry
 
-		self.mini_matrix = mini_matrix  # Store the result
-		hi = 5
+		# Define the mini-matrix
+		self.mini_matrix = mini_matrix
 		# Determine the dissociation rates for each complex of interest:
 		self.complex_dissociation_rates = np.zeros(len(self.complex_IDs))
-		# Find the dissociation rate for each complex of interest:
+		# Find the dissociation rate for each complex of interest (keep equal to the protein degradation rate for now):
 		for protein in self.proteins_to_complexes.keys():
 			protein_deg_rate = self._proteinDegRates()[self.protein_IDs_to_index[protein]]
 			complex_name = self.proteins_to_complexes[protein]
@@ -133,10 +130,6 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.complex_dissociation_rates[complex_index] = protein_deg_rate
 
 	def calculateRequest(self):
-		# TODO: need to add proteins dissociated listener and have that be something that is added to the protein counts officially!
-		# TODO: make that a sepearte listener from degraded proteins AND add a complexes dissociated listener
-
-
 		# First, determine how many complexes dissociate into proteins:
 		self.total_complex_counts_before = self.complexes.total_counts() # this has numbers!
 		self.complex_counts_before = self.complexes.counts() # all zeros
@@ -146,41 +139,31 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.randomState.poisson(self.complex_dissociation_rates * self.complexes.total_counts()),
 			self.complexes.total_counts()
 			)
-
-		# TODO: need to dissociate the complexes here! try Dec first then try requestIs if that does not work
-		# TODO: convention seems to have countsDec in the evolveState, so maybe have this there if I decide to do countsDec and not evolve state??
 		self.complexes.requestIs(nComplexesToDissociate)
-		hi = 5
 
+		# TODO: decide whether monomers in dissociated complexes should be automatically degraded and added to nProteinsToDegrade
+		# TODO: OR if they should be added to self.proteins.total_counts() and have nProteinsToDegrade be calcuated with those produced incorperated
+		# TODO: TEST BOTH OPTIONS!
+		# TODO: also do a test with not doing the poisson and just do a dot product in case there is normalization happening
 
+		# METHOD 1:
 		# Add dissociated proteins from complexes to the protein counts:
 		update_proteins = np.zeros(len(self.protein_IDs))
+
 		# Use the matrix to calculate the number of proteins dissociated by multiplying the nComplexesToDissociate by the mini matrix:
 		proteins_dissociated = np.dot(self.mini_matrix, nComplexesToDissociate[self.matrix_complexes_j])
 		for idx, protein_index in enumerate(self.matrix_monomers_i):
 			# todo: would it also be ok to just do idx and then find protein_index from self.matrix_monomers_i[idx]?
 			update_proteins[protein_index] += proteins_dissociated[idx]
 
-		# TODO: have something that is saved here and written to a listener once it is in evolveState()
+		# Record the counts of the complexes dissociated and the proteins produced:
 		self.proteinsProduced = update_proteins
 		self.complexesDissociated = nComplexesToDissociate
-		#self.complexes.countsDec(nComplexesToDissociate)  # dissociate selected complexes
-		# todo: add requestIs statement for complexes dissociated listener here
-
-		# figure out how to actually update total_counts() as a result:
-		self.proteinstotalcountsbefore = self.proteins.total_counts()
-		self.protein_counts = self.proteins.counts()
-
 
 		# Determine the updated protein counts after accounting for dissociated complexes:
 		updated_counts = update_proteins + self.proteins.total_counts()
 
-
-		# TODO: FIGURE out what .countsInc() updates (does not seem to update protiens.total_counts(), but maybe it does update proteins.counts()?
-		# TODO: need to actually update the protein counts, cannot simply just temporarily add them here
-		# ^ could it be as simple as adding then subtracting them?
-
-		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
+		# Determine how many proteins to degrade based on the degradation rates and counts of each protein:
 		nProteinsToDegrade = np.fmin(
 			self.randomState.poisson(self._proteinDegRates() * updated_counts),
 			updated_counts
@@ -188,7 +171,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		self.proteinsDegraded = nProteinsToDegrade
 
-		# TODO: also update hydrolysis reactions (or some other type of molecule that complexation uses?) to account for complexes dissociating
+		# TODO: Figure out what to deplete/increase to account for complexes dissociated
 		# Determine the number of hydrolysis reactions
 		nReactions = np.dot(self.proteinLengths.asNumber(), nProteinsToDegrade)
 
@@ -196,16 +179,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Assuming one N-1 H2O is required per peptide chain length N
 		self.h2o.requestIs(nReactions - np.sum(nProteinsToDegrade))
 
-
-		#self.proteins.countsDec(nProteinsToDegrade)  # degrade selected proteins
-		self.intermediate_counts = self.proteins.counts()
-		self.intermediate_total_counts = self.proteins.total_counts()
-
-
-		# Figure out the total change in the proteins, but remember that the proteins degraded are positive:
-		self.netActivity = nProteinsToDegrade - update_proteins
-
-		# TODO: can i put the counts increased before this at least????
+		# Request proteins for degradation:
 		self.proteins.requestIs(nProteinsToDegrade) # there is no need to do a countsDec here since it will be accepted? I think not matter what?
 
 
@@ -215,35 +189,25 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
-		hi = 5
 		self.metabolites.countsInc(np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
 			))
 
-		hi = 5
-
-		# TODO: figure out how _countsAllocatedFinal works in EQ with both positive and negative numbers! maybe it doesnt use negatives?
-		# Update the counts of the complexes, the counts of the proteins (due to dissociation)
-		#self.complexes.countsDec(self.complexesDissociated) # todo: double check if the indexing is correct becuase I have no clue why this did not work. should not have been negative.
-		self.writeToListener("ComplexationListener", "complexesDissociated", self.complexesDissociated)
-		# Update the protein counts due to dissociation:
-		self.proteins.countsInc(self.proteinsProduced)
-		self.writeToListener("MonomerCounts", "monomersProducedViaDissociation", self.proteinsProduced) # todo: this is not great practice given the monomers were used in the previous step, but not sure how to update that there accordingly yet.
 		# Record how many monomers were calculated to degrade:
 		counts_degraded = self.proteins.counts()
 		self.writeToListener("MonomerCounts", "monomersDegraded", counts_degraded)
 
-		hi = 4
+		# Degrade the selected proteins and complexes:
+		self.proteins.countsIs(0) # NOTE: if this is placed after countsInc statements, those statements will be voided
+		self.complexes.countsIs(0)
 
-		# Reset the degraded protein counts:
-		self.proteins.countsIs(0)
+		# Update the counts of the complexes, the counts of the proteins (due to dissociation)
+		self.writeToListener("ComplexationListener", "complexesDissociated", self.complexesDissociated)
 
-		#
-
-		# TODO: since complexation happened already, update the complexedMonomers
-	#  count listener here, as well as the complexCounts listener and read the
-	#  complexes dissociated listener here (and maybe add monomersProducedViaDissociation listener?)
+		# Update the protein counts to reflect those produced due to complex dissociation:
+		self.proteins.countsInc(self.proteinsProduced)
+		self.writeToListener("MonomerCounts", "monomersProducedViaDissociation", self.proteinsProduced)
 
 
 
