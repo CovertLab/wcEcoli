@@ -94,7 +94,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 		self._countsAllocatedFinal = np.zeros((nMolecules, self._nProcesses), dtype)
 		self._countsUnallocated = np.zeros(nMolecules, dtype)
 
-
+		# NOTE: This is used to build the countsAllocatedInitial tracker AND partition the counts based off priority
 	def partition(self, processes):
 		# Reset allocated counts
 		self._countsAllocatedInitial.fill(0)
@@ -116,7 +116,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 			if view._processIndex in process_indexes_set:
 				self._countsRequested[view._containerIndexes, view._processIndex] += view._request()
 
-		# Select columns to partition
+		# Select columns to partition based off relevant subprocesses currently involved:
 		counts_requested = self._countsRequested[:, process_indexes]
 
 		if ASSERT_POSITIVE_COUNTS and np.any(counts_requested < 0):
@@ -134,6 +134,7 @@ class BulkMolecules(wholecell.states.internal_state.InternalState):
 
 		# Calculate partition
 		if len(processes) > 1:
+			# If there are more than one process involved in the simulation.py substate (I.e. Equilibrium, TwoComponentSystem, RnaMaturation), allocate molecules based off the priority rank of each:
 			self._countsAllocatedInitial[:, process_indexes] = calculatePartition(
 				self._processPriorities[process_indexes],
 				counts_requested,
@@ -267,13 +268,12 @@ def calculatePartition(processPriorities, countsRequested, counts, random_state)
 	counts = counts.copy()
 
 	priorityLevels = np.sort(np.unique(processPriorities))[::-1]
-
+	# NOTE: this iterates through the priorities of all the processes (so it starts with those that have the same priority at the same time
 	for priorityLevel in priorityLevels:
 		processHasPriority = (priorityLevel == processPriorities)
 
-		requests = countsRequested[:, processHasPriority].copy()
-
-		totalRequests = requests.sum(axis=1)
+		requests = countsRequested[:, processHasPriority].copy() # NOTE: only includes the allocated counts for the processes that match the current priority being handled/iterated over
+		totalRequests = requests.sum(axis=1) # adds up counts for processes with the same priorities
 		excess_request_mask = (totalRequests > counts)
 
 		# Get fractional request for molecules that have excess request
@@ -281,7 +281,7 @@ def calculatePartition(processPriorities, countsRequested, counts, random_state)
 		fractional_requests = (
 			requests[excess_request_mask, :] * counts[excess_request_mask, np.newaxis]
 			/ totalRequests[excess_request_mask, np.newaxis]
-			)
+			) # NOTE: if the number of requested counts is not possible to satisfy, scale down
 
 		# Distribute fractional counts to ensure full allocation of excess
 		# request molecules
@@ -297,7 +297,7 @@ def calculatePartition(processPriorities, countsRequested, counts, random_state)
 
 		allocations = requests.astype(np.int64)
 		partitioned_counts[:, processHasPriority] = allocations
-		counts -= allocations.sum(axis=1)
+		counts -= allocations.sum(axis=1) # remove the counts available to request for subsequent lower priorities
 
 	return partitioned_counts
 
@@ -362,7 +362,7 @@ class BulkMoleculesView(BulkMoleculesViewBase):
 
 
 	def countsIs(self, values):
-		self._countsIs(values)
+		self._countsIs(values) # so here, by using _countsIs, the _countsIs function is called
 
 
 	def countsInc(self, values):
