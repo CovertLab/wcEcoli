@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655
+# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 29.1
+# Version: 30.0
 # Orthologs: true
-# Date and time generated: October 2, 2025, 15:07:36
+# Date and time generated: December 3, 2025, 10:41:54
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "EG10001"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
 "EG10002"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	795862	796551	"+"	["EG10002_RNA"]
@@ -2901,6 +2901,7 @@
 "G0-17125"	"ameF"	["ameF", "b4844", "ECK4701"]	2911051	2911450	"+"	["RNA0-440"]
 "G0-17126"	"xtpA"	["xtpA", "b4845", "ECK4702"]	345252	345434	"+"	["G0-17126_RNA"]
 "G0-17130"	"yrdG"	["yrdG", "asarfA", "b4846", "ECK4703"]	3438431	3438484	"-"	["RNA0-441"]
+"G0-17139"	"otsa"	["otsa"]	null	null	null	["G0-17139_RNA"]
 "G0-41"	"ecnA"	["ecnA", "b4410", "ECK4142"]	4376317	4376442	"+"	["G0-41_RNA"]
 "G0-8601"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	3124236	3125459	"-"	["G0-8601_RNA"]
 "G0-8785"	"csrB"	["csrB", "b4408", "ECK2787"]	2924156	2924524	"-"	["CSRB-RNA"]

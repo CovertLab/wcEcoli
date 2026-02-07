@@ -1,8 +1,8 @@
-# Organism: Escherichia coli K-12 substr. MG1655
+# Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 29.1
+# Version: 30.0
 # Orthologs: true
-# Date and time generated: October 2, 2025, 15:08:26
+# Date and time generated: December 3, 2025, 10:42:35
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "G0-10515"	"yjhW"	["yjhW", "b4562", "ECK4275"]	4509479	4509793	"+"	[]
 "G0-10560"	"wbbL_2"	["wbbL_2", "b4540", "ECK2025"]	2101396	2101744	"-"	[]
