@@ -3,13 +3,16 @@ SimulationData for translation process
 """
 
 import numpy as np
-
+import pandas as pd
 from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import data, units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
-
+from wholecell.utils.filepath import ROOT_PATH
+import os
+import io
+from wholecell.io import tsv
 
 PROCESS_MAX_TIME_STEP = 2.
 
@@ -110,7 +113,7 @@ class Translation(object):
 		# Get molecular weights
 		mws = sim_data.getter.get_masses(protein_ids).asNumber(units.g / units.mol)
 
-		# Calculate degradation rates based on N-rule (Tobias et al., 1991)
+		# Calculate degradation rates based on the N-rule (Tobias et al., 1991)
 		deg_rate_units = 1 / units.s
 		n_end_rule_deg_rates = {
 			row['aa_code']: (np.log(2)/(row['half life'])).asNumber(deg_rate_units)
@@ -131,11 +134,91 @@ class Translation(object):
 		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
 		clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
-			for p in raw_data.protein_half_lives_Clim3a
+			for p in
+			raw_data.protein_half_lives_Clim4_STD_ratio_threshold_2_keep_NaNs_HL_cap_12
 		}
 
-		# Initialize degradation rates array:
+		# Get protease assignments and contributions to degradation
+		# (in fraction form) estimated from Gupta et al. 2024 data:
+		protease_dict = {
+			p['id']: {'protease_assignment': p['protease_assignment'],
+					  'ClpP_fraction': p['ClpP'],
+					  'Lon_fraction': p['Lon'],
+					  'HslV_fraction': p['HslV'],
+					  'Unexplained_fraction': p['Unexplained']
+					  }
+			for p in raw_data.protease_assignments
+		}
+
+		# Initialize information arrays:
+		common_name = np.full(len(all_proteins), None)
 		deg_rate = np.zeros(len(all_proteins))
+		deg_rate_source_id = np.full(len(all_proteins), None)
+		protease_assignment = np.full(len(all_proteins), None)
+		ClpP_contribution = np.full(len(all_proteins), None)
+		Lon_contribution = np.full(len(all_proteins), None)
+		HslV_contribution = np.full(len(all_proteins), None)
+		Unexplained_contribution = np.full(len(all_proteins), None)
+
+		# Function that will map proteins to the protease assignment if there is one:
+		def determine_protease_involvement(protein_id):
+			if protein_id in protease_dict.keys():
+				if protein['id'] in protease_dict.keys():
+					protease_assignment[i] = protease_dict[protein['id']]['protease_assignment']
+					ClpP_contribution[i] = protease_dict[protein['id']]['ClpP_fraction']
+					Lon_contribution[i] = protease_dict[protein['id']]['Lon_fraction']
+					HslV_contribution[i] = protease_dict[protein['id']]['HslV_fraction']
+					Unexplained_contribution[i] = protease_dict[protein['id']][
+						'Unexplained_fraction']
+			else:
+				pass
+
+
+		# Function that generates a mapping from monomer ids to gene symbols:
+		def get_gene_symbols_for_monomer_ids():
+			"""
+            Extracts the gene symbols for each monomer id in the model.
+            Returns: a dictionary mapping monomer ids to gene symbols.
+            Code adapted from convert_to_flat.py.
+            """
+			RNAS_FILE = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+									 'flat', 'rnas.tsv')
+			with (io.open(RNAS_FILE, 'rb') as f):
+				reader = tsv.reader(f, delimiter='\t')
+				headers = next(reader)
+				while headers[0].startswith('#'):
+					headers = next(reader)
+
+				# extract relevant information
+				gene_symbol_index = headers.index('common_name')
+				protein_id_index = headers.index('monomer_ids')
+				monomer_ids_to_gene_symbols = {}
+				for line in reader:
+					gene_symbol = line[gene_symbol_index]
+					protein_id = list(
+						line[protein_id_index][2:-2].split('", "'))[0]
+					monomer_ids_to_gene_symbols[protein_id] = gene_symbol
+
+			return monomer_ids_to_gene_symbols
+
+		def get_common_name(protein_id):
+			"""
+            Get the common name of a protein given its monomer id.
+            Args:
+                protein_id: the name of the monomer
+            Returns:
+                common_name: The common name of the protein.
+            """
+			# Remove the compartment tag first if it exists:
+			if '[' in protein_id:
+				protein_id = protein_id[:-3]  # subtract the compartment
+				common_name = get_gene_symbols_for_monomer_ids()[protein_id]
+			# If the protein id is not found in the mapping, return None
+			elif protein_id not in get_gene_symbols_for_monomer_ids().keys():
+				common_name = None
+			else:
+				common_name = get_gene_symbols_for_monomer_ids()[protein_id]
+			return common_name
 
 		# Obtain the selected protein degradation rate combination from raw_data:
 		selected_PDR_combination = raw_data.protein_degradation_combo_option
@@ -147,9 +230,12 @@ class Translation(object):
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# the N-end rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				common_name[i] = get_common_name(protein['id'])
+				determine_protease_involvement(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -158,17 +244,22 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
 
 		if selected_PDR_combination == "PDR_combo_2022":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
 			# from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				common_name[i] = get_common_name(protein['id'])
+				determine_protease_involvement(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'Nagar_et_al_ML_2021'
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -178,17 +269,22 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
 
 		if selected_PDR_combination == "PDR_combo_2025":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# Carbon limited rates from Gupta et al., 2024, and finally N-end
 			# rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				common_name[i] = get_common_name(protein['id'])
+				determine_protease_involvement(protein['id'])
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'CL_measured_deg_rates_2020'
 				elif protein['id'] in clim_deg_rates:
 					deg_rate[i] = clim_deg_rates[protein['id']]
+					deg_rate_source_id[i] = 'Gupta_et_al_MS_2024'
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
@@ -198,18 +294,33 @@ class Translation(object):
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					deg_rate_source_id[i] = 'N_end_rule'
 
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
 		max_cistron_id_length = max(
 			len(cistron_id) for cistron_id in cistron_ids)
+		max_deg_source_id_length = max(
+			len(source_id) for source_id in deg_rate_source_id)
+		max_protease_length = max(
+			len(protease_id) for protease_id in protease_assignment if protease_id is not None)
+		max_common_name_length = max(
+			len(name) for name in common_name if name is not None)
+
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
+				('common_name', 'U{}'.format(max_common_name_length)),
 				('deg_rate', 'f8'),
+				('deg_rate_source', 'U{}'.format(max_deg_source_id_length)),
+				('protease_assignment', 'U{}'.format(max_protease_length)),
+				('ClpP_fraction', 'f8'),
+				('Lon_fraction', 'f8'),
+				('HslV_fraction', 'f8'),
+				('Unexplained_fraction', 'f8'),
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
@@ -218,7 +329,14 @@ class Translation(object):
 
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
+		monomer_data['common_name'] = common_name
 		monomer_data['deg_rate'] = deg_rate
+		monomer_data['deg_rate_source'] = deg_rate_source_id
+		monomer_data['protease_assignment'] = protease_assignment
+		monomer_data['ClpP_fraction'] = ClpP_contribution
+		monomer_data['Lon_fraction'] = Lon_contribution
+		monomer_data['HslV_fraction'] = HslV_contribution
+		monomer_data['Unexplained_fraction'] = Unexplained_contribution
 		monomer_data['length'] = lengths
 		monomer_data['aa_counts'] = aa_counts
 		monomer_data['mw'] = mws
@@ -226,7 +344,14 @@ class Translation(object):
 		field_units = {
 			'id': None,
 			'cistron_id': None,
+			'common_name': None,
 			'deg_rate': deg_rate_units,
+			'deg_rate_source': None,
+			'protease_assignment': None,
+			'ClpP_fraction': None,
+			'Lon_fraction': None,
+			'HslV_fraction': None,
+			'Unexplained_fraction': None,
 			'length': units.aa,
 			'aa_counts': units.aa,
 			'mw': units.g / units.mol,
