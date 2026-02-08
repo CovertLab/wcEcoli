@@ -257,7 +257,7 @@ class Translation(object):
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
 				('common_name', 'U{}'.format(max_common_name_length)),
-				('degradation_rate', 'f8'),
+				('deg_rate', 'f8'),
 				('half_life_source', 'U{}'.format(max_HL_source_ID_length)),
 				('protease_assignment', 'U{}'.format(max_protease_ID_length)),
 				('ClpP_contribution_fraction', 'f8'),
@@ -273,7 +273,7 @@ class Translation(object):
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
 		monomer_data['common_name'] = common_name
-		monomer_data['degradation_rate'] = deg_rate
+		monomer_data['deg_rate'] = deg_rate
 		monomer_data['half_life_source'] = half_life_source_ID
 		monomer_data['protease_assignment'] = self.protease_assignment
 		monomer_data['ClpP_contribution_fraction'] = self.clpp_contribution
@@ -288,7 +288,7 @@ class Translation(object):
 			'id': None,
 			'cistron_id': None,
 			'common_name': None,
-			'degradation_rate': deg_rate_units,
+			'deg_rate': deg_rate_units,
 			'half_life_source': None,
 			'protease_assignment': None,
 			'ClpP_contribution_fraction': None,
