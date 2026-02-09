@@ -181,7 +181,8 @@ class Translation(object):
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start with methionine
+					# All protein sequences should start w/ methionine:
+					assert seq[0] == 'M'
 					# Set N-end residue as second amino acid if initial methionine
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
@@ -205,8 +206,8 @@ class Translation(object):
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start
-					# with methionine
+					# All protein sequences should start w/ methionine:
+					assert seq[0] == 'M'
 					# Set N-end residue as second amino acid if initial methionine
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
@@ -230,10 +231,10 @@ class Translation(object):
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start
-					# with methionine
-					# Set N-end residue as second amino acid if initial methionine
-					# is cleaved
+					# All protein sequences should start w/ methionine:
+					assert seq[0] == 'M'
+					# Set N-end residue as 2nd amino acid if initial methionine
+					# is cleaved:
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					half_life_source_ID[i] = 'N_end_rule'
@@ -437,19 +438,19 @@ class Translation(object):
         Returns:
             common_name: The common name of the protein as specified in rnas.tsv.
         """
-		# First remove the compartment tag if the input protein has one:
+		# First, remove the compartment tag if the input protein has one:
 		if '[' in protein_ID:
-			protein = protein_ID[:-3]  # subtract the compartment tag
+			protein = protein_ID[:-3]
 		else:
 			protein = protein_ID
 
 		# Next, determine the common name (if there is one) for the protein:
 		if protein not in self.monomer_id_to_common_name_dict.keys():
 			# If the protein ID is not found in the mapping,
-			# assign the common name to  None:
+			# assign the common name to None:
 			common_name = None
 		else:
-			# If the protein ID is found in the mapping, return the common name
+			# If the protein ID is found in the mapping, return the common name:
 			common_name = self.monomer_id_to_common_name_dict[protein]
 		return common_name
 
@@ -463,8 +464,8 @@ class Translation(object):
             index: index of the protein being evaluated in the all_proteins list
 
         Returns: An update to the protease_assignment,
-        ClpP_contribution, Lon_contribution, HslV_contribution,
-        and Unexplained_contribution arrays in place within protease_dict.
+        clpp_contribution, lon_contribution, hslv_contribution,
+        and unexplained_contribution arrays in place within the protease_dict.
         """
 		if protein_ID in self.protease_dict.keys():
 			self.protease_assignment[index] = self.protease_dict[protein_ID]['protease_assignment']
