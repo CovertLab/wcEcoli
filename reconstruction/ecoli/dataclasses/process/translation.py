@@ -141,7 +141,6 @@ class Translation(object):
 		# protease degradation contributions to degradation for each protein
 		# estimated from Gupta et al. 2024 data (note: this data is not used
 		# functionally in the model):
-		# TODO (mia): consider generating this in a function
 		self.protease_dict = {
 			p['id']: {'protease_assignment': p['protease_assignment'],
 					  'ClpP_fraction': p['ClpP'],
@@ -156,7 +155,6 @@ class Translation(object):
 		common_name = np.full(len(all_proteins), None)
 		deg_rate = np.zeros(len(all_proteins))
 		half_life_source_ID = np.full(len(all_proteins), None)
-		# TODO: consider generating the protease dict here with a function
 		self.protease_assignment = np.full(len(all_proteins), None)
 		self.clpp_contribution = np.full(len(all_proteins), None)
 		self.lon_contribution = np.full(len(all_proteins), None)
