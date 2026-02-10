@@ -247,8 +247,7 @@ class Translation(object):
 		max_HL_source_ID_length = max(
 			len(source_ID) for source_ID in half_life_source_ID)
 		max_protease_ID_length = max(
-			len(protease_ID) for protease_ID in self.protease_assignment
-			if protease_ID is not None)
+			len(protease_ID) for protease_ID in self.protease_assignment)
 		max_common_name_length = max(
 			len(name) for name in common_name if name is not None)
 
@@ -405,7 +404,6 @@ class Translation(object):
 
 		self.elongation_rates[self.ribosomal_protein_indexes] = self.max_elongation_rate
 
-	# TODO (mia): when common names are added ot the proteins.tsv file, replace rnas.tsv here with that.
 	# Function that generates a mapping from monomer IDs to common names:
 	def generate_monomer_ID_to_common_name_dict(self, raw_data):
 		"""
@@ -475,9 +473,13 @@ class Translation(object):
 			self.unexplained_contribution[index] = self.protease_dict[protein_ID][
 				'Unexplained_fraction']
 		else:
-			# If the protein does not have a degradation classification,
-			# retain the "None" values from initialization:
-			pass
+			# If a protein does not have a degradation classification, fill in
+			#  NA for the assignment and 0 for the contributions:
+			self.protease_assignment[index] = "not applicable"
+			self.clpp_contribution[index] = 0
+			self.lon_contribution[index] = 0
+			self.hslv_contribution[index] = 0
+			self.unexplained_contribution[index] = 0
 
 	def make_elongation_rates(
 			self,
