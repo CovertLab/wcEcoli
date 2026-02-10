@@ -47,7 +47,7 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		self.actualFluxes = np.zeros(self.n_constrained_reactions, np.float64)
 		self.targetAAConc = np.zeros(len(self.aa_ids), np.float64)
 
-	def update(self):
+	def initialUpdate(self):
 		# Obtain  countsToMolar value at each timestep (including the initial time step)
 		COUNTS_UNITS = units.mmol
 		MASS_UNITS = units.fg
