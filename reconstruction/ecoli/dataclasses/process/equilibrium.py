@@ -96,6 +96,7 @@ class Equilibrium(object):
 			if should_skip_reaction(reaction):
 				continue
 
+			# Assume stoich is known (i.e., not null):
 			stoichiometry_unknown = False
 
 			ratesFwd.append(forward_rates.get(reaction['id'], median_forward_rate))
@@ -147,6 +148,7 @@ class Equilibrium(object):
 				molecularMass = sim_data.getter.get_mass(mol_id_with_compartment).asNumber(units.g / units.mol)
 				stoichMatrixMass.append(molecularMass)
 
+			self.reaction_stoichiometry_unknown.append(stoichiometry_unknown)
 			reaction_index += 1
 
 		# TODO(jerry): Move the rest to a subroutine for __init__ and __setstate__?
@@ -173,6 +175,149 @@ class Equilibrium(object):
 		# Build matrices
 		self._populateDerivativeAndJacobian()
 		self._stoichMatrix = self.stoich_matrix()
+
+
+		# Create sparse matrix for monomer to complex stoichiometry
+		i, j, v, shape = self._buildStoichMatrixMonomers()
+		self._stoichMatrixMonomersI = i
+		self._stoichMatrixMonomersJ = j
+		self._stoichMatrixMonomersV = v
+		self._stoichMatrixMonomersShape = shape
+
+		first_m = self.stoich_matrix_monomers()
+		second_m = np.zeros(self._stoichMatrixMonomersShape, np.float64)
+		second_m[self._stoichMatrixMonomersI, self._stoichMatrixMonomersJ] = self._stoichMatrixMonomersV
+
+
+		hi = 5
+
+		# Generate dictionary mapping molecules to the direct parent complexes the form:
+		for subunit in self.molecule_names:
+			# find the matrix index where this subunit is as a molecule:
+			subunit_index = self.molecule_names.index(subunit)
+
+			# Find the indicies of self._stoich_matrix_J where the value will
+			# correspond to the index of the correct reaction in self.ids_reactions
+			reaction_indicies = np.where(
+				(self._stoichMatrixI == subunit_index) &
+				(self._stoichMatrixV < 0))[0]
+
+			# For each reaction index, find the complex(es) that is(are) formed:
+			parent_complexes = {}
+			for reaction_idx in reaction_indicies:
+				# find the value of the reaction index (which will be the index
+				# that corresponds to the index of the reaction in self.ids_reactions):
+				rxn_idx = self._stoichMatrixJ[reaction_idx]
+
+				# Initialize data structures to hold complex information
+				complex_information = []
+				stoich = {}
+				stoich_known = {}
+				complex_type = {}
+				reaction_name = {}
+
+				# find the complex formed in this reaction:
+				complex_index = np.where(
+					(self._stoichMatrixJ == rxn_idx) &
+					(self._stoichMatrixV > 0))[0]
+
+				# Find the number of unique subunits in this complex reaction:
+				unique_subunits_in_complex = np.where(
+					(self._stoichMatrixJ == rxn_idx) &
+					(self._stoichMatrixV < 0))[0]
+				num_unique_subunits = len(unique_subunits_in_complex)
+				if num_unique_subunits > 1:
+					cplx_type = 'heterogeneous'
+				else:
+					cplx_type = 'homogeneous'
+
+				# Add complex information to lists
+				complex_name = self.molecule_names[self._stoichMatrixI[complex_index][0]]
+				reaction_name['reaction_id'] = self.rxn_ids[rxn_idx]
+				stoich['stoichiometry'] = -self._stoichMatrixV[reaction_idx]
+				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
+				complex_type['complex_type'] = cplx_type
+				complex_information.append(reaction_name)
+				complex_information.append(stoich)
+				complex_information.append(stoich_known)
+				complex_information.append(complex_type)
+
+				# Append the complex name and stoich as a dictionary entry
+				parent_complexes[complex_name] = complex_information
+
+			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
+		# TODO: figure out why "CPLX0-7639_RXN" is not showing up in the dictionary
+
+		# Make a dictionary mapping molecules to all downstream complexes they form
+		# (both directly and indirectly via another complex):
+		for subunit in self.molecule_names:
+			# find the matrix index where this subunit is as a molecule:
+			subunit_index = self.molecule_names.index(subunit)
+
+			# Find the indicies of self._stoichMatrixMonomersJ where the value will
+			# correspond to the index of complexes the subunit generates:
+			complex_indicies = np.where(
+				(self._stoichMatrixMonomersI == subunit_index) &
+				(self._stoichMatrixMonomersV < 0))[
+				0]  # equivalently, can find the complex indices with (self._stoichMatrixMonomersJ > 0) as the second argument
+
+			# For each complex formed by this subunit, find relevant information about its complexes:
+			downstream_complexes = {}
+			for complex_idx in complex_indicies:
+				# Find the complex's name:
+				complex_name = self.ids_complexes[self._stoichMatrixMonomersJ[complex_idx]]
+
+				# Obtain the index of the complex within self.molecule_names
+				cplx_idx = self.molecule_names.index(complex_name)
+
+				# Use the stoichMatrix() to find the reaction index:
+				reaction_indicies = np.where(
+					(self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
+
+				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
+				reaction_idx = self._stoichMatrixJ[reaction_indicies]
+
+				# Initialize data structures to hold complex information
+				downstream_complex_information = []
+				stoich = {}
+				stoich_known = {}
+				complex_type = {}
+				reaction_name = {}
+
+				# Find the number of unique subunits in this complex reaction:
+				unique_subunits_in_complex = np.where(
+					(self._stoichMatrixJ == reaction_idx) &
+					(self._stoichMatrixV < 0))[0]
+				num_unique_subunits = len(unique_subunits_in_complex)
+				if num_unique_subunits > 1:
+					cplx_type = 'heterogenious'
+				elif num_unique_subunits == 1:
+					cplx_type = 'homogenious'
+				else:
+					cplx_type = 'unknown'
+
+				# Add complex information to lists:
+				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
+				stoich['stoichiometry'] = -self._stoichMatrixMonomersV[complex_idx]
+				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
+					reaction_idx[0]]
+				complex_type['complex_type'] = cplx_type
+				downstream_complex_information.append(reaction_name)
+				downstream_complex_information.append(stoich)
+				downstream_complex_information.append(stoich_known)
+				downstream_complex_information.append(complex_type)
+
+				# Append the complex name and stoich as a dictionary entry
+				downstream_complexes[complex_name] = downstream_complex_information
+
+			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
+
+
+
+
+
+
+
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
@@ -256,6 +401,41 @@ class Equilibrium(object):
 		out = np.zeros(shape, np.float64)
 		out[stoichMatrixMonomersI, stoichMatrixMonomersJ] = stoichMatrixMonomersV
 		return out
+
+	def _buildStoichMatrixMonomers(self):
+		"""
+		Builds a stoichiometric matrix where each column is a reaction that
+		forms a complex directly from its constituent monomers. Since some
+		reactions from the raw data are complexation reactions of complexes,
+		this is different from the stoichiometric matrix generated by
+		stoichMatrix().
+		"""
+		stoichMatrixMonomersI = []
+		stoichMatrixMonomersJ = []
+		stoichMatrixMonomersV = []
+
+		for colIdx, id_complex in enumerate(self.ids_complexes):
+			D = self.get_monomers(id_complex)
+
+			rowIdx = self.molecule_names.index(id_complex)
+			stoichMatrixMonomersI.append(rowIdx)
+			stoichMatrixMonomersJ.append(colIdx)
+			stoichMatrixMonomersV.append(1.)
+
+			for subunitId, subunitStoich in zip(D["subunitIds"], D["subunitStoich"]):
+				rowIdx = self.molecule_names.index(subunitId)
+				stoichMatrixMonomersI.append(rowIdx)
+				stoichMatrixMonomersJ.append(colIdx)
+				stoichMatrixMonomersV.append(-1. * subunitStoich)
+
+		stoichMatrixMonomersI = np.array(stoichMatrixMonomersI)
+		stoichMatrixMonomersJ = np.array(stoichMatrixMonomersJ)
+		stoichMatrixMonomersV = np.array(stoichMatrixMonomersV)
+
+		shape = (stoichMatrixMonomersI.max() + 1, stoichMatrixMonomersJ.max() + 1)
+
+		return (stoichMatrixMonomersI, stoichMatrixMonomersJ, stoichMatrixMonomersV, shape)
+
 
 	def _populateDerivativeAndJacobian(self):
 		'''Compile callable functions for computing the derivative and the Jacobian.'''
