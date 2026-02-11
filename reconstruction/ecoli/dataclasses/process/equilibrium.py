@@ -36,6 +36,8 @@ class Equilibrium(object):
 		stoichMatrixMass = []
 		self.metabolite_set = set()
 		self.complex_name_to_rxn_idx = {}
+		self.molecules_to_parent_complexes_dict = {}
+		self.molecules_to_all_downstream_complexes_dict = {}
 
 		# Make sure reactions are not duplicated in complexationReactions and
 		# equilibriumReactions
@@ -79,6 +81,7 @@ class Equilibrium(object):
 		median_forward_rate = np.median(np.array(list(forward_rates.values())))
 		median_reverse_rate = np.median(np.array(list(reverse_rates.values())))
 
+		self.reaction_stoichiometry_unknown = []
 		reaction_index = 0
 
 		def should_skip_reaction(reaction):
@@ -92,6 +95,8 @@ class Equilibrium(object):
 		for reaction in raw_data.equilibrium_reactions:
 			if should_skip_reaction(reaction):
 				continue
+
+			stoichiometry_unknown = False
 
 			ratesFwd.append(forward_rates.get(reaction['id'], median_forward_rate))
 			ratesRev.append(reverse_rates.get(reaction['id'], median_reverse_rate))
@@ -123,6 +128,7 @@ class Equilibrium(object):
 				# Assume coefficients given as null are -1
 				if coeff is None:
 					coeff = -1
+					stoichiometry_unknown = True
 
 				# All stoichiometric coefficients must be integers
 				assert coeff % 1 == 0
