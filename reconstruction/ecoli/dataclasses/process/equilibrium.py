@@ -188,8 +188,7 @@ class Equilibrium(object):
 		second_m = np.zeros(self._stoichMatrixMonomersShape, np.float64)
 		second_m[self._stoichMatrixMonomersI, self._stoichMatrixMonomersJ] = self._stoichMatrixMonomersV
 
-
-		hi = 5
+		hi = 6
 
 		# Generate dictionary mapping molecules to the direct parent complexes the form:
 		for subunit in self.molecule_names:
@@ -250,32 +249,78 @@ class Equilibrium(object):
 
 		# Make a dictionary mapping molecules to all downstream complexes they form
 		# (both directly and indirectly via another complex):
+		test_matrix = {}
 		for subunit in self.molecule_names:
 			# find the matrix index where this subunit is as a molecule:
 			subunit_index = self.molecule_names.index(subunit)
 
 			# Find the indicies of self._stoichMatrixMonomersJ where the value will
 			# correspond to the index of complexes the subunit generates:
-			complex_indicies = np.where(
+			complex_indices = np.where(
 				(self._stoichMatrixMonomersI == subunit_index) &
 				(self._stoichMatrixMonomersV < 0))[
 				0]  # equivalently, can find the complex indices with (self._stoichMatrixMonomersJ > 0) as the second argument
 
 			# For each complex formed by this subunit, find relevant information about its complexes:
+			ds_coms = {}
+			su_idx = first_m[subunit_index, :]
+			c_idxs = np.where(su_idx < 0)[0]
+			for c_idx in c_idxs:
+				comp = self.ids_complexes[c_idx]
+				comp_idx = self.molecule_names.index(comp)
+				reaction_indices = np.where(
+					(self._stoichMatrixI == comp_idx) & (self._stoichMatrixV > 0))[0]
+				reaction_idx = self._stoichMatrixJ[reaction_indices]
+				# Initialize data structures to hold complex information
+				downstream_complex_information = []
+				stoich = {}
+				stoich_known = {}
+				complex_type = {}
+				reaction_name = {}
+
+				# Find the number of unique subunits in this complex reaction:
+				unique_subunits_in_complex = np.where(
+					(self._stoichMatrixJ == reaction_idx) &
+					(self._stoichMatrixV < 0))[0]
+				num_unique_subunits = len(unique_subunits_in_complex)
+				if num_unique_subunits > 1:
+					cplx_type = 'heterogeneous'
+				elif num_unique_subunits == 1:
+					cplx_type = 'homogeneous'
+				else:
+					cplx_type = 'unknown'
+
+				# Add complex information to lists:
+				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
+				stoich['stoichiometry'] = first_m[subunit_index, c_idx]
+				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
+					reaction_idx[0]] * -1
+				complex_type['complex_type'] = cplx_type
+				downstream_complex_information.append(reaction_name)
+				downstream_complex_information.append(stoich)
+				downstream_complex_information.append(stoich_known)
+				downstream_complex_information.append(complex_type)
+
+				# Append the complex name and stoich as a dictionary entry
+				ds_coms[comp] = downstream_complex_information
+
+
 			downstream_complexes = {}
-			for complex_idx in complex_indicies:
+			for complex_idx in complex_indices:
 				# Find the complex's name:
 				complex_name = self.ids_complexes[self._stoichMatrixMonomersJ[complex_idx]]
+
 
 				# Obtain the index of the complex within self.molecule_names
 				cplx_idx = self.molecule_names.index(complex_name)
 
 				# Use the stoichMatrix() to find the reaction index:
-				reaction_indicies = np.where(
+				reaction_indices = np.where(
 					(self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
 
+
 				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
-				reaction_idx = self._stoichMatrixJ[reaction_indicies]
+				reaction_idx = self._stoichMatrixJ[reaction_indices]
 
 				# Initialize data structures to hold complex information
 				downstream_complex_information = []
@@ -290,9 +335,9 @@ class Equilibrium(object):
 					(self._stoichMatrixV < 0))[0]
 				num_unique_subunits = len(unique_subunits_in_complex)
 				if num_unique_subunits > 1:
-					cplx_type = 'heterogenious'
+					cplx_type = 'heterogeneous'
 				elif num_unique_subunits == 1:
-					cplx_type = 'homogenious'
+					cplx_type = 'homogeneous'
 				else:
 					cplx_type = 'unknown'
 
@@ -311,6 +356,9 @@ class Equilibrium(object):
 				downstream_complexes[complex_name] = downstream_complex_information
 
 			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
+			test_matrix[subunit] = ds_coms
+		hi = 5
+		hi = 10
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
