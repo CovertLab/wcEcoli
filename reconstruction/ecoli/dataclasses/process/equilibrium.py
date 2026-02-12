@@ -312,13 +312,6 @@ class Equilibrium(object):
 
 			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
 
-
-
-
-
-
-
-
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
 		__setstate__() will recompute, esp. those like the rates for ODEs
