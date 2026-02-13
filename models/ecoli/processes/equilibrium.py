@@ -43,8 +43,8 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
 		# Extract relevant monomer information within the internal states:
-		self.bulkMolecules = sim.internal_states["BulkMolecules"]
-		self.bulk_molecule_IDs = self.bulkMolecules.container.objectNames()
+		bulkMolecules = sim.internal_states["BulkMolecules"]
+		bulk_molecule_IDs = bulkMolecules.container.objectNames()
 
 		# Get IDs of molecules involved in complexation reactions:
 		equilibrium_molecule_IDs = sim_data.process.equilibrium.molecule_names
@@ -71,11 +71,17 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.matching_molecule_indices = matching_indices
 
 		# Construct dictionary to quickly find bulk molecule indexes from IDs:
-		molecule_dict = {mol: i for i, mol in enumerate(self.bulk_molecule_IDs)}
+		molecule_dict = {mol: i for i, mol in enumerate(bulk_molecule_IDs)}
 
 		# Get indexes of all relevant bulk molecules:
 		self.equilibrium_complex_idx = np.array(
 			[molecule_dict[x] for x in equilibrium_complex_IDs])
+
+		self.equilibrium_complexes = (
+			bulkMolecules.container[self.equilibrium_complex_idx])
+
+		self.bm = bulkMolecules.container.counts()
+		self.eqbm = self.bm[self.equilibrium_complex_idx]
 
 
 	def calculateRequest(self):
@@ -130,31 +136,49 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.molecules.countsInc(deltaMolecules)
 
 		# Write outputs to listeners
-		self.writeToListener("EquilibriumListener", "complexationEvents", rxnFluxes)
-		self.writeToListener("EquilibriumListener", "reactionRates", (
-			deltaMolecules[self.product_indices] / self.timeStepSec()
-			))
+		self.writeToListener("EquilibriumListener",
+							 "complexationEvents", rxnFluxes)
+		self.writeToListener("EquilibriumListener",
+							 "reactionRates", (
+			deltaMolecules[self.product_indices] / self.timeStepSec()))
 
 		# Determine the total counts of each complex:
-		bulkMoleculeCounts = self.bulkMolecules.container.counts()
-		complex_counts = bulkMoleculeCounts[self.equilibrium_complex_idx]
-		self.writeToListener("EquilibriumListener", "complexCounts", complex_counts)
+		# TODO: consider moving this to the update() function of the listener
+		complex_counts = self.equilibrium_complexes.total_counts()# TODO: determine if counts or total_counts should be used here??? I believe total_counts() BUT if I decide to make self.equilivrui9m_complexes equal to .counts(), I think it would be equilivalent (just cant use .counts() imn evolve state)
 
-		# TODO: check the np.negative sign convention here
-		# Determine how many free monomers were used to generate complexes:
-		opposite_deltaMolecules = np.negative(
-			deltaMolecules)  # monomers that were used to form complexes will be positive here to stay consisent with the nomenclature used for monomersDegraded (in monomer_counts.py), and monomers that were generated from complex disassociation will be positive.
+		hi = 5
+		self.writeToListener("EquilibriumListener",
+							 "complexCounts", complex_counts)
+
+		# Determine how many free monomers were used to generate complexes this
+		# timestep (monomers that were used to form complexes here will be
+		# positive to stay consistent with the sign convention used for
+		# monomersDegraded in the monomerCounts listener, and monomers that are
+		# generated here from complex disassociation will thus be negative):
+		opposite_deltaMolecules = np.negative(deltaMolecules)
 		free_monomers_complexed = np.zeros(len(self.monomer_IDs), np.int64)
-		free_monomers_complexed[self.matching_monomer_indices] = opposite_deltaMolecules[
-			self.matching_molecule_indices]
-		self.writeToListener("EquilibriumListener", "freeMonomersComplexed",
+		free_monomers_complexed[self.matching_monomer_indices] = (
+			np.fmax(0, opposite_deltaMolecules[self.matching_molecule_indices]))
+		self.writeToListener("EquilibriumListener",
+							 "freeMonomersComplexed",
 							 free_monomers_complexed)
 
-		# Determine how the number of monomers in complexes:
+		# Determine how many free monomers were relased from complexes that
+		# dissociated this timestep:
+		free_monomers_released = np.zeros(len(self.monomer_IDs), np.int64)
+		free_monomers_released[self.matching_monomer_indices] = (
+			np.fmax(0, deltaMolecules[self.matching_molecule_indices]))
+		self.writeToListener("EquilibriumListener",
+							 "freeMonomersReleased",
+							 free_monomers_released)
+
+		# Determine the total number of monomers in equilibirum complexes:
 		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
 												   complex_counts))
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
 		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
 			self.matching_molecule_indices]
-		self.writeToListener("EquilibriumListener", "complexedMonomerCounts", complexed_monomers)
+		self.writeToListener("EquilibriumListener",
+							 "complexedMonomerCounts",
+							 complexed_monomers)
 
