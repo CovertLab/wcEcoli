@@ -296,9 +296,7 @@ class Equilibrium(object):
 
 				# Add complex information to lists:
 				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
-				stoich['stoichiometry'] = self._stoichMatrixMonomersV[complex_idx] # TODO: note that complex_idx is NOT right to use here!
-				act = stoich_matrix_monomers[subunit_index, complex_idx]
-				hi = 5
+				stoich['stoichiometry'] = stoich_matrix_monomers[subunit_index, complex_idx]
 				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
 					reaction_idx[0]]
 				complex_type['complex_type'] = cplx_type
@@ -348,7 +346,6 @@ class Equilibrium(object):
 				# Add complex information to lists:
 				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
 				stoich['stoichiometry'] = self._stoichMatrixMonomersV[complex_idx]
-				hi = 5
 				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
 					reaction_idx[0]]
 				complex_type['complex_type'] = cplx_type
@@ -360,37 +357,8 @@ class Equilibrium(object):
 				# Append the complex name and stoich as a dictionary entry
 				downstream_complexes1[complex_name] = downstream_complex_information
 
-			# check if the two methods give the same result:
-			def deep_compare_dicts(dict1, dict2):
-				"""Recursively compares two dictionaries and returns True if they are equal, False otherwise."""
-				if dict1.keys() != dict2.keys():
-					return False
-				for key in dict1:
-					value1 = dict1[key]
-					value2 = dict2[key]
-
-					# If values are lists, compare their contents
-					if isinstance(value1, list) and isinstance(value2, list):
-						if len(value1) != len(value2):
-							return False
-						for item1, item2 in zip(value1, value2):
-							if item1 != item2:
-								return False
-					# Compare other types
-					elif value1 != value2:
-						return False
-				return True
-
-			# Inside your loop:
-			assert deep_compare_dicts(downstream_complexes, downstream_complexes1), (
-				f"Mismatch found for subunit: {subunit}."
-			)
-
-
 			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
-			test1[subunit] = downstream_complexes1
-		hi = 5
-		hi = 10
+
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
