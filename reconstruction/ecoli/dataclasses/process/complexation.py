@@ -172,7 +172,7 @@ class Complexation(object):
 				# in analyses:
 				complex_name = self.molecule_names[self._stoich_matrix_I[complex_index][0]]
 				reaction_name['reaction_id'] = self.ids_reactions[rxn_idx]
-				stoich['stoichiometry'] = -self._stoich_matrix_V[reaction_idx]
+				stoich['stoichiometry'] = self._stoich_matrix_V[reaction_idx]
 				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
 				complex_type['complex_type'] = cplx_type
 				complex_information.append(reaction_name)
@@ -203,7 +203,6 @@ class Complexation(object):
 				(self._stoichMatrixMonomersI == subunit_index) &
 				(self._stoichMatrixMonomersV < 0))[
 				0]
-			# TODO: test if you can find the complex indices with (self._stoichMatrixMonomersJ > 0) as the second argument
 
 			# For each complex formed by this subunit, find relevant information about its complexes:
 			downstream_complexes = {}
@@ -243,7 +242,7 @@ class Complexation(object):
 
 				# Add complex information to lists:
 				reaction_name['reaction_id'] = self.ids_reactions[reaction_idx[0]]
-				stoich['stoichiometry'] = -self._stoichMatrixMonomersV[complex_idx]
+				stoich['stoichiometry'] = self._stoichMatrixMonomersV[complex_idx]
 				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
 					reaction_idx[0]]
 				complex_type['complex_type'] = cplx_type
