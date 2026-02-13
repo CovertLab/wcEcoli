@@ -176,19 +176,12 @@ class Equilibrium(object):
 		self._populateDerivativeAndJacobian()
 		self._stoichMatrix = self.stoich_matrix()
 
-
 		# Create sparse matrix for monomer to complex stoichiometry
 		i, j, v, shape = self._buildStoichMatrixMonomers()
 		self._stoichMatrixMonomersI = i
 		self._stoichMatrixMonomersJ = j
 		self._stoichMatrixMonomersV = v
 		self._stoichMatrixMonomersShape = shape
-
-		first_m = self.stoich_matrix_monomers()
-		second_m = np.zeros(self._stoichMatrixMonomersShape, np.float64)
-		second_m[self._stoichMatrixMonomersI, self._stoichMatrixMonomersJ] = self._stoichMatrixMonomersV
-
-		hi = 6
 
 		# Generate dictionary mapping molecules to the direct parent complexes the form:
 		for subunit in self.molecule_names:
@@ -247,77 +240,37 @@ class Equilibrium(object):
 			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
 		# TODO: figure out why "CPLX0-7639_RXN" is not showing up in the dictionary
 
+		# Generate the stoich matrix for complexes to all consituent monomers:
+		stoich_matrix_monomers = self.stoich_matrix_monomers()
+		test1 = {}
+
 		# Make a dictionary mapping molecules to all downstream complexes they form
 		# (both directly and indirectly via another complex):
-		test_matrix = {}
 		for subunit in self.molecule_names:
 			# find the matrix index where this subunit is as a molecule:
 			subunit_index = self.molecule_names.index(subunit)
 
+			# Find the indices of complexes containing this subunit:
+			complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
+
 			# Find the indicies of self._stoichMatrixMonomersJ where the value will
 			# correspond to the index of complexes the subunit generates:
-			complex_indices = np.where(
+			complex_indices1 = np.where(
 				(self._stoichMatrixMonomersI == subunit_index) &
 				(self._stoichMatrixMonomersV < 0))[
-				0]  # equivalently, can find the complex indices with (self._stoichMatrixMonomersJ > 0) as the second argument
-
-			# For each complex formed by this subunit, find relevant information about its complexes:
-			ds_coms = {}
-			su_idx = first_m[subunit_index, :]
-			c_idxs = np.where(su_idx < 0)[0]
-			for c_idx in c_idxs:
-				comp = self.ids_complexes[c_idx]
-				comp_idx = self.molecule_names.index(comp)
-				reaction_indices = np.where(
-					(self._stoichMatrixI == comp_idx) & (self._stoichMatrixV > 0))[0]
-				reaction_idx = self._stoichMatrixJ[reaction_indices]
-				# Initialize data structures to hold complex information
-				downstream_complex_information = []
-				stoich = {}
-				stoich_known = {}
-				complex_type = {}
-				reaction_name = {}
-
-				# Find the number of unique subunits in this complex reaction:
-				unique_subunits_in_complex = np.where(
-					(self._stoichMatrixJ == reaction_idx) &
-					(self._stoichMatrixV < 0))[0]
-				num_unique_subunits = len(unique_subunits_in_complex)
-				if num_unique_subunits > 1:
-					cplx_type = 'heterogeneous'
-				elif num_unique_subunits == 1:
-					cplx_type = 'homogeneous'
-				else:
-					cplx_type = 'unknown'
-
-				# Add complex information to lists:
-				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
-				stoich['stoichiometry'] = first_m[subunit_index, c_idx]
-				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
-					reaction_idx[0]] * -1
-				complex_type['complex_type'] = cplx_type
-				downstream_complex_information.append(reaction_name)
-				downstream_complex_information.append(stoich)
-				downstream_complex_information.append(stoich_known)
-				downstream_complex_information.append(complex_type)
-
-				# Append the complex name and stoich as a dictionary entry
-				ds_coms[comp] = downstream_complex_information
-
+				0]
 
 			downstream_complexes = {}
 			for complex_idx in complex_indices:
 				# Find the complex's name:
-				complex_name = self.ids_complexes[self._stoichMatrixMonomersJ[complex_idx]]
+				complex_name = self.ids_complexes[complex_idx]
 
-
-				# Obtain the index of the complex within self.molecule_names
+				# Obtain the index of the complex within self.molecule_names:
 				cplx_idx = self.molecule_names.index(complex_name)
 
 				# Use the stoichMatrix() to find the reaction index:
 				reaction_indices = np.where(
 					(self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
-
 
 				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
 				reaction_idx = self._stoichMatrixJ[reaction_indices]
@@ -343,7 +296,9 @@ class Equilibrium(object):
 
 				# Add complex information to lists:
 				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
-				stoich['stoichiometry'] = -self._stoichMatrixMonomersV[complex_idx]
+				stoich['stoichiometry'] = self._stoichMatrixMonomersV[complex_idx] # TODO: note that complex_idx is NOT right to use here!
+				act = stoich_matrix_monomers[subunit_index, complex_idx]
+				hi = 5
 				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
 					reaction_idx[0]]
 				complex_type['complex_type'] = cplx_type
@@ -355,8 +310,85 @@ class Equilibrium(object):
 				# Append the complex name and stoich as a dictionary entry
 				downstream_complexes[complex_name] = downstream_complex_information
 
+
+			downstream_complexes1 = {}
+			for complex_idx in complex_indices1:
+				# Find the complex's name:
+				complex_name = self.ids_complexes[self._stoichMatrixMonomersJ[complex_idx]]
+
+				# Obtain the index of the complex within self.molecule_names
+				cplx_idx = self.molecule_names.index(complex_name)
+
+				# Use the stoichMatrix() to find the reaction index:
+				reaction_indices = np.where(
+					(self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
+
+				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
+				reaction_idx = self._stoichMatrixJ[reaction_indices]
+
+				# Initialize data structures to hold complex information
+				downstream_complex_information = []
+				stoich = {}
+				stoich_known = {}
+				complex_type = {}
+				reaction_name = {}
+
+				# Find the number of unique subunits in this complex reaction:
+				unique_subunits_in_complex = np.where(
+					(self._stoichMatrixJ == reaction_idx) &
+					(self._stoichMatrixV < 0))[0]
+				num_unique_subunits = len(unique_subunits_in_complex)
+				if num_unique_subunits > 1:
+					cplx_type = 'heterogeneous'
+				elif num_unique_subunits == 1:
+					cplx_type = 'homogeneous'
+				else:
+					cplx_type = 'unknown'
+
+				# Add complex information to lists:
+				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
+				stoich['stoichiometry'] = self._stoichMatrixMonomersV[complex_idx]
+				hi = 5
+				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
+					reaction_idx[0]]
+				complex_type['complex_type'] = cplx_type
+				downstream_complex_information.append(reaction_name)
+				downstream_complex_information.append(stoich)
+				downstream_complex_information.append(stoich_known)
+				downstream_complex_information.append(complex_type)
+
+				# Append the complex name and stoich as a dictionary entry
+				downstream_complexes1[complex_name] = downstream_complex_information
+
+			# check if the two methods give the same result:
+			def deep_compare_dicts(dict1, dict2):
+				"""Recursively compares two dictionaries and returns True if they are equal, False otherwise."""
+				if dict1.keys() != dict2.keys():
+					return False
+				for key in dict1:
+					value1 = dict1[key]
+					value2 = dict2[key]
+
+					# If values are lists, compare their contents
+					if isinstance(value1, list) and isinstance(value2, list):
+						if len(value1) != len(value2):
+							return False
+						for item1, item2 in zip(value1, value2):
+							if item1 != item2:
+								return False
+					# Compare other types
+					elif value1 != value2:
+						return False
+				return True
+
+			# Inside your loop:
+			assert deep_compare_dicts(downstream_complexes, downstream_complexes1), (
+				f"Mismatch found for subunit: {subunit}."
+			)
+
+
 			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
-			test_matrix[subunit] = ds_coms
+			test1[subunit] = downstream_complexes1
 		hi = 5
 		hi = 10
 
