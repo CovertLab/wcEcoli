@@ -130,6 +130,31 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.molecules.countsInc(deltaMolecules)
 
 		# Write outputs to listeners
+		self.writeToListener("EquilibriumListener", "complexationEvents", rxnFluxes)
 		self.writeToListener("EquilibriumListener", "reactionRates", (
 			deltaMolecules[self.product_indices] / self.timeStepSec()
 			))
+
+		# Determine the total counts of each complex:
+		bulkMoleculeCounts = self.bulkMolecules.container.counts()
+		complex_counts = bulkMoleculeCounts[self.equilibrium_complex_idx]
+		self.writeToListener("EquilibriumListener", "complexCounts", complex_counts)
+
+		# TODO: check the np.negative sign convention here
+		# Determine how many free monomers were used to generate complexes:
+		opposite_deltaMolecules = np.negative(
+			deltaMolecules)  # monomers that were used to form complexes will be positive here to stay consisent with the nomenclature used for monomersDegraded (in monomer_counts.py), and monomers that were generated from complex disassociation will be positive.
+		free_monomers_complexed = np.zeros(len(self.monomer_IDs), np.int64)
+		free_monomers_complexed[self.matching_monomer_indices] = opposite_deltaMolecules[
+			self.matching_molecule_indices]
+		self.writeToListener("EquilibriumListener", "freeMonomersComplexed",
+							 free_monomers_complexed)
+
+		# Determine how the number of monomers in complexes:
+		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
+												   complex_counts))
+		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
+		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
+			self.matching_molecule_indices]
+		self.writeToListener("EquilibriumListener", "complexedMonomerCounts", complexed_monomers)
+
