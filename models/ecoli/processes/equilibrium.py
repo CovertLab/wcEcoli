@@ -34,12 +34,48 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Create matrix and method
 		self.stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
+		self._stoichMatrix = sim_data.process.equilibrium.stoich_matrix_monomers().astype(np.int64)
 		self.fluxesAndMoleculesToSS = sim_data.process.equilibrium.fluxes_and_molecules_to_SS
 		self.product_indices = [idx for idx in np.where(np.any(self.stoichMatrix > 0, axis=1))[0]]
 
 		# Build views
-		moleculeNames = sim_data.process.equilibrium.molecule_names
-		self.molecules = self.bulkMoleculesView(moleculeNames)
+		self.moleculeNames = sim_data.process.equilibrium.molecule_names
+		self.molecules = self.bulkMoleculesView(self.moleculeNames)
+
+		# Extract relevant monomer information within the internal states:
+		self.bulkMolecules = sim.internal_states["BulkMolecules"]
+		self.bulk_molecule_IDs = self.bulkMolecules.container.objectNames()
+
+		# Get IDs of molecules involved in complexation reactions:
+		equilibrium_molecule_IDs = sim_data.process.equilibrium.molecule_names
+		equilibrium_complex_IDs = sim_data.process.equilibrium.ids_complexes
+
+		# Extract all monomer IDs so that matches within moleculeNames can be tracked:
+		self.monomer_IDs = sim_data.process.translation.monomer_data["id"].tolist()
+
+		# Find where monomers IDs are within molecules:
+		matching_monomers_mask = np.isin(equilibrium_molecule_IDs, self.monomer_IDs)
+
+		# Get the indices of the matching monomers (i.e. where it is nonzero):
+		matching_indices = np.where(matching_monomers_mask)[0]
+
+		# Obtain the indices of the monomer IDs within bulkIDs for each matching index:
+		monomer_indices = []
+		for i in matching_indices:
+			molecule_ID = equilibrium_molecule_IDs[i]
+			if molecule_ID in self.monomer_IDs:
+				monomer_index = self.monomer_IDs.index(molecule_ID)
+				monomer_indices.append(monomer_index)
+
+		self.matching_monomer_indices = monomer_indices
+		self.matching_molecule_indices = matching_indices
+
+		# Construct dictionary to quickly find bulk molecule indexes from IDs:
+		molecule_dict = {mol: i for i, mol in enumerate(self.bulk_molecule_IDs)}
+
+		# Get indexes of all relevant bulk molecules:
+		self.equilibrium_complex_idx = np.array(
+			[molecule_dict[x] for x in equilibrium_complex_IDs])
 
 
 	def calculateRequest(self):
