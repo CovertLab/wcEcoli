@@ -38,8 +38,8 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.product_indices = [idx for idx in np.where(np.any(self.stoichMatrix > 0, axis=1))[0]]
 
 		# Build views
-		self.moleculeNames = sim_data.process.equilibrium.molecule_names
-		self.molecules = self.bulkMoleculesView(self.moleculeNames)
+		moleculeNames = sim_data.process.equilibrium.molecule_names
+		self.molecules = self.bulkMoleculesView(moleculeNames)
 
 		# Get IDs of molecules involved in complexation reactions:
 		equilibrium_molecule_IDs = sim_data.process.equilibrium.molecule_names
