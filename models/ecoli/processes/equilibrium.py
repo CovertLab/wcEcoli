@@ -118,10 +118,12 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Write outputs to listeners
 		self.writeToListener("EquilibriumListener",
-							 "complexationEvents", rxnFluxes)
-		self.writeToListener("EquilibriumListener",
 							 "reactionRates", (
 			deltaMolecules[self.product_indices] / self.timeStepSec()))
+
+		# Record the number of complexation events that occurred this timestep:
+		self.writeToListener("EquilibriumListener",
+							 "complexationEvents", rxnFluxes)
 
 		# Determine how many free monomers were used to generate complexes this
 		# timestep (monomers that were used to form complexes here will be
