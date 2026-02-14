@@ -84,12 +84,14 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		self.complexedMonomerCounts = np.zeros(len(self.monomerIDs), np.int64)
 
 	def update(self):
-		# Get current counts of bulk and unique molecules
+		# Get current counts of all bulk molecules:
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
-		# Update the complex counts at the start of the cell:
+
+		# Determine the number of complexes present in the cell currently by
+		# indexing into bulkMoleculeCounts where complexed molecules are located:
 		self.complexCounts = bulkMoleculeCounts[self.equilibrium_complex_idx]
 
-		# Update the counts of monomers currently complexed at the start of the cell:
+		# Determine the # of monomers that are "currently" in complexes:
 		monomers_in_complexes = np.negative(np.dot(self.stoich_matrix_monomers,
 												   self.complexCounts))
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
