@@ -34,7 +34,6 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Create matrix and method
 		self.stoichMatrix = sim_data.process.equilibrium.stoich_matrix().astype(np.int64)
-		self._stoichMatrix = sim_data.process.equilibrium.stoich_matrix_monomers().astype(np.int64)
 		self.fluxesAndMoleculesToSS = sim_data.process.equilibrium.fluxes_and_molecules_to_SS
 		self.product_indices = [idx for idx in np.where(np.any(self.stoichMatrix > 0, axis=1))[0]]
 
