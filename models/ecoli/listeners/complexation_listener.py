@@ -25,8 +25,11 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(ComplexationListener, self).initialize(sim, sim_data)
 
+		self.monomerIDs = sim_data.process.translation.monomer_data["id"].tolist()
 		self.complexIDs = sim_data.process.complexation.ids_complexes
 		self.reactionIDs = sim_data.process.complexation.ids_reactions
+		self.stoich_matrix_monomers = (
+			sim_data.process.complexation.stoich_matrix_monomers().astype(np.int64))
 
 
 	# Allocate memory

@@ -95,7 +95,7 @@ class Complexation(wholecell.processes.process.Process):
 		self.writeToListener("ComplexationListener",
 							 "complexationEvents", events)
 
-		# Determine how many free monomers were made into complexes:
+		# Determine how many free monomers were used to generate complexes this timestep:
 		downstream_molecule_changes = np.negative(
 			np.dot(self.stoichMatrixMonomers, events))
 		free_monomers_complexed = np.zeros(len(self.monomer_IDs), np.int64)
