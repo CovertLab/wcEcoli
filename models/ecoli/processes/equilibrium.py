@@ -42,13 +42,8 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.moleculeNames = sim_data.process.equilibrium.molecule_names
 		self.molecules = self.bulkMoleculesView(self.moleculeNames)
 
-		# Extract relevant monomer information within the internal states:
-		bulkMolecules = sim.internal_states["BulkMolecules"]
-		bulk_molecule_IDs = bulkMolecules.container.objectNames()
-
 		# Get IDs of molecules involved in complexation reactions:
 		equilibrium_molecule_IDs = sim_data.process.equilibrium.molecule_names
-		equilibrium_complex_IDs = sim_data.process.equilibrium.ids_complexes
 
 		# Extract all monomer IDs so that matches within moleculeNames can be tracked:
 		self.monomer_IDs = sim_data.process.translation.monomer_data["id"].tolist()
@@ -69,21 +64,6 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		self.matching_monomer_indices = monomer_indices
 		self.matching_molecule_indices = matching_indices
-
-		# Construct dictionary to quickly find bulk molecule indexes from IDs:
-		molecule_dict = {mol: i for i, mol in enumerate(bulk_molecule_IDs)}
-
-		# Get indexes of all relevant bulk molecules:
-		self.equilibrium_complex_idx = np.array(
-			[molecule_dict[x] for x in equilibrium_complex_IDs])
-
-		self.equilibrium_complexes = (
-			self.bulkMoleculesView(equilibrium_complex_IDs))
-
-		self.eqcc = self.equilibrium_complexes.counts()
-
-		self.bm = bulkMolecules.container.counts()
-		self.eqbm = self.bm[self.equilibrium_complex_idx]
 
 
 	def calculateRequest(self):
@@ -144,14 +124,6 @@ class Equilibrium(wholecell.processes.process.Process):
 							 "reactionRates", (
 			deltaMolecules[self.product_indices] / self.timeStepSec()))
 
-		# Determine the total counts of each complex:
-		# TODO: consider moving this to the update() function of the listener
-		# TODO: determine if counts or total_counts should be used here??? I believe total_counts() BUT if I decide to make self.equilivrui9m_complexes equal to .counts(), I think it would be equilivalent (just cant use .counts() imn evolve state)
-		"""complex_counts = self.equilibrium_complexes.total_counts()
-
-		self.writeToListener("EquilibriumListener",
-							 "complexCounts", complex_counts)"""
-
 		# Determine how many free monomers were used to generate complexes this
 		# timestep (monomers that were used to form complexes here will be
 		# positive to stay consistent with the sign convention used for
@@ -174,17 +146,4 @@ class Equilibrium(wholecell.processes.process.Process):
 							 "freeMonomersReleased",
 							 free_monomers_released)
 
-		# Determine the total number of monomers in equilibirum complexes:
-		"""monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
-												   complex_counts))
-		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
-		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
-			self.matching_molecule_indices]
-		self.writeToListener("EquilibriumListener",
-							 "complexedMonomerCounts",
-							 complexed_monomers)"""
-
-		cc1 = self.equilibrium_complexes.counts()
-		hi = 5
-		hello = 9
 

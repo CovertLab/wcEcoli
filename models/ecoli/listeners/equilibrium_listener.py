@@ -66,9 +66,6 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		self.equilibrium_complex_idx = np.array(
 			[molecule_dict[x] for x in equilibrium_complex_IDs])
 
-		# TODO: remove after testing passes.
-		self.bm = self.bulkMolecules.container.counts()
-		self.eqbm = self.bm[self.equilibrium_complex_idx]
 
 	# Allocate memory
 	def allocate(self):
@@ -88,26 +85,17 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 	def update(self):
 		# Get current counts of bulk and unique molecules
-		# TODO: check if total_counts() should be used here instead of counts() (although I believe counts is ok here.
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 		# Update the complex counts at the start of the cell:
 		self.complexCounts = bulkMoleculeCounts[self.equilibrium_complex_idx]
 
-		# TODO: check if the following are equal to the above:
-		check = self.eqbm
-		assert np.array_equal(self.complexCounts, check)
-
 		# Update the counts of monomers currently complexed at the start of the cell:
 		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
-												   self.complexCounts))  # np.negative makes the monomers within it turn positive
+												   self.complexCounts))
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
 		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
 			self.matching_molecule_indices]
-		hi = 6
 		self.complexedMonomerCounts = complexed_monomers
-
-	# TODO: decide if it is ok to delete large matrices here to save memory (should be ok since it is initial update?)
-
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
