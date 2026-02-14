@@ -59,6 +59,9 @@ class EnzymeKinetics(wholecell.listeners.listener.Listener):
 		counts_to_molar = (1 / (self.nAvogadro * cell_volume)).asUnit(CONC_UNITS) # mmol/L
 		self.countsToMolar = counts_to_molar.asNumber()
 
+	def update(self):
+		pass
+
 	def tableCreate(self, tableWriter):
 		subcolumns = {
 			'metaboliteCountsInit': 'metaboliteNames',
