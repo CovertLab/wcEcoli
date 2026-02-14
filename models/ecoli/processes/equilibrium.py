@@ -78,7 +78,9 @@ class Equilibrium(wholecell.processes.process.Process):
 			[molecule_dict[x] for x in equilibrium_complex_IDs])
 
 		self.equilibrium_complexes = (
-			bulkMolecules.container[self.equilibrium_complex_idx])
+			self.bulkMoleculesView(equilibrium_complex_IDs))
+
+		self.eqcc = self.equilibrium_complexes.counts()
 
 		self.bm = bulkMolecules.container.counts()
 		self.eqbm = self.bm[self.equilibrium_complex_idx]
@@ -144,11 +146,11 @@ class Equilibrium(wholecell.processes.process.Process):
 
 		# Determine the total counts of each complex:
 		# TODO: consider moving this to the update() function of the listener
-		complex_counts = self.equilibrium_complexes.total_counts()# TODO: determine if counts or total_counts should be used here??? I believe total_counts() BUT if I decide to make self.equilivrui9m_complexes equal to .counts(), I think it would be equilivalent (just cant use .counts() imn evolve state)
+		# TODO: determine if counts or total_counts should be used here??? I believe total_counts() BUT if I decide to make self.equilivrui9m_complexes equal to .counts(), I think it would be equilivalent (just cant use .counts() imn evolve state)
+		"""complex_counts = self.equilibrium_complexes.total_counts()
 
-		hi = 5
 		self.writeToListener("EquilibriumListener",
-							 "complexCounts", complex_counts)
+							 "complexCounts", complex_counts)"""
 
 		# Determine how many free monomers were used to generate complexes this
 		# timestep (monomers that were used to form complexes here will be
@@ -173,12 +175,16 @@ class Equilibrium(wholecell.processes.process.Process):
 							 free_monomers_released)
 
 		# Determine the total number of monomers in equilibirum complexes:
-		monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
+		"""monomers_in_complexes = np.negative(np.dot(self._stoichMatrix,
 												   complex_counts))
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
 		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
 			self.matching_molecule_indices]
 		self.writeToListener("EquilibriumListener",
 							 "complexedMonomerCounts",
-							 complexed_monomers)
+							 complexed_monomers)"""
+
+		cc1 = self.equilibrium_complexes.counts()
+		hi = 5
+		hello = 9
 
