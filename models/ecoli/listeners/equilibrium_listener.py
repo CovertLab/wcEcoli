@@ -28,7 +28,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		self.monomerIDs = sim_data.process.translation.monomer_data["id"].tolist()
 		self.complexIDs = sim_data.process.equilibrium.ids_complexes
 		self.reactionIDs = sim_data.process.equilibrium.rxn_ids
-		self.stoich_matrix_monomers = (
+		self.stoichMatrixMonomers = (
 			sim_data.process.equilibrium.stoich_matrix_monomers().astype(np.int64))
 
 		# Extract relevant monomer information within the internal states:
@@ -92,7 +92,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		self.complexCounts = bulkMoleculeCounts[self.equilibrium_complex_idx]
 
 		# Determine the # of monomers that are "currently" in complexes:
-		monomers_in_complexes = np.negative(np.dot(self.stoich_matrix_monomers,
+		monomers_in_complexes = np.negative(np.dot(self.stoichMatrixMonomers,
 												   self.complexCounts))
 		complexed_monomers = np.zeros(len(self.monomer_IDs), np.int64)
 		complexed_monomers[self.matching_monomer_indices] = monomers_in_complexes[
