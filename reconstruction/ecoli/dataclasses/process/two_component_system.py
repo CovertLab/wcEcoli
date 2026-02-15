@@ -167,6 +167,9 @@ class TwoComponentSystem(object):
 		self.independent_molecules_atp_index = np.where(self.independent_molecules == "ATP[c]")[0][0]
 
 		self.complex_to_monomer = self._buildComplexToMonomer(raw_data.modified_proteins, self.molecule_names)
+		# TODO (mia): decide if it is worth deleting the above dictionary complex_to_monomer from self if it is not used elseware
+		self.molecules_to_parent_complexes_dict = {}
+		self.molecules_to_all_downstream_complexes_dict = {}
 
 
 		# Mass balance matrix
@@ -188,6 +191,8 @@ class TwoComponentSystem(object):
 
 		# Molecules that are required to produce ATP with the independent stoich matrix
 		self.atp_reaction_reactant_mask = self.dependency_matrix[:, self.independent_molecules_atp_index] < 0
+
+
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
