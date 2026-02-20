@@ -57,6 +57,9 @@ class TfUnbinding(wholecell.processes.process.Process):
 		for tf_idx, tf_id in enumerate(self.tf_ids):
 			self.active_tf_view[tf_id].countInc(n_bound_TF[tf_idx])
 
+		# Save the # of TFs that were unbound and returned to the bulk counts:
+		self.writeToListener("RnaSynthProb", "nActualUnbound", n_bound_TF)
+
 		# Reset bound_TF attribute of promoters
 		self.promoters.attrIs(bound_TF=np.zeros_like(bound_TF))
 
