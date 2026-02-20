@@ -176,7 +176,7 @@ class Equilibrium(object):
 		self._populateDerivativeAndJacobian()
 		self._stoichMatrix = self.stoich_matrix()
 
-		# Generate dictionary mapping molecules to the direct parent complexes the form:
+		# Generate dictionary mapping molecules to the direct parent complexes they form:
 		for subunit in self.molecule_names:
 			# find the matrix index where this subunit is as a molecule:
 			subunit_index = self.molecule_names.index(subunit)
@@ -202,6 +202,7 @@ class Equilibrium(object):
 				reaction_name = {}
 
 				# find the complex formed in this reaction:
+				# TODO: is this even the right thing to do?
 				complex_index = np.where(
 					(self._stoichMatrixJ == rxn_idx) &
 					(self._stoichMatrixV > 0))[0]
@@ -244,6 +245,7 @@ class Equilibrium(object):
 
 			# Find the indices of complexes containing the subunit:
 			complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
+			hi = 6
 
 			downstream_complexes = {}
 			for complex_idx in complex_indices:
