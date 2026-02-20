@@ -41,29 +41,6 @@ class Equilibrium(wholecell.processes.process.Process):
 		moleculeNames = sim_data.process.equilibrium.molecule_names
 		self.molecules = self.bulkMoleculesView(moleculeNames)
 
-		# Get IDs of molecules involved in complexation reactions:
-		equilibrium_molecule_IDs = sim_data.process.equilibrium.molecule_names
-
-		# Extract all monomer IDs so that matches within moleculeNames can be tracked:
-		self.monomer_IDs = sim_data.process.translation.monomer_data["id"].tolist()
-
-		# Find where monomers IDs are within molecules:
-		matching_monomers_mask = np.isin(equilibrium_molecule_IDs, self.monomer_IDs)
-
-		# Get the indices of the matching monomers (i.e. where it is nonzero):
-		matching_indices = np.where(matching_monomers_mask)[0]
-
-		# Obtain the indices of the monomer IDs within bulkIDs for each matching index:
-		monomer_indices = []
-		for i in matching_indices:
-			molecule_ID = equilibrium_molecule_IDs[i]
-			if molecule_ID in self.monomer_IDs:
-				monomer_index = self.monomer_IDs.index(molecule_ID)
-				monomer_indices.append(monomer_index)
-
-		self.matching_monomer_indices = monomer_indices
-		self.matching_molecule_indices = matching_indices
-
 
 	def calculateRequest(self):
 		# Get molecule counts
@@ -125,26 +102,7 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.writeToListener("EquilibriumListener",
 							 "complexationEvents", rxnFluxes)
 
-		# Determine how many free monomers were used to generate complexes this
-		# timestep (monomers that were used to form complexes here will be
-		# positive to stay consistent with the sign convention used for
-		# monomersDegraded in the monomerCounts listener, and monomers that are
-		# generated here from complex disassociation will thus be negative):
-		opposite_deltaMolecules = np.negative(deltaMolecules)
-		free_monomers_complexed = np.zeros(len(self.monomer_IDs), np.int64)
-		free_monomers_complexed[self.matching_monomer_indices] = (
-			np.fmax(0, opposite_deltaMolecules[self.matching_molecule_indices]))
+		# Record the change in counts for each molecule involved in
+		# complexation reactions this timestep:
 		self.writeToListener("EquilibriumListener",
-							 "freeMonomersComplexed",
-							 free_monomers_complexed)
-
-		# Determine how many free monomers were relased from complexes that
-		# dissociated this timestep:
-		free_monomers_released = np.zeros(len(self.monomer_IDs), np.int64)
-		free_monomers_released[self.matching_monomer_indices] = (
-			np.fmax(0, deltaMolecules[self.matching_molecule_indices]))
-		self.writeToListener("EquilibriumListener",
-							 "freeMonomersReleased",
-							 free_monomers_released)
-
-
+							 "deltaMolecules", deltaMolecules)

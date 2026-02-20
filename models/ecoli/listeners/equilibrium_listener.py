@@ -27,6 +27,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 		self.monomerIDs = sim_data.process.translation.monomer_data["id"].tolist()
 		self.complexIDs = sim_data.process.equilibrium.ids_complexes
+		self.moleculeIDs = sim_data.process.equilibrium.molecule_names
 		self.reactionIDs = sim_data.process.equilibrium.rxn_ids
 		self.stoichMatrixMonomers = (
 			sim_data.process.equilibrium.stoich_matrix_monomers().astype(np.int64))
@@ -35,15 +36,11 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		self.bulkMolecules = sim.internal_states["BulkMolecules"]
 		bulk_molecule_IDs = self.bulkMolecules.container.objectNames()
 
-		# Get IDs of molecules involved in complexation reactions:
-		equilibrium_molecule_IDs = sim_data.process.equilibrium.molecule_names
-		equilibrium_complex_IDs = sim_data.process.equilibrium.ids_complexes
-
 		# Extract all monomer IDs so that matches within moleculeNames can be tracked:
 		self.monomer_IDs = sim_data.process.translation.monomer_data["id"].tolist()
 
 		# Find where monomers IDs are within molecules:
-		matching_monomers_mask = np.isin(equilibrium_molecule_IDs, self.monomer_IDs)
+		matching_monomers_mask = np.isin(self.moleculeIDs, self.monomer_IDs)
 
 		# Get the indices of the matching monomers (i.e. where it is nonzero):
 		matching_indices = np.where(matching_monomers_mask)[0]
@@ -51,7 +48,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		# Obtain the indices of the monomer IDs within bulkIDs for each matching index:
 		monomer_indices = []
 		for i in matching_indices:
-			molecule_ID = equilibrium_molecule_IDs[i]
+			molecule_ID = self.moleculeIDs[i]
 			if molecule_ID in self.monomer_IDs:
 				monomer_index = self.monomer_IDs.index(molecule_ID)
 				monomer_indices.append(monomer_index)
@@ -64,7 +61,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 		# Get indexes of all relevant bulk molecules:
 		self.equilibrium_complex_idx = np.array(
-			[molecule_dict[x] for x in equilibrium_complex_IDs])
+			[molecule_dict[x] for x in self.complexIDs])
 
 
 	# Allocate memory
@@ -77,9 +74,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 		self.complexCounts = np.zeros(len(self.complexIDs), np.int64)
 
-		self.freeMonomersComplexed = np.zeros(len(self.monomerIDs), np.int64)
-
-		self.freeMonomersReleased = np.zeros(len(self.monomerIDs), np.int64)
+		self.deltaMolecules = np.zeros(len(self.moleculeIDs), np.int64)
 
 		self.complexedMonomerCounts = np.zeros(len(self.monomerIDs), np.int64)
 
@@ -87,8 +82,7 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 		# Get current counts of all bulk molecules:
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 
-		# Determine the number of complexes present in the cell currently by
-		# indexing into bulkMoleculeCounts where complexed molecules are located:
+		# Determine the number of equilibrium complexes present currently:
 		self.complexCounts = bulkMoleculeCounts[self.equilibrium_complex_idx]
 
 		# Determine the # of monomers that are "currently" in complexes:
@@ -104,13 +98,13 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 			'reactionRates': 'reactionIDs',
 			'complexationEvents': 'reactionIDs',
 			'complexCounts': 'complexIDs',
-			'freeMonomersComplexed': 'monomerIDs',
-			'freeMonomersReleased': 'monomerIDs',
+			'deltaMolecules': 'moleculeIDs',
 			'complexedMonomerCounts': 'monomerIDs'}
 
 		tableWriter.writeAttributes(
 			monomerIDs = self.monomerIDs,
 			complexIDs = self.complexIDs,
+			moleculeIDs = self.moleculeIDs,
 			reactionIDs = self.reactionIDs,
 			subcolumns = subcolumns)
 
@@ -122,7 +116,6 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 			reactionRates = self.reactionRates,
 			complexationEvents = self.complexationEvents,
 			complexCounts = self.complexCounts,
-			freeMonomersComplexed = self.freeMonomersComplexed,
-			freeMonomersReleased = self.freeMonomersReleased,
+			deltaMolecules = self.deltaMolecules,
 			complexedMonomerCounts = self.complexedMonomerCounts
 			)
