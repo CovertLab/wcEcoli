@@ -166,8 +166,13 @@ class TwoComponentSystem(object):
 
 		self.independent_molecules_atp_index = np.where(self.independent_molecules == "ATP[c]")[0][0]
 
+		# TODO (mia): figure out why raw_data.modified_proteins is used here to
+		#  generate this dictionary , as it incorperates molecules with
+		#  compartment tag combinations that are not "valid" according to
+		#  is_valid_molecule(), thus, causing stoich_matrix_monomers()
+		#  built in this listener to not include certain molecules and not match
+		#  the stoich_matrix() built using the template above well.
 		self.complex_to_monomer = self._buildComplexToMonomer(raw_data.modified_proteins, self.molecule_names)
-		# TODO (mia): decide if it is worth deleting the above dictionary complex_to_monomer from self if it is not used elseware
 		self.molecules_to_parent_complexes_dict = {}
 		self.molecules_to_all_downstream_complexes_dict = {}
 
@@ -192,7 +197,139 @@ class TwoComponentSystem(object):
 		# Molecules that are required to produce ATP with the independent stoich matrix
 		self.atp_reaction_reactant_mask = self.dependency_matrix[:, self.independent_molecules_atp_index] < 0
 
+		# TODO (mia): test out altering stoich_matrix_monomers to be built the
+		#  same way as it is in the complexation and equilibrium process files.
+		# Generate the stoich matrix for complexes to all consituent monomers:
+		stoich_matrix_monomers = self.stoich_matrix_monomers()
 
+		# Generate dictionary mapping molecules to the direct parent complexes they form:
+		for subunit in self.molecule_names:
+			# find the matrix index where this subunit is as a molecule:
+			subunit_index = np.where(self.molecule_names == subunit)
+
+			# Find the indicies of self._stoich_matrix_J where the value will
+			# correspond to the index of the correct reaction in self.ids_reactions
+			reaction_indicies = np.where(
+				(self._stoichMatrixI == subunit_index) &
+				(self._stoichMatrixV < 0))[0]
+
+			# For each reaction index, find the complex(es) that is(are) formed:
+			parent_complexes = {}
+			for reaction_idx in reaction_indicies:
+				# find the value of the reaction index (which will be the index
+				# that corresponds to the index of the reaction in self.ids_reactions):
+				rxn_idx = self._stoichMatrixJ[reaction_idx]
+
+				# Initialize data structures to hold complex information
+				complex_information = []
+				stoich = {}
+				stoich_known = {}
+				complex_type = {}
+				reaction_name = {}
+
+				# Find the indexes of the complexes formed in this reaction:
+				complex_indices = np.where(
+					(self._stoichMatrixJ == rxn_idx) &
+					(self._stoichMatrixV > 0))[0]
+
+				for complex_index in complex_indices:
+					# Check if the complex is in the complex_to_monomer dictionary
+					# (i.e. if it is a complex with known subunit composition):
+					complex_name = self.molecule_names[self._stoichMatrixI[complex_index]]
+					if complex_name not in self.complex_to_monomer.keys():
+						# If the product is not a complex, skip it.
+						continue
+					else:
+						# Find the number of unique subunits in this complex reaction:
+						cplx_idx = list(self.complex_to_monomer.keys()).index(complex_name)
+						components = np.where(stoich_matrix_monomers[:, cplx_idx] < 0)[0]
+						num_unique_subunits = len(components)
+						# NOTE: the complex_to_monomer dictionary output might
+						# not be aligned with the stoich_matrix() currently.
+						# Ideally, it would be best to confirm the modified_proteins
+						# should even be used ot generate complex_to_monomer.
+
+						if num_unique_subunits > 1:
+							cplx_type = 'heterogeneous'
+						else:
+							cplx_type = 'homogeneous'
+
+						# Add complex information to lists
+						complex_name = self.molecule_names[self._stoichMatrixI[complex_index]]
+						reaction_name['reaction_id'] = self.rxn_ids[rxn_idx]
+						stoich['stoichiometry'] = self._stoichMatrixV[reaction_idx]
+						stoich_known['stoich_unknown'] = 'not applicable'
+						complex_type['complex_type'] = cplx_type
+						complex_information.append(reaction_name)
+						complex_information.append(stoich)
+						complex_information.append(stoich_known)
+						complex_information.append(complex_type)
+
+						# Append the complex name and stoich as a dictionary entry
+						parent_complexes[complex_name] = complex_information
+
+			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
+
+		# Make a dictionary mapping molecules to all downstream complexes they form
+		# (both directly and indirectly via another complex):
+		for subunit in self.molecule_names:
+			# find the matrix index where this subunit is as a molecule:
+			subunit_index = np.where(self.molecule_names == subunit)
+
+			# Find the indices of complexes containing the subunit:
+			complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
+
+			downstream_complexes = {}
+			for complex_idx in complex_indices:
+				# Find the complex's name:
+				complex_name = list(self.complex_to_monomer.keys())[complex_idx]
+
+				# Obtain the index of the complex within self.molecule_names:
+				cplx_idx = np.where(self.molecule_names == complex_name)
+
+				# Use the stoichMatrix() to find the reaction index:
+				reaction_indices = np.where(
+					(self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
+
+				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
+				reaction_idx = self._stoichMatrixJ[reaction_indices]
+
+				# Initialize data structures to hold complex information
+				downstream_complex_information = []
+				stoich = {}
+				stoich_known = {}
+				complex_type = {}
+				reaction_name = {}
+
+				# Find the number of unique subunits in this complex reaction:
+				unique_subunits_in_complex = np.where(
+					(self._stoichMatrixJ == reaction_idx) &
+					(self._stoichMatrixV < 0))[0]
+				num_unique_subunits = len(unique_subunits_in_complex)
+				if num_unique_subunits > 1:
+					cplx_type = 'heterogeneous'
+				elif num_unique_subunits == 1:
+					cplx_type = 'homogeneous'
+				else:
+					cplx_type = 'unknown'
+
+				# Add complex information to lists:
+				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
+				stoich['stoichiometry'] = stoich_matrix_monomers[subunit_index, complex_idx]
+				stoich_known['stoich_unknown'] = 'not applicable'
+				complex_type['complex_type'] = cplx_type
+				downstream_complex_information.append(reaction_name)
+				downstream_complex_information.append(stoich)
+				downstream_complex_information.append(stoich_known)
+				downstream_complex_information.append(complex_type)
+
+				# Append the complex name and stoich as a dictionary entry
+				downstream_complexes[complex_name] = downstream_complex_information
+
+			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
+
+		hi = 5 #
+	# TODO: check why so many entries have 0 stoichiometry values?
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
@@ -221,6 +358,9 @@ class TwoComponentSystem(object):
 			# tags on the molecule compartment found in tcsMolecules
 			molecule_and_location = f"{row['id']}[{row['compartment']}]"
 			if molecule_and_location in tcsMolecules:
+				# TODO: the modedifedFormsMonomers DO NOT always have the same
+				#  compartment as the molecule with the same name in tcsMolecules,
+				#  which I think messes up the stoich matrices that are made?
 				D[molecule_and_location] = {}
 				for subunit in row["subunits"]:
 					# We only care about mapping to protein monomers for now
@@ -273,6 +413,11 @@ class TwoComponentSystem(object):
 		Columns: complexes
 		Values: monomer stoichiometry
 		'''
+		# TODO (mia): figure out if this can be replaced by finding a way to
+		#  get a list of the complex_IDs similar to how they are generated in
+		#  the other complexation process files, as the current method relies
+		#  on complex_to_monomer, which is not built using the same reactions
+		#  as the stoich_matrix() matrix is.
 		ids_complexes = self.complex_to_monomer.keys()
 		stoichMatrixMonomersI = []
 		stoichMatrixMonomersJ = []
@@ -286,6 +431,9 @@ class TwoComponentSystem(object):
 			stoichMatrixMonomersV.append(1.)
 
 			for subunitId, subunitStoich in zip(D["subunitIds"], D["subunitStoich"]):
+				# NOTE (mia): since the complex_to_monomer dictionary does not
+				# match how molecule_names is generated, many subunits will not
+				# be appended here.
 				if subunitId in self.molecule_names.tolist():
 					rowIdx = self.molecule_names.tolist().index(subunitId)
 					stoichMatrixMonomersI.append(rowIdx)
