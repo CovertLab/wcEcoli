@@ -201,8 +201,7 @@ class Equilibrium(object):
 				complex_type = {}
 				reaction_name = {}
 
-				# find the complex formed in this reaction:
-				# TODO: is this even the right thing to do?
+				# Find the complex formed in this reaction (each reaction forms one complex):
 				complex_index = np.where(
 					(self._stoichMatrixJ == rxn_idx) &
 					(self._stoichMatrixV > 0))[0]
@@ -232,7 +231,7 @@ class Equilibrium(object):
 				parent_complexes[complex_name] = complex_information
 
 			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
-		# TODO: figure out why "CPLX0-7639_RXN" is not showing up in the dictionary
+
 
 		# Generate the stoich matrix for complexes to all consituent monomers:
 		stoich_matrix_monomers = self.stoich_matrix_monomers()
@@ -604,19 +603,24 @@ class Equilibrium(object):
 		return -1  # Flag for monomer
 
 	def _moleculeRecursiveSearch(self, product, stoichMatrix, speciesList):
+		# find the row corresponding to the product in the list of species:
 		row = self._findRow(product, speciesList)
+		# find the column corresponding to the reaction forming the product in the stoichiometric matrix:
 		col = self._findColumn(stoichMatrix[row, :])
+		# return the product itself if it is found to be only a subunit and not a complex
 		if col == -1:
 			return {product: 1.0}
 
 		total = {}
 		for i in range(0, len(speciesList)):
 			if i == row:
+				# skip the row corresponding to the complex itself
 				continue
 			val = stoichMatrix[i][col]
 			species = speciesList[i]
 
 			if val != 0:
+				# see if a subunit is a complex itself that should be unpacked:
 				x = self._moleculeRecursiveSearch(species, stoichMatrix, speciesList)
 				for j in x:
 					if j in total:
