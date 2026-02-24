@@ -83,3 +83,8 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 
 		# Increment changes in molecule counts
 		self.molecules.countsInc(self.all_molecule_changes)
+
+		# TODO: write all_molecule_changes to a listener.
+
+		# TEMPORARY: write to a monomer_counts.py listener:
+		self.writeToListener("MonomerCounts", "delta2CMolecles", self.molecules.counts())

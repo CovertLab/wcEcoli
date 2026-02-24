@@ -97,6 +97,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.replisome_idx = unique_molecule_ids.index("active_replisome")
 		self.promoter_idx = unique_molecule_ids.index('promoter')
 
+		# TEMP:
+		self.two_component_system_molecule_ids = two_component_system_molecule_ids
+
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
 
@@ -120,6 +123,14 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 		)
 
+		self.delta2CMolecules = np.zeros(
+			len(self.two_component_system_molecule_ids),
+			np.int64)
+
+		self.two_component_molecule_counts = np.zeros(
+			len(self.two_component_system_molecule_ids),
+			np.int64)
+
 	def update(self):
 		# Get current counts of bulk and unique molecules
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
@@ -128,6 +139,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		n_active_rnap = uniqueMoleculeCounts[self.rnap_idx]
 		n_active_replisome = uniqueMoleculeCounts[self.replisome_idx]
 		n_bound_TFs = self.uniqueMolecules.container._collections[self.promoter_idx]
+
+		# TEMPORARY:
+		self.two_component_molecule_counts = bulkMoleculeCounts[self.two_component_system_molecule_idx]
 
 		# Account for monomers in unique molecule complexes (NOTE: all execpt
 		# RNAps unpack into to both monomers and other types of complexes
@@ -168,10 +182,13 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			'freeMonomerCounts': 'monomerIds',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
+			'twoComponentSystemMoleculeCounts': 'twoComponentSystemMoleculeIds',
+			'delta2CMolecules': 'twoComponentSystemMoleculeIds',
 			}
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomer_ids,
+			twoComponentSystemMoleculeIds = self.two_component_system_molecule_ids,
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
@@ -182,4 +199,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			freeMonomerCounts=self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
+			twoComponentSystemMoleculeCounts = self.two_component_molecule_counts,
+			delta2CMolecules = self.delta2CMolecules,
 			)
