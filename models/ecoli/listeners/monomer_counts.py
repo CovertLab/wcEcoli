@@ -168,6 +168,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
 			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
 		# TODO: consider moving the 2C unpacking to happen before eq unpacking since it might release some EQ complexes that need to be further unpacked.
+		# however, it might not be nessessary depending on what the 2C breaks the phosporylated complexes down into.
 		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
 			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
 
