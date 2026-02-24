@@ -34,13 +34,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		two_component_system_molecule_ids = list(sim_data.process.two_component_system.molecule_names)
 		two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
 
-		self.overlap_EMs_CCs = list(set(equilibrium_molecule_ids).intersection(
-			set(complexation_complex_ids)))  # should be 16
-		self.overlap_2CMs_ECs = list(set(two_component_system_molecule_ids).intersection(
-			set(equilibrium_complex_ids)))  # should be 4
-		self.overlap_2CMs_CCs = list(set(two_component_system_molecule_ids).intersection(
-			set(complexation_complex_ids)))  # should be 4
-
 		# Get IDs of ribosome subunits
 		ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
 			sim_data.molecule_ids.s50_full_complex)
