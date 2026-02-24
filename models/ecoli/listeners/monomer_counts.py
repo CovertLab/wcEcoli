@@ -100,6 +100,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# TEMP:
 		self.two_component_system_molecule_ids = two_component_system_molecule_ids
 
+		#TODO: consider tracking monomers in exoRNases here too.
+
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
 
