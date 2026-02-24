@@ -67,6 +67,7 @@ class Equilibrium(object):
 		# Remove reactions that we know won't occur (e.g., don't do
 		# computations on metabolites that have zero counts)
 		# TODO (ggsun): check if this list is accurate
+		# TODO (mia): check what the outputs of the skipped reactions look like
 		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [
 			m["Metabolite"] for m in raw_data.metabolite_concentrations] + [
 			"LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + two_component_system_ligands
