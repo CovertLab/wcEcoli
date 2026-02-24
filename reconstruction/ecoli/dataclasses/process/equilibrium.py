@@ -245,7 +245,6 @@ class Equilibrium(object):
 
 			# Find the indices of complexes containing the subunit:
 			complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
-			hi = 6
 
 			downstream_complexes = {}
 			for complex_idx in complex_indices:
