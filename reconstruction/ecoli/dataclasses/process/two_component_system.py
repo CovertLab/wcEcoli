@@ -270,6 +270,7 @@ class TwoComponentSystem(object):
 
 			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
 
+
 		# Make a dictionary mapping molecules to all downstream complexes they form
 		# (both directly and indirectly via another complex):
 		for subunit in self.molecule_names:
@@ -328,8 +329,6 @@ class TwoComponentSystem(object):
 
 			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
 
-		hi = 5 #
-	# TODO: check why so many entries have 0 stoichiometry values?
 
 	def __getstate__(self):
 		"""Return the state to pickle, omitting derived attributes that
