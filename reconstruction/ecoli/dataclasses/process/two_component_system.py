@@ -839,4 +839,6 @@ class TwoComponentSystem(object):
 		"""
 		return self._stoich_matrix.dot(self._rates_jacobian[1](y, t))
 
+	# TODO: test adding in the moleculeRecursiveSearch, findRow, and findColumn
+	#  functions here to build SMM the way the other complexation process files do.
 
