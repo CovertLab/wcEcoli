@@ -67,7 +67,7 @@ class Equilibrium(object):
 		# Remove reactions that we know won't occur (e.g., don't do
 		# computations on metabolites that have zero counts)
 		# TODO (ggsun): check if this list is accurate
-		# TODO (mia): check what the outputs of the skipped reactions look like
+		# todo (mia): check if these are still valid
 		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [
 			m["Metabolite"] for m in raw_data.metabolite_concentrations] + [
 			"LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + two_component_system_ligands
@@ -166,6 +166,8 @@ class Equilibrium(object):
 		# Mass balance matrix
 		self._stoichMatrixMass = np.array(stoichMatrixMass)
 		self.balance_matrix = self.stoich_matrix() * self.mass_matrix()
+
+		hi = 6
 
 		# Find the mass balance of each equation in the balanceMatrix
 		massBalanceArray = self.mass_balance()
