@@ -31,7 +31,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.monomer_ids = sim_data.process.translation.monomer_data["id"].tolist()
 
 		# Get IDs of complexed molecules monomers involved in two component system
-		two_component_system_molecule_ids = list(sim_data.process.two_component_system.molecule_names)
+		# TODO: temporary test of using modifed_molecules instead
+		two_component_system_molecule_ids = list(sim_data.process.two_component_system.modified_molecules)
 		two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
 
 		# Get IDs of ribosome subunits
@@ -96,11 +97,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.rnap_idx = unique_molecule_ids.index('active_RNAP')
 		self.replisome_idx = unique_molecule_ids.index("active_replisome")
 		self.promoter_idx = unique_molecule_ids.index('promoter')
-
-		# TEMP:
-		self.two_component_system_molecule_ids = two_component_system_molecule_ids
-
-		#TODO: consider tracking monomers in exoRNases here too.
 
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
