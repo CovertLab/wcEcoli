@@ -345,7 +345,6 @@ class TwoComponentSystem(object):
 		self._stoichMatrix = self.stoich_matrix()
 		self.modified_molecules = self.make_modified_molecule_names(sim_data)
 		SMM = self.stoich_matrix_monomers_TEMP(sim_data)
-		hi = 5
 
 
 
@@ -869,7 +868,7 @@ class TwoComponentSystem(object):
 			# index to the individual subunit dictionaries within:
 			subunits = self.get_monomers_TEMP(sim_data, complex)
 			for subunit in subunits['subunitIds']:
-				if subunit not in tcs_molecules:
+				if subunit not in tcs_molecules and subunit not in new_molecules:
 					new_molecules.append(subunit)
 		return np.array(tcs_molecules + new_molecules)
 
