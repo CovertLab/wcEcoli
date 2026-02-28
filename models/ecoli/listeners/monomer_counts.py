@@ -32,7 +32,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 
 		# Get IDs of complexed molecules monomers involved in two component system
 		# TODO: temporary test of using modifed_molecules instead
-		two_component_system_molecule_ids = list(sim_data.process.two_component_system.modified_molecules)
+		self.two_component_system_molecule_ids = list(sim_data.process.two_component_system.modified_molecules)
 		two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
 
 		# Get IDs of ribosome subunits
@@ -62,7 +62,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# assembly of unique molecules
 		self.complexation_stoich = sim_data.process.complexation.stoich_matrix_monomers()
 		self.equilibrium_stoich = sim_data.process.equilibrium.stoich_matrix_monomers()
-		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers()
+		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers_TEMP()
 		self.ribosome_stoich = np.hstack(
 			(ribosome_50s_subunits["subunitStoich"],
 			ribosome_30s_subunits["subunitStoich"]))
@@ -83,7 +83,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.complexation_complex_idx = get_molecule_indexes(complexation_complex_ids)
 		self.equilibrium_molecule_idx = get_molecule_indexes(equilibrium_molecule_ids)
 		self.equilibrium_complex_idx = get_molecule_indexes(equilibrium_complex_ids)
-		self.two_component_system_molecule_idx = get_molecule_indexes(two_component_system_molecule_ids)
+		self.two_component_system_molecule_idx = get_molecule_indexes(self.two_component_system_molecule_ids)
 		self.two_component_system_complex_idx = get_molecule_indexes(two_component_system_complex_ids)
 		self.ribosome_subunit_idx = get_molecule_indexes(ribosome_subunit_ids)
 		self.rnap_subunit_idx = get_molecule_indexes(rnap_subunit_ids)
@@ -163,8 +163,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.negative(bulkMoleculeCounts[self.complexation_complex_idx]))
 		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
 			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
-		# TODO: consider moving the 2C unpacking to happen before eq unpacking since it might release some EQ complexes that need to be further unpacked.
-		# however, it might not be nessessary depending on what the 2C breaks the phosporylated complexes down into.
 		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
 			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
 
