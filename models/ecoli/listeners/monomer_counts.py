@@ -62,7 +62,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# assembly of unique molecules
 		self.complexation_stoich = sim_data.process.complexation.stoich_matrix_monomers()
 		self.equilibrium_stoich = sim_data.process.equilibrium.stoich_matrix_monomers()
-		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers_TEMP()
+		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers_TEMP(sim_data)
 		self.ribosome_stoich = np.hstack(
 			(ribosome_50s_subunits["subunitStoich"],
 			ribosome_30s_subunits["subunitStoich"]))
@@ -125,7 +125,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			len(self.two_component_system_molecule_ids),
 			np.int64)
 
-		self.two_component_molecule_counts = np.zeros(
+		self.twoComponentSystemCounts = np.zeros(
 			len(self.two_component_system_molecule_ids),
 			np.int64)
 
@@ -197,6 +197,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			freeMonomerCounts=self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
-			twoComponentSystemMoleculeCounts = self.two_component_molecule_counts,
+			twoComponentSystemMoleculeCounts = self.twoComponentSystemCounts,
 			delta2CMolecules = self.delta2CMolecules,
 			)
