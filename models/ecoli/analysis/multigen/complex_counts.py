@@ -131,8 +131,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     (smJ == rxn_idx) &
                     (smV < 0))[0]
                 num_unique_subunits = len(unique_subunits_in_complex)
-                # TODO: for the EQ complex, edit this to not count the metabolite ids. then check if the remaining are in monomerIDs.
-                #  if they are not in monomerIDs, they are probably a complexation complex. check if that complexation complex is unique
                 if num_unique_subunits > 1:
                     cplx_type = 'heterogeneous'
                 else:
@@ -166,7 +164,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             downstream_complexes = {}
             for complex_idx in complex_indices:
                 # Find the complex's name:
-                complex_name = self.complexIDs[complex_idx] # TODO: double check that complexIDs is the exact same as sim_data.process.complexation.ids_complexes
+                complex_name = self.complexIDs[complex_idx]
 
                 # Obtain the index of the complex within self.molecule_names:
                 cplx_idx = molecule_names.index(complex_name)
@@ -214,6 +212,160 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
 
         return molecules_to_parent_complexes_dict, molecules_to_all_downstream_complexes_dict
+
+
+    # build the eq dictionaries
+    def build_equilibrium_dictionaries(self, sim_data):
+        molecule_names = sim_data.process.equilibrium.molecule_names
+        rxn_ids = sim_data.process.equilibrium.rxn_ids
+        rsu = sim_data.process.equilibrium.reaction_stoichiometry_unknown
+        smI = sim_data.process.equilibrium._stoichMatrixI  # TODO: see if just the SM can be used here!
+        smJ = sim_data.process.equilibrium._stoichMatrixJ
+        smV = sim_data.process.equilibrium._stoichMatrixV
+        smm = sim_data.process.equilibrium.stoich_matrix_monomers()
+
+        # Generate dictionary mapping molecules to the direct parent complexes they form:
+        for subunit in molecule_names:
+            # find the matrix index where this subunit is as a molecule:
+            subunit_index = molecule_names.index(subunit)
+
+            # Find the indicies of self._stoich_matrix_J where the value will
+            # correspond to the index of the correct reaction in self.ids_reactions
+            reaction_indicies = np.where(
+                (smI == subunit_index) &
+                (smV < 0))[0]
+
+            # For each reaction index, find the complex(es) that is(are) formed:
+            parent_complexes = {}
+            for reaction_idx in reaction_indicies:
+                # find the value of the reaction index (which will be the index
+                # that corresponds to the index of the reaction in self.ids_reactions):
+                rxn_idx = smJ[reaction_idx]
+
+                # Initialize data structures to hold complex information
+                complex_information = []
+                stoich = {}
+                stoich_known = {}
+                complex_type = {}
+                reaction_name = {}
+
+                # Find the complex formed in this reaction (each reaction forms one complex):
+                complex_index = np.where(
+                    (smJ == rxn_idx) &
+                    (smV > 0))[0]
+
+                # Find the number of unique subunits in this complex reaction:
+                unique_subunits_in_complex = np.where(
+                    (smJ == rxn_idx) &
+                    (smV < 0))[0]
+                # TODO: remove the metabolite ids from this. also, check if the subunit is a heterogeneous complexation complex.
+                # first, remove the metabolite ids
+                subunit_list = []
+                for idx in unique_subunits_in_complex:
+                    subunit_name = molecule_names[smI[idx]]
+                    if subunit_name in self.monomerIDs:
+                        if subunit_name not in subunit_list:
+                            subunit_list.append(subunit_name)
+                    # check if it is a complexation complex:
+                    elif subunit_name in self.complexIDs:
+                        # see how many unique subunits the complexation complex has:
+                        complexation_complex_index = self.complexIDs.index(subunit_name)
+                        c_smm = sim_data.process.complexation.stoich_matrix_monomers()
+                        complexation_unique_subunits = np.where(c_smm[:, complexation_complex_index] < 0)[0]
+                        c_molecule_names = sim_data.process.complexation.molecule_names
+                        for idx in complexation_unique_subunits:
+                            c_su_name = c_molecule_names[idx]
+                            if c_su_name not in subunit_list:
+                                subunit_list.append(c_su_name)
+                    # if its a metabolite, skip it:
+                    else:
+                        continue
+
+
+
+                num_unique_subunits = len(subunit_list)
+                if num_unique_subunits > 1:
+                    cplx_type = 'heterogeneous'
+                else:
+                    cplx_type = 'homogeneous'
+
+                # Add complex information to lists
+                complex_name = molecule_names[smI[complex_index][0]]
+                reaction_name['reaction_id'] = rxn_ids[rxn_idx]
+                stoich['stoichiometry'] = self._stoichMatrixV[reaction_idx]
+                stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
+                complex_type['complex_type'] = cplx_type
+                complex_information.append(reaction_name)
+                complex_information.append(stoich)
+                complex_information.append(stoich_known)
+                complex_information.append(complex_type)
+
+                # Append the complex name and stoich as a dictionary entry
+                parent_complexes[complex_name] = complex_information
+
+            self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
+
+        # Generate the stoich matrix for complexes to all consituent monomers:
+        stoich_matrix_monomers = self.stoich_matrix_monomers()
+
+        # Make a dictionary mapping molecules to all downstream complexes they form
+        # (both directly and indirectly via another complex):
+        for subunit in self.molecule_names:
+            # find the matrix index where this subunit is as a molecule:
+            subunit_index = self.molecule_names.index(subunit)
+
+            # Find the indices of complexes containing the subunit:
+            complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
+
+            downstream_complexes = {}
+            for complex_idx in complex_indices:
+                # Find the complex's name:
+                complex_name = self.ids_complexes[complex_idx]
+
+                # Obtain the index of the complex within self.molecule_names:
+                cplx_idx = self.molecule_names.index(complex_name)
+
+                # Use the stoichMatrix() to find the reaction index:
+                reaction_indices = np.where(
+                    (self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
+
+                # Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
+                reaction_idx = self._stoichMatrixJ[reaction_indices]
+
+                # Initialize data structures to hold complex information
+                downstream_complex_information = []
+                stoich = {}
+                stoich_known = {}
+                complex_type = {}
+                reaction_name = {}
+
+                # Find the number of unique subunits in this complex reaction:
+                unique_subunits_in_complex = np.where(
+                    (self._stoichMatrixJ == reaction_idx) &
+                    (self._stoichMatrixV < 0))[0]
+                num_unique_subunits = len(unique_subunits_in_complex)
+                if num_unique_subunits > 1:
+                    cplx_type = 'heterogeneous'
+                elif num_unique_subunits == 1:
+                    cplx_type = 'homogeneous'
+                else:
+                    cplx_type = 'unknown'
+
+                # Add complex information to lists:
+                reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
+                stoich['stoichiometry'] = stoich_matrix_monomers[subunit_index, complex_idx]
+                stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
+                    reaction_idx[0]]
+                complex_type['complex_type'] = cplx_type
+                downstream_complex_information.append(reaction_name)
+                downstream_complex_information.append(stoich)
+                downstream_complex_information.append(stoich_known)
+                downstream_complex_information.append(complex_type)
+
+                # Append the complex name and stoich as a dictionary entry
+                downstream_complexes[complex_name] = downstream_complex_information
+
+            molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
 
 
     # UNIQUE TYPES: TFs, ribosomes, RNAps, replisomes
@@ -318,7 +470,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             enumerate(monomer_counts_reader.readAttribute(
                                 'monomerIds'))}
         # Extract the monomer IDs:
-        monomerIDs = monomer_counts_reader.readAttribute("monomerIds")
+        self.monomerIDs = monomer_counts_reader.readAttribute("monomerIds")
 
         # Extract the free monomer counts using the monomer counts listener:
         free_monomer_counts = read_stacked_columns(cell_paths, 'MonomerCounts', "freeMonomerCounts")
