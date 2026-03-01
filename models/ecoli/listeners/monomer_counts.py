@@ -159,13 +159,15 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 		bulkMoleculeCounts[self.bound_TF_subunit_idx] += n_bound_TF_subunit.astype(int)
 
-		# Account for monomers in bulk molecule complexes
-		complex_monomer_counts = np.dot(self.complexation_stoich,
-			np.negative(bulkMoleculeCounts[self.complexation_complex_idx]))
-		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
-			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
+		# Account for monomers in bulk molecule complexes (NOTE: some of the
+		# base subunits of the EQ reactions are complexation complexes, so its
+		# important that EQ counts are added before complexation is unpacked):
 		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
 			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
+		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
+			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
+		complex_monomer_counts = np.dot(self.complexation_stoich,
+			np.negative(bulkMoleculeCounts[self.complexation_complex_idx]))
 
 		bulkMoleculeCounts[self.complexation_molecule_idx] += complex_monomer_counts.astype(int)
 		bulkMoleculeCounts[self.equilibrium_molecule_idx] += equilibrium_monomer_counts.astype(int)
