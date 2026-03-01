@@ -224,6 +224,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         smV = sim_data.process.equilibrium._stoichMatrixV
         smm = sim_data.process.equilibrium.stoich_matrix_monomers()
 
+        molecules_to_parent_complexes_dict = {}
+        molecules_to_all_downstream_complexes_dict = {}
+        complex_to_complex_type = {}
+
         # Generate dictionary mapping molecules to the direct parent complexes they form:
         for subunit in molecule_names:
             # find the matrix index where this subunit is as a molecule:
@@ -281,19 +285,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     else:
                         continue
 
-
-
                 num_unique_subunits = len(subunit_list)
                 if num_unique_subunits > 1:
                     cplx_type = 'heterogeneous'
                 else:
                     cplx_type = 'homogeneous'
 
+
                 # Add complex information to lists
                 complex_name = molecule_names[smI[complex_index][0]]
+                complex_to_complex_type[complex_name] = cplx_type
                 reaction_name['reaction_id'] = rxn_ids[rxn_idx]
-                stoich['stoichiometry'] = self._stoichMatrixV[reaction_idx]
-                stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
+                stoich['stoichiometry'] = smV[reaction_idx]
+                stoich_known['stoich_unknown'] = rsu[rxn_idx]
                 complex_type['complex_type'] = cplx_type
                 complex_information.append(reaction_name)
                 complex_information.append(stoich)
@@ -303,34 +307,33 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 # Append the complex name and stoich as a dictionary entry
                 parent_complexes[complex_name] = complex_information
 
-            self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
+            molecules_to_parent_complexes_dict[subunit] = parent_complexes
 
-        # Generate the stoich matrix for complexes to all consituent monomers:
-        stoich_matrix_monomers = self.stoich_matrix_monomers()
+        # TODO: confirm whether any EQ complexes are subunits of other eq complexes. I dont think they are?
 
         # Make a dictionary mapping molecules to all downstream complexes they form
         # (both directly and indirectly via another complex):
-        for subunit in self.molecule_names:
+        for subunit in molecule_names:
             # find the matrix index where this subunit is as a molecule:
-            subunit_index = self.molecule_names.index(subunit)
+            subunit_index = molecule_names.index(subunit)
 
             # Find the indices of complexes containing the subunit:
-            complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
+            complex_indices = np.where(smm[subunit_index, :] < 0)[0]
 
             downstream_complexes = {}
             for complex_idx in complex_indices:
                 # Find the complex's name:
-                complex_name = self.ids_complexes[complex_idx]
+                complex_name = self.eqComplexIDs[complex_idx]
 
                 # Obtain the index of the complex within self.molecule_names:
-                cplx_idx = self.molecule_names.index(complex_name)
+                cplx_idx = molecule_names.index(complex_name)
 
                 # Use the stoichMatrix() to find the reaction index:
                 reaction_indices = np.where(
-                    (self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
+                    (smI == cplx_idx) & (smV > 0))[0]
 
                 # Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
-                reaction_idx = self._stoichMatrixJ[reaction_indices]
+                reaction_idx = smJ[reaction_indices]
 
                 # Initialize data structures to hold complex information
                 downstream_complex_information = []
@@ -339,24 +342,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 complex_type = {}
                 reaction_name = {}
 
-                # Find the number of unique subunits in this complex reaction:
-                unique_subunits_in_complex = np.where(
-                    (self._stoichMatrixJ == reaction_idx) &
-                    (self._stoichMatrixV < 0))[0]
-                num_unique_subunits = len(unique_subunits_in_complex)
-                if num_unique_subunits > 1:
-                    cplx_type = 'heterogeneous'
-                elif num_unique_subunits == 1:
-                    cplx_type = 'homogeneous'
-                else:
-                    cplx_type = 'unknown'
-
                 # Add complex information to lists:
-                reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
-                stoich['stoichiometry'] = stoich_matrix_monomers[subunit_index, complex_idx]
-                stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
+                reaction_name['reaction_id'] = rxn_ids[reaction_idx[0]]
+                stoich['stoichiometry'] = smm[subunit_index, complex_idx]
+                stoich_known['stoich_unknown'] = rsu[
                     reaction_idx[0]]
-                complex_type['complex_type'] = cplx_type
+                complex_type['complex_type'] = complex_to_complex_type[complex_name]
                 downstream_complex_information.append(reaction_name)
                 downstream_complex_information.append(stoich)
                 downstream_complex_information.append(stoich_known)
@@ -366,6 +357,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 downstream_complexes[complex_name] = downstream_complex_information
 
             molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
+
+        return molecules_to_parent_complexes_dict, molecules_to_all_downstream_complexes_dict
 
 
     # UNIQUE TYPES: TFs, ribosomes, RNAps, replisomes
@@ -431,16 +424,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
     # NOTE: complexation complexes can be subunits of other complexation complexes, equilibrium complexes, and two component system complexes
     def is_a_complexation_complex_subunit(self, sim_data, molecule):
-        # Get the complexation complex subunit IDs:
-        complexation_complex_ids = sim_data.process.complexation.complexation_complex_ids
-
         # Determine if the complex is a complexation complex subunit:
-        complexation_complex_id_match = [complex_id for complex_id in complexation_complex_ids if molecule == complex_id]
+        complexation_complex_id_match = [complex_id for complex_id in self.complexIDs if molecule == complex_id]
 
         if complexation_complex_id_match != []:
             print(f"{molecule} is a complexation complex subunit.")
 
         return complexation_complex_id_match
+
 
 
 
@@ -493,6 +484,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         self.c_m2pc_dict, self.c_m2adc_dict = self.build_complexation_dictionaries(sim_data)
 
+        self.eq_m2pc_dict, self.eq_m2adc_dict = self.build_equilibrium_dictionaries(sim_data)
+        # the only eq complex that is a subunit of another eq complex is CPLX0-7796
+
+        # check if for any eq complexes, the value of the matrix is not empty:
+        for id in self.eqComplexIDs:
+            if id in self.eq_m2pc_dict.keys():
+                if self.eq_m2pc_dict[id] != {}:
+                    print(f"{id} is an eq complex that is a subunit of a larger complex.")
+            if id in self.eq_m2adc_dict.keys():
+                if self.eq_m2adc_dict[id] != {}:
+                    print(f"{id} is an eq complex that has downstream complexes it forms.")
+
+
 
 
         hi = 5
@@ -541,7 +545,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 if complex in molecules_to_parent_complexes.keys():
                     complexation_parent_complexes = molecules_to_parent_complexes[complex]
 
-
                 # Find all constiuent monomers of the complex based on where the
                 # complex shows up as a value in MDSC dict:
                 monomers = {k: v for k, v in molecules_to_all_downstream_complexes.items() if
@@ -561,6 +564,24 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         complexation_rxn_to_idx_dict[reaction_id] = reaction_idx
 
                 # TODO: check if the complex is part of an equilibrium complex or tcs as well, using both itself AND its parent complex if applicable!
+                # Check if the complex is a subunit of an equilibrium complex:
+                eq_parent_complexes = self.eq_m2pc_dict[complex] # TODO: decide if we want downstream or parent complexes here.
+                if eq_parent_complexes != {}:
+                    equilibirum_parent_complexes = eq_parent_complexes
+
+                # todo: Check if it is in a   two component system complex:
+
+
+            elif complex_type == "equilibrium":
+                complex_idx = eq_complex_idx_dict[complex]
+                complex_counts = read_stacked_columns(cell_paths, 'EquilibriumListener',
+                                                      "complexCounts")[:, complex_idx]
+                # Check if the complex is a subunit of a larger complex:
+                parent_complexes = self.eq_m2pc_dict[complex]
+                if parent_complexes != {}:
+                    equilibirum_parent_complexes = parent_complexes
+
+
 
             # BEFORE:
 
