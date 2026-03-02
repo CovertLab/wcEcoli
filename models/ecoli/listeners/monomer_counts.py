@@ -34,8 +34,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# TODO (mia): consider completely redefining molecule_ids to be the modified_molecule_ids
 		#  (check that the stoich_matrix() stoich values are the same, as it will change in size):
 		self.two_component_system_molecule_ids = list(sim_data.process.two_component_system.molecule_names)
-		self.two_component_system_modified_molecules = list(sim_data.process.two_component_system.modified_molecules)
-		two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
+		two_component_system_modified_molecules = list(sim_data.process.two_component_system.modified_molecules)
+		self.two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
 
 		# Get IDs of ribosome subunits
 		ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
@@ -86,8 +86,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.equilibrium_molecule_idx = get_molecule_indexes(equilibrium_molecule_ids)
 		self.equilibrium_complex_idx = get_molecule_indexes(equilibrium_complex_ids)
 		self.two_component_system_molecule_idx = get_molecule_indexes(self.two_component_system_molecule_ids)
-		self.two_component_system_modified_molecule_idx = get_molecule_indexes(self.two_component_system_modified_molecules)
-		self.two_component_system_complex_idx = get_molecule_indexes(two_component_system_complex_ids)
+		self.two_component_system_modified_molecule_idx = get_molecule_indexes(two_component_system_modified_molecules)
+		self.two_component_system_complex_idx = get_molecule_indexes(self.two_component_system_complex_ids)
 		self.ribosome_subunit_idx = get_molecule_indexes(ribosome_subunit_ids)
 		self.rnap_subunit_idx = get_molecule_indexes(rnap_subunit_ids)
 		self.replisome_subunit_idx = get_molecule_indexes(replisome_subunit_ids)
@@ -125,7 +125,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		)
 
 		self.twoComponentSystemCounts = np.zeros(
-			len(self.two_component_system_modified_molecules),
+			len(self.two_component_system_complex_ids),
 			np.int64)
 
 		self.delta2CMolecules = np.zeros(
@@ -164,6 +164,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# important that EQ counts are added before complexation is unpacked):
 		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
 			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
+		# TODO: or, could change SMM to to include all the downstream molecules
+		#  of the complexation complex subunits, however, this would require a manual modified_proteins.tsv file to be made for use in the parca.
 		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
 			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
 		complex_monomer_counts = np.dot(self.complexation_stoich,
@@ -176,6 +178,8 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# Update the total and free monomer counts at the start of each time step:
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
 		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx]
+		# TODO: save the TCS counts as well!
+		self.twoComponentSystemCounts = self.bulkMolecules.container.counts()[self.two_component_system_complex_idx]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
@@ -183,14 +187,14 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			'freeMonomerCounts': 'monomerIds',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
-			'twoComponentSystemMoleculeCounts': 'twoComponentSystemModifiedMoleculeIds',
+			'twoComponentSystemComplexCounts': 'twoComponentSystemComplexIds',
 			'delta2CMolecules': 'twoComponentSystemMoleculeIds',
 			}
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomer_ids,
-			twoComponentSystemMoleculeIds = self.two_component_system_molecule_ids,
-			twoComponentSystemModifiedMoleculeIds = self.two_component_system_modified_molecules,
+			twoComponentSystemMComplexIds = self.two_component_system_complex_ids,
+			twoComponentSystemModifiedMoleculeIds = self.two_component_system_molecule_ids,
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
@@ -201,6 +205,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			freeMonomerCounts=self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
-			twoComponentSystemMoleculeCounts = self.twoComponentSystemCounts,
+			twoComponentSystemComplexCounts = self.twoComponentSystemCounts,
 			delta2CMolecules = self.delta2CMolecules,
 			)
