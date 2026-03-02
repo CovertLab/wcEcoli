@@ -27,7 +27,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["MONOMER0-160", "PHOSPHO-ARCA"] #
+PLOT_COMPLEXES = ['CPLX0-7796', "CPLX-125", "ARCB-CPLX", "PHOSPHO-NARL"] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
@@ -84,7 +84,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 elif molecule in self.eqComplexIDs:
                     complex_types[molecule] = "equilibrium"
                 else:
-                    complex_types[molecule] = "tcs"
+                    complex_types[molecule] = "two component system"
             else:
                 print(f"{molecule} is not a valid complex. Only complexation, "
                       f"equiliibrium, and two component system complexes can "
@@ -527,6 +527,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return TF_id_match
 
+    def tf_index(self, sim_data, molecule):
+        # Get the TF IDs:
+        tfs = sim_data.process.transcription_regulation.tf_ids
+        tf_ids = [tf_id + f'[{sim_data.getter.get_compartment(tf_id)[0]}]'
+                          for tf_id in tfs]
+
+        # Find the index of the TF in the TF list:
+        tf_index = tf_ids.index(molecule)
+
+        return tf_index
+
     def is_a_ribosome_subunit(self, sim_data, molecule):
         # Get the ribosome subunit IDs:
         ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
@@ -544,6 +555,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return ribosome_subunit_id_match
 
+    def ribosome_subunit_index(self, sim_data, molecule):
+        # Get the ribosome subunit IDs:
+        ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
+            sim_data.molecule_ids.s50_full_complex)
+        ribosome_30s_subunits = sim_data.process.complexation.get_monomers(
+            sim_data.molecule_ids.s30_full_complex)
+        ribosome_subunit_ids = (ribosome_50s_subunits["subunitIds"].tolist() +
+                                ribosome_30s_subunits["subunitIds"].tolist())
+
+        # Find the index of the ribosome subunit in the ribosome subunit list:
+        ribosome_subunit_index = ribosome_subunit_ids.index(molecule)
+
+        return ribosome_subunit_index
+
     def is_an_RNAP_subunit(self, sim_data, molecule):
         # Get the RNAP subunit IDs:
         rnap_subunits = sim_data.process.complexation.get_monomers(
@@ -557,6 +582,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             print(f"{molecule} is an RNAP subunit.")
 
         return rnap_subunit_id_match
+
+    def rnap_subunit_index(self, sim_data, molecule):
+        # Get the RNAP subunit IDs:
+        rnap_subunits = sim_data.process.complexation.get_monomers(
+            sim_data.molecule_ids.full_RNAP)
+        rnap_subunit_ids = rnap_subunits["subunitIds"].tolist()
+
+        # Find the index of the RNAP subunit in the RNAP subunit list:
+        rnap_subunit_index = rnap_subunit_ids.index(molecule)
+
+        return rnap_subunit_index
 
     def is_a_replisome_subunit(self, sim_data, molecule):
         # Get the replisome subunit IDs:
@@ -572,15 +608,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return replisome_subunit_id_match
 
-    # NOTE: complexation complexes can be subunits of other complexation complexes, equilibrium complexes, and two component system complexes
-    def is_a_complexation_complex_subunit(self, sim_data, molecule):
-        # Determine if the complex is a complexation complex subunit:
-        complexation_complex_id_match = [complex_id for complex_id in self.complexIDs if molecule == complex_id]
+    def replisome_subunit_index(self, sim_data, molecule):
+        # Get the replisome subunit IDs:
+        replisome_trimer_subunits = sim_data.molecule_groups.replisome_trimer_subunits
+        replisome_monomer_subunits = sim_data.molecule_groups.replisome_monomer_subunits
+        replisome_subunit_ids = replisome_trimer_subunits + replisome_monomer_subunits
 
-        if complexation_complex_id_match != []:
-            print(f"{molecule} is a complexation complex subunit.")
+        # Find the index of the replisome subunit in the replisome subunit list:
+        replisome_subunit_index = replisome_subunit_ids.index(molecule)
 
-        return complexation_complex_id_match
+        return replisome_subunit_index
 
 
 
@@ -626,7 +663,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         eq_complex_idx_dict = {complexID: i for i, complexID in
                             enumerate(self.eqComplexIDs)}
         self.tcsComplexIDs = list(sim_data.process.two_component_system.complex_to_monomer.keys())
-        tcs_molecule_ids = sim_data.process.two_component_system.molecule_names
+        tcs_molecule_ids = list(sim_data.process.two_component_system.molecule_names)
         tcs_complex_idx_dict = {complexID: i for i, complexID in
                             enumerate(tcs_molecule_ids)}
 
@@ -666,6 +703,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             equilibirum_parent_complexes = []
             tcs_parent_complexes = []
 
+            # Unique molecule subunit tracking:
+            tf_existance = self.is_a_TF(sim_data, complex)
+            ribosome_existance = self.is_a_ribosome_subunit(sim_data, complex)
+            rnap_existance = self.is_an_RNAP_subunit(sim_data, complex)
+            replisome_existance = self.is_a_replisome_subunit(sim_data, complex)
+
+
             # Determine the complex type:
             complex_type = complex_type_dict[complex]
 
@@ -703,9 +747,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 # Check if the complex is a subunit of a TCS complex:
                 if complex in self.tcs_m2pc_dict.keys():
                     tcs_parent_complexes.append(self.tcs_m2pc_dict[complex])
-
-                # TODO: add checks for TFs, ribosome subunits, RNAP subunits, and replisome subunits here as well (and add to the plot if so)
-
 
             elif complex_type == "equilibrium":
                 complex_idx = eq_complex_idx_dict[complex]
@@ -827,7 +868,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             all_monomer_subunits = list(all_base_monomers.keys())
             for monomer in all_base_monomers.keys():
                 # get the counts of the monomer in the complex:
-                hi = 5
                 monomer_info = all_base_monomers[monomer][complex][1]
                 monomer_stoich = monomer_info['stoichiometry']  * -1 # use 1 to get the stoichiometry dict
                 monomer_complex_counts = complex_counts * monomer_stoich
@@ -836,13 +876,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 monomer_parent_complexes = molecules_to_parent_complexes[monomer]
                 if complex in monomer_parent_complexes.keys():
                     # if the complex is a parent complex of the monomer, plot with a different style:
-                    ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within\n{complex} ({monomer_stoich} per)', linewidth=1, linestyle=":")
+                    ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within {complex} \n({monomer_stoich} per)', linewidth=1, linestyle=":")
                 else:
                     for pc in monomer_parent_complexes.keys():
                         gparent_complexes = molecules_to_parent_complexes[pc]
                         if complex in gparent_complexes.keys():
                             # if the complex is a parent complex of the monomer's parent complex, note that:
-                            ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within\n{complex} ({monomer_stoich} per, via {pc})', linewidth=.8, linestyle="-.")
+                            ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within {complex} \n({monomer_stoich} per, via {pc})', linewidth=.8, linestyle="-.")
                             break # Do not continue checking the other grandparents!
                         else:
                             # if the complex is not a parent complex of the monomer or its parent complexes:
@@ -869,7 +909,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         total_stoich = subunit_stoich * int(monomer_stoich) # TODO check this!
                         monomer_complex_counts = complex_counts * total_stoich
                         ax1.plot(time, monomer_complex_counts, alpha=1,
-                                 label=f'{monomer} counts within\n{complex} ({total_stoich} per, via {subunit} with {monomer_stoich} per)', linewidth=.8, linestyle="--")
+                                 label=f'{monomer} counts within {complex} \n({total_stoich} per, via {subunit}, {subunit_stoich} per)', linewidth=.8, linestyle=":")
 
             if equilibrium_complex_subunits != []:
                 for subunit in equilibrium_complex_subunits:
@@ -897,13 +937,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         total_stoich = subunit_stoich * int(monomer_stoich) # TODO check this!
                         monomer_complex_counts = complex_counts * total_stoich
                         ax1.plot(time, monomer_complex_counts, alpha=1,
-                                 label=f'{monomer} counts within\n{complex} ({total_stoich} per, via {subunit} with {monomer_stoich} per)', linewidth=.8, linestyle="--")
+                                 label=f'{monomer} counts within {complex} \n({total_stoich} per, via {subunit}, {subunit_stoich} per)', linewidth=.8, linestyle=":")
 
                     # Unpack any complexation complex subunits within the equilibrium complex subunit as well:
                     if temp_complexation_complex_subunits != []:
                         for cplx_subunit in temp_complexation_complex_subunits:
                             # Find the counts of the subunit within the complex first:
-                            cplx_subunit_info = molecules_to_all_downstream_complexes[cplx_subunit][subunit][1] # TODO: is this right?
+                            cplx_subunit_info = molecules_to_all_downstream_complexes[cplx_subunit][subunit][1]
                             cplx_subunit_stoich = cplx_subunit_info['stoichiometry'] * -1
 
                             # Find where the subunit shows up in the complexation complexes:
@@ -915,10 +955,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                 monomer_info = temp_monomers[monomer][cplx_subunit][1]
                                 monomer_stoich = monomer_info['stoichiometry'] * -1
                                 # subunit stoich = how many of the eq subunit are in the complex, complexation subunit stoich = how many of the complexation subunit are in the eq subunit, monomer stoich = how many of the monomer are in the complexation subunit
-                                total_stoich = subunit_stoich * int(cplx_subunit_stoich) * int(monomer_stoich) # TODO check this!
+                                total_stoich = subunit_stoich * int(cplx_subunit_stoich) * int(monomer_stoich)
                                 monomer_complex_counts = complex_counts * total_stoich
                                 ax1.plot(time, monomer_complex_counts, alpha=1,
-                                         label=f'{monomer} counts within\n{complex} ({total_stoich} per, via {subunit} with {cplx_subunit_stoich} per and {monomer_stoich} per)', linewidth=.8, linestyle="--")
+                                         label=f'{monomer} counts within {complex} '
+                                               f'\n({total_stoich} per, via {subunit}, {subunit_stoich} per)', linewidth=.8, linestyle=":")
 
 
 
@@ -928,7 +969,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 protein_FMC = free_monomer_counts[:, protein_idx]
                 ax2.plot(time, protein_FMC, alpha=0.75, label=f'{monomer}', linewidth=0.75)
 
-            ax2.set_ylabel(f"Free Monomer \nSubunit Counts")
+            ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
 
             # Third, add a plot of the complexation events over time:
@@ -948,8 +989,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # If the complex is itself a subunit of a larger complex, plot the
             # counts of the parent complex and the events that generate it as well:
-            if complexation_parent_complexes != {}:
-                parent_complexes = complexation_parent_complexes
+            if complexation_parent_complexes != []:
+                parent_complexes = complexation_parent_complexes[0].keys()
                 complex_reactions = sim_data.process.complexation.ids_reactions
                 for parent_complex in parent_complexes:
                     # Find the counts of complex within the parent complex:
@@ -970,15 +1011,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                                                      "complexationEvents")[:,
                                                 reaction_idx]
                     ax1.plot(time, complex_counts_within_parent_complex, alpha=0.5,
-                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)',
+                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich * -1} per)',
                              linewidth=0.75,
                              linestyle="-.")
                     ax3.plot(time, np.negative(parent_complex_events), alpha=0.5,
-                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich} {complex} to generate {parent_complex})',
+                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich * -1} {complex} to generate {parent_complex})',
                              linewidth=0.75)
 
-            if equilibirum_parent_complexes != {}:
-                parent_complexes = equilibirum_parent_complexes
+            if equilibirum_parent_complexes != []:
+                parent_complexes = equilibirum_parent_complexes[0].keys()
                 complex_reactions = eq_complex_counts_listener.readAttribute("reactionIDs")
                 for parent_complex in parent_complexes:
                     # Find the counts of complex within the parent complex:
@@ -1000,15 +1041,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                                                  "complexationEvents")[:,
                                             reaction_idx]
                     ax1.plot(time, complex_counts_within_parent_complex, alpha=0.5,
-                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)',
+                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich * -1} per)',
                              linewidth=0.75,
                              linestyle="-.")
                     ax3.plot(time, np.negative(parent_complex_events), alpha=0.5,
-                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich} {complex} to generate {parent_complex})',
+                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich * -1} {complex} to generate {parent_complex})',
                              linewidth=0.75)
 
-            if tcs_parent_complexes != {}:
-                parent_complexes = tcs_parent_complexes
+            if tcs_parent_complexes != []:
+                parent_complexes = tcs_parent_complexes[0].keys()
                 for parent_complex in parent_complexes:
                     # Find the counts of complex within the parent complex:
                     parent_complex_idx = tcs_complex_idx_dict[parent_complex]
@@ -1029,12 +1070,40 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                                                  "delta2CMolecules")[:,
                                             reaction_idx]
                     ax1.plot(time, complex_counts_within_parent_complex, alpha=0.5,
-                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)',
+                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich * -1} per)',
                              linewidth=0.75,
                              linestyle="-.")
                     ax3.plot(time, np.negative(parent_complex_events), alpha=0.5,
-                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich} {complex} to generate {parent_complex})',
+                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich * -1} {complex} to generate {parent_complex})',
                              linewidth=0.75)
+
+            # Check if the complex is a TF:
+            if tf_existance != []:
+                tf_idx = self.tf_index(sim_data, complex)
+                tf_counts = read_stacked_columns(cell_paths,
+                                                                 'RnaSynthProb',
+                                                                 "nActualBound")[:,
+                                            tf_idx]
+                tfs_unbound = read_stacked_columns(cell_paths,
+                                                                 'RnaSynthProb',
+                                                                 "nActualUnbound")[:,
+                                            tf_idx]
+                ax1.plot(time, tf_counts, color='lightcoral', label=f'Bound transcription factor \n{complex} molecules', linewidth=0.75, alpha=0.75)
+
+                ax3.plot(time, (tf_counts * -1), color='lightcoral', label=f'Binding events of transcription factor \n{complex}', linewidth=0.75, alpha=0.75)
+                ax3.plot(time, tfs_unbound, color='indianred', label=f'Unbinding events of transcription factor \n{complex}', linewidth=0.75, alpha=0.75)
+
+            # TODO: decide whether or not to delete this based off whether there are any complex subunits of ribosomes.
+            if ribosome_existance != []:
+                ribosome_subunit_idx = self.ribosome_subunit_index(sim_data, complex) # todo: does this matter? arent they all 1:1?
+                ribosome_subunit_counts = 5 # TODO: find ths by summing monomersElongated over all time steps. that is the number of ribosomes that get used!
+                ax1.plot(time, ribosome_subunit_counts, color='mediumpurple', label=f'Ribosome subunit \n{complex} counts', linewidth=0.75, alpha=0.75)
+                ax3.plot(time, ribosome_subunit_counts * -1, color='mediumpurple', label=f'Ribosome assembly events of subunit \n{complex}', linewidth=0.75, alpha=0.75)
+
+
+            # TODO: add RNAPs and replisomes!
+
+
 
 
             # Set the axes and legends (since some might have been added with the parent complexes):
