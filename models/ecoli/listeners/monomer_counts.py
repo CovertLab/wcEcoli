@@ -179,6 +179,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
 		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx]
 		# TODO: save the TCS counts as well!
+		# todo: consider moving this to the eq listener to save with the other TFs!
 		self.twoComponentSystemCounts = self.bulkMolecules.container.counts()[self.two_component_system_complex_idx]
 
 	def tableCreate(self, tableWriter):
