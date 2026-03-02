@@ -27,7 +27,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ["MONOMER0-160",] #
+PLOT_COMPLEXES = ["MONOMER0-160", "PHOSPHO-ARCA"] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
@@ -626,15 +626,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         eq_complex_idx_dict = {complexID: i for i, complexID in
                             enumerate(self.eqComplexIDs)}
         self.tcsComplexIDs = list(sim_data.process.two_component_system.complex_to_monomer.keys())
+        tcs_molecule_ids = sim_data.process.two_component_system.molecule_names
         tcs_complex_idx_dict = {complexID: i for i, complexID in
-                            enumerate(self.tcsComplexIDs)}
+                            enumerate(tcs_molecule_ids)}
 
         self.c_m2pc_dict, self.c_m2adc_dict = self.build_complexation_dictionaries(sim_data)
 
+        # Warning: these will not unpack subunits to monomers if the subunit is a complexation complex!
         self.eq_m2pc_dict, self.eq_m2adc_dict = self.build_equilibrium_dictionaries(sim_data)
-        # the only eq complex that is a subunit of another eq complex is CPLX0-7796
 
-        # TODO: note that this will not show how intermediate complexes are formed (like ARCB-CPLX)! Must use the complexation or eq dicts to fully unwrap!
+        # Warning: these will not unpack subunits to baseline monomers if the subunit is a complexation or equilibrium complex!
         self.tcs_m2pc_dict, self.tcs_m2adc_dict = self.build_tcs_dictionaries(sim_data)
 
 
@@ -657,10 +658,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Generate a plot for each complex:
         for complex in valid_complexes:
-            monomers = {}
-            complexation_parent_complexes = {}
-            equilibirum_parent_complexes = {}
-            tcs_parent_complexes = {}
+            all_base_monomers = {}
+            reaction_to_idx_dict = {}
+            complexation_complex_subunits = []
+            equilibrium_complex_subunits = []
+            complexation_parent_complexes = []
+            equilibirum_parent_complexes = []
+            tcs_parent_complexes = []
 
             # Determine the complex type:
             complex_type = complex_type_dict[complex]
@@ -669,126 +673,127 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 complex_idx = complex_idx_dict[complex]
                 complex_counts = read_stacked_columns(cell_paths, 'ComplexationListener',
                                                       "complexCounts")[:, complex_idx]
-                # find the complex and its consituent monomers:
-                # TODO: see if it is possible to generate this dictionary in this file!
-                molecules_to_all_downstream_complexes = sim_data.process.complexation.molecules_to_all_downstream_complexes_dict
-                # determine if the complex itself is a subunit of a larger complex:
-                # TODO: figure out how to search for this in any complex type! Maybe make one large dictionary that combines both complexation and equilibrium?
-                molecules_to_parent_complexes = sim_data.process.complexation.molecules_to_parent_complexes_dict
 
-                # If the complex is a subunit of another complexation complex,
-                # it will show up in the molecules_to_parent_complexes dictionary:
-                # TODO: note: for eq and tcs, the complexes will show up in the
-                #  keys no matter what bc there are no subunit_names to make the dicts with.
-                #  instead do parent_complexes = molecules_to_parent_complexes[complex] and then check if its not empty and add it if so.
-                if complex in molecules_to_parent_complexes.keys():
-                    complexation_parent_complexes = molecules_to_parent_complexes[complex]
+                # Check if the complex is a subunit of another complexation complex itself:
+                if complex in self.c_m2pc_dict.keys():
+                    complexation_parent_complexes.append(self.c_m2pc_dict[complex])
 
                 # Find all constiuent monomers of the complex based on where the
-                # complex shows up as a value in MDSC dict:
-                monomers = {k: v for k, v in molecules_to_all_downstream_complexes.items() if
+                # complex shows up as a value in molecules_to_all_downstream_complexes dict:
+                monomers = {k: v for k, v in self.c_m2adc_dict.items() if
                             complex in v}
 
-                # Find which complexation reactions this complex is involved in:
-                complex_reactions = complex_counts_listener.readAttribute("reactionIDs")
-                complexation_rxn_to_idx_dict = {}
+                # Find which complexation reactions the complex is involved in:
+                complex_reactions = complex_counts_listener.readAttribute("reactionIDs") # see if we can get rid of the listener by directly indexing to the reaction ids in sim data?
                 complex_makeup = '' # TODO: check that this is where we want this
                 for monomer in monomers:
                     monomer_info = monomers[monomer]
                     monomer_complex_info = monomer_info[complex][0]
                     reaction_id = monomer_complex_info['reaction_id']
                     complex_makeup = monomer_info[complex][3]['complex_type']
+                    all_base_monomers[monomer] = monomer_info
                     if reaction_id in complex_reactions:
                         reaction_idx = complex_reactions.index(reaction_id)
-                        complexation_rxn_to_idx_dict[reaction_id] = reaction_idx
+                        reaction_to_idx_dict[reaction_id] = reaction_idx
 
-                # TODO: check if the complex is part of an equilibrium complex or tcs as well, using both itself AND its parent complex if applicable!
                 # Check if the complex is a subunit of an equilibrium complex:
-                eq_parent_complexes = self.eq_m2pc_dict[complex] # TODO: decide if we want downstream or parent complexes here.
-                if eq_parent_complexes != {}:
-                    equilibirum_parent_complexes = eq_parent_complexes
+                if complex in self.eq_m2pc_dict.keys():
+                    equilibirum_parent_complexes.append(self.eq_m2pc_dict[complex])
 
-                # todo: Check if it is in a   two component system complex:
+                # Check if the complex is a subunit of a TCS complex:
+                if complex in self.tcs_m2pc_dict.keys():
+                    tcs_parent_complexes.append(self.tcs_m2pc_dict[complex])
+
+                # TODO: add checks for TFs, ribosome subunits, RNAP subunits, and replisome subunits here as well (and add to the plot if so)
 
 
             elif complex_type == "equilibrium":
                 complex_idx = eq_complex_idx_dict[complex]
                 complex_counts = read_stacked_columns(cell_paths, 'EquilibriumListener',
                                                       "complexCounts")[:, complex_idx]
-                # Check if the complex is a subunit of a larger complex:
-                parent_complexes = self.eq_m2pc_dict[complex]
-                if parent_complexes != {}:
-                    equilibirum_parent_complexes = parent_complexes
 
+                # Check if the complex is a subunit of another EQ complex itself:
+                if complex in self.eq_m2pc_dict.keys():
+                    equilibirum_parent_complexes.append(self.eq_m2pc_dict[complex])
 
-
-            # BEFORE:
-
-
-            elif complex in complex_idx_dict: # TODO: need to use keys here, otherwise the complexation complexes part of eq complexes will be recognized.
-                complex_type = "complexation"
-                complex_idx = complex_idx_dict[complex]
-                # find the complex and its consituent monomers:
-                molecules_to_all_downstream_complexes = sim_data.process.complexation.molecules_to_all_downstream_complexes_dict
-                # determine if the complex itself is a subunit of a larger complex:
-                # TODO: figure out how to search for this in any complex type! Maybe make one large dictionary that combines both complexation and equilibrium?
-                molecules_to_parent_complexes = sim_data.process.complexation.molecules_to_parent_complexes_dict
-                if complex in molecules_to_parent_complexes.keys(): # TODO: double check this does not include the grandparent complexes in it? I feel like maybe it could? and that could cuase issues?
-                    parent_complexes = molecules_to_parent_complexes[complex]
-                # find where the complex shows up as a value in the dict:
-                monomers = {k: v for k, v in molecules_to_all_downstream_complexes.items() if complex in v}
-                complex_counts = read_stacked_columns(cell_paths, 'ComplexationListener', "complexCounts")[:, complex_idx]
-
-                # TODO: determine if any complexes are generated by multiple reactions (if so, probalby need to generate a dictionary)
-                # Find which reactions this complex is involved in:
-                complex_reactions = complex_counts_listener.readAttribute("reactionIDs")
-                reaction_to_idx_dict = {}
-                complex_makeup = ''
-                for monomer in monomers:
-                    monomer_info = monomers[monomer]
-                    monomer_complex_info = monomer_info[complex][0]
-                    reaction_id = monomer_complex_info['reaction_id']
-                    complex_makeup = monomer_info[complex][3]['complex_type']
-                    if reaction_id in complex_reactions:
-                        reaction_idx = complex_reactions.index(reaction_id)
-                        reaction_to_idx_dict[reaction_id] = reaction_idx
-
-            elif complex in eq_complex_idx_dict:
-                complex_type = "equilibrium"
-                complex_idx = eq_complex_idx_dict[complex]
-                # find the complex and its consituent monomers:
-                molecules_to_all_downstream_complexes = sim_data.process.equilibrium.molecules_to_all_downstream_complexes_dict
-                # determine if the complex itself is a subunit of a larger complex: # TODO: figure out how to search for this in any complex type! Maybe make one large dictionary that combines both complexation and equilibrium?
-                molecules_to_parent_complexes = sim_data.process.equilibrium.molecules_to_parent_complexes_dict
-                if complex in molecules_to_parent_complexes.keys():
-                    parent_complexes = molecules_to_parent_complexes[complex]
-                # find where the complex shows up as a value in the dict:
-                monomers_temp = {k: v for k, v in molecules_to_all_downstream_complexes.items() if
+                # Find all base molecules of the complex based on where the
+                # complex shows up as a value in molecules_to_all_downstream_complexes dict:
+                molecules = {k: v for k, v in self.eq_m2adc_dict.items() if
                             complex in v}
-                # remove any monomers that are not actually monomers (i.e. ATP):
-                for key in monomers_temp.keys():
-                    if key in monomerIDs:
-                        monomers[key] = monomers_temp[key]
 
-                complex_counts = read_stacked_columns(cell_paths, 'EquilibriumListener',
-                                                      "complexCounts")[:, complex_idx]
+                # Find all base monomers of the equilibrium complex:
+                subunits = []
+                for molecule in molecules:
+                    if molecule in self.monomerIDs:
+                        all_base_monomers[molecule] = molecules[molecule]
+                        subunits.append(molecule)
+                    elif molecule in self.complexIDs:
+                        complexation_complex_subunits.append(molecule)
+                        subunits.append(molecule)
+                    else:
+                        # if the molecule is a ligand, skip it
+                        # (i.e. do not add it to the subunits list)
+                        continue
 
-                # find which reactions this complex is involved in:
-                complex_reactions = eq_complex_counts_listener.readAttribute("reactionIDs")
-                reaction_to_idx_dict = {}
+                # Find which EQ reactions this complex is involved in:
+                eq_complex_reactions = eq_complex_counts_listener.readAttribute("reactionIDs")
+                complex_makeup = ''
+                for subunit in subunits:
+                    subunit_info = molecules[subunit]
+                    subunit_complex_info = subunit_info[complex][0]
+                    reaction_id = subunit_complex_info['reaction_id']
+                    complex_makeup = subunit_info[complex][3]['complex_type']
+                    if reaction_id in eq_complex_reactions:
+                        reaction_idx = eq_complex_reactions.index(reaction_id)
+                        reaction_to_idx_dict[reaction_id] = reaction_idx
+
+                # Check if the complex is a subunit of a TCS complex:
+                if complex in self.tcs_m2pc_dict.keys():
+                    tcs_parent_complexes.append(self.tcs_m2pc_dict[complex])
+
+                # TODO: add checks for TFs, ribosome subunits, RNAP subunits, and replisome subunits here as well (and add to the plot if so)
+
+            # TCS complexes:
+            else:
+                complex_idx = self.tcsComplexIDs.index(complex)
+                complex_counts = read_stacked_columns(cell_paths, 'MonomerCounts',
+                                                      "twoComponentSystemComplexCounts")[:, complex_idx]
+
+                # Find all constiuent monomers of the complex based on where the
+                # complex shows up as a value in molecules_to_all_downstream_complexes dict
+                # (NOTE: the tcs_m2adc dict is similar to c_m2adc because it
+                # does actually map each complex down to its monomers, whereas
+                # the eq_m2adc dict does not, hence why it needed extra unpacking
+                # of its subunits to affirm their identity)
+                monomers = {k: v for k, v in self.tcs_m2adc_dict.items() if
+                            complex in v}
+
+                # Check if any of the direct subunits are complexation or EQ complexes:
+                molecules = {k: v for k, v in self.tcs_m2pc_dict.items() if
+                             complex in v}
+                for molecule in molecules:
+                    if molecule in self.complexIDs:
+                        complexation_complex_subunits.append(molecule)
+                    elif molecule in self.eqComplexIDs:
+                        equilibrium_complex_subunits.append(molecule)
+
+
+                # Find which TCS reactions the complex is involved in:
+                tcs_complex_reactions = sim_data.process.two_component_system.rxn_ids
                 complex_makeup = ''
                 for monomer in monomers:
                     monomer_info = monomers[monomer]
                     monomer_complex_info = monomer_info[complex][0]
+                    all_base_monomers[monomer] = monomer_info
                     reaction_id = monomer_complex_info['reaction_id']
                     complex_makeup = monomer_info[complex][3]['complex_type']
-                    if reaction_id in complex_reactions:
-                        reaction_idx = complex_reactions.index(reaction_id)
+                    if reaction_id in tcs_complex_reactions:
+                        reaction_idx = tcs_complex_reactions.index(reaction_id)
                         reaction_to_idx_dict[reaction_id] = reaction_idx
 
-            else:
-                # TODO: determine if any complexes are in both complexation and equilibrium (if so, need to handle that here)?
-                raise ValueError(f"Complex {complex} not found in complexation complex or equilibrium complex  listeners.")
+
+                # TODO: check if the complex is a subunit of a unique molecule type!
+
 
             # Generate the plots:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, figsize=(10, 6))
@@ -796,13 +801,37 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # First, make a plot of the complex itself and its subunits (as well as the complexes it forms)
             ax1.plot(time, complex_counts, color='lightseagreen', label=f'{complex} free complex counts', linewidth=.75, alpha=0.75)
 
-            # plot the counts of each monomer that makes up the complex:
-            for monomer in monomers.keys():
+            # Plot the counts of each monomer within the complex:
+
+            # OK so if I have an eq complex being plotted, and one of its subunits is a complexation complex, I want it to say MONOMERX counts within COMPLEX (Y per, via Z COMPLEXATION COMPLEX)
+            # same with TCS complexes!
+
+            """monomers_to_add = {k: v for k, v in self.c_m2adc_dict.items() if
+                               molecule in v}
+            for monomer in monomers_to_add:
+                if monomer not in all_base_monomers:
+                    all_base_monomers[monomer] = monomers_to_add[monomer][molecule][0]"""
+
+            # ACTUALLY, how I want to do this is have the monomer subunits literally just be the monomers from that complexes actual reaction. then use the complexation or equilibirum subunits [] to get the monomers within!
+
+            if complex_type == "complexation":
+                molecules_to_parent_complexes = self.c_m2pc_dict
+                molecules_to_all_downstream_complexes = self.c_m2adc_dict
+            elif complex_type == "equilibrium":
+                molecules_to_parent_complexes = self.eq_m2pc_dict
+                molecules_to_all_downstream_complexes = self.eq_m2adc_dict
+            else:
+                molecules_to_parent_complexes = self.tcs_m2pc_dict
+                molecules_to_all_downstream_complexes = self.tcs_m2adc_dict
+
+            all_monomer_subunits = list(all_base_monomers.keys())
+            for monomer in all_base_monomers.keys():
                 # get the counts of the monomer in the complex:
-                monomer_info = monomers[monomer]
-                monomer_complex_info = monomer_info[complex][1] # use 1 to get the stoichiometry dict
-                monomer_stoich = monomer_complex_info['stoichiometry']
+                hi = 5
+                monomer_info = all_base_monomers[monomer][complex][1]
+                monomer_stoich = monomer_info['stoichiometry']  * -1 # use 1 to get the stoichiometry dict
                 monomer_complex_counts = complex_counts * monomer_stoich
+
                 # check if the monomer is the result of the complex or a different parent complex:
                 monomer_parent_complexes = molecules_to_parent_complexes[monomer]
                 if complex in monomer_parent_complexes.keys():
@@ -814,15 +843,87 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         if complex in gparent_complexes.keys():
                             # if the complex is a parent complex of the monomer's parent complex, note that:
                             ax1.plot(time, monomer_complex_counts, alpha=1, label=f'{monomer} counts within\n{complex} ({monomer_stoich} per, via {pc})', linewidth=.8, linestyle="-.")
-                            break
+                            break # Do not continue checking the other grandparents!
                         else:
                             # if the complex is not a parent complex of the monomer or its parent complexes:
                             ax1.plot(time, monomer_complex_counts, alpha=1,
                                      label=f'{monomer} counts within\n{complex} ({monomer_stoich} per, via an unknown intermediate)',
                                      linewidth=.8, linestyle="-.")
 
+            # Also check if any of the complex's subunits are complexation complexes that need to be further unpacked:
+            if complexation_complex_subunits != []:
+                for subunit in complexation_complex_subunits:
+
+                    # Find the counts of the subunit within the complex first:
+                    subunit_info = molecules_to_all_downstream_complexes[subunit][complex][1]
+                    subunit_stoich = subunit_info['stoichiometry'] * -1
+
+                    # Find where the subunit shows up in the complexation complexes:
+                    monomers = {k: v for k, v in self.c_m2adc_dict.items() if
+                                       subunit in v}
+
+                    for monomer in monomers:
+                        all_monomer_subunits.append(monomer)
+                        monomer_info = monomers[monomer][subunit][1]
+                        monomer_stoich = monomer_info['stoichiometry'] * -1
+                        total_stoich = subunit_stoich * int(monomer_stoich) # TODO check this!
+                        monomer_complex_counts = complex_counts * total_stoich
+                        ax1.plot(time, monomer_complex_counts, alpha=1,
+                                 label=f'{monomer} counts within\n{complex} ({total_stoich} per, via {subunit} with {monomer_stoich} per)', linewidth=.8, linestyle="--")
+
+            if equilibrium_complex_subunits != []:
+                for subunit in equilibrium_complex_subunits:
+                    # Find the counts of the subunit within the complex first:
+                    subunit_info = molecules_to_all_downstream_complexes[subunit][complex][0]
+                    subunit_stoich = subunit_info['stoichiometry'] * -1
+
+                    # Find where the subunit shows up in the equilibrium complexes:
+                    molecules = {k: v for k, v in self.eq_m2adc_dict.items() if
+                                       subunit in v}
+
+                    # check if the monomers are within a complexation complex too:
+                    temp_complexation_complex_subunits = []
+                    monomers = {}
+                    for molecule in molecules:
+                        if molecule in self.complexIDs:
+                            temp_complexation_complex_subunits.append(molecule)
+                        if molecule in self.monomerIDs:
+                            monomers[molecule] = molecules[molecule]
+
+                    for monomer in monomers:
+                        all_monomer_subunits.append(monomer)
+                        monomer_info = monomers[monomer][subunit][1]
+                        monomer_stoich = monomer_info['stoichiometry'] * -1
+                        total_stoich = subunit_stoich * int(monomer_stoich) # TODO check this!
+                        monomer_complex_counts = complex_counts * total_stoich
+                        ax1.plot(time, monomer_complex_counts, alpha=1,
+                                 label=f'{monomer} counts within\n{complex} ({total_stoich} per, via {subunit} with {monomer_stoich} per)', linewidth=.8, linestyle="--")
+
+                    # Unpack any complexation complex subunits within the equilibrium complex subunit as well:
+                    if temp_complexation_complex_subunits != []:
+                        for cplx_subunit in temp_complexation_complex_subunits:
+                            # Find the counts of the subunit within the complex first:
+                            cplx_subunit_info = molecules_to_all_downstream_complexes[cplx_subunit][subunit][1] # TODO: is this right?
+                            cplx_subunit_stoich = cplx_subunit_info['stoichiometry'] * -1
+
+                            # Find where the subunit shows up in the complexation complexes:
+                            temp_monomers = {k: v for k, v in self.c_m2adc_dict.items() if
+                                               cplx_subunit in v}
+
+                            for monomer in temp_monomers:
+                                all_monomer_subunits.append(monomer)
+                                monomer_info = temp_monomers[monomer][cplx_subunit][1]
+                                monomer_stoich = monomer_info['stoichiometry'] * -1
+                                # subunit stoich = how many of the eq subunit are in the complex, complexation subunit stoich = how many of the complexation subunit are in the eq subunit, monomer stoich = how many of the monomer are in the complexation subunit
+                                total_stoich = subunit_stoich * int(cplx_subunit_stoich) * int(monomer_stoich) # TODO check this!
+                                monomer_complex_counts = complex_counts * total_stoich
+                                ax1.plot(time, monomer_complex_counts, alpha=1,
+                                         label=f'{monomer} counts within\n{complex} ({total_stoich} per, via {subunit} with {cplx_subunit_stoich} per and {monomer_stoich} per)', linewidth=.8, linestyle="--")
+
+
+
             # Next, plot the free monomer counts for each protein that makes up the complex:
-            for monomer in monomers.keys():
+            for monomer in all_monomer_subunits:
                 protein_idx = monomer_idx_dict[monomer]
                 protein_FMC = free_monomer_counts[:, protein_idx]
                 ax2.plot(time, protein_FMC, alpha=0.75, label=f'{monomer}', linewidth=0.75)
@@ -833,56 +934,103 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Third, add a plot of the complexation events over time:
             for rxn in reaction_to_idx_dict.keys():
                 rxn_idx = reaction_to_idx_dict[rxn]
-                if complex_type == "equilibrium":
+                if complex_type == "complexation":
+                    rxn_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, rxn_idx]
+                elif complex_type == "equilibrium":
                     # NOTE: equilibrium reactions can go negative (reverse reactions), so the events here may be negative
                     rxn_events = read_stacked_columns(cell_paths, 'EquilibriumListener', "complexationEvents")[:, rxn_idx]
-                else:
-                    rxn_events = read_stacked_columns(cell_paths, 'ComplexationListener', "complexationEvents")[:, rxn_idx]
+                else: # TCS reactions
+                    # Find this by indexing to where the complex is made within the TCS delta molecules counter, since they are all one-to-one reactions:
+                    tcs_index = tcs_complex_idx_dict[complex]
+                    rxn_events = read_stacked_columns(cell_paths, 'MonomerCounts', "delta2CMolecules")[:, tcs_index]
                 ax3.plot(time, rxn_events, alpha=0.75, label=f'{rxn} \n(generates 1 {complex})', linewidth=0.75)
 
 
             # If the complex is itself a subunit of a larger complex, plot the
             # counts of the parent complex and the events that generate it as well:
-            if parent_complexes != {}:
+            if complexation_parent_complexes != {}:
+                parent_complexes = complexation_parent_complexes
+                complex_reactions = sim_data.process.complexation.ids_reactions
                 for parent_complex in parent_complexes:
-                    if complex_type == "complexation":
-                        # find the counts of complex within the parent complex:
-                        parent_complex_idx = complex_idx_dict[parent_complex]
-                        parent_complex_counts = read_stacked_columns(cell_paths,
+                    # Find the counts of complex within the parent complex:
+                    parent_complex_idx = complex_idx_dict[parent_complex]
+                    parent_complex_counts = read_stacked_columns(cell_paths,
                                                                      'ComplexationListener',
                                                                      "complexCounts")[:,
                                                 parent_complex_idx]
-                        complex_stoich = parent_complexes[parent_complex][1]['stoichiometry']
-                        complex_counts_within_parent_complex = parent_complex_counts * complex_stoich
 
-                        # find the events that generate the parent complex:
-                        parent_complex_reaction_ID = parent_complexes[parent_complex][0]['reaction_id']
-                        reaction_idx = complex_reactions.index(parent_complex_reaction_ID)
-                        parent_complex_events = read_stacked_columns(cell_paths,
+                    complex_stoich = self.c_m2pc_dict[complex][parent_complex][1]['stoichiometry']
+                    complex_counts_within_parent_complex = parent_complex_counts * complex_stoich * -1
+
+                    # Find the events that generate the parent complex:
+                    parent_complex_reaction_ID = self.c_m2pc_dict[complex][parent_complex][0]['reaction_id']
+                    reaction_idx = complex_reactions.index(parent_complex_reaction_ID)
+                    parent_complex_events = read_stacked_columns(cell_paths,
                                                                      'ComplexationListener',
                                                                      "complexationEvents")[:,
                                                 reaction_idx]
-                    else:
-                        parent_complex_idx = eq_complex_idx_dict[parent_complex]
-                        parent_complex_counts = read_stacked_columns(cell_paths,
-                                                                     'EquilibriumListener',
-                                                                     "complexCounts")[:,
-                                                parent_complex_idx]
-                        complex_stoich = parent_complexes[parent_complex][1]['stoichiometry']
-                        complex_counts_within_parent_complex = parent_complex_counts * complex_stoich
-
-                        # find the events that generate the parent complex:
-                        parent_complex_reaction_ID = parent_complexes[parent_complex][0][
-                            'reaction_id']
-                        reaction_idx = complex_reactions.index(parent_complex_reaction_ID)
-                        parent_complex_events = read_stacked_columns(cell_paths,
-                                                                     'ComplexationListener',
-                                                                     "complexationEvents")[:,
-                                                reaction_idx]
-
-
                     ax1.plot(time, complex_counts_within_parent_complex, alpha=0.5,
-                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)', linewidth=0.75,
+                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)',
+                             linewidth=0.75,
+                             linestyle="-.")
+                    ax3.plot(time, np.negative(parent_complex_events), alpha=0.5,
+                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich} {complex} to generate {parent_complex})',
+                             linewidth=0.75)
+
+            if equilibirum_parent_complexes != {}:
+                parent_complexes = equilibirum_parent_complexes
+                complex_reactions = eq_complex_counts_listener.readAttribute("reactionIDs")
+                for parent_complex in parent_complexes:
+                    # Find the counts of complex within the parent complex:
+                    parent_complex_idx = eq_complex_idx_dict[parent_complex]
+                    parent_complex_counts = read_stacked_columns(cell_paths,
+                                                                 'EquilibriumListener',
+                                                                 "complexCounts")[:,
+                                            parent_complex_idx]
+
+                    complex_stoich = self.eq_m2pc_dict[complex][parent_complex][1]['stoichiometry']
+                    complex_counts_within_parent_complex = parent_complex_counts * complex_stoich * -1
+
+                    # Find the events that generate the parent complex:
+                    parent_complex_reaction_ID = self.eq_m2pc_dict[complex][parent_complex][0][
+                        'reaction_id']
+                    reaction_idx = complex_reactions.index(parent_complex_reaction_ID)
+                    parent_complex_events = read_stacked_columns(cell_paths,
+                                                                 'EquilibriumListener',
+                                                                 "complexationEvents")[:,
+                                            reaction_idx]
+                    ax1.plot(time, complex_counts_within_parent_complex, alpha=0.5,
+                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)',
+                             linewidth=0.75,
+                             linestyle="-.")
+                    ax3.plot(time, np.negative(parent_complex_events), alpha=0.5,
+                             label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich} {complex} to generate {parent_complex})',
+                             linewidth=0.75)
+
+            if tcs_parent_complexes != {}:
+                parent_complexes = tcs_parent_complexes
+                for parent_complex in parent_complexes:
+                    # Find the counts of complex within the parent complex:
+                    parent_complex_idx = tcs_complex_idx_dict[parent_complex]
+                    parent_complex_counts = read_stacked_columns(cell_paths,
+                                                                 'MonomerCounts',
+                                                                 "twoComponentSystemComplexCounts")[:,
+                                            parent_complex_idx]
+
+                    complex_stoich = self.tcs_m2pc_dict[complex][parent_complex][1]['stoichiometry']
+                    complex_counts_within_parent_complex = parent_complex_counts * complex_stoich * -1
+
+                    # Find the events that generate the parent complex:
+                    parent_complex_reaction_ID = self.tcs_m2pc_dict[complex][parent_complex][0][
+                        'reaction_id']
+                    reaction_idx = tcs_molecule_ids.index(parent_complex)
+                    parent_complex_events = read_stacked_columns(cell_paths,
+                                                                 'MonomerCounts',
+                                                                 "delta2CMolecules")[:,
+                                            reaction_idx]
+                    ax1.plot(time, complex_counts_within_parent_complex, alpha=0.5,
+                             label=f'{complex} counts within\n{parent_complex} ({complex_stoich} per)',
+                             linewidth=0.75,
                              linestyle="-.")
                     ax3.plot(time, np.negative(parent_complex_events), alpha=0.5,
                              label=f'{parent_complex_reaction_ID} \n(consumes {complex_stoich} {complex} to generate {parent_complex})',
