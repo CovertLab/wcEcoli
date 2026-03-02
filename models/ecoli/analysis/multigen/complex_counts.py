@@ -652,6 +652,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 
         # Extract the three types of complexes:
+        # TODO: delete these readers!
         complex_counts_listener = TableReader(
             os.path.join(simOutDir, "ComplexationListener"))
         self.complexIDs = sim_data.process.complexation.ids_complexes
