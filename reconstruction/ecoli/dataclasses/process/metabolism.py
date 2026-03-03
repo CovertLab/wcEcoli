@@ -354,6 +354,9 @@ class Metabolism(object):
 		self.catalysis_matrix_J = catalysisMatrixJ
 		self.catalysis_matrix_V = catalysisMatrixV
 
+		# TODO (rjuene): add the new gene affected reaction id list and upper bounds from raw data
+		# TODO (rjuene): add the multiplier adjustment for the new gene affected reaction list
+
 		# Properties for setting flux targets
 		self.use_all_constraints = USE_ALL_CONSTRAINTS
 		self.constraints_to_disable = [rxn["disabled reaction"]

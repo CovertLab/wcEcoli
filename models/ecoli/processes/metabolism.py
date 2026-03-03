@@ -366,6 +366,8 @@ class FluxBalanceAnalysisModel(object):
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalyst_ids = metabolism.catalyst_ids
 		self.reactions_with_catalyst = metabolism.reactions_with_catalyst
+		# TODO (rjuene): add the new gene affected reaction id list and upper bounds from dataclass
+		# TODO (rjuene): add the multiplier adjustment for the new gene affected reaction list from sim_data, possibly edited by variant?
 
 		i = metabolism.catalysis_matrix_I
 		j = metabolism.catalysis_matrix_J
@@ -545,6 +547,8 @@ class FluxBalanceAnalysisModel(object):
 		reaction_bounds[no_rxn_mask] = 0
 		self.fba.setReactionFluxBounds(self.reactions_with_catalyst,
 			upperBounds=reaction_bounds, raiseForReversible=False)
+
+		# TODO (rjuene): add the new gene affected reaction constraints, calling setReactionFluxBounds
 
 	def set_reaction_targets(self, kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step):
