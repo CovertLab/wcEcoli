@@ -141,7 +141,7 @@ class Translation(object):
 		# protease degradation contributions to degradation for each protein
 		# estimated from Gupta et al. 2024 data (note: this data is not used
 		# functionally in the model):
-		self.protease_dict = {
+		protease_dict = {
 			p['id']: {'protease_assignment': p['protease_assignment'],
 					  'ClpP_fraction': p['ClpP'],
 					  'Lon_fraction': p['Lon'],
@@ -173,7 +173,7 @@ class Translation(object):
 			# the N-end rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				common_name[i] = self.get_common_name(protein['id'])
-				self.determine_protease_involvement(protein['id'], i)
+				self.determine_protease_involvement(protein['id'], i, protease_dict)
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -195,7 +195,7 @@ class Translation(object):
 			# from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				common_name[i] = self.get_common_name(protein['id'])
-				self.determine_protease_involvement(protein['id'], i)
+				self.determine_protease_involvement(protein['id'], i, protease_dict)
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -220,7 +220,7 @@ class Translation(object):
 			# rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				common_name[i] = self.get_common_name(protein['id'])
-				self.determine_protease_involvement(protein['id'], i)
+				self.determine_protease_involvement(protein['id'], i, protease_dict)
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
@@ -407,7 +407,7 @@ class Translation(object):
 	# Function that generates a mapping from monomer IDs to common names:
 	def generate_monomer_ID_to_common_name_dict(self, raw_data):
 		"""
-        Extracts the common name listed in rnas.tsv for each monomer ID.
+        Extracts the common name listed in rnas raw_data table for each monomer ID.
         Returns:
         	a dictionary mapping monomer IDs to common names.
         """
@@ -453,7 +453,7 @@ class Translation(object):
 		return common_name
 
 	# Function that will map proteins to their protease assignment if applicable:
-	def determine_protease_involvement(self, protein_ID, index):
+	def determine_protease_involvement(self, protein_ID, index, protease_dict):
 		"""
         Maps a protein to its protease assignment and estimated fractional
         contributions to degradation done by each protease.
@@ -465,12 +465,12 @@ class Translation(object):
         clpp_contribution, lon_contribution, hslv_contribution,
         and unexplained_contribution arrays in place within the protease_dict.
         """
-		if protein_ID in self.protease_dict.keys():
-			self.protease_assignment[index] = self.protease_dict[protein_ID]['protease_assignment']
-			self.clpp_contribution[index] = self.protease_dict[protein_ID]['ClpP_fraction']
-			self.lon_contribution[index] = self.protease_dict[protein_ID]['Lon_fraction']
-			self.hslv_contribution[index] = self.protease_dict[protein_ID]['HslV_fraction']
-			self.unexplained_contribution[index] = self.protease_dict[protein_ID][
+		if protein_ID in protease_dict.keys():
+			self.protease_assignment[index] = protease_dict[protein_ID]['protease_assignment']
+			self.clpp_contribution[index] = protease_dict[protein_ID]['ClpP_fraction']
+			self.lon_contribution[index] = protease_dict[protein_ID]['Lon_fraction']
+			self.hslv_contribution[index] = protease_dict[protein_ID]['HslV_fraction']
+			self.unexplained_contribution[index] = protease_dict[protein_ID][
 				'Unexplained_fraction']
 		else:
 			# If a protein does not have a degradation classification, fill in
