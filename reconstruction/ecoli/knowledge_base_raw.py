@@ -59,7 +59,7 @@ LIST_OF_DICT_FILENAMES = [
 	"ppgpp_regulation_added.tsv",
 	"ppgpp_regulation_removed.tsv",
 	"protease_assignments.tsv",
-	"protein_half_lives_Clim4_STD_ratio_threshold_2_keep_NaNs.tsv",
+	"protein_half_lives_Clim4a.tsv",
 	"protein_half_lives_measured.tsv",
 	"protein_half_lives_n_end_rule.tsv",
 	"protein_half_lives_pulsed_silac.tsv",
