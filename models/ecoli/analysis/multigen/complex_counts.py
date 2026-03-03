@@ -27,7 +27,7 @@ from wholecell.analysis.analysis_tools import (exportFigure,
 from wholecell.io.tablereader import TableReader
 import wholecell.utils.units as units
 
-PLOT_COMPLEXES = ['CPLX0-7796', "CPLX-125", "ARCB-CPLX", "PHOSPHO-NARL"] #
+PLOT_COMPLEXES = ['PC00027'] #
                   #"MONOMER0-160", "MONOMER0-155", ]
 
 
@@ -1089,10 +1089,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                                                  'RnaSynthProb',
                                                                  "nActualUnbound")[:,
                                             tf_idx]
-                ax1.plot(time, tf_counts, color='lightcoral', label=f'Bound transcription factor \n{complex} molecules', linewidth=0.75, alpha=0.75)
+                ax1.plot(time, tf_counts, color='lightcoral', label=f'transcription unit bound\n {complex} transcription factors', linewidth=0.75, alpha=0.75)
 
                 ax3.plot(time, (tf_counts * -1), color='lightcoral', label=f'Binding events of transcription factor \n{complex}', linewidth=0.75, alpha=0.75)
-                ax3.plot(time, tfs_unbound, color='indianred', label=f'Unbinding events of transcription factor \n{complex}', linewidth=0.75, alpha=0.75)
+                ax3.plot(time, tfs_unbound, color='indianred', label=f'Unbinding events of \n{complex} transcription factor', linewidth=0.75, alpha=0.75)
 
             # TODO: decide whether or not to delete this based off whether there are any complex subunits of ribosomes.
             if ribosome_existance != []:
