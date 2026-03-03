@@ -150,7 +150,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# down via the complexation, equilibrium, and two component system
 		# stoichiometric matrices easily after this.
 		n_ribosome_subunit = n_active_ribosome * self.ribosome_stoich
-		n_rnap_subunit = n_active_rnap * self.rnap_stoich
+		n_rnap_subunit = n_active_rnap * self.rnap_stoich # the inactive RNAPs (APORNAP-CPLX) are handled in the complexation complex count unpacking.
 		n_replisome_subunit = n_active_replisome * self.replisome_stoich
 		n_bound_TF_subunit = n_bound_TFs['bound_TF'].sum(axis=0)
 
