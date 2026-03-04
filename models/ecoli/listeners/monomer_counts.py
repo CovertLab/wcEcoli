@@ -164,16 +164,19 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# important that EQ counts are added before complexation is unpacked):
 		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
 			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
+		bulkMoleculeCounts[
+			self.two_component_system_modified_molecule_idx] += two_component_monomer_counts.astype(
+			int)
 		# TODO: or, could change SMM to to include all the downstream molecules
 		#  of the complexation complex subunits, however, this would require a manual modified_proteins.tsv file to be made for use in the parca.
 		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
 			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
+		bulkMoleculeCounts[self.equilibrium_molecule_idx] += equilibrium_monomer_counts.astype(int)
 		complex_monomer_counts = np.dot(self.complexation_stoich,
 			np.negative(bulkMoleculeCounts[self.complexation_complex_idx]))
-
 		bulkMoleculeCounts[self.complexation_molecule_idx] += complex_monomer_counts.astype(int)
-		bulkMoleculeCounts[self.equilibrium_molecule_idx] += equilibrium_monomer_counts.astype(int)
-		bulkMoleculeCounts[self.two_component_system_modified_molecule_idx] += two_component_monomer_counts.astype(int)
+
+
 
 		# Update the total and free monomer counts at the start of each time step:
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
