@@ -3,13 +3,11 @@ SimulationData for translation process
 """
 
 import numpy as np
-
 from wholecell.sim.simulation import MAX_TIME_STEP
 from wholecell.utils import data, units
 from wholecell.utils.unit_struct_array import UnitStructArray
 from wholecell.utils.polymerize import polymerize
 from wholecell.utils.random import make_elongation_rates
-
 
 PROCESS_MAX_TIME_STEP = 2.
 
@@ -110,7 +108,7 @@ class Translation(object):
 		# Get molecular weights
 		mws = sim_data.getter.get_masses(protein_ids).asNumber(units.g / units.mol)
 
-		# Calculate degradation rates based on N-rule (Tobias et al., 1991)
+		# Calculate degradation rates based on the N-rule (Tobias et al., 1991)
 		deg_rate_units = 1 / units.s
 		n_end_rule_deg_rates = {
 			row['aa_code']: (np.log(2)/(row['half life'])).asNumber(deg_rate_units)
@@ -131,11 +129,34 @@ class Translation(object):
 		# Get degradation rates from carbon-limited data (Gupta et al., 2024)
 		clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
-			for p in raw_data.protein_half_lives_Clim3a
+			for p in
+			raw_data.protein_half_lives_Clim4a
 		}
 
-		# Initialize degradation rates array:
+
+		# Extract the protease degradation classification type and
+		# protease degradation contributions to degradation for each protein
+		# estimated from Gupta et al. 2024 data (note: this data is not used
+		# functionally in the model):
+		protease_dict = {
+			p['id']: {'protease_assignment': p['protease_assignment'],
+					  'ClpP_fraction': p['ClpP'],
+					  'Lon_fraction': p['Lon'],
+					  'HslV_fraction': p['HslV'],
+					  'Unexplained_fraction': p['Unexplained']
+					  }
+			for p in raw_data.protease_assignments
+		}
+
+		# Initialize protein information arrays to be saved with monomer data:
 		deg_rate = np.zeros(len(all_proteins))
+		half_life_source_ID = np.full(len(all_proteins), None)
+		self.protease_assignment = np.full(len(all_proteins), None)
+		self.clpp_contribution = np.full(len(all_proteins), None)
+		self.lon_contribution = np.full(len(all_proteins), None)
+		self.hslv_contribution = np.full(len(all_proteins), None)
+		self.unexplained_contribution = np.full(len(all_proteins), None)
+
 
 		# Obtain the selected protein degradation rate combination from raw_data:
 		selected_PDR_combination = raw_data.protein_degradation_combo_option
@@ -147,69 +168,92 @@ class Translation(object):
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# the N-end rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				self.determine_protease_involvement(protein['id'], i, protease_dict)
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					half_life_source_ID[i] = 'CL_measured_deg_rates_2020'
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start with methionine
+					# All protein sequences should start w/ methionine:
+					assert seq[0] == 'M'
 					# Set N-end residue as second amino acid if initial methionine
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					half_life_source_ID[i] = 'N_end_rule'
 
 		if selected_PDR_combination == "PDR_combo_2022":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# pulsed silac rates from Nagar et al., 2021, and finally N-end rule
 			# from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				self.determine_protease_involvement(protein['id'], i, protease_dict)
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					half_life_source_ID[i] = 'CL_measured_deg_rates_2020'
 				elif protein['id'] in pulsed_silac_deg_rates:
 					deg_rate[i] = pulsed_silac_deg_rates[protein['id']]
+					half_life_source_ID[i] = 'Nagar_et_al_ML_2021'
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start
-					# with methionine
+					# All protein sequences should start w/ methionine:
+					assert seq[0] == 'M'
 					# Set N-end residue as second amino acid if initial methionine
 					# is cleaved
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					half_life_source_ID[i] = 'N_end_rule'
 
 		if selected_PDR_combination == "PDR_combo_2025":
 			# Uses measured rates from Macklin et al., 2020 first, followed by
 			# Carbon limited rates from Gupta et al., 2024, and finally N-end
 			# rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
+				self.determine_protease_involvement(protein['id'], i, protease_dict)
 				# Use measured degradation rates if available
 				if protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
+					half_life_source_ID[i] = 'CL_measured_deg_rates_2020'
 				elif protein['id'] in clim_deg_rates:
 					deg_rate[i] = clim_deg_rates[protein['id']]
+					half_life_source_ID[i] = 'Gupta_et_al_MS_2024'
 				# If measured rates are unavailable, use N-end rule
 				else:
 					seq = protein['seq']
-					assert seq[0] == 'M'  # All protein sequences should start
-					# with methionine
-					# Set N-end residue as second amino acid if initial methionine
-					# is cleaved
+					# All protein sequences should start w/ methionine:
+					assert seq[0] == 'M'
+					# Set N-end residue as 2nd amino acid if initial methionine
+					# is cleaved:
 					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
+					half_life_source_ID[i] = 'N_end_rule'
 
 
 		max_protein_id_length = max(
 			len(protein_id) for protein_id in protein_ids_with_compartments)
 		max_cistron_id_length = max(
 			len(cistron_id) for cistron_id in cistron_ids)
+		max_HL_source_ID_length = max(
+			len(source_ID) for source_ID in half_life_source_ID)
+		max_protease_ID_length = max(
+			len(protease_ID) for protease_ID in self.protease_assignment)
+
 		monomer_data = np.zeros(
 			n_proteins,
 			dtype = [
 				('id', 'U{}'.format(max_protein_id_length)),
 				('cistron_id', 'U{}'.format(max_cistron_id_length)),
 				('deg_rate', 'f8'),
+				('half_life_source', 'U{}'.format(max_HL_source_ID_length)),
+				('protease_assignment', 'U{}'.format(max_protease_ID_length)),
+				('ClpP_contribution_fraction', 'f8'),
+				('Lon_contribution_fraction', 'f8'),
+				('HslV_contribution_fraction', 'f8'),
+				('Unexplained_contribution_fraction', 'f8'),
 				('length', 'i8'),
 				('aa_counts', '{}i8'.format(n_amino_acids)),
 				('mw', 'f8'),
@@ -219,6 +263,12 @@ class Translation(object):
 		monomer_data['id'] = protein_ids_with_compartments
 		monomer_data['cistron_id'] = cistron_ids
 		monomer_data['deg_rate'] = deg_rate
+		monomer_data['half_life_source'] = half_life_source_ID
+		monomer_data['protease_assignment'] = self.protease_assignment
+		monomer_data['ClpP_contribution_fraction'] = self.clpp_contribution
+		monomer_data['Lon_contribution_fraction'] = self.lon_contribution
+		monomer_data['HslV_contribution_fraction'] = self.hslv_contribution
+		monomer_data['Unexplained_contribution_fraction'] = self.unexplained_contribution
 		monomer_data['length'] = lengths
 		monomer_data['aa_counts'] = aa_counts
 		monomer_data['mw'] = mws
@@ -227,6 +277,12 @@ class Translation(object):
 			'id': None,
 			'cistron_id': None,
 			'deg_rate': deg_rate_units,
+			'half_life_source': None,
+			'protease_assignment': None,
+			'ClpP_contribution_fraction': None,
+			'Lon_contribution_fraction': None,
+			'HslV_contribution_fraction': None,
+			'Unexplained_contribution_fraction': None,
 			'length': units.aa,
 			'aa_counts': units.aa,
 			'mw': units.g / units.mol,
@@ -335,6 +391,39 @@ class Translation(object):
 			dtype=np.int64)
 
 		self.elongation_rates[self.ribosomal_protein_indexes] = self.max_elongation_rate
+
+
+
+	# Function that will map proteins to their protease assignment if applicable:
+	def determine_protease_involvement(self, protein_ID, index, protease_dict):
+		"""
+        Maps a protein to its protease assignment and estimated fractional
+        contributions to degradation done by each protease.
+        Args:
+            protein_ID: ID of the protein to be mapped
+            index: index of the protein being evaluated in the all_proteins list
+            protease_dict: dictionary containing protease assignment and
+            contribution data for each protein
+
+        Returns: An update to the protease_assignment,
+        clpp_contribution, lon_contribution, hslv_contribution,
+        and unexplained_contribution arrays in place within the protease_dict.
+        """
+		if protein_ID in protease_dict.keys():
+			self.protease_assignment[index] = protease_dict[protein_ID]['protease_assignment']
+			self.clpp_contribution[index] = protease_dict[protein_ID]['ClpP_fraction']
+			self.lon_contribution[index] = protease_dict[protein_ID]['Lon_fraction']
+			self.hslv_contribution[index] = protease_dict[protein_ID]['HslV_fraction']
+			self.unexplained_contribution[index] = protease_dict[protein_ID][
+				'Unexplained_fraction']
+		else:
+			# If a protein does not have a degradation classification, fill in
+			#  NA for the assignment and 0 for the contributions:
+			self.protease_assignment[index] = "not applicable"
+			self.clpp_contribution[index] = 0
+			self.lon_contribution[index] = 0
+			self.hslv_contribution[index] = 0
+			self.unexplained_contribution[index] = 0
 
 	def make_elongation_rates(
 			self,
