@@ -224,6 +224,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 
 
+		# save the whole table
+		output_filepath = os.path.join(plotOutDir, 'all_essential_' + plotOutFileName)
+		with open(output_filepath, 'w', newline='') as f:
+			writer = csv.writer(f)
+			writer.writerow(['reaction_id', 'catalyst_id', 'kcat_mean', 'kcat_std'])
+			for reaction_id, catalyst_id, kcat_mean, kcat_std in zip(below_line_essential_reaction_ids, below_line_essential_associated_catalyst_ids, below_line_essential_kcat_est_avg, below_line_essential_kcat_est_std):
+				writer.writerow([reaction_id, catalyst_id, kcat_mean, kcat_std])
 
 
 
