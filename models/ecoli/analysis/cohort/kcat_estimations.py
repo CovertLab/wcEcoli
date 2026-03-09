@@ -162,8 +162,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Calculate kcat estimates for below line essential reactions by dividing the fluxes by the associated catalyst concentrations
 		below_line_essential_fluxes = fluxes[:, below_line_essential_reaction_indexes]
+		below_line_essential_fluxes[np.isinf(below_line_essential_fluxes)] = np.nan
 		below_line_essential_catalyst_concentrations = catalyst_concentrations[:, below_line_essential_catalyst_indexes]
 		below_line_essential_kcat_estimates = below_line_essential_fluxes / below_line_essential_catalyst_concentrations
+		below_line_essential_kcat_estimates[np.isinf(below_line_essential_kcat_estimates)] = np.nan
 
 		# Save reaction id, catalyst id, average flux, averacge catalyst concentration, and average kcat estimate for below line essential reactions to a CSV
 		output_file_avg = os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_averages.csv')
@@ -173,9 +175,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			for i in range(len(below_line_essential_reaction_indexes)):
 				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
 				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
-				avg_flux = np.mean(below_line_essential_fluxes[:, i])
-				avg_catalyst_conc = np.mean(below_line_essential_catalyst_concentrations[:, i])
-				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				avg_flux = np.nanmean(below_line_essential_fluxes[:, i])
+				avg_catalyst_conc = np.nanmean(below_line_essential_catalyst_concentrations[:, i])
+				avg_kcat_estimate = np.nanmean(below_line_essential_kcat_estimates[:, i])
 				writer.writerow([reaction_id, catalyst_id, avg_flux, avg_catalyst_conc, avg_kcat_estimate])
 
 		# Save reaction id, catalyst id, median kcat estimate, and each 5% quantile kcat estimate for below line essential reactions to a CSV
@@ -199,26 +201,26 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			writer = csv.writer(csvfile)
 			writer.writerow(['Reaction ID', 'Catalyst ID', 'Average kcat Estimate (1/h)'])
 			# Get indexes of top k highest average kcat estimates
-			top_k_indexes = np.argsort(np.mean(below_line_essential_kcat_estimates, axis=0))[-k:]
+			top_k_indexes = np.argsort(np.nanmean(below_line_essential_kcat_estimates, axis=0))[-k:]
 			for i in top_k_indexes:
 				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
 				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
-				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				avg_kcat_estimate = np.nanmean(below_line_essential_kcat_estimates[:, i])
 				writer.writerow([reaction_id, catalyst_id, avg_kcat_estimate])
 			# Get indexes of top k closest to the median kcat estimates
 			median_kcat_estimates = np.median(below_line_essential_kcat_estimates, axis=0)
-			closest_to_median_k_indexes = np.argsort(np.abs(np.mean(below_line_essential_kcat_estimates, axis=0) - median_kcat_estimates))[:k]
+			closest_to_median_k_indexes = np.argsort(np.abs(np.nanmean(below_line_essential_kcat_estimates, axis=0) - median_kcat_estimates))[:k]
 			for i in closest_to_median_k_indexes:
 				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
 				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
-				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				avg_kcat_estimate = np.nanmean(below_line_essential_kcat_estimates[:, i])
 				writer.writerow([reaction_id, catalyst_id, avg_kcat_estimate])
 			# Get indexes of top k lowest average kcat estimates
-			lowest_k_indexes = np.argsort(np.mean(below_line_essential_kcat_estimates, axis=0))[:k]
+			lowest_k_indexes = np.argsort(np.nanmean(below_line_essential_kcat_estimates, axis=0))[:k]
 			for i in lowest_k_indexes:
 				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
 				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
-				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				avg_kcat_estimate = np.nanmean(below_line_essential_kcat_estimates[:, i])
 				writer.writerow([reaction_id, catalyst_id, avg_kcat_estimate])
 
 		# Output a csv of the essential reaction ids where they have multiple catalysts, and how many of those catalysts are in the essential catalyst ids list
