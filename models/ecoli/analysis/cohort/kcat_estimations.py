@@ -1,5 +1,11 @@
 """
-TODO: write this
+Analysis script to estimate kcat values for below-line essential metabolic reactions.
+
+This script:
+1. Identifies catalysts (enzymes) associated with below-line proteome genes
+2. Maps these catalysts to their corresponding metabolic reactions
+3. Calculates kcat estimates by dividing reaction fluxes by catalyst concentrations
+4. Outputs statistics on kcat estimates for essential reactions
 """
 
 import csv
@@ -20,8 +26,6 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 IGNORE_FIRST_N_GENS = 4
-
-# TODO: put my list(s) in here
 
 # TODO: better way to handle this vs hardcoding reading in CSVs
 below_line_directory = "reconstruction/ecoli/scripts/new_gene_below_line_proteome_ids/"
@@ -79,60 +83,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		# Read columns
 		# remove_first=True because countsToMolar is 0 at first time step
+		cell_density = sim_data.constants.cell_density
 		counts_to_molar = read_stacked_columns(
 			cell_paths, 'EnzymeKinetics', 'countsToMolar',
 			remove_first=True, ignore_exception=True)
-
-		# Load attributes for metabolic fluxes
-		cell_density = sim_data.constants.cell_density
-		listener_fba_reaction_ids = TableReader(
-			os.path.join(cell_paths[0], 'simOut', 'FBAResults')).readAttribute('reactionIDs')
-		listener_catalyst_ids = TableReader(
-			os.path.join(cell_paths[0], 'simOut', 'FBAResults')).readAttribute('catalyst_ids')
-
-		# Determine the catalysts associated with the below line monomers and complexes
-		below_line_catalyst_ids = list(set(below_line_ids) & set(listener_catalyst_ids))
-		below_line_essential_catalyst_ids = list(set(below_line_essential_ids) & set(listener_catalyst_ids))
-
-		# Map catalyst IDs to reaction IDs
-		# TODO: think about how to handle reactions with multiple catalysts
-		reaction_id_to_catalyst_ids_dict = sim_data.process.metabolism.reaction_catalysts
-		catalyst_id_to_reaction_ids_dict = {}
-		for reaction_id, catalyst_ids in reaction_id_to_catalyst_ids_dict.items():
-			for catalyst_id in catalyst_ids:
-				if catalyst_id not in catalyst_id_to_reaction_ids_dict:
-					catalyst_id_to_reaction_ids_dict[catalyst_id] = []
-				catalyst_id_to_reaction_ids_dict[catalyst_id].append(reaction_id)
-		below_line_reaction_ids = [reaction_id for catalyst_id in below_line_catalyst_ids for reaction_id in catalyst_id_to_reaction_ids_dict[catalyst_id]]
-		below_line_associated_catalyst_ids = [catalyst_id for reaction_id in below_line_reaction_ids for catalyst_id in reaction_id_to_catalyst_ids_dict[reaction_id]]
-		below_line_essential_reaction_ids = [reaction_id for catalyst_id in below_line_essential_catalyst_ids for reaction_id in catalyst_id_to_reaction_ids_dict[catalyst_id]]
-		below_line_essential_associated_catalyst_ids = [catalyst_id for reaction_id in below_line_essential_reaction_ids for catalyst_id in reaction_id_to_catalyst_ids_dict[reaction_id]]
-
-		below_line_pairs = zip(below_line_reaction_ids, below_line_associated_catalyst_ids)
-		pair_counts = {}
-		for pair in below_line_pairs:
-			if pair not in pair_counts:
-				pair_counts[pair] = 0
-			pair_counts[pair] += 1
-		unique_below_line_pairs = [pair for pair, count in pair_counts.items() if count == 1]
-		below_line_reaction_ids, below_line_associated_catalyst_ids = zip(*unique_below_line_pairs) # Note the same reaction id can still appear multiple times if it is associated with multiple catalysts
-		below_line_reaction_idx = np.array([np.where(np.array(listener_fba_reaction_ids) == reaction_id)[0][0] for reaction_id in below_line_reaction_ids])
-		below_line_associated_catalyst_idx = np.array([np.where(np.array(listener_catalyst_ids) == catalyst_id)[0][0] for catalyst_id in below_line_associated_catalyst_ids])
-
-		below_line_essential_pairs = zip(below_line_essential_reaction_ids, below_line_essential_associated_catalyst_ids)
-		essential_pair_counts = {}
-		for pair in below_line_essential_pairs:
-			if pair not in essential_pair_counts:
-				essential_pair_counts[pair] = 0
-			essential_pair_counts[pair] += 1
-		unique_below_line_essential_pairs = [pair for pair, count in essential_pair_counts.items() if count == 1]
-		below_line_essential_reaction_ids, below_line_essential_associated_catalyst_ids = zip(*unique_below_line_essential_pairs)
-		below_line_essential_reaction_idx = np.array([np.where(np.array(listener_fba_reaction_ids) == reaction_id)[0][0] for reaction_id in below_line_essential_reaction_ids])
-		below_line_essential_associated_catalyst_idx = np.array([np.where(np.array(listener_catalyst_ids) == catalyst_id)[0][0] for catalyst_id in below_line_essential_associated_catalyst_ids])
-
-		# Read columns
 		catalyst_counts = read_stacked_columns(
 			cell_paths, 'FBAResults', 'catalyst_counts', ignore_exception=True, remove_first = True)
+		catalyst_concentrations = catalyst_counts * counts_to_molar
 		cell_mass = read_stacked_columns(
 			cell_paths, 'Mass', 'cellMass', ignore_exception=True, remove_first = True)
 		dry_mass = read_stacked_columns(
@@ -148,99 +105,160 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			* (read_stacked_columns(cell_paths, 'FBAResults', 'reactionFluxes', ignore_exception=True, remove_first = True) / conversion_coeffs)
 			).asNumber(units.mmol / units.g / units.h)
 
-		below_line_reaction_fluxes = fluxes[:, below_line_reaction_idx]
-		below_line_essential_reaction_fluxes = fluxes[:, below_line_essential_reaction_idx]
-		below_line_associated_catalyst_counts = catalyst_counts[:, below_line_associated_catalyst_idx]
-		below_line_essential_associated_catalyst_counts = catalyst_counts[:, below_line_essential_associated_catalyst_idx]
-		below_line_associated_catalyst_conc = below_line_associated_catalyst_counts * counts_to_molar
-		below_line_essential_associated_catalyst_conc = below_line_essential_associated_catalyst_counts * counts_to_molar
+		# Load attributes for metabolic fluxes
+		listener_fba_reaction_ids = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'FBAResults')).readAttribute('reactionIDs')
+		listener_catalyst_ids = TableReader(
+			os.path.join(cell_paths[0], 'simOut', 'FBAResults')).readAttribute('catalyst_ids')
 
-		below_line_reaction_fluxes[np.isinf(below_line_reaction_fluxes)] = np.nan
-		below_line_essential_reaction_fluxes[np.isinf(below_line_essential_reaction_fluxes)] = np.nan
-		below_line_reaction_flux_avg = np.nanmean(below_line_reaction_fluxes, axis=0)
-		below_line_essential_reaction_flux_avg = np.nanmean(below_line_essential_reaction_fluxes, axis=0)
-		below_line_associated_catalyst_conc_avg = np.nanmean(below_line_associated_catalyst_conc, axis=0)
-		below_line_essential_associated_catalyst_conc_avg = np.nanmean(below_line_essential_associated_catalyst_conc, axis=0)
+		# Determine the catalysts associated with the below line monomers and complexes
+		below_line_catalyst_ids = list(set(below_line_ids) & set(listener_catalyst_ids))
+		below_line_essential_catalyst_ids_unique = list(set(below_line_essential_ids) & set(listener_catalyst_ids))
 
-		below_line_kcat_est = below_line_reaction_fluxes / below_line_associated_catalyst_conc
-		below_line_essential_kcat_est = below_line_essential_reaction_fluxes / below_line_essential_associated_catalyst_conc
+		# Map catalyst IDs to reaction IDs
+		# Note some reactions will have multiple catalysts
+		reaction_id_to_catalyst_ids_dict = sim_data.process.metabolism.reaction_catalysts
+		catalyst_id_to_reaction_ids_dict = {}
+		for reaction_id, catalyst_ids in reaction_id_to_catalyst_ids_dict.items():
+			for catalyst_id in catalyst_ids:
+				if catalyst_id not in catalyst_id_to_reaction_ids_dict:
+					catalyst_id_to_reaction_ids_dict[catalyst_id] = []
+				catalyst_id_to_reaction_ids_dict[catalyst_id].append(reaction_id)
 
-		below_line_kcat_est[np.isinf(below_line_kcat_est)] = np.nan
-		below_line_essential_kcat_est[np.isinf(below_line_essential_kcat_est)] = np.nan
-		below_line_kcat_est_avg = np.nanmean(below_line_kcat_est, axis=0)
-		below_line_essential_kcat_est_avg = np.nanmean(below_line_essential_kcat_est, axis=0)
-		below_line_kcat_est_std = np.nanstd(below_line_kcat_est, axis=0)
-		below_line_essential_kcat_est_std = np.nanstd(below_line_essential_kcat_est, axis=0)
+		# TODO: decide how to handle cases where a catalyst is associated with multiple reactions
+		# maybe compute kcat estimates for all associated reactions and take the max? but save them all for now
 
-		below_line_kcat_est_avg_avg = np.nanmean(below_line_kcat_est_avg)
-		below_line_kcat_est_avg_std = np.nanstd(below_line_kcat_est_avg)
-		below_line_essential_kcat_est_avg_avg = np.nanmean(below_line_essential_kcat_est_avg)
-		below_line_essential_kcat_est_avg_std = np.nanstd(below_line_essential_kcat_est_avg)
+		# Get reaction IDs associated with below line essential catalysts
+		below_line_essential_catalyst_ids = [] # Will contain repeats if the catalyst is associated with multiple reactions, which is fine because we will compute kcat estimates for each reaction-catalyst pair
+		below_line_essential_reaction_ids = []
+		for catalyst_id in below_line_essential_catalyst_ids_unique:
+			if catalyst_id in catalyst_id_to_reaction_ids_dict:
+				below_line_essential_reaction_ids.extend(
+					catalyst_id_to_reaction_ids_dict[catalyst_id])
+				below_line_essential_catalyst_ids.extend(
+					[catalyst_id] * len(catalyst_id_to_reaction_ids_dict[catalyst_id]))
+			else:
+				print(f"Warning: Below line essential catalyst ID {catalyst_id} not found in reaction_catalysts mapping.")
 
-		# Pick 3 large ones
-		vals = below_line_essential_kcat_est_avg
-		finite_idx = np.flatnonzero(np.isfinite(vals))
-		k = 3
-		top_local = np.argpartition(vals[finite_idx], -k)[-k:]
-		top_5_essential_idx = finite_idx[top_local]
-		top_5_essential_reaction_ids = [below_line_essential_reaction_ids[idx] for idx in top_5_essential_idx]
-		top_5_essential_catalyst_ids = [below_line_essential_associated_catalyst_ids[idx] for idx in top_5_essential_idx]
-		top_5_kcat_means = below_line_essential_kcat_est_avg[top_5_essential_idx]
-		top_5_kcat_stds = below_line_essential_kcat_est_std[top_5_essential_idx]
+		# Determine the indexes for below line essential reactions in the flux array
+		below_line_essential_reaction_indexes = []
+		reaction_id_to_idx_dict = {rxn_id: idx for idx, rxn_id in enumerate(listener_fba_reaction_ids)}
+		for reaction_id in below_line_essential_reaction_ids:
+			if reaction_id in reaction_id_to_idx_dict:
+				below_line_essential_reaction_indexes.append(reaction_id_to_idx_dict[reaction_id])
+			else:
+				print(f"Warning: Reaction ID {reaction_id} associated with below line essential catalysts not found in listener FBA reaction IDs.")
+		below_line_essential_reaction_indexes = np.array(below_line_essential_reaction_indexes)
 
-		# Pick 3 small ones
-		vals = below_line_essential_kcat_est_avg
-		finite_idx = np.flatnonzero(np.isfinite(vals))
-		k = 3
-		bottom_local = np.argpartition(vals[finite_idx], k)[:k]
-		bottom_5_essential_idx = finite_idx[bottom_local]
-		bottom_5_essential_reaction_ids = [below_line_essential_reaction_ids[idx] for idx in bottom_5_essential_idx]
-		bottom_5_essential_catalyst_ids = [below_line_essential_associated_catalyst_ids[idx] for idx in bottom_5_essential_idx]
-		bottom_5_kcat_means = below_line_essential_kcat_est_avg[bottom_5_essential_idx]
-		bottom_5_kcat_stds = below_line_essential_kcat_est_std[bottom_5_essential_idx]
+		# Determine the indexes for below line essential catalysts in the catalyst concentration array
+		below_line_essential_catalyst_indexes = []
+		catalyst_id_to_idx_dict = {catalyst_id: idx for idx, catalyst_id in enumerate(listener_catalyst_ids)}
+		for catalyst_id in below_line_essential_catalyst_ids:
+			if catalyst_id in catalyst_id_to_idx_dict:
+				below_line_essential_catalyst_indexes.append(catalyst_id_to_idx_dict[catalyst_id])
+			else:
+				print(f"Warning: Catalyst ID {catalyst_id} associated with below line essential reactions not found in listener catalyst IDs.")
+		below_line_essential_catalyst_indexes = np.array(below_line_essential_catalyst_indexes)
 
-		# pick 3 in the median
-		vals = below_line_essential_kcat_est_avg
-		finite_idx = np.flatnonzero(np.isfinite(vals))
-		k = 3
-		median_local = np.argpartition(np.abs(vals[finite_idx] - np.nanmedian(vals)), k)[:k]
-		median_5_essential_idx = finite_idx[median_local]
-		median_5_essential_reaction_ids = [below_line_essential_reaction_ids[idx] for idx in median_5_essential_idx]
-		median_5_essential_catalyst_ids = [below_line_essential_associated_catalyst_ids[idx] for idx in median_5_essential_idx]
-		median_5_kcat_means = below_line_essential_kcat_est_avg[median_5_essential_idx]
-		median_5_kcat_stds = below_line_essential_kcat_est_std[median_5_essential_idx]
+		# Calculate kcat estimates for below line essential reactions by dividing the fluxes by the associated catalyst concentrations
+		below_line_essential_fluxes = fluxes[:, below_line_essential_reaction_indexes]
+		below_line_essential_catalyst_concentrations = catalyst_concentrations[:, below_line_essential_catalyst_indexes]
+		below_line_essential_kcat_estimates = below_line_essential_fluxes / below_line_essential_catalyst_concentrations
 
-		# save to csv
-		output_filepath = os.path.join(plotOutDir, plotOutFileName)
-		with open(output_filepath, 'w', newline='') as f:
-			writer = csv.writer(f)
-			writer.writerow(['reaction_id', 'catalyst_id', 'kcat_mean', 'kcat_std'])
-			for reaction_id, catalyst_id, kcat_mean, kcat_std in zip(top_5_essential_reaction_ids, top_5_essential_catalyst_ids, top_5_kcat_means, top_5_kcat_stds):
-				writer.writerow([reaction_id, catalyst_id, kcat_mean, kcat_std])
-			for reaction_id, catalyst_id, kcat_mean, kcat_std in zip(bottom_5_essential_reaction_ids, bottom_5_essential_catalyst_ids, bottom_5_kcat_means, bottom_5_kcat_stds):
-				writer.writerow([reaction_id, catalyst_id, kcat_mean, kcat_std])
-			for reaction_id, catalyst_id, kcat_mean, kcat_std in zip(median_5_essential_reaction_ids, median_5_essential_catalyst_ids, median_5_kcat_means, median_5_kcat_stds):
-				writer.writerow([reaction_id, catalyst_id, kcat_mean, kcat_std])
+		# Save reaction id, catalyst id, average flux, averacge catalyst concentration, and average kcat estimate for below line essential reactions to a CSV
+		output_file_avg = os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_averages.csv')
+		with open(output_file_avg, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Reaction ID', 'Catalyst ID', 'Average Flux (mmol/g DCW/h)', 'Average Catalyst Concentration (mM)', 'Average kcat Estimate (1/h)'])
+			for i in range(len(below_line_essential_reaction_indexes)):
+				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
+				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
+				avg_flux = np.mean(below_line_essential_fluxes[:, i])
+				avg_catalyst_conc = np.mean(below_line_essential_catalyst_concentrations[:, i])
+				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				writer.writerow([reaction_id, catalyst_id, avg_flux, avg_catalyst_conc, avg_kcat_estimate])
 
+		# Save reaction id, catalyst id, median kcat estimate, and each 5% quantile kcat estimate for below line essential reactions to a CSV
+		output_file_quantiles = os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_quantiles.csv')
+		with open(output_file_quantiles, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Reaction ID', 'Catalyst ID', 'Median kcat Estimate (1/h)', '5% Quantile kcat Estimate (1/h)', '95% Quantile kcat Estimate (1/h)'])
+			for i in range(len(below_line_essential_reaction_indexes)):
+				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
+				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
+				median_kcat_estimate = np.median(below_line_essential_kcat_estimates[:, i])
+				quantile_5_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.05)
+				quantile_95_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.95)
+				writer.writerow([reaction_id, catalyst_id, median_kcat_estimate, quantile_5_kcat_estimate, quantile_95_kcat_estimate])
 
+		# Give a csv of the averages for k of the top kcat estimates, lowest kcat estimates, and closest to the median kcat estimates among the below line essential reactions
+		# These are candidates for checking multigen plots
+		k = 10
+		output_file_top_k = os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_top_k.csv')
+		with open(output_file_top_k, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Reaction ID', 'Catalyst ID', 'Average kcat Estimate (1/h)'])
+			# Get indexes of top k highest average kcat estimates
+			top_k_indexes = np.argsort(np.mean(below_line_essential_kcat_estimates, axis=0))[-k:]
+			for i in top_k_indexes:
+				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
+				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
+				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				writer.writerow([reaction_id, catalyst_id, avg_kcat_estimate])
+			# Get indexes of top k closest to the median kcat estimates
+			median_kcat_estimates = np.median(below_line_essential_kcat_estimates, axis=0)
+			closest_to_median_k_indexes = np.argsort(np.abs(np.mean(below_line_essential_kcat_estimates, axis=0) - median_kcat_estimates))[:k]
+			for i in closest_to_median_k_indexes:
+				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
+				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
+				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				writer.writerow([reaction_id, catalyst_id, avg_kcat_estimate])
+			# Get indexes of top k lowest average kcat estimates
+			lowest_k_indexes = np.argsort(np.mean(below_line_essential_kcat_estimates, axis=0))[:k]
+			for i in lowest_k_indexes:
+				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
+				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
+				avg_kcat_estimate = np.mean(below_line_essential_kcat_estimates[:, i])
+				writer.writerow([reaction_id, catalyst_id, avg_kcat_estimate])
 
-		# save the whole table
-		output_filepath = os.path.join(plotOutDir, 'all_essential_' + plotOutFileName)
-		with open(output_filepath, 'w', newline='') as f:
-			writer = csv.writer(f)
-			writer.writerow(['reaction_id', 'catalyst_id', 'kcat_mean', 'kcat_std'])
-			for reaction_id, catalyst_id, kcat_mean, kcat_std in zip(below_line_essential_reaction_ids, below_line_essential_associated_catalyst_ids, below_line_essential_kcat_est_avg, below_line_essential_kcat_est_std):
-				writer.writerow([reaction_id, catalyst_id, kcat_mean, kcat_std])
+		# Output a csv of the essential reaction ids where they have multiple catalysts, and how many of those catalysts are in the essential catalyst ids list
+		unique_below_line_essential_reaction_ids = set(below_line_essential_reaction_ids)
+		num_catalysts = []
+		num_below_line_essential_catalysts = []
+		reactions_to_filter_out = [] # reactions with multiple catalysts where not all of the catalysts are in the below line essential catalyst list, need to think about how to handle these
+		for reaction_id in unique_below_line_essential_reaction_ids:
+			reaction_catalyst_ids = reaction_id_to_catalyst_ids_dict.get(reaction_id, [])
+			reaction_num_catalysts = len(reaction_catalyst_ids)
+			num_catalysts.append(reaction_num_catalysts)
+			reaction_num_below_line_essential_catalysts = sum([1 for this_catalyst_id in reaction_catalyst_ids if this_catalyst_id in below_line_essential_catalyst_ids_unique])
+			num_below_line_essential_catalysts.append(reaction_num_below_line_essential_catalysts)
+			if len(reaction_catalyst_ids) > 1 and reaction_num_below_line_essential_catalysts < reaction_num_catalysts:
+				reactions_to_filter_out.append(reaction_id)
+		print("Number of below line essential reactions with multiple catalysts where not all catalysts are in the below line essential catalyst list (need to filter these out for some analyses):", len(reactions_to_filter_out))
+		output_file_multiple_catalysts = os.path.join(plotOutDir, 'below_line_essential_reactions_multiple_catalysts.csv')
+		with open(output_file_multiple_catalysts, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Reaction ID', 'Number of Catalysts', 'Number of Below Line Essential Catalysts'])
+			for i, reaction_id in enumerate(unique_below_line_essential_reaction_ids):
+				writer.writerow([reaction_id, num_catalysts[i], num_below_line_essential_catalysts[i]])
 
-
-
-
-
-		import ipdb
-		ipdb.set_trace()
-
-
-
+		# Save reaction id, catalyst id, median kcat estimate, and each 5% quantile kcat estimate for below line essential reactions to a CSV but filter out the reactions with multiple catalysts where not all of the catalysts are in the below line essential catalyst list
+		output_file_quantiles_filtered = os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_quantiles_filtered.csv')
+		with open(output_file_quantiles_filtered, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Reaction ID', 'Catalyst ID', 'Median kcat Estimate (1/h)', '5% Quantile kcat Estimate (1/h)', '95% Quantile kcat Estimate (1/h)', '10% Quantile kcat Estimate (1/h)', '90% Quantile kcat Estimate (1/h)', '99% Quantile kcat Estimate (1/h)'])
+			for i in range(len(below_line_essential_reaction_indexes)):
+				reaction_id = listener_fba_reaction_ids[below_line_essential_reaction_indexes[i]]
+				if reaction_id in reactions_to_filter_out:
+					continue
+				catalyst_id = listener_catalyst_ids[below_line_essential_catalyst_indexes[i]]
+				median_kcat_estimate = np.median(below_line_essential_kcat_estimates[:, i])
+				quantile_5_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.05)
+				quantile_95_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.95)
+				quantile_10_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.10)
+				quantile_90_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.90)
+				quantile_99_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.99)
+				writer.writerow([reaction_id, catalyst_id, median_kcat_estimate, quantile_5_kcat_estimate, quantile_95_kcat_estimate, quantile_10_kcat_estimate, quantile_90_kcat_estimate, quantile_99_kcat_estimate])
 
 
 if __name__ == '__main__':

@@ -1,7 +1,12 @@
 """
-
+Plot estimated kcat values for below-the-line reactions over time, where kcat is
+estimated as flux / catalyst concentration. This is a rough estimation that assumes
+all of the catalyst is active and that the reaction is substrate-saturated, but
+it can provide some insight into how kcat values may be changing over the course
+of the simulation. The plot will show the estimated kcat values for each reaction
+of interest over time, along with the average and standard deviation of the estimated
+kcat values across all time points.
 """
-# TODO: update file header comment
 
 import pickle
 import os
@@ -25,15 +30,17 @@ LINE_COLOR = (66/255, 170/255, 154/255)
 IGNORE_FIRST_N_GENS = 4
 
 reaction_catalyst_id_tuples = [
-	("PREPHENATEDEHYDROG-RXN","EG10484-MONOMER[c]"),
-	("MALONYL-COA-ACP-TRANSACYL-RXN","CPLX0-8092[c]"),
-	("GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33. (reverse)","G7622-MONOMER[c]"),
-	("RXN-17009","RIBF-MONOMER[c]"),
-	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","CPLX0-7717[m]"),
-	("RXN-9558 (reverse)","CPLX0-8301[c]"),
+	("PREPHENATEDEHYDROG-RXN","CHORISMUTPREPHENDEHYDROG-CPLX[c]"),
+	("MALONYL-COA-ACP-TRANSACYL-RXN","MALONYL-COA-ACP-TRANSACYL-MONOMER[c]"),
+	("GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33. (reverse)","GLYOHMETRANS-CPLX[c]"),
+	("RXN-17009","1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER[i]"),
+	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","CPLX0-7810[c]"),
+	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","G7266-MONOMER[c]"),
+	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","PROTOHEME-FERROCHELAT-MONOMER[c]"),
+	("RXN-9558 (reverse)","CPLX0-8006[c]"),
 	("PSERTRANSAMPYR-RXN","PSERTRANSAM-CPLX[c]"),
-	("RXN-22914","FABB-CPLX[c]"),
-	("UDPNACETYLGLUCOSAMENOLPYRTRANS-RXN","FABA-CPLX[c]"),
+	("RXN-22914","CPLX0-341[c]"),
+	("UDPNACETYLGLUCOSAMENOLPYRTRANS-RXN","UDPNACETYLGLUCOSAMENOLPYRTRANS-MONOMER[c]"),
 ]
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -106,13 +113,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			plt.ylabel('Flux (mmol/g DCW/h)')
 
 			plt.subplot(3, 1, 2)
-			plt.plot(below_line_associated_catalyst_counts[:, i], color=LINE_COLOR)
+			plt.plot(below_line_associated_catalyst_conc[:, i], color=LINE_COLOR)
 			plt.title(f'Concentration of {catalyst_id} over time')
 			plt.ylabel('Concentration (mM)')
 
 			plt.subplot(3, 1, 3)
 			plt.plot(below_line_kcat_est[:, i], color=LINE_COLOR)
-			plt.title(f'Estimated kcat over time')
+			avg_kcat_est = np.mean(below_line_kcat_est[:, i])
+			std_kcat_est = np.std(below_line_kcat_est[:, i])
+			plt.title(f'Estimated kcat over time (average: {avg_kcat_est:.2f}, std: {std_kcat_est:.2f})')
+			plt.axhline(avg_kcat_est, color='red', linestyle='--', label='Average kcat est')
+			plt.legend()
 			plt.ylabel('Estimated kcat')
 			plt.xlabel('Time step')
 
@@ -125,8 +136,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			exportFigure(plt, kcat_estimation_timeseries_dir, plot_file_name, metadata)
 
-		import ipdb
-		ipdb.set_trace()
 
 if __name__ == '__main__':
 	Plot().cli()
