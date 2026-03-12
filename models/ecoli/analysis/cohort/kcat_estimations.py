@@ -262,6 +262,45 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				quantile_99_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.99)
 				writer.writerow([reaction_id, catalyst_id, median_kcat_estimate, quantile_5_kcat_estimate, quantile_95_kcat_estimate, quantile_10_kcat_estimate, quantile_90_kcat_estimate, quantile_99_kcat_estimate])
 
+		# Plot the distribution of the the filtered 99 percent quantiles
+		import matplotlib.pyplot as plt
+		filtered_99_quantiles = []
+		filtered_medians = []
+		filtered_95_quantiles = []
+		for i in range(len(below_line_essential_reaction_indexes)):
+			reaction_id = below_line_essential_reaction_indexes[i]
+			if reaction_id in reactions_to_filter_out:
+				continue
+			median_kcat_estimate = np.median(below_line_essential_kcat_estimates[:, i])
+			filtered_medians.append(median_kcat_estimate)
+			quantile_95_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.95)
+			filtered_99_quantiles.append(quantile_95_kcat_estimate)
+			quantile_99_kcat_estimate = np.quantile(below_line_essential_kcat_estimates[:, i], 0.99)
+			filtered_99_quantiles.append(quantile_99_kcat_estimate)
+		filtered_99_quantiles = np.array(filtered_99_quantiles)
+		filtered_medians = np.array(filtered_medians)
+		filtered_95_quantiles = np.array(filtered_95_quantiles)
+		plt.figure(figsize=(10, 6))
+		plt.hist(np.log10(filtered_99_quantiles + 1), bins=100, color='blue', edgecolor='black')
+		plt.title('Distribution of 99% Quantile kcat Estimates for Below Line Essential Reactions (Filtered)')
+		plt.xlabel('log10(99% Quantile kcat Estimate (1/h) + 1)')
+		plt.ylabel('Frequency')
+		plt.grid(axis='y', alpha=0.75)
+		plt.tight_layout()
+		plt.savefig(os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_99_quantiles_histogram_filtered.png'))
+		plt.close()
+
+		# Plot medians
+		plt.figure(figsize=(10, 6))
+		plt.hist(np.log10(filtered_medians + 1), bins=100, color='blue', edgecolor='black')
+		plt.title('Distribution of Median kcat Estimates for Below Line Essential Reactions (Filtered)')
+		plt.xlabel('log10(Median kcat Estimate (1/h) + 1)')
+		plt.ylabel('Frequency')
+		plt.grid(axis='y', alpha=0.75)
+		plt.tight_layout()
+		plt.savefig(os.path.join(plotOutDir, 'below_line_essential_kcat_estimates_medians_histogram_filtered.png'))
+		plt.close()
+
 
 if __name__ == '__main__':
 	Plot().cli()

@@ -30,17 +30,35 @@ LINE_COLOR = (66/255, 170/255, 154/255)
 IGNORE_FIRST_N_GENS = 4
 
 reaction_catalyst_id_tuples = [
-	("PREPHENATEDEHYDROG-RXN","CHORISMUTPREPHENDEHYDROG-CPLX[c]"),
-	("MALONYL-COA-ACP-TRANSACYL-RXN","MALONYL-COA-ACP-TRANSACYL-MONOMER[c]"),
-	("GLYOHMETRANS-RXN-SER/THF//GLY/METHYLENE-THF/WATER.33. (reverse)","GLYOHMETRANS-CPLX[c]"),
-	("RXN-17009","1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER[i]"),
-	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","CPLX0-7810[c]"),
-	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","G7266-MONOMER[c]"),
-	("PROTOHEMEFERROCHELAT-RXN[CCO-CYTOSOL]-PROTOHEME/PROTON//PROTOPORPHYRIN_IX/FE+2.54.","PROTOHEME-FERROCHELAT-MONOMER[c]"),
-	("RXN-9558 (reverse)","CPLX0-8006[c]"),
-	("PSERTRANSAMPYR-RXN","PSERTRANSAM-CPLX[c]"),
-	("RXN-22914","CPLX0-341[c]"),
-	("UDPNACETYLGLUCOSAMENOLPYRTRANS-RXN","UDPNACETYLGLUCOSAMENOLPYRTRANS-MONOMER[c]"),
+	# Top kcat estimates
+	("RXN0-5055", "ACETYL-COA-CARBOXYLTRANSFER-CPLX[c]"),
+	("HOMOSERDEHYDROG-RXN-HOMO-SER/NADP//L-ASPARTATE-SEMIALDEHYDE/NADPH/PROTON.53. (reverse)", "ASPKINIIHOMOSERDEHYDROGII-CPLX[c]"),
+	("RXN-22438-5-METHYL-THF/NAD//METHYLENE-THF/NADH/PROTON.44. (reverse)", "METHYLENETHFREDUCT-CPLX[c]"),
+	("HOMOSERDEHYDROG-RXN-HOMO-SER/NAD//L-ASPARTATE-SEMIALDEHYDE/NADH/PROTON.51. (reverse)", "ASPKINIIHOMOSERDEHYDROGII-CPLX[c]"),
+	("ASPARTATEKIN-RXN", "ASPKINIIHOMOSERDEHYDROGII-CPLX[c]"),
+	("RXN-15147", "O-SUCCHOMOSERLYASE-CPLX[c]"),
+	("2PGADEHYDRAT-RXN", "CPLX0-2381[m]"),
+	# Middle kcat estimates
+	("HOMSUCTRAN-RXN", "HOMSUCTRAN-CPLX[c]"),
+	("DIHYDRODIPICSYN-RXN", "DIHYDRODIPICSYN-CPLX[c]"),
+	("KETOGLUTREDUCT-RXN", "PGLYCDEHYDROG-CPLX[c]"),
+	# Ones where there is a big difference between median and 90ish percent quantile
+	("PANTEPADENYLYLTRAN-RXN", "COADTRI-CPLX[c]"),
+	("GLUTRNAREDUCT-RXN (reverse)", "CPLX0-3741[c]"),
+	("OROTPDECARB-RXN", "OROTPDECARB-CPLX[c]"),
+	("DIAMINOPIMDECARB-RXN", "DIAMINOPIMDECARB-CPLX[c]"),
+	# nan kcat estimates
+	("RXN-19778-HYDROGEN-PEROXIDE/CPD-9956//UBIQUINONE-8/WATER.47.", "CYT-D-UBIOX-CPLX[i]"),
+	("SERINE-O-ACETTRAN-RXN__CPLX0-237", "CPLX0-237[c]"),
+	("RXN0-5266-CPD-9956/OXYGEN-MOLECULE/PROTON//UBIQUINONE-8/WATER/PROTON.59.", "CYT-D-UBIOX-CPLX[i]"),
+	# 0 kcat estimates
+	("CARBOXYLESTERASE-RXN", "EG10122-MONOMER[c]"),
+	("ACETYLESTERASE-RXN-ETHYLACETATE/WATER//ETOH/ACET/PROTON.37.","EG10122-MONOMER[c]"),
+	("RXN-17354","CPLX0-7938[c]"),
+	# Negative kcat estimates?
+	("RXN-17008","1-ACYLGLYCEROL-3-P-ACYLTRANSFER-MONOMER[i]"),
+	("RXN-9556 (reverse)","CPLX0-8005[c]"),
+	("RXN-9557","FABZ-CPLX[c]"),
 ]
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
@@ -123,12 +141,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			std_kcat_est = np.std(below_line_kcat_est[:, i])
 			plt.title(f'Estimated kcat over time (average: {avg_kcat_est:.2f}, std: {std_kcat_est:.2f})')
 			plt.axhline(avg_kcat_est, color='red', linestyle='--', label='Average kcat est')
+			median_kcat_est = np.median(below_line_kcat_est[:, i])
+			plt.axhline(median_kcat_est, color='green', linestyle='--', label='Median kcat est')
+			quantile_99_kcat_est = np.quantile(below_line_kcat_est[:, i], 0.99)
+			plt.axhline(quantile_99_kcat_est, color='orange', linestyle='--', label='99% quantile kcat est')
 			plt.legend()
 			plt.ylabel('Estimated kcat')
 			plt.xlabel('Time step')
 
 			# Save the figure
-			plot_file_name = f'{rxn_id}_{catalyst_id}_kcat_estimation_timeseries'
+			plot_file_name = f'{i}_{rxn_id}_{catalyst_id}_kcat_estimation_timeseries'
 			plot_file_name = plot_file_name.replace(' ', '_')
 			plot_file_name = plot_file_name.replace('/', '|')
 
