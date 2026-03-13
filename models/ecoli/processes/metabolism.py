@@ -27,6 +27,7 @@ TIME_UNITS = units.s
 CONC_UNITS = COUNTS_UNITS / VOLUME_UNITS
 CONVERSION_UNITS = MASS_UNITS * TIME_UNITS / VOLUME_UNITS
 GDCW_BASIS = units.mmol / units.g / units.h
+SECS_PER_HOUR = 3600  # kcat estimates are stored in L/g/h; TIME_UNITS = s requires this conversion
 
 USE_KINETICS = True
 
@@ -366,8 +367,6 @@ class FluxBalanceAnalysisModel(object):
 		# Data structures to compute reaction bounds based on enzyme presence/absence
 		self.catalyst_ids = metabolism.catalyst_ids
 		self.reactions_with_catalyst = metabolism.reactions_with_catalyst
-		# TODO (rjuene): add the new gene affected reaction id list and upper bounds from dataclass
-		# TODO (rjuene): add the multiplier adjustment for the new gene affected reaction list from sim_data, possibly edited by variant?
 
 		i = metabolism.catalysis_matrix_I
 		j = metabolism.catalysis_matrix_J
@@ -424,6 +423,30 @@ class FluxBalanceAnalysisModel(object):
 
 		self.metabolite_names = {met: i for i, met in enumerate(self.fba.getOutputMoleculeIDs())}
 		self.aa_names_no_location = [x[:-3] for x in sorted(sim_data.amino_acid_code_to_id_ordered.values())]
+
+		# Build per-reaction kcat upper bound lookup for the kcat_estimate_scale variant.
+		# selected_kcat_estimates is only present on sim_data when that variant is active;
+		# on wildtype and all other variants these lists remain empty and no bounds are set.
+		# kcat_rxn_catalyst_pairs[i] is a list of (catalyst_counts_index, kcat_L_per_g_per_h)
+		# for reaction kcat_constrained_reactions[i]. Multiple catalysts per reaction are kept
+		# so the per-timestep upper bound can take the max across them.
+		fba_reaction_ids = set(self.fba.getReactionIDs())
+		catalyst_id_to_idx = {cid: i for i, cid in enumerate(self.catalyst_ids)}
+		self.kcat_constrained_reactions = []
+		self.kcat_rxn_catalyst_pairs = []   # parallel to kcat_constrained_reactions
+		if hasattr(metabolism, 'selected_kcat_estimates'):
+			seen = {}  # reaction_id -> index in kcat_constrained_reactions
+			for (rxn_id, cat_id), kcat in metabolism.selected_kcat_estimates.items():
+				if rxn_id not in fba_reaction_ids:
+					continue
+				if cat_id not in catalyst_id_to_idx:
+					continue
+				if rxn_id not in seen:
+					seen[rxn_id] = len(self.kcat_constrained_reactions)
+					self.kcat_constrained_reactions.append(rxn_id)
+					self.kcat_rxn_catalyst_pairs.append([])
+				self.kcat_rxn_catalyst_pairs[seen[rxn_id]].append(
+					(catalyst_id_to_idx[cat_id], kcat))
 
 	def update_external_molecule_levels(self, objective,
 			metabolite_concentrations, external_molecule_levels):
@@ -548,7 +571,29 @@ class FluxBalanceAnalysisModel(object):
 		self.fba.setReactionFluxBounds(self.reactions_with_catalyst,
 			upperBounds=reaction_bounds, raiseForReversible=False)
 
-		# TODO (rjuene): add the new gene affected reaction constraints, calling setReactionFluxBounds
+		# Apply kcat-based dynamic upper bounds for below-line essential reactions
+		# when the kcat_estimate_scale variant is active.
+		#
+		# For each reaction the bound is:
+		#   flux (mmol/L/timestep) <= max_over_catalysts(kcat * [enzyme]) * coefficient
+		#
+		# where kcat is in L/g/h, [enzyme] = catalyst_count * counts_to_molar in mmol/L,
+		# and coefficient (g·s/L) converts from mmol/g/s to mmol/L per timestep.
+		# The /SECS_PER_HOUR factor converts kcat from per-hour to per-second (TIME_UNITS = s).
+		# Taking the max across catalysts avoids over-constraining reactions where multiple
+		# enzymes can independently drive the reaction.
+		if self.kcat_constrained_reactions:
+			c2m = counts_to_molar.asNumber(CONC_UNITS)
+			coeff = coefficient.asNumber(CONVERSION_UNITS)
+			kcat_upper_bounds = [
+				max(kcat / SECS_PER_HOUR * catalyst_counts[cat_idx] * c2m * coeff
+					for cat_idx, kcat in pairs)
+				for pairs in self.kcat_rxn_catalyst_pairs
+			]
+			self.fba.setReactionFluxBounds(
+				self.kcat_constrained_reactions,
+				upperBounds=kcat_upper_bounds,
+				raiseForReversible=False)
 
 	def set_reaction_targets(self, kinetic_enzyme_counts,
 			kinetic_substrate_counts, counts_to_molar, time_step):
