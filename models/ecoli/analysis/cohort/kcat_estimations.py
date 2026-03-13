@@ -144,10 +144,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		cell_density = sim_data.constants.cell_density
+		quantile_values = list(QUANTILES.values())
 
-		# Accumulate per-pair kcat values across all cells, one cell at a time
-		# kcat_values[i] is a list of scalar kcat estimates for pair i
-		kcat_values = [[] for _ in range(n_pairs)]
+		# Accumulate per-cell quantiles for each pair: shape (n_cells_processed, n_pairs, n_quantiles).
+		# Taking the median of per-cell quantiles at the end gives an accurate approximation
+		# with O(n_cells * n_pairs * n_quantiles) memory instead of O(n_cells * T * n_pairs).
+		per_cell_quantiles = []  # list of (n_pairs, n_quantiles) arrays, one per cell
 
 		for cell_path in cell_paths:
 			sim_out = os.path.join(cell_path, 'simOut')
@@ -202,30 +204,31 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			kcat = fluxes / conc
 			kcat[np.isinf(kcat)] = np.nan
 
-			# Accumulate per-pair values
-			for i in range(n_pairs):
-				vals = kcat[:, i]
-				vals = vals[~np.isnan(vals)]
-				if len(vals) > 0:
-					kcat_values[i].extend(vals.tolist())
+			# Compute all quantiles for this cell in one pass; shape: (n_pairs, n_quantiles)
+			cell_q = np.nanquantile(kcat, quantile_values, axis=0).T
+			per_cell_quantiles.append(cell_q)
+
+		if not per_cell_quantiles:
+			print('No cells successfully processed.')
+			return
+
+		# Stack to (n_cells, n_pairs, n_quantiles) and take the median across cells
+		# to get the final (n_pairs, n_quantiles) estimates
+		stacked = np.stack(per_cell_quantiles, axis=0)          # (n_cells, n_pairs, n_quantiles)
+		final_quantiles = np.nanmedian(stacked, axis=0)         # (n_pairs, n_quantiles)
 
 		# Write one TSV per quantile
 		tsv_header = ['reaction_id', 'catalyst_id', 'kcat_estimate']
-		for label, q in QUANTILES.items():
+		for col_idx, (label, _) in enumerate(QUANTILES.items()):
 			out_path = os.path.join(plotOutDir, f'kcat_estimates_{label}.tsv')
 			with open(out_path, 'w', newline='') as f:
 				writer = csv.writer(f, delimiter='\t')
 				writer.writerow(tsv_header)
 				for i in range(n_pairs):
-					vals = kcat_values[i]
-					if len(vals) == 0:
-						estimate = np.nan
-					else:
-						estimate = np.quantile(vals, q)
 					writer.writerow([
 						valid_pair_reaction_ids[i],
 						valid_pair_catalyst_ids[i],
-						estimate,
+						final_quantiles[i, col_idx],
 					])
 			print(f"Wrote {out_path}")
 
