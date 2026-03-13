@@ -53,11 +53,36 @@ class Metabolism(object):
 		self._build_transport_reactions(raw_data, sim_data)
 		self._build_amino_acid_pathways(raw_data, sim_data)
 		self._add_metabolite_charge(raw_data)
+		self._load_kcat_estimates(raw_data)
 
 	def _add_metabolite_charge(self, raw_data):
 		self.metabolite_charge = {}
 		for met in raw_data.metabolites:
 			self.metabolite_charge[met["id"]] = met["molecular_charge"]
+
+	def _load_kcat_estimates(self, raw_data):
+		"""
+		Load kcat estimates for below-line essential reactions from flat files.
+
+		Sets self.kcat_estimates: dict mapping quantile label to a dict of
+		(reaction_id, catalyst_id) -> kcat_estimate (float, units mmol/g DCW/h).
+
+		Quantile labels: 'median', 'p05', 'p10', 'p90', 'p95', 'p99'.
+		"""
+		sources = {
+			'median': raw_data.kcat_estimates.kcat_estimates_median,
+			'p05':    raw_data.kcat_estimates.kcat_estimates_p05,
+			'p10':    raw_data.kcat_estimates.kcat_estimates_p10,
+			'p90':    raw_data.kcat_estimates.kcat_estimates_p90,
+			'p95':    raw_data.kcat_estimates.kcat_estimates_p95,
+			'p99':    raw_data.kcat_estimates.kcat_estimates_p99,
+		}
+		self.kcat_estimates = {}
+		for label, rows in sources.items():
+			self.kcat_estimates[label] = {
+				(row['reaction_id'], row['catalyst_id']): float(row['kcat_estimate'])
+				for row in rows
+			}
 
 	def _set_solver_values(self, constants):
 		"""
@@ -353,9 +378,6 @@ class Metabolism(object):
 		self.catalysis_matrix_I = catalysisMatrixI
 		self.catalysis_matrix_J = catalysisMatrixJ
 		self.catalysis_matrix_V = catalysisMatrixV
-
-		# TODO (rjuene): add the new gene affected reaction id list and upper bounds from raw data
-		# TODO (rjuene): add the multiplier adjustment for the new gene affected reaction list
 
 		# Properties for setting flux targets
 		self.use_all_constraints = USE_ALL_CONSTRAINTS

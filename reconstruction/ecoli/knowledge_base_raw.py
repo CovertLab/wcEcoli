@@ -122,6 +122,12 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("adjustments", "rna_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "protein_deg_rates_adjustments.tsv"),
 	os.path.join("adjustments", "relative_metabolite_concentrations_changes.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_median.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_p05.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_p10.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_p90.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_p95.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_p99.tsv"),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = [
