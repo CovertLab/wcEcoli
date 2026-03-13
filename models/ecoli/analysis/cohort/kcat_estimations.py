@@ -29,11 +29,15 @@ from wholecell.utils import units
 
 IGNORE_FIRST_N_GENS = 4
 
-below_line_directory = "reconstruction/ecoli/scripts/new_gene_below_line_proteome_ids/"
-below_line_monomer_ids_filepath = below_line_directory + "below_line_monomer_ids_variant16.csv"
-below_line_complex_ids_filepath = below_line_directory + "below_line_complex_ids_variant16.csv"
-below_line_essential_monomer_ids_filepath = below_line_directory + "below_line_essential_monomer_ids_variant16.csv"
-below_line_essential_complex_ids_filepath = below_line_directory + "below_line_essential_complex_ids_variant16.csv"
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+	os.path.dirname(os.path.abspath(__file__))))))
+below_line_directory = os.path.join(
+	_REPO_ROOT, "reconstruction", "ecoli", "scripts",
+	"new_gene_below_line_proteome_ids")
+below_line_monomer_ids_filepath = os.path.join(below_line_directory, "below_line_monomer_ids_variant16.csv")
+below_line_complex_ids_filepath = os.path.join(below_line_directory, "below_line_complex_ids_variant16.csv")
+below_line_essential_monomer_ids_filepath = os.path.join(below_line_directory, "below_line_essential_monomer_ids_variant16.csv")
+below_line_essential_complex_ids_filepath = os.path.join(below_line_directory, "below_line_essential_complex_ids_variant16.csv")
 
 QUANTILES = {
 	'median': 0.50,
