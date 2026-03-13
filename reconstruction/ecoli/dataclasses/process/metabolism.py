@@ -37,6 +37,11 @@ ENZYME_REACTION_ID = '{}__{}'
 
 VERBOSE = False
 
+# Minimum kcat estimate to include as a reaction upper bound (units: L/g DCW/h).
+# Values at or below this are treated as numerical noise from reactions
+# that carried near-zero flux in the reference simulations, not true capacity limits.
+MIN_KCAT_ESTIMATE = 1.0  # L/g DCW/h
+
 
 class InvalidReactionDirectionError(Exception):
 	pass
@@ -65,7 +70,10 @@ class Metabolism(object):
 		Load kcat estimates for below-line essential reactions from flat files.
 
 		Sets self.kcat_estimates: dict mapping quantile label to a dict of
-		(reaction_id, catalyst_id) -> kcat_estimate (float, units mmol/g DCW/h).
+		(reaction_id, catalyst_id) -> kcat_estimate (float, units L/g DCW/h).
+		Only entries with kcat_estimate >= MIN_KCAT_ESTIMATE are included;
+		values below this threshold are treated as noise from reactions that
+		carried near-zero flux in the reference simulations.
 
 		Quantile labels: 'median', 'p05', 'p10', 'p90', 'p95', 'p99'.
 		"""
@@ -80,8 +88,9 @@ class Metabolism(object):
 		self.kcat_estimates = {}
 		for label, rows in sources.items():
 			self.kcat_estimates[label] = {
-				(row['reaction_id'], row['catalyst_id']): float(row['kcat_estimate'])
+				(row['reaction_id'], row['catalyst_id']): kcat
 				for row in rows
+				if (kcat := float(row['kcat_estimate'])) >= MIN_KCAT_ESTIMATE
 			}
 
 	def _set_solver_values(self, constants):
