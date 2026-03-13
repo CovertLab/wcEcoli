@@ -1,0 +1,225 @@
+"""
+Summary plot for the kcat_estimate_scale variant sweep.
+
+Produces three panels:
+
+  1. Completion rate  — fraction of seeds (out of 8) that reached the final
+     generation, one bar per variant.  Variant 0 (wildtype control) is shown
+     in gray; kcat-constrained variants are color-coded by quantile.
+
+  2. Mean doubling time by generation  — heatmap (variants × generations).
+     All 25 generations are shown so transient initialization effects are
+     visible.  Cells that timed out (> MAX_DOUBLING_TIME_MIN minutes) are
+     excluded from the mean.
+
+  3. Average dry mass  — mean dry mass (fg) averaged over all timesteps and
+     seeds for each variant, using only generations >= IGNORE_FIRST_N_GENS_MASS.
+     Y-axis is zoomed to ±3% of the data range to highlight differences
+     between variants.
+"""
+
+import numpy as np
+from matplotlib import pyplot as plt
+import matplotlib.ticker as mticker
+
+from models.ecoli.analysis import variantAnalysisPlot
+from models.ecoli.sim.variants.kcat_estimate_scale import (
+	KCAT_QUANTILES, KCAT_MULTIPLIERS)
+from wholecell.analysis.analysis_tools import exportFigure
+from wholecell.io.tablereader import TableReader
+import os
+
+# Cells longer than this are considered timed-out and excluded from doubling
+# time statistics.
+MAX_DOUBLING_TIME_MIN = 180
+
+# Generations to skip for the average dry mass panel (early gens are biased).
+IGNORE_FIRST_N_GENS_MASS = 4
+
+# Palette: one color per quantile label, gray for wildtype
+_QUANTILE_COLORS = {
+	'p99':    '#d62728',
+	'p95':    '#ff7f0e',
+	'p90':    '#2ca02c',
+	'median': '#1f77b4',
+	'wildtype': '#888888',
+}
+
+
+def _variant_label(index):
+	"""Return a short human-readable label for a variant index."""
+	if index == 0:
+		return 'WT'
+	i = index - 1
+	n_mult = len(KCAT_MULTIPLIERS)
+	quantile = KCAT_QUANTILES[i // n_mult]
+	mult = KCAT_MULTIPLIERS[i % n_mult]
+	mult_pct = int(round(mult * 100))
+	return f'{quantile}\nx{mult_pct}%'
+
+
+def _variant_color(index):
+	if index == 0:
+		return _QUANTILE_COLORS['wildtype']
+	i = index - 1
+	n_mult = len(KCAT_MULTIPLIERS)
+	quantile = KCAT_QUANTILES[i // n_mult]
+	return _QUANTILE_COLORS[quantile]
+
+
+class Plot(variantAnalysisPlot.VariantAnalysisPlot):
+	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
+				validationDataFile, metadata):
+
+		variant_indexes = self.ap.get_variants()
+		n_variants = len(variant_indexes)
+		n_total_gens = self.ap.n_generation
+
+		# ------------------------------------------------------------------ #
+		# Collect per-variant statistics                                       #
+		# ------------------------------------------------------------------ #
+		completion_rates = {}            # variant -> float [0, 1]
+		dt_by_gen = {}                   # variant -> array (n_gens,) of means
+		avg_dry_mass = {}                # variant -> float (mean dry mass, fg)
+
+		for vi in variant_indexes:
+			# -- completion rate ------------------------------------------
+			n_gen0 = len(self.ap.get_cells(
+				variant=[vi], generation=[0], only_successful=True))
+			n_last = len(self.ap.get_cells(
+				variant=[vi], generation=[n_total_gens - 1],
+				only_successful=True))
+			completion_rates[vi] = (n_last / n_gen0) if n_gen0 > 0 else 0.0
+
+			# -- doubling time by generation --------------------------------
+			mean_dts = np.full(n_total_gens, np.nan)
+			for gen in range(n_total_gens):
+				cells = self.ap.get_cells(
+					variant=[vi], generation=[gen], only_successful=True)
+				if len(cells) == 0:
+					continue
+				times = []
+				for cell_path in cells:
+					sim_out = os.path.join(cell_path, 'simOut')
+					try:
+						t = TableReader(os.path.join(sim_out, 'Main')
+							).readColumn('time', squeeze=True)
+						dt_min = (t[-1] - t[0]) / 60.
+						if dt_min <= MAX_DOUBLING_TIME_MIN:
+							times.append(dt_min)
+					except Exception:
+						pass
+				if times:
+					mean_dts[gen] = np.mean(times)
+			dt_by_gen[vi] = mean_dts
+
+			# -- average dry mass ------------------------------------------
+			all_cells = self.ap.get_cells(
+				variant=[vi],
+				generation=np.arange(IGNORE_FIRST_N_GENS_MASS, n_total_gens),
+				only_successful=True)
+			cell_means = []
+			for cell_path in all_cells:
+				sim_out = os.path.join(cell_path, 'simOut')
+				try:
+					dm = TableReader(os.path.join(sim_out, 'Mass')
+						).readColumn('dryMass', squeeze=True)
+					cell_means.append(np.mean(dm))
+				except Exception:
+					pass
+			avg_dry_mass[vi] = np.mean(cell_means) if cell_means else np.nan
+
+		# ------------------------------------------------------------------ #
+		# Plot                                                                 #
+		# ------------------------------------------------------------------ #
+		fig = plt.figure(figsize=(max(14, n_variants * 0.7), 16))
+		gs = fig.add_gridspec(3, 1, hspace=0.45,
+							  height_ratios=[1, 2, 1])
+
+		x = np.arange(n_variants)
+		labels = [_variant_label(vi) for vi in variant_indexes]
+		colors = [_variant_color(vi) for vi in variant_indexes]
+
+		# ---- Panel 1: completion rate ------------------------------------ #
+		ax1 = fig.add_subplot(gs[0])
+		bars = ax1.bar(x, [completion_rates[vi] for vi in variant_indexes],
+					   color=colors, edgecolor='white', linewidth=0.5)
+		ax1.axhline(1.0, color='k', lw=0.8, ls='--')
+		ax1.set_ylim(0, 1.12)
+		ax1.set_ylabel('Completion rate\n(fraction reaching gen 24)', fontsize=10)
+		ax1.set_title('Fraction of seeds completing all 25 generations', fontsize=11)
+		ax1.set_xticks(x)
+		ax1.set_xticklabels(labels, fontsize=7, rotation=0)
+		ax1.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+		for bar, vi in zip(bars, variant_indexes):
+			rate = completion_rates[vi]
+			ax1.text(bar.get_x() + bar.get_width() / 2,
+					 rate + 0.02, f'{rate:.0%}',
+					 ha='center', va='bottom', fontsize=7)
+
+		# ---- Panel 2:  mean doubling time heatmap ----------------------- #
+		ax2 = fig.add_subplot(gs[1])
+		heatmap_data = np.array([dt_by_gen[vi] for vi in variant_indexes])
+		# Clamp color range to reasonable limits
+		vmin = np.nanmin(heatmap_data)
+		vmax = min(np.nanmax(heatmap_data), MAX_DOUBLING_TIME_MIN)
+		im = ax2.imshow(
+			heatmap_data,
+			aspect='auto', origin='upper',
+			cmap='RdYlGn_r',
+			vmin=vmin, vmax=vmax,
+			interpolation='nearest')
+		cbar = fig.colorbar(im, ax=ax2, fraction=0.03, pad=0.02)
+		cbar.set_label('Mean doubling time (min)', fontsize=9)
+		ax2.set_xlabel('Generation', fontsize=10)
+		ax2.set_ylabel('Variant', fontsize=10)
+		ax2.set_title(
+			'Mean doubling time per generation\n'
+			f'(cells > {MAX_DOUBLING_TIME_MIN} min excluded; gray = no data)',
+			fontsize=11)
+		ax2.set_xticks(np.arange(n_total_gens))
+		ax2.set_xticklabels(np.arange(n_total_gens), fontsize=7)
+		ax2.set_yticks(np.arange(n_variants))
+		ax2.set_yticklabels(labels, fontsize=7)
+		# Mark NaN cells
+		nan_mask = np.isnan(heatmap_data)
+		for (vi_idx, gen_idx) in zip(*np.where(nan_mask)):
+			ax2.add_patch(plt.Rectangle(
+				(gen_idx - 0.5, vi_idx - 0.5), 1, 1,
+				color='#cccccc', zorder=2))
+
+		# ---- Panel 3: average dry mass ----------------------------------- #
+		ax3 = fig.add_subplot(gs[2])
+		masses = [avg_dry_mass[vi] for vi in variant_indexes]
+		ax3.bar(x, masses, color=colors, edgecolor='white', linewidth=0.5)
+		finite_masses = [m for m in masses if np.isfinite(m)]
+		if finite_masses:
+			ymin = min(finite_masses) * 0.97
+			ymax = max(finite_masses) * 1.03
+			ax3.set_ylim(ymin, ymax)
+		ax3.set_ylabel('Average dry mass (fg)', fontsize=10)
+		ax3.set_title(
+			f'Mean dry mass averaged over all timesteps and seeds\n'
+			f'(gens {IGNORE_FIRST_N_GENS_MASS}–{n_total_gens - 1})',
+			fontsize=11)
+		ax3.set_xticks(x)
+		ax3.set_xticklabels(labels, fontsize=7, rotation=0)
+
+		# Legend for quantile colors
+		from matplotlib.patches import Patch
+		legend_elements = [
+			Patch(facecolor=_QUANTILE_COLORS['wildtype'], label='wildtype (no bounds)'),
+		] + [
+			Patch(facecolor=_QUANTILE_COLORS[q], label=q)
+			for q in KCAT_QUANTILES
+		]
+		fig.legend(handles=legend_elements, loc='lower center',
+				   ncol=len(legend_elements), fontsize=9,
+				   bbox_to_anchor=(0.5, -0.01))
+
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		plt.close('all')
+
+
+if __name__ == '__main__':
+	Plot().cli()
