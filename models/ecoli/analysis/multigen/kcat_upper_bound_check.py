@@ -33,7 +33,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 0
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
