@@ -1,45 +1,40 @@
 """
-Tests combinations of kcat estimate quantile choice and a scalar multiplier
-applied to all selected kcat values. Use this to sweep how the tightness and
-magnitude of kcat-based kinetic targets affect growth.
+Sweeps a scalar multiplier applied to the max kcat estimates for below-line
+essential reactions.  Use this to test how the tightness of kcat-based flux
+upper bounds affects growth relative to an unconstrained wildtype control.
 
-Index 0 is a wildtype control (no kcat bounds applied). Indices 1-20 are
-quantile x multiplier combinations (KCAT_QUANTILES x KCAT_MULTIPLIERS,
-row-major), where index i >= 1 maps to:
-	quantile   = KCAT_QUANTILES[(i - 1) // len(KCAT_MULTIPLIERS)]
-	multiplier = KCAT_MULTIPLIERS[(i - 1)  % len(KCAT_MULTIPLIERS)]
+Index 0 is a wildtype control (no kcat bounds applied).  Indices 1-15 use the
+'max' quantile kcat estimates scaled by a multiplier from 1.0 down to 0.8
+(15 evenly spaced values via np.linspace).
 
 When kcat bounds are active, sim_data.process.metabolism is modified:
-	sim_data.process.metabolism.kcat_estimate_quantile  (str)
-	sim_data.process.metabolism.kcat_estimate_multiplier  (float)
+	sim_data.process.metabolism.kcat_estimate_quantile   (str)
+	sim_data.process.metabolism.kcat_estimate_multiplier (float)
 	sim_data.process.metabolism.selected_kcat_estimates  (dict)
 
 Expected variant indices:
 	 0: wildtype control (no kcat bounds)
-	 1: p99 x 1.00
-	 2: p99 x 0.95
-	 3: p99 x 0.90
-	 4: p99 x 0.85
-	 5: p99 x 0.80
-	 6: p95 x 1.00
-	 7: p95 x 0.95
-	 8: p95 x 0.90
-	 9: p95 x 0.85
-	10: p95 x 0.80
-	11: p90 x 1.00
-	12: p90 x 0.95
-	13: p90 x 0.90
-	14: p90 x 0.85
-	15: p90 x 0.80
-	16: median x 1.00
-	17: median x 0.95
-	18: median x 0.90
-	19: median x 0.85
-	20: median x 0.80
+	 1: max x 100%
+	 2: max x  99%
+	 3: max x  98%
+	 4: max x  97%
+	 5: max x  96%
+	 6: max x  95%
+	 7: max x  94%
+	 8: max x  93%
+	 9: max x  92%
+	10: max x  91%
+	11: max x  90%
+	12: max x  89%
+	13: max x  88%
+	14: max x  87%
+	15: max x  86%
 """
 
-KCAT_QUANTILES = ['p99', 'p95', 'p90', 'median']
-KCAT_MULTIPLIERS = [1.0, 0.95, 0.9, 0.85, 0.8]
+import numpy as np
+
+KCAT_QUANTILE = 'max'
+KCAT_MULTIPLIERS = np.round(np.arange(1.0, 0.855, -0.01), 2)
 
 
 def kcat_estimate_scale(sim_data, index):
@@ -49,14 +44,10 @@ def kcat_estimate_scale(sim_data, index):
 			desc='No kcat bounds applied; matches wildtype behavior.',
 		), sim_data
 
-	i = index - 1
-	n_multipliers = len(KCAT_MULTIPLIERS)
-	quantile = KCAT_QUANTILES[i // n_multipliers]
-	multiplier = KCAT_MULTIPLIERS[i % n_multipliers]
+	multiplier = KCAT_MULTIPLIERS[index - 1]
+	base_estimates = sim_data.process.metabolism.kcat_estimates[KCAT_QUANTILE]
 
-	base_estimates = sim_data.process.metabolism.kcat_estimates[quantile]
-
-	sim_data.process.metabolism.kcat_estimate_quantile = quantile
+	sim_data.process.metabolism.kcat_estimate_quantile = KCAT_QUANTILE
 	sim_data.process.metabolism.kcat_estimate_multiplier = multiplier
 	sim_data.process.metabolism.selected_kcat_estimates = {
 		key: value * multiplier for key, value in base_estimates.items()
@@ -64,9 +55,9 @@ def kcat_estimate_scale(sim_data, index):
 
 	multiplier_pct = int(round(multiplier * 100))
 	return dict(
-		shortName=f'{quantile}_x{multiplier_pct}pct',
+		shortName=f'{KCAT_QUANTILE}_x{multiplier_pct}pct',
 		desc=(
-			f'kcat estimates from {quantile} quantile,'
-			f' scaled by {multiplier} ({multiplier_pct}%).'
+			f'kcat estimates from {KCAT_QUANTILE} quantile,'
+			f' scaled by {multiplier:.2f} ({multiplier_pct}%).'
 		),
 	), sim_data

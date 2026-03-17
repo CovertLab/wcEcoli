@@ -5,7 +5,8 @@ Produces three panels:
 
   1. Completion rate  — fraction of seeds (out of 8) that reached the final
      generation, one bar per variant.  Variant 0 (wildtype control) is shown
-     in gray; kcat-constrained variants are color-coded by quantile.
+     in gray; kcat-constrained variants are colored by multiplier magnitude
+     on a blue gradient (darker = larger multiplier / tighter bound).
 
   2. Mean doubling time by generation  — heatmap (variants × generations).
      All 25 generations are shown so transient initialization effects are
@@ -20,11 +21,11 @@ Produces three panels:
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.cm import Blues
 import matplotlib.ticker as mticker
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.sim.variants.kcat_estimate_scale import (
-	KCAT_QUANTILES, KCAT_MULTIPLIERS)
+from models.ecoli.sim.variants.kcat_estimate_scale import KCAT_MULTIPLIERS
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 import os
@@ -36,35 +37,28 @@ MAX_DOUBLING_TIME_MIN = 180
 # Generations to skip for the average dry mass panel (early gens are biased).
 IGNORE_FIRST_N_GENS_MASS = 4
 
-# Palette: one color per quantile label, gray for wildtype
-_QUANTILE_COLORS = {
-	'p99':    '#d62728',
-	'p95':    '#ff7f0e',
-	'p90':    '#2ca02c',
-	'median': '#1f77b4',
-	'wildtype': '#888888',
-}
+# Gray for wildtype; blue gradient (0.4–0.9) for constrained variants,
+# darker = larger multiplier (tighter bound).
+_WILDTYPE_COLOR = '#888888'
+_CONSTRAINED_COLORS = [
+	Blues(0.4 + 0.5 * i / (len(KCAT_MULTIPLIERS) - 1))
+	for i in range(len(KCAT_MULTIPLIERS))
+]
 
 
 def _variant_label(index):
 	"""Return a short human-readable label for a variant index."""
 	if index == 0:
 		return 'WT'
-	i = index - 1
-	n_mult = len(KCAT_MULTIPLIERS)
-	quantile = KCAT_QUANTILES[i // n_mult]
-	mult = KCAT_MULTIPLIERS[i % n_mult]
+	mult = KCAT_MULTIPLIERS[index - 1]
 	mult_pct = int(round(mult * 100))
-	return f'{quantile}\nx{mult_pct}%'
+	return f'max\nx{mult_pct}%'
 
 
 def _variant_color(index):
 	if index == 0:
-		return _QUANTILE_COLORS['wildtype']
-	i = index - 1
-	n_mult = len(KCAT_MULTIPLIERS)
-	quantile = KCAT_QUANTILES[i // n_mult]
-	return _QUANTILE_COLORS[quantile]
+		return _WILDTYPE_COLOR
+	return _CONSTRAINED_COLORS[index - 1]
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -205,16 +199,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax3.set_xticks(x)
 		ax3.set_xticklabels(labels, fontsize=7, rotation=0)
 
-		# Legend for quantile colors
+		# Legend: wildtype + one entry per multiplier
 		from matplotlib.patches import Patch
 		legend_elements = [
-			Patch(facecolor=_QUANTILE_COLORS['wildtype'], label='wildtype (no bounds)'),
+			Patch(facecolor=_WILDTYPE_COLOR, label='wildtype (no bounds)'),
 		] + [
-			Patch(facecolor=_QUANTILE_COLORS[q], label=q)
-			for q in KCAT_QUANTILES
+			Patch(facecolor=_CONSTRAINED_COLORS[i],
+				  label=f'max x{int(round(m * 100))}%')
+			for i, m in enumerate(KCAT_MULTIPLIERS)
 		]
 		fig.legend(handles=legend_elements, loc='lower center',
-				   ncol=len(legend_elements), fontsize=9,
+				   ncol=len(legend_elements), fontsize=7,
 				   bbox_to_anchor=(0.5, -0.01))
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

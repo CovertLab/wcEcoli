@@ -128,6 +128,8 @@ LIST_OF_DICT_FILENAMES = [
 	os.path.join("kcat_estimates", "kcat_estimates_p90.tsv"),
 	os.path.join("kcat_estimates", "kcat_estimates_p95.tsv"),
 	os.path.join("kcat_estimates", "kcat_estimates_p99.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_p999.tsv"),
+	os.path.join("kcat_estimates", "kcat_estimates_max.tsv"),
 	]
 SEQUENCE_FILE = 'sequence.fasta'
 LIST_OF_PARAMETER_FILENAMES = [
