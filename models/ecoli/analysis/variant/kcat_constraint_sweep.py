@@ -21,7 +21,7 @@ Produces three panels:
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.cm import Blues
+import matplotlib.cm as cm
 import matplotlib.ticker as mticker
 
 from models.ecoli.analysis import variantAnalysisPlot
@@ -41,7 +41,7 @@ IGNORE_FIRST_N_GENS_MASS = 4
 # darker = larger multiplier (tighter bound).
 _WILDTYPE_COLOR = '#888888'
 _CONSTRAINED_COLORS = [
-	Blues(0.4 + 0.5 * i / (len(KCAT_MULTIPLIERS) - 1))
+	cm.Blues(0.4 + 0.5 * i / (len(KCAT_MULTIPLIERS) - 1))
 	for i in range(len(KCAT_MULTIPLIERS))
 ]
 
