@@ -221,9 +221,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		# Stack to (n_cells, n_pairs, n_quantiles) and take the median across cells
-		# to get the final (n_pairs, n_quantiles) estimates
+		# to get the final (n_pairs, n_quantiles) estimates.  Exception: the 'max'
+		# column uses nanmax instead of nanmedian so it reflects the true global
+		# maximum observed across all cells, ensuring the bound is never violated
+		# by definition in the training data.
 		stacked = np.stack(per_cell_quantiles, axis=0)          # (n_cells, n_pairs, n_quantiles)
 		final_quantiles = np.nanmedian(stacked, axis=0)         # (n_pairs, n_quantiles)
+
+		# For the 'max' label, use the true global maximum across all cells
+		# rather than the median of per-cell maxima, so the resulting bound
+		# is never violated by definition in the training data.
+		max_col_idx = list(QUANTILES.keys()).index('max')
+		final_quantiles[:, max_col_idx] = np.nanmax(stacked[:, :, max_col_idx], axis=0)
 
 		# Write one TSV per quantile using tsv_writer so values are JSON-encoded
 		# and compatible with JsonReader in knowledge_base_raw.
