@@ -9,7 +9,7 @@
 #
 # Usage:
 #   ./purge.sh <directory> [keep_days]
-#     - directory options include daily_build, with_aa, anaerobic, optional_features
+#     - directory options include daily_build, with_aa, anaerobic, optional_features, failed
 #     - keep_days: number of most recent days to keep (default: 14)
 
 set -eu
@@ -23,7 +23,7 @@ if [ -z "$DIR_TO_PURGE" ]; then
 	exit 1
 fi
 
-if [ "$DIR_TO_PURGE" != "daily_build" ] && [ "$DIR_TO_PURGE" != "with_aa" ] && [ "$DIR_TO_PURGE" != "anaerobic" ] && [ "$DIR_TO_PURGE" != "optional_features" ]; then
+if [ "$DIR_TO_PURGE" != "daily_build" ] && [ "$DIR_TO_PURGE" != "with_aa" ] && [ "$DIR_TO_PURGE" != "anaerobic" ] && [ "$DIR_TO_PURGE" != "optional_features" ] && [ "$DIR_TO_PURGE" != "failed" ]; then
 	echo "Incorrect directory passed (got: $DIR_TO_PURGE)"
 	exit 1
 fi

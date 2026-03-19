@@ -20,6 +20,8 @@ if [ $N_FAILS -gt 0 ]; then
   echo
   sed '/^$/N;/^\n$/D' stderr.log  # Print errors but filter out multiple blank lines in a row
   mv out/2* /scratch/groups/mcovert/wc_ecoli/failed/
+  # Purge old failed runs, keeping 14 most recent days
+  runscripts/jenkins/purge.sh failed 14 || true
 fi
 
 test $N_FAILS = 0
