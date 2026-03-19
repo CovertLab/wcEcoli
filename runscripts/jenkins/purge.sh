@@ -1,72 +1,94 @@
 #! /bin/bash
 
-# Purges Jenkins runs from a given month while keeping the first run of that month.
-# Useful for freeing space on Sherlock while still keeping some history of runs.
-# Uses a relative month to now so that it can automatically remove old months when
-# scheduled to run in a Jenkins script.
+# Purges Jenkins runs, keeping only the most recent N days of runs.
+# A "day" is determined by the date prefix in the directory name (YYYYMMDD).
+# All directories from a kept day are preserved (e.g., all 9 optional_features
+# variants from that day). Everything older is deleted.
 #
 # WARNING: will delete shared files in /scratch/groups/mcovert/wc_ecoli/
 #
 # Usage:
-#   ./purge.sh <directory> <months ago>
-#     - directory options include daily_build, with_aa, anaerobic
-#     - months ago specifies the month to purge by how many months ago from now it is
-#       (eg. 2 when the current month is Nov will remove all but the first day run
-#       in Sept)
+#   ./purge.sh <directory> [keep_days]
+#     - directory options include daily_build, with_aa, anaerobic, optional_features
+#     - keep_days: number of most recent days to keep (default: 14)
 
 set -eu
 
 # Handle arguments
-DIR_TO_PURGE="$1"
-MONTHS_AGO_TO_PURGE="$2"
+DIR_TO_PURGE="${1:-}"
+KEEP_DAYS="${2:-14}"
 
-if [ $# -ne 2 ]; then
-	echo "Need to supply directory and month to purge"
-	exit
+if [ -z "$DIR_TO_PURGE" ]; then
+	echo "Usage: purge.sh <directory> [keep_days]"
+	exit 1
 fi
 
-if [ "$DIR_TO_PURGE" != "daily_build" ] && [ "$DIR_TO_PURGE" != "with_aa" ] && [ "$DIR_TO_PURGE" != "anaerobic" ]; then
+if [ "$DIR_TO_PURGE" != "daily_build" ] && [ "$DIR_TO_PURGE" != "with_aa" ] && [ "$DIR_TO_PURGE" != "anaerobic" ] && [ "$DIR_TO_PURGE" != "optional_features" ]; then
 	echo "Incorrect directory passed (got: $DIR_TO_PURGE)"
-	exit
+	exit 1
 fi
 
 re='^[0-9]+$'
-if ! [[ "$MONTHS_AGO_TO_PURGE" =~ $re ]] || [ "$MONTHS_AGO_TO_PURGE" -lt 6 ]; then
-	echo "Need to supply a month greater than 5 (got: $MONTHS_AGO_TO_PURGE)"
-	exit
+if ! [[ "$KEEP_DAYS" =~ $re ]] || [ "$KEEP_DAYS" -lt 1 ]; then
+	echo "keep_days must be a positive integer (got: $KEEP_DAYS)"
+	exit 1
 fi
 
 DIR="/scratch/groups/mcovert/wc_ecoli/$DIR_TO_PURGE"
 
-# Only deletes files from one month which is selected by MONTHS_AGO_TO_PURGE months prior to today
-MONTH=$((10#$(date +%m) - $MONTHS_AGO_TO_PURGE))
-YEAR=$(date +%Y)
-while [ $MONTH -lt 1 ]; do
-	MONTH=$(($MONTH + 12))
-	YEAR=$(($YEAR - 1))
-done
-DAY=2
-
-# Find the first date of the month that has a file (it won't be removed)
-FILES=$(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-1 ! -newermt $YEAR-$MONTH-$DAY | wc -l)
-while [ $FILES -lt 1 ] && [ $DAY -lt 31 ]; do
-	DAY=$(($DAY + 1))
-	FILES=$(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-1 ! -newermt $YEAR-$MONTH-$DAY | wc -l)
-done
-
-# Set next month so that only one month gets removed
-if [ $(($MONTH + 1)) -gt 12 ]; then
-	NEXT_MONTH=1
-	NEXT_YEAR=$(($YEAR + 1))
-else
-	NEXT_MONTH=$(($MONTH + 1))
-	NEXT_YEAR=$YEAR
+if [ ! -d "$DIR" ]; then
+	echo "Directory does not exist: $DIR"
+	exit 1
 fi
 
-# Only remove if 30 directories or less to remove (ie 1 month) as a safety check (might not be necessary)
-if [ $(find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-$DAY ! -newermt $NEXT_YEAR-$NEXT_MONTH-1 | wc -l) -le 30 ]; then
-	echo "Purging directories from $MONTH/$YEAR to $NEXT_MONTH/$NEXT_YEAR created on or after day $DAY for $DIR"
-	find $DIR -maxdepth 1 -type d -newermt $YEAR-$MONTH-$DAY ! -newermt $NEXT_YEAR-$NEXT_MONTH-1 -printf "%p\n" -exec rm -fr {} \;
-else
-	echo "More than 30 directories to remove in $DIR between $MONTH/$YEAR and $NEXT_MONTH/$NEXT_YEAR"
+# List all run directories sorted alphabetically (which is chronological
+# since directory names start with a timestamp like 20260318.003210).
+ALL_DIRS=$(find "$DIR" -maxdepth 1 -mindepth 1 -type d | sort)
+
+if [ -z "$ALL_DIRS" ]; then
+	echo "No run directories found in $DIR"
+	exit 0
 fi
+
+# Extract unique date prefixes (YYYYMMDD) from directory names, sorted
+ALL_DATES=$(echo "$ALL_DIRS" | xargs -n1 basename | sed 's/\..*//' | sort -u)
+N_DATES=$(echo "$ALL_DATES" | wc -l)
+
+if [ "$N_DATES" -le "$KEEP_DAYS" ]; then
+	echo "Nothing to purge in $DIR ($N_DATES days of runs, keeping all)"
+	exit 0
+fi
+
+# Find the cutoff: dates to remove are everything except the last KEEP_DAYS
+DATES_TO_REMOVE=$(echo "$ALL_DATES" | head -n -"$KEEP_DAYS")
+
+# Build list of directories to remove (those whose date prefix is in the remove set)
+TO_REMOVE=""
+while IFS= read -r dir; do
+	date_prefix=$(basename "$dir" | sed 's/\..*//')
+	if echo "$DATES_TO_REMOVE" | grep -qx "$date_prefix"; then
+		TO_REMOVE="$TO_REMOVE
+$dir"
+	fi
+done <<< "$ALL_DIRS"
+
+TO_REMOVE=$(echo "$TO_REMOVE" | grep -v '^$' || true)
+
+if [ -z "$TO_REMOVE" ]; then
+	echo "Nothing to purge in $DIR"
+	exit 0
+fi
+
+N_REMOVE=$(echo "$TO_REMOVE" | wc -l)
+N_TOTAL=$(echo "$ALL_DIRS" | wc -l)
+N_DAYS_REMOVE=$(echo "$DATES_TO_REMOVE" | wc -l)
+
+echo "Purging $N_REMOVE directories ($N_DAYS_REMOVE days) of $N_TOTAL total in $DIR (keeping $KEEP_DAYS most recent days)"
+
+while IFS= read -r dir; do
+	[ -z "$dir" ] && continue
+	echo "  Removing: $(basename "$dir")"
+	rm -rf "$dir"
+done <<< "$TO_REMOVE"
+
+echo "Done. $N_REMOVE directories removed."
