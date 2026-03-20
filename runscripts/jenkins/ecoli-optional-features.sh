@@ -49,5 +49,5 @@ bash runscripts/jenkins/run-fireworks.sh
 
 runscripts/jenkins/save_output.sh out/ /scratch/groups/mcovert/wc_ecoli/optional_features/
 
-# Purge old optional_features runs, keeping 14 most recent
+# Purge old optional_features runs, keeping 14 most recent days
 runscripts/jenkins/purge.sh optional_features || true

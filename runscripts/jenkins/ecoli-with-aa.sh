@@ -11,5 +11,5 @@ bash runscripts/jenkins/run-fireworks.sh
 
 runscripts/jenkins/save_output.sh out/ /scratch/groups/mcovert/wc_ecoli/with_aa/
 
-# Purge old with_aa runs, keeping 14 most recent
+# Purge old with_aa runs, keeping 14 most recent days
 runscripts/jenkins/purge.sh with_aa || true

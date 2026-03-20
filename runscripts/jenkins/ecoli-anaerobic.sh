@@ -16,5 +16,5 @@ bash runscripts/jenkins/run-fireworks.sh
 
 runscripts/jenkins/save_output.sh out/ /scratch/groups/mcovert/wc_ecoli/anaerobic/
 
-# Purge old anaerobic runs, keeping 14 most recent
+# Purge old anaerobic runs, keeping 14 most recent days
 runscripts/jenkins/purge.sh anaerobic || true

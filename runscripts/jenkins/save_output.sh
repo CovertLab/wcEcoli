@@ -24,4 +24,9 @@ dest_dir=$(realpath $dest_dir)
 mkdir -p $dest_dir
 
 cd $src_dir
-mv * $dest_dir
+# Move contents of src_dir to dest_dir only if there is something to move.
+shopt -s nullglob
+files=(*)
+if [ ${#files[@]} -gt 0 ]; then
+    mv -- "${files[@]}" "$dest_dir"
+fi

@@ -18,5 +18,5 @@ chmod 444 /scratch/groups/mcovert/wc_ecoli/cached/simData.cPickle
 
 runscripts/jenkins/save_output.sh out/ /scratch/groups/mcovert/wc_ecoli/daily_build/
 
-# Purge old daily_build runs, keeping 14 most recent
+# Purge old daily_build runs, keeping 14 most recent days
 runscripts/jenkins/purge.sh daily_build || true

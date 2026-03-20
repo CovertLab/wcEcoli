@@ -43,7 +43,13 @@ fi
 
 # List all run directories sorted alphabetically (which is chronological
 # since directory names start with a timestamp like 20260318.003210).
-ALL_DIRS=$(find "$DIR" -maxdepth 1 -mindepth 1 -type d | sort)
+# Only include directories whose basename starts with a date prefix (YYYYMMDD.).
+ALL_DIRS=$(find "$DIR" -maxdepth 1 -mindepth 1 -type d | sort | while read -r path; do
+	base=$(basename "$path")
+	if [[ "$base" =~ ^[0-9]{8}\. ]]; then
+		echo "$path"
+	fi
+done)
 
 if [ -z "$ALL_DIRS" ]; then
 	echo "No run directories found in $DIR"
@@ -60,7 +66,8 @@ if [ "$N_DATES" -le "$KEEP_DAYS" ]; then
 fi
 
 # Find the cutoff: dates to remove are everything except the last KEEP_DAYS
-DATES_TO_REMOVE=$(echo "$ALL_DATES" | head -n -"$KEEP_DAYS")
+REMOVE_DAYS=$((N_DATES - KEEP_DAYS))
+DATES_TO_REMOVE=$(echo "$ALL_DATES" | head -n "$REMOVE_DAYS")
 
 # Build list of directories to remove (those whose date prefix is in the remove set)
 TO_REMOVE=""
