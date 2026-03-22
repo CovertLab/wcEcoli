@@ -114,148 +114,6 @@ class Complexation(object):
 		self.reaction_stoichiometry_unknown = np.array(
 			self.reaction_stoichiometry_unknown)
 
-
-		# Generate a dictionary mapping molecules to the direct parent complexes
-		# they form (i.e. only complexes that they are a direct subunit of, not
-		# complexes that they are indirectly a subunit of via another complex
-		# being a subunit of that complex (so some complexes can be a key value in this)):
-		for subunit in self.subunit_names:
-			# Find the index where this subunit is located in self.molecules
-			# (as we need to find where this index is a value in self._stoich_matrix_I):
-			subunit_index = self.molecule_names.index(subunit)
-
-			# Find the indices of self._stoich_matrix_J (where the value will
-			# correspond to the index of the reaction(s) the subunit is involed
-			# in within in self.ids_reactions) by finding where the value of
-			# self._stoich_matrix_V is negative, indicating the subunit is a reactant:
-			reaction_indices = np.where(
-				(self._stoich_matrix_I == subunit_index) &
-				(self._stoich_matrix_V < 0))[0]
-
-			# For each reaction index, find the complex(es) that is(are) formed:
-			parent_complexes = {}
-			for reaction_idx in reaction_indices:
-				# Find the value of self._stoich_matrix_J at reaction_idx
-				# because that value corresponds to the index to the reaction
-				# we want in self.ids_reactions:
-				rxn_idx = self._stoich_matrix_J[reaction_idx]
-
-				# Initialize data structures to hold complex information:
-				complex_information = []
-				stoich = {}
-				stoich_known = {}
-				complex_type = {}
-				reaction_name = {}
-
-				# Find the complex formed in this reaction by finding the index
-				# of the value in self._stoich_matrix_I where the value of
-				# self._stoich_matrix_J is the same as rxn_idx and the value of
-				# self._stoich_matrix_V is positive, indicating it is a product:
-				complex_index = np.where(
-					(self._stoich_matrix_J == rxn_idx) &
-					(self._stoich_matrix_V > 0))[0]
-
-				# Find the number of unique subunits in this complex reaction:
-				unique_subunits_in_complex = np.where(
-					(self._stoich_matrix_J == rxn_idx) &
-					(self._stoich_matrix_V < 0))[0]
-
-				# Classify the complex as homogeneous or heterogeneous based on
-				# the number of unique subunits in the complex reaction:
-				num_unique_subunits = len(unique_subunits_in_complex)
-				if num_unique_subunits > 1:
-					cplx_type = 'heterogeneous'
-				else:
-					cplx_type = 'homogeneous'
-
-				# Add complex information to lists so it can be accessed easily
-				# in analyses:
-				complex_name = self.molecule_names[self._stoich_matrix_I[complex_index][0]]
-				reaction_name['reaction_id'] = self.ids_reactions[rxn_idx]
-				stoich['stoichiometry'] = self._stoich_matrix_V[reaction_idx]
-				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
-				complex_type['complex_type'] = cplx_type
-				complex_information.append(reaction_name)
-				complex_information.append(stoich)
-				complex_information.append(stoich_known)
-				complex_information.append(complex_type)
-
-				# Append the complex name and stoich as a dictionary entry:
-				parent_complexes[complex_name] = complex_information
-
-			# Add the parent complex(es) info for the molecule to the dictionary:
-			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
-
-		# Make a dictionary mapping molecules to all downstream complexes they
-		# form both directly and indirectly via other complexes (differs from
-		# self.molecules_to_parent_complexes_dict because if a molecule maps to
-		# a parent complex that is used to generate another complex, this
-		# molecule's dictionary entry will also include info for relevant to these
-		# "grandparent" complexes it indirectly forms)
-		for subunit in self.subunit_names:
-			# Find the index where this subunit is located in self.molecules
-			# (as we need to find where this index is a value in self._stoichMatrixMonomersI):
-			subunit_index = self.molecule_names.index(subunit)
-
-			# Find the indices of self._stoichMatrixMonomersJ where the value will
-			# correspond to the index of complexes the subunit forms:
-			complex_indices = np.where(
-				(self._stoichMatrixMonomersI == subunit_index) &
-				(self._stoichMatrixMonomersV < 0))[
-				0]
-
-			# For each complex formed by this subunit, find relevant information about its complexes:
-			downstream_complexes = {}
-			for complex_idx in complex_indices:
-				# Find the complex's name:
-				complex_name = self.ids_complexes[self._stoichMatrixMonomersJ[complex_idx]]
-
-				# Obtain the index of the complex within self.molecule_names
-				cplx_idx = self.molecule_names.index(complex_name)
-
-				# Use the stoichMatrix() to find the reaction index:
-				reaction_indices = np.where(
-					(self._stoich_matrix_I == cplx_idx) &
-					(self._stoich_matrix_V > 0))[0]
-
-				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
-				reaction_idx = self._stoich_matrix_J[reaction_indices]
-
-				# Initialize data structures to hold complex information
-				downstream_complex_information = []
-				stoich = {}
-				stoich_known = {}
-				complex_type = {}
-				reaction_name = {}
-
-				# Find the number of unique subunits in this complex reaction:
-				unique_subunits_in_complex = np.where(
-					(self._stoich_matrix_J == reaction_idx) &
-					(self._stoich_matrix_V < 0))[0]
-				num_unique_subunits = len(unique_subunits_in_complex)
-				if num_unique_subunits > 1:
-					cplx_type = 'heterogeneous'
-				elif num_unique_subunits == 1:
-					cplx_type = 'homogeneous'
-				else:
-					cplx_type = 'unknown'
-
-				# Add complex information to lists:
-				reaction_name['reaction_id'] = self.ids_reactions[reaction_idx[0]]
-				stoich['stoichiometry'] = self._stoichMatrixMonomersV[complex_idx]
-				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
-					reaction_idx[0]]
-				complex_type['complex_type'] = cplx_type
-				downstream_complex_information.append(reaction_name)
-				downstream_complex_information.append(stoich)
-				downstream_complex_information.append(stoich_known)
-				downstream_complex_information.append(complex_type)
-
-				# Append the complex name and stoich as a dictionary entry
-				downstream_complexes[complex_name] = downstream_complex_information
-
-			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
-
 	def stoich_matrix(self):
 		"""
 		Builds a stoichiometric matrix based on each given complexation
@@ -371,3 +229,19 @@ class Complexation(object):
 					else:
 						total[j] = x[j]*(np.absolute(val))
 		return total
+
+	def _view_matrix_with_row_and_col_names(self, rows, cols, matrix):
+		"""
+		Returns stoichiometry matrix as DataFrame with row and column labels.
+
+		NOTE:
+			for self.stoich_matrix(): rows=self.molecule_names, cols=self.ids_reactions
+			for self.stoich_matrix_monomers(): rows=self.molecule_names, cols=self.ids_complexes
+			for self.mass_matrix(): rows=self.molecule_names, cols=self.ids_reactions
+		"""
+		import pandas as pd
+		return pd.DataFrame(
+			matrix,
+			index=rows,
+			columns=cols
+		)
