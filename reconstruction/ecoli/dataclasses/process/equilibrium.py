@@ -36,8 +36,6 @@ class Equilibrium(object):
 		stoichMatrixMass = []
 		self.metabolite_set = set()
 		self.complex_name_to_rxn_idx = {}
-		self.molecules_to_parent_complexes_dict = {}
-		self.molecules_to_all_downstream_complexes_dict = {}
 
 		# Make sure reactions are not duplicated in complexationReactions and
 		# equilibriumReactions
@@ -67,7 +65,6 @@ class Equilibrium(object):
 		# Remove reactions that we know won't occur (e.g., don't do
 		# computations on metabolites that have zero counts)
 		# TODO (ggsun): check if this list is accurate
-		# todo (mia): check if these are still valid
 		MOLECULES_THAT_WILL_EXIST_IN_SIMULATION = [
 			m["Metabolite"] for m in raw_data.metabolite_concentrations] + [
 			"LEU", "S-ADENOSYLMETHIONINE", "ARABINOSE", "4FE-4S"] + two_component_system_ligands
@@ -167,8 +164,6 @@ class Equilibrium(object):
 		self._stoichMatrixMass = np.array(stoichMatrixMass)
 		self.balance_matrix = self.stoich_matrix() * self.mass_matrix()
 
-		hi = 6
-
 		# Find the mass balance of each equation in the balanceMatrix
 		massBalanceArray = self.mass_balance()
 
@@ -178,125 +173,6 @@ class Equilibrium(object):
 		# Build matrices
 		self._populateDerivativeAndJacobian()
 		self._stoichMatrix = self.stoich_matrix()
-
-		# Generate dictionary mapping molecules to the direct parent complexes they form:
-		for subunit in self.molecule_names:
-			# find the matrix index where this subunit is as a molecule:
-			subunit_index = self.molecule_names.index(subunit)
-
-			# Find the indicies of self._stoich_matrix_J where the value will
-			# correspond to the index of the correct reaction in self.ids_reactions
-			reaction_indicies = np.where(
-				(self._stoichMatrixI == subunit_index) &
-				(self._stoichMatrixV < 0))[0]
-
-			# For each reaction index, find the complex(es) that is(are) formed:
-			parent_complexes = {}
-			for reaction_idx in reaction_indicies:
-				# find the value of the reaction index (which will be the index
-				# that corresponds to the index of the reaction in self.ids_reactions):
-				rxn_idx = self._stoichMatrixJ[reaction_idx]
-
-				# Initialize data structures to hold complex information
-				complex_information = []
-				stoich = {}
-				stoich_known = {}
-				complex_type = {}
-				reaction_name = {}
-
-				# Find the complex formed in this reaction (each reaction forms one complex):
-				complex_index = np.where(
-					(self._stoichMatrixJ == rxn_idx) &
-					(self._stoichMatrixV > 0))[0]
-
-				# Find the number of unique subunits in this complex reaction:
-				unique_subunits_in_complex = np.where(
-					(self._stoichMatrixJ == rxn_idx) &
-					(self._stoichMatrixV < 0))[0]
-				num_unique_subunits = len(unique_subunits_in_complex)
-				if num_unique_subunits > 1:
-					cplx_type = 'heterogeneous'
-				else:
-					cplx_type = 'homogeneous'
-
-				# Add complex information to lists
-				complex_name = self.molecule_names[self._stoichMatrixI[complex_index][0]]
-				reaction_name['reaction_id'] = self.rxn_ids[rxn_idx]
-				stoich['stoichiometry'] = self._stoichMatrixV[reaction_idx]
-				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[rxn_idx]
-				complex_type['complex_type'] = cplx_type
-				complex_information.append(reaction_name)
-				complex_information.append(stoich)
-				complex_information.append(stoich_known)
-				complex_information.append(complex_type)
-
-				# Append the complex name and stoich as a dictionary entry
-				parent_complexes[complex_name] = complex_information
-
-			self.molecules_to_parent_complexes_dict[subunit] = parent_complexes
-
-
-		# Generate the stoich matrix for complexes to all consituent monomers:
-		stoich_matrix_monomers = self.stoich_matrix_monomers()
-
-		# Make a dictionary mapping molecules to all downstream complexes they form
-		# (both directly and indirectly via another complex):
-		for subunit in self.molecule_names:
-			# find the matrix index where this subunit is as a molecule:
-			subunit_index = self.molecule_names.index(subunit)
-
-			# Find the indices of complexes containing the subunit:
-			complex_indices = np.where(stoich_matrix_monomers[subunit_index, :] < 0)[0]
-
-			downstream_complexes = {}
-			for complex_idx in complex_indices:
-				# Find the complex's name:
-				complex_name = self.ids_complexes[complex_idx]
-
-				# Obtain the index of the complex within self.molecule_names:
-				cplx_idx = self.molecule_names.index(complex_name)
-
-				# Use the stoichMatrix() to find the reaction index:
-				reaction_indices = np.where(
-					(self._stoichMatrixI == cplx_idx) & (self._stoichMatrixV > 0))[0]
-
-				# Obtain the value that corresponds to the index of the reaction in self.ids_reactions:
-				reaction_idx = self._stoichMatrixJ[reaction_indices]
-
-				# Initialize data structures to hold complex information
-				downstream_complex_information = []
-				stoich = {}
-				stoich_known = {}
-				complex_type = {}
-				reaction_name = {}
-
-				# Find the number of unique subunits in this complex reaction:
-				unique_subunits_in_complex = np.where(
-					(self._stoichMatrixJ == reaction_idx) &
-					(self._stoichMatrixV < 0))[0]
-				num_unique_subunits = len(unique_subunits_in_complex)
-				if num_unique_subunits > 1:
-					cplx_type = 'heterogeneous'
-				elif num_unique_subunits == 1:
-					cplx_type = 'homogeneous'
-				else:
-					cplx_type = 'unknown'
-
-				# Add complex information to lists:
-				reaction_name['reaction_id'] = self.rxn_ids[reaction_idx[0]]
-				stoich['stoichiometry'] = stoich_matrix_monomers[subunit_index, complex_idx]
-				stoich_known['stoich_unknown'] = self.reaction_stoichiometry_unknown[
-					reaction_idx[0]]
-				complex_type['complex_type'] = cplx_type
-				downstream_complex_information.append(reaction_name)
-				downstream_complex_information.append(stoich)
-				downstream_complex_information.append(stoich_known)
-				downstream_complex_information.append(complex_type)
-
-				# Append the complex name and stoich as a dictionary entry
-				downstream_complexes[complex_name] = downstream_complex_information
-
-			self.molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
 
 
 	def __getstate__(self):
@@ -350,10 +226,28 @@ class Equilibrium(object):
 	def stoich_matrix_monomers(self):
 		"""
 		Builds a stoichiometric matrix where each column is a reaction that
-		forms a complex directly from its constituent monomers. Since some
-		reactions from the raw data are complexation reactions of complexes,
-		this is different from the stoichiometric matrix generated by
-		stoichMatrix().
+		forms a complex directly from available base subunits (monomers,
+		metabolites, and complexation complexes) that exist in the total molecule
+		pool in the the equilibrium_reactions.tsv table. It is important to note
+		that some equilibrium reaction subunits are complexation complexes
+		themselves, and in those cases, this matrix will NOT break the
+		complexation complex subunits down into their base monomers the way the
+		stoich_matrix_monomers() function in the complexation process does,
+		as the equilibirum process is likely not aware of all those subunits
+		as they are not all listed in the equilibrium_reactions.tsv table.
+
+		For example:
+		If an equilibrium reaction subunit is another equilibirium complex, then
+		that "grandparent" complex will correctly map to the reactants of the
+		"parent" complex (but if the "grandchildren" subunits are complexation
+		complexes, they will not be broken down to their base monomers unless
+		the complexation reaction that makes the complexation complex is also
+		listed in the equilibrium_reactions.tsv table, which is highly unlikely).
+
+		Hence, when unpacking these complexes in the monomer_counts.py listener
+		to calculate the total counts for each monomer in the simulation, this
+		matrix should be unpacked before the complexation process's
+		stoich_matrix_monomers() matrix is unpacked.
 		"""
 		stoichMatrixMonomersI = []
 		stoichMatrixMonomersJ = []
@@ -630,3 +524,15 @@ class Equilibrium(object):
 					else:
 						total[j] = x[j]*(np.absolute(val))
 		return total
+
+	def _view_matrix_with_row_and_col_names(self, rows, cols, matrix):
+		"""
+		Returns stoichiometry matrix as DataFrame with row and column labels.
+
+		NOTE:
+			for self.stoich_matrix(): rows=self.molecule_names, cols=self.rxn_ids
+			for self.stoich_matrix_monomers(): rows=self.molecule_names, cols=self.ids_complexes
+			for self.mass_matrix(): rows=self.molecule_names, cols=self.ids_reactions
+		"""
+		import pandas as pd
+		return pd.DataFrame(matrix, index=rows, columns=cols)
