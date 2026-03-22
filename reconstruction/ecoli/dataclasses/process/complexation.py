@@ -26,8 +26,6 @@ class Complexation(object):
 
 		self.ids_reactions = []
 		self.reaction_stoichiometry_unknown = []
-		self.molecules_to_parent_complexes_dict = {}
-		self.molecules_to_all_downstream_complexes_dict = {}
 		reaction_index = 0
 		miscrnas_with_singleton_tus = sim_data.getter.get_miscrnas_with_singleton_tus()
 
@@ -240,8 +238,4 @@ class Complexation(object):
 			for self.mass_matrix(): rows=self.molecule_names, cols=self.ids_reactions
 		"""
 		import pandas as pd
-		return pd.DataFrame(
-			matrix,
-			index=rows,
-			columns=cols
-		)
+		return pd.DataFrame(matrix, index=rows, columns=cols)

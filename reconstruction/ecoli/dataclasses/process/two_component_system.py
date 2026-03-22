@@ -772,11 +772,7 @@ class TwoComponentSystem(object):
 			for self.stoich_matrix_monomers(): rows=self.modified_molecules, cols=self.complex_to_monomer.keys()
 		"""
 		import pandas as pd
-		return pd.DataFrame(
-			matrix,
-			index=rows,
-			columns=cols
-		)
+		return pd.DataFrame(matrix, index=rows, columns=cols)
 
 
 
