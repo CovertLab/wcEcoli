@@ -1523,30 +1523,30 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             self.check_complex_validity(PLOT_COMPLEXES_revised))
 
         # Generate a plot for each complex:
-        for complex in valid_complexes:
+        for complex_id in valid_complexes:
             # Extract the upstream monomers and sentences describing their paths:
-            upstream_monomers, upstream_monomer_paths = self.analyze_complex(complex)
+            upstream_monomers, upstream_monomer_paths = self.analyze_complex(complex_id)
 
             # Extract all downstream complexes the complex is a subunit of:
             downstream_complexes, downstream_complex_paths = (
-                self.analyze_molecule_parents(complex))
+                self.analyze_molecule_parents(complex_id))
 
             # Determine the complex type (complexation vs. equilibrium vs. TCS):
-            complex_type = complex_type_dict[complex]
+            complex_type = complex_type_dict[complex_id]
 
             # Determine the complex makeup (homogeneous vs. heterogeneous):
-            complex_makeup = self.determine_complex_makeup(complex, complex_type)
+            complex_makeup = self.determine_complex_makeup(complex_id, complex_type)
 
             # Extract the counts of the complex from bulk molecule counts:
             complex_counts = (
-                read_stacked_bulk_molecules(cell_paths, [complex]))[0]
+                read_stacked_bulk_molecules(cell_paths, [complex_id]))[0]
 
             # Track the theoretical total counts of the complex (i.e., free
             # counts + counts within other complexes + counts within unique molecules)
             total_counts = complex_counts.copy().astype(float)
 
             # Generate the plots:
-            if self.is_a_ribosome_subunit(sim_data, complex) == []:
+            if self.is_a_ribosome_subunit(sim_data, complex_id) == []:
                 # Normal plot size for non-ribosome related complexes:
                 fig, (ax1, ax2, ax3) = (
                     plt.subplots(3, 1, sharex=True, figsize=(10, 6)))
@@ -1559,7 +1559,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # First, add the free counts of the complex over time to the first plot:
             ax1.plot(time, complex_counts, color='lightseagreen',
-                     label=f'{complex} free complex counts', linewidth=.75, alpha=0.75)
+                     label=f'{complex_id} free complex counts', linewidth=.75, alpha=0.75)
 
             # Also plot the counts of each base monomer within the complex:
             monomer_ids = list(upstream_monomers.keys())
@@ -1614,7 +1614,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 else:
                     rxns_plotted.append(rxn_id)
                 rxn_stoich = 1 # always 1 for complex formation
-                name = f'{rxn_id} \n(generates {rxn_stoich} {complex})'
+                name = f'{rxn_id} \n(generates {rxn_stoich} {complex_id})'
 
                 # Plot the reaction events based on the type of complex:
                 if complex_type == "complexation":
@@ -1632,28 +1632,28 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     rxn_events = self.tcs_reaction_events[:, rxn_idx]
                     ax3.plot(time, rxn_events, alpha=0.5, label=
                             f'{rxn_id} \n estimated events '
-                            f'(generates 1 {complex})', linewidth=0.75)
+                            f'(generates 1 {complex_id})', linewidth=0.75)
 
                     # Also check if the complex is made from a different TCS
                     # reaction by the same base monomer:
                     if "POS" in rxn_id:
                         reaction_IDs = (self.find_extra_tcs_reactions(
-                            monomer, complex, rxns_plotted))
+                            monomer, complex_id, rxns_plotted))
                         for reaction_ID in reaction_IDs:
                             print(f"Plotting extra reaction {reaction_ID} for "
-                                  f"{complex} formation from {monomer}")
+                                  f"{complex_id} formation from {monomer}")
                              # Plot the reaction events based on the type of complex:
                             rxns_plotted.append(reaction_ID)
                             rxn_idx = tcs_rxn_ids.index(reaction_ID)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, rxn_events, alpha=0.5, label=
                             f'{reaction_ID} \n estimated events '
-                            f'(generates 1 {complex})', linewidth=0.75)
+                            f'(generates 1 {complex_id})', linewidth=0.75)
 
                     # Lastly, if there is a TCS reaction in the mix, check if
                     # the complex itself is consumed by any TCS reactions:
-                    if complex in self.tcs_c2m_via_dprs_dict.keys():
-                        subunit_complex_info = self.tcs_c2m_via_dprs_dict[complex]
+                    if complex_id in self.tcs_c2m_via_dprs_dict.keys():
+                        subunit_complex_info = self.tcs_c2m_via_dprs_dict[complex_id]
                         for subunit_complex in subunit_complex_info:
                             # Extract the reverse reaction reactant's information:
                             subunit_complex_dict = subunit_complex_info[subunit_complex]
@@ -1662,13 +1662,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                 continue
                             # Otherwise, plot the dephosphorylation reaction:
                             print(f"Plotting dephosphorylation reaction {rxn_id}"
-                                  f" that consumes {complex}")
+                                  f" that consumes {complex_id}")
                             consumption_rxns_plotted.append(rxn_id)
                             rxn_idx = tcs_rxn_ids.index(rxn_id)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, np.negative(rxn_events), alpha=0.5,
                                      label=f'{rxn_id} \n estimated events '
-                                    f'(consumes 1 {complex})', linewidth=0.75)
+                                    f'(consumes 1 {complex_id})', linewidth=0.75)
 
 
             # Next, Find the reactions that consume the complex as a subunit
@@ -1681,7 +1681,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 else:
                     consumption_rxns_plotted.append(rxn_id)
                 rxn_stoich = downstream_complexes[parent_complex][0]['path'][0][1]
-                name = f'{rxn_id} \n(consumes {rxn_stoich} {complex})'
+                name = f'{rxn_id} \n(consumes {rxn_stoich} {complex_id})'
 
                 if rxn_id in complexation_rxn_ids:
                     rxn_idx = complexation_rxn_ids.index(rxn_id)
@@ -1702,26 +1702,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     rxn_events = self.tcs_reaction_events[:, rxn_idx]
                     ax3.plot(time, np.negative(rxn_events),
                              alpha=0.5, label=f'{rxn_id} \n estimated events '
-                                 f'(consumes 1 {complex})', linewidth=0.75)
+                                 f'(consumes 1 {complex_id})', linewidth=0.75)
 
                     # Also check if the parent is made from a different TCS
                     # reaction by the same base complex:
                     if "POS" in rxn_id:
                         reaction_IDs = self.find_extra_tcs_reactions(
-                            complex, parent_complex, consumption_rxns_plotted)
+                            complex_id, parent_complex, consumption_rxns_plotted)
                         for reaction_ID in reaction_IDs:
                             # Plot the reaction events based on the type of complex:
                             consumption_rxns_plotted.append(reaction_ID)
                             rxn_idx = tcs_rxn_ids.index(reaction_ID)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, np.negative(rxn_events), alpha=0.5, label=
-                            f'{reaction_ID} \n estimated events (consumes 1 {complex})', linewidth=0.75)
+                            f'{reaction_ID} \n estimated events (consumes 1 {complex_id})', linewidth=0.75)
 
                     # Lastly, check if the parent dephosphorylates to the complex:
                     if parent_complex in self.tcs_c2m_via_dprs_dict.keys():
                         subunit_complex_info = self.tcs_c2m_via_dprs_dict[parent_complex]
-                        if complex in subunit_complex_info.keys():
-                            subunit_complex_dict = subunit_complex_info[complex]
+                        if complex_id in subunit_complex_info.keys():
+                            subunit_complex_dict = subunit_complex_info[complex_id]
                             rxn_id = subunit_complex_dict[0]['reaction_id']
                             if rxn_id in rxns_plotted or rxn_id in consumption_rxns_plotted:
                                 continue
@@ -1730,77 +1730,77 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             rxn_idx = tcs_rxn_ids.index(rxn_id)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, rxn_events, alpha=0.5, label=
-                                f'{rxn_id}\n estimated events (generates 1 {complex})', linewidth=0.75)
+                                f'{rxn_id}\n estimated events (generates 1 {complex_id})', linewidth=0.75)
 
             # Finally, check if the complex (or its parent complexes) are
             # involved in any special events that should be plotted:
 
             # Check if the complex is a TF:
-            if self.is_a_TF(sim_data, complex) != []:
+            if self.is_a_TF(sim_data, complex_id) != []:
                 # If the complex is a TF, plot its bound counts and binding/unbinding events:
-                tf_idx = self.tf_index(sim_data, complex)
+                tf_idx = self.tf_index(sim_data, complex_id)
                 tf_counts = read_stacked_columns(cell_paths,'RnaSynthProb',
                                                 "nActualBound")[:,tf_idx]
                 tfs_unbound = read_stacked_columns(cell_paths,'RnaSynthProb',
                                                 "nActualUnbound")[:,tf_idx]
                 ax1.plot(time, tf_counts, color='lightcoral',
-                         label=f'transcription unit bound\n {complex} '
+                         label=f'transcription unit bound\n {complex_id} '
                                f'transcription factors',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, (tf_counts * -1), color='lightcoral',
-                         label=f'{complex} Transcription factor\nbinding events',
+                         label=f'{complex_id} Transcription factor\nbinding events',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, tfs_unbound, color='purple',
-                         label=f'{complex} Transcription factor\nunbinding events',
+                         label=f'{complex_id} Transcription factor\nunbinding events',
                          linewidth=0.75, alpha=0.75)
                 total_counts += tf_counts
 
             # Check if the complex is a replisome subunit:
-            if self.is_a_replisome_subunit(sim_data, complex) != []:
+            if self.is_a_replisome_subunit(sim_data, complex_id) != []:
                 # If the complex is a replisome subunit, plot its counts within
                 # active replisomes and the replisome assembly events that consume it:
                 replisome_stoich, replisome_counts, replisome_events = (
-                    self.get_replisome_subunit_counts(sim_data, cell_paths, complex))
+                    self.get_replisome_subunit_counts(sim_data, cell_paths, complex_id))
                 subunit_counts_within_replisomes = (
                         replisome_counts * replisome_stoich)
                 ax1.plot(time, subunit_counts_within_replisomes, color='gold',
-                         label=f'{complex} counts within active replisomes, '
+                         label=f'{complex_id} counts within active replisomes, '
                                f'{replisome_stoich} per',
                          linewidth=0.75, alpha=0.75, linestyle="--")
                 ax3.plot(time, np.negative(replisome_events), color='gold',
                          label=f'Active replisome assebly events\n(consumes '
-                               f'{replisome_stoich} {complex})',
+                               f'{replisome_stoich} {complex_id})',
                          linewidth=0.75, alpha=0.75)
                 # Add the replisome subunit counts to the total counts of the complex:
                 total_counts += (subunit_counts_within_replisomes)
 
             # Check if the complex is an inactive RNAP (1:1 ratio):
-            if self.is_an_RNAP_subunit(sim_data, complex) != []:
+            if self.is_an_RNAP_subunit(sim_data, complex_id) != []:
                 rnap_counts, rnap_activation_events, rnap_deactivation_events = (
                     self.get_rnap_subunit_counts(metadata, cell_paths))
                 ax1.plot(time, rnap_counts, color='gold',
-                         label=f'{complex} counts within active RNAPs, 1 per',
+                         label=f'{complex_id} counts within active RNAPs, 1 per',
                          linewidth=0.75, alpha=0.75, linestyle="--")
                 ax3.plot(time, rnap_activation_events * -1, color='gold',
-                         label=f'RNAP activation events\n(consumes 1 {complex})',
+                         label=f'RNAP activation events\n(consumes 1 {complex_id})',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, rnap_deactivation_events, color='orange',
-                         label=f'RNAP inactivation events\n(produces 1 {complex})',
+                         label=f'RNAP inactivation events\n(produces 1 {complex_id})',
                          linewidth=0.75, alpha=0.75)
                 total_counts += rnap_counts
 
             # Check if the complex is a ribosome subunit (1:1 ratio):
-            if self.is_a_ribosome_subunit(sim_data, complex) != []:
+            if self.is_a_ribosome_subunit(sim_data, complex_id) != []:
                 ribosome_counts, ribosome_initiation_events, ribosome_termination_events = (
                     self.get_ribosome_subunit_counts(cell_paths))
                 ax1.plot(time, ribosome_counts, color='gold',
-                         label=f'{complex} counts within active ribosomes, 1 per',
+                         label=f'{complex_id} counts within active ribosomes, 1 per',
                          linewidth=0.75, alpha=0.75, linestyle="--")
                 ax3.plot(time, ribosome_initiation_events * -1, color='gold',
-                         label=f'Active ribosome assembly events\n(consumes 1 {complex})',
+                         label=f'Active ribosome assembly events\n(consumes 1 {complex_id})',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, ribosome_termination_events, color='orange',
-                         label=f'Active ribosome disassembly events\n(produces 1 {complex})',
+                         label=f'Active ribosome disassembly events\n(produces 1 {complex_id})',
                          linewidth=0.75, alpha=0.75)
                 total_counts += ribosome_counts
 
@@ -1820,7 +1820,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     subunit_counts = replisome_counts * total_stoich * replisome_stoich
 
                     ax1.plot(time, subunit_counts, color='gold',
-                             label=f'{complex} counts within active replisomes,'
+                             label=f'{complex_id} counts within active replisomes,'
                                    f'\n{replisome_stoich*replisome_stoich} per '
                                    f'(via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
@@ -1840,7 +1840,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     # the parent complex:
                     subunit_counts = tf_counts * total_stoich
                     ax1.plot(time, subunit_counts, color='lightcoral',
-                             label=f'transcription unit bound {complex} transcription'
+                             label=f'transcription unit bound {complex_id} transcription'
                                    f' factors,\n {total_stoich} per (via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
@@ -1861,7 +1861,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     subunit_counts = ribosome_counts * total_stoich
 
                     ax1.plot(time, subunit_counts, color='gold',
-                             label=f'{complex} counts within active ribosomes,'
+                             label=f'{complex_id} counts within active ribosomes,'
                                    f'\n{total_stoich} per (via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
@@ -1871,7 +1871,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Plot the total theoretical complex counts:
             ax1.plot(time, total_counts, color='black',
-                     label=f'Theoretical total {complex} counts\n(free complex '
+                     label=f'Theoretical total {complex_id} counts\n(free complex '
                            f'counts + counts within parent complexes)',
                      linewidth=.25, alpha=1)
 
@@ -1880,7 +1880,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.set_ylabel("Complex Counts")
             ax1.set_title(
                 f"Complex counts for the {complex_makeup} {complex_type} complex "
-                f"{complex}\n Sim ID: {metadata['description']}", fontsize=6)
+                f"{complex_id}\n Sim ID: {metadata['description']}", fontsize=6)
             ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
 
@@ -1896,11 +1896,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 ax2.axvline(x=dt, linestyle='--', color="yellowgreen", alpha=a)
                 ax3.axvline(x=dt, linestyle='--', color="yellowgreen", alpha=a)
 
-            if self.is_a_ribosome_subunit(sim_data, complex) == []:
+            if self.is_a_ribosome_subunit(sim_data, complex_id) == []:
                 plt.tight_layout()
 
             # Save the plot:
-            file_name = plotOutFileName + "_" + complex
+            file_name = plotOutFileName + "_" + complex_id
             exportFigure(plt, plotOutDir, file_name, metadata)
 
 
