@@ -9,7 +9,7 @@ fluxesAndMoleculesToSS()
 import numpy as np
 from scipy import integrate
 import sympy as sp
-
+import pandas as pd
 from wholecell.utils import build_ode, data, units
 from wholecell.utils.random import stochasticRound
 
@@ -534,5 +534,4 @@ class Equilibrium(object):
 			for self.stoich_matrix_monomers(): rows=self.molecule_names, cols=self.ids_complexes
 			for self.mass_matrix(): rows=self.molecule_names, cols=self.ids_reactions
 		"""
-		import pandas as pd
 		return pd.DataFrame(matrix, index=rows, columns=cols)

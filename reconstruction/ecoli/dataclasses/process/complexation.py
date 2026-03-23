@@ -5,7 +5,7 @@ SimulationData for the Complexation process
 import numpy as np
 from wholecell.utils import units
 from wholecell.utils.mc_complexation import mccBuildMatrices
-
+import pandas as pd
 
 class ComplexationError(Exception):
 	pass
@@ -237,5 +237,4 @@ class Complexation(object):
 			for self.stoich_matrix_monomers(): rows=self.molecule_names, cols=self.ids_complexes
 			for self.mass_matrix(): rows=self.molecule_names, cols=self.ids_reactions
 		"""
-		import pandas as pd
 		return pd.DataFrame(matrix, index=rows, columns=cols)

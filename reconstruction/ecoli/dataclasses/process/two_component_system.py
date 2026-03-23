@@ -12,9 +12,8 @@ import numpy as np
 import scipy
 import scipy.integrate
 import re
-
+import pandas as pd
 import sympy as sp
-
 from wholecell.utils import build_ode
 from wholecell.utils import data
 from wholecell.utils import units
@@ -771,7 +770,6 @@ class TwoComponentSystem(object):
 			for self.stoich_matrix(): rows=self.molecule_names, cols=self.ids_reactions
 			for self.stoich_matrix_monomers(): rows=self.modified_molecules, cols=self.complex_to_monomer.keys()
 		"""
-		import pandas as pd
 		return pd.DataFrame(matrix, index=rows, columns=cols)
 
 
