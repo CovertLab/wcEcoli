@@ -17,30 +17,28 @@ class TwoComponentSystems(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(TwoComponentSystems, self).initialize(sim, sim_data)
 
-		# Get the IDs of molecules involved in two component system reactions:
-		self.two_component_system_molecule_ids = (
-			list(sim_data.process.two_component_system.molecule_names))
+		# Get the IDs of two component systems reactions:
+		self.reactionIDs = list(sim_data.process.two_component_system.rxn_ids)
 
 
 	def allocate(self):
 		super(TwoComponentSystems, self).allocate()
 
-		self.delta2CSMolecules = np.zeros(
-			len(self.two_component_system_molecule_ids),
+		self.complexationEvents = np.zeros(
+			len(self.reactionIDs),
 			np.int64)
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'delta2CSMolecules': 'twoComponentSystemMoleculeIds'
-			}
+			'complexationEvents': 'reactionIDs'}
 
 		tableWriter.writeAttributes(
-			twoComponentSystemMoleculeIds = self.two_component_system_molecule_ids,
+			twoComponentSystemRxnIds = self.reactionIDs,
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
 		tableWriter.append(
 			time = self.time(),
 			simulationStep = self.simulationStep(),
-			delta2CSMolecules = self.delta2CSMolecules,
+			complexationEvents = self.complexationEvents,
 			)
