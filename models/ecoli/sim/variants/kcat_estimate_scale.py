@@ -3,9 +3,9 @@ Sweeps a scalar multiplier applied to the max kcat estimates for below-line
 essential reactions.  Use this to test how the tightness of kcat-based flux
 upper bounds affects growth relative to an unconstrained wildtype control.
 
-Index 0 is a wildtype control (no kcat bounds applied).  Indices 1-15 use the
-'max' quantile kcat estimates scaled by a multiplier from 1.0 down to 0.8
-(15 evenly spaced values via np.linspace).
+Index 0 is a wildtype control (no kcat bounds applied).  Indices 1-21 use the
+'max' quantile kcat estimates scaled by a multiplier from 1.0 down to 0.0
+in increments of 0.05.
 
 When kcat bounds are active, sim_data.process.metabolism is modified:
 	sim_data.process.metabolism.kcat_estimate_quantile   (str)
@@ -15,26 +15,32 @@ When kcat bounds are active, sim_data.process.metabolism is modified:
 Expected variant indices:
 	 0: wildtype control (no kcat bounds)
 	 1: max x 100%
-	 2: max x  99%
-	 3: max x  98%
-	 4: max x  97%
-	 5: max x  96%
-	 6: max x  95%
-	 7: max x  94%
-	 8: max x  93%
-	 9: max x  92%
-	10: max x  91%
-	11: max x  90%
-	12: max x  89%
-	13: max x  88%
-	14: max x  87%
-	15: max x  86%
+	 2: max x  95%
+	 3: max x  90%
+	 4: max x  85%
+	 5: max x  80%
+	 6: max x  75%
+	 7: max x  70%
+	 8: max x  65%
+	 9: max x  60%
+	10: max x  55%
+	11: max x  50%
+	12: max x  45%
+	13: max x  40%
+	14: max x  35%
+	15: max x  30%
+	16: max x  25%
+	17: max x  20%
+	18: max x  15%
+	19: max x  10%
+	20: max x   5%
+	21: max x   0%
 """
 
 import numpy as np
 
 KCAT_QUANTILE = 'max'
-KCAT_MULTIPLIERS = np.round(np.arange(1.0, 0.855, -0.01), 2)
+KCAT_MULTIPLIERS = np.round(np.arange(1.0, -0.001, -0.05), 2)
 
 
 def kcat_estimate_scale(sim_data, index):
