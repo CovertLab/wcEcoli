@@ -54,10 +54,10 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 		# Note: the BDF solver has been empirically tested to be the fastest
 		# solver for this setting among the list of solvers that can be used
 		# by the scipy ODE suite.
-		self.molecules_required, self.all_molecule_changes = self.moleculesToNextTimeStep(
-			moleculeCounts, self.cellVolume, self.nAvogadro,
-			self.timeStepSec(), self.randomState, method="LSODA", jit=self.jit,
-			)
+		self.molecules_required, self.all_molecule_changes = (
+			self.moleculesToNextTimeStep(moleculeCounts, self.cellVolume,
+					self.nAvogadro, self.timeStepSec(), self.randomState,
+										   method="LSODA", jit=self.jit))
 
 		# Request counts of molecules needed
 		self.molecules.requestIs(self.molecules_required)
@@ -81,10 +81,10 @@ class TwoComponentSystem(wholecell.processes.process.Process):
 				jit=self.jit,
 				)
 
+		# Record molecule changes so that the reaction events can be estimated in analysis plots:
+		self.writeToListener("TwoComponentSystems",
+							 "moleculeChanges", self.all_molecule_changes)
+
 		# Increment changes in molecule counts
 		self.molecules.countsInc(self.all_molecule_changes)
 
-		# TODO: write all_molecule_changes to a listener.
-
-		# TEMPORARY: write to a monomer_counts.py listener:
-		self.writeToListener("MonomerCounts", "delta2CMolecules", self.molecules.counts())
