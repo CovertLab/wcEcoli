@@ -22,14 +22,6 @@ from wholecell.utils import units
 # Alternative methods to try (in order of priority) when solving ODEs to the next time step
 IVP_METHODS = ['LSODA', 'BDF']
 
-# TEMP ADDITION:
-class TwoComponentSystemError(Exception):
-	pass
-
-class MoleculeNotFoundError(TwoComponentSystemError):
-	pass
-# END TEMP ADDITION
-
 class TwoComponentSystem(object):
 	def __init__(self, raw_data, sim_data):
 		# Store two component system raw data for use in analysis
