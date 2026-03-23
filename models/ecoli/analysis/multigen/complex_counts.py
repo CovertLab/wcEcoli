@@ -512,7 +512,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             path_string_parts.append(chunk)
         path_string = " →\n".join(path_string_parts)
 
-        sentence = (f"{molecule_id} counts within in {parent_complex_id}, "
+        sentence = (f"{molecule_id} counts within {parent_complex_id}, "
                     f"\n{abs(total_stoich)} per (via {path_string})")
 
         return sentence
