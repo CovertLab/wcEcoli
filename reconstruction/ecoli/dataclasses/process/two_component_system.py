@@ -745,9 +745,9 @@ class TwoComponentSystem(object):
 		new proteins from the modified_proteins.tsv file that were not included
 		in the original list (or were, but needed corrected compartment tags).
 
-		# TODO (mia): eventually go through and fix the compartment tag for
-		DCUS-MONOMER from [c] to [i] to avoid needing to check compartment
-		validity and to be more consistent with true biology.
+		# TODO (mia): Fix the compartment tag for DCUS-MONOMER from [c] to [i]
+		to avoid needing to check compartment validity and to be more
+		consistent with true biology.
 		"""
 		# Orginal monomers (extracted from two_component_systems.tsv):
 		tcs_molecules = self.molecule_names.tolist()
