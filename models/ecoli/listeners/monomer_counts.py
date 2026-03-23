@@ -189,8 +189,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			'freeMonomerCounts': 'monomerIds',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
-			'twoComponentSystemComplexCounts': 'twoComponentSystemComplexIds',
-			'delta2CMolecules': 'twoComponentSystemMoleculeIds',
 			}
 
 		tableWriter.writeAttributes(
