@@ -56,7 +56,7 @@ END OF USER INPUTS
 """
 
 # file folder location:
-raw_data_file_location = 'reconstruction/ecoli/scripts/clim_half_life_data/'
+raw_data_file_location = 'reconstruction/ecoli/scripts/protein_half_lives/clim_half_life_data/'
 
 # Path to the input file location:
 INPUT_PATH = os.path.join(

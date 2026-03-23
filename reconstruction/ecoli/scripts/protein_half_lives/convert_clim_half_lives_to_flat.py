@@ -35,7 +35,7 @@ USER INPUTS
 # Note: this file should have a column named "Protein ID" (formatted exactly as
 # it is in the original file: 41467_2024_49920_MOESM4_ESM_ST1.xlsx)
 # and a column named "half_life (units.min)" to function properly with the code:
-Clim_file = 'Clim12.tsv'
+Clim_file = 'Clim#.tsv'
 
 # SPECIFY THE ECOCYC COMPARISON FILE
 # (in reconstruction/ecoli/scripts/clim_half_life_data/uniprot_id_to_ecocyc_monomer_id_matches)
@@ -55,7 +55,7 @@ END OF USER INPUTS
 """
 
 # file folder location:
-raw_data_file_location = 'reconstruction/ecoli/scripts/clim_half_life_data/'
+raw_data_file_location = 'reconstruction/ecoli/scripts/protein_half_lives/clim_half_life_data/'
 
 # Path to the input file location:
 INPUT_PATH = os.path.join(
