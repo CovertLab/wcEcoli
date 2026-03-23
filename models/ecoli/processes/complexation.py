@@ -70,10 +70,4 @@ class Complexation(wholecell.processes.process.Process):
 		self.writeToListener("ComplexationListener",
 							 "complexationEvents", events)
 
-		# Record the change in counts for each molecule involved in
-		# complexation reactions this timestep:
-		deltaMolecules = moleculeCounts - updatedMoleculeCounts
-		self.writeToListener("ComplexationListener",
-							 "deltaMolecules", deltaMolecules)
-
 
