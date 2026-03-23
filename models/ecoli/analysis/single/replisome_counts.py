@@ -55,8 +55,6 @@ class Plot(singleAnalysisPlot.SingleAnalysisPlot):
 			)
 
 		# Load counts of replisome subunits
-		# TODO (mia): double check that this would be the right way to do this,
-		#  since bulk molecules would only record the inactive-replisome counts.
 		(replisome_subunit_counts,) = read_bulk_molecule_counts(simOutDir, (replisome_subunit_ids,))
 
 		# Load time data
