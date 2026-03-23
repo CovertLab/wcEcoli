@@ -1,20 +1,13 @@
 """
 This plot visualizes the counts of a specified complex over time, along with:
 - Free monomer subunit availability
-- Complexation/phosphorylation events that produce or consume the complex
+- Complexation events that produce or consume the complex
 - Counts within parent complexes and unique molecules (ribosomes, RNAPs, etc.)
 
 Supported complex types:
 - Complexation complexes (irreversible assembly)
 - Equilibrium complexes (reversible ligand binding)
-- Two-component system complexes (phosphotransfer reactions)
-
-# NOTES: as of 03/01/2026:
-- 81 complexation complexes are subunits of other complexation complexes
-- 16 complexation complexes are subunits of equilibrium complexes
-- 4 complexation complexes are subunits of two component system complexes
-- 1 equilibrium complex is a subunit of another equilibrium complex
-- 4 equilibrium complexes are subunits of two component system complexes
+- Two-component system complexes (phosphotransfer/phosporylation/dephosporylation reactions)
 
 In total, there are 1131 unique complexation complexes, 39 unique equilibrium
 complexes, and 18 unique two component system complexes.
@@ -29,13 +22,8 @@ from wholecell.analysis.analysis_tools import (exportFigure,
          read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
-
-PLOT_COMPLEXES = ['PHOSPHO-NARX-NITRATE-CPLX[i]'] #['PHOSPHO-BAER[c]', "ARCB-CPLX", 'PHOSPHO-BAES[i]', 'PHOSPHO-BASR[c]', 'PHOSPHO-BASS[i]', 'PHOSPHO-DCUR[c]', 'PHOSPHO-DCUS[i]', 'PHOSPHO-NARL[c]', 'PHOSPHO-NARX[i]', 'PHOSPHO-PHOP[c]', 'PHOSPHO-PHOQ[i]', 'PHOSPHO-PHOB[c]', 'PHOSPHO-PHOR[i]', 'PHOSPHO-ARCB-CPLX[i]', 'PHOSPHO-BAES-INDOLE-CPLX[i]', 'PHOSPHO-BASS-FE+3-CPLX[i]', 'PHOSPHO-DCUS-SUC-CPLX[i]', 'PHOSPHO-NARX-NITRATE-CPLX[i]' ] #'CPLX0-11744','CPLX0-7796',"MONOMER0-155",'CPLX0-3953[c]','CPLX0-3962[c]', 'CPLX0-3955', 'CPLX0-3956']#'PHOSPHO-ARCA',"PHOSPHO-ARCB-CPLX",'APORNAP-CPLX[c]', 'CPLX0-2361','ARCB-CPLX',"PHOSPHO-ARCB-CPLX",'CPLX0-7796','CPLX0-3102','CPLX0-3104','CPLX0-3107','CPLX0-3101','CPLX0-7796APO[c]',]  #'CPLX0-2361', #['PHOSPHO-ARCA[c]', 'PHOSPHO-BAER[c]', 'PHOSPHO-BAES[i]', 'PHOSPHO-BASR[c]', 'PHOSPHO-BASS[i]', 'PHOSPHO-DCUR[c]', 'PHOSPHO-DCUS[i]', 'PHOSPHO-NARL[c]', 'PHOSPHO-NARX[i]', 'PHOSPHO-PHOP[c]', 'PHOSPHO-PHOQ[i]', 'PHOSPHO-PHOB[c]', 'PHOSPHO-PHOR[i]', 'PHOSPHO-ARCB-CPLX[i]', 'PHOSPHO-BAES-INDOLE-CPLX[i]', 'PHOSPHO-BASS-FE+3-CPLX[i]', 'PHOSPHO-DCUS-SUC-CPLX[i]', 'PHOSPHO-NARX-NITRATE-CPLX[i]'] #"PHOSPHO-PHOQ", "CPLX0-3107","CPLX0-11744","MONOMER0-160",
-                  #"CPLX0-3101", "MONOMER0-160", "MONOMER0-155", ] "ARCB-OXYGEN-CPLX[i]", 'ARCB-CPLX', "PHOSPHO-ARCB-CPLX" "PHOSPHO-NARX", "PHOSPHO-NARX-NITRATE-CPLX"
-FOR_NOW = True
-# TODO LIST:
-# - Consider adding option to plot metabolites on the free subunit counts plot (ax2)
-# - Make the free monomer counts version of this plot
+# List complexes you would like to plot here (with or without compartment tags):
+PLOT_COMPLEXES = ["APORNAP-CPLX"]
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
@@ -1108,30 +1096,25 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             reaction_fluxes: (n_reactions,) array of ESTIMATED reaction counts
         """
         # Extract the molecule changes for each TCS molecule across the cell paths:
-        all_molecule_changes = []
-        for sim_dir in cell_paths:
-            tcs_reader = TableReader(
-                os.path.join(sim_dir,'simOut', "TwoComponentSystems"))
-            molecule_changes = tcs_reader.readColumn("moleculeChanges")
-            all_molecule_changes.extend(molecule_changes)
-
-        # Combine molecule changes across all cell paths (e.g., by summing or averaging):
-        all_molecule_changes = np.concatenate(all_molecule_changes)
-
-        # Estimate the reaction events for each time step:
-        estimated_reaction_fluxes = np.zeros_like(all_molecule_changes)
+        all_molecule_changes = read_stacked_columns(
+            cell_paths, 'TwoComponentSystems', 'moleculeChanges')
         sm = sim_data.process.two_component_system.stoich_matrix()
+        n_timesteps = all_molecule_changes.shape[0]
+        n_reactions = sm.shape[1]
 
-        for i in range(all_molecule_changes.shape[0]):
+        # Estimate the reaction fluxes for each step using non-negative least squares:
+        estimated_reaction_fluxes = np.zeros((n_timesteps, n_reactions))
+
+        for i in range(n_timesteps):
             reaction_fluxes, residual = scipy.optimize.nnls(sm, all_molecule_changes[i])
             estimated_reaction_fluxes[i] = np.round(reaction_fluxes).astype(int)
 
             # Print a warning if the fit was not good::
             reconstructed = sm.dot(estimated_reaction_fluxes[i])
-            max_error = np.max(np.abs(reconstructed - estimated_reaction_fluxes[i]))
+            max_error = np.max(np.abs(reconstructed - all_molecule_changes[i]))
 
             if max_error > 0.5:
-                print(f"Warning: reaction flux reconstruction error = {max_error}")
+                print(f"Warning: reaction flux reconstruction error (t={i}) = {max_error}")
                 print(f"Residual from NNLS: {residual}")
 
         return estimated_reaction_fluxes
@@ -1235,7 +1218,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         ribosome50s_subunit_ids = ribosome50s_subunits["subunitIds"].tolist()
 
         ribosome_subunits = (ribosome30s_subunit_ids + ribosome50s_subunit_ids
-                             + "CPLX0-3956[c]" + "CPLX0-3955[c]"
+                             + ["CPLX0-3956[c]","CPLX0-3955[c]"]
                              + [sim_data.molecule_ids.s30_full_complex]
                              + [sim_data.molecule_ids.s50_full_complex])
 
@@ -1527,6 +1510,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             if molecule in self.tcs_m2pc_via_ptrs_dict:
                 self.tcs_m2pc_dict[molecule].update(self.tcs_m2pc_via_ptrs_dict[molecule])
 
+        # Estimate the TCS reaction events:
+        self.tcs_reaction_events = (
+            self.build_tcs_reaction_event_estimates(sim_data, cell_paths))
+
         # Make sure thee inputted entries are valid and assign a compartment tag:
         PLOT_COMPLEXES_revised = (
             self.check_validity_and_get_compartment(sim_data, PLOT_COMPLEXES))
@@ -1549,19 +1536,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Determine the complex makeup (homogeneous vs. heterogeneous):
             complex_makeup = self.determine_complex_makeup(complex, complex_type)
-
-            # Check if the complex or any of its parent complexes are involved
-            # in a TCS reaction, and if so, build the TCS rxn event estimates:
-            # Check if complex or any parent is TCS-related
-            tcs_molecules = sim_data.process.two_component_system.modified_molecules
-            complexes = list(downstream_complexes.keys())
-
-            if (complex_type == "two_component_system" or
-                    any(parent in tcs_molecules for parent in complexes)):
-                self.tcs_reaction_events = (
-                    self.build_tcs_reaction_event_estimates(sim_data,cell_paths))
-            else:
-                self.tcs_reaction_events = None
 
             # Extract the counts of the complex from bulk molecule counts:
             complex_counts = (
@@ -1608,6 +1582,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                          label=f'{monomer}', linewidth=0.75)
 
             # Add the parent complexes to the complex counts plot as well:
+            complexes = list(downstream_complexes.keys())
             for i in range(len(complexes)):
                 parent_complex = complexes[i]
                 path = downstream_complex_paths[i]
@@ -1655,7 +1630,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 else: # TCS reactions
                     rxn_idx = tcs_rxn_ids.index(rxn_id)
                     rxn_events = self.tcs_reaction_events[:, rxn_idx]
-                    ax3.plot(time, rxn_events, alpha=0.5, label=name, linewidth=0.75)
+                    ax3.plot(time, rxn_events, alpha=0.5, label=
+                            f'{rxn_id} \n estimated events '
+                            f'(generates 1 {complex})', linewidth=0.75)
 
                     # Also check if the complex is made from a different TCS
                     # reaction by the same base monomer:
@@ -1670,7 +1647,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             rxn_idx = tcs_rxn_ids.index(reaction_ID)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, rxn_events, alpha=0.5, label=
-                            f'{reaction_ID} \n(generates 1 {complex})', linewidth=0.75)
+                            f'{reaction_ID} \n estimated events '
+                            f'(generates 1 {complex})', linewidth=0.75)
 
                     # Lastly, if there is a TCS reaction in the mix, check if
                     # the complex itself is consumed by any TCS reactions:
@@ -1688,8 +1666,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             consumption_rxns_plotted.append(rxn_id)
                             rxn_idx = tcs_rxn_ids.index(rxn_id)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
-                            ax3.plot(time, np.negative(rxn_events), alpha=0.5, label=
-                                    f'{rxn_id} \n(consumes 1 {complex})', linewidth=0.75)
+                            ax3.plot(time, np.negative(rxn_events), alpha=0.5,
+                                     label=f'{rxn_id} \n estimated events '
+                                    f'(consumes 1 {complex})', linewidth=0.75)
 
 
             # Next, Find the reactions that consume the complex as a subunit
@@ -1719,11 +1698,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                              alpha=0.5, label=name, linewidth=0.75)
 
                 else:
-                    print(f"here #2, {rxn_id}")
                     rxn_idx = tcs_rxn_ids.index(rxn_id)
                     rxn_events = self.tcs_reaction_events[:, rxn_idx]
-                    ax3.plot(time,  np.negative(rxn_events),
-                             alpha=0.5, label=name, linewidth=0.75)
+                    ax3.plot(time, np.negative(rxn_events),
+                             alpha=0.5, label=f'{rxn_id} \n estimated events '
+                                 f'(consumes 1 {complex})', linewidth=0.75)
 
                     # Also check if the parent is made from a different TCS
                     # reaction by the same base complex:
@@ -1736,7 +1715,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             rxn_idx = tcs_rxn_ids.index(reaction_ID)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, np.negative(rxn_events), alpha=0.5, label=
-                            f'{reaction_ID} \n(consumes 1 {complex})', linewidth=0.75)
+                            f'{reaction_ID} \n estimated events (consumes 1 {complex})', linewidth=0.75)
 
                     # Lastly, check if the parent dephosphorylates to the complex:
                     if parent_complex in self.tcs_c2m_via_dprs_dict.keys():
@@ -1751,7 +1730,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             rxn_idx = tcs_rxn_ids.index(rxn_id)
                             rxn_events = self.tcs_reaction_events[:, rxn_idx]
                             ax3.plot(time, rxn_events, alpha=0.5, label=
-                                f'{rxn_id} \n(generates 1 {complex})', linewidth=0.75)
+                                f'{rxn_id}\n estimated events (generates 1 {complex})', linewidth=0.75)
 
             # Finally, check if the complex (or its parent complexes) are
             # involved in any special events that should be plotted:
@@ -1901,7 +1880,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.set_ylabel("Complex Counts")
             ax1.set_title(
                 f"Complex counts for the {complex_makeup} {complex_type} complex "
-                f"{complex}\n Sim ID: {metadata['description']}")
+                f"{complex}\n Sim ID: {metadata['description']}", fontsize=6)
             ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
 
@@ -1921,7 +1900,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 plt.tight_layout()
 
             # Save the plot:
-            file_name = plotOutFileName + "_" + complex + 'testing'
+            file_name = plotOutFileName + "_" + complex
             exportFigure(plt, plotOutDir, file_name, metadata)
 
 
