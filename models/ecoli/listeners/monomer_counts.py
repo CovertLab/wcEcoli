@@ -104,7 +104,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.ribosome_idx = unique_molecule_ids.index('active_ribosome')
 		self.rnap_idx = unique_molecule_ids.index('active_RNAP')
 		self.replisome_idx = unique_molecule_ids.index("active_replisome")
-		self.promoter_idx = unique_molecule_ids.index('promoter')
+
 
 	def allocate(self):
 		super(MonomerCounts, self).allocate()
@@ -135,17 +135,20 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 		uniqueMoleculeCounts = self.uniqueMolecules.container.counts()
 
+		# Get promoter objects to determine the number of bound TFs:
+		promoters = self.uniqueMolecules.container.objectsInCollection('promoter')
+
 		# Get current counts of active unique molecules:
 		n_active_ribosome = uniqueMoleculeCounts[self.ribosome_idx]
 		n_active_rnap = uniqueMoleculeCounts[self.rnap_idx]
 		n_active_replisome = uniqueMoleculeCounts[self.replisome_idx]
-		n_bound_TFs = self.uniqueMolecules.container._collections[self.promoter_idx]
+		n_bound_TFs = promoters.attr('bound_TF')
 
 		# Calculate the subunit counts using stoich matrices:
 		n_ribosome_subunit = n_active_ribosome * self.ribosome_stoich
 		n_rnap_subunit = n_active_rnap * self.rnap_stoich
 		n_replisome_subunit = n_active_replisome * self.replisome_stoich
-		n_bound_TF_subunit = n_bound_TFs['bound_TF'].sum(axis=0)
+		n_bound_TF_subunit = n_bound_TFs.sum(axis=0)
 
 		# Add the counts of all active unique molecule complex subunits to the
 		# free counts of each "inactive" subunit in the bulk (note this must
