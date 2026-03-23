@@ -47,8 +47,6 @@ class TwoComponentSystem(object):
 
 		activeToInactiveTF = {}  # convention: active TF is the DNA-binding form (active form is phosphorylated version of RR)
 
-		# TEMP:
-		common_molecules = []
 
 		# Build template reactions
 		signalingTemplate = {
@@ -98,8 +96,6 @@ class TwoComponentSystem(object):
 							molecule["molecule"],
 							molecule["location"]
 							)
-						if moleculeName not in common_molecules:
-							common_molecules.append(moleculeName)
 
 					if moleculeName not in molecules:
 						molecules.append(moleculeName)
