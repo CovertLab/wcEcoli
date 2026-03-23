@@ -101,8 +101,3 @@ class Equilibrium(wholecell.processes.process.Process):
 		# Record the number of complexation events that occurred this timestep:
 		self.writeToListener("EquilibriumListener",
 							 "complexationEvents", rxnFluxes)
-
-		# Record the change in counts for each molecule involved in
-		# complexation reactions this timestep:
-		self.writeToListener("EquilibriumListener",
-							 "deltaMolecules", deltaMolecules)
