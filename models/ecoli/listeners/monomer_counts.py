@@ -30,14 +30,14 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		equilibrium_complex_ids = sim_data.process.equilibrium.ids_complexes
 		self.monomer_ids = sim_data.process.translation.monomer_data["id"].tolist()
 
-		# Get IDs of complexed molecules monomers involved in two component system
-		# TODO (mia): consider completely redefining molecule_ids to be the modified_molecule_ids
-		#  (check that the stoich_matrix() stoich values are the same, as it will change in size):
-		self.two_component_system_molecule_ids = list(sim_data.process.two_component_system.molecule_names)
-		two_component_system_modified_molecules = list(sim_data.process.two_component_system.modified_molecules)
-		self.two_component_system_complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
+		# Get IDs of molecules involved in two component system complexes:
+		two_component_system_molecule_ids = (
+			list(sim_data.process.two_component_system.modified_molecules))
+		two_component_system_complex_ids = (
+			list(sim_data.process.two_component_system.complex_to_monomer.keys()))
 
-		# Get IDs of ribosome subunits
+		# Get IDs of monomers within ribosome subunits for unpacking of active
+		# ribosomes (stored within unique molecules):
 		ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
 			sim_data.molecule_ids.s50_full_complex)
 		ribosome_30s_subunits = sim_data.process.complexation.get_monomers(
@@ -45,26 +45,30 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		ribosome_subunit_ids = (ribosome_50s_subunits["subunitIds"].tolist() +
 			ribosome_30s_subunits["subunitIds"].tolist())
 
-		# Get IDs of RNA polymerase subunits
+		# Get IDs of RNA polymerase subunits for unpacking of active RNA
+		# polymerases (stored within unique molecules):
 		rnap_subunits = sim_data.process.complexation.get_monomers(
 			sim_data.molecule_ids.full_RNAP)
 		rnap_subunit_ids = rnap_subunits["subunitIds"].tolist()
 
-		# Get IDs of replisome subunits
+		# Get IDs of replisome subunits for unpacking of active replisomes
+		# (stored within unique molecules):
 		replisome_trimer_subunits = sim_data.molecule_groups.replisome_trimer_subunits
 		replisome_monomer_subunits = sim_data.molecule_groups.replisome_monomer_subunits
 		replisome_subunit_ids = replisome_trimer_subunits + replisome_monomer_subunits
 
-		# Get the IDs of transcription factor subunits:
+		# Get the IDs of transcription factor subunits for unpacking active TFs
+		# (stored within unique molecules):
 		tfs = sim_data.process.transcription_regulation.tf_ids
 		tf_subunit_ids = [tf_id + f'[{sim_data.getter.get_compartment(tf_id)[0]}]'
 						  for tf_id in tfs]
 
-		# Get stoichiometric matrices for complexation, equilibrium, two component system and the
-		# assembly of unique molecules
+		# Get stoichiometric matrices for complexation, equilibrium, two
+		# component system complexes and the assembly of active unique molecules
 		self.complexation_stoich = sim_data.process.complexation.stoich_matrix_monomers()
 		self.equilibrium_stoich = sim_data.process.equilibrium.stoich_matrix_monomers()
-		self.two_component_system_stoich = sim_data.process.two_component_system.stoich_matrix_monomers_TEMP(sim_data)
+		self.two_component_system_stoich = (
+			sim_data.process.two_component_system.stoich_matrix_monomers())
 		self.ribosome_stoich = np.hstack(
 			(ribosome_50s_subunits["subunitStoich"],
 			ribosome_30s_subunits["subunitStoich"]))
@@ -85,9 +89,10 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		self.complexation_complex_idx = get_molecule_indexes(complexation_complex_ids)
 		self.equilibrium_molecule_idx = get_molecule_indexes(equilibrium_molecule_ids)
 		self.equilibrium_complex_idx = get_molecule_indexes(equilibrium_complex_ids)
-		self.two_component_system_molecule_idx = get_molecule_indexes(self.two_component_system_molecule_ids)
-		self.two_component_system_modified_molecule_idx = get_molecule_indexes(two_component_system_modified_molecules)
-		self.two_component_system_complex_idx = get_molecule_indexes(self.two_component_system_complex_ids)
+		self.two_component_system_molecule_idx = (
+			get_molecule_indexes(two_component_system_molecule_ids))
+		self.two_component_system_complex_idx = (
+			get_molecule_indexes(two_component_system_complex_ids))
 		self.ribosome_subunit_idx = get_molecule_indexes(ribosome_subunit_ids)
 		self.rnap_subunit_idx = get_molecule_indexes(rnap_subunit_ids)
 		self.replisome_subunit_idx = get_molecule_indexes(replisome_subunit_ids)
@@ -124,66 +129,59 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 		)
 
-		self.twoComponentSystemCounts = np.zeros(
-			len(self.two_component_system_complex_ids),
-			np.int64)
-
-		self.delta2CMolecules = np.zeros(
-			len(self.two_component_system_molecule_ids),
-			np.int64)
-
 
 	def update(self):
-		# Get current counts of bulk and unique molecules
+		# Get current counts of bulk and unique molecules:
 		bulkMoleculeCounts = self.bulkMolecules.container.counts()
 		uniqueMoleculeCounts = self.uniqueMolecules.container.counts()
+
+		# Get current counts of active unique molecules:
 		n_active_ribosome = uniqueMoleculeCounts[self.ribosome_idx]
 		n_active_rnap = uniqueMoleculeCounts[self.rnap_idx]
 		n_active_replisome = uniqueMoleculeCounts[self.replisome_idx]
 		n_bound_TFs = self.uniqueMolecules.container._collections[self.promoter_idx]
 
-		# Account for monomers in unique molecule complexes (NOTE: all execpt
-		# RNAps unpack into to both monomers and other types of complexes
-		# tracked in the bulk, and thus, it is important these unique molecule
-		# complexes are unpacked first and added to the instance of
-		# "bulkMoleculeCounts" here so that the complexes can be further broken
-		# down via the complexation, equilibrium, and two component system
-		# stoichiometric matrices easily after this.
+		# Calculate the subunit counts using stoich matrices:
 		n_ribosome_subunit = n_active_ribosome * self.ribosome_stoich
-		n_rnap_subunit = n_active_rnap * self.rnap_stoich # the inactive RNAPs (APORNAP-CPLX) are handled in the complexation complex count unpacking.
+		n_rnap_subunit = n_active_rnap * self.rnap_stoich
 		n_replisome_subunit = n_active_replisome * self.replisome_stoich
 		n_bound_TF_subunit = n_bound_TFs['bound_TF'].sum(axis=0)
 
+		# Add the counts of all active unique molecule complex subunits to the
+		# free counts of each "inactive" subunit in the bulk (note this must
+		# happen before the bulk molecule complexes are unpacked, as some of
+		# these subunits are bulk molecule complexes):
 		bulkMoleculeCounts[self.ribosome_subunit_idx] += n_ribosome_subunit.astype(int)
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
 		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 		bulkMoleculeCounts[self.bound_TF_subunit_idx] += n_bound_TF_subunit.astype(int)
 
-		# Account for monomers in bulk molecule complexes (NOTE: some of the
-		# base subunits of the EQ reactions are complexation complexes, so its
-		# important that EQ counts are added before complexation is unpacked):
+		# Account for monomer subunits that make up TCS complexes
+		# (note: TCS complex subunits can be equilibrium or complexation
+		# complexes, so these must be unpacked before those):
 		two_component_monomer_counts = np.dot(self.two_component_system_stoich,
 			np.negative(bulkMoleculeCounts[self.two_component_system_complex_idx]))
-		bulkMoleculeCounts[
-			self.two_component_system_modified_molecule_idx] += two_component_monomer_counts.astype(
-			int)
-		# TODO: or, could change SMM to to include all the downstream molecules
-		#  of the complexation complex subunits, however, this would require a manual modified_proteins.tsv file to be made for use in the parca.
+		bulkMoleculeCounts[self.two_component_system_molecule_idx] += (
+			two_component_monomer_counts.astype(int))
+
+		# Account for monomer subunits that make up equilibrium complexes
+		# (note: eq complex subunits can be complexation complexes, so these
+		# must be unpacked before those):
 		equilibrium_monomer_counts = np.dot(self.equilibrium_stoich,
 			np.negative(bulkMoleculeCounts[self.equilibrium_complex_idx]))
-		bulkMoleculeCounts[self.equilibrium_molecule_idx] += equilibrium_monomer_counts.astype(int)
+		bulkMoleculeCounts[self.equilibrium_molecule_idx] += (
+			equilibrium_monomer_counts.astype(int))
+
+		# Account for monomer subunits that make up complexation complexes:
 		complex_monomer_counts = np.dot(self.complexation_stoich,
 			np.negative(bulkMoleculeCounts[self.complexation_complex_idx]))
-		bulkMoleculeCounts[self.complexation_molecule_idx] += complex_monomer_counts.astype(int)
-
-
+		bulkMoleculeCounts[self.complexation_molecule_idx] += (
+			complex_monomer_counts.astype(int))
 
 		# Update the total and free monomer counts at the start of each time step:
 		self.monomerCounts = bulkMoleculeCounts[self.monomer_idx]
-		self.freeMonomerCounts = self.bulkMolecules.container.counts()[self.monomer_idx]
-		# TODO: save the TCS counts as well!
-		# todo: consider moving this to the eq listener to save with the other TFs!
-		self.twoComponentSystemCounts = self.bulkMolecules.container.counts()[self.two_component_system_complex_idx]
+		self.freeMonomerCounts = (
+			self.bulkMolecules.container.counts())[self.monomer_idx]
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
@@ -197,8 +195,6 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 
 		tableWriter.writeAttributes(
 			monomerIds = self.monomer_ids,
-			twoComponentSystemMComplexIds = self.two_component_system_complex_ids,
-			twoComponentSystemModifiedMoleculeIds = self.two_component_system_molecule_ids,
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
@@ -209,6 +205,4 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			freeMonomerCounts=self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
-			twoComponentSystemComplexCounts = self.twoComponentSystemCounts,
-			delta2CMolecules = self.delta2CMolecules,
 			)
