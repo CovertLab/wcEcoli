@@ -14,8 +14,8 @@ from wholecell.analysis.plotting_tools import (
 	DEFAULT_MATPLOTLIB_COLORS as COLORS)
 
 FONT_SIZE = 9
-DOUBLING_TIME_BOUNDS_MINUTES = [0, 180]
-N_BINS = 36
+DOUBLING_TIME_BOUNDS_MINUTES = [0, 360]
+N_BINS = 100
 
 # Set True to exclude cells that hit time limit
 EXCLUDE_TIMEOUT_CELLS = True
@@ -24,7 +24,7 @@ EXCLUDE_TIMEOUT_CELLS = True
 PLOT_COMPLETION_RATES = True
 
 # Remove first N gens from plot
-IGNORE_FIRST_N_GENS = 16
+IGNORE_FIRST_N_GENS = 4
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
