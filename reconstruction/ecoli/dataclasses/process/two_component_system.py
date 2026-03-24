@@ -613,7 +613,7 @@ class TwoComponentSystem(object):
 				'subunitStoich': list(info[cplxId].values())}
 		else:
 			# Return stoich of 1 for monomers passed through:
-			out = {'subunitIds': cplxId, 'subunitStoich': 1}
+			out = {'subunitIds': [cplxId], 'subunitStoich': [1]}
 		return out
 
 
