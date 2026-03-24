@@ -33,7 +33,7 @@ class TwoComponentSystems(wholecell.listeners.listener.Listener):
 			'moleculeChanges': 'moleculeIDs',}
 
 		tableWriter.writeAttributes(
-			twoComponentSystemMoleculeIDs = self.moleculeIDs,
+			moleculeIDs = self.moleculeIDs,
 			subcolumns = subcolumns)
 
 	def tableAppend(self, tableWriter):
