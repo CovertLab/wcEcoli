@@ -44,6 +44,10 @@ class TfUnbinding(wholecell.processes.process.Process):
 	def evolveState(self):
 		# If there are no promoters, return immediately
 		if self.promoters.total_count() == 0:
+
+			# Write zeros to avoid stale values in the listener
+			self.writeToListener("RnaSynthProb", "nActualUnbound",
+								 np.zeros(len(self.tf_ids), dtype=int))
 			return
 
 		# Get attributes of all promoters
