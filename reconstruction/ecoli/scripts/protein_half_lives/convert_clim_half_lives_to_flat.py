@@ -25,7 +25,6 @@ import time
 import pandas as pd
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
-os.chdir(os.path.expanduser('~/wcEcoli/'))
 
 """
 USER INPUTS
@@ -62,7 +61,8 @@ if Clim_file == 'Clim#.tsv' or '#' in Clim_file:
         "/raw_clim_sorts/'.")
 
 # file folder location:
-raw_data_file_location = 'reconstruction/ecoli/scripts/protein_half_lives/clim_half_life_data/'
+raw_data_file_location = os.path.join(ROOT_PATH,
+    'reconstruction', 'ecoli', 'scripts', 'protein_half_lives', 'clim_half_life_data')
 
 # Path to the input file location:
 INPUT_PATH = os.path.join(
