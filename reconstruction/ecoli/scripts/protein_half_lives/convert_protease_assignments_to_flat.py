@@ -25,7 +25,6 @@ import time
 import pandas as pd
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
-os.chdir(os.path.expanduser('~/wcEcoli/'))
 
 """
 USER INPUTS
@@ -36,7 +35,7 @@ USER INPUTS
 # Note: this file should have a column named "Protein ID" (formatted exactly as
 # it is in the original file: 41467_2024_49920_MOESM4_ESM_ST1.xlsx)
 # and a column named "half_life (units.min)":
-protease_assignment_file = 'priority_proteases_10182024.xlsx'
+protease_assignment_file = 'priority_proteases_DATE.xlsx'
 
 # SPECIFY THE ECOCYC COMPARISON FILE (in the
 # uniprot_id_to_ecocyc_monomer_id_matches folder)
@@ -54,9 +53,19 @@ OUTPUT_FILE_NAME = 'protease_assignments.tsv' # e.g. 'protease_assignments_name.
 """
 END OF USER INPUTS
 """
+# Raise error if the user has not updated the placeholder value for the input file name:
+if (protease_assignment_file == 'priority_proteases_DATE.xlsx' or
+        "DATE" in protease_assignment_file):
+    raise ValueError(
+        "The protease_assignment_file is set to a placeholder value. "
+        "Please update the name to the actual input filename located in "
+        "'reconstruction/ecoli/scripts/protein_half_lives/clim_half_life_data"
+        "/raw_protease_assignment_files/'.")
+
 
 # file folder location:
-raw_data_file_location = 'reconstruction/ecoli/scripts/clim_half_life_data/'
+raw_data_file_location = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli',
+                    'scripts', 'protein_half_lives', 'clim_half_life_data')
 
 # Path to the input file location:
 INPUT_PATH = os.path.join(

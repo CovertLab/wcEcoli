@@ -25,7 +25,6 @@ import time
 import pandas as pd
 from wholecell.io import tsv
 from wholecell.utils.filepath import ROOT_PATH
-os.chdir(os.path.expanduser('~/wcEcoli/'))
 
 """
 USER INPUTS
@@ -35,7 +34,7 @@ USER INPUTS
 # Note: this file should have a column named "Protein ID" (formatted exactly as
 # it is in the original file: 41467_2024_49920_MOESM4_ESM_ST1.xlsx)
 # and a column named "half_life (units.min)" to function properly with the code:
-Clim_file = 'Clim12.tsv'
+Clim_file = 'Clim#.tsv'
 
 # SPECIFY THE ECOCYC COMPARISON FILE
 # (in reconstruction/ecoli/scripts/clim_half_life_data/uniprot_id_to_ecocyc_monomer_id_matches)
@@ -53,9 +52,17 @@ OUTPUT_FILE_NAME = 'protein_half_lives_name.tsv' # e.g. 'protein_half_lives_name
 """
 END OF USER INPUTS
 """
+# Raise error if the user has not updated the placeholder value for the input file name:
+if Clim_file == 'Clim#.tsv' or '#' in Clim_file:
+    raise ValueError(
+        "Clim_file is set to a placeholder value ('Clim#.tsv'). "
+        "Please update Clim_file to the actual input filename located in "
+        "'reconstruction/ecoli/scripts/protein_half_lives/clim_half_life_data"
+        "/raw_clim_sorts/'.")
 
 # file folder location:
-raw_data_file_location = 'reconstruction/ecoli/scripts/clim_half_life_data/'
+raw_data_file_location = os.path.join(ROOT_PATH,
+    'reconstruction', 'ecoli', 'scripts', 'protein_half_lives', 'clim_half_life_data')
 
 # Path to the input file location:
 INPUT_PATH = os.path.join(

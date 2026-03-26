@@ -94,6 +94,10 @@ class Equilibrium(wholecell.processes.process.Process):
 		self.molecules.countsInc(deltaMolecules)
 
 		# Write outputs to listeners
-		self.writeToListener("EquilibriumListener", "reactionRates", (
-			deltaMolecules[self.product_indices] / self.timeStepSec()
-			))
+		self.writeToListener("EquilibriumListener",
+							 "reactionRates", (
+			deltaMolecules[self.product_indices] / self.timeStepSec()))
+
+		# Record the number of complexation events that occurred this timestep:
+		self.writeToListener("EquilibriumListener",
+							 "complexationEvents", rxnFluxes)

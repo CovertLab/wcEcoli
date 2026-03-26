@@ -44,7 +44,7 @@ USER INPUTS END
 """
 # Directory for this file
 file_location = \
-    'reconstruction/ecoli/scripts/clim_half_life_data/'
+    'reconstruction/ecoli/scripts/protein_half_lives/clim_half_life_data/'
 
 # Directory to supplemental data files and data file of interest
 INPUT_FOLDER = os.path.join(file_location, 'raw_Gupta_et_al_data')

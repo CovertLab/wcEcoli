@@ -25,9 +25,8 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(EquilibriumListener, self).initialize(sim, sim_data)
 
-		self.complexIDs = sim_data.process.equilibrium.ids_complexes
+		# Get the IDs of the equilibrium reactions:
 		self.reactionIDs = sim_data.process.equilibrium.rxn_ids
-
 
 	# Allocate memory
 	def allocate(self):
@@ -35,13 +34,15 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 
 		self.reactionRates = np.zeros(len(self.reactionIDs), np.float64)
 
+		self.complexationEvents = np.zeros(len(self.reactionIDs), np.int64)
 
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'reactionRates': 'reactionIDs'}
+			'reactionRates': 'reactionIDs',
+			'complexationEvents': 'reactionIDs'
+			}
 
 		tableWriter.writeAttributes(
-			complexIDs = self.complexIDs,
 			reactionIDs = self.reactionIDs,
 			subcolumns = subcolumns)
 
@@ -51,4 +52,5 @@ class EquilibriumListener(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			reactionRates = self.reactionRates,
-			)
+			complexationEvents = self.complexationEvents
+		)
