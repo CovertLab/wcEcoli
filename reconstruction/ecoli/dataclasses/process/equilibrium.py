@@ -228,13 +228,13 @@ class Equilibrium(object):
 		Builds a stoichiometric matrix where each column is a reaction that
 		forms a complex directly from available base subunits (monomers,
 		metabolites, and complexation complexes) that exist in the total molecule
-		pool in the the equilibrium_reactions.tsv table. It is important to note
+		pool in the the raw_data.equilibrium_reactions table. It is important to note
 		that some equilibrium reaction subunits are complexation complexes
 		themselves, and in those cases, this matrix will NOT break the
 		complexation complex subunits down into their base monomers the way the
 		stoich_matrix_monomers() function in the complexation process does,
 		as the equilibirum process is likely not aware of all those subunits
-		as they are not all listed in the equilibrium_reactions.tsv table.
+		as they are not all listed in the raw_data.equilibrium_reactions table.
 
 		For example:
 		If an equilibrium reaction subunit is another equilibirium complex, then
@@ -242,7 +242,7 @@ class Equilibrium(object):
 		"parent" complex (but if the "grandchildren" subunits are complexation
 		complexes, they will not be broken down to their base monomers unless
 		the complexation reaction that makes the complexation complex is also
-		listed in the equilibrium_reactions.tsv table, which is highly unlikely).
+		listed in the raw_data.equilibrium_reactions table, which is highly unlikely).
 
 		Hence, when unpacking these complexes in the monomer_counts.py listener
 		to calculate the total counts for each monomer in the simulation, this

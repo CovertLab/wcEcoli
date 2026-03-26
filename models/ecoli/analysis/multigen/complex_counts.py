@@ -49,7 +49,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return revised_molecule_list
 
-    def check_complex_validity(self, molecule_list):
+    def check_complex_validity(self, sim_data, molecule_list):
         """
         Verify that molecules are valid complexes and determine their types.
 
@@ -60,11 +60,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 - valid_complexes: List of valid complex IDs
                 - complex_types: Dict mapping complex IDs to their types
         """
+        # First, check validity of molecule IDs and get compartment tags:
+        revised_molecule_list = self.check_validity_and_get_compartment(
+                                    sim_data, molecule_list)
+
+        # Next, check that the molecules are valid complexes and determine their types:
         all_complexes = self.complexIDs + self.eqComplexIDs + self.tcsComplexIDs
         valid_complexes = []
         complex_types = {}
 
-        for molecule in molecule_list:
+        for molecule in revised_molecule_list:
             if molecule in all_complexes:
                 valid_complexes.append(molecule)
                 if molecule in self.complexIDs:
@@ -75,7 +80,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     complex_types[molecule] = "two component system"
             else:
                 print(f"{molecule} is not a valid complex. Only complexation, "
-                      f"equilibrium, and two component system complexes can be plotted.")
+                      f"equilibrium, and two component system complexes can "
+                      f"be plotted.")
 
         return valid_complexes, complex_types
 
@@ -109,14 +115,35 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
-    def determine_complex_makeup(self, complex, complex_type):
+    def determine_complex_makeup(self, complex_id, complex_type):
+        """
+        Depending on the type of complex (complexation, equilibrium, or two
+        component system), determine what combination of monomer subunits the
+        complex is made from. If there is only one type of monomer subunit in
+        the complex, it is considered homogeneous. If there are multiple types
+        of monomer subunits, it is considered heterogeneous.
+
+        NOTE: this classification methodology is only dependent on monomer
+        subunit make up and not other molcule types (i.e. if an equilibrium
+        complex is made from a ligand binding to a single monomer, the complex
+        will still be labeled as homogeneous because it is made from only one
+        type of monomer subunit).
+        Args:
+            complex_id: ID of the complex being analyzed
+            complex_type: complex classification: complexation, eq, or TCS.
+        Returns:
+            str: "homogeneous" or "heterogeneous" for equilibrium and
+            complexation complexes, and something from the "pairings" dictionary
+            in the build_tcs_dictionaries() function for TCS complexes.
+
+        """
         # Determine the makeup of the complex based on its type:
         if complex_type == 'complexation':
-            makeup = self.c2ct[complex]
+            makeup = self.c2ct[complex_id]
         elif complex_type == 'equilibrium':
-            makeup = self.eq_c2ct[complex]
+            makeup = self.eq_c2ct[complex_id]
         elif complex_type == 'two component system':
-            makeup = self.tcs_c2ct[complex]
+            makeup = self.tcs_c2ct[complex_id]
         else:
             makeup = "unknown"
 
@@ -1302,7 +1329,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
     def get_rnap_subunit_counts(self, metadata, cell_paths):
         """
-            Extract RNAP subunit counts and events from simulation data.
+        Extract RNAP subunit counts and events from simulation data.
+
         Args:
             metadata: simulation metadata
             cell_paths: cell paths to extract data from
@@ -1394,7 +1422,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
     def get_replisome_subunit_counts(self, sim_data, cell_paths, molecule):
         """
-            Extract replisome subunit counts and events from simulation data.
+        Extract replisome subunit counts and events from simulation data.
         Args:
             metadata: simulation metadata
             cell_paths: cell paths to extract data from
@@ -1481,7 +1509,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         self.eqComplexIDs = sim_data.process.equilibrium.ids_complexes
         self.tcsComplexIDs = list(sim_data.process.two_component_system.complex_to_monomer.keys())
 
-        # Generatae the complexation molecules to parent complexes
+        # Generate the complexation molecules to parent complexes
         # and molecules to all downstream complexes dictionaries:
         self.c_m2pc_dict, self.c_m2adc_dict, self.c2ct = (
             self.build_complexation_dictionaries(sim_data))
@@ -1514,13 +1542,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         self.tcs_reaction_events = (
             self.build_tcs_reaction_event_estimates(sim_data, cell_paths))
 
-        # Make sure thee inputted entries are valid and assign a compartment tag:
-        PLOT_COMPLEXES_revised = (
-            self.check_validity_and_get_compartment(sim_data, PLOT_COMPLEXES))
-
-        # Check that all the valid inputs are indeed complexes:
+        # Check that all the valid inputs are indeed valid and complexes:
         valid_complexes, complex_type_dict = (
-            self.check_complex_validity(PLOT_COMPLEXES_revised))
+            self.check_complex_validity(sim_data, PLOT_COMPLEXES))
 
         # Generate a plot for each complex:
         for complex_id in valid_complexes:
@@ -1563,9 +1587,19 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Also plot the counts of each base monomer within the complex:
             monomer_ids = list(upstream_monomers.keys())
+
+            # If there happens to be a situation where there are more than one
+            # path per monomer, then the lengths of monomer_ids and
+            # upstream_monomer_paths will not match.
+            assert len(monomer_ids) == len(upstream_monomer_paths), \
+                (f"Length mismatch: {len(monomer_ids)} monomers but "
+                 f"{len(upstream_monomer_paths)} paths")
+
             for i in range(len(monomer_ids)):
                 monomer = monomer_ids[i]
-                path = upstream_monomer_paths[i]  # Get corresponding path from the list
+                path = upstream_monomer_paths[i]
+                # Note: 0 just indexes to the value of an array that holds the
+                # "total_stoich" dictionary, and is not related to index i here.
                 total_stoich = upstream_monomers[monomer][0]['total_stoich']
                 monomer_counts = complex_counts * total_stoich
 
@@ -1586,6 +1620,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             for i in range(len(complexes)):
                 parent_complex = complexes[i]
                 path = downstream_complex_paths[i]
+                # Note: 0 just indexes to the value of an array that holds the
+                # "total_stoich" dictionary, and is not related to index i here.
                 total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
                 parent_complex_free_counts = (
                     read_stacked_bulk_molecules(cell_paths, [parent_complex]))[0]
@@ -1821,7 +1857,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                     ax1.plot(time, subunit_counts, color='gold',
                              label=f'{complex_id} counts within active replisomes,'
-                                   f'\n{replisome_stoich*replisome_stoich} per '
+                                   f'\n{replisome_stoich*total_stoich} per '
                                    f'(via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
