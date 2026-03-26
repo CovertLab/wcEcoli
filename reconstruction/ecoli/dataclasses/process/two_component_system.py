@@ -167,12 +167,12 @@ class TwoComponentSystem(object):
 
 		# Build dictionary mapping complexes to their base monomer subunit
 		# composition from the modified_proteins table in the flat file (since
-		# its not possible to get the base monomers from the raw TCS tsv files):
+		# its not possible to get the base monomers from the raw TCS raw_data files):
 		self.complex_to_monomer = self._buildComplexToMonomer(
 			sim_data, raw_data.modified_proteins, self.molecule_names)
 
 		# Build list of molecules that include those from the original molecule
-		# list and molecules from the modified_proteins.tsv table that are not
+		# list and molecules from the raw_data.modified_proteins table that are not
 		# in the oiginal molecule list:
 		self.modified_molecules = self.make_modified_molecule_list()
 
@@ -220,7 +220,7 @@ class TwoComponentSystem(object):
 		to its stoichiometry.
 
 		This function also handles correcting compartment tags for subunits
-		where the compartment tag listed in the modified_proteins.tsv table
+		where the compartment tag listed in the raw_data.modified_proteins table
 		is inconsistent with the molecule's tag saved in the bulk molecule data.
 		'''
 		D = {}
@@ -291,7 +291,8 @@ class TwoComponentSystem(object):
 		Builds stoichiometry matrix for complexes to their base monomers subunits
 		Rows: modified molecules (complexes and monomers, including base monomer
 		subunits that were not included in the original molecule list extracted
-		from two_component_systems.tsv, but were included in the modified_proteins.tsv table)
+		from raw_data.two_component_systems, but were included in the
+		raw_data.modified_proteins table).
 		Columns: complexes
 		Values: base monomer stoichiometry (not including non-monomer subunits,
 		like metabolites, ATP, etc.)
@@ -719,7 +720,7 @@ class TwoComponentSystem(object):
 		"""
 		Since the raw modified_proteins table contains proteins that are either
 
-		1. not in the original molecule pool provided in two_component_systems.tsv
+		1. not in the original molecule pool provided in raw_data.two_component_systems
 		(PHOQ-MONOMER, PHOR-MONOMER, ARCB-MONOMER, and NARX-MONOMER), or,
 		2. in the molecule pool but have different compartment tags from what
 		the simulation expects (DUCS-MONOMER[i] should be DCUS-MONOMER[c]),
@@ -729,17 +730,17 @@ class TwoComponentSystem(object):
 
 		This function generates a modified molecule list that includes the original
 		molecules from the TCS molecule pool (built in __init__()) and the
-		new proteins from the modified_proteins.tsv file that were not included
+		new proteins from the raw_data.modified_proteins file that were not included
 		in the original list (or were, but needed corrected compartment tags).
 
 		# TODO (mia): Consider/investigate changing the compartment tag for
 		DCUS-MONOMER from [c] to [i] to avoid needing to check compartment
 		validity here (and potentially be more consistent with known biology).
 		"""
-		# Orginal monomers (extracted from two_component_systems.tsv):
+		# Orginal monomers (extracted from raw_data.two_component_systems):
 		tcs_molecules = self.molecule_names.tolist()
 		# Obtain the new molecules from the complex_to_monomer dictionary
-		# (generated from modified_proteins.tsv):
+		# (generated from raw_data.modified_proteins):
 		new_molecules = []
 		for complex in self.complex_to_monomer.keys():
 			# Index to the individual subunit dictionaries for the complex:
