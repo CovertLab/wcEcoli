@@ -613,7 +613,7 @@ class TwoComponentSystem(object):
 				'subunitStoich': list(info[cplxId].values())}
 		else:
 			# Return stoich of 1 for monomers passed through:
-			out = {'subunitIds': [cplxId], 'subunitStoich': [1]}
+			out = {'subunitIds': cplxId, 'subunitStoich': 1}
 		return out
 
 
@@ -732,9 +732,9 @@ class TwoComponentSystem(object):
 		new proteins from the modified_proteins.tsv file that were not included
 		in the original list (or were, but needed corrected compartment tags).
 
-		# TODO (mia): Fix the compartment tag for DCUS-MONOMER from [c] to [i]
-		to avoid needing to check compartment validity and to be more
-		consistent with true biology.
+		# TODO (mia): Consider/investigate changing the compartment tag for
+		DCUS-MONOMER from [c] to [i] to avoid needing to check compartment
+		validity here (and potentially be more biologically consistent).
 		"""
 		# Orginal monomers (extracted from two_component_systems.tsv):
 		tcs_molecules = self.molecule_names.tolist()
