@@ -734,7 +734,7 @@ class TwoComponentSystem(object):
 
 		# TODO (mia): Consider/investigate changing the compartment tag for
 		DCUS-MONOMER from [c] to [i] to avoid needing to check compartment
-		validity here (and potentially be more biologically consistent).
+		validity here (and potentially be more consistent with known biology).
 		"""
 		# Orginal monomers (extracted from two_component_systems.tsv):
 		tcs_molecules = self.molecule_names.tolist()
