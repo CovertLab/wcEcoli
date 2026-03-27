@@ -19,6 +19,7 @@ Produces three panels:
      between variants.
 """
 
+import csv
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -32,7 +33,7 @@ import os
 
 # Cells longer than this are considered timed-out and excluded from doubling
 # time statistics.
-MAX_DOUBLING_TIME_MIN = 180
+MAX_DOUBLING_TIME_MIN = 300
 
 # Generations to skip for the average dry mass panel (early gens are biased).
 IGNORE_FIRST_N_GENS_MASS = 4
@@ -75,6 +76,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		completion_rates = {}            # variant -> float [0, 1]
 		dt_by_gen = {}                   # variant -> array (n_gens,) of means
 		avg_dry_mass = {}                # variant -> float (mean dry mass, fg)
+		lineage_dts = []                 # list of dicts for per-lineage CSV
 
 		for vi in variant_indexes:
 			# -- completion rate ------------------------------------------
@@ -86,6 +88,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			completion_rates[vi] = (n_last / n_gen0) if n_gen0 > 0 else 0.0
 
 			# -- doubling time by generation --------------------------------
+			# Collect per-seed doubling times for CSV and compute means
+			seed_dts = {}  # seed -> {gen: dt_min}
 			mean_dts = np.full(n_total_gens, np.nan)
 			for gen in range(n_total_gens):
 				cells = self.ap.get_cells(
@@ -99,13 +103,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						t = TableReader(os.path.join(sim_out, 'Main')
 							).readColumn('time', squeeze=True)
 						dt_min = (t[-1] - t[0]) / 60.
-						if dt_min <= MAX_DOUBLING_TIME_MIN:
-							times.append(dt_min)
 					except Exception:
-						pass
+						continue
+					# Extract seed from path: .../000001/generation_000000/000000/
+					# The seed is the directory under the variant directory
+					parts = cell_path.rstrip('/').split('/')
+					# Path structure: .../variant/seed/generation/cell
+					seed = parts[-3]
+					if seed not in seed_dts:
+						seed_dts[seed] = {}
+					seed_dts[seed][gen] = dt_min
+					if dt_min <= MAX_DOUBLING_TIME_MIN:
+						times.append(dt_min)
 				if times:
 					mean_dts[gen] = np.mean(times)
 			dt_by_gen[vi] = mean_dts
+
+			# Build per-lineage rows for CSV
+			for seed in sorted(seed_dts.keys()):
+				row = {'variant': vi, 'seed': seed}
+				for gen in range(n_total_gens):
+					row[f'gen_{gen}_dt_min'] = seed_dts[seed].get(gen, np.nan)
+				lineage_dts.append(row)
 
 			# -- average dry mass ------------------------------------------
 			all_cells = self.ap.get_cells(
@@ -122,6 +141,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				except Exception:
 					pass
 			avg_dry_mass[vi] = np.mean(cell_means) if cell_means else np.nan
+
+		# ------------------------------------------------------------------ #
+		# Write per-lineage doubling times to CSV                              #
+		# ------------------------------------------------------------------ #
+		if lineage_dts:
+			gen_cols = [f'gen_{g}_dt_min' for g in range(n_total_gens)]
+			csv_path = os.path.join(plotOutDir, 'doubling_times_by_lineage.csv')
+			with open(csv_path, 'w', newline='', encoding='utf-8') as fh:
+				writer = csv.DictWriter(
+					fh, fieldnames=['variant', 'seed'] + gen_cols)
+				writer.writeheader()
+				writer.writerows(lineage_dts)
+			print(f'Wrote {csv_path}')
 
 		# ------------------------------------------------------------------ #
 		# Plot                                                                 #
