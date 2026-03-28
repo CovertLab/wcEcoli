@@ -165,3 +165,4 @@ reconstruction/ecoli/scripts/nca/data/regulon-db/*.tsv
 
 # VSCode:
 .vscode/
+.idea/copilot.data.migration.*.xml
