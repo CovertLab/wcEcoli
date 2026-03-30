@@ -14,8 +14,10 @@ The x-axis is simulated time in hours, concatenated across all generations of a
 single seed lineage (seed 0 by default).  Vertical dashed gray lines mark
 generation boundaries.
 
-Skips gracefully if the simulation was not run with the kcat_estimate_scale
-variant (i.e., sim_data.process.metabolism.selected_kcat_estimates is absent).
+When run on a variant without kcat constraints (e.g., variant 0 wildtype
+control), the flux traces and enzyme concentrations are still plotted.  The
+upper bound line uses the 'max' kcat estimates from the knowledge base for
+reference, shown as a dashed line rather than solid.
 """
 
 import os
@@ -77,16 +79,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			sim_data = pickle.load(f)
 
 		metabolism = sim_data.process.metabolism
-		if not hasattr(metabolism, 'selected_kcat_estimates'):
-			print('Skipping: sim_data does not have selected_kcat_estimates.'
-				  ' Run with the kcat_estimate_scale variant.')
-			return
+		has_constraints = hasattr(metabolism, 'selected_kcat_estimates')
+
+		# kcat lookup: use selected_kcat_estimates if the variant set them,
+		# otherwise fall back to the 'max' estimates from the knowledge base.
+		if has_constraints:
+			kcat_lookup = metabolism.selected_kcat_estimates
+		else:
+			kcat_lookup = metabolism.kcat_estimates.get('max', {})
 
 		# Build pair list
 		if REACTION_CATALYST_PAIRS:
 			pairs_to_plot = list(REACTION_CATALYST_PAIRS)
 		else:
-			all_pairs = sorted(metabolism.selected_kcat_estimates.keys())
+			all_pairs = sorted(kcat_lookup.keys())
 			pairs_to_plot = all_pairs[:N_PAIRS_TO_PLOT]
 
 		if not pairs_to_plot:
@@ -122,14 +128,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if cat_id not in cat_id_to_idx:
 				print(f'Warning: {cat_id} not in catalyst_ids — skipping.')
 				continue
-			# Check if valid key in selected_kcat_estimates
-			if (rxn_id, cat_id) not in metabolism.selected_kcat_estimates:
-				print(f'Warning: ({rxn_id}, {cat_id}) not in selected_kcat_estimates — skipping.')
+			if (rxn_id, cat_id) not in kcat_lookup:
+				print(f'Warning: ({rxn_id}, {cat_id}) not in kcat lookup — skipping.')
 				continue
 			valid_pairs.append((rxn_id, cat_id))
 			rxn_indexes.append(rxn_id_to_idx[rxn_id])
 			cat_indexes.append(cat_id_to_idx[cat_id])
-			kcats.append(metabolism.selected_kcat_estimates[(rxn_id, cat_id)])
+			kcats.append(kcat_lookup[(rxn_id, cat_id)])
 
 		if not valid_pairs:
 			print('No valid pairs found in listener IDs.')
@@ -232,10 +237,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		if n_pairs == 1:
 			axes = axes[np.newaxis, :]
 
-		quantile = getattr(metabolism, 'kcat_estimate_quantile', 'unknown')
-		multiplier = getattr(metabolism, 'kcat_estimate_multiplier', '?')
+		quantile = getattr(metabolism, 'kcat_estimate_quantile', 'max')
+		multiplier = getattr(metabolism, 'kcat_estimate_multiplier', None)
+		if has_constraints:
+			title_suffix = f'quantile: {quantile},  multiplier: {multiplier}'
+		else:
+			title_suffix = 'no constraints (reference bounds from max estimates)'
 		fig.suptitle(
-			f'kcat flux traces  —  quantile: {quantile},  multiplier: {multiplier}  '
+			f'kcat flux traces  —  {title_suffix}  '
 			f'—  gens {IGNORE_FIRST_N_GENS}+',
 			fontsize=12, y=1.002)
 
@@ -246,10 +255,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax_flux, ax_conc = axes[ri]
 
 			# Left panel: flux (blue) and bound (red) overlaid
+			bound_ls = '-' if has_constraints else '--'
+			bound_label = 'bound' if has_constraints else 'bound (ref)'
 			ax_flux.plot(time_cat, flux_cat[:, ri],
 						 lw=0.7, color='#1f77b4', alpha=0.85, label='flux')
 			ax_flux.plot(time_cat, bound_cat[:, ri],
-						 lw=0.7, color='#d62728', alpha=0.85, label='bound')
+						 lw=0.7, color='#d62728', alpha=0.85,
+						 ls=bound_ls, label=bound_label)
 
 			# Right panel: enzyme concentration (green)
 			ax_conc.plot(time_cat, conc_cat[:, ri],
