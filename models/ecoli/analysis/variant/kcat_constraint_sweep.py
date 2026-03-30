@@ -1,7 +1,7 @@
 """
 Summary plot for the kcat_estimate_scale variant sweep.
 
-Produces three panels:
+Produces four panels:
 
   1. Completion rate  — fraction of seeds (out of 8) that reached the final
      generation, one bar per variant.  Variant 0 (wildtype control) is shown
@@ -13,7 +13,12 @@ Produces three panels:
      visible.  Cells that timed out (> MAX_DOUBLING_TIME_MIN minutes) are
      excluded from the mean.
 
-  3. Average dry mass  — mean dry mass (fg) averaged over all timesteps and
+  3. Average doubling time  — mean doubling time (min) averaged over all
+     seeds for each variant, using only generations >= IGNORE_FIRST_N_GENS_MASS.
+     Y-axis is zoomed to ±3% of the data range to highlight differences
+     between variants.
+
+  4. Average dry mass  — mean dry mass (fg) averaged over all timesteps and
      seeds for each variant, using only generations >= IGNORE_FIRST_N_GENS_MASS.
      Y-axis is zoomed to ±3% of the data range to highlight differences
      between variants.
@@ -75,6 +80,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# ------------------------------------------------------------------ #
 		completion_rates = {}            # variant -> float [0, 1]
 		dt_by_gen = {}                   # variant -> array (n_gens,) of means
+		avg_doubling_time = {}           # variant -> float (mean dt, min)
 		avg_dry_mass = {}                # variant -> float (mean dry mass, fg)
 		lineage_dts = []                 # list of dicts for per-lineage CSV
 
@@ -119,6 +125,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					mean_dts[gen] = np.mean(times)
 			dt_by_gen[vi] = mean_dts
 
+			# -- average doubling time (skip early gens) --------------------
+			later_dts = mean_dts[IGNORE_FIRST_N_GENS_MASS:]
+			avg_doubling_time[vi] = (
+				np.nanmean(later_dts) if np.any(np.isfinite(later_dts))
+				else np.nan)
+
 			# Build per-lineage rows for CSV
 			for seed in sorted(seed_dts.keys()):
 				row = {'variant': vi, 'seed': seed}
@@ -158,9 +170,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# ------------------------------------------------------------------ #
 		# Plot                                                                 #
 		# ------------------------------------------------------------------ #
-		fig = plt.figure(figsize=(max(14, n_variants * 0.7), 16))
-		gs = fig.add_gridspec(3, 1, hspace=0.45,
-							  height_ratios=[1, 2, 1])
+		fig = plt.figure(figsize=(max(14, n_variants * 0.7), 20))
+		gs = fig.add_gridspec(4, 1, hspace=0.45,
+							  height_ratios=[1, 2, 1, 1])
 
 		x = np.arange(n_variants)
 		labels = [_variant_label(vi) for vi in variant_indexes]
@@ -214,22 +226,40 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				(gen_idx - 0.5, vi_idx - 0.5), 1, 1,
 				color='#cccccc', zorder=2))
 
-		# ---- Panel 3: average dry mass ----------------------------------- #
+		# ---- Panel 3: average doubling time ------------------------------- #
 		ax3 = fig.add_subplot(gs[2])
+		dts = [avg_doubling_time[vi] for vi in variant_indexes]
+		ax3.bar(x, dts, color=colors, edgecolor='white', linewidth=0.5)
+		finite_dts = [d for d in dts if np.isfinite(d)]
+		if finite_dts:
+			ymin = min(finite_dts) * 0.97
+			ymax = max(finite_dts) * 1.03
+			ax3.set_ylim(ymin, ymax)
+		ax3.set_ylabel('Average doubling time (min)', fontsize=10)
+		ax3.set_title(
+			f'Mean doubling time averaged over all seeds\n'
+			f'(gens {IGNORE_FIRST_N_GENS_MASS}–{n_total_gens - 1}; '
+			f'cells > {MAX_DOUBLING_TIME_MIN} min excluded)',
+			fontsize=11)
+		ax3.set_xticks(x)
+		ax3.set_xticklabels(labels, fontsize=7, rotation=0)
+
+		# ---- Panel 4: average dry mass ----------------------------------- #
+		ax4 = fig.add_subplot(gs[3])
 		masses = [avg_dry_mass[vi] for vi in variant_indexes]
-		ax3.bar(x, masses, color=colors, edgecolor='white', linewidth=0.5)
+		ax4.bar(x, masses, color=colors, edgecolor='white', linewidth=0.5)
 		finite_masses = [m for m in masses if np.isfinite(m)]
 		if finite_masses:
 			ymin = min(finite_masses) * 0.97
 			ymax = max(finite_masses) * 1.03
-			ax3.set_ylim(ymin, ymax)
-		ax3.set_ylabel('Average dry mass (fg)', fontsize=10)
-		ax3.set_title(
+			ax4.set_ylim(ymin, ymax)
+		ax4.set_ylabel('Average dry mass (fg)', fontsize=10)
+		ax4.set_title(
 			f'Mean dry mass averaged over all timesteps and seeds\n'
 			f'(gens {IGNORE_FIRST_N_GENS_MASS}–{n_total_gens - 1})',
 			fontsize=11)
-		ax3.set_xticks(x)
-		ax3.set_xticklabels(labels, fontsize=7, rotation=0)
+		ax4.set_xticks(x)
+		ax4.set_xticklabels(labels, fontsize=7, rotation=0)
 
 		# Legend: wildtype + one entry per multiplier
 		from matplotlib.patches import Patch
