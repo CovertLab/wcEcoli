@@ -1,5 +1,8 @@
 """
 Plot mRNA and protein counts for new genes across multiple generations
+
+Use --variant-range and  --seed-range to specify the range of variants to go
+through in the plot.
 """
 
 import pickle
@@ -59,22 +62,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		new_gene_mRNA_indexes = [mRNA_idx_dict.get(mRNA_id) for mRNA_id in
 								 new_gene_mRNA_ids]
 
-		# Extract protein indexes for each new gene
-		monomer_counts_reader = TableReader(
-			os.path.join(simOutDir, "MonomerCounts"))
-		monomer_idx_dict = {monomer: i for i, monomer in
-							enumerate(monomer_counts_reader.readAttribute(
-								'monomerIds'))}
-		new_gene_monomer_indexes = [monomer_idx_dict.get(monomer_id) for
-									monomer_id in new_gene_monomer_ids]
-
 		# Load data
 		time = read_stacked_columns(cell_paths, 'Main', 'time')
 		(new_gene_monomer_counts,) = read_stacked_bulk_molecules(
 			cell_paths, new_gene_monomer_ids)
-		all_mRNA_stacked_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_counts')
-		new_gene_mRNA_counts = all_mRNA_stacked_counts[:,new_gene_mRNA_indexes]
+		new_gene_mRNA_counts = read_stacked_columns(cell_paths,
+			'RNACounts', 'mRNA_counts')[:,new_gene_mRNA_indexes]
 
 		# Plotting
 		plt.figure(figsize = (8.5, 11))
