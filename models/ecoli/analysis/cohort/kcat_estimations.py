@@ -18,7 +18,7 @@ import os
 import pickle
 
 import numpy as np
-from scipy.ndimage import uniform_filter1d
+from scipy.ndimage import median_filter
 
 from reconstruction.spreadsheets import CSV_DIALECT, JsonWriter
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -51,7 +51,7 @@ QUANTILES = {
 	'max': 1.0,
 }
 
-SMOOTH_WINDOW = 100  # timesteps (seconds) for smoothed_max estimation
+SMOOTH_WINDOW = 10  # timesteps (seconds) for smoothed_max estimation
 
 
 def _read_csv_ids(filepath):
@@ -220,7 +220,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_q = np.nanquantile(kcat, quantile_values, axis=0).T
 			per_cell_quantiles.append(cell_q)
 
-			# Smoothed max: rolling mean over non-zero kcat, then take max
+			# Smoothed max: median filter over non-zero kcat, then take max.
+			# Median filter eliminates spikes shorter than half the window.
 			cell_sm = np.full(n_pairs, np.nan)
 			for pair_idx in range(n_pairs):
 				col = kcat[:, pair_idx].copy()
@@ -228,7 +229,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				if not np.any(valid):
 					continue
 				col[~valid] = 0.0
-				smoothed = uniform_filter1d(col, size=SMOOTH_WINDOW)
+				smoothed = median_filter(col, size=SMOOTH_WINDOW)
 				# Only consider timesteps that originally had non-zero kcat
 				smoothed[~valid] = np.nan
 				cell_sm[pair_idx] = np.nanmax(smoothed)
