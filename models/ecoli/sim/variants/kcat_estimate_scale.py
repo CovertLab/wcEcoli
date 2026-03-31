@@ -1,10 +1,11 @@
 """
-Sweeps a scalar multiplier applied to the max kcat estimates for below-line
-essential reactions.  Use this to test how the tightness of kcat-based flux
-upper bounds affects growth relative to an unconstrained wildtype control.
+Sweeps a scalar multiplier applied to the smoothed_max kcat estimates for
+below-line essential reactions.  Use this to test how the tightness of
+kcat-based flux upper bounds affects growth relative to an unconstrained
+wildtype control.
 
 Index 0 is a wildtype control (no kcat bounds applied).  Indices 1-21 use the
-'max' quantile kcat estimates scaled by a multiplier from 1.0 down to 0.0
+'smoothed_max' kcat estimates scaled by a multiplier from 1.0 down to 0.0
 in increments of 0.05.
 
 When kcat bounds are active, sim_data.process.metabolism is modified:
@@ -14,32 +15,32 @@ When kcat bounds are active, sim_data.process.metabolism is modified:
 
 Expected variant indices:
 	 0: wildtype control (no kcat bounds)
-	 1: max x 100%
-	 2: max x  95%
-	 3: max x  90%
-	 4: max x  85%
-	 5: max x  80%
-	 6: max x  75%
-	 7: max x  70%
-	 8: max x  65%
-	 9: max x  60%
-	10: max x  55%
-	11: max x  50%
-	12: max x  45%
-	13: max x  40%
-	14: max x  35%
-	15: max x  30%
-	16: max x  25%
-	17: max x  20%
-	18: max x  15%
-	19: max x  10%
-	20: max x   5%
-	21: max x   0%
+	 1: smoothed_max x 100%
+	 2: smoothed_max x  95%
+	 3: smoothed_max x  90%
+	 4: smoothed_max x  85%
+	 5: smoothed_max x  80%
+	 6: smoothed_max x  75%
+	 7: smoothed_max x  70%
+	 8: smoothed_max x  65%
+	 9: smoothed_max x  60%
+	10: smoothed_max x  55%
+	11: smoothed_max x  50%
+	12: smoothed_max x  45%
+	13: smoothed_max x  40%
+	14: smoothed_max x  35%
+	15: smoothed_max x  30%
+	16: smoothed_max x  25%
+	17: smoothed_max x  20%
+	18: smoothed_max x  15%
+	19: smoothed_max x  10%
+	20: smoothed_max x   5%
+	21: smoothed_max x   0%
 """
 
 import numpy as np
 
-KCAT_QUANTILE = 'max'
+KCAT_QUANTILE = 'smoothed_max'
 KCAT_MULTIPLIERS = np.round(np.arange(1.0, -0.001, -0.05), 2)
 
 

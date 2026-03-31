@@ -75,7 +75,8 @@ class Metabolism(object):
 		values below this threshold are treated as noise from reactions that
 		carried near-zero flux in the reference simulations.
 
-		Quantile labels: 'median', 'p05', 'p10', 'p90', 'p95', 'p99', 'p999', 'max'.
+		Quantile labels: 'median', 'p05', 'p10', 'p90', 'p95', 'p99', 'p999',
+		'max', 'smoothed_max'.
 		"""
 		sources = {
 			'median': raw_data.kcat_estimates.kcat_estimates_median,
@@ -85,7 +86,8 @@ class Metabolism(object):
 			'p95':    raw_data.kcat_estimates.kcat_estimates_p95,
 			'p99':    raw_data.kcat_estimates.kcat_estimates_p99,
 			'p999':   raw_data.kcat_estimates.kcat_estimates_p999,
-			'max':    raw_data.kcat_estimates.kcat_estimates_max,
+			'max':          raw_data.kcat_estimates.kcat_estimates_max,
+			'smoothed_max': raw_data.kcat_estimates.kcat_estimates_smoothed_max,
 		}
 		self.kcat_estimates = {}
 		for label, rows in sources.items():

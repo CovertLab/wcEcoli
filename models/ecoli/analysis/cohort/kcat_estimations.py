@@ -18,6 +18,7 @@ import os
 import pickle
 
 import numpy as np
+from scipy.ndimage import uniform_filter1d
 
 from reconstruction.spreadsheets import CSV_DIALECT, JsonWriter
 from models.ecoli.analysis import cohortAnalysisPlot
@@ -49,6 +50,8 @@ QUANTILES = {
 	'p999': 0.999,
 	'max': 1.0,
 }
+
+SMOOTH_WINDOW = 10  # timesteps (seconds) for smoothed_max estimation
 
 
 def _read_csv_ids(filepath):
@@ -158,6 +161,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Taking the median of per-cell quantiles at the end gives an accurate approximation
 		# with O(n_cells * n_pairs * n_quantiles) memory instead of O(n_cells * T * n_pairs).
 		per_cell_quantiles = []  # list of (n_pairs, n_quantiles) arrays, one per cell
+		per_cell_smoothed_max = []  # list of (n_pairs,) arrays, one per cell
 
 		for cell_path in cell_paths:
 			sim_out = os.path.join(cell_path, 'simOut')
@@ -216,9 +220,27 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cell_q = np.nanquantile(kcat, quantile_values, axis=0).T
 			per_cell_quantiles.append(cell_q)
 
+			# Smoothed max: rolling mean over non-zero kcat, then take max
+			cell_sm = np.full(n_pairs, np.nan)
+			for pair_idx in range(n_pairs):
+				col = kcat[:, pair_idx].copy()
+				valid = np.isfinite(col) & (col > 0)
+				if not np.any(valid):
+					continue
+				col[~valid] = 0.0
+				smoothed = uniform_filter1d(col, size=SMOOTH_WINDOW)
+				# Only consider timesteps that originally had non-zero kcat
+				smoothed[~valid] = np.nan
+				cell_sm[pair_idx] = np.nanmax(smoothed)
+			per_cell_smoothed_max.append(cell_sm)
+
 		if not per_cell_quantiles:
 			print('No cells successfully processed.')
 			return
+
+		# Aggregate smoothed_max across cells using nanmax
+		smoothed_max_stacked = np.stack(per_cell_smoothed_max, axis=0)  # (n_cells, n_pairs)
+		final_smoothed_max = np.nanmax(smoothed_max_stacked, axis=0)   # (n_pairs,)
 
 		# Stack to (n_cells, n_pairs, n_quantiles) and take the median across cells
 		# to get the final (n_pairs, n_quantiles) estimates.  Exception: the 'max'
@@ -266,6 +288,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						'kcat_estimate': estimate,
 					})
 			print(f"Wrote {out_path}")
+
+		# Write smoothed_max TSV
+		sm_out_path = os.path.join(plotOutDir, 'kcat_estimates_smoothed_max.tsv')
+		with open(sm_out_path, 'w', encoding='utf-8', newline='') as fh:
+			fh.write(provenance_comment)
+			writer = JsonWriter(fh, fieldnames, dialect=CSV_DIALECT)
+			writer.writeheader()
+			for i in range(n_pairs):
+				estimate = final_smoothed_max[i]
+				if np.isnan(estimate):
+					continue
+				writer.writerow({
+					'reaction_id': valid_pair_reaction_ids[i],
+					'catalyst_id': valid_pair_catalyst_ids[i],
+					'kcat_estimate': estimate,
+				})
+		print(f"Wrote {sm_out_path}")
 
 
 if __name__ == '__main__':
