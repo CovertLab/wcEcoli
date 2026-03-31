@@ -31,7 +31,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 # Number of representative reactions per behavioral category.
-N_PER_CATEGORY = 5
+N_PER_CATEGORY = 15
 
 # Classification thresholds.
 SPIKE_RATIO = 5.0
