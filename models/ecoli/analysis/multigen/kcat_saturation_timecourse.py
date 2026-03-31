@@ -29,7 +29,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 # Number of top-saturated reactions to plot in the PDF.
-N_REACTIONS_TO_SHOW = 20
+N_REACTIONS_TO_SHOW = 50
 
 # Ignore first N generations (initialization transient).
 IGNORE_FIRST_N_GENS = 4
