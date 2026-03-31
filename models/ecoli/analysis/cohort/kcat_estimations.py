@@ -51,7 +51,7 @@ QUANTILES = {
 	'max': 1.0,
 }
 
-SMOOTH_WINDOW = 10  # timesteps (seconds) for smoothed_max estimation
+SMOOTH_WINDOW = 100  # timesteps (seconds) for smoothed_max estimation
 
 
 def _read_csv_ids(filepath):
