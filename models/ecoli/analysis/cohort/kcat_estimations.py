@@ -53,6 +53,9 @@ QUANTILES = {
 
 SMOOTH_WINDOW = 100  # timesteps (seconds) for smoothed_max estimation
 
+LOW_VARIANCE_THRESHOLD = 1.05  # smoothed_max/median ratio below which buffer applies
+LOW_VARIANCE_BUFFER = 1.1      # extra multiplier for low-variance reactions
+
 
 def _read_csv_ids(filepath):
 	"""Read the first column of a CSV, skipping the header row."""
@@ -306,6 +309,39 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					'kcat_estimate': estimate,
 				})
 		print(f"Wrote {sm_out_path}")
+
+		# Write smoothed_max_buffered TSV: apply a buffer to low-variance reactions
+		median_col_idx = list(QUANTILES.keys()).index('median')
+		final_median = final_quantiles[:, median_col_idx]
+
+		buffered_fieldnames = ['reaction_id', 'catalyst_id', 'kcat_estimate', 'buffered']
+		smb_out_path = os.path.join(plotOutDir, 'kcat_estimates_smoothed_max_buffered.tsv')
+		with open(smb_out_path, 'w', encoding='utf-8', newline='') as fh:
+			fh.write(provenance_comment)
+			writer = JsonWriter(fh, buffered_fieldnames, dialect=CSV_DIALECT)
+			writer.writeheader()
+			for i in range(n_pairs):
+				sm_val = final_smoothed_max[i]
+				if np.isnan(sm_val):
+					continue
+				med_val = final_median[i]
+				if med_val > 0:
+					spread = sm_val / med_val
+				else:
+					spread = float('inf')
+				if spread < LOW_VARIANCE_THRESHOLD:
+					buffered = True
+					estimate = sm_val * LOW_VARIANCE_BUFFER
+				else:
+					buffered = False
+					estimate = sm_val
+				writer.writerow({
+					'reaction_id': valid_pair_reaction_ids[i],
+					'catalyst_id': valid_pair_catalyst_ids[i],
+					'kcat_estimate': estimate,
+					'buffered': buffered,
+				})
+		print(f"Wrote {smb_out_path}")
 
 
 if __name__ == '__main__':

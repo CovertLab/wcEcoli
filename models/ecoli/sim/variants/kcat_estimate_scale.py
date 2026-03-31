@@ -1,12 +1,14 @@
 """
-Sweeps a scalar multiplier applied to the smoothed_max kcat estimates for
-below-line essential reactions.  Use this to test how the tightness of
+Sweeps a scalar multiplier applied to the smoothed_max_buffered kcat estimates
+for below-line essential reactions.  Use this to test how the tightness of
 kcat-based flux upper bounds affects growth relative to an unconstrained
 wildtype control.
 
 Index 0 is a wildtype control (no kcat bounds applied).  Indices 1-21 use the
-'smoothed_max' kcat estimates scaled by a multiplier from 1.0 down to 0.0
-in increments of 0.05.
+'smoothed_max_buffered' kcat estimates scaled by a multiplier from 1.0 down to
+0.0 in increments of 0.05.  The buffered variant applies a 1.1x multiplier to
+low-variance reactions (where smoothed_max/median < 1.05) to provide headroom
+for stochastic variation.
 
 When kcat bounds are active, sim_data.process.metabolism is modified:
 	sim_data.process.metabolism.kcat_estimate_quantile   (str)
@@ -40,7 +42,7 @@ Expected variant indices:
 
 import numpy as np
 
-KCAT_QUANTILE = 'smoothed_max'
+KCAT_QUANTILE = 'smoothed_max_buffered'
 KCAT_MULTIPLIERS = np.round(np.arange(1.0, -0.001, -0.05), 2)
 
 
