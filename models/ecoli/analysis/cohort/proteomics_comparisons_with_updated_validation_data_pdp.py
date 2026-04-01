@@ -186,6 +186,104 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         return (sim_validation_common_names_to_counts_dict,
                 sim_validation_common_names_to_monomer_ids_dict)
 
+    # create a function that plots the saved validation data against the sim data:
+    def plot_validation_data_vs_sim_data(self, simDataFile, validationDataFile, plotOutDir, plotOutFileName):
+        # Get the validation data saved with the sim data:
+        (sim_schmidt_counts, val_schmidt_counts,
+         schmidt_overlap_ids, sim_wisniewski_counts,
+         val_wisniewski_counts,
+         wisniewski_overlap_ids) = self.get_validation_data(
+            simDataFile, validationDataFile)
+
+        (sim_validation_common_names_to_counts_dict,
+         sim_validation_common_names_to_monomer_ids_dict) = (
+            self.prep_validation_data_for_comparison(simDataFile, validationDataFile))
+
+        x = np.log10(val_schmidt_counts +1)
+        y = np.log10(sim_schmidt_counts +1)
+
+        # Plot the validation data vs the sim data for the Schmidt dataset:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=y,
+                                 mode='markers', name='Schmidt 2015',
+                                 marker=dict(color='lightseagreen'), opacity=0.7))
+
+        # Add hover text with the common names of the proteins:
+        hover_text = []
+        for i in range(len(schmidt_overlap_ids)):
+            common_name = self.sim_monomer_ids_to_common_names_dict[
+                schmidt_overlap_ids[i][:-3]]  # remove compartment tag
+            hover_text.append(common_name)
+        fig.update_traces(hovertext=hover_text, hoverinfo='text')
+
+        fig.update_layout(title='Simulated Protein Counts vs. saved Schmidt 2015 Validation Data',
+                          xaxis_title='Schmidt 2015 Protein Counts',
+                          yaxis_title='Simulated Protein Counts')
+
+        # add a legend:
+        fig.update_layout(showlegend=True)
+
+        # compute the counts above 30 for the linear fit and the pearson r, R2, and COD R2:
+
+        above_30_idx = np.where((x > np.log10(30 + 1)) & (y > np.log10(30 + 1)))
+        x_above_30 = x[above_30_idx]
+        y_above_30 = y[above_30_idx]
+        z_above_30 = np.polyfit(x_above_30, y_above_30, 1)
+        p_above_30 = np.poly1d(z_above_30)
+        trendline_y_above_30 = p_above_30(x)
+
+        # Compute the pearson r, R2, and the coefficient of determination R2:
+        r_value, p_val = pearsonr(x_above_30, y_above_30)
+        pr2 = r_value ** 2
+        COD_r2 = r2_score(x_above_30, y_above_30)  # COD R2
+
+        fig.update_layout(
+            title=f"Simulation Protein Counts vs. Validation Protein Counts<br>"
+                  f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
+                  f"Validation dataset: saved Schmidt et al. 2015 ST6 BW25113 data <br>"
+                  f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
+            title_font=dict(size=8),
+            xaxis_title="log₁₀(Validation Protein Counts + 1)",
+            yaxis_title="log₁₀(Simulation Protein Counts + 1)",
+            autosize=False,
+            width=900,
+            height=600,
+            plot_bgcolor='white',  # Set the plot area background color to white
+            paper_bgcolor='white'  # Set the entire graph background to white
+        )
+
+        # Define the text to display
+        text = (
+            f'Pearson R (counts > 30): {round(r_value, 3)}<br>'
+            f'Pearson R<sup>2</sup> (counts > 30): {round(pr2, 3)}<br>'
+            f'Coefficient of determination R<sup>2</sup> (counts > 30): {round(COD_r2, 3)}'
+        )
+        # Get the maximum x and minimum y to position the text in the bottom-right
+        x_max = x.max()
+        y_min = y.min()
+
+        # Adjust x_max and y_min slightly outside the actual graph boundaries
+        text_offset_x = 0.1
+        text_offset_y = 0.05
+
+        # Adding text annotation to the bottom right
+        fig.add_annotation(
+            x=x_max + text_offset_x,  # Move the x position slightly to the right
+            y=y_min - text_offset_y,  # Move the y position slightly below
+            text=text,
+            showarrow=False,
+            bgcolor='rgba(255, 255, 255, 0.8)',
+            bordercolor='rgba(0, 0, 0, 0.5)',
+            borderwidth=1,
+            borderpad=4,
+            align='right',
+            font=dict(size=10, color='gray'),
+            xref='x',
+            yref='y',
+        )
+
+        fig.write_html(os.path.join(plotOutDir, plotOutFileName + '_saved_Schmidt_2015_ST6_validation_comparison.html'))
+
 
 
     # Function that checks if an input is a vaild molecule in the simulation:
@@ -809,6 +907,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         pr2 = r_value ** 2
         COD_r2 = r2_score(x_above_30, y_above_30) # COD R2
 
+        # Also calc pearson R2 for all counts, not just those above 30:
+        r_value_all, p_val_all = pearsonr(x, y)
+        pr2_all = r_value_all ** 2
+        COD_r2_all = r2_score(x, y)
+
+
         # Add total counts scatter data:
         hovertext = self.generate_hovertext(RVS_sim_data_df)
         fig.add_trace(
@@ -862,7 +966,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             title=f"Simulation Protein Counts vs. Validation Protein Counts<br>"
                   f"Sim ID: {self.sim_name} (averaged over {self.total_cells} cells), "
                   f"Validation dataset: {validation_source_name}<br>"
-                  f"Pearson R<sup>2</sup> for counts > 30: {round(pr2, 3)}, n={len(above_30_idx[0])} (of {len(x)} total plotted)",
+                  f"coefficent of determination (COD) R<sup>2</sup> for all counts (n={len(x)}): {round(COD_r2_all,3)}; for counts > 30 (n={len(above_30_idx[0])}): {round(COD_r2, 3)}",
             title_font=dict(size=8),
             xaxis_title="log₁₀(Validation Protein Counts + 1)",
             yaxis_title="log₁₀(Simulation Protein Counts + 1)",
@@ -1949,13 +2053,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             os.mkdir(comparison_outpath)
 
         # Create comparison plots between the simulation and the raw validation data:
-        print("Plotting simulation vs raw validation data...")
+        print("Plotting simulation vs raw Schmidt et al. 2016 ST6 validation data...")
         self.compare_simulation_counts_to_raw_validation_source(
             comparison_outpath, "Schmidt et al. 2016 ST6 BW25113 data",
             "Schmidt2016_ST6_BW",
             SBWST6_uniprot_IDs_to_monomer_IDs,
             SBWST6_uniprot_IDs_to_schmidt_common_names,
             SBWST6_uniprot_IDs_to_schmidt_glucose_counts)
+
+        # Create comparison plots for the data saved with the sim:
+        self.plot_validation_data_vs_sim_data(simDataFile, validationDataFile, plotOutDir, 'saved_simulation_validation_data_comparison')
 
         if INCLUDE_MANUALLY_MAPPED_PROTEINS == True:
             # Find unmapped uniprot IDs and attempt to map them manually:
