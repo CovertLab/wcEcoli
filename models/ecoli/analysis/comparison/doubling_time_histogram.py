@@ -28,8 +28,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
 		# noinspection PyUnusedLocal
 		ap1, sim_data, _ = self.setup(reference_sim_dir)
+		reference_sim_name = os.path.basename(reference_sim_dir)
+
 		# noinspection PyUnusedLocal
 		ap2, _, _ = self.setup(input_sim_dir)
+		input_sim_name = os.path.basename(input_sim_dir)
 
 		def read_sims(ap):
 			sim_dirs = ap.get_cells(
@@ -69,11 +72,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax.hist(
 			dt1, bins=bins, alpha=0.5,
-			label=f'reference (n={len(dt1)}, {np.mean(dt1):.1f} $\pm$ {np.std(dt1):.1f})')
+			label=f'reference: {reference_sim_name}\n(n={len(dt1)}, {np.mean(dt1):.1f} $\pm$ {np.std(dt1):.1f})')
 		ax.hist(
 			dt2, bins=bins, alpha=0.5,
-			label=f'input (n={len(dt2)}, {np.mean(dt2):.1f} $\pm$ {np.std(dt2):.1f})')
-		ax.legend(prop={'size': 8})
+			label=f'input: {input_sim_name}\n(n={len(dt2)}, {np.mean(dt2):.1f} $\pm$ {np.std(dt2):.1f})')
+		ax.legend(prop={'size': 5})
 
 		ax.set_xlim(*DOUBLING_TIME_BOUNDS_MINUTES)
 		ax.set_xticks(
@@ -89,7 +92,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		ax.spines["right"].set_visible(False)
 
 		plt.tight_layout()
-		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
+		file_name = plotOutFileName + '_' + input_sim_name + '_' + reference_sim_name + '.pdf'
+		exportFigure(plt, plotOutDir, file_name, metadata)
 		plt.close('all')
 
 	def setup(self, inputDir: str) -> Tuple[
