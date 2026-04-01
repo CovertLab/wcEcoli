@@ -98,6 +98,15 @@ class Metabolism(object):
 				if (kcat := float(row['kcat_estimate'])) >= MIN_KCAT_ESTIMATE
 			}
 
+		# Track which reactions received a low-variance buffer so the
+		# variant can selectively exclude them.  The 'buffered' field is
+		# JSON-decoded by JsonReader, so it arrives as a Python bool.
+		self.kcat_buffered_reactions = {
+			(row['reaction_id'], row['catalyst_id'])
+			for row in raw_data.kcat_estimates.kcat_estimates_smoothed_max_buffered
+			if row.get('buffered') is True
+		}
+
 	def _set_solver_values(self, constants):
 		"""
 		Sets values to be used in the FBA solver.
