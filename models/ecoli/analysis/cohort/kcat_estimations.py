@@ -165,6 +165,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# with O(n_cells * n_pairs * n_quantiles) memory instead of O(n_cells * T * n_pairs).
 		per_cell_quantiles = []  # list of (n_pairs, n_quantiles) arrays, one per cell
 		per_cell_smoothed_max = []  # list of (n_pairs,) arrays, one per cell
+		per_cell_nonzero_median = []  # list of (n_pairs,) arrays, one per cell
 
 		for cell_path in cell_paths:
 			sim_out = os.path.join(cell_path, 'simOut')
@@ -238,6 +239,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				cell_sm[pair_idx] = np.nanmax(smoothed)
 			per_cell_smoothed_max.append(cell_sm)
 
+			# Nonzero median: median of kcat > 0 values, for spread check.
+			# Uses the same filter as smoothed_max so that rarely-expressed
+			# enzymes are evaluated based on behavior when present.
+			cell_nzm = np.full(n_pairs, np.nan)
+			for pair_idx in range(n_pairs):
+				col = kcat[:, pair_idx]
+				valid = np.isfinite(col) & (col > 0)
+				if np.any(valid):
+					cell_nzm[pair_idx] = np.nanmedian(col[valid])
+			per_cell_nonzero_median.append(cell_nzm)
+
 		if not per_cell_quantiles:
 			print('No cells successfully processed.')
 			return
@@ -245,6 +257,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Aggregate smoothed_max across cells using nanmax
 		smoothed_max_stacked = np.stack(per_cell_smoothed_max, axis=0)  # (n_cells, n_pairs)
 		final_smoothed_max = np.nanmax(smoothed_max_stacked, axis=0)   # (n_pairs,)
+
+		# Aggregate nonzero median across cells using nanmedian
+		nonzero_median_stacked = np.stack(per_cell_nonzero_median, axis=0)  # (n_cells, n_pairs)
+		final_nonzero_median = np.nanmedian(nonzero_median_stacked, axis=0)  # (n_pairs,)
 
 		# Stack to (n_cells, n_pairs, n_quantiles) and take the median across cells
 		# to get the final (n_pairs, n_quantiles) estimates.  Exception: the 'max'
@@ -310,10 +326,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				})
 		print(f"Wrote {sm_out_path}")
 
-		# Write smoothed_max_buffered TSV: apply a buffer to low-variance reactions
-		median_col_idx = list(QUANTILES.keys()).index('median')
-		final_median = final_quantiles[:, median_col_idx]
-
+		# Write smoothed_max_buffered TSV: apply a buffer to low-variance reactions.
+		# Uses nonzero median for the spread check so that rarely-expressed enzymes
+		# (whose overall median is 0/NaN) are evaluated based on behavior when present.
 		buffered_fieldnames = ['reaction_id', 'catalyst_id', 'kcat_estimate', 'buffered']
 		smb_out_path = os.path.join(plotOutDir, 'kcat_estimates_smoothed_max_buffered.tsv')
 		with open(smb_out_path, 'w', encoding='utf-8', newline='') as fh:
@@ -324,8 +339,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				sm_val = final_smoothed_max[i]
 				if np.isnan(sm_val):
 					continue
-				med_val = final_median[i]
-				if med_val > 0:
+				med_val = final_nonzero_median[i]
+				if np.isfinite(med_val) and med_val > 0:
 					spread = sm_val / med_val
 				else:
 					spread = float('inf')
