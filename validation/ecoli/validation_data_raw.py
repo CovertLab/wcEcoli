@@ -18,6 +18,8 @@ LIST_OF_DICT_FILENAMES = (
 	"li_protein_synthesis_rates_2014.tsv",
 	"macromolecular_growth_rate_modulation.tsv",
 	"schmidt2015_javier_table.tsv",
+	"Schmidt_2016_ST6.tsv",
+	"Schmidt_2016_ST9.tsv",
 	"taniguichi2010_table_6.tsv",
 	"toya_2010_central_carbon_fluxes.tsv",
 	"wisniewski2014_supp2.tsv",
