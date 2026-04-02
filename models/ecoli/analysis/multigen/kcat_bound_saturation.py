@@ -36,7 +36,7 @@ from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 0
 
 # Bound is considered "active" when flux exceeds this fraction of the bound.
 SATURATION_THRESHOLD = 0.9

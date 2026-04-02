@@ -32,7 +32,7 @@ from wholecell.utils import units
 N_REACTIONS_TO_SHOW = 50
 
 # Ignore first N generations (initialization transient).
-IGNORE_FIRST_N_GENS = 4
+IGNORE_FIRST_N_GENS = 0
 
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
