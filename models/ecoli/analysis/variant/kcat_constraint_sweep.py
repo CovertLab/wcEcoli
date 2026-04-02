@@ -1,27 +1,23 @@
 """
-Summary plot for the kcat_estimate_scale variant sweep.
+Summary plot for the kcat_estimate_scale variant sweep comparing
+smoothed_max_buffered (SMB) vs smoothed_max without buffered reactions
+(SM w/o B) at several multiplier levels.
 
 Produces four panels:
 
-  1. Completion rate  — fraction of seeds (out of 8) that reached the final
-     generation, one bar per variant.  Variant 0 (wildtype control) is shown
-     in gray; kcat-constrained variants are colored by multiplier magnitude
-     on a blue gradient (darker = larger multiplier / tighter bound).
+  1. Completion rate  — fraction of seeds that reached the final
+     generation, one bar per variant.  Variant 0 (wildtype control) is
+     shown in gray; SMB variants in blue, SM w/o B variants in orange.
 
   2. Mean doubling time by generation  — heatmap (variants × generations).
-     All 25 generations are shown so transient initialization effects are
-     visible.  Cells that timed out (> MAX_DOUBLING_TIME_MIN minutes) are
-     excluded from the mean.
+     Cells that timed out (> MAX_DOUBLING_TIME_MIN minutes) are excluded
+     from the mean.
 
   3. Average doubling time  — mean doubling time (min) averaged over all
      seeds for each variant, using only generations >= IGNORE_FIRST_N_GENS_MASS.
-     Y-axis is zoomed to ±3% of the data range to highlight differences
-     between variants.
 
   4. Average dry mass  — mean dry mass (fg) averaged over all timesteps and
      seeds for each variant, using only generations >= IGNORE_FIRST_N_GENS_MASS.
-     Y-axis is zoomed to ±3% of the data range to highlight differences
-     between variants.
 """
 
 import csv
@@ -31,7 +27,7 @@ import matplotlib.cm as cm
 import matplotlib.ticker as mticker
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.sim.variants.kcat_estimate_scale import KCAT_MULTIPLIERS
+from models.ecoli.sim.variants.kcat_estimate_scale import MULTIPLIERS
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
 import os
@@ -43,28 +39,33 @@ MAX_DOUBLING_TIME_MIN = 300
 # Generations to skip for the average dry mass panel (early gens are biased).
 IGNORE_FIRST_N_GENS_MASS = 4
 
-# Gray for wildtype; blue gradient (0.4–0.9) for constrained variants,
-# darker = larger multiplier (tighter bound).
+# Colors: gray for wildtype, blue for SMB, orange for SM w/o B.
 _WILDTYPE_COLOR = '#888888'
-_CONSTRAINED_COLORS = [
-	cm.Blues(0.4 + 0.5 * i / (len(KCAT_MULTIPLIERS) - 1))
-	for i in range(len(KCAT_MULTIPLIERS))
-]
+_SMB_COLORS = [cm.Blues(0.4 + 0.5 * i / max(len(MULTIPLIERS) - 1, 1))
+			   for i in range(len(MULTIPLIERS))]
+_SM_WO_B_COLORS = [cm.Oranges(0.4 + 0.5 * i / max(len(MULTIPLIERS) - 1, 1))
+				   for i in range(len(MULTIPLIERS))]
 
 
 def _variant_label(index):
 	"""Return a short human-readable label for a variant index."""
 	if index == 0:
 		return 'WT'
-	mult = KCAT_MULTIPLIERS[index - 1]
-	mult_pct = int(round(mult * 100))
-	return f'max\nx{mult_pct}%'
+	pair_idx = (index - 1) // 2
+	use_buffered = (index % 2 == 1)
+	mult_pct = int(round(MULTIPLIERS[pair_idx] * 100))
+	kind = 'SMB' if use_buffered else 'SM\nw/o B'
+	return f'{kind}\nx{mult_pct}%'
 
 
 def _variant_color(index):
 	if index == 0:
 		return _WILDTYPE_COLOR
-	return _CONSTRAINED_COLORS[index - 1]
+	pair_idx = (index - 1) // 2
+	use_buffered = (index % 2 == 1)
+	if use_buffered:
+		return _SMB_COLORS[pair_idx]
+	return _SM_WO_B_COLORS[pair_idx]
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -111,10 +112,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						dt_min = (t[-1] - t[0]) / 60.
 					except Exception:
 						continue
-					# Extract seed from path: .../000001/generation_000000/000000/
-					# The seed is the directory under the variant directory
+					# Extract seed from path: .../variant/seed/generation/cell
 					parts = cell_path.rstrip('/').split('/')
-					# Path structure: .../variant/seed/generation/cell
 					seed = parts[-3]
 					if seed not in seed_dts:
 						seed_dts[seed] = {}
@@ -170,7 +169,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# ------------------------------------------------------------------ #
 		# Plot                                                                 #
 		# ------------------------------------------------------------------ #
-		fig = plt.figure(figsize=(max(14, n_variants * 0.7), 20))
+		fig = plt.figure(figsize=(max(14, n_variants * 0.9), 20))
 		gs = fig.add_gridspec(4, 1, hspace=0.45,
 							  height_ratios=[1, 2, 1, 1])
 
@@ -184,8 +183,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					   color=colors, edgecolor='white', linewidth=0.5)
 		ax1.axhline(1.0, color='k', lw=0.8, ls='--')
 		ax1.set_ylim(0, 1.12)
-		ax1.set_ylabel('Completion rate\n(fraction reaching gen 24)', fontsize=10)
-		ax1.set_title('Fraction of seeds completing all 25 generations', fontsize=11)
+		ax1.set_ylabel('Completion rate', fontsize=10)
+		ax1.set_title('Fraction of seeds completing all generations', fontsize=11)
 		ax1.set_xticks(x)
 		ax1.set_xticklabels(labels, fontsize=7, rotation=0)
 		ax1.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
@@ -198,7 +197,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# ---- Panel 2:  mean doubling time heatmap ----------------------- #
 		ax2 = fig.add_subplot(gs[1])
 		heatmap_data = np.array([dt_by_gen[vi] for vi in variant_indexes])
-		# Clamp color range to reasonable limits
 		vmin = np.nanmin(heatmap_data)
 		vmax = min(np.nanmax(heatmap_data), MAX_DOUBLING_TIME_MIN)
 		im = ax2.imshow(
@@ -219,7 +217,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax2.set_xticklabels(np.arange(n_total_gens), fontsize=7)
 		ax2.set_yticks(np.arange(n_variants))
 		ax2.set_yticklabels(labels, fontsize=7)
-		# Mark NaN cells
 		nan_mask = np.isnan(heatmap_data)
 		for (vi_idx, gen_idx) in zip(*np.where(nan_mask)):
 			ax2.add_patch(plt.Rectangle(
@@ -261,17 +258,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax4.set_xticks(x)
 		ax4.set_xticklabels(labels, fontsize=7, rotation=0)
 
-		# Legend: wildtype + one entry per multiplier
+		# Legend
 		from matplotlib.patches import Patch
 		legend_elements = [
-			Patch(facecolor=_WILDTYPE_COLOR, label='wildtype (no bounds)'),
-		] + [
-			Patch(facecolor=_CONSTRAINED_COLORS[i],
-				  label=f'max x{int(round(m * 100))}%')
-			for i, m in enumerate(KCAT_MULTIPLIERS)
+			Patch(facecolor=_WILDTYPE_COLOR, label='WT (no bounds)'),
+			Patch(facecolor=_SMB_COLORS[0], label='SMB (buffered)'),
+			Patch(facecolor=_SM_WO_B_COLORS[0], label='SM w/o B (unbuffered dropped)'),
 		]
 		fig.legend(handles=legend_elements, loc='lower center',
-				   ncol=len(legend_elements), fontsize=7,
+				   ncol=len(legend_elements), fontsize=8,
 				   bbox_to_anchor=(0.5, -0.01))
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
