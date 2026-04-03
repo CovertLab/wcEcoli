@@ -41,13 +41,14 @@ EXTRA_REACTIONS = [
 	]
 
 # Quantiles to plot, with display properties.
-# Each entry: (quantile_key, label_template, color, linestyle)
+# Each entry: (quantile_key, label_template, color, linestyle, linewidth)
+# Widths and dash patterns are varied to help distinguish overlapping lines.
 QUANTILE_STYLES = [
-	('max',                  'max (kcat={:.2f})',         'green',  '-'),
-	('smoothed_max',         'smoothed_max (kcat={:.2f})','red',    '-'),
-	('smoothed_max_x1.1',   'SM x 1.1 (kcat={:.2f})',   'orange', '--'),
-	('smoothed_max_buffered','SM buffered (kcat={:.2f})', 'purple', '-'),
-	('p999',                 'p999 (kcat={:.2f})',        'brown',  '-'),
+	('max',                  'max (kcat={:.2f})',         'green',  '-',        1.8),
+	('smoothed_max',         'smoothed_max (kcat={:.2f})','red',    '-',        1.4),
+	('smoothed_max_x1.1',   'SM x 1.1 (kcat={:.2f})',   'orange', (5, 3),     1.4),
+	('smoothed_max_buffered','SM buffered (kcat={:.2f})', 'purple', (8, 3, 2, 3), 1.2),
+	('p999',                 'p999 (kcat={:.2f})',        'brown',  (2, 2),     1.0),
 	]
 
 
@@ -82,7 +83,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		target_kcats = {}
 		for pair in sorted(targets):
 			kcats = {}
-			for qkey, _, _, _ in QUANTILE_STYLES:
+			for qkey, _, _, _, _ in QUANTILE_STYLES:
 				if qkey == 'smoothed_max_x1.1':
 					val = metabolism.kcat_estimates.get('smoothed_max', {}).get(pair)
 					if val is not None:
@@ -131,7 +132,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		flux_all = []
 		cat_counts_all = []
 		# bounds_all: {quantile_key: [arrays]}
-		bounds_all = {qkey: [] for qkey, _, _, _ in QUANTILE_STYLES}
+		bounds_all = {qkey: [] for qkey, _, _, _, _ in QUANTILE_STYLES}
 		gen_boundary_times = []
 
 		time_offset = 0.0
@@ -192,7 +193,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			for ti in range(n_targets):
 				pair = valid_targets[ti]
 				conc = cat_counts[:, ti] * counts_to_molar  # molar
-				for qkey, _, _, _ in QUANTILE_STYLES:
+				for qkey, _, _, _, _ in QUANTILE_STYLES:
 					kcat_val = target_kcats[pair].get(qkey)
 					if kcat_val is not None:
 						if len(bounds_all[qkey]) <= len(time_all):
@@ -257,7 +258,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 				# Title
 				kcat_strs = []
-				for qkey, _, _, _ in QUANTILE_STYLES:
+				for qkey, _, _, _, _ in QUANTILE_STYLES:
 					if qkey in kcats:
 						kcat_strs.append(f'{qkey}={kcats[qkey]:.2f}')
 				fig.suptitle(
@@ -270,12 +271,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				ax_top.plot(time_cat, flux_cat[:, ti],
 							lw=0.8, color='blue', alpha=0.85, label='flux')
 
-				for qkey, label_tmpl, color, ls in QUANTILE_STYLES:
+				for qkey, label_tmpl, color, dashes, lw in QUANTILE_STYLES:
 					if qkey in bounds_cat and qkey in kcats:
-						ax_top.plot(
-							time_cat, bounds_cat[qkey][:, ti],
-							lw=0.8, color=color, ls=ls, alpha=0.8,
+						kwargs = dict(
+							lw=lw, color=color, alpha=0.85,
 							label=label_tmpl.format(kcats[qkey]))
+						if isinstance(dashes, tuple):
+							kwargs['dashes'] = dashes
+						else:
+							kwargs['ls'] = dashes
+						ax_top.plot(
+							time_cat, bounds_cat[qkey][:, ti], **kwargs)
 
 				ax_top.set_ylabel('mmol/g DCW/h', fontsize=9)
 				ax_top.legend(fontsize=7, loc='upper right', ncol=2)
