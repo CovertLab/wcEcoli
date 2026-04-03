@@ -64,6 +64,101 @@ CATEGORY_LABELS = {
 }
 
 
+def _get_spike_runs(flux, bound):
+	"""Return lengths of contiguous runs where flux > bound.
+
+	Args:
+		flux: 1-D array of flux values.
+		bound: 1-D array of bound values (same length).
+
+	Returns:
+		List of integer run lengths (empty if no spikes).
+	"""
+	exceeds = (flux > bound) & np.isfinite(flux) & (bound > 0)
+	if not exceeds.any():
+		return []
+	# Find run boundaries via diff
+	padded = np.concatenate([[False], exceeds, [False]])
+	diffs = np.diff(padded.astype(int))
+	starts = np.where(diffs == 1)[0]
+	ends = np.where(diffs == -1)[0]
+	return (ends - starts).tolist()
+
+
+def _write_spike_length_page(pdf, spiking_tis, valid_targets, flux_cat,
+							 sm_bound_cat):
+	"""Add a page showing spike-length distributions for spiking reactions.
+
+	Returns number of pages added (1).
+	"""
+	fig, (ax_hist, ax_table) = plt.subplots(
+		2, 1, figsize=(14, 10),
+		gridspec_kw={'height_ratios': [2, 1]})
+
+	fig.suptitle('Spike-length distribution (timesteps where flux > smoothed_max bound)',
+				 fontsize=12, fontweight='bold')
+
+	# Collect spike runs per reaction
+	all_runs = []
+	table_rows = []
+	for ti in spiking_tis:
+		rxn_id, _ = valid_targets[ti]
+		runs = _get_spike_runs(flux_cat[:, ti], sm_bound_cat[:, ti])
+		if runs:
+			all_runs.extend(runs)
+			table_rows.append((
+				rxn_id,
+				len(runs),
+				np.median(runs),
+				np.max(runs),
+				np.sum(runs),
+			))
+
+	# Top panel: histogram of all spike lengths pooled across reactions
+	if all_runs:
+		max_len = max(all_runs)
+		bins = np.arange(0.5, max_len + 1.5, 1) if max_len <= 50 else 30
+		ax_hist.hist(all_runs, bins=bins, color='#d62728', alpha=0.7,
+					 edgecolor='white', lw=0.5)
+		ax_hist.set_xlabel('Spike length (timesteps)', fontsize=10)
+		ax_hist.set_ylabel('Count', fontsize=10)
+		ax_hist.set_title(
+			f'{len(all_runs)} spikes across {len(table_rows)} reactions  '
+			f'(median={np.median(all_runs):.0f}, '
+			f'max={np.max(all_runs):.0f} timesteps)',
+			fontsize=10)
+	else:
+		ax_hist.text(0.5, 0.5, 'No spikes exceed smoothed_max bound',
+					 ha='center', va='center', fontsize=12,
+					 transform=ax_hist.transAxes)
+	ax_hist.tick_params(labelsize=8)
+
+	# Bottom panel: per-reaction table
+	ax_table.axis('off')
+	if table_rows:
+		table_rows.sort(key=lambda r: -r[4])  # sort by total timesteps
+		col_labels = ['Reaction', 'Spikes', 'Median len', 'Max len',
+					  'Total timesteps']
+		cell_text = [
+			[r[0][:55], str(r[1]), f'{r[2]:.0f}', str(r[3]), str(r[4])]
+			for r in table_rows
+		]
+		table = ax_table.table(
+			cellText=cell_text, colLabels=col_labels,
+			loc='center', cellLoc='left')
+		table.auto_set_font_size(False)
+		table.set_fontsize(7)
+		table.auto_set_column_width(list(range(len(col_labels))))
+		# Bold header
+		for j in range(len(col_labels)):
+			table[0, j].set_text_props(fontweight='bold')
+
+	plt.tight_layout()
+	pdf.savefig(fig)
+	plt.close(fig)
+	return 1
+
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
@@ -321,6 +416,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				pdf.savefig(fig)
 				plt.close(fig)
 				n_pages += 1
+
+				# Spike-length distribution page for spiking category
+				if cat == 'spiking' and 'smoothed_max' in bounds_cat:
+					n_pages += _write_spike_length_page(
+						pdf, selected[cat], valid_targets,
+						flux_cat, bounds_cat['smoothed_max'])
 
 				for ti in selected[cat]:
 					rxn_id, cat_id = valid_targets[ti]
