@@ -279,8 +279,30 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				print(f'    - {rxn_id:<50s}  {"[buffered]" if is_buf else ""}')
 		print('=' * 100 + '\n')
 
-		# --- Multi-page PDF -----------------------------------------------
+		# --- Multi-page PDFs ----------------------------------------------
+		# Full version with all quantiles
 		pdf_path = os.path.join(plotOutDir, plotOutFileName + '.pdf')
+		n_pages = self._write_pdf(
+			pdf_path, QUANTILE_STYLES, valid_targets, target_kcats,
+			categories, selected, metabolism, time_cat, flux_cat,
+			cat_counts_cat, bounds_cat, gen_boundary_times)
+		print(f'PDF written to {pdf_path}  ({n_pages} pages)')
+
+		# Version without max (avoids scale distortion)
+		styles_no_max = [s for s in QUANTILE_STYLES if s[0] != 'max']
+		pdf_path_nomax = os.path.join(
+			plotOutDir, plotOutFileName + '_no_max.pdf')
+		n_pages_nomax = self._write_pdf(
+			pdf_path_nomax, styles_no_max, valid_targets, target_kcats,
+			categories, selected, metabolism, time_cat, flux_cat,
+			cat_counts_cat, bounds_cat, gen_boundary_times)
+		print(f'PDF written to {pdf_path_nomax}  ({n_pages_nomax} pages)')
+
+	@staticmethod
+	def _write_pdf(pdf_path, quantile_styles, valid_targets, target_kcats,
+				   categories, selected, metabolism, time_cat, flux_cat,
+				   cat_counts_cat, bounds_cat, gen_boundary_times):
+		"""Write a multi-page PDF with the given quantile styles."""
 		n_pages = 0
 		with PdfPages(pdf_path) as pdf:
 			for cat in CATEGORY_ORDER:
@@ -311,7 +333,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 					# Title
 					kcat_strs = []
-					for qkey, _, _, _, _ in QUANTILE_STYLES:
+					for qkey, _, _, _, _ in quantile_styles:
 						if qkey in kcats:
 							kcat_strs.append(f'{qkey}={kcats[qkey]:.2f}')
 					fig.suptitle(
@@ -321,7 +343,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 						fontsize=10)
 
 					# Top panel: constraint lines first, then flux on top
-					for qkey, label_tmpl, color, dashes, lw in QUANTILE_STYLES:
+					for qkey, label_tmpl, color, dashes, lw in quantile_styles:
 						if qkey in bounds_cat and qkey in kcats:
 							kwargs = dict(
 								lw=lw, color=color, alpha=0.85,
@@ -362,8 +384,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					plt.close(fig)
 					n_pages += 1
 
-		print(f'PDF written to {pdf_path}')
-		print(f'Total pages: {n_pages}')
+		return n_pages
 
 
 if __name__ == '__main__':
