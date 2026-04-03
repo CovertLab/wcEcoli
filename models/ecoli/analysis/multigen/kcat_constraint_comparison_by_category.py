@@ -24,6 +24,7 @@ import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from scipy.ndimage import median_filter
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.processes.metabolism import (
@@ -44,6 +45,9 @@ SPARSE_ZERO_FRACTION = 0.5
 
 # Ignore first N generations (initialization transient).
 IGNORE_FIRST_N_GENS = 4
+
+# Median filter window for kcat smoothing (matches kcat_estimations.py).
+SMOOTH_WINDOW = 100
 
 # Quantiles to plot, with display properties.
 # Each entry: (quantile_key, label_template, color, dashes_or_linestyle, linewidth)
@@ -159,6 +163,136 @@ def _write_spike_length_page(pdf, spiking_tis, valid_targets, flux_cat,
 	return 1
 
 
+def _write_kcat_smoothing_pdf(pdf_path, valid_targets, target_kcats,
+							  categories, selected, metabolism,
+							  time_cat, flux_cat, enzyme_conc_cat,
+							  raw_kcat_cat, smoothed_kcat_cat,
+							  gen_boundary_times):
+	"""Write a PDF showing flux, enzyme conc, and raw vs smoothed kcat.
+
+	Three panels per reaction:
+	  1. Flux (mmol/g DCW/h)
+	  2. Enzyme concentration (molar)
+	  3. Raw kcat (light gray) + smoothed kcat (blue) + horizontal
+	     estimate lines (smoothed_max, smoothed_max_buffered, p999)
+
+	Returns number of pages written.
+	"""
+	# Horizontal reference lines for the kcat panel
+	kcat_ref_styles = [
+		('smoothed_max',          'smoothed_max',  'red',    '-',           1.4),
+		('smoothed_max_buffered', 'SM buffered',   'purple', (8, 3, 2, 3), 1.2),
+		('p999',                  'p999',          'brown',  (2, 2),       1.0),
+		('max',                   'max',           'green',  '-',          1.0),
+	]
+
+	n_pages = 0
+	with PdfPages(pdf_path) as pdf:
+		for cat in CATEGORY_ORDER:
+			if cat not in selected or not selected[cat]:
+				continue
+
+			# Category header
+			fig = plt.figure(figsize=(14, 2))
+			fig.text(0.5, 0.5,
+					 f'{CATEGORY_LABELS.get(cat, cat)} — kcat smoothing',
+					 ha='center', va='center', fontsize=18,
+					 fontweight='bold')
+			fig.text(0.5, 0.25,
+					 f'{len(categories[cat])} reactions, '
+					 f'showing top {len(selected[cat])}',
+					 ha='center', va='center', fontsize=12, color='gray')
+			pdf.savefig(fig)
+			plt.close(fig)
+			n_pages += 1
+
+			for ti in selected[cat]:
+				rxn_id, cat_id = valid_targets[ti]
+				is_buffered = (rxn_id, cat_id) in metabolism.kcat_buffered_reactions
+				kcats = target_kcats[(rxn_id, cat_id)]
+
+				fig, (ax_flux, ax_conc, ax_kcat) = plt.subplots(
+					3, 1, figsize=(14, 10), sharex=True,
+					gridspec_kw={'height_ratios': [1, 1, 1.5]})
+
+				fig.suptitle(
+					f'{rxn_id}  /  {cat_id}  [{cat}]\n'
+					f'Buffered: {"yes" if is_buffered else "no"}  |  '
+					f'median filter window = {SMOOTH_WINDOW} timesteps',
+					fontsize=10)
+
+				# Panel 1: Flux
+				ax_flux.plot(time_cat, flux_cat[:, ti],
+							 lw=0.7, color='blue', alpha=0.85)
+				ax_flux.set_ylabel('Flux (mmol/g DCW/h)', fontsize=9)
+
+				# Panel 2: Enzyme concentration
+				ax_conc.plot(time_cat, enzyme_conc_cat[:, ti],
+							 lw=0.7, color='teal', alpha=0.85)
+				ax_conc.set_ylabel('Enzyme conc (M)', fontsize=9)
+
+				# Panel 3: Raw and smoothed kcat
+				ax_kcat.plot(time_cat, raw_kcat_cat[:, ti],
+							 lw=0.4, color='lightgray', alpha=0.7,
+							 label='raw kcat', zorder=1)
+				ax_kcat.plot(time_cat, smoothed_kcat_cat[:, ti],
+							 lw=1.2, color='#1f77b4', alpha=0.9,
+							 label=f'smoothed (median, w={SMOOTH_WINDOW})',
+							 zorder=5)
+
+				# Horizontal lines for stored estimates
+				for qkey, label, color, dashes, lw in kcat_ref_styles:
+					val = kcats.get(qkey)
+					if val is None:
+						# smoothed_max_x1.1 stored under different key
+						if qkey == 'smoothed_max_x1.1':
+							val = kcats.get('smoothed_max_x1.1')
+						if val is None:
+							continue
+					kwargs = dict(
+						color=color, lw=lw, alpha=0.8,
+						label=f'{label} = {val:.2f}')
+					if isinstance(dashes, tuple):
+						kwargs['linestyle'] = '--'
+						# Can't use dashes kwarg with axhline easily,
+						# use linestyle approximation
+					else:
+						kwargs['linestyle'] = dashes
+					ax_kcat.axhline(val, **kwargs)
+
+				ax_kcat.set_ylabel('kcat (mmol/g DCW/h / M)', fontsize=9)
+				ax_kcat.set_xlabel('Time (h)', fontsize=9)
+				ax_kcat.legend(fontsize=7, loc='upper right', ncol=2)
+
+				# Clamp kcat y-axis to avoid extreme outliers
+				sm_val = kcats.get('smoothed_max')
+				max_val = kcats.get('max')
+				if max_val is not None:
+					ax_kcat.set_ylim(bottom=0, top=max_val * 1.3)
+				elif sm_val is not None:
+					raw_col = raw_kcat_cat[:, ti]
+					p99 = np.nanpercentile(raw_col[np.isfinite(raw_col)], 99) \
+						if np.any(np.isfinite(raw_col)) else sm_val * 2
+					ax_kcat.set_ylim(bottom=0, top=max(sm_val * 2, p99 * 1.1))
+
+				# Generation boundaries
+				for gt in gen_boundary_times[1:]:
+					for ax in (ax_flux, ax_conc, ax_kcat):
+						ax.axvline(gt, color='gray', lw=0.5, ls='--',
+								   alpha=0.5)
+
+				for ax in (ax_flux, ax_conc, ax_kcat):
+					ax.set_xlim(time_cat[0], time_cat[-1])
+					ax.tick_params(labelsize=7)
+
+				plt.tight_layout()
+				pdf.savefig(fig)
+				plt.close(fig)
+				n_pages += 1
+
+	return n_pages
+
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 				validationDataFile, metadata):
@@ -231,6 +365,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time_all = []
 		flux_all = []
 		cat_counts_all = []
+		enzyme_conc_all = []
+		raw_kcat_all = []
+		smoothed_kcat_all = []
 		bounds_all = {qkey: [] for qkey, _, _, _, _ in QUANTILE_STYLES}
 		gen_boundary_times = []
 
@@ -285,9 +422,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			).asNumber(units.mmol / units.g / units.h)
 			fluxes[np.isinf(fluxes)] = np.nan
 
+			# Enzyme concentration (molar) and per-timestep kcat
+			enzyme_conc = cat_counts * counts_to_molar[:, np.newaxis]
+			with np.errstate(divide='ignore', invalid='ignore'):
+				raw_kcat = fluxes / enzyme_conc
+			raw_kcat[~np.isfinite(raw_kcat)] = np.nan
+
+			# Apply median filter per-reaction (matches kcat_estimations.py)
+			smoothed_kcat = np.full_like(raw_kcat, np.nan)
+			for ti in range(n_targets):
+				col = raw_kcat[:, ti].copy()
+				valid = np.isfinite(col) & (col > 0)
+				if valid.any():
+					col[~valid] = 0.0
+					sm = median_filter(col, size=SMOOTH_WINDOW)
+					sm[~valid] = np.nan
+					smoothed_kcat[:, ti] = sm
+
 			for ti in range(n_targets):
 				pair = valid_targets[ti]
-				conc = cat_counts[:, ti] * counts_to_molar
+				conc = enzyme_conc[:, ti]
 				for qkey, _, _, _, _ in QUANTILE_STYLES:
 					kcat_val = target_kcats[pair].get(qkey)
 					if kcat_val is not None:
@@ -299,6 +453,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			time_all.append(t_h)
 			flux_all.append(fluxes)
 			cat_counts_all.append(cat_counts)
+			enzyme_conc_all.append(enzyme_conc)
+			raw_kcat_all.append(raw_kcat)
+			smoothed_kcat_all.append(smoothed_kcat)
 
 		if not time_all:
 			print('No cells processed successfully.')
@@ -307,6 +464,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		time_cat = np.concatenate(time_all)
 		flux_cat = np.vstack(flux_all)
 		cat_counts_cat = np.vstack(cat_counts_all)
+		enzyme_conc_cat = np.vstack(enzyme_conc_all)
+		raw_kcat_cat = np.vstack(raw_kcat_all)
+		smoothed_kcat_cat = np.vstack(smoothed_kcat_all)
 		bounds_cat = {}
 		for qkey in bounds_all:
 			if bounds_all[qkey]:
@@ -392,6 +552,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			categories, selected, metabolism, time_cat, flux_cat,
 			cat_counts_cat, bounds_cat, gen_boundary_times)
 		print(f'PDF written to {pdf_path_nomax}  ({n_pages_nomax} pages)')
+
+		# Kcat smoothing visualization
+		pdf_path_smooth = os.path.join(
+			plotOutDir, plotOutFileName + '_kcat_smoothing.pdf')
+		n_pages_smooth = _write_kcat_smoothing_pdf(
+			pdf_path_smooth, valid_targets, target_kcats, categories,
+			selected, metabolism, time_cat, flux_cat, enzyme_conc_cat,
+			raw_kcat_cat, smoothed_kcat_cat, gen_boundary_times)
+		print(f'PDF written to {pdf_path_smooth}  ({n_pages_smooth} pages)')
 
 	@staticmethod
 	def _write_pdf(pdf_path, quantile_styles, valid_targets, target_kcats,
