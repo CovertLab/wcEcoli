@@ -183,7 +183,6 @@ def _write_kcat_smoothing_pdf(pdf_path, valid_targets, target_kcats,
 		('smoothed_max',          'smoothed_max',  'red',    '-',           1.4),
 		('smoothed_max_buffered', 'SM buffered',   'purple', (8, 3, 2, 3), 1.2),
 		('p999',                  'p999',          'brown',  (2, 2),       1.0),
-		('max',                   'max',           'green',  '-',          1.0),
 	]
 
 	n_pages = 0
@@ -266,10 +265,7 @@ def _write_kcat_smoothing_pdf(pdf_path, valid_targets, target_kcats,
 
 				# Clamp kcat y-axis to avoid extreme outliers
 				sm_val = kcats.get('smoothed_max')
-				max_val = kcats.get('max')
-				if max_val is not None:
-					ax_kcat.set_ylim(bottom=0, top=max_val * 1.3)
-				elif sm_val is not None:
+				if sm_val is not None:
 					raw_col = raw_kcat_cat[:, ti]
 					p99 = np.nanpercentile(raw_col[np.isfinite(raw_col)], 99) \
 						if np.any(np.isfinite(raw_col)) else sm_val * 2
