@@ -267,10 +267,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					+ '  '.join(kcat_strs),
 					fontsize=10)
 
-				# Top panel: flux vs constraint lines
-				ax_top.plot(time_cat, flux_cat[:, ti],
-							lw=0.8, color='blue', alpha=0.85, label='flux')
-
+				# Top panel: constraint lines first, then flux on top
 				for qkey, label_tmpl, color, dashes, lw in QUANTILE_STYLES:
 					if qkey in bounds_cat and qkey in kcats:
 						kwargs = dict(
@@ -282,6 +279,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 							kwargs['ls'] = dashes
 						ax_top.plot(
 							time_cat, bounds_cat[qkey][:, ti], **kwargs)
+
+				ax_top.plot(time_cat, flux_cat[:, ti],
+							lw=1.6, color='blue', alpha=0.9, label='flux',
+							zorder=10)
 
 				ax_top.set_ylabel('mmol/g DCW/h', fontsize=9)
 				ax_top.legend(fontsize=7, loc='upper right', ncol=2)
