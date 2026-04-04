@@ -72,11 +72,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax.hist(
 			dt1, bins=bins, alpha=0.5,
-			label=f'reference: {reference_sim_name}\n(n={len(dt1)}, {np.mean(dt1):.1f} $\pm$ {np.std(dt1):.1f})')
+			label=f'Input Sim: {reference_sim_name}\n(n cells={len(dt1)},\navg. DT: {np.mean(dt1):.1f} $\pm$ {np.std(dt1):.1f})')
 		ax.hist(
 			dt2, bins=bins, alpha=0.5,
-			label=f'input: {input_sim_name}\n(n={len(dt2)}, {np.mean(dt2):.1f} $\pm$ {np.std(dt2):.1f})')
-		ax.legend(prop={'size': 5})
+			label=f'Reference Sim: {input_sim_name}\n(n cells={len(dt2)},\navg. DT: {np.mean(dt2):.1f} $\pm$ {np.std(dt2):.1f})')
+		ax.legend(prop={'size': 12}, loc='upper right', frameon=False)
 
 		ax.set_xlim(*DOUBLING_TIME_BOUNDS_MINUTES)
 		ax.set_xticks(
@@ -87,7 +87,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 				)
 			)
 
-		ax.set_xlabel('Doubling time (min)')
+		ax.set_xlabel('Doubling time (min)', fontsize=20)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 
