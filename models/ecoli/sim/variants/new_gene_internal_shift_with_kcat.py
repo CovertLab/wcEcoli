@@ -77,9 +77,11 @@ def new_gene_internal_shift_with_kcat(sim_data, index):
 		return CONTROL_OUTPUT, sim_data
 
 	return dict(
-		shortName='{}_max_kcat'.format(expression_list_index),
-		desc='New gene expression factor {} (10^(x-1)), '
-			 'translation efficiency {}, '
-			 'with 1.0x max kcat constraints.'.format(
-				 expression_factor, trl_eff_value),
-	), sim_data
+		shortName="{}_NGEXP_TRLEFF_INTERNAL_SHIFT."
+			+ "{}_env_max_kcat".format(sim_data.ordered_conditions[condition_index]),
+		desc="Changed expression of new genes by variant index {}.".format(
+			expression_factor) + ". Set translation efficiency of new genes "
+			"to {}".format(trl_eff_value)
+			+ "Simulation of condition {}.".format(sim_data.ordered_conditions[condition_index])
+			+ " With 1.0x max kcat constraints."
+		), sim_data
