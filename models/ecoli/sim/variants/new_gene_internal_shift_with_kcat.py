@@ -73,6 +73,9 @@ def new_gene_internal_shift_with_kcat(sim_data, index):
 			desc='Control (new gene knockout) with 1.0x max kcat constraints.',
 		), sim_data
 
+	if index == WILDTYPE_CONTROL_INDEX:
+		return CONTROL_OUTPUT, sim_data
+
 	return dict(
 		shortName='{}_max_kcat'.format(expression_list_index),
 		desc='New gene expression factor {} (10^(x-1)), '
