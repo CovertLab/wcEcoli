@@ -3047,6 +3047,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		figsize_x =  2 + 2*len(new_gene_expression_factors)/3
 		figsize_y = 2*len(new_gene_translation_efficiency_values)/2
 
+		# Create separate plots
+		if DASHBOARD_FLAG == 0 or DASHBOARD_FLAG == 2:
+			self.plot_heatmaps(
+				False, variant_mask, heatmap_x_label,heatmap_y_label,
+				new_gene_expression_factors,
+				new_gene_translation_efficiency_values, 'mean', figsize_x,
+				figsize_y, plotOutDir, plot_suffix)
+
+			if STD_DEV_FLAG:
+				self.plot_heatmaps(
+					False, variant_mask, heatmap_x_label, heatmap_y_label,
+					new_gene_expression_factors,
+					new_gene_translation_efficiency_values, 'std_dev',
+					figsize_x, figsize_y, plotOutDir, plot_suffix)
+
 		# Create dashboard plot
 		if DASHBOARD_FLAG == 1 or DASHBOARD_FLAG == 2:
 			self.plot_heatmaps(
@@ -3062,20 +3077,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					new_gene_translation_efficiency_values, 'std_dev',
 					figsize_x, figsize_y, plotOutDir, plot_suffix)
 
-		# Create separate plots
-		if DASHBOARD_FLAG == 0 or DASHBOARD_FLAG == 2:
-			self.plot_heatmaps(
-				False, variant_mask, heatmap_x_label,heatmap_y_label,
-				new_gene_expression_factors,
-				new_gene_translation_efficiency_values, 'mean', figsize_x,
-				figsize_y, plotOutDir, plot_suffix)
-
-			if STD_DEV_FLAG:
-				self.plot_heatmaps(
-					False, variant_mask, heatmap_x_label, heatmap_y_label,
-					new_gene_expression_factors,
-					new_gene_translation_efficiency_values, 'std_dev',
-					figsize_x, figsize_y, plotOutDir, plot_suffix)
 
 if __name__ == "__main__":
 	Plot().cli()
