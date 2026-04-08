@@ -69,7 +69,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Get listener IDs from a representative cell to build index maps.
 		ref_cells = self.ap.get_cells(
 			variant=[kcat_variant], generation=[0], only_successful=True)
-		if not ref_cells:
+		if len(ref_cells) == 0:
 			print('Skipping: no cells found for reference variant.')
 			return
 
@@ -118,7 +118,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				variant=[vi],
 				generation=np.arange(ignore_first_n_gens, n_total_gens),
 				only_successful=True)
-			if not cells:
+			if len(cells) == 0:
 				continue
 
 			# Per-reaction accumulators for this variant.
