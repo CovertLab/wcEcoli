@@ -17,6 +17,7 @@ variants = [
 	'new_gene_internal_shift',
 	'new_gene_internal_shift_with_kcat',
 	'new_gene_phased_internal_shift',
+	'new_gene_trl_eff_sweep',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',

@@ -25,6 +25,13 @@ from typing import Tuple
 from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSION_FACTORS,
 	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES, NEW_GENE_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN)
+from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
+	TRL_EFF_VALUES as TRL_EFF_SWEEP_VALUES,
+	EXPRESSION_FACTOR as TRL_EFF_SWEEP_EXPRESSION_FACTOR,
+	KCAT_HALF_START as TRL_EFF_SWEEP_KCAT_HALF_START,
+	NEW_GENE_INDUCTION_GEN as TRL_EFF_SWEEP_INDUCTION_GEN,
+	NEW_GENE_KNOCKOUT_GEN as TRL_EFF_SWEEP_KNOCKOUT_GEN,
+)
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
@@ -112,6 +119,14 @@ class RunSimulation(scriptBase.ScriptBase):
 				NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
 				new_gene_induction_gen=NEW_GENE_INDUCTION_GEN,
 				new_gene_knockout_gen=NEW_GENE_KNOCKOUT_GEN,)
+
+		if variant_type == 'new_gene_trl_eff_sweep':
+			metadata.update(
+				expression_factor=TRL_EFF_SWEEP_EXPRESSION_FACTOR,
+				trl_eff_values=TRL_EFF_SWEEP_VALUES,
+				kcat_half_start=TRL_EFF_SWEEP_KCAT_HALF_START,
+				new_gene_induction_gen=TRL_EFF_SWEEP_INDUCTION_GEN,
+				new_gene_knockout_gen=TRL_EFF_SWEEP_KNOCKOUT_GEN,)
 
 		metadata_dir = fp.makedirs(args.sim_path, constants.METADATA_DIR)
 		metadata_path = os.path.join(metadata_dir, constants.JSON_METADATA_FILE)
