@@ -76,7 +76,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Get listener catalyst_ids from a representative cell
 		ref_cells = self.ap.get_cells(
 			variant=[kcat_variant], generation=[0], only_successful=True)
-		if not ref_cells:
+		if len(ref_cells) == 0:
 			print('Skipping: no cells for reference variant.')
 			return
 
@@ -132,7 +132,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					print(f'  Ignored exception reading {sim_out}: {e!r}')
 					continue
 
-			if not cell_counts:
+			if len(cell_counts) == 0:
 				return mean_dt, None, None
 
 			return (
