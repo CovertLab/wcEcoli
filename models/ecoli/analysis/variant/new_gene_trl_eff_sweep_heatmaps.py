@@ -351,6 +351,82 @@ class Plot(KcatHeatmapsPlot):
 				 'plot_title': 'Average Glucose Consumption Rate (fg/hr)',
 				 'num_digits_rounding': 1,
 				},
+			"new_gene_copy_number_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene Copy Number'},
+			"new_gene_mRNA_counts_heatmap":
+				{'plot_title': 'Log(New Gene mRNA Counts+1)'},
+			"new_gene_monomer_counts_heatmap":
+				{'plot_title': 'Log(New Gene Protein Counts+1)'},
+			"new_gene_mRNA_mass_fraction_heatmap":
+				{'plot_title': 'New Gene mRNA Mass Fraction'},
+			"new_gene_mRNA_counts_fraction_heatmap":
+				{'plot_title': 'New Gene mRNA Counts Fraction'},
+			"new_gene_mRNA_NTP_fraction_heatmap":
+				{'is_nonstandard_plot': True,
+				 'num_digits_rounding': 4,
+				 'box_text_size': 'x-small',
+				 'plot_title': 'New Gene',
+				},
+			"new_gene_monomer_mass_fraction_heatmap":
+				{'plot_title': 'New Gene Protein Mass Fraction'},
+			"new_gene_monomer_counts_fraction_heatmap":
+				{'plot_title': 'New Gene Protein Counts Fraction'},
+			"new_gene_rnap_init_rate_heatmap":
+				{'plot_title': 'New Gene RNAP Initialization Rate'},
+			"new_gene_ribosome_init_rate_heatmap":
+				{'plot_title': 'New Gene Ribosome Initalization Rate'},
+			"new_gene_rnap_time_overcrowded_heatmap":
+				{'plot_title': 'Fraction of Time RNAP Overcrowded New Gene'},
+			"new_gene_ribosome_time_overcrowded_heatmap":
+				{'plot_title': 'Fraction of Time Ribosome Overcrowded New Gene'},
+			"new_gene_actual_protein_init_prob_heatmap":
+				{'plot_title': 'New Gene Actual Protein Init Prob',
+				 'num_digits_rounding': 4},
+			"new_gene_target_protein_init_prob_heatmap":
+				{'plot_title': 'New Gene Target Protein Init Prob',
+				 'num_digits_rounding': 4},
+			"new_gene_protein_init_prob_max_p_target_ratio_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene Protein Max Prob / Target Prob Ratio',
+				 'num_digits_rounding': 4},
+			"new_gene_rna_synth_prob_max_p_target_ratio_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene RNA Synth Max Prob / Target Prob Ratio',
+				 'num_digits_rounding': 4},
+			"new_gene_ribosome_init_events_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene Ribosome Init Events Per Time Step',
+				 'num_digits_rounding': 0,
+				 'box_text_size': 'x-small'},
+			"new_gene_ribosome_init_events_portion_heatmap":
+				{'is_nonstandard_data_retrieval': True,
+				 'plot_title': 'New Gene Portion of Initiated Ribosomes',
+				 'num_digits_rounding': 4},
+			"new_gene_actual_rna_synth_prob_heatmap":
+				{'plot_title': 'New Gene Actual RNA Synth Prob',
+				 'num_digits_rounding': 4},
+			"new_gene_target_rna_synth_prob_heatmap":
+				{'plot_title': 'New Gene Target RNA Synth Prob',
+				 'num_digits_rounding': 4},
+			"new_gene_rnap_counts_heatmap":
+				{'box_text_size': 'x-small',
+				 'num_digits_rounding': 0,
+				 'plot_title': 'New Gene RNAP Counts',
+				},
+			"new_gene_rnap_portion_heatmap":
+				{'plot_title': 'New Gene RNAP Portion',
+				 'num_digits_rounding': 3,
+				},
+			"new_gene_ribosome_counts_heatmap":
+				{'box_text_size': 'x-small',
+				 'num_digits_rounding': 0,
+				 'plot_title': 'New Gene Ribosome Counts',
+				},
+			"new_gene_ribosome_portion_heatmap":
+				{'plot_title': 'New Gene Ribosome Portion',
+				 'num_digits_rounding': 3,
+				},
 		}
 
 		# Check validity and fill in defaults
