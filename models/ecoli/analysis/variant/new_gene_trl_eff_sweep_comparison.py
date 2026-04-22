@@ -1,17 +1,17 @@
 """
-Summary plot for the new_gene_trl_eff_sweep variant comparing doubling time
-impacts with and without kcat constraints at matching translation efficiencies.
+Summary plot for the new_gene_trl_eff_sweep variant comparing doubling-time
+impacts across four kcat-constraint categories at matching translation
+efficiencies.
 
 Produces four panels:
 
   1. Completion rate  -- fraction of seeds that reached the final generation,
-     one bar per variant.  Blue hues for no-kcat, red/orange hues for kcat.
+     one bar per variant. Bars are colored by kcat category.
 
   2. Mean doubling time by generation  -- heatmap (variants x generations).
      Cells that timed out (> MAX_DOUBLING_TIME_MIN minutes) are excluded.
 
-  3. Average doubling time  -- paired bars (no-kcat vs kcat) at each
-     translation efficiency value.
+  3. Average doubling time  -- one bar per variant, grouped by category.
 
   4. Average dry mass  -- mean dry mass (fg) averaged over all timesteps and
      seeds for each variant, using only the last 8 generations.
@@ -20,15 +20,16 @@ Produces four panels:
 import csv
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.cm as cm
 import matplotlib.ticker as mticker
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
 	TRL_EFF_VALUES,
 	EXPRESSION_FACTOR,
-	N_TRL_EFF,
-	KCAT_HALF_START,
+	KCAT_MULTIPLIERS,
+	category_label,
+	is_control,
+	variant_to_category,
 )
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.io.tablereader import TableReader
@@ -38,34 +39,38 @@ import os
 # time statistics.
 MAX_DOUBLING_TIME_MIN = 300
 
+# Canonical category visual encoding (shared across all trl_eff_sweep scripts)
+CATEGORY_COLORS = {
+	0: (27/255, 132/255, 198/255),   # no_kcat -- blue
+	1: (202/255,   0/255,  32/255),  # 1.0x    -- red
+	2: (230/255, 120/255,  25/255),  # 0.8x    -- orange
+	3: (120/255,  60/255, 155/255),  # 0.6x    -- purple
+}
+# Darker tone for controls of each category
+CONTROL_COLORS = {
+	0: (17/255,  85/255, 128/255),
+	1: (128/255,  0/255,  20/255),
+	2: (150/255, 78/255,  15/255),
+	3: (78/255,  38/255, 100/255),
+}
+
 
 def _variant_label(index):
 	"""Return a short human-readable label for a variant index."""
-	is_kcat = (index >= KCAT_HALF_START)
-	local_index = index - KCAT_HALF_START if is_kcat else index
-	kcat_tag = '+kcat' if is_kcat else ''
-
-	if local_index == 0:
-		return f'Control\n(KO{", " + kcat_tag if kcat_tag else ""})'
-
-	trl_eff = TRL_EFF_VALUES[local_index - 1]
-	return f'Trl {trl_eff}\n{kcat_tag}' if kcat_tag else f'Trl {trl_eff}'
+	cat_idx, local_idx = variant_to_category(index)
+	cat = category_label(cat_idx)
+	if local_idx == 0:
+		return f'Control\n({cat})'
+	trl_eff = TRL_EFF_VALUES[local_idx - 1]
+	return f'Trl {trl_eff}\n{cat}'
 
 
 def _variant_color(index):
-	"""Return a color for a variant index.
-	Blue hues for no-kcat half, red/orange hues for kcat half."""
-	is_kcat = (index >= KCAT_HALF_START)
-	local_index = index - KCAT_HALF_START if is_kcat else index
-
-	if local_index == 0:
-		return '#888888' if not is_kcat else '#555555'
-
-	shade = 0.3 + 0.6 * (local_index / N_TRL_EFF)
-	if is_kcat:
-		return cm.Reds(shade)
-	else:
-		return cm.Blues(shade)
+	"""Return a color for a variant index, keyed on its kcat category."""
+	cat_idx, _ = variant_to_category(index)
+	if is_control(index):
+		return CONTROL_COLORS[cat_idx]
+	return CATEGORY_COLORS[cat_idx]
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -188,7 +193,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax1.set_ylabel('Completion rate', fontsize=10)
 		ax1.set_title('Fraction of seeds completing all generations', fontsize=11)
 		ax1.set_xticks(x)
-		ax1.set_xticklabels(labels, fontsize=7, rotation=0)
+		ax1.set_xticklabels(labels, fontsize=7, rotation=90)
 		ax1.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
 		for bar, vi in zip(bars, variant_indexes):
 			rate = completion_rates[vi]
@@ -241,7 +246,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			f'cells > {MAX_DOUBLING_TIME_MIN} min excluded)',
 			fontsize=11)
 		ax3.set_xticks(x)
-		ax3.set_xticklabels(labels, fontsize=7, rotation=0)
+		ax3.set_xticklabels(labels, fontsize=7, rotation=90)
 
 		# ---- Panel 4: average dry mass ----------------------------------- #
 		ax4 = fig.add_subplot(gs[3])
@@ -258,18 +263,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			f'(gens {ignore_first_n_gens}\u2013{n_total_gens - 1})',
 			fontsize=11)
 		ax4.set_xticks(x)
-		ax4.set_xticklabels(labels, fontsize=7, rotation=0)
+		ax4.set_xticklabels(labels, fontsize=7, rotation=90)
 
-		# Legend
+		# Legend -- one entry per kcat category (expression + control)
 		from matplotlib.patches import Patch
-		legend_elements = [
-			Patch(facecolor='#888888', label='Control (KO, no kcat)'),
-			Patch(facecolor='#555555', label='Control (KO, +kcat)'),
-			Patch(facecolor=cm.Blues(0.6), label=f'No kcat (exp 10^{EXPRESSION_FACTOR - 1})'),
-			Patch(facecolor=cm.Reds(0.6), label=f'+kcat (exp 10^{EXPRESSION_FACTOR - 1})'),
-		]
+		legend_elements = []
+		for cat_idx in range(len(KCAT_MULTIPLIERS)):
+			cat = category_label(cat_idx)
+			legend_elements.append(Patch(
+				facecolor=CATEGORY_COLORS[cat_idx],
+				label=f'{cat} (exp 10^{EXPRESSION_FACTOR - 1})'))
+			legend_elements.append(Patch(
+				facecolor=CONTROL_COLORS[cat_idx],
+				label=f'{cat} control (KO)'))
 		fig.legend(handles=legend_elements, loc='lower center',
-				   ncol=len(legend_elements), fontsize=8,
+				   ncol=min(len(legend_elements), 4), fontsize=8,
 				   bbox_to_anchor=(0.5, -0.01))
 
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

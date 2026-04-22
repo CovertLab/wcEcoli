@@ -4,11 +4,12 @@ new_gene_trl_eff_sweep variant.
 
 For each non-control variant, compares the mean enzyme counts and
 concentrations (for enzymes with kcat > 1 in the max kcat estimates) against
-the matched control variant (variant 0 for no-kcat, variant 22 for kcat).
+its own category's control (variants 0, 12, 24, 36 for no_kcat / 1.0x / 0.8x
+/ 0.6x respectively).
 
 Outputs:
   - Detail CSV: per-(variant, enzyme) counts, concentrations, and ratios
-  - Scatter plot: doubling time vs mean enzyme count ratio
+  - Scatter plot: doubling time vs mean enzyme count ratio (all categories)
   - Scatter plot: translation efficiency vs mean enzyme count ratio
   - Heatmap: per-enzyme count ratios across kcat variants
 """
@@ -23,12 +24,26 @@ from matplotlib.colors import TwoSlopeNorm
 
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
-	TRL_EFF_VALUES, N_TRL_EFF, KCAT_HALF_START)
+	TRL_EFF_VALUES,
+	KCAT_MULTIPLIERS,
+	N_PER_CATEGORY,
+	category_label,
+	is_control,
+	variant_to_category,
+)
 from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
 # Use last 8 generations
 N_GENS_TO_USE = 8
+
+# Canonical category visual encoding
+CATEGORY_COLORS = {
+	0: (27/255, 132/255, 198/255),   # no_kcat -- blue
+	1: (202/255,   0/255,  32/255),  # 1.0x    -- red
+	2: (230/255, 120/255,  25/255),  # 0.8x    -- orange
+	3: (120/255,  60/255, 155/255),  # 0.6x    -- purple
+}
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -44,10 +59,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# -------------------------------------------------------------- #
 		# Load kcat estimates and build enzyme index maps                  #
 		# -------------------------------------------------------------- #
-		# Find a kcat variant to load sim_data from
+		# Find a kcat-constrained non-control variant to load sim_data from
 		kcat_variant = None
 		for vi in variant_indexes:
-			if vi >= KCAT_HALF_START and (vi - KCAT_HALF_START) != 0:
+			cat_idx, local_idx = variant_to_category(vi)
+			if KCAT_MULTIPLIERS[cat_idx] is not None and local_idx != 0:
 				kcat_variant = vi
 				break
 		if kcat_variant is None:
@@ -142,24 +158,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			)
 
 		# -------------------------------------------------------------- #
-		# Compute control data                                             #
+		# Compute control data -- one control per kcat category            #
 		# -------------------------------------------------------------- #
 		print('Computing control data...')
-		ctrl_no_kcat_vi = 0
-		ctrl_kcat_vi = KCAT_HALF_START  # 22
+		controls_by_cat = {
+			cat: cat * N_PER_CATEGORY for cat in range(len(KCAT_MULTIPLIERS))}
 
 		ctrl_dt = {}
 		ctrl_counts = {}
 		ctrl_conc = {}
-		for vi in [ctrl_no_kcat_vi, ctrl_kcat_vi]:
+		for cat, vi in controls_by_cat.items():
 			if vi not in available:
-				print(f'  Control variant {vi} not available.')
+				print(f'  Control variant {vi} ({category_label(cat)}) '
+					  'not available.')
 				continue
 			dt, counts, conc = get_variant_data(vi)
 			ctrl_dt[vi] = dt
 			ctrl_counts[vi] = counts
 			ctrl_conc[vi] = conc
-			print(f'  Variant {vi}: dt={dt:.1f} min')
+			print(f'  Variant {vi} ({category_label(cat)}): '
+				  f'dt={dt:.1f} min')
 
 		# -------------------------------------------------------------- #
 		# Compute data for all non-control variants                        #
@@ -167,17 +185,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print('Computing variant data...')
 		results = []
 		for vi in variant_indexes:
-			is_kcat = (vi >= KCAT_HALF_START)
-			local_idx = vi - KCAT_HALF_START if is_kcat else vi
-			if local_idx == 0:
+			if is_control(vi):
 				continue  # skip controls
-
-			ctrl_vi = ctrl_kcat_vi if is_kcat else ctrl_no_kcat_vi
+			cat_idx, local_idx = variant_to_category(vi)
+			ctrl_vi = controls_by_cat[cat_idx]
 			if ctrl_counts.get(ctrl_vi) is None:
 				continue
 
 			trl_eff = TRL_EFF_VALUES[local_idx - 1]
-			print(f'  Variant {vi} (trl_eff={trl_eff}, kcat={is_kcat})...')
+			print(f'  Variant {vi} (trl_eff={trl_eff}, '
+				  f'{category_label(cat_idx)})...')
 
 			dt, counts, conc = get_variant_data(vi)
 			if counts is None:
@@ -191,7 +208,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 			results.append({
 				'vi': vi,
-				'is_kcat': is_kcat,
+				'cat_idx': cat_idx,
+				'is_kcat': KCAT_MULTIPLIERS[cat_idx] is not None,
 				'local_idx': local_idx,
 				'trl_eff': trl_eff,
 				'dt': dt,
@@ -217,7 +235,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		with open(csv_path, 'w', newline='', encoding='utf-8') as fh:
 			writer = csv.writer(fh)
 			writer.writerow([
-				'variant_index', 'trl_eff', 'is_kcat', 'enzyme_id',
+				'variant_index', 'trl_eff', 'category', 'enzyme_id',
 				'count_variant', 'count_control', 'count_ratio',
 				'conc_variant', 'conc_control', 'conc_ratio',
 				'dt_variant', 'dt_control',
@@ -225,7 +243,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for r in results:
 				for ei, eid in enumerate(target_cat_ids):
 					writer.writerow([
-						r['vi'], r['trl_eff'], r['is_kcat'], eid,
+						r['vi'], r['trl_eff'], category_label(r['cat_idx']),
+						eid,
 						f'{r["counts"][ei]:.2f}',
 						f'{r["ctrl_counts"][ei]:.2f}',
 						f'{r["count_ratio"][ei]:.4f}'
@@ -242,16 +261,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# -------------------------------------------------------------- #
 		# Plot 1: Scatter — doubling time vs mean enzyme count ratio       #
 		# -------------------------------------------------------------- #
-		fig, ax = plt.subplots(figsize=(8, 6))
+		fig, ax = plt.subplots(figsize=(12, 6))
 
-		for is_kcat, color, label in [(False, 'tab:blue', 'No kcat'),
-									  (True, 'tab:red', 'With kcat')]:
-			subset = [r for r in results if r['is_kcat'] == is_kcat]
+		for cat_idx in range(len(KCAT_MULTIPLIERS)):
+			subset = [r for r in results if r['cat_idx'] == cat_idx]
 			if not subset:
 				continue
 			dts = [r['dt'] for r in subset]
 			ratios = [r['mean_count_ratio'] for r in subset]
-			ax.scatter(dts, ratios, c=color, label=label, s=40, alpha=0.8)
+			ax.scatter(
+				dts, ratios, c=[CATEGORY_COLORS[cat_idx]] * len(subset),
+				label=category_label(cat_idx), s=40, alpha=0.8)
 			for r in subset:
 				ax.annotate(
 					f'{r["trl_eff"]:.2f}',
@@ -260,7 +280,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		ax.axhline(1.0, color='gray', ls='--', lw=0.8)
 		ax.set_xlabel('Doubling Time (min)')
-		ax.set_ylabel('Mean Enzyme Count Ratio (variant / control)')
+		ax.set_ylabel('Mean Enzyme Count Ratio (variant / category control)')
 		ax.set_title(
 			'Enzyme count reduction vs doubling time\n'
 			f'({n_enzymes} enzymes with kcat > 1, last {N_GENS_TO_USE} gens)')
@@ -272,20 +292,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# -------------------------------------------------------------- #
 		# Plot 2: Scatter — trl_eff vs mean enzyme count ratio             #
 		# -------------------------------------------------------------- #
-		fig, ax = plt.subplots(figsize=(8, 6))
+		fig, ax = plt.subplots(figsize=(12, 6))
 
-		for is_kcat, color, label in [(False, 'tab:blue', 'No kcat'),
-									  (True, 'tab:red', 'With kcat')]:
-			subset = [r for r in results if r['is_kcat'] == is_kcat]
+		for cat_idx in range(len(KCAT_MULTIPLIERS)):
+			subset = [r for r in results if r['cat_idx'] == cat_idx]
 			if not subset:
 				continue
 			trl_effs = [r['trl_eff'] for r in subset]
 			ratios = [r['mean_count_ratio'] for r in subset]
-			ax.scatter(trl_effs, ratios, c=color, label=label, s=40, alpha=0.8)
+			ax.scatter(
+				trl_effs, ratios,
+				c=[CATEGORY_COLORS[cat_idx]] * len(subset),
+				label=category_label(cat_idx), s=40, alpha=0.8)
 
 		ax.axhline(1.0, color='gray', ls='--', lw=0.8)
 		ax.set_xlabel('Translation Efficiency')
-		ax.set_ylabel('Mean Enzyme Count Ratio (variant / control)')
+		ax.set_ylabel('Mean Enzyme Count Ratio (variant / category control)')
 		ax.set_title(
 			'Enzyme count reduction vs translation efficiency\n'
 			f'({n_enzymes} enzymes with kcat > 1, last {N_GENS_TO_USE} gens)')
@@ -308,7 +330,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ratio_matrix = np.array(
 			[r['count_ratio'] for r in kcat_results]).T  # (n_enzymes, n_variants)
 		col_labels = [
-			f'trl={r["trl_eff"]:.2f}\ndt={r["dt"]:.0f}'
+			f'trl={r["trl_eff"]:.2f}\n'
+			f'{category_label(r["cat_idx"])}\n'
+			f'dt={r["dt"]:.0f}'
 			for r in kcat_results]
 
 		# Sort rows by mean ratio (most reduced first)

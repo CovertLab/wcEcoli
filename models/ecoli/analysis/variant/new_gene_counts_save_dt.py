@@ -90,6 +90,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		avg_s50_5s_rRNA_total_counts = np.zeros(len(variants))
 		avg_s30_total_counts = np.zeros(len(variants))
 		avg_s50_total_counts = np.zeros(len(variants))
+		avg_ppgpp_conc = np.zeros(len(variants))
 
 		avg_s30_protein_counts = {}
 		avg_s50_protein_counts = {}
@@ -261,6 +262,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				remove_first=True, ignore_exception=True))
 			avg_membrane_mass[i] = np.mean(read_stacked_columns(
 				all_cells, 'Mass', 'membrane_mass',
+				remove_first=True, ignore_exception=True))
+			avg_ppgpp_conc[i] = np.mean(read_stacked_columns(
+				all_cells, 'GrowthLimits', 'ppgpp_conc',
 				remove_first=True, ignore_exception=True))
 
 			ng_mass = (
@@ -522,6 +526,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			avg_rRNA_mass, avg_tRNA_mass, avg_protein_mass,
 			avg_dna_mass, avg_water_mass, avg_small_molecule_mass,
 			avg_membrane_mass, percent_completion,
+			avg_ppgpp_conc,
 		)).T
 		header = np.array([
 			'Variant Index', 'Doubling Time (min)',
@@ -540,6 +545,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'Avg DNA Mass (fg)', 'Avg Water Mass (fg)',
 			'Avg Small Molecule Mass (fg)', 'Avg Membrane Mass (fg)',
 			'Percent Completion (fraction of seeds that reached all gens)',
+			'Avg ppGpp Concentration (uM)',
 		])
 		all_avg_monomer_counts = np.vstack((header, all_avg_monomer_counts))
 		np.savetxt(os.path.join(plotOutDir, plotOutFileName + ".csv"),

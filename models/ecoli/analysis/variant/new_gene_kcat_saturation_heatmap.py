@@ -1,15 +1,16 @@
 """
 Heatmap of kcat upper-bound saturation rates across
-new_gene_internal_shift_with_kcat variants.
+new_gene_trl_eff_sweep variants.
 
-For each kcat-constrained reaction (rows) and variant (columns), shows the
-fraction of timesteps where flux > 0.9 * bound, pooled over all seeds and the
-last 8 generations.  Only timesteps where the bound is positive (enzyme
-present) are counted.
+For each kcat-constrained category (1..3 in KCAT_MULTIPLIERS), emits one
+heatmap subplot. Rows are constrained reactions and columns are all variants
+that belong to that category (including controls). Cells show the fraction
+of timesteps where flux > SATURATION_THRESHOLD * bound, pooled over all seeds
+and the last 8 generations. Cells where saturation is undefined (e.g. cat 0
+variants, or enzymes never present) are drawn as light gray. Reactions where
+every variant has zero flux across all categories are dropped.
 
-Variant 21 (wildtype, no kcat constraints) is shown as gray/NaN.
-
-Also exports a CSV of the saturation-rate matrix.
+Also exports one CSV per category of the saturation-rate matrix.
 """
 
 import csv
@@ -18,10 +19,15 @@ import pickle
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.colors import ListedColormap
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.analysis.variant.new_gene_kcat_sweep import _variant_label
+from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
+	TRL_EFF_VALUES,
+	EXPRESSION_FACTOR,
+	KCAT_MULTIPLIERS,
+	category_label,
+	variant_to_category,
+)
 from models.ecoli.processes.metabolism import (
 	COUNTS_UNITS, VOLUME_UNITS, TIME_UNITS, MASS_UNITS)
 from wholecell.analysis.analysis_tools import exportFigure
@@ -31,8 +37,104 @@ from wholecell.utils import units
 # Bound is considered "active" when flux exceeds this fraction of the bound.
 SATURATION_THRESHOLD = 0.9
 
-# Wildtype variant index (no kcat constraints).
-_WILDTYPE_INDEX = 21
+
+def _variant_label(index):
+	"""Return a short human-readable label for a variant index."""
+	cat_idx, local_idx = variant_to_category(index)
+	cat = category_label(cat_idx)
+	if local_idx == 0:
+		return f'Control\n({cat})'
+	trl_eff = TRL_EFF_VALUES[local_idx - 1]
+	return f'Trl {trl_eff}\n{cat}'
+
+
+def _compute_saturation(ap, variants, rxn_to_pairs, constrained_rxn_ids,
+		rxn_indexes, all_cat_indexes, cat_idx_local, cell_density,
+		n_total_gens, ignore_first_n_gens, flux_sum):
+	"""Return (n_rxns, n_variants) saturation matrix for variants.
+
+	`flux_sum` (n_rxns,) is updated with the total absolute flux observed
+	across these variants so callers can drop always-zero reactions.
+	"""
+	n_rxns = len(constrained_rxn_ids)
+	n_variants = len(variants)
+	saturation_matrix = np.full((n_rxns, n_variants), np.nan)
+
+	for vi_col, vi in enumerate(variants):
+		cells = ap.get_cells(
+			variant=[vi],
+			generation=np.arange(ignore_first_n_gens, n_total_gens),
+			only_successful=True)
+		if len(cells) == 0:
+			continue
+
+		saturated_count = np.zeros(n_rxns, dtype=int)
+		valid_count = np.zeros(n_rxns, dtype=int)
+
+		for cell_path in cells:
+			sim_out = os.path.join(cell_path, 'simOut')
+			try:
+				counts_to_molar = TableReader(
+					os.path.join(sim_out, 'EnzymeKinetics')
+				).readColumn('countsToMolar', squeeze=True)[1:]
+
+				cell_mass = TableReader(
+					os.path.join(sim_out, 'Mass')
+				).readColumn('cellMass', squeeze=True)[1:]
+
+				dry_mass = TableReader(
+					os.path.join(sim_out, 'Mass')
+				).readColumn('dryMass', squeeze=True)[1:]
+
+				cat_counts = TableReader(
+					os.path.join(sim_out, 'FBAResults')
+				).readColumn('catalyst_counts',
+							 indices=np.array(all_cat_indexes),
+							 squeeze=False)[1:]
+
+				rxn_fluxes_raw = TableReader(
+					os.path.join(sim_out, 'FBAResults')
+				).readColumn('reactionFluxes',
+							 indices=rxn_indexes,
+							 squeeze=False)[1:]
+			except Exception as e:
+				print(f'Ignored exception reading {sim_out}: {e!r}')
+				continue
+
+			conversion_coeffs = (
+				dry_mass / cell_mass
+				* cell_density.asNumber(MASS_UNITS / VOLUME_UNITS))
+			fluxes = (
+				(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
+				* (rxn_fluxes_raw / conversion_coeffs[:, np.newaxis])
+			).asNumber(units.mmol / units.g / units.h)
+			fluxes[np.isinf(fluxes)] = np.nan
+
+			flux_sum += np.nansum(np.abs(fluxes), axis=0)
+
+			bounds = np.zeros_like(fluxes)
+			for ri, rxn_id in enumerate(constrained_rxn_ids):
+				for cat_idx, kcat in rxn_to_pairs[rxn_id]:
+					li = cat_idx_local[cat_idx]
+					conc = cat_counts[:, li] * counts_to_molar
+					bounds[:, ri] = np.maximum(
+						bounds[:, ri], kcat * conc)
+
+			for ri in range(n_rxns):
+				valid = (bounds[:, ri] > 0) & np.isfinite(fluxes[:, ri])
+				n_valid = valid.sum()
+				if n_valid == 0:
+					continue
+				valid_count[ri] += n_valid
+				saturated_count[ri] += (
+					fluxes[valid, ri]
+					> SATURATION_THRESHOLD * bounds[valid, ri]).sum()
+
+		has_data = valid_count > 0
+		saturation_matrix[has_data, vi_col] = (
+			saturated_count[has_data] / valid_count[has_data])
+
+	return saturation_matrix
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -40,24 +142,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				validationDataFile, metadata):
 
 		variant_indexes = self.ap.get_variants()
-		n_variants = len(variant_indexes)
 		n_total_gens = self.ap.n_generation
 		ignore_first_n_gens = max(n_total_gens - 8, 0)
 
-		# ------------------------------------------------------------------ #
-		# Determine constrained reactions from any kcat variant               #
-		# ------------------------------------------------------------------ #
-		# Find the first non-wildtype variant to load sim_data from.
-		kcat_variant = None
+		# Group variants by kcat category. We iterate constrained categories
+		# (1..len(KCAT_MULTIPLIERS)-1). Cat 0 variants included in the
+		# heatmap as NaN/gray if they're present (they're not here because
+		# we plot per category, but the spec calls for NaN treatment).
+		constrained_cats = [
+			c for c, m in enumerate(KCAT_MULTIPLIERS) if m is not None]
+
+		variants_by_cat = {c: [] for c in constrained_cats}
 		for vi in variant_indexes:
-			if vi != _WILDTYPE_INDEX:
-				kcat_variant = vi
-				break
-		if kcat_variant is None:
+			cat, _ = variant_to_category(vi)
+			if cat in variants_by_cat:
+				variants_by_cat[cat].append(vi)
+
+		constrained_cats = [c for c in constrained_cats if variants_by_cat[c]]
+		if not constrained_cats:
 			print('Skipping: no kcat-constrained variants found.')
 			return
 
-		kb_path = self.ap.get_variant_kb(kcat_variant)
+		# ------------------------------------------------------------------ #
+		# Determine constrained reactions from the first available kcat     #
+		# variant                                                            #
+		# ------------------------------------------------------------------ #
+		ref_variant = variants_by_cat[constrained_cats[0]][0]
+		kb_path = self.ap.get_variant_kb(ref_variant)
 		with open(kb_path, 'rb') as f:
 			sim_data = pickle.load(f)
 
@@ -66,9 +177,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print('Skipping: sim_data does not have selected_kcat_estimates.')
 			return
 
-		# Get listener IDs from a representative cell to build index maps.
 		ref_cells = self.ap.get_cells(
-			variant=[kcat_variant], generation=[0], only_successful=True)
+			variant=[ref_variant], generation=[0], only_successful=True)
 		if len(ref_cells) == 0:
 			print('Skipping: no cells found for reference variant.')
 			return
@@ -81,7 +191,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		rxn_id_to_idx = {r: i for i, r in enumerate(listener_rxn_ids)}
 		cat_id_to_idx = {c: i for i, c in enumerate(listener_cat_ids)}
 
-		# rxn_to_pairs: rxn_id -> [(cat_listener_idx, kcat), ...]
 		rxn_to_pairs = {}
 		for (rxn_id, cat_id), kcat in metabolism.selected_kcat_estimates.items():
 			if rxn_id not in rxn_id_to_idx or cat_id not in cat_id_to_idx:
@@ -99,177 +208,110 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_cat_indexes = sorted(
 			{ci for pairs in rxn_to_pairs.values() for ci, _ in pairs})
 		cat_idx_local = {ci: li for li, ci in enumerate(all_cat_indexes)}
-
 		cell_density = sim_data.constants.cell_density
+
 		n_rxns = len(constrained_rxn_ids)
+		flux_sum = np.zeros(n_rxns)
 
-		# ------------------------------------------------------------------ #
-		# Per-variant: compute saturation rates                               #
-		# ------------------------------------------------------------------ #
-		# saturation_matrix[ri, vi_col] = fraction of timesteps where
-		# flux > SATURATION_THRESHOLD * bound.
-		saturation_matrix = np.full((n_rxns, n_variants), np.nan)
+		per_cat_matrix = {}
+		for cat in constrained_cats:
+			per_cat_matrix[cat] = _compute_saturation(
+				self.ap, variants_by_cat[cat], rxn_to_pairs,
+				constrained_rxn_ids, rxn_indexes, all_cat_indexes,
+				cat_idx_local, cell_density, n_total_gens,
+				ignore_first_n_gens, flux_sum)
 
-		for vi_col, vi in enumerate(variant_indexes):
-			if vi == _WILDTYPE_INDEX:
-				continue  # leave as NaN
-
-			cells = self.ap.get_cells(
-				variant=[vi],
-				generation=np.arange(ignore_first_n_gens, n_total_gens),
-				only_successful=True)
-			if len(cells) == 0:
-				continue
-
-			# Per-reaction accumulators for this variant.
-			saturated_count = np.zeros(n_rxns, dtype=int)
-			valid_count = np.zeros(n_rxns, dtype=int)
-
-			for cell_path in cells:
-				sim_out = os.path.join(cell_path, 'simOut')
-				try:
-					counts_to_molar = TableReader(
-						os.path.join(sim_out, 'EnzymeKinetics')
-					).readColumn('countsToMolar', squeeze=True)[1:]
-
-					cell_mass = TableReader(
-						os.path.join(sim_out, 'Mass')
-					).readColumn('cellMass', squeeze=True)[1:]
-
-					dry_mass = TableReader(
-						os.path.join(sim_out, 'Mass')
-					).readColumn('dryMass', squeeze=True)[1:]
-
-					cat_counts = TableReader(
-						os.path.join(sim_out, 'FBAResults')
-					).readColumn('catalyst_counts',
-								 indices=np.array(all_cat_indexes),
-								 squeeze=False)[1:]
-
-					rxn_fluxes_raw = TableReader(
-						os.path.join(sim_out, 'FBAResults')
-					).readColumn('reactionFluxes',
-								 indices=rxn_indexes,
-								 squeeze=False)[1:]
-				except Exception as e:
-					print(f'Ignored exception reading {sim_out}: {e!r}')
-					continue
-
-				# Reaction fluxes -> mmol/g DCW/h
-				conversion_coeffs = (
-					dry_mass / cell_mass
-					* cell_density.asNumber(MASS_UNITS / VOLUME_UNITS))
-				fluxes = (
-					(COUNTS_UNITS / MASS_UNITS / TIME_UNITS)
-					* (rxn_fluxes_raw / conversion_coeffs[:, np.newaxis])
-				).asNumber(units.mmol / units.g / units.h)
-				fluxes[np.isinf(fluxes)] = np.nan
-
-				# Bounds -> mmol/g DCW/h: max over catalysts of kcat * [E]
-				bounds = np.zeros_like(fluxes)
-				for ri, rxn_id in enumerate(constrained_rxn_ids):
-					for cat_idx, kcat in rxn_to_pairs[rxn_id]:
-						li = cat_idx_local[cat_idx]
-						conc = cat_counts[:, li] * counts_to_molar
-						bounds[:, ri] = np.maximum(
-							bounds[:, ri], kcat * conc)
-
-				# Count saturated and valid timesteps per reaction.
-				for ri in range(n_rxns):
-					valid = (bounds[:, ri] > 0) & np.isfinite(fluxes[:, ri])
-					n_valid = valid.sum()
-					if n_valid == 0:
-						continue
-					valid_count[ri] += n_valid
-					saturated_count[ri] += (
-						fluxes[valid, ri]
-						> SATURATION_THRESHOLD * bounds[valid, ri]).sum()
-
-			# Compute saturation rate for this variant.
-			has_data = valid_count > 0
-			saturation_matrix[has_data, vi_col] = (
-				saturated_count[has_data] / valid_count[has_data])
-
-		# ------------------------------------------------------------------ #
-		# Sort rows by mean saturation rate (descending)                      #
-		# ------------------------------------------------------------------ #
-		# Mean over non-NaN columns (kcat variants only).
-		mean_sat = np.nanmean(saturation_matrix, axis=1)
-		# Reactions with no data across all variants get NaN mean; sort last.
-		mean_sat[np.isnan(mean_sat)] = -1
-		sort_order = np.argsort(mean_sat)[::-1]
-
-		saturation_matrix = saturation_matrix[sort_order]
-		sorted_rxn_ids = [constrained_rxn_ids[i] for i in sort_order]
-		mean_sat = mean_sat[sort_order]
-
-		# Drop reactions with no data at all.
-		has_any = mean_sat >= 0
-		saturation_matrix = saturation_matrix[has_any]
-		sorted_rxn_ids = [r for r, h in zip(sorted_rxn_ids, has_any) if h]
-
-		if len(sorted_rxn_ids) == 0:
-			print('Skipping: no reactions had valid data across variants.')
+		# Drop reactions where flux == 0 everywhere (always undefined).
+		keep_rxn = flux_sum > 0
+		if not np.any(keep_rxn):
+			print('Skipping: all reactions have zero flux.')
 			return
+		kept_rxn_ids = [
+			r for r, k in zip(constrained_rxn_ids, keep_rxn) if k]
 
-		n_show = len(sorted_rxn_ids)
+		# Sort rows (globally) by pooled mean saturation rate across all
+		# constrained categories, descending.
+		pooled = np.concatenate(
+			[per_cat_matrix[cat] for cat in constrained_cats], axis=1)
+		pooled = pooled[keep_rxn]
+		mean_sat = np.nanmean(pooled, axis=1)
+		mean_sat_sort = np.where(np.isnan(mean_sat), -np.inf, mean_sat)
+		order = np.argsort(mean_sat_sort)[::-1]
+		kept_rxn_ids = [kept_rxn_ids[i] for i in order]
 
-		# ------------------------------------------------------------------ #
-		# Export CSV                                                           #
-		# ------------------------------------------------------------------ #
-		csv_path = os.path.join(plotOutDir, 'kcat_saturation_rates.csv')
-		with open(csv_path, 'w', newline='', encoding='utf-8') as fh:
-			writer = csv.writer(fh)
-			header = ['reaction_id'] + [
-				f'variant_{vi}' for vi in variant_indexes]
-			writer.writerow(header)
-			for ri, rxn_id in enumerate(sorted_rxn_ids):
-				row = [rxn_id] + [
-					f'{saturation_matrix[ri, ci]:.4f}'
-					if np.isfinite(saturation_matrix[ri, ci]) else 'NaN'
-					for ci in range(n_variants)]
-				writer.writerow(row)
-		print(f'Wrote {csv_path}')
+		for cat in constrained_cats:
+			per_cat_matrix[cat] = per_cat_matrix[cat][keep_rxn][order]
 
 		# ------------------------------------------------------------------ #
-		# Plot heatmap                                                         #
+		# Export one CSV per category                                         #
 		# ------------------------------------------------------------------ #
-		fig_height = max(6, n_show * 0.3 + 2)
-		fig_width = max(12, n_variants * 0.7 + 3)
-		fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+		for cat in constrained_cats:
+			sat = per_cat_matrix[cat]
+			variants = variants_by_cat[cat]
+			csv_path = os.path.join(
+				plotOutDir,
+				f'kcat_saturation_rates_{category_label(cat)}.csv')
+			with open(csv_path, 'w', newline='', encoding='utf-8') as fh:
+				writer = csv.writer(fh)
+				writer.writerow(
+					['reaction_id'] + [f'variant_{vi}' for vi in variants])
+				for ri, rxn_id in enumerate(kept_rxn_ids):
+					row = [rxn_id] + [
+						f'{sat[ri, ci]:.4f}'
+						if np.isfinite(sat[ri, ci]) else 'NaN'
+						for ci in range(len(variants))]
+					writer.writerow(row)
+			print(f'Wrote {csv_path}')
 
-		# Use a colormap that shows gray for NaN.
+		# ------------------------------------------------------------------ #
+		# Plot: one subplot per constrained category (stacked vertically)   #
+		# ------------------------------------------------------------------ #
+		n_show = len(kept_rxn_ids)
+		max_n_variants = max(
+			len(variants_by_cat[c]) for c in constrained_cats)
+		fig_height = max(
+			6, len(constrained_cats) * (n_show * 0.3 + 3))
+		fig_width = max(14, max_n_variants * 0.8 + 4)
+
+		fig, axes = plt.subplots(
+			len(constrained_cats), 1,
+			figsize=(fig_width, fig_height), squeeze=False)
+
 		cmap = plt.cm.YlOrRd.copy()
-		cmap.set_bad(color='#cccccc')
+		cmap.set_bad('lightgray')
 
-		im = ax.imshow(
-			saturation_matrix * 100,
-			aspect='auto',
-			origin='upper',
-			cmap=cmap,
-			vmin=0, vmax=100,
-			interpolation='nearest')
+		for ax_idx, cat in enumerate(constrained_cats):
+			ax = axes[ax_idx, 0]
+			sat = per_cat_matrix[cat]
+			variants = variants_by_cat[cat]
 
-		cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-		cbar.set_label(
-			f'Saturation rate (% timesteps with flux > '
-			f'{SATURATION_THRESHOLD} × bound)',
-			fontsize=9)
+			im = ax.imshow(
+				sat * 100,
+				aspect='auto', origin='upper',
+				cmap=cmap,
+				vmin=0, vmax=100,
+				interpolation='nearest')
+			cbar = fig.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
+			cbar.set_label(
+				f'Saturation rate (% timesteps with flux > '
+				f'{SATURATION_THRESHOLD} × bound)',
+				fontsize=9)
 
-		# Axis labels
-		variant_labels = [_variant_label(vi) for vi in variant_indexes]
-		ax.set_xticks(np.arange(n_variants))
-		ax.set_xticklabels(variant_labels, fontsize=7, rotation=45, ha='right')
-		ax.set_yticks(np.arange(n_show))
-		ax.set_yticklabels(sorted_rxn_ids, fontsize=6)
+			variant_labels = [_variant_label(vi) for vi in variants]
+			ax.set_xticks(np.arange(len(variants)))
+			ax.set_xticklabels(variant_labels, fontsize=7, rotation=90)
+			ax.set_yticks(np.arange(n_show))
+			ax.set_yticklabels(kept_rxn_ids, fontsize=6)
 
-		ax.set_xlabel('Variant', fontsize=10)
-		ax.set_ylabel('Reaction (sorted by mean saturation rate)', fontsize=10)
-		ax.set_title(
-			'Kcat bound saturation rate by reaction and variant\n'
-			f'(last {min(8, n_total_gens)} gens; '
-			f'gray = no data / wildtype)',
-			fontsize=11)
+			ax.set_xlabel(
+				f'Variant ({category_label(cat)})', fontsize=10)
+			ax.set_ylabel(
+				'Reaction (sorted by mean saturation rate)', fontsize=10)
+			ax.set_title(
+				f'Kcat bound saturation rate -- {category_label(cat)}\n'
+				f'(last {min(8, n_total_gens)} gens; '
+				f'exp 10^{EXPRESSION_FACTOR - 1}; gray = no data)',
+				fontsize=11)
 
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)

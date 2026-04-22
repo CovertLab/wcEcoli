@@ -2,9 +2,9 @@
 Heatmap dashboard for the new_gene_trl_eff_sweep variant.
 
 Adapted from new_gene_kcat_translation_efficiency_heatmaps.py. Heatmaps are
-2 rows (no-kcat, kcat) x (N_TRL_EFF + 1) columns (control + trl_eff values).
-Only 1 expression factor (8.5), so the expression axis collapses into the
-kcat row dimension.
+len(KCAT_MULTIPLIERS) columns (one per kcat category) x (N_TRL_EFF + 1) rows
+(control + trl_eff values). Only 1 expression factor (8.5), so the expression
+axis collapses into the kcat-category column dimension.
 
 Uses the same HEATMAPS_TO_MAKE_LIST and data extraction methods from the
 parent class via inheritance.
@@ -35,7 +35,9 @@ from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
 	TRL_EFF_VALUES,
 	EXPRESSION_FACTOR,
 	N_TRL_EFF,
-	KCAT_HALF_START,
+	KCAT_MULTIPLIERS,
+	category_label,
+	variant_to_category,
 )
 from wholecell.analysis.analysis_tools import exportFigure
 from wholecell.analysis.plotting_tools import heatmap
@@ -44,8 +46,8 @@ from wholecell.analysis.plotting_tools import heatmap
 class Plot(KcatHeatmapsPlot):
 	"""
 	Subclass that overrides do_plot to handle the new_gene_trl_eff_sweep
-	variant index layout (2 rows: no-kcat/kcat, N_TRL_EFF+1 columns:
-	control + trl_eff values).
+	variant index layout (len(KCAT_MULTIPLIERS) columns: one per kcat
+	category; N_TRL_EFF+1 rows: control + trl_eff values).
 
 	All data extraction methods are inherited from the parent class.
 	"""
@@ -63,28 +65,27 @@ class Plot(KcatHeatmapsPlot):
 			self.sim_data)
 
 		# Axis labels for heatmap:
-		# - "columns" (exp axis) = 2 values: no-kcat, kcat
+		# - "columns" (exp axis in parent code) = kcat categories
 		# - "rows" (trl_eff axis) = N_TRL_EFF + 1 values: control + trl_eff values
-		n_cols = 2  # [no-kcat, kcat]
-		n_rows = N_TRL_EFF + 1  # control + 21 trl_eff values
+		n_cols = len(KCAT_MULTIPLIERS)  # 4
+		n_rows = N_TRL_EFF + 1  # control + N_TRL_EFF trl_eff values
 
-		# Column labels (expression axis in parent code)
-		col_labels = ['No kcat', '+kcat']
+		# Column labels (one per kcat category)
+		col_labels = [category_label(c) for c in range(n_cols)]
 		# Row labels (trl_eff axis in parent code)
 		row_labels = ['Control (KO)'] + [str(v) for v in TRL_EFF_VALUES]
 
 		# Map variant indexes to (trl_eff_index, exp_index) for heatmap data.
-		# trl_eff_index = local_index (0=control, 1..21=trl_eff values)
-		# exp_index = 0 (no-kcat) or 1 (kcat)
+		# exp_index = kcat category (0..3); trl_eff_index = local_index
+		# (0=control, 1..N_TRL_EFF=trl_eff values).
 		variants = self.ap.get_variants()
 		variant_index_to_list_indices = {}
 		variant_mask = np.zeros((n_rows, n_cols), dtype=bool)
 
 		for index in variants:
-			is_kcat = (index >= KCAT_HALF_START)
-			local_index = index - KCAT_HALF_START if is_kcat else index
-			exp_index = 1 if is_kcat else 0
-			trl_eff_index = local_index  # 0=control, 1..21=trl_eff
+			cat_idx, local_index = variant_to_category(index)
+			exp_index = cat_idx
+			trl_eff_index = local_index
 
 			variant_index_to_list_indices[index] = np.array([
 				exp_index, trl_eff_index])
@@ -528,10 +529,10 @@ class Plot(KcatHeatmapsPlot):
 		print("---Plotting---")
 		plot_suffix = "_gens_" + str(MIN_CELL_INDEX) + "_through_" + str(
 			MAX_CELL_INDEX)
-		heatmap_x_label = "Kcat Constraint"
+		heatmap_x_label = "Kcat Category"
 		heatmap_y_label = "Translation Efficiency"
-		figsize_x = 2 + 2 * n_cols / 3
-		figsize_y = 2 * n_rows / 2
+		figsize_x = 5 * n_cols
+		figsize_y = 1.2 * n_rows
 
 		if DASHBOARD_FLAG == 0 or DASHBOARD_FLAG == 2:
 			self.plot_heatmaps(

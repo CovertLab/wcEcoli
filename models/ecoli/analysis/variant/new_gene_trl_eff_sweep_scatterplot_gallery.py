@@ -1,16 +1,18 @@
 """
 Scatterplot gallery for the new_gene_trl_eff_sweep variant comparing cell
-properties with and without kcat constraints at matching translation
+properties across four kcat-constraint categories at matching translation
 efficiencies.
 
 Reads CSVs produced by new_gene_counts_save_dt, save_omes, and
-save_transcriptome.  Points are colored by kcat status (blue = no kcat,
-red = kcat) and shaped by control status (triangle = control/knockout,
-circle = expression variant).
+save_transcriptome. Points are colored by kcat category (blue = no_kcat,
+red = 1.0x, orange = 0.8x, purple = 0.6x) and shaped by control status
+(triangle = control/knockout, circle = expression variant).
 
-Variant index layout (44 indices total):
-  No-kcat half (0-21): 0 = control, 1-21 = expression variants
-  Kcat half (22-43): 22 = control, 23-43 = expression variants
+Variant index layout (48 indices total, 4 categories x 12 variants each):
+  Category 0 (no_kcat, 0-11):    0 = control,  1-11 = expression variants
+  Category 1 (kcat_1.0x, 12-23): 12 = control, 13-23 = expression variants
+  Category 2 (kcat_0.8x, 24-35): 24 = control, 25-35 = expression variants
+  Category 3 (kcat_0.6x, 36-47): 36 = control, 37-47 = expression variants
 """
 
 import os
@@ -22,7 +24,12 @@ import pandas as pd
 import seaborn as sns
 
 from models.ecoli.analysis import variantAnalysisPlot
-from models.ecoli.sim.variants.new_gene_trl_eff_sweep import KCAT_HALF_START
+from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
+	KCAT_MULTIPLIERS,
+	category_label,
+	is_control,
+	variant_to_category,
+)
 from wholecell.analysis.analysis_tools import exportFigure
 
 # -- Visual encoding constants ------------------------------------------------
@@ -30,7 +37,15 @@ from wholecell.analysis.analysis_tools import exportFigure
 POSTER_BLUE = (27/255, 132/255, 198/255)
 POSTER_RED = (202/255, 0/255, 32/255)
 
-CONTROL_INDICES = {0, KCAT_HALF_START}
+# Canonical category visual encoding (shared across all trl_eff_sweep scripts)
+CATEGORY_COLORS = {
+	0: (27/255, 132/255, 198/255),   # no_kcat -- blue (matches POSTER_BLUE)
+	1: (202/255,   0/255,  32/255),  # 1.0x    -- red (matches POSTER_RED)
+	2: (230/255, 120/255,  25/255),  # 0.8x    -- orange
+	3: (120/255,  60/255, 155/255),  # 0.6x    -- purple
+}
+CONTROL_MARKER = '^'
+EXPRESSION_MARKER = 'o'
 
 OUTPUT_FOLDER_NAME = 'scatterplot_gallery'
 
@@ -51,45 +66,55 @@ EXTENDED_COLORS = [
 ]
 
 
+def _group_key(cat_idx, is_ctrl):
+	"""Build a canonical group label from (cat_idx, is_ctrl)."""
+	suffix = 'control' if is_ctrl else 'expression'
+	return f'{category_label(cat_idx)} {suffix}'
+
+
 def _group_masks(variant_indices):
-	"""Return boolean masks for the four point groups.
+	"""Return boolean masks for the 8 point groups (4 categories x
+	{control, expression}).
 
 	Returns:
 		dict mapping group label -> boolean array of same length as
 		variant_indices.
 	"""
-	vi = np.asarray(variant_indices)
-	is_kcat = vi >= KCAT_HALF_START
-	is_control = np.isin(vi, list(CONTROL_INDICES))
+	vi = np.asarray(variant_indices, dtype=int)
+	cat_arr = np.zeros_like(vi)
+	ctrl_arr = np.zeros_like(vi, dtype=bool)
+	for i, v in enumerate(vi):
+		cat, _ = variant_to_category(int(v))
+		cat_arr[i] = cat
+		ctrl_arr[i] = is_control(int(v))
 
-	return {
-		'No-kcat expression': ~is_kcat & ~is_control,
-		'No-kcat control':    ~is_kcat &  is_control,
-		'Kcat expression':     is_kcat & ~is_control,
-		'Kcat control':        is_kcat &  is_control,
-	}
+	masks = {}
+	for cat_idx in range(len(KCAT_MULTIPLIERS)):
+		masks[_group_key(cat_idx, False)] = (cat_arr == cat_idx) & ~ctrl_arr
+		masks[_group_key(cat_idx, True)] = (cat_arr == cat_idx) & ctrl_arr
+	return masks
 
 
 def _group_style(label):
 	"""Return (color, marker) for a group label."""
-	styles = {
-		'No-kcat expression': (POSTER_BLUE, 'o'),
-		'No-kcat control':    (POSTER_BLUE, '^'),
-		'Kcat expression':    (POSTER_RED,  'o'),
-		'Kcat control':       (POSTER_RED,  '^'),
-	}
-	return styles[label]
+	for cat_idx in range(len(KCAT_MULTIPLIERS)):
+		if label == _group_key(cat_idx, False):
+			return CATEGORY_COLORS[cat_idx], EXPRESSION_MARKER
+		if label == _group_key(cat_idx, True):
+			return CATEGORY_COLORS[cat_idx], CONTROL_MARKER
+	raise KeyError(f'Unknown group label: {label!r}')
 
 
 def _add_legend(ax):
-	"""Add a 4-entry legend to the axes."""
+	"""Add a legend with one entry per category x (expression, control)."""
 	handles = []
-	for label in ['No-kcat expression', 'No-kcat control',
-				  'Kcat expression', 'Kcat control']:
-		color, marker = _group_style(label)
-		handles.append(mlines.Line2D(
-			[], [], color=color, marker=marker, linestyle='None',
-			markersize=6, alpha=0.7, label=label))
+	for cat_idx in range(len(KCAT_MULTIPLIERS)):
+		for is_ctrl in (False, True):
+			label = _group_key(cat_idx, is_ctrl)
+			color, marker = _group_style(label)
+			handles.append(mlines.Line2D(
+				[], [], color=color, marker=marker, linestyle='None',
+				markersize=6, alpha=0.7, label=label))
 	ax.legend(handles=handles, fontsize=7, loc='best')
 
 
@@ -151,6 +176,10 @@ def make_scatterplot_multi_y(dt_data, variant_indices, x_col, y_cols,
 	x_data = dt_data[x_col].values
 	masks = _group_masks(variant_indices)
 
+	# Use the first expression group as the label-gate (so each y-series only
+	# gets a single legend entry).
+	first_expression_label = _group_key(0, False)
+
 	for i, y_col in enumerate(y_cols):
 		y_data = dt_data[y_col].values
 		base_color = MULTI_Y_COLORS[i % len(MULTI_Y_COLORS)]
@@ -162,7 +191,7 @@ def make_scatterplot_multi_y(dt_data, variant_indices, x_col, y_cols,
 			ax.scatter(x_data[mask], y_data[mask], color=base_color,
 					   marker=marker, alpha=0.5, s=40,
 					   label=(output_to_label_dict.get(y_col, y_col)
-							  if label == 'No-kcat expression' else None))
+							  if label == first_expression_label else None))
 
 	ax.set_xlabel(output_to_label_dict.get(x_col, x_col))
 	ax.set_ylabel(y_axis_label)
