@@ -1,18 +1,26 @@
 """
-Sweep translation efficiencies at a fixed expression factor (8.5), with half
-of the indices running without kcat constraints and half running with kcat
-constraints. Enables direct comparison of doubling time impacts when kcat
-constraints are active vs inactive at matching GFP expression levels.
+Sweep new-gene (GFP) translation efficiencies at a fixed expression factor
+(8.5) across four kcat-constraint regimes. Enables direct comparison of
+doubling-time impacts as the kcat bound is progressively tightened at matched
+GFP expression levels.
 
-Variant index layout (44 indices total):
+Layout (48 indices total, 4 categories x 12 variants each):
 
-No-kcat half (indices 0-21):
-  0:     Control — exp=0 (GFP knockout), no kcat constraints
-  1-21:  exp=8.5, trl_eff = [5.00, 4.75, ..., 0.25, 0], no kcat constraints
+Category 0 — no kcat constraint (indices 0-11):
+  0:       Control (GFP knockout, exp factor = 0)
+  1-11:    exp=8.5, trl_eff = TRL_EFF_VALUES
 
-Kcat half (indices 22-43):
-  22:    Control — exp=0 (GFP knockout), WITH max kcat constraints
-  23-43: exp=8.5, trl_eff = [5.00, 4.75, ..., 0.25, 0], WITH max kcat constraints
+Category 1 — kcat = 1.0 x max (indices 12-23):
+  12:      Control (GFP knockout)
+  13-23:   exp=8.5, trl_eff = TRL_EFF_VALUES
+
+Category 2 — kcat = 0.8 x max (indices 24-35):
+  24:      Control (GFP knockout)
+  25-35:   exp=8.5, trl_eff = TRL_EFF_VALUES
+
+Category 3 — kcat = 0.6 x max (indices 36-47):
+  36:      Control (GFP knockout)
+  37-47:   exp=8.5, trl_eff = TRL_EFF_VALUES
 
 Modifies:
 	sim_data.condition
@@ -28,7 +36,7 @@ Modifies (after shift):
 	sim_data.process.transcription_regulation.delta_prob
 	sim_data.process.translation.translation_efficiencies_by_monomer
 
-Modifies (kcat half only):
+Modifies (categories 1-3 only, i.e. when a kcat multiplier is applied):
 	sim_data.process.metabolism.kcat_estimate_quantile
 	sim_data.process.metabolism.kcat_estimate_multiplier
 	sim_data.process.metabolism.selected_kcat_estimates
@@ -43,14 +51,35 @@ from models.ecoli.sim.variants.new_gene_internal_shift import (
 )
 
 TRL_EFF_VALUES = [
-	5.00, 4.75, 4.50, 4.25, 4.00,
-	3.75, 3.50, 3.25, 3.00, 2.75,
-	2.50, 2.25, 2.00, 1.75, 1.50,
-	1.25, 1.00, 0.75, 0.50, 0.25,
-	0]
+	5.0, 4.5, 4.0, 3.5, 3.0,
+	2.5, 2.0, 1.5, 1.0, 0.5,
+	0.0]
 EXPRESSION_FACTOR = 8.5
-N_TRL_EFF = len(TRL_EFF_VALUES)  # 21
-KCAT_HALF_START = N_TRL_EFF + 1  # 22
+KCAT_MULTIPLIERS = [None, 1.0, 0.8, 0.6]  # None => no kcat bound
+N_TRL_EFF = len(TRL_EFF_VALUES)  # 11
+N_PER_CATEGORY = N_TRL_EFF + 1  # 12 (1 control + 11 expression variants)
+N_VARIANTS = N_PER_CATEGORY * len(KCAT_MULTIPLIERS)  # 48
+
+
+def variant_to_category(index: int) -> tuple[int, int]:
+	"""Return (cat_idx, local_idx) where cat_idx in 0..3 and local_idx in 0..11."""
+	return divmod(index, N_PER_CATEGORY)
+
+
+def is_control(index: int) -> bool:
+	"""Return True if this variant is the control (GFP knockout) for its category.
+
+	Controls are local_idx == 0 within each category (global indices
+	{0, 12, 24, 36}).
+	"""
+	_, local_idx = variant_to_category(index)
+	return local_idx == 0
+
+
+def category_label(cat_idx: int) -> str:
+	"""Return a short human label for the category, e.g. 'no_kcat', 'kcat_1.0x'."""
+	mult = KCAT_MULTIPLIERS[cat_idx]
+	return 'no_kcat' if mult is None else f'kcat_{mult:.1f}x'
 
 
 def _induce(sim_data, local_index):
@@ -85,21 +114,26 @@ def _induce(sim_data, local_index):
 
 def new_gene_trl_eff_sweep(sim_data, index):
 	"""
-	Apply variant. Determines whether this index belongs to the no-kcat half
-	or the kcat half, applies kcat constraints if needed, then sets up
-	internal shift for new gene induction at the appropriate expression
+	Apply variant. Determines the (category, local index) pair for this
+	variant, applies the category's kcat multiplier (if any), then sets up
+	the internal shift for new gene induction at the appropriate expression
 	factor and translation efficiency.
 	"""
-	is_kcat = (index >= KCAT_HALF_START)
-	local_index = index - KCAT_HALF_START if is_kcat else index
+	cat_idx, local_idx = variant_to_category(index)
+	multiplier = KCAT_MULTIPLIERS[cat_idx]
 
-	# Apply kcat constraints for kcat half
-	if is_kcat:
+	# Apply kcat constraint if this category has one
+	if multiplier is not None:
+		assert 'max' in sim_data.process.metabolism.kcat_estimates, \
+			"sim_data.process.metabolism.kcat_estimates['max'] missing" \
+			" — Parca must populate this"
 		metabolism = sim_data.process.metabolism
 		metabolism.kcat_estimate_quantile = 'max'
-		metabolism.kcat_estimate_multiplier = 1.0
-		metabolism.selected_kcat_estimates = dict(
-			metabolism.kcat_estimates['max'])
+		metabolism.kcat_estimate_multiplier = multiplier
+		metabolism.selected_kcat_estimates = {
+			key: value * multiplier
+			for key, value in metabolism.kcat_estimates['max'].items()
+		}
 
 	# Always minimal media
 	condition(sim_data, 0)
@@ -110,24 +144,21 @@ def new_gene_trl_eff_sweep(sim_data, index):
 	# Add the new gene induction to the internal_shift instructions
 	if NEW_GENE_INDUCTION_GEN != -1:
 		sim_data.internal_shift_dict[NEW_GENE_INDUCTION_GEN] = [
-			(_induce, local_index)]
+			(_induce, local_idx)]
 	if NEW_GENE_KNOCKOUT_GEN != -1:
 		sim_data.internal_shift_dict[NEW_GENE_KNOCKOUT_GEN] = [
 			(_induce, 0)]  # knockout = set expression to 0
 
 	# Build description
-	kcat_str = "WITH" if is_kcat else "WITHOUT"
-	if local_index == 0:
-		return dict(
-			shortName=f"control_{'kcat' if is_kcat else 'no_kcat'}",
-			desc=f"Control (new gene knockout) {kcat_str} max kcat constraints.",
-		), sim_data
-
-	trl_eff_value = TRL_EFF_VALUES[local_index - 1]
-	return dict(
-		shortName=f"trl_eff_{trl_eff_value}_exp_{EXPRESSION_FACTOR}"
-			f"_{'kcat' if is_kcat else 'no_kcat'}",
-		desc=f"Expression factor 10^{EXPRESSION_FACTOR - 1}, "
-			f"translation efficiency {trl_eff_value}, "
-			f"{kcat_str} max kcat constraints.",
-	), sim_data
+	cat = category_label(cat_idx)
+	if local_idx == 0:
+		shortName = f'control_{cat}'
+		desc = f'Control (new gene knockout), {cat}.'
+	else:
+		trl_eff_value = TRL_EFF_VALUES[local_idx - 1]
+		shortName = (
+			f'trl_eff_{trl_eff_value}_exp_{EXPRESSION_FACTOR}_{cat}')
+		desc = (
+			f'Expression factor 10^{EXPRESSION_FACTOR - 1}, '
+			f'translation efficiency {trl_eff_value}, {cat}.')
+	return dict(shortName=shortName, desc=desc), sim_data

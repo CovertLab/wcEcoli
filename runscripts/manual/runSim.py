@@ -28,7 +28,7 @@ from models.ecoli.sim.variants.new_gene_internal_shift import (NEW_GENE_EXPRESSI
 from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
 	TRL_EFF_VALUES as TRL_EFF_SWEEP_VALUES,
 	EXPRESSION_FACTOR as TRL_EFF_SWEEP_EXPRESSION_FACTOR,
-	KCAT_HALF_START as TRL_EFF_SWEEP_KCAT_HALF_START,
+	KCAT_MULTIPLIERS as TRL_EFF_SWEEP_KCAT_MULTIPLIERS,
 	NEW_GENE_INDUCTION_GEN as TRL_EFF_SWEEP_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN as TRL_EFF_SWEEP_KNOCKOUT_GEN,
 )
@@ -124,7 +124,7 @@ class RunSimulation(scriptBase.ScriptBase):
 			metadata.update(
 				expression_factor=TRL_EFF_SWEEP_EXPRESSION_FACTOR,
 				trl_eff_values=TRL_EFF_SWEEP_VALUES,
-				kcat_half_start=TRL_EFF_SWEEP_KCAT_HALF_START,
+				kcat_multipliers=TRL_EFF_SWEEP_KCAT_MULTIPLIERS,
 				new_gene_induction_gen=TRL_EFF_SWEEP_INDUCTION_GEN,
 				new_gene_knockout_gen=TRL_EFF_SWEEP_KNOCKOUT_GEN,)
 
