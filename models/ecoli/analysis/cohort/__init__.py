@@ -15,6 +15,7 @@ ACTIVE = [
 	"histogramGrowthRate.py",
 	"initialVsFinalMass.py",
 	"kinetics_flux_comparison.py",
+	"mass_category_doubling.py",
 	"mass_fraction_instantaneous_growth_rates.py",
 	"promoter_probabilities.py",
 	"proteinCopyNumberDistribution.py",
