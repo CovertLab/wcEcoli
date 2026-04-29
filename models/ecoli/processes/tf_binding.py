@@ -203,8 +203,6 @@ class TfBinding(wholecell.processes.process.Process):
 		self.writeToListener(
 			"RnaSynthProb", "nPromoterBound", nPromotersBound)
 		self.writeToListener(
-			"RnaSynthProb", "nActualBound", nActualBound)
-		self.writeToListener(
 			"RnaSynthProb", "n_available_promoters", n_promoters)
 		self.writeToListener(
 			"RnaSynthProb", "n_bound_TF_per_TU", n_bound_TF_per_TU)
