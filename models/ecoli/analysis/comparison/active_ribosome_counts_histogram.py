@@ -26,8 +26,12 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 	def do_plot(self, reference_sim_dir, plotOutDir, plotOutFileName, input_sim_dir, unused, metadata):
 		# noinspection PyUnusedLocal
 		ap1, sim_data1, _ = self.setup(reference_sim_dir)
+
 		# noinspection PyUnusedLocal
 		ap2, sim_data2, _ = self.setup(input_sim_dir)
+
+		reference_name = reference_sim_dir.split('out/')[-1]
+		input_name = input_sim_dir.split('out/')[-1]
 
 		if ap1.n_generation <= 4 or ap2.n_generation <= 4:
 			print('Not enough generations to run analysis.')
@@ -35,7 +39,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		def read_sims(ap):
 			# Ignore data from first four gens
-			cell_paths = ap.get_cells(generation=np.arange(4, ap.n_generation))
+			cell_paths = ap.get_cells(generation=np.arange(2, ap.n_generation))
 
 			# Get index of active ribosomes in the unique molecule counts reader
 			unique_molecule_counts_reader = TableReader(
@@ -54,6 +58,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 		# Get initial active ribosome counts from each set of sims
 		active_ribosome_counts1 = read_sims(ap1)
 		active_ribosome_counts2 = read_sims(ap2)
+		hi = 5
 
 		# Plot histogram
 		fig = plt.figure(figsize=FIGSIZE)
@@ -63,11 +68,11 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
 		ax.hist(
 			active_ribosome_counts1, bins=bins, alpha=0.5,
-			label=f'reference ({np.mean(active_ribosome_counts1):.2f} $\pm$ {np.std(active_ribosome_counts1):.2f}, n={len(active_ribosome_counts1)})')
+			label=f'reference: {reference_name} ({np.mean(active_ribosome_counts1):.2f} $\pm$ {np.std(active_ribosome_counts1):.2f}, n={len(active_ribosome_counts1)})')
 		ax.axvline(np.mean(active_ribosome_counts1), ls='--', lw=2, c='C0')
 		ax.hist(
 			active_ribosome_counts2, bins=bins, alpha=0.5,
-			label=f'input ({np.mean(active_ribosome_counts2):.2f} $\pm$ {np.std(active_ribosome_counts2):.2f}, n={len(active_ribosome_counts2)})')
+			label=f'input: {input_name} ({np.mean(active_ribosome_counts2):.2f} $\pm$ {np.std(active_ribosome_counts2):.2f}, n={len(active_ribosome_counts2)})')
 		ax.axvline(np.mean(active_ribosome_counts2), ls='--', lw=2, c='C1')
 
 		ax.legend(prop={'size': 6})
