@@ -180,6 +180,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 		self.writeToListener("GrowthLimits", "activeRibosomeAllocated", n_active_ribosomes)
 
 		if n_active_ribosomes == 0:
+			print("WARNING: No active ribosomes found!")
 			return
 
 		# Build amino acids sequences for each ribosome to polymerize
