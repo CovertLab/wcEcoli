@@ -72,6 +72,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		TU_indexes, all_coordinates, all_domains, bound_TFs = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF"
 			)
+
+		# Record the TFs that are bound whenever promoters exist:
+		self.nActualBound = bound_TFs.sum(axis=0)
+
 		genes = self.uniqueMolecules.container.objectsInCollection('gene')
 		cistron_indexes = genes.attr("cistron_index")
 
