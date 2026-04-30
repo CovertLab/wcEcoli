@@ -73,7 +73,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			"TU_index", "coordinates", "domain_index", "bound_TF"
 			)
 
-		# Record the TFs that are bound whenever promoters exist:
+		# TFs currently bound to transcription units/promoters at this timestep:
 		self.nActualBound = bound_TFs.sum(axis=0, dtype=np.float64)
 
 		genes = self.uniqueMolecules.container.objectsInCollection('gene')
