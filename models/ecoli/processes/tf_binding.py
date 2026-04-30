@@ -96,9 +96,6 @@ class TfBinding(wholecell.processes.process.Process):
 				"RnaSynthProb", "nPromoterBound",
 				np.zeros(self.n_TF, dtype=np.float64))
 			self.writeToListener(
-				"RnaSynthProb", "nActualBound",
-				np.zeros(self.n_TF, dtype=np.float64))
-			self.writeToListener(
 				"RnaSynthProb", "n_available_promoters",
 				np.zeros(self.n_TF, dtype=np.float64))
 			self.writeToListener(
@@ -119,7 +116,6 @@ class TfBinding(wholecell.processes.process.Process):
 		# Create vectors for storing values
 		pPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
-		nActualBound = np.zeros(self.n_TF, dtype=np.float64)
 		n_promoters = np.zeros(self.n_TF, dtype=np.float64)
 		n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), dtype=np.int16)
 
@@ -186,7 +182,6 @@ class TfBinding(wholecell.processes.process.Process):
 			# Record values
 			pPromotersBound[tf_idx] = pPromoterBound
 			nPromotersBound[tf_idx] = n_to_bind
-			nActualBound[tf_idx] = bound_locs.sum()
 
 		delta_TF = bound_TF_new.astype(np.int8) - bound_TF.astype(np.int8)
 		mass_diffs = delta_TF.dot(self.active_tf_masses)
@@ -202,8 +197,6 @@ class TfBinding(wholecell.processes.process.Process):
 			"RnaSynthProb", "pPromoterBound", pPromotersBound)
 		self.writeToListener(
 			"RnaSynthProb", "nPromoterBound", nPromotersBound)
-		self.writeToListener(
-			"RnaSynthProb", "nActualBound", nActualBound)
 		self.writeToListener(
 			"RnaSynthProb", "n_available_promoters", n_promoters)
 		self.writeToListener(

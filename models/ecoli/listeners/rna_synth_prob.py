@@ -72,6 +72,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		TU_indexes, all_coordinates, all_domains, bound_TFs = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF"
 			)
+
+		# TFs currently bound to transcription units/promoters at this timestep:
+		self.nActualBound = bound_TFs.sum(axis=0, dtype=np.float64)
+
 		genes = self.uniqueMolecules.container.objectsInCollection('gene')
 		cistron_indexes = genes.attr("cistron_index")
 
