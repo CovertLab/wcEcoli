@@ -98,18 +98,28 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
                 only_successful=True)
             
+            if len(cell_paths_per_seed) == 0:
+                continue
+
             if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
                 continue
 
             # Load data
             time = read_stacked_columns(cell_paths_per_seed, 'Main', 'time', remove_first=True).flatten()
-            gen_start_times = read_stacked_columns(cell_paths_per_seed, 'Main', 'time', remove_first=True, fun=lambda x: x[0]).flatten()
 
+            if len(time) == 0:
+                continue
+
+            gen_start_times = read_stacked_columns(cell_paths_per_seed, 'Main', 'time', remove_first=True, fun=lambda x: x[0]).flatten()
+            actual_sample_size = min(SAMPLE_PER_SEED, len(time))
+
+            if actual_sample_size == 0:
+                continue
             # Select 10,000 unique random time steps to represent 10,000 single cells
-            np.random.seed(0)
+            
             random_time_indices = np.random.choice(
                 a=len(time),
-                size=SAMPLE_PER_SEED,         
+                size=actual_sample_size,         
                 replace=False # Ensures that each time step is selected only once
             )
 

@@ -138,6 +138,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEEDS,
 			only_successful=True)
+		
+		cell_paths = self.ap.get_cells(
+        generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), 
+        seed=SEEDS,
+        only_successful=True)
+
+		if len(cell_paths) == 0 :
+			return
+		
 
 		# There are 4346 mRNA ids with counts
 		RNA_reader = TableReader(

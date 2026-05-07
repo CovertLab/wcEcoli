@@ -19,8 +19,9 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 20
-SEED_RANGE = np.arange(0, 40)
+IGNORE_FIRST_N_GENS = 8
+SEED_RANGE = np.arange(0, 60)
+BATCH_SIZE = 50
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -34,6 +35,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
 			only_successful=True)
+		
+		if len(cell_paths) == 0:
+			print('No valid cell paths found for this variant. Skipping analysis.')
+			return
 		
 		print('Analyzing %d cells...' % len(cell_paths))
 
@@ -92,13 +97,33 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			in cistron_ids_in_order
 		])
 
+		mean_monomer_counts = np.zeros(len(monomer_indices))
+		mean_mRNA_counts = np.zeros(len(mRNA_ids_indices))
+		n_cells = 0
 
-		mean_monomer_counts = read_stacked_columns(
-				cell_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True).mean(axis=0)[monomer_indices]
-		mean_mRNA_counts = read_stacked_columns(
-				cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-				ignore_exception=True).mean(axis=0)[mRNA_ids_indices]
+		for i in range(0, len(cell_paths), BATCH_SIZE):
+			batch_paths = cell_paths[i:i+BATCH_SIZE]
+			print(f'Processing batch {i//BATCH_SIZE + 1}/{(len(cell_paths)-1)//BATCH_SIZE + 1}...')
+			
+			# Read batch data
+			batch_monomer = read_stacked_columns(
+				batch_paths, 'MonomerCounts', 'monomerCounts',
+				ignore_exception=True)[:, monomer_indices]
+			batch_mRNA = read_stacked_columns(
+				batch_paths, 'RNACounts', 'mRNA_cistron_counts',
+				ignore_exception=True)[:, mRNA_ids_indices]
+			
+			# Accumulate sums
+			mean_monomer_counts += batch_monomer.sum(axis=0)
+			mean_mRNA_counts += batch_mRNA.sum(axis=0)
+			n_cells += batch_monomer.shape[0]
+			
+			# Free memory
+			del batch_monomer, batch_mRNA
+
+			# Calculate means
+			mean_monomer_counts /= n_cells
+			mean_mRNA_counts /= n_cells
 
 		
 		# import ipdb; ipdb.set_trace()

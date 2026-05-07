@@ -20,7 +20,7 @@ from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = 1
-SEED_RANGE = np.arange(1, 3)
+SEED_RANGE = np.arange(1, 60)
 TIMEPOINTS_TO_SAMPLE = 10000
 SAMPLE_PER_SEED = TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)
 

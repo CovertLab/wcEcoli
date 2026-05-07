@@ -12,7 +12,7 @@ from matplotlib import cm
 
 import csv
 
-from wholecell.utils import units
+
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
     read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)

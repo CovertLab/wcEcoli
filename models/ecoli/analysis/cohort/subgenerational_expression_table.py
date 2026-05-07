@@ -5,13 +5,10 @@ expression frequencies and average/maximum mRNA/protein counts.
 
 import pickle
 import os
-
 import csv
-# noinspection PyUnresolvedReferences
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
 
@@ -55,6 +52,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
+		
+		print(f"Processing {len(cell_paths)} cells...")
+		
 		simOutDir = os.path.join(cell_paths[0], 'simOut')
 		rna_counts_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
 		mRNA_cistron_ids_rna_counts_table = rna_counts_reader.readAttribute(
@@ -70,23 +70,38 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			in mRNA_cistron_ids
 			])
 
-		# Get boolean matrix for whether each gene's mRNA exists in each
-		# generation or not
-		mRNA_exists_in_gen = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-			ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[
-				:, mRNA_cistron_indexes]
+		# Initialize arrays for accumulating statistics
+		n_genes = len(mRNA_cistron_ids)
+		n_cells = len(cell_paths)
+		mRNA_exists_count = np.zeros(n_genes, dtype=int)
+		max_mRNA_counts = np.zeros(n_genes, dtype=int)
+		
+		# Process RNA counts cell by cell to save memory
+		print("Processing mRNA counts...")
+		for i, cell_path in enumerate(cell_paths):
+			if i % 100 == 0:
+				print(f"  Cell {i}/{n_cells}")
+			try:
+				simOutDir = os.path.join(cell_path, 'simOut')
+				rna_reader = TableReader(os.path.join(simOutDir, 'RNACounts'))
+				mRNA_counts = rna_reader.readColumn('mRNA_cistron_counts')[:, mRNA_cistron_indexes]
+				
+				# Update existence count
+				mRNA_exists_count += (mRNA_counts.sum(axis=0) > 0).astype(int)
+				
+				# Update max counts
+				cell_max = mRNA_counts.max(axis=0)
+				max_mRNA_counts = np.maximum(max_mRNA_counts, cell_max)
+				
+			except Exception as e:
+				print(f"  Warning: Could not read cell {cell_path}: {e}")
+				continue
 
-		# Divide by total number of cells to get probability
-		p_mRNA_exists_in_gen = (
-			mRNA_exists_in_gen.sum(axis=0) / mRNA_exists_in_gen.shape[0])
-
-		# Get maximum counts of mRNAs for each gene across all timepoints
-		max_mRNA_counts = read_stacked_columns(
-			cell_paths, 'RNACounts', 'mRNA_cistron_counts',
-			ignore_exception=True).max(axis=0)[mRNA_cistron_indexes]
+		# Calculate probability
+		p_mRNA_exists_in_gen = mRNA_exists_count / n_cells
 
 		# Get subcolumn for monomer IDs in monomer counts table
+		simOutDir = os.path.join(cell_paths[0], 'simOut')
 		monomer_counts_reader = TableReader(
 			os.path.join(simOutDir, 'MonomerCounts'))
 		monomer_ids_monomer_counts_table = monomer_counts_reader.readAttribute(
@@ -101,18 +116,36 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			monomer_id_to_index[monomer_id] for monomer_id in monomer_ids
 			])
 
-		# Get maximum counts of monomers for each gene across all timepoints
-		max_monomer_counts = read_stacked_columns(
-			cell_paths, 'MonomerCounts', 'monomerCounts',
-			ignore_exception=True).max(axis=0)[monomer_indexes]
+		# Process monomer counts cell by cell to save memory
+		max_monomer_counts = np.zeros(n_genes, dtype=int)
+		print("Processing monomer counts...")
+		for i, cell_path in enumerate(cell_paths):
+			if i % 100 == 0:
+				print(f"  Cell {i}/{n_cells}")
+			try:
+				simOutDir = os.path.join(cell_path, 'simOut')
+				monomer_reader = TableReader(os.path.join(simOutDir, 'MonomerCounts'))
+				monomer_counts = monomer_reader.readColumn('monomerCounts')[:, monomer_indexes]
+				
+				# Update max counts
+				cell_max = monomer_counts.max(axis=0)
+				max_monomer_counts = np.maximum(max_monomer_counts, cell_max)
+				
+			except Exception as e:
+				print(f"  Warning: Could not read cell {cell_path}: {e}")
+				continue
 
 		# Get indexes of subgenerationally expressed genes
 		subgen_exp_indexes = np.where(np.logical_and(
 			p_mRNA_exists_in_gen > 0, p_mRNA_exists_in_gen < 1
 			))[0]
 
+		print(f"Found {len(subgen_exp_indexes)} subgenerationally expressed genes")
+
 		# Write data to table
-		with open(os.path.join(plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
+		output_file = os.path.join(plotOutDir, plotOutFileName + '.tsv')
+		print(f"Writing results to {output_file}")
+		with open(output_file, 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow([
 				'gene_name', 'cistron_name', 'protein_name',
@@ -125,6 +158,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					p_mRNA_exists_in_gen[i], max_mRNA_counts[i],
 					max_monomer_counts[i]
 					])
+		
+		print("Done!")
 
 
 if __name__ == '__main__':
