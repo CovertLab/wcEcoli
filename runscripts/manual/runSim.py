@@ -32,6 +32,11 @@ from models.ecoli.sim.variants.new_gene_trl_eff_sweep import (
 	NEW_GENE_INDUCTION_GEN as TRL_EFF_SWEEP_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN as TRL_EFF_SWEEP_KNOCKOUT_GEN,
 )
+from models.ecoli.sim.variants.new_gene_saturated_rxn_test import (
+	TRL_EFF_LEVELS as SAT_RXN_TRL_EFF_LEVELS,
+	EXPRESSION_FACTOR as SAT_RXN_EXPRESSION_FACTOR,
+	N_VARIANTS as SAT_RXN_N_VARIANTS,
+)
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
@@ -125,6 +130,14 @@ class RunSimulation(scriptBase.ScriptBase):
 				expression_factor=TRL_EFF_SWEEP_EXPRESSION_FACTOR,
 				trl_eff_values=TRL_EFF_SWEEP_VALUES,
 				kcat_multipliers=TRL_EFF_SWEEP_KCAT_MULTIPLIERS,
+				new_gene_induction_gen=TRL_EFF_SWEEP_INDUCTION_GEN,
+				new_gene_knockout_gen=TRL_EFF_SWEEP_KNOCKOUT_GEN,)
+
+		if variant_type == 'new_gene_saturated_rxn_test':
+			metadata.update(
+				expression_factor=SAT_RXN_EXPRESSION_FACTOR,
+				trl_eff_values=SAT_RXN_TRL_EFF_LEVELS,
+				n_variants=SAT_RXN_N_VARIANTS,
 				new_gene_induction_gen=TRL_EFF_SWEEP_INDUCTION_GEN,
 				new_gene_knockout_gen=TRL_EFF_SWEEP_KNOCKOUT_GEN,)
 
