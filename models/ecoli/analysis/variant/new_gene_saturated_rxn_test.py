@@ -229,7 +229,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax_scatter.grid(True, alpha=0.3)
 
 		fig.tight_layout()
-		exportFigure(fig, plotOutDir, plotOutFileName, metadata)
+		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close(fig)
 
 
