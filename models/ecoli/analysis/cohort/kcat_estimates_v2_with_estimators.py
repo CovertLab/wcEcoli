@@ -938,29 +938,34 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				f"{q} -- n={s['n']:,}, max/p99={_fmt_ratio(s['max_over_p99'])}",
 				fontsize=9)
 
-			# Reference lines: median (grey), p99 (orange), max (red).
+			# Reference / estimator lines sit at zorder 0.5 so the
+			# histogram bars (default zorder 1) are drawn on top -- the
+			# distribution stays readable even where the recommended line
+			# crosses a populated bin.  The bars use alpha=0.7 so the line
+			# colors still show through in the populated regions.
+			LINE_Z = 0.5
 			if np.isfinite(s['median']):
 				ax.axvline(s['median'], color='grey',
-					ls='--', lw=0.8, label='median')
+					ls='--', lw=0.8, label='median', zorder=LINE_Z)
 			if np.isfinite(s['p99']):
 				ax.axvline(s['p99'], color='orange',
-					ls='--', lw=0.8, label='p99')
+					ls='--', lw=0.8, label='p99', zorder=LINE_Z)
 			if np.isfinite(s['max']):
 				ax.axvline(s['max'], color='red',
-					ls='--', lw=0.8, label='max')
+					ls='--', lw=0.8, label='max', zorder=LINE_Z)
 
 			if q == 'kcat':
 				# Estimator overlays: purple = top-K gap, green = smoothed
 				# max (W=5), black solid = recommended (max of the two).
 				if gap_est is not None and np.isfinite(gap_est):
 					ax.axvline(gap_est, color='#7e1ec6', ls='--', lw=1.0,
-						label='gap est.')
+						label='gap est.', zorder=LINE_Z)
 				if sm_est is not None and np.isfinite(sm_est):
 					ax.axvline(sm_est, color='#2ca02c', ls='--', lw=1.0,
-						label='smoothed_max')
+						label='smoothed_max', zorder=LINE_Z)
 				if rec_est is not None and np.isfinite(rec_est):
 					ax.axvline(rec_est, color='black', ls='-', lw=1.6,
-						label='recommended')
+						label='recommended', zorder=LINE_Z)
 
 			if q == 'kcat':
 				# On the rug variant, the rug + caption sit in the upper-right
