@@ -296,6 +296,39 @@ def _gap_estimate(top_k_largest, n_samples, max_val, p99_floor=None,
 	return trimmed
 
 
+# Number of largest samples discarded by the drop_top_K estimator.  Per the
+# PI's suggestion ("throw out the top 20 samples and return the new max").
+# This is the *non-percentage* version: a fixed integer regardless of the
+# cohort sample count.  Fall back to max if the pair has fewer than this
+# many positive-finite samples so rare reactions are not punished.
+DROP_TOP_K = 20
+
+
+def _drop_top_20_estimate(top_k_largest, n_samples, max_val,
+		k_to_drop=DROP_TOP_K):
+	"""Fixed-K trimmed-max estimator.
+
+	Sort the positive-finite kcat samples descending and return the
+	(k_to_drop + 1)-th value (i.e. drop the K largest, take the next one).
+	Reads from the existing `top_k_gap` accumulator (cap TOP_K_GAP_CAP),
+	which always retains far more than k_to_drop samples per pair when the
+	pair has any meaningful data.  Falls back to `max_val` if the pair has
+	fewer than k_to_drop + 1 samples total so sparse pairs are never
+	punished.
+	"""
+	if not np.isfinite(max_val):
+		return np.nan
+	if n_samples < k_to_drop + 1:
+		return float(max_val)
+	if top_k_largest is None or top_k_largest.size < k_to_drop + 1:
+		return float(max_val)
+	desc = np.sort(top_k_largest)[::-1]
+	desc = desc[np.isfinite(desc) & (desc > 0)]
+	if desc.size < k_to_drop + 1:
+		return float(max_val)
+	return float(desc[k_to_drop])
+
+
 def _select_kcat(pair_entry):
 	"""Return the recommended kcat estimate (1/s) for this pair.
 
@@ -688,9 +721,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						sm_est = (float(sm_raw)
 							if np.isfinite(sm_raw) and sm_raw > 0
 							else np.nan)
+						# drop_top_20: PI's "throw out the top 20 samples and
+						# return the next-largest value".  Reads from the
+						# same top_k_gap accumulator (cap 5000) -- the 21st
+						# largest sample is always present so long as the
+						# pair has at least 21 positive-finite samples.
+						# Falls back to max_val for sparser pairs so a low-
+						# sample reaction is never punished.
+						dt20_est = _drop_top_20_estimate(
+							top_k_gap[p], n, max_val)
 						entry['quantities'][q]['gap_estimate'] = gap_est
 						entry['quantities'][q][
 							'smoothed_max_estimate'] = sm_est
+						entry['quantities'][q][
+							'drop_top_20_estimate'] = dt20_est
 						# Recommended = max of valid positive estimators;
 						# fall back to max if neither produced a usable
 						# value, so sparse pairs are never punished.
@@ -712,6 +756,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						# when gap == max (no trim).
 						entry['quantities'][q]['max_over_gap'] = (
 							_ratio(max_val, gap_est))
+						entry['quantities'][q]['max_over_drop_top_20'] = (
+							_ratio(max_val, dt20_est))
 				view_stats.append(entry)
 			pair_stats_by_view[view] = view_stats
 
@@ -763,6 +809,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					f'{SMOOTH_WINDOW} timesteps on nonzero kcat,'
 					f' nanmax across cells (empty when no kcat persists'
 					f' for >=3 consecutive samples).\n'
+					f'# kcat_drop_top_20_estimate: drop the largest'
+					f' {DROP_TOP_K} positive-finite kcat samples per'
+					f' pair, return the next-largest; falls back to max'
+					f' when n < {DROP_TOP_K + 1}.\n'
 					f'# kcat_recommended: max(gap, smoothed_max), falling'
 					f' back to max if neither estimator produced a'
 					f' valid positive value.\n'
@@ -777,8 +827,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					'p75', 'p95', 'p99', 'max',
 					'max_over_p99', 'max_over_median', 'max_over_mean',
 					'kcat_gap_estimate', 'kcat_smoothed_max_estimate',
+					'kcat_drop_top_20_estimate',
 					'kcat_recommended',
-					'max_over_gap', 'max_over_recommended',
+					'max_over_gap', 'max_over_drop_top_20',
+					'max_over_recommended',
 				])
 				for p in sorted_indices:
 					entry = pair_stats[p]
@@ -790,16 +842,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 								0, 0,
 								'', '', '', '', '', '', '', '', '',
 								'', '', '',
-								'', '', '', '', '',
+								'', '', '', '', '', '', '',
 							])
 							continue
-						extra_cols = ['', '', '', '', '']
+						extra_cols = ['', '', '', '', '', '', '']
 						if q == 'kcat':
 							extra_cols = [
 								_fmt(s.get('gap_estimate')),
 								_fmt(s.get('smoothed_max_estimate')),
+								_fmt(s.get('drop_top_20_estimate')),
 								_fmt(s.get('recommended_estimate')),
 								_fmt(s.get('max_over_gap')),
+								_fmt(s.get('max_over_drop_top_20')),
 								_fmt(s.get('max_over_recommended')),
 							]
 						writer.writerow([
@@ -872,6 +926,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return f"{x:.3g}" if (x is not None and np.isfinite(x)) else "n/a"
 		gap_est = kc.get('gap_estimate')
 		sm_est = kc.get('smoothed_max_estimate')
+		dt20_est = kc.get('drop_top_20_estimate')
 		rec_est = kc.get('recommended_estimate')
 		suptitle = (
 			f"{entry['reaction_id']}\n"
@@ -881,8 +936,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			f"max/mean = {_fmt_ratio(kc['max_over_mean'])}\n"
 			f"gap = {_fmt_ratio(gap_est)},  "
 			f"smoothed_max = {_fmt_ratio(sm_est)},  "
-			f"recommended = {_fmt_ratio(rec_est)}  "
+			f"drop_top_20 = {_fmt_ratio(dt20_est)},  "
+			f"recommended = {_fmt_ratio(rec_est)}\n"
 			f"(max/gap = {_fmt_ratio(kc.get('max_over_gap'))},  "
+			f"max/drop_top_20 = {_fmt_ratio(kc.get('max_over_drop_top_20'))},  "
 			f"max/recommended = {_fmt_ratio(kc.get('max_over_recommended'))})"
 		)
 		fig.suptitle(suptitle, fontsize=10)
@@ -956,16 +1013,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			if q == 'kcat':
 				# Estimator overlays: purple = top-K gap, green = smoothed
-				# max (W=5), black solid = recommended (max of the two).
+				# max (W=5), orange = drop_top_20 (fixed-K trimmed max).
+				# `recommended` (= max of gap + smoothed_max) is kept in the
+				# CSV but is no longer drawn on the plot.
 				if gap_est is not None and np.isfinite(gap_est):
 					ax.axvline(gap_est, color='#7e1ec6', ls='--', lw=1.0,
 						label='gap est.', zorder=LINE_Z)
 				if sm_est is not None and np.isfinite(sm_est):
 					ax.axvline(sm_est, color='#2ca02c', ls='--', lw=1.0,
 						label='smoothed_max', zorder=LINE_Z)
-				if rec_est is not None and np.isfinite(rec_est):
-					ax.axvline(rec_est, color='black', ls='-', lw=1.6,
-						label='recommended', zorder=LINE_Z)
+				if dt20_est is not None and np.isfinite(dt20_est):
+					ax.axvline(dt20_est, color='#ff7f0e', ls=':', lw=1.0,
+						label='drop_top_20', zorder=LINE_Z)
 
 			if q == 'kcat':
 				# On the rug variant, the rug + caption sit in the upper-right

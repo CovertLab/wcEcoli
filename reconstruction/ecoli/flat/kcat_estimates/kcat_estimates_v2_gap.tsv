@@ -1,0 +1,7 @@
+# PLACEHOLDER -- v2 top-K gap estimator.  Replace this file with real output
+# from models/ecoli/analysis/cohort/kcat_estimates_v2_to_tsv.py once you have
+# run kcat_estimates_v2_with_estimators on a wildtype cohort.  While this
+# placeholder is in place, parca loads an empty dict for
+# metabolism.kcat_estimates['v2_gap'] and the kcat_v2_estimator_sweep variant
+# function will raise ValueError on any non-wildtype variant.
+"reaction_id"	"catalyst_id"	"kcat_estimate"

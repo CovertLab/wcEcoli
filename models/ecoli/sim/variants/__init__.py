@@ -11,6 +11,7 @@ variants = [
 	'condition',
 	'gene_knockout',
 	'kcat_estimate_scale',
+	'kcat_v2_estimator_sweep',
 	'mene_params',
 	'metabolism_kinetic_objective_weight',
 	'metabolism_secretion_penalty',

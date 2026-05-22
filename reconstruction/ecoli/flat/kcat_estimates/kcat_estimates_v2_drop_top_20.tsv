@@ -1,0 +1,8 @@
+# PLACEHOLDER -- v2 drop-top-20 estimator (sort positive kcat samples
+# descending; drop the 20 largest; return the next).  Replace this file with
+# real output from models/ecoli/analysis/cohort/kcat_estimates_v2_to_tsv.py
+# once you have run kcat_estimates_v2_with_estimators on a wildtype cohort.
+# While this placeholder is in place, parca loads an empty dict for
+# metabolism.kcat_estimates['v2_drop_top_20'] and the kcat_v2_estimator_sweep
+# variant function will raise ValueError on any non-wildtype variant.
+"reaction_id"	"catalyst_id"	"kcat_estimate"

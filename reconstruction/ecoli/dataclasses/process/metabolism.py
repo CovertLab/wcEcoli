@@ -76,7 +76,8 @@ class Metabolism(object):
 		carried near-zero flux in the reference simulations.
 
 		Quantile labels: 'median', 'p05', 'p10', 'p90', 'p95', 'p99', 'p999',
-		'max', 'smoothed_max', 'smoothed_max_buffered'.
+		'max', 'smoothed_max', 'smoothed_max_buffered',
+		'v2_gap', 'v2_smoothed_max', 'v2_drop_top_20'.
 		"""
 		sources = {
 			'median': raw_data.kcat_estimates.kcat_estimates_median,
@@ -89,6 +90,13 @@ class Metabolism(object):
 			'max':          raw_data.kcat_estimates.kcat_estimates_max,
 			'smoothed_max': raw_data.kcat_estimates.kcat_estimates_smoothed_max,
 			'smoothed_max_buffered': raw_data.kcat_estimates.kcat_estimates_smoothed_max_buffered,
+			# v2 estimators (top-K gap, short-window smoothed_max, drop_top_20).
+			# These load empty dicts until placeholder TSVs in
+			# reconstruction/ecoli/flat/kcat_estimates/ are replaced with real
+			# data from kcat_estimates_v2_to_tsv.py.
+			'v2_gap':         raw_data.kcat_estimates.kcat_estimates_v2_gap,
+			'v2_smoothed_max': raw_data.kcat_estimates.kcat_estimates_v2_smoothed_max,
+			'v2_drop_top_20': raw_data.kcat_estimates.kcat_estimates_v2_drop_top_20,
 		}
 		self.kcat_estimates = {}
 		for label, rows in sources.items():
