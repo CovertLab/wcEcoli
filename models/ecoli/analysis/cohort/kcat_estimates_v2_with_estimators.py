@@ -296,11 +296,11 @@ def _gap_estimate(top_k_largest, n_samples, max_val, p99_floor=None,
 	return trimmed
 
 
-# Number of largest samples discarded by the drop_top_K estimator.  Per the
-# PI's suggestion ("throw out the top 20 samples and return the new max").
-# This is the *non-percentage* version: a fixed integer regardless of the
-# cohort sample count.  Fall back to max if the pair has fewer than this
-# many positive-finite samples so rare reactions are not punished.
+# Number of largest samples discarded by the drop_top_K estimator
+# ("throw out the top K samples and return the new max").  This is the
+# *non-percentage* version: a fixed integer regardless of the cohort sample
+# count.  Fall back to max if the pair has fewer than this many
+# positive-finite samples so rare reactions are not punished.
 DROP_TOP_K = 20
 
 
@@ -721,9 +721,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						sm_est = (float(sm_raw)
 							if np.isfinite(sm_raw) and sm_raw > 0
 							else np.nan)
-						# drop_top_20: PI's "throw out the top 20 samples and
-						# return the next-largest value".  Reads from the
-						# same top_k_gap accumulator (cap 5000) -- the 21st
+						# drop_top_20: throw out the top 20 samples and return
+						# the next-largest value.  Reads from the same
+						# top_k_gap accumulator (cap 5000) -- the 21st
 						# largest sample is always present so long as the
 						# pair has at least 21 positive-finite samples.
 						# Falls back to max_val for sparser pairs so a low-
