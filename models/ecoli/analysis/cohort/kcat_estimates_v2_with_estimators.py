@@ -92,6 +92,12 @@ MAKE_DISTRIBUTION_PDFS = True
 # until the v2 estimator below is implemented.
 MAKE_KCAT_OVERLAY_PDFS = False
 
+# When True, pickle the per-pair top-K kcat samples + n/max/p99 alongside
+# the CSV so threshold-sweep tooling (see kcat_v2_gap_threshold_compare.py)
+# can recompute gap_estimate at arbitrary thresholds without re-running
+# this full analysis.
+SAVE_TOP_K_GAP_DUMP = True
+
 # Number of largest sample values to retain per (pair, quantity) for the rug
 # plot in the "_dist_logy_rug" PDF.
 TOP_K_RUG = 20
@@ -868,6 +874,45 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 							*extra_cols,
 						])
 			print(f"Wrote {csv_path}")
+
+		# --- Top-K dump for offline gap-threshold sweeps ---
+		# Pickle the per-pair raw top-K kcat samples (cap TOP_K_GAP_CAP)
+		# plus the n/max/p99 metadata _gap_estimate needs, so
+		# kcat_v2_gap_threshold_compare.py can recompute gap estimates at
+		# arbitrary thresholds without rerunning this whole analysis.
+		if SAVE_TOP_K_GAP_DUMP:
+			default_stats = pair_stats_by_view[VIEW_DEFAULT]
+			dump_payload = {
+				'pair_ids': list(zip(
+					valid_pair_reaction_ids, valid_pair_catalyst_ids)),
+				'top_k_gap': [
+					np.asarray(top_k_gap[p], dtype=float)
+					for p in range(n_pairs)
+				],
+				'n_samples': np.array(
+					[(default_stats[p]['quantities'].get('kcat') or {}).get('n', 0)
+						for p in range(n_pairs)], dtype=np.int64),
+				'max': np.array(
+					[(default_stats[p]['quantities'].get('kcat') or {})
+						.get('max', np.nan)
+						for p in range(n_pairs)], dtype=float),
+				'p99': np.array(
+					[(default_stats[p]['quantities'].get('kcat') or {})
+						.get('p99', np.nan)
+						for p in range(n_pairs)], dtype=float),
+				'config': {
+					'TOP_K_GAP_CAP':      TOP_K_GAP_CAP,
+					'TOP_K_GAP_FLOOR':    TOP_K_GAP_FLOOR,
+					'TOP_K_GAP_FRACTION': TOP_K_GAP_FRACTION,
+					'GAP_THRESHOLD_LOG10': GAP_THRESHOLD_LOG10,
+					'GAP_MIN_SAMPLES':    GAP_MIN_SAMPLES,
+				},
+			}
+			dump_path = os.path.join(
+				plotOutDir, 'kcat_estimates_v2_top_k_gap.pkl')
+			with open(dump_path, 'wb') as fh:
+				pickle.dump(dump_payload, fh)
+			print(f"Wrote {dump_path}")
 
 		# --- PDF generation (per view) ---
 		# v2_with_estimators always draws the three estimator lines on the
