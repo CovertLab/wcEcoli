@@ -133,6 +133,13 @@ class Translation(object):
 			raw_data.protein_half_lives_clim
 		}
 
+		nlim_proteins = ['PD03938', 'RED-THIOREDOXIN2-MONOMER', 'RPOD-MONOMER',
+								'PD02936', 'G6737-MONOMER', 'G6890-MONOMER', 'UHPA-MONOMER']
+		nlim_half_lives = [84.5721682, 218.0766086, 805.9719844, 497.8023124, 181.9462098, 137.7208259, 726.2359721]  # minutes
+
+		nlim_deg_rates = {
+			nlim_proteins[i]: (np.log(2) / (nlim_half_lives[i] * 60)) for i in range(len(nlim_proteins))} # * 60 converts to seconds
+
 
 		# Extract the protease degradation classification type and
 		# protease degradation contributions to degradation for each protein
@@ -214,8 +221,12 @@ class Translation(object):
 			# rule from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				self.determine_protease_involvement(protein['id'], i, protease_dict)
+				if protein['id'] in nlim_deg_rates:
+					deg_rate[i] = nlim_deg_rates[protein['id']]
+					print(f"Protein {protein['id']} assigned nlim degradation rate of {deg_rate[i]:.2e} 1/s (half-life of {np.log(2)/deg_rate[i]/60:.2f} minutes)")
+					half_life_source_ID[i] = 'Gupta_et_al_nlim_2024'
 				# Use measured degradation rates if available
-				if protein['id'] in measured_deg_rates:
+				elif protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					half_life_source_ID[i] = 'CL_measured_deg_rates_2020'
 				elif protein['id'] in clim_deg_rates:
