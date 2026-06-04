@@ -129,6 +129,21 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 		)
 
+		self.monomersActivelyDegraded = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.expectedMonomerDegradations_M = np.zeros(
+			len(self.monomer_ids),
+			np.float64
+		)
+
+		self.expectedMonomerDegradations = np.zeros(
+			len(self.monomer_ids),
+			np.float64
+		)
+
 
 	def update(self):
 		# Get current counts of bulk and unique molecules:
@@ -192,6 +207,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			'freeMonomerCounts': 'monomerIds',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
+			'monomersActivelyDegraded': 'monomerIds',
+			'expectedMonomerDegradations_M': 'monomerIds',
+			'expectedMonomerDegradations': 'monomerIds',
 			}
 
 		tableWriter.writeAttributes(
@@ -206,4 +224,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			freeMonomerCounts=self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
+			monomersActivelyDegraded = self.monomersActivelyDegraded,
+			expectedMonomerDegradations_M = self.expectedMonomerDegradations_M,
+			expectedMonomerDegradations = self.expectedMonomerDegradations,
 			)
