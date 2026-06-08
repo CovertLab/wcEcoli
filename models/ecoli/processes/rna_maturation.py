@@ -153,7 +153,10 @@ class RnaMaturation(wholecell.processes.process.Process):
 		# Evolve states
 		self.mature_rnas.countsInc(n_mature_rnas)
 		self.unprocessed_rnas.countsDec(unprocessed_rna_counts)
-		self.ppi.countDec(self.n_ppi_added.dot(unprocessed_rna_counts))
+		ppi_consumed_maturation = self.n_ppi_added.dot(unprocessed_rna_counts)
+		self.ppi.countDec(ppi_consumed_maturation)
+		self.writeToListener("MetaboliteCounts", "ppiFromRnaMaturation",
+			int(-ppi_consumed_maturation))
 
 		# Write to listener
 		self.writeToListener(
@@ -198,6 +201,8 @@ class RnaMaturation(wholecell.processes.process.Process):
 		n_total_added_bases = n_added_bases.sum()
 
 		self.nmps.countsInc(n_added_bases)
+		self.writeToListener('MetaboliteCounts', 'nmpFromRnaMaturation',
+			n_added_bases.astype(int))
 		if n_total_added_bases > 0:
 			self.water.countDec(n_total_added_bases)
 			self.proton.countInc(n_total_added_bases)
