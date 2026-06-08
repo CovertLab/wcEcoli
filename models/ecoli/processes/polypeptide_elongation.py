@@ -284,6 +284,7 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
+		self.writeToListener("MetaboliteCounts", "aaUsedInTranslation", aas_used)
 		self.writeToListener("GrowthLimits", "aaCountDiff", [self.aa_count_diff.get(id_, 0) for id_ in self.aaNames])
 
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
@@ -636,7 +637,10 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		total_uncharging_reactions = charged_and_elongated + n_trna_uncharged
 		total_charging_reactions = charged_and_elongated + n_trna_charged
 		net_charged = total_charging_reactions - total_uncharging_reactions
-		self.charging_molecules.countsInc(np.dot(self.charging_stoich_matrix, total_charging_reactions))
+		charging_delta = np.dot(self.charging_stoich_matrix, total_charging_reactions)
+		self.charging_molecules.countsInc(charging_delta)
+		self.process.writeToListener('MetaboliteCounts', 'chargingMoleculeDeltaInTranslation',
+			charging_delta.astype(int))
 
 		## Account for uncharging of tRNA during elongation
 		self.charged_trna.countsDec(total_uncharging_reactions)
@@ -683,6 +687,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.writeToListener('GrowthLimits', 'spot_deg_inhibited', spot_deg_inhibited)
 
 			self.ppgpp_reaction_metabolites.countsInc(delta_metabolites)
+			self.process.writeToListener('MetaboliteCounts',
+				'ppGppReactionMetaboliteDelta', delta_metabolites.astype(int))
 
 		# Use the difference between (expected AA supply based on expected doubling time
 		# and current DCW) and AA used to charge tRNA to update the concentration target
