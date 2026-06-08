@@ -325,6 +325,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		# Increase polymerized fragment counts
 		self.fragment_metabolites.countsInc(metabolites_endo_cleavage)
+		self.writeToListener('MetaboliteCounts', 'fragmentMetabolitesFromEndoCleavage',
+			metabolites_endo_cleavage.astype(int))
 
 		# Check if exonucleolytic digestion can happen 
 		if self.fragment_bases.counts().sum() == 0:
@@ -357,6 +359,7 @@ class RnaDegradation(wholecell.processes.process.Process):
 			self.fragment_bases.countsIs(0)
 
 			total_fragment_bases_digested = n_fragment_bases_sum
+			nmps_produced = n_fragment_bases
 
 		else:
 			fragment_specificity = n_fragment_bases / n_fragment_bases_sum
@@ -372,8 +375,12 @@ class RnaDegradation(wholecell.processes.process.Process):
 			self.proton.countInc(total_fragment_bases_digested)
 			self.fragment_bases.countsDec(n_fragment_bases_digested)
 
+			nmps_produced = n_fragment_bases_digested
+
 		self.writeToListener("RnaDegradationListener",
 			"fragmentBasesDigested", total_fragment_bases_digested)
+		self.writeToListener("MetaboliteCounts", "nmpFromRnaDegradation",
+			nmps_produced)
 
 
 	def _calculate_total_n_to_degrade(self, specificity, total_kcat_endornase):
