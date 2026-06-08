@@ -284,7 +284,8 @@ class TranscriptElongation(wholecell.processes.process.Process):
 		self.ntps.countsDec(ntps_used)
 		self.bulk_RNAs.countsInc(n_new_bulk_RNAs)
 		self.inactive_RNAPs.countInc(n_terminated + n_attenuated)
-		self.ppi.countInc(n_elongations - n_initialized)
+		ppi_from_transcription = n_elongations - n_initialized
+		self.ppi.countInc(ppi_from_transcription)
 
 		# Handle stalled elongation
 		n_total_stalled = did_stall_mask.sum()
@@ -317,6 +318,7 @@ class TranscriptElongation(wholecell.processes.process.Process):
 				# Increment counts of fragment NTPs and phosphates
 				self.fragmentBases.countsInc(base_counts)
 				self.ppi.countInc(n_initiated_sequences)
+				ppi_from_transcription += n_initiated_sequences
 
 		# Write outputs to listeners
 		self.writeToListener(
@@ -330,6 +332,9 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			'counts_attenuated', counts_attenuated)
 
 		self.writeToListener("GrowthLimits", "ntpUsed", ntps_used)
+		self.writeToListener("MetaboliteCounts", "ntpUsedInTranscription", ntps_used)
+		self.writeToListener("MetaboliteCounts", "ppiFromTranscription",
+			int(ppi_from_transcription))
 
 		self.writeToListener(
 			"RnapData", "actualElongations", sequence_elongations.sum())
