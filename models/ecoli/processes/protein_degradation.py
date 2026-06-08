@@ -95,16 +95,19 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 	def evolveState(self):
 
-		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
+		# Degrade selected proteins, release amino acids from those proteins back into the cell,
 		# and consume H_2O that is required for the degradation process
-		self.metabolites.countsInc(np.dot(
+		metabolites_delta = np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
-			))
+			)
+		self.metabolites.countsInc(metabolites_delta)
 
 		# Record how many monomers were calculated to degrade:
 		counts_degraded = self.proteins.counts()
 		self.writeToListener("MonomerCounts", "monomersDegraded", counts_degraded)
+		self.writeToListener("MetaboliteCounts", "metabolitesFromProteinDegradation",
+			metabolites_delta)
 
 		# Reset the degraded protein counts:
 		self.proteins.countsIs(0)
