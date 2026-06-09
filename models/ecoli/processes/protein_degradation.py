@@ -106,8 +106,6 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Record how many monomers were calculated to degrade:
 		counts_degraded = self.proteins.counts()
 		self.writeToListener("MonomerCounts", "monomersDegraded", counts_degraded)
-		self.writeToListener("MetaboliteCounts", "metabolitesFromProteinDegradation",
-			metabolites_delta)
 
 		# Reset the degraded protein counts:
 		self.proteins.countsIs(0)

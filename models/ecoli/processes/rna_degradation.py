@@ -325,8 +325,6 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		# Increase polymerized fragment counts
 		self.fragment_metabolites.countsInc(metabolites_endo_cleavage)
-		self.writeToListener('MetaboliteCounts', 'fragmentMetabolitesFromEndoCleavage',
-			metabolites_endo_cleavage.astype(int))
 
 		# Check if exonucleolytic digestion can happen 
 		if self.fragment_bases.counts().sum() == 0:

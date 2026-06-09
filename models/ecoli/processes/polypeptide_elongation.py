@@ -284,7 +284,6 @@ class PolypeptideElongation(wholecell.processes.process.Process):
 
 		self.writeToListener("GrowthLimits", "net_charged", net_charged)
 		self.writeToListener("GrowthLimits", "aasUsed", aas_used)
-		self.writeToListener("MetaboliteCounts", "aaUsedInTranslation", aas_used)
 		self.writeToListener("GrowthLimits", "aaCountDiff", [self.aa_count_diff.get(id_, 0) for id_ in self.aaNames])
 
 		self.writeToListener("RibosomeData", "aaCountInSequence", aaCountInSequence)
@@ -639,8 +638,6 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		net_charged = total_charging_reactions - total_uncharging_reactions
 		charging_delta = np.dot(self.charging_stoich_matrix, total_charging_reactions)
 		self.charging_molecules.countsInc(charging_delta)
-		self.process.writeToListener('MetaboliteCounts', 'chargingMoleculeDeltaInTranslation',
-			charging_delta.astype(int))
 
 		## Account for uncharging of tRNA during elongation
 		self.charged_trna.countsDec(total_uncharging_reactions)

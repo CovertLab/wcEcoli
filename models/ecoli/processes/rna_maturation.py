@@ -155,8 +155,6 @@ class RnaMaturation(wholecell.processes.process.Process):
 		self.unprocessed_rnas.countsDec(unprocessed_rna_counts)
 		ppi_consumed_maturation = self.n_ppi_added.dot(unprocessed_rna_counts)
 		self.ppi.countDec(ppi_consumed_maturation)
-		self.writeToListener("MetaboliteCounts", "ppiFromRnaMaturation",
-			int(-ppi_consumed_maturation))
 
 		# Write to listener
 		self.writeToListener(

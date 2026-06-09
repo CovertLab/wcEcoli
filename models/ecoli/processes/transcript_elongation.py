@@ -332,7 +332,6 @@ class TranscriptElongation(wholecell.processes.process.Process):
 			'counts_attenuated', counts_attenuated)
 
 		self.writeToListener("GrowthLimits", "ntpUsed", ntps_used)
-		self.writeToListener("MetaboliteCounts", "ntpUsedInTranscription", ntps_used)
 		self.writeToListener("MetaboliteCounts", "ppiFromTranscription",
 			int(ppi_from_transcription))
 

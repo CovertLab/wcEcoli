@@ -307,8 +307,6 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		self.dntps.countsDec(dNtpsUsed)
 		self.ppi.countInc(dNtpsUsed.sum())
 		self.writeToListener("MetaboliteCounts", "dntpUsedInReplication", dNtpsUsed)
-		self.writeToListener("MetaboliteCounts", "ppiFromReplication",
-			int(dNtpsUsed.sum()))
 
 
 		## Module 3: replication termination
