@@ -105,6 +105,13 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 
 
 	def evolveState(self):
+		# Net PPi[c] change made by this process (default 0 if no collisions
+		# generate incomplete transcripts this timestep):
+		ppi_from_chromosome_structure = 0
+		# Amino acids released from degrading incomplete polypeptides of
+		# removed ribosomes (default 0 if no ribosomes removed):
+		aa_from_chromosome_structure = np.zeros(self.n_amino_acids, dtype=np.int64)
+
 		# Read unique molecule attributes
 		replisome_domain_indexes, replisome_coordinates, replisome_unique_indexes = self.active_replisomes.attrs(
 			'domain_index', 'coordinates', 'unique_index')
@@ -385,11 +392,14 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 					self.ppi.countInc(n_ppi_added)
 				else:
 					self.ppi.countDec(-n_ppi_added)
+				ppi_from_chromosome_structure += int(n_ppi_added)
 
-		# Write to listener
+		# Write to listeners
 		self.writeToListener(
 			'RnapData', 'incomplete_transcription_event',
 			incomplete_transcription_event)
+		self.writeToListener("MetaboliteCounts", "ppiFromChromosomeStructure",
+			ppi_from_chromosome_structure)
 
 		# Get mask for ribosomes that are bound to nonexisting mRNAs
 		remaining_RNA_unique_indexes = RNA_unique_indexes[
@@ -429,12 +439,15 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 				# Increment counts of free amino acids and decrease counts of
 				# free water molecules
 				self.amino_acids.countsInc(amino_acid_counts)
+				aa_from_chromosome_structure += amino_acid_counts
 				self.water.countDec(
 					incomplete_sequence_lengths.sum() - n_initiated_sequences)
 
-		# Write to listener
+		# Write to listeners
 		self.writeToListener(
 			'RnapData', 'n_removed_ribosomes', n_removed_ribosomes)
+		self.writeToListener("MetaboliteCounts", "aaFromChromosomeStructure",
+			aa_from_chromosome_structure)
 
 
 		def get_replicated_motif_attributes(old_coordinates, old_domain_indexes):
