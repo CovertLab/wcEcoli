@@ -40,14 +40,22 @@ Outputs in plotOutDir (two parallel "views" of the data):
   Per-view CSVs (always produced):
 	* kcat_estimates_v2_with_estimators_summary.csv  -- four rows per pair,
 	      one per quantity, plus three estimator columns on the kcat row
-	      (kcat_gap_estimate, kcat_smoothed_max_estimate, kcat_recommended).
-	      Rows sorted by kcat max/recommended descending.
+	      (kcat_gap_estimate, kcat_smoothed_max_estimate, kcat_recommended)
+	      and six spike columns (spike_events, spike_single_step,
+	      spike_steps, spike_max_run_steps, spike_max_run_seconds,
+	      spike_time_frac).  Rows sorted by kcat max/recommended descending.
 	* kcat_estimates_v2_with_estimators_summary_active.csv
 
-  Per-view PDFs (controlled by PLOT_STYLES_ENABLED; rug is on by default):
+  Per-view PDFs (controlled by PLOT_STYLES_ENABLED; rug is on by default).
+  Each is unchanged from before -- one page per pair, a 2x2 grid of
+  distributions -- with a small spike caption added to the kcat panel:
 	* kcat_estimates_v2_with_estimators_dist_logy{,_active}.pdf
 	* kcat_estimates_v2_with_estimators_dist_ecdf{,_active}.pdf
 	* kcat_estimates_v2_with_estimators_dist_logy_rug{,_active}.pdf
+
+  Cohort-level PDF (produced once; spike stats are not view-specific):
+	* kcat_estimates_v2_with_estimators_spike_summary.pdf -- a 2x2 overview
+	      aggregating spike statistics across all reactions (see SPIKE_FACTOR).
 
 Toggle MAKE_DISTRIBUTION_PDFS = False to produce only the CSVs.
 
@@ -130,6 +138,22 @@ GAP_MIN_SAMPLES = 100
 # for >=3 consecutive samples.  The old kcat_estimations.py used W=100,
 # which erased real metabolic transients of 10-50 s -- avoid going long.
 SMOOTH_WINDOW = 5
+
+# ---------------------------------------------------------------------------
+# Spike characterization
+# ---------------------------------------------------------------------------
+# A "spike" is a maximal run of consecutive timesteps where a pair's kcat
+# exceeds SPIKE_FACTOR x that cell's median kcat (its typical operating value).
+# Counting these per pair answers the question the estimators can't: are the
+# high tail values one sustained demand event or scattered single-timestep
+# glitches?  A pair whose spikes are almost all single-step is being driven by
+# numerical noise; one with long runs has a real transient.  Reported per pair:
+# event count, single-timestep-event count, longest run (timesteps + seconds),
+# and the fraction of valid time spent in spikes.
+SPIKE_FACTOR = 10.0
+# Minimum valid kcat samples a cell must have before its median is a
+# trustworthy baseline; cells below this are skipped for spike counting.
+SPIKE_MIN_CELL_SAMPLES = 20
 
 # Which plot styles to emit (per view).  The full set of available styles is
 # {'logy', 'ecdf', 'logy_rug'}; trim or extend this list to control which
@@ -555,6 +579,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		top_k_gap = [np.empty(0, dtype=float) for _ in range(n_pairs)]
 		per_pair_smoothed_max = np.full(n_pairs, -np.inf, dtype=float)
 
+		# Spike characterization accumulators (global across views, per pair):
+		# a spike is a run of consecutive timesteps above SPIKE_FACTOR x the
+		# cell median kcat.  See SPIKE_FACTOR.
+		spike_events = np.zeros(n_pairs, dtype=np.int64)
+		spike_single_step = np.zeros(n_pairs, dtype=np.int64)
+		spike_steps = np.zeros(n_pairs, dtype=np.int64)
+		spike_max_run_steps = np.zeros(n_pairs, dtype=np.int64)
+		spike_max_run_seconds = np.zeros(n_pairs, dtype=float)
+		spike_valid_steps = np.zeros(n_pairs, dtype=np.int64)
+
 		# --- Per-cell read + accumulate ---
 		cells_processed = 0
 		for cell_path in cell_paths:
@@ -577,6 +611,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					os.path.join(sim_out, 'FBAResults')
 				).readColumn('reactionFluxes',
 					indices=rxn_indexes, squeeze=False)[1:]
+				time_step_sec = TableReader(
+					os.path.join(sim_out, 'Main')
+				).readColumn('timeStepSec', squeeze=True)[1:]
 			except Exception as e:
 				print(f"Ignored exception reading {sim_out}: {e!r}")
 				continue
@@ -648,13 +685,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# nanmax taken across the cell, then merged into the global
 			# per-pair smoothed max via np.maximum.
 			kcat_for_filter = np.where(kcat_valid, kcat, 0.0)
+			# Cumulative elapsed seconds (length T+1) so a run spanning
+			# timesteps [start, end) lasts cum_sec[end] - cum_sec[start],
+			# correct even with variable timestep widths.
+			cum_sec = np.concatenate(([0.0], np.cumsum(time_step_sec)))
 			for p in range(n_pairs):
-				if not np.any(kcat_valid[:, p]):
+				valid_p = kcat_valid[:, p]
+				if not np.any(valid_p):
 					continue
 				smoothed = median_filter(
 					kcat_for_filter[:, p], size=SMOOTH_WINDOW,
 					mode='nearest')
-				smoothed[~kcat_valid[:, p]] = np.nan
+				smoothed[~valid_p] = np.nan
 				if np.any(~np.isnan(smoothed)):
 					cell_max = float(np.nanmax(smoothed))
 				else:
@@ -667,6 +709,34 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					cell_max = -np.inf
 				if cell_max > per_pair_smoothed_max[p]:
 					per_pair_smoothed_max[p] = cell_max
+
+				# Spike characterization: maximal runs of timesteps where this
+				# pair's kcat exceeds SPIKE_FACTOR x the cell's median kcat.
+				n_valid = int(valid_p.sum())
+				if n_valid < SPIKE_MIN_CELL_SAMPLES:
+					continue
+				spike_valid_steps[p] += n_valid
+				baseline = float(np.median(kcat[valid_p, p]))
+				if baseline <= 0:
+					continue
+				is_spike = valid_p & (kcat[:, p] > SPIKE_FACTOR * baseline)
+				# Run boundaries via a padded first-difference: +1 marks a run
+				# start, -1 a run end (exclusive).
+				edges = np.diff(np.concatenate(
+					([0], is_spike.astype(np.int8), [0])))
+				starts = np.where(edges == 1)[0]
+				ends = np.where(edges == -1)[0]
+				if starts.size == 0:
+					continue
+				run_lengths = ends - starts
+				run_seconds = cum_sec[ends] - cum_sec[starts]
+				spike_events[p] += int(starts.size)
+				spike_single_step[p] += int(np.count_nonzero(run_lengths == 1))
+				spike_steps[p] += int(run_lengths.sum())
+				spike_max_run_steps[p] = max(
+					int(spike_max_run_steps[p]), int(run_lengths.max()))
+				spike_max_run_seconds[p] = max(
+					float(spike_max_run_seconds[p]), float(run_seconds.max()))
 
 			cells_processed += 1
 
@@ -766,6 +836,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 							_ratio(max_val, gap_est))
 						entry['quantities'][q]['max_over_drop_top_20'] = (
 							_ratio(max_val, dt20_est))
+						# Spike characterization (global across views).
+						v_steps = int(spike_valid_steps[p])
+						entry['quantities'][q]['spike_events'] = int(
+							spike_events[p])
+						entry['quantities'][q]['spike_single_step'] = int(
+							spike_single_step[p])
+						entry['quantities'][q]['spike_steps'] = int(
+							spike_steps[p])
+						entry['quantities'][q]['spike_max_run_steps'] = int(
+							spike_max_run_steps[p])
+						entry['quantities'][q]['spike_max_run_seconds'] = float(
+							spike_max_run_seconds[p])
+						entry['quantities'][q]['spike_time_frac'] = (
+							spike_steps[p] / v_steps if v_steps > 0
+							else np.nan)
 				view_stats.append(entry)
 			pair_stats_by_view[view] = view_stats
 
@@ -824,6 +909,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					f'# kcat_recommended: max(gap, smoothed_max), falling'
 					f' back to max if neither estimator produced a'
 					f' valid positive value.\n'
+					f'# spike_*: a spike is a run of consecutive timesteps'
+					f' where a pair kcat exceeds {SPIKE_FACTOR:g}x that'
+					f' cell median kcat (its typical value); cells with'
+					f' < {SPIKE_MIN_CELL_SAMPLES} valid samples are skipped.'
+					f' spike_events counts runs across all cells,'
+					f' spike_single_step counts isolated 1-timestep runs,'
+					f' spike_steps is total timesteps in spikes,'
+					f' spike_max_run_steps/seconds is the longest single run,'
+					f' spike_time_frac = spike_steps / valid timesteps.\n'
 					f'# Sort: rows sorted by kcat max/gap_estimate'
 					f' descending, so pairs the gap detector trimmed'
 					f' appear first regardless of what smoothed_max did.\n')
@@ -839,6 +933,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					'kcat_recommended',
 					'max_over_gap', 'max_over_drop_top_20',
 					'max_over_recommended',
+					'spike_events', 'spike_single_step', 'spike_steps',
+					'spike_max_run_steps', 'spike_max_run_seconds',
+					'spike_time_frac',
 				])
 				for p in sorted_indices:
 					entry = pair_stats[p]
@@ -851,9 +948,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 								'', '', '', '', '', '', '', '', '',
 								'', '', '',
 								'', '', '', '', '', '', '',
+								'', '', '', '', '', '',
 							])
 							continue
-						extra_cols = ['', '', '', '', '', '', '']
+						extra_cols = ['', '', '', '', '', '', '',
+							'', '', '', '', '', '']
 						if q == 'kcat':
 							extra_cols = [
 								_fmt(s.get('gap_estimate')),
@@ -863,6 +962,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 								_fmt(s.get('max_over_gap')),
 								_fmt(s.get('max_over_drop_top_20')),
 								_fmt(s.get('max_over_recommended')),
+								s.get('spike_events', 0),
+								s.get('spike_single_step', 0),
+								s.get('spike_steps', 0),
+								s.get('spike_max_run_steps', 0),
+								_fmt(s.get('spike_max_run_seconds')),
+								_fmt(s.get('spike_time_frac')),
 							]
 						writer.writerow([
 							entry['reaction_id'], entry['catalyst_id'], q,
@@ -928,10 +1033,134 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					pair_stats_by_view[view],
 					accumulators[view], top_k[view],
 					chosen_kcats=None, suffix=VIEW_SUFFIX[view])
+			# One cohort-level spike summary.  Spike stats are global (not
+			# view-specific), so produce it once from the default view.
+			self._make_spike_summary_pdf(
+				plotOutDir, pair_stats_by_view[VIEW_DEFAULT])
 
 	# ------------------------------------------------------------------------
 	# Plotting
 	# ------------------------------------------------------------------------
+
+	def _make_spike_summary_pdf(self, plotOutDir, pair_stats):
+		"""Aggregate per-reaction spike statistics into one overview figure.
+
+		Reads the kcat spike fields attached in do_plot and renders a 2x2
+		cohort-level summary: the longest sustained spike per reaction, how
+		single-timestep-dominated each reaction is, the fraction of time spent
+		in spikes, and how hard the gap estimator trims versus the longest
+		spike.  Answers the question the per-reaction pages can't -- across all
+		reactions, are high kcat tails driven by isolated numerical glitches or
+		by sustained demand events?
+		"""
+		max_run, single_frac, time_frac, max_over_gap = [], [], [], []
+		for entry in pair_stats:
+			kc = entry['quantities'].get('kcat')
+			if kc is None:
+				continue
+			ev = int(kc.get('spike_events', 0) or 0)
+			if ev <= 0:
+				continue
+			max_run.append(int(kc.get('spike_max_run_steps', 0) or 0))
+			single_frac.append(int(kc.get('spike_single_step', 0) or 0) / ev)
+			tf = kc.get('spike_time_frac')
+			time_frac.append(tf if (tf is not None and np.isfinite(tf))
+				else np.nan)
+			mog = kc.get('max_over_gap')
+			max_over_gap.append(mog if (mog is not None and np.isfinite(mog))
+				else np.nan)
+
+		n_pairs_kcat = sum(
+			1 for e in pair_stats if e['quantities'].get('kcat') is not None)
+		n_with_spikes = len(max_run)
+		out_path = os.path.join(
+			plotOutDir,
+			'kcat_estimates_v2_with_estimators_spike_summary.pdf')
+
+		fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+		if n_with_spikes == 0:
+			for ax in axes.ravel():
+				ax.axis('off')
+			axes[0, 0].text(0.5, 0.5,
+				f'no >={SPIKE_FACTOR:g}x-median spikes detected '
+				f'across {n_pairs_kcat} reactions',
+				ha='center', va='center', fontsize=12, color='grey')
+			with PdfPages(out_path) as pdf:
+				pdf.savefig(fig)
+			plt.close(fig)
+			print(f"Wrote {out_path}")
+			return
+
+		max_run = np.array(max_run)
+		single_frac = np.array(single_frac)
+		time_frac = np.array(time_frac, dtype=float)
+		max_over_gap = np.array(max_over_gap, dtype=float)
+		cap = 30
+		n_single_only = int(np.count_nonzero(max_run == 1))
+
+		# Panel A: longest sustained spike per reaction (timesteps).  A bar at
+		# x=1 that dominates means most reactions' worst spike is one glitch.
+		axA = axes[0, 0]
+		axA.hist(np.clip(max_run, 1, cap),
+			bins=np.arange(0.5, cap + 1.5, 1), color='#7e1ec6', alpha=0.8)
+		axA.set_xlabel(f'longest sustained spike (timesteps, clipped at {cap})')
+		axA.set_ylabel('reactions')
+		axA.set_title('Longest spike run per reaction')
+		axA.text(0.97, 0.95,
+			f'{n_single_only}/{n_with_spikes} peak at a single timestep',
+			transform=axA.transAxes, ha='right', va='top', fontsize=8)
+
+		# Panel B: fraction of a reaction's spike events that are one timestep.
+		axB = axes[0, 1]
+		axB.hist(single_frac, bins=np.linspace(0, 1, 21),
+			color='#1f77b4', alpha=0.8)
+		axB.set_xlabel('fraction of spike events lasting a single timestep')
+		axB.set_ylabel('reactions')
+		axB.set_title('How blip-dominated is each reaction?')
+
+		# Panel C: fraction of valid time spent in spikes (log x).
+		axC = axes[1, 0]
+		tf_pos = time_frac[np.isfinite(time_frac) & (time_frac > 0)]
+		if tf_pos.size:
+			lo = np.floor(np.log10(tf_pos.min()))
+			axC.hist(tf_pos,
+				bins=np.logspace(lo, 0, int((0 - lo) * 4) + 1),
+				color='#2ca02c', alpha=0.8)
+			axC.set_xscale('log')
+		axC.set_xlabel('fraction of valid time in spikes')
+		axC.set_ylabel('reactions')
+		axC.set_title('Time spent in spikes per reaction')
+
+		# Panel D: how hard the gap estimator trims vs longest spike.  Points
+		# high on y with a short x (and light color = single-step) are spikes
+		# the gap detector rightly trimmed; high y with long x warrants a look.
+		axD = axes[1, 1]
+		finite = np.isfinite(max_over_gap)
+		if np.any(finite):
+			sc = axD.scatter(
+				np.clip(max_run[finite], 1, cap),
+				np.clip(max_over_gap[finite], 1, None),
+				c=single_frac[finite], cmap='viridis', vmin=0, vmax=1,
+				s=18, alpha=0.8, edgecolors='none')
+			cb = fig.colorbar(sc, ax=axD)
+			cb.set_label('single-step fraction', fontsize=8)
+		axD.set_yscale('log')
+		axD.set_xlabel(f'longest sustained spike (timesteps, clipped at {cap})')
+		axD.set_ylabel('max / gap estimate')
+		axD.set_title('Gap trim vs longest spike')
+		axD.axhline(1.0, color='grey', ls='--', lw=0.8)
+
+		fig.suptitle(
+			f'kcat spike summary -- {n_with_spikes}/{n_pairs_kcat} reactions '
+			f'with >={SPIKE_FACTOR:g}x-median spikes; '
+			f'{n_single_only} peak at a single timestep; '
+			f'median longest run {int(np.median(max_run))} timestep(s).',
+			fontsize=11)
+		fig.tight_layout(rect=[0, 0, 1, 0.96])
+		with PdfPages(out_path) as pdf:
+			pdf.savefig(fig)
+		plt.close(fig)
+		print(f"Wrote {out_path}")
 
 	def _make_pdfs(self, plotOutDir, sorted_indices, pair_stats,
 				   accumulators, top_k, chosen_kcats=None, suffix=''):
@@ -1072,6 +1301,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				if dt20_est is not None and np.isfinite(dt20_est):
 					ax.axvline(dt20_est, color='#ff7f0e', ls=':', lw=1.0,
 						label='drop_top_20', zorder=LINE_Z)
+
+				# Spike summary: are the high tail values one sustained event
+				# or scattered single-timestep glitches?  Anchored upper-right
+				# under the rug caption.
+				sp_events = s.get('spike_events', 0)
+				sp_single = s.get('spike_single_step', 0)
+				sp_max_steps = s.get('spike_max_run_steps', 0)
+				sp_max_sec = s.get('spike_max_run_seconds', 0.0) or 0.0
+				ax.text(0.99, 0.88,
+					f">{SPIKE_FACTOR:g}x-median spikes: {sp_events:,}\n"
+					f"  single-step: {sp_single:,}\n"
+					f"  longest: {sp_max_steps} steps ({sp_max_sec:.0f}s)",
+					transform=ax.transAxes, ha='right', va='top',
+					fontsize=6.5, color='#7e1ec6')
 
 			if q == 'kcat':
 				# On the rug variant, the rug + caption sit in the upper-right
