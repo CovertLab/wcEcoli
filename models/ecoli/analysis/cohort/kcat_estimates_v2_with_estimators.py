@@ -9,7 +9,7 @@ following additions:
      (cap 5000; effective K = max(100, min(5000, 0.002 * n_samples)) so
      resolution scales with cohort size).  Sorts descending, finds the
      largest log-gap between adjacent samples; if it exceeds the threshold
-     (~3x ratio), returns the value just below the gap, else returns max.
+     (~2x ratio), returns the value just below the gap, else returns max.
      Trims spike-shaped distributions; falls back to max on well-behaved
      ones, so it is never more punishing than the existing max estimator.
 
@@ -96,7 +96,7 @@ MAKE_KCAT_OVERLAY_PDFS = False
 # the CSV so threshold-sweep tooling (see kcat_v2_gap_threshold_compare.py)
 # can recompute gap_estimate at arbitrary thresholds without re-running
 # this full analysis.
-SAVE_TOP_K_GAP_DUMP = True
+SAVE_TOP_K_GAP_DUMP = False
 
 # Number of largest sample values to retain per (pair, quantity) for the rug
 # plot in the "_dist_logy_rug" PDF.
@@ -115,9 +115,11 @@ TOP_K_GAP_FLOOR = 100
 TOP_K_GAP_FRACTION = 0.002
 
 # Log10 ratio threshold for "this is a gap, not a continuation of the tail".
-# 0.5 corresponds to a ~3x jump between adjacent sorted samples; anything
-# below this is treated as part of the same tail.
-GAP_THRESHOLD_LOG10 = 0.5
+# 0.3 corresponds to a ~2x jump between adjacent sorted samples; anything
+# below this is treated as part of the same tail.  Lowered from 0.5 (~3x) so
+# the detector catches real spikes that hide behind a sub-3x gap (e.g.
+# ISOCITHASE, GLUTRACE), at the cost of trimming a few more borderline pairs.
+GAP_THRESHOLD_LOG10 = 0.3
 
 # Minimum positive-finite kcat samples required to trust the gap detector.
 # Below this we fall back to max (sparse data => no reliable gap inference).
