@@ -240,6 +240,14 @@ from models.ecoli.sim.variants.new_gene_saturated_rxn_test import (
 	EXPRESSION_FACTOR as SAT_RXN_EXPRESSION_FACTOR,
 	N_VARIANTS as SAT_RXN_N_VARIANTS,
 )
+from models.ecoli.sim.variants.new_gene_trl_eff_v2_estimator_sweep import (
+	TRL_EFF_VALUES as TRL_EFF_V2_EST_VALUES,
+	EXPRESSION_FACTOR as TRL_EFF_V2_EST_EXPRESSION_FACTOR,
+	BLOCK_ESTIMATORS as TRL_EFF_V2_EST_BLOCK_ESTIMATORS,
+	N_VARIANTS as TRL_EFF_V2_EST_N_VARIANTS,
+	NEW_GENE_INDUCTION_GEN as TRL_EFF_V2_EST_INDUCTION_GEN,
+	NEW_GENE_KNOCKOUT_GEN as TRL_EFF_V2_EST_KNOCKOUT_GEN,
+)
 from wholecell.fireworks.firetasks import InitRawDataTask
 from wholecell.fireworks.firetasks import InitRawValidationDataTask
 from wholecell.fireworks.firetasks import InitValidationDataTask
@@ -522,6 +530,15 @@ class WorkflowBuilder:
 				"n_variants": SAT_RXN_N_VARIANTS,
 				"new_gene_induction_gen": TRL_EFF_SWEEP_INDUCTION_GEN,
 				"new_gene_knockout_gen": TRL_EFF_SWEEP_KNOCKOUT_GEN,})
+
+		if VARIANT == 'new_gene_trl_eff_v2_estimator_sweep':
+			self.metadata.update({
+				"expression_factor": TRL_EFF_V2_EST_EXPRESSION_FACTOR,
+				"trl_eff_values": TRL_EFF_V2_EST_VALUES,
+				"block_estimators": TRL_EFF_V2_EST_BLOCK_ESTIMATORS,
+				"n_variants": TRL_EFF_V2_EST_N_VARIANTS,
+				"new_gene_induction_gen": TRL_EFF_V2_EST_INDUCTION_GEN,
+				"new_gene_knockout_gen": TRL_EFF_V2_EST_KNOCKOUT_GEN,})
 
 		METADATA_DIRECTORY = filepath.makedirs(self.INDIV_OUT_DIRECTORY, constants.METADATA_DIR)
 		metadata_path = os.path.join(METADATA_DIRECTORY, constants.JSON_METADATA_FILE)
