@@ -80,19 +80,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		all_cats = MASS_CATEGORIES + RNA_SUB
 		absolute = {name: {} for name, _ in all_cats}
 		frac = {name: {} for name, _ in all_cats}
-		dry, conc, flux = {}, {}, {}
+		conc_density = {name: {} for name, _ in all_cats}  # mass / cell volume
+		dry, vol, conc, flux = {}, {}, {}, {}
 		for vi in variant_indexes:
 			cells = self.ap.get_cells(
 				variant=[vi], generation=window, only_successful=True)
 			dcol = _col(cells, 'Mass', 'dryMass')
+			vcol = _col(cells, 'Mass', 'cellVolume')
 			dry[vi] = (float(np.nanmean(dcol))
 				if dcol is not None and np.nanmean(dcol) > 0 else np.nan)
+			vol[vi] = (float(np.nanmean(vcol))
+				if vcol is not None and np.nanmean(vcol) > 0 else np.nan)
 			for name, col in all_cats:
 				arr = _col(cells, 'Mass', col)
 				absolute[name][vi] = (float(np.nanmean(arr))
 					if arr is not None else np.nan)
 				frac[name][vi] = (absolute[name][vi] / dry[vi]
 					if np.isfinite(dry[vi]) else np.nan)
+				conc_density[name][vi] = (absolute[name][vi] / vol[vi]
+					if np.isfinite(vol[vi]) else np.nan)
 
 			conc[vi], flux[vi] = np.nan, np.nan
 			if len(cat_indexes) > 0:
@@ -139,18 +145,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_title(title)
 			ax.legend(fontsize=7)
 
-		# ---- Figure 1: per category, fraction + absolute, lines per block ----
-		fig, axes = plt.subplots(len(MASS_CATEGORIES), 2, figsize=(12, 16))
+		# ---- Figure 1: per category, fraction + absolute + concentration ----
+		fig, axes = plt.subplots(len(MASS_CATEGORIES), 3, figsize=(18, 16))
 		for r, (name, _col_name) in enumerate(MASS_CATEGORIES):
 			_blocks(axes[r, 0], frac[name],
 				f'{name} mass fraction', 'fraction of dry mass')
 			_blocks(axes[r, 1], absolute[name],
 				f'{name} mass (absolute)', 'mass (fg)')
+			_blocks(axes[r, 2], conc_density[name],
+				f'{name} concentration', 'mass / volume (fg/fL)')
 		fig.suptitle(
-			'new_gene_trl_eff_v2_estimator_sweep: mass categories by block '
-			'(do the kcat constraints change metabolite / small-molecule mass?)',
+			'new_gene_trl_eff_v2_estimator_sweep: mass categories by block -- '
+			'fraction, absolute, and concentration (mass/volume).\n'
+			'Flat concentration with falling absolute = smaller cell at '
+			'preserved composition, not metabolite depletion.',
 			fontsize=13)
-		fig.tight_layout(rect=[0, 0, 1, 0.97])
+		fig.tight_layout(rect=[0, 0, 1, 0.96])
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata)
 		plt.close('all')
 
