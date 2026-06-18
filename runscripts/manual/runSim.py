@@ -45,6 +45,12 @@ from models.ecoli.sim.variants.new_gene_trl_eff_v2_estimator_sweep import (
 	NEW_GENE_INDUCTION_GEN as TRL_EFF_V2_EST_INDUCTION_GEN,
 	NEW_GENE_KNOCKOUT_GEN as TRL_EFF_V2_EST_KNOCKOUT_GEN,
 )
+from models.ecoli.sim.variants.new_gene_trl_eff_v2_kcat_multiplier_sweep import (
+	ESTIMATORS as TRL_EFF_V2_MULT_ESTIMATORS,
+	TRL_EFF_VALUES as TRL_EFF_V2_MULT_VALUES,
+	MULTIPLIERS as TRL_EFF_V2_MULT_MULTIPLIERS,
+	N_VARIANTS as TRL_EFF_V2_MULT_N_VARIANTS,
+)
 from wholecell.fireworks.firetasks import SimulationDaughterTask, SimulationTask, VariantSimDataTask
 from wholecell.utils import constants, data, scriptBase
 import wholecell.utils.filepath as fp
@@ -155,6 +161,16 @@ class RunSimulation(scriptBase.ScriptBase):
 				trl_eff_values=TRL_EFF_V2_EST_VALUES,
 				block_estimators=TRL_EFF_V2_EST_BLOCK_ESTIMATORS,
 				n_variants=TRL_EFF_V2_EST_N_VARIANTS,
+				new_gene_induction_gen=TRL_EFF_V2_EST_INDUCTION_GEN,
+				new_gene_knockout_gen=TRL_EFF_V2_EST_KNOCKOUT_GEN,)
+
+		if variant_type == 'new_gene_trl_eff_v2_kcat_multiplier_sweep':
+			metadata.update(
+				expression_factor=TRL_EFF_V2_EST_EXPRESSION_FACTOR,
+				estimators=TRL_EFF_V2_MULT_ESTIMATORS,
+				trl_eff_values=TRL_EFF_V2_MULT_VALUES,
+				multipliers=TRL_EFF_V2_MULT_MULTIPLIERS,
+				n_variants=TRL_EFF_V2_MULT_N_VARIANTS,
 				new_gene_induction_gen=TRL_EFF_V2_EST_INDUCTION_GEN,
 				new_gene_knockout_gen=TRL_EFF_V2_EST_KNOCKOUT_GEN,)
 

@@ -21,6 +21,7 @@ variants = [
 	'new_gene_saturated_rxn_test',
 	'new_gene_trl_eff_sweep',
 	'new_gene_trl_eff_v2_estimator_sweep',
+	'new_gene_trl_eff_v2_kcat_multiplier_sweep',
 	'param_sensitivity',
 	'ppgpp_conc',
 	'ppgpp_limitations',
