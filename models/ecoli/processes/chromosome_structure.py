@@ -398,7 +398,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		self.writeToListener(
 			'RnapData', 'incomplete_transcription_event',
 			incomplete_transcription_event)
-		self.writeToListener("MetaboliteCounts", "ppiFromChromosomeStructure",
+		self.writeToListener("SmallMoleculeCounts", "ppiFromChromosomeStructure",
 			ppi_from_chromosome_structure)
 
 		# Get mask for ribosomes that are bound to nonexisting mRNAs
@@ -446,7 +446,7 @@ class ChromosomeStructure(wholecell.processes.process.Process):
 		# Write to listeners
 		self.writeToListener(
 			'RnapData', 'n_removed_ribosomes', n_removed_ribosomes)
-		self.writeToListener("MetaboliteCounts", "aaFromChromosomeStructure",
+		self.writeToListener("SmallMoleculeCounts", "aaFromChromosomeStructure",
 			aa_from_chromosome_structure)
 
 

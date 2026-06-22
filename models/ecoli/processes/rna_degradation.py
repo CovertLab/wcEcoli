@@ -377,7 +377,7 @@ class RnaDegradation(wholecell.processes.process.Process):
 
 		self.writeToListener("RnaDegradationListener",
 			"fragmentBasesDigested", total_fragment_bases_digested)
-		self.writeToListener("MetaboliteCounts", "nmpFromRnaDegradation",
+		self.writeToListener("SmallMoleculeCounts", "nmpFromRnaDegradation",
 			nmps_produced)
 
 

@@ -36,7 +36,7 @@ from models.ecoli.listeners.enzyme_kinetics import EnzymeKinetics
 from models.ecoli.listeners.growth_limits import GrowthLimits
 from models.ecoli.listeners.rna_synth_prob import RnaSynthProb
 from models.ecoli.listeners.monomer_counts import MonomerCounts
-from models.ecoli.listeners.metabolite_counts import MetaboliteCounts
+from models.ecoli.listeners.small_molecule_counts import SmallMoleculeCounts
 from models.ecoli.listeners.RNA_counts import RNACounts
 from models.ecoli.listeners.complexation_listener import ComplexationListener
 from models.ecoli.listeners.equilibrium_listener import EquilibriumListener
@@ -110,7 +110,7 @@ class EcoliSimulation(Simulation):
 		GrowthLimits,
 		RnaSynthProb,
 		MonomerCounts,
-		MetaboliteCounts,
+		SmallMoleculeCounts,
 		RNACounts,
 		ComplexationListener,
 		EquilibriumListener,

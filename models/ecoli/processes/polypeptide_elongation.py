@@ -684,8 +684,8 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			self.process.writeToListener('GrowthLimits', 'spot_deg_inhibited', spot_deg_inhibited)
 
 			self.ppgpp_reaction_metabolites.countsInc(delta_metabolites)
-			self.process.writeToListener('MetaboliteCounts',
-				'ppGppReactionMetaboliteDelta', delta_metabolites.astype(int))
+			self.process.writeToListener('SmallMoleculeCounts',
+				'ppGppReactionSmallMoleculeDelta', delta_metabolites.astype(int))
 
 		# Use the difference between (expected AA supply based on expected doubling time
 		# and current DCW) and AA used to charge tRNA to update the concentration target

@@ -199,7 +199,7 @@ class RnaMaturation(wholecell.processes.process.Process):
 		n_total_added_bases = n_added_bases.sum()
 
 		self.nmps.countsInc(n_added_bases)
-		self.writeToListener('MetaboliteCounts', 'nmpFromRnaMaturation',
+		self.writeToListener('SmallMoleculeCounts', 'nmpFromRnaMaturation',
 			n_added_bases.astype(int))
 		if n_total_added_bases > 0:
 			self.water.countDec(n_total_added_bases)

@@ -306,7 +306,7 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# Update counts of polymerized metabolites
 		self.dntps.countsDec(dNtpsUsed)
 		self.ppi.countInc(dNtpsUsed.sum())
-		self.writeToListener("MetaboliteCounts", "dntpUsedInReplication", dNtpsUsed)
+		self.writeToListener("SmallMoleculeCounts", "dntpUsedInReplication", dNtpsUsed)
 
 
 		## Module 3: replication termination
