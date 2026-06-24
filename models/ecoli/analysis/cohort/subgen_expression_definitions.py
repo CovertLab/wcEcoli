@@ -28,11 +28,15 @@ p_present, max_mRNA_count, and max_protein_count columns.
 import pickle
 import os
 import csv
+import json
+import subprocess
+from datetime import datetime
 
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import constants
 
 
 IGNORE_FIRST_N_GENS = 8
@@ -57,8 +61,46 @@ def _blank_if_nan(value):
 	return '' if isinstance(value, float) and np.isnan(value) else value
 
 
+def _git_info(repo_dir):
+	"""Return the current git hash, branch, and dirty flag for repo_dir."""
+	def run(args):
+		return subprocess.check_output(
+			['git', '-C', repo_dir] + args,
+			stderr=subprocess.DEVNULL).decode().strip()
+	try:
+		return {
+			'git_hash': run(['rev-parse', 'HEAD']),
+			'git_branch': run(['rev-parse', '--abbrev-ref', 'HEAD']),
+			'git_dirty': bool(run(['status', '--porcelain'])),
+			}
+	except Exception as e:
+		return {'git_hash': None, 'git_branch': None, 'git_dirty': None,
+			'error': str(e)}
+
+
+def _load_sim_metadata(variant_dir):
+	"""Load the simulation's metadata.json (git hash, run time, options).
+
+	The sim-level metadata directory sits one level above the variant directory;
+	fall back to a metadata directory inside the variant directory.
+	"""
+	candidates = [
+		os.path.join(os.path.dirname(variant_dir),
+			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
+		os.path.join(variant_dir,
+			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
+		]
+	for path in candidates:
+		if os.path.isfile(path):
+			with open(path) as f:
+				return path, json.load(f)
+	return None, {}
+
+
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
+		analysis_run_time = datetime.now().isoformat(timespec='seconds')
+
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
@@ -93,6 +135,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
 		print('Analyzing %d cells...' % len(cell_paths))
+
+		if len(cell_paths) == 0:
+			print('No successful cells found. Skipping analysis.')
+			return
 
 		# Build index maps from our gene list into each listener's subcolumns.
 		first_sim_out = os.path.join(cell_paths[0], 'simOut')
@@ -160,7 +206,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sum_synth_events = np.zeros(n_genes)
 		max_mRNA_counts = np.zeros(n_genes, dtype=np.int64)
 		max_protein_counts = np.zeros(n_genes, dtype=np.int64)
-		n_cells = 0
+		included_cells = []
+		skipped_cells = []
 
 		for i, cell_path in enumerate(cell_paths):
 			if i % 100 == 0:
@@ -178,6 +225,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 						).readColumn('countRnaCistronSynthesized')[time_slice][:, full_cistron_indexes]
 			except Exception as e:
 				print('  Warning: could not read cell %s: %s' % (cell_path, e))
+				skipped_cells.append(cell_path)
 				continue
 
 			# Per-generation reductions over the time axis
@@ -194,8 +242,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			max_mRNA_counts = np.maximum(max_mRNA_counts, mRNA_counts.max(axis=0))
 			max_protein_counts = np.maximum(
 				max_protein_counts, monomer_counts.max(axis=0))
-			n_cells += 1
+			included_cells.append(cell_path)
 
+		n_cells = len(included_cells)
 		if n_cells == 0:
 			print('No readable cells found. Skipping.')
 			return
@@ -264,6 +313,46 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		print('\t'.join(header))
 		for row in summary_rows:
 			print('\t'.join(str(x) for x in row))
+
+		# Provenance metadata: which cells were included, when the analysis ran,
+		# when the sims ran, and the git hash of each.
+		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
+		repo_dir = os.path.dirname(os.path.abspath(__file__))
+		run_metadata = {
+			'analysis': {
+				'script': os.path.basename(__file__),
+				'run_time': analysis_run_time,
+				'git': _git_info(repo_dir),
+				'parameters': {
+					'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
+					'remove_first_timestep': REMOVE_FIRST_TIMESTEP,
+					'thresholds': THRESHOLDS,
+					'countRnaCistronSynthesized_available': has_synth,
+					},
+				},
+			'simulation': {
+				'metadata_source': sim_metadata_path,
+				'git_hash': sim_metadata.get('git_hash'),
+				'git_branch': sim_metadata.get('git_branch'),
+				'run_time': sim_metadata.get('time'),
+				'description': sim_metadata.get('description'),
+				'variant': sim_metadata.get('variant'),
+				'total_gens': sim_metadata.get('total_gens'),
+				'total_init_sims': sim_metadata.get('total_init_sims'),
+				},
+			'cells': {
+				'n_attempted': len(cell_paths),
+				'n_included': len(included_cells),
+				'n_skipped': len(skipped_cells),
+				'included': included_cells,
+				'skipped': skipped_cells,
+				},
+			}
+		metadata_path = os.path.join(
+			plotOutDir, plotOutFileName + '_run_metadata.json')
+		print('Writing %s' % metadata_path)
+		with open(metadata_path, 'w') as f:
+			json.dump(run_metadata, f, indent=2)
 
 
 if __name__ == '__main__':
