@@ -21,6 +21,7 @@ ACTIVE = [
 	"replisome_rnap_collision_per_gene.py",
 	"rnaCopyNumberDistribution.py",
 	"subgenerational_expression_table.py",
+	"subgen_expression_definitions.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
 	# "transcriptionGenomeCoverageSecondHalf.py",
