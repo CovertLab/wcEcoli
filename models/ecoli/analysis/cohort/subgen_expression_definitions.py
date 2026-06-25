@@ -45,6 +45,9 @@ IGNORE_FIRST_N_GENS = 8
 REMOVE_FIRST_TIMESTEP = False
 # Probability filters for the subgenerational classification sweep.
 THRESHOLDS = [1.0, 0.99, 0.95]
+# Report the absent-cell list only for near-ubiquitous genes that are absent in at
+# most this many cells (i.e. expression probability close to 1).
+MAX_ABSENT_CELLS_TO_REPORT = 10
 
 # Output column label for each definition, in order.
 DEFINITION_LABELS = [
@@ -206,6 +209,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sum_synth_events = np.zeros(n_genes)
 		max_mRNA_counts = np.zeros(n_genes, dtype=np.int64)
 		max_protein_counts = np.zeros(n_genes, dtype=np.int64)
+		# Time-and-population-averaged copy numbers: accumulate the sum over all
+		# timesteps of all cells, then divide by the total timestep count.
+		sum_mRNA_counts = np.zeros(n_genes)
+		sum_protein_counts = np.zeros(n_genes)
+		total_timesteps = 0
+		# For near-ubiquitous genes (absent in only a handful of cells), record which
+		# cells lacked the mRNA so repeated offenders can be spotted. Once a gene is
+		# absent in more than the report cap it can never be "close to 1", so drop its
+		# record and disqualify it to keep memory bounded.
+		absent_cells_by_gene = {}
+		disqualified_absent = np.zeros(n_genes, dtype=bool)
 		included_cells = []
 		skipped_cells = []
 
@@ -230,8 +244,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Per-generation reductions over the time axis
 			init_per_cell = init_events.sum(axis=0)
+			present_in_cell = mRNA_counts.sum(axis=0) > 0
 
-			sum_present += mRNA_counts.sum(axis=0) > 0       # def 1
+			sum_present += present_in_cell                   # def 1
 			sum_any_init += init_per_cell > 0                # def 2
 			sum_init_events += init_per_cell                 # def 3
 			if has_synth:
@@ -242,6 +257,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			max_mRNA_counts = np.maximum(max_mRNA_counts, mRNA_counts.max(axis=0))
 			max_protein_counts = np.maximum(
 				max_protein_counts, monomer_counts.max(axis=0))
+			sum_mRNA_counts += mRNA_counts.sum(axis=0)
+			sum_protein_counts += monomer_counts.sum(axis=0)
+			total_timesteps += mRNA_counts.shape[0]
+
+			# Track absent cells for genes still eligible to be "close to 1".
+			for gene_index in np.nonzero(~present_in_cell & ~disqualified_absent)[0]:
+				gene_index = int(gene_index)
+				cells = absent_cells_by_gene.setdefault(gene_index, [])
+				cells.append(cell_path)
+				if len(cells) > MAX_ABSENT_CELLS_TO_REPORT:
+					disqualified_absent[gene_index] = True
+					del absent_cells_by_gene[gene_index]
+
 			included_cells.append(cell_path)
 
 		n_cells = len(included_cells)
@@ -264,6 +292,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			p_present, p_any_init, mean_init_events,
 			p_any_synth, mean_synth_events]
 
+		# Time-and-population-averaged copy numbers
+		mean_mRNA_counts = sum_mRNA_counts / total_timesteps
+		mean_protein_counts = sum_protein_counts / total_timesteps
+
 		# Write the main per-gene table
 		main_path = os.path.join(plotOutDir, plotOutFileName + '.tsv')
 		print('Writing %s' % main_path)
@@ -272,13 +304,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			writer.writerow(
 				['gene_name', 'cistron_name', 'protein_name']
 				+ DEFINITION_LABELS
-				+ ['max_mRNA_count', 'max_protein_count'])
+				+ ['max_mRNA_count', 'mean_mRNA_count',
+					'max_protein_count', 'mean_protein_count'])
 			for i in range(n_genes):
 				writer.writerow([
 					gene_ids[i], mRNA_cistron_ids[i], monomer_ids[i][:-3],
 					p_present[i], p_any_init[i], mean_init_events[i],
 					_blank_if_nan(p_any_synth[i]), _blank_if_nan(mean_synth_events[i]),
-					max_mRNA_counts[i], max_protein_counts[i],
+					max_mRNA_counts[i], mean_mRNA_counts[i],
+					max_protein_counts[i], mean_protein_counts[i],
 					])
 
 		# Definition comparison: how many genes are subgenerational under each
@@ -314,6 +348,39 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		for row in summary_rows:
 			print('\t'.join(str(x) for x in row))
 
+		# Near-ubiquitous genes: those present in almost every cell but absent in a
+		# few (1 .. MAX_ABSENT_CELLS_TO_REPORT cells). List the offending cells in
+		# long format so the same cells recurring across genes -- a sign those cells
+		# were unhealthy rather than the gene being genuinely subgenerational -- can
+		# be spotted by sorting on absent_cell_path.
+		absent_path = os.path.join(
+			plotOutDir, plotOutFileName + '_near_ubiquitous_absences.tsv')
+		print('Writing %s' % absent_path)
+		absent_rows = []
+		for gene_index, cells in absent_cells_by_gene.items():
+			# A gene that is never present is the opposite of "close to 1"; it only
+			# reaches here when the cohort has <= MAX_ABSENT_CELLS_TO_REPORT cells.
+			if sum_present[gene_index] == 0:
+				continue
+			for cell_path in cells:
+				absent_rows.append([
+					gene_ids[gene_index], mRNA_cistron_ids[gene_index],
+					monomer_ids[gene_index][:-3], p_present[gene_index],
+					len(cells), cell_path,
+					])
+		# Sort by cell path (group recurring cells), then by gene for readability.
+		absent_rows.sort(key=lambda row: (row[5], row[0]))
+		with open(absent_path, 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			writer.writerow([
+				'gene_name', 'cistron_name', 'protein_name', 'p_present_def1',
+				'n_absent_cells', 'absent_cell_path'])
+			for row in absent_rows:
+				writer.writerow(row)
+		n_reported_genes = len({row[0] for row in absent_rows})
+		print('  %d near-ubiquitous genes absent in 1-%d cells (%d gene-cell rows).'
+			% (n_reported_genes, MAX_ABSENT_CELLS_TO_REPORT, len(absent_rows)))
+
 		# Provenance metadata: which cells were included, when the analysis ran,
 		# when the sims ran, and the git hash of each.
 		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
@@ -327,6 +394,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
 					'remove_first_timestep': REMOVE_FIRST_TIMESTEP,
 					'thresholds': THRESHOLDS,
+					'max_absent_cells_to_report': MAX_ABSENT_CELLS_TO_REPORT,
 					'countRnaCistronSynthesized_available': has_synth,
 					},
 				},
