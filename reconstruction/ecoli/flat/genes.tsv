@@ -1,8 +1,8 @@
 # Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 30.0
+# Version: 30.5
 # Orthologs: true
-# Date and time generated: December 3, 2025, 10:41:54
+# Date and time generated: June 29, 2026, 14:29:56
 "id"	"symbol"	"synonyms"	"left_end_pos"	"right_end_pos"	"direction"	"rna_ids"
 "EG10001"	"alr"	["alr", "alr5", "b4053", "ECK4045"]	4265782	4266861	"+"	["EG10001_RNA"]
 "EG10002"	"modB"	["modB", "chlJ", "tslJ", "b0764", "ECK0753"]	795862	796551	"+"	["EG10002_RNA"]
@@ -2002,7 +2002,7 @@
 "EG12094"	"sgrR"	["sgrR", "yabN", "b0069", "ECK0070"]	75644	77299	"-"	["EG12094_RNA"]
 "EG12095"	"secG"	["secG", "prlH", "b3175", "ECK3164"]	3322173	3322505	"-"	["EG12095_RNA"]
 "EG12096"	"chpB"	["chpB", "yjfE", "chpBK", "b4225", "ECK4221"]	4448692	4449042	"+"	["EG12096_RNA"]
-"EG12097"	"yfiH"	["yfiH", "pgeF", "b2593", "ECK2591"]	2734303	2735034	"-"	["EG12097_RNA"]
+"EG12097"	"pgeF"	["pgeF", "yfiH", "b2593", "ECK2591"]	2734303	2735034	"-"	["EG12097_RNA"]
 "EG12098"	"rluD"	["rluD", "yfiI", "sfhB", "b2594", "ECK2592"]	2735031	2736011	"-"	["EG12098_RNA"]
 "EG12099"	"efp"	["efp", "b4147", "ECK4141"]	4375699	4376265	"+"	["EG12099_RNA"]
 "EG12100"	"tktB"	["tktB", "b2465", "ECK2460"]	2579636	2581639	"+"	["EG12100_RNA"]
@@ -2292,7 +2292,7 @@
 "EG12436"	"rseP"	["rseP", "ecfE", "yaeL", "b0176", "ECK0175"]	196546	197898	"+"	["EG12436_RNA"]
 "EG12437"	"menE"	["menE", "b2260", "ECK2254"]	2373648	2375003	"-"	["EG12437_RNA"]
 "EG12438"	"menH"	["menH", "yfbB", "b2263", "ECK2257"]	2376834	2377592	"-"	["EG12438_RNA"]
-"EG12439"	"yjfF"	["yjfF", "b4231", "ECK4226"]	4453583	4454578	"+"	["EG12439_RNA"]
+"EG12439"	"gafD"	["gafD", "yjfF", "b4231", "ECK4226"]	4453583	4454578	"+"	["EG12439_RNA"]
 "EG12440"	"mpl"	["mpl", "tpl", "yjfG", "b4233", "ECK4228"]	4455785	4457158	"+"	["EG12440_RNA"]
 "EG12442"	"yfjD"	["yfjD", "b2612", "ypjE", "b2613", "b4461", "ECK2609"]	2748774	2750060	"+"	["EG12442_RNA"]
 "EG12443"	"yggL"	["yggL", "b2959", "ECK2954"]	3101807	3102133	"-"	["EG12443_RNA"]
@@ -2311,9 +2311,9 @@
 "EG12494"	"ulaB"	["ulaB", "yjfT", "sgaB", "b4194", "ECK4190"]	4421393	4421698	"+"	["EG12494_RNA"]
 "EG12495"	"ulaC"	["ulaC", "ptxA", "yjfU", "sgaA", "b4195", "ECK4191"]	4421708	4422172	"+"	["EG12495_RNA"]
 "EG12504"	"cycA"	["cycA", "ytfD", "dagA", "b4208", "ECK4204"]	4429864	4431276	"+"	["EG12504_RNA"]
-"EG12517"	"ytfQ"	["ytfQ", "b4227", "ECK4223"]	4449962	4450918	"+"	["EG12517_RNA"]
-"EG12518"	"ytfR"	["ytfR", "ytfS", "b4228", "b4229", "b4485", "ECK4224"]	4451058	4452560	"+"	["EG12518_RNA"]
-"EG12520"	"ytfT"	["ytfT", "b4230", "ECK4225"]	4452571	4453596	"+"	["EG12520_RNA"]
+"EG12517"	"gafA"	["gafA", "ytfQ", "b4227", "ECK4223"]	4449962	4450918	"+"	["EG12517_RNA"]
+"EG12518"	"gafB"	["gafB", "ytfS", "b4228", "b4229", "ytfR", "b4485", "ECK4224"]	4451058	4452560	"+"	["EG12518_RNA"]
+"EG12520"	"gafC"	["gafC", "ytfT", "b4230", "ECK4225"]	4452571	4453596	"+"	["EG12520_RNA"]
 "EG12522"	"garD"	["garD", "yhaG", "b3128", "ECK3116"]	3275282	3276853	"+"	["EG12522_RNA"]
 "EG12525"	"mgtA"	["mgtA", "atmA", "corB", "mgt", "mtg", "b4242", "ECK4237"]	4467625	4470321	"+"	["EG12525_RNA"]
 "EG12539"	"idnT"	["idnT", "gntW", "yjgT", "b4265", "ECK4258"]	4491206	4492525	"-"	["EG12539_RNA"]
@@ -2902,6 +2902,7 @@
 "G0-17126"	"xtpA"	["xtpA", "b4845", "ECK4702"]	345252	345434	"+"	["G0-17126_RNA"]
 "G0-17130"	"yrdG"	["yrdG", "asarfA", "b4846", "ECK4703"]	3438431	3438484	"-"	["RNA0-441"]
 "G0-17139"	"otsa"	["otsa"]	null	null	null	["G0-17139_RNA"]
+"G0-17140"	"toiL"	["toiL", "b4848", "ECK4705"]	4534166	4534192	"-"	["G0-17140_RNA"]
 "G0-41"	"ecnA"	["ecnA", "b4410", "ECK4142"]	4376317	4376442	"+"	["G0-41_RNA"]
 "G0-8601"	"glcF"	["glcF", "gox", "yghL", "b2978", "b4467", "ECK2972"]	3124236	3125459	"-"	["G0-8601_RNA"]
 "G0-8785"	"csrB"	["csrB", "b4408", "ECK2787"]	2924156	2924524	"-"	["CSRB-RNA"]

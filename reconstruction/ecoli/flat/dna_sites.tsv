@@ -1,8 +1,8 @@
 # Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 30.0
+# Version: 30.5
 # Orthologs: true
-# Date and time generated: December 3, 2025, 10:41:50
+# Date and time generated: June 29, 2026, 14:29:52
 "id"	"common_name"	"synonyms"	"type"	"left_end_pos"	"right_end_pos"	"direction"
 "BS-7046"	null	[]	"dna-binding-site"	1825765	1825784	null
 "BS-7048"	null	[]	"dna-binding-site"	3169748	3169760	null
@@ -916,6 +916,22 @@
 "BS0-11033"	null	[]	"dna-binding-site"	2224958	2224972	null
 "BS0-11034"	null	[]	"dna-binding-site"	2224958	2224972	null
 "BS0-11035"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11036"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11037"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11038"	null	[]	"dna-binding-site"	1978216	1978232	null
+"BS0-11039"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11040"	null	[]	"dna-binding-site"	1130939	1130953	null
+"BS0-11041"	null	[]	"dna-binding-site"	2652394	2652422	null
+"BS0-11042"	null	[]	"dna-binding-site"	3258213	3258241	null
+"BS0-11043"	null	[]	"dna-binding-site"	1582584	1582612	null
+"BS0-11044"	null	[]	"dna-binding-site"	1669864	1669879	null
+"BS0-11045"	null	[]	"dna-binding-site"	573123	573138	null
+"BS0-11046"	null	[]	"dna-binding-site"	2524920	2524935	null
+"BS0-11047"	null	[]	"dna-binding-site"	2525329	2525344	null
+"BS0-11048"	null	[]	"dna-binding-site"	2344685	2344700	null
+"BS0-11049"	null	[]	"dna-binding-site"	2344650	2344665	null
+"BS0-11050"	null	[]	"dna-binding-site"	null	null	null
+"BS0-11051"	null	[]	"dna-binding-site"	null	null	null
 "BS0-1121"	null	[]	"dna-binding-site"	3493838	3493852	null
 "BS0-1122"	null	[]	"dna-binding-site"	963666	963678	null
 "BS0-1123"	null	[]	"dna-binding-site"	963586	963598	null
