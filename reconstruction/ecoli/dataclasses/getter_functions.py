@@ -17,6 +17,7 @@ EXCLUDED_RNA_TYPES = {'pseudo', 'phantom'}
 # Mapping of compartment IDs to abbreviations for compartments undefined in
 # flat/compartments.tsv
 UNDEFINED_COMPARTMENT_IDS_TO_ABBREVS = {
+	'CCI-CYTOSOL-GN': 'c',
 	'CCI-PERI-BAC-GN': 'p',
 	'CCI-PM-BAC-NEG-GN': 'i',
 	'CCO-PM-BAC-ACT': 'i',
