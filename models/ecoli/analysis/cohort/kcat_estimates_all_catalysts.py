@@ -43,12 +43,22 @@ Outputs (in plotOutDir):
   kcat_estimates_all_catalysts_{max,gap,smoothed_max,selected}.tsv  -- L/g DCW/h,
       in the existing v2 TSV schema; drop into
       reconstruction/ecoli/flat/kcat_estimates/ to use as model bounds.
-  kcat_vs_measured.csv / kcat_vs_measured.pdf       -- implied (selected, 1/s) vs
-      measured (1/s) for the pairs present in both, with the implied/measured
-      ratio distribution.
+  kcat_vs_measured.csv / kcat_vs_measured.pdf       -- implied (1/s) vs measured
+      (1/s), matched PER REACTION (implied = max over the reaction's catalysts,
+      like the measured side), one scatter panel + Pearson R(log10) per estimator.
+      Mirrors out/.../compare_kcat.py: the measured values come from the curated
+      "WCM kinetic equations" sheet and are used AS REPORTED (no temperature
+      adjustment); skip rows flagged Exclude.
+
+Generations skipped at the start (settle-in) default to 4; override with the
+KCAT_IGNORE_FIRST_N_GENS environment variable.  The measured sheet defaults to
+the in-repo copy reconstruction/ecoli/scripts/kcat_literature/measured_kcats.csv
+(tracked, so the cluster sees it); override with KCAT_MEASURED_SHEET.  If the
+sheet is absent, estimates and TSVs are still written and only the comparison is
+skipped.
 
 Reads only recorded listeners (FBAResults, EnzymeKinetics, Mass) + the measured
-kcat flat file -- no re-simulation.
+kcat sheet -- no re-simulation.
 """
 
 import csv
@@ -57,6 +67,7 @@ import json
 import os
 
 import numpy as np
+from scipy import stats
 from scipy.ndimage import median_filter
 import matplotlib
 matplotlib.use('Agg')
@@ -65,7 +76,6 @@ import matplotlib.pyplot as plt
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.analysis.cohort.kcat_estimates_v2_with_estimators import (
-	IGNORE_FIRST_N_GENS,
 	SMOOTH_WINDOW,
 	TOP_K_GAP_CAP,
 	QUANTITY_BINS,
@@ -91,6 +101,11 @@ MIN_KCAT_LGH = MIN_KCAT_ESTIMATE
 # Minimum active samples (flux > 0 and [enzyme] > 0) for a pair to be trusted.
 MIN_SAMPLES = 20
 
+# Number of initial generations to skip (settle-in transient).  Override per run
+# with the KCAT_IGNORE_FIRST_N_GENS environment variable (e.g. in the sbatch),
+# so no code edit is needed to change the window.
+IGNORE_FIRST_N_GENS = int(os.environ.get('KCAT_IGNORE_FIRST_N_GENS', '4'))
+
 # Cap on retained top-K kcat samples per pair per basis (bounds memory for the
 # full catalyst set; the v2 default 5000 x both bases x thousands of pairs is
 # unnecessarily large).  k_eff in _gap_estimate still scales with sample count.
@@ -99,18 +114,20 @@ TOP_K_CAP = min(TOP_K_GAP_CAP, 2000)
 # Unit bases: label -> human description for provenance.
 BASES = ('per_s', 'Lgh')
 
-# Measured kcat flat file (literature turnover numbers, 1/s).
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 	os.path.dirname(os.path.abspath(__file__))))))
-METABOLISM_KINETICS_TSV = os.path.join(
-	_REPO_ROOT, 'reconstruction', 'ecoli', 'flat', 'metabolism_kinetics.tsv')
+
+# Curated measured-kcat sheet (literature turnover numbers, 1/s, as reported --
+# no temperature adjustment), mirroring the source used by the previous
+# out/.../compare_kcat.py.  Default is the minimal in-repo copy (reactionID,
+# kcat (1/s), Exclude columns), which is tracked so the cluster can see it;
+# override with the KCAT_MEASURED_SHEET environment variable.  If the file is
+# absent, estimates/TSVs are still written and only the comparison is skipped.
+MEASURED_SHEET = os.environ.get('KCAT_MEASURED_SHEET', os.path.join(
+	_REPO_ROOT, 'reconstruction', 'ecoli', 'scripts', 'kcat_literature',
+	'measured_kcats.csv'))
 
 REVERSE_TAG = ' (reverse)'
-
-
-def _strip_location(catalyst_id):
-	"""Drop a trailing location tag, e.g. 'CPLX0-235[c]' -> 'CPLX0-235'."""
-	return catalyst_id.split('[')[0]
 
 
 def _base_reaction(reaction_id):
@@ -128,49 +145,41 @@ def _base_reaction(reaction_id):
 	return base
 
 
-def _temperature_adjusted(kcat_value, temp):
-	"""Adjust a measured kcat (1/s) to 37 C with Q10 = 2 (blank temp -> 25).
+def _load_measured_sheet(path):
+	"""Return {base_reaction: max measured kcat (1/s)} from the curated sheet.
 
-	Mirrors Metabolism.temperature_adjusted_kcat without needing a units.Unum.
-	"""
-	if temp is None or temp == '':
-		temp = 25.0
-	return 2 ** ((37.0 - float(temp)) / 10.0) * float(kcat_value)
-
-
-def _load_measured_kcats():
-	"""Return {(base_reaction, base_enzyme): kcat_1s} from the measured file.
-
-	kcat (1/s) lists are temperature-adjusted to 37 C; when a row lists several
-	kcats (one per substrate) the max is kept as the enzyme's peak turnover, and
-	when several rows map to the same key (e.g. forward/reverse directions) the
-	max across them is kept.
+	Mirrors out/.../compare_kcat.py:parse_sheet -- reads the 'kcat (1/s)' column
+	(a JSON list; the first value is taken), skips rows flagged in 'Exclude', and
+	keeps the max kcat across rows for a reaction.  Values are used AS REPORTED
+	(no temperature adjustment), matching the prior comparison.  Returns an empty
+	dict (and the comparison is skipped) if the sheet is missing.
 	"""
 	measured = {}
-	if not os.path.exists(METABOLISM_KINETICS_TSV):
-		print(f'Measured kcat file not found: {METABOLISM_KINETICS_TSV}')
+	if not path or not os.path.exists(path):
+		print(f'Measured kcat sheet not found: {path!r} -- skipping comparison. '
+			f'Set KCAT_MEASURED_SHEET to enable it.')
 		return measured
-	with open(METABOLISM_KINETICS_TSV, newline='', encoding='utf-8') as fh:
-		lines = [ln for ln in fh if not ln.startswith('#')]
-	reader = csv.DictReader(lines, delimiter='\t')
-	kcat_col = next((c for c in reader.fieldnames if c.startswith('kcat')), None)
-	for row in reader:
-		raw = (row.get(kcat_col) or '').strip()
-		if not raw:
-			continue
-		try:
-			kcats = json.loads(raw)
-		except (ValueError, TypeError):
-			continue
-		if not kcats:
-			continue
-		temp = (row.get('Temp') or '').strip()
-		adj = max(_temperature_adjusted(k, temp) for k in kcats)
-		rxn = _base_reaction(str(row['reactionID']).strip('"'))
-		enz = _strip_location(str(row['enzymeID']).strip('"'))
-		key = (rxn, enz)
-		if key not in measured or adj > measured[key]:
-			measured[key] = adj
+	with open(path, newline='', encoding='utf-8') as fh:
+		reader = csv.DictReader(fh)
+		for row in reader:
+			if (row.get('Exclude') or '').strip():
+				continue
+			raw_rxn = (row.get('reactionID') or '').strip()
+			raw_kcat = (row.get('kcat (1/s)') or '').strip()
+			if not raw_rxn or not raw_kcat:
+				continue
+			try:
+				kcat_val = json.loads(raw_kcat)
+				if isinstance(kcat_val, list):
+					kcat_val = kcat_val[0]
+				kcat_val = float(kcat_val)
+			except (ValueError, TypeError, IndexError):
+				continue
+			if not np.isfinite(kcat_val) or kcat_val <= 0:
+				continue
+			rxn = _base_reaction(raw_rxn.strip('"'))
+			if rxn not in measured or kcat_val > measured[rxn]:
+				measured[rxn] = kcat_val
 	return measured
 
 
@@ -363,8 +372,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return dict(max=max_val, gap=gap, smoothed_max=sm,
 				selected=_select(gap, sm, max_val))
 
-		measured = _load_measured_kcats()
-		print(f'{len(measured)} measured (reaction, enzyme) kcats loaded.')
+		measured = _load_measured_sheet(MEASURED_SHEET)
+		print(f'{len(measured)} measured reaction kcats loaded from sheet.')
 
 		rows = []
 		for p in range(n_pairs):
@@ -372,8 +381,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			est = {b: _estimates(b, p, n) for b in BASES}
 			rxn_id = pair_reaction_ids[p]
 			cat_id = pair_catalyst_ids[p]
-			meas = measured.get(
-				(_base_reaction(rxn_id), _strip_location(cat_id)), np.nan)
+			meas = measured.get(_base_reaction(rxn_id), np.nan)
 			rows.append({
 				'reaction_id': rxn_id,
 				'catalyst_id': cat_id,
@@ -396,7 +404,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		self._write_summary(plotOutDir, rows, timestamp, ap, n_gens_used,
 			cells_processed, len(cell_paths), conv_mean)
 		self._write_tsvs(plotOutDir, rows, timestamp, variantDir)
-		self._write_comparison(plotOutDir, rows, timestamp)
+		self._write_comparison(plotOutDir, rows, measured, timestamp)
 
 	# ------------------------------------------------------------------ outputs
 	@staticmethod
@@ -467,62 +475,99 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print(f'Wrote {out_path} ({len(valid)} rows)')
 
 	@staticmethod
-	def _write_comparison(plotOutDir, rows, timestamp):
-		"""Compare implied (selected, 1/s) vs measured (1/s): CSV + scatter."""
-		pairs = [r for r in rows
-			if np.isfinite(r['measured_kcat_1s']) and r['measured_kcat_1s'] > 0
-			and np.isfinite(r['per_s']['selected'])
-			and r['per_s']['selected'] >= MIN_KCAT_1S
-			and r['n_samples'] >= MIN_SAMPLES]
+	def _write_comparison(plotOutDir, rows, measured, timestamp):
+		"""Compare implied kcats (1/s) to the curated measured sheet, per reaction.
 
+		Mirrors out/.../compare_kcat.py: aggregate the implied 1/s estimate per
+		reaction (max over its catalysts, like the measured side), match by
+		reaction, and report a log-log scatter with Pearson R on log10 for each
+		estimator (max, gap, smoothed_max, selected).  No temperature adjustment;
+		measured values are used as reported.
+		"""
+		if not measured:
+			print('No measured sheet -- skipping comparison.')
+			return
+		ests = ('max', 'gap', 'smoothed_max', 'selected')
+
+		# Implied 1/s per base reaction = max over its catalysts (mirrors the
+		# measured "max kcat per reaction"), restricted to trusted pairs.
+		per_rxn = {e: {} for e in ests}
+		for r in rows:
+			if r['n_samples'] < MIN_SAMPLES:
+				continue
+			rxn = _base_reaction(r['reaction_id'])
+			for e in ests:
+				v = r['per_s'][e]
+				if np.isfinite(v) and v >= MIN_KCAT_1S:
+					if rxn not in per_rxn[e] or v > per_rxn[e][rxn]:
+						per_rxn[e][rxn] = v
+
+		matched, pearson = {}, {}
+		for e in ests:
+			common = sorted(set(measured) & set(per_rxn[e]))
+			lit = np.array([measured[c] for c in common])
+			est = np.array([per_rxn[e][c] for c in common])
+			matched[e] = (common, lit, est)
+			pearson[e] = (stats.pearsonr(np.log10(lit), np.log10(est))[0]
+				if len(common) >= 3 else np.nan)
+			print(f'{e}: {len(common)} matched reactions, '
+				f'Pearson R (log10) = {pearson[e]:.4f}')
+
+		# CSV: reactions matched by the 'selected' estimator, all estimators +
+		# log-ratios, sorted by |log10(selected/measured)| (best match first).
+		sel_common = list(matched['selected'][0])
+		sel_common.sort(key=lambda r: abs(np.log10(
+			per_rxn['selected'][r] / measured[r])))
 		csv_path = os.path.join(plotOutDir, 'kcat_vs_measured.csv')
 		with open(csv_path, 'w', newline='', encoding='utf-8') as fh:
-			fh.write(f'# implied (selected, 1/s) vs measured (1/s, 37C) on '
-				f'{timestamp}. {len(pairs)} matched pairs.\n')
-			writer = csv.writer(fh)
-			writer.writerow(['reaction_id', 'catalyst_id', 'measured_kcat_1s',
-				'implied_kcat_1s', 'implied_over_measured', 'n_samples',
-				'multi_catalyst'])
-			for r in pairs:
-				meas = r['measured_kcat_1s']
-				imp = r['per_s']['selected']
-				writer.writerow([r['reaction_id'], r['catalyst_id'],
-					f'{meas:.6g}', f'{imp:.6g}', f'{imp / meas:.6g}',
-					r['n_samples'], r['multi_catalyst']])
-		print(f'Wrote {csv_path} ({len(pairs)} matched pairs)')
+			fh.write(f'# implied (1/s, per reaction = max over catalysts) vs '
+				f'curated measured sheet (1/s, as reported) on {timestamp}. '
+				f'Pearson R(log10): '
+				+ ', '.join(f'{e}={pearson[e]:.3f}' for e in ests) + '.\n')
+			w = csv.writer(fh)
+			w.writerow(['reaction_id', 'measured_kcat_1s']
+				+ [f'implied_{e}_1s' for e in ests]
+				+ [f'log10_{e}_over_measured' for e in ests])
+			for rxn in sel_common:
+				lit = measured[rxn]
+				vals = [per_rxn[e].get(rxn, np.nan) for e in ests]
+				logs = [(np.log10(v / lit)
+					if np.isfinite(v) and v > 0 else np.nan) for v in vals]
+				w.writerow([rxn, f'{lit:.6g}']
+					+ [f'{v:.6g}' if np.isfinite(v) else '' for v in vals]
+					+ [f'{x:.4f}' if np.isfinite(x) else '' for x in logs])
+		print(f'Wrote {csv_path} ({len(sel_common)} matched reactions)')
 
-		if not pairs:
+		if not any(len(matched[e][0]) for e in ests):
 			print('No measured/implied matches -- skipping scatter.')
 			return
-		meas = np.array([r['measured_kcat_1s'] for r in pairs])
-		imp = np.array([r['per_s']['selected'] for r in pairs])
-		multi = np.array([bool(r['multi_catalyst']) for r in pairs])
-		ratio = imp / meas
-
-		fig, ax = plt.subplots(figsize=(7, 7))
-		lo = min(meas.min(), imp.min()) * 0.5
-		hi = max(meas.max(), imp.max()) * 2.0
-		ax.plot([lo, hi], [lo, hi], ls='--', color='#888', lw=1.0, label='y = x')
-		ax.scatter(meas[~multi], imp[~multi], s=18, alpha=0.6, color='#1f77b4',
-			label='single catalyst')
-		ax.scatter(meas[multi], imp[multi], s=18, alpha=0.6, color='#d62728',
-			label='multi-catalyst (upper bound)')
-		ax.set_xscale('log')
-		ax.set_yscale('log')
-		ax.set_xlim(lo, hi)
-		ax.set_ylim(lo, hi)
-		ax.set_xlabel('measured kcat (1/s, 37C)')
-		ax.set_ylabel('implied kcat (selected, 1/s)')
-		med = float(np.median(ratio))
-		q1, q3 = np.percentile(ratio, [25, 75])
-		ax.set_title(
-			'Implied vs measured kcat (no-kinetics run)\n'
-			f'n = {len(pairs)} pairs; implied/measured median {med:.2g} '
-			f'(IQR {q1:.2g}-{q3:.2g})')
-		ax.legend(fontsize=8, loc='best')
+		fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+		axes = axes.flatten()
+		for i, e in enumerate(ests):
+			common, lit, est = matched[e]
+			ax = axes[i]
+			if len(common) == 0:
+				ax.set_visible(False)
+				continue
+			ax.scatter(lit, est, s=18, alpha=0.5, color='#1f77b4',
+				edgecolors='none')
+			lo = min(lit.min(), est.min()) * 0.5
+			hi = max(lit.max(), est.max()) * 2.0
+			ax.plot([lo, hi], [lo, hi], 'k--', lw=0.8, alpha=0.5)
+			ax.set_xscale('log')
+			ax.set_yscale('log')
+			ax.set_xlim(lo, hi)
+			ax.set_ylim(lo, hi)
+			ax.set_xlabel('measured kcat (1/s, as reported)')
+			ax.set_ylabel(f'implied kcat ({e}, 1/s)')
+			ax.set_title(f'{e}: R(log10) = {pearson[e]:.3f} (n = {len(common)})')
+			ax.set_aspect('equal')
+		fig.suptitle(
+			'Implied (no-kinetics run) vs measured kcat, per reaction',
+			fontsize=13, y=1.0)
 		fig.tight_layout()
 		pdf_path = os.path.join(plotOutDir, 'kcat_vs_measured.pdf')
-		fig.savefig(pdf_path, dpi=200)
+		fig.savefig(pdf_path, dpi=200, bbox_inches='tight')
 		plt.close('all')
 		print(f'Wrote {pdf_path}')
 
