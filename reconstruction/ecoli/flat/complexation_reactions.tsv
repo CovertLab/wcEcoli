@@ -1,8 +1,8 @@
 # Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 30.0
+# Version: 30.5
 # Orthologs: true
-# Date and time generated: December 3, 2025, 10:41:48
+# Date and time generated: June 29, 2026, 14:29:50
 "id"	"stoichiometry"	"common_name"	"cofactors"
 "1-PFK_RXN"	{"1-PFK": 1, "1-PFK-MONOMER": -2}	null	{"MG+2": 1}
 "2OXOGLUTARATEDEH-CPLX_RXN"	{"2OXOGLUTARATEDEH-CPLX": 1, "E1O": -1, "E2O": -1, "E3-CPLX": -1}	"2-oxoglutarate dehydrogenase complex"	{"LIPOIC-ACID": 1, "THIAMINE-PYROPHOSPHATE": 2, "FAD": 3, "MG+2": 2}
@@ -22,7 +22,7 @@
 "ABC-14-CPLX_RXN"	{"ABC-14-CPLX": 1, "HISP-MONOMER": -2, "HISM-MONOMER": -1, "HISQ-MONOMER": -1, "HISJ-MONOMER": -1}	"histidine ABC transporter"	{}
 "ABC-15-CPLX_RXN"	{"ABC-15-CPLX": 1, "LIVF-MONOMER": -1, "LIVG-MONOMER": -1, "LIVH-MONOMER": -1, "LIVM-MONOMER": -1, "LIVJ-MONOMER": -1}	"branched chain amino acid / phenylalanine ABC transporter"	{}
 "ABC-16-CPLX_RXN"	{"ABC-16-CPLX": 1, "MALK-MONOMER": -2, "MALF-MONOMER": -1, "MALG-MONOMER": -1, "MALE-MONOMER": -1}	"maltose ABC transporter"	{}
-"ABC-18-CPLX_RXN"	{"ABC-18-CPLX": 1, "MGLA-MONOMER": -1, "MGLC-MONOMER": -2, "MGLB-MONOMER": -1}	"D-galactose / methyl-&beta;-D-galactoside ABC transporter"	{}
+"ABC-18-CPLX_RXN"	{"ABC-18-CPLX": 1, "MGLA-MONOMER": -1, "MGLC-MONOMER": -2, "MGLB-MONOMER": -1}	"D-galactopyranose / methyl-&beta;-D-galactoside ABC transporter"	{}
 "ABC-19-CPLX_RXN"	{"ABC-19-CPLX": 1, "MODC-MONOMER": -1, "MODB-MONOMER": -2, "MODA-MONOMER": -1}	"molybdate ABC transporter"	{}
 "ABC-2-CPLX_RXN"	{"ABC-2-CPLX": 1, "ARAG-MONOMER": -2, "ARAH-MONOMER": -2, "ARAF-MONOMER": -1}	"arabinose ABC transporter"	{}
 "ABC-20-CPLX_RXN"	{"ABC-20-CPLX": 1, "NIKD-MONOMER": -1, "NIKE-MONOMER": -1, "NIKB-MONOMER": -1, "NIKC-MONOMER": -1, "NIKA-MONOMER": -1}	"Ni(2+) ABC transporter"	{}
@@ -46,7 +46,7 @@
 "ABC-41-CPLX_RXN"	{"ABC-41-CPLX": 1, "YEJF-MONOMER": -1, "YEJB-MONOMER": -1, "YEJE-MONOMER": -1, "YEJA-MONOMER": -1}	null	{}
 "ABC-42-CPLX_RXN"	{"ABC-42-CPLX": 1, "YJCW-MONOMER": -1, "YJCV-MONOMER": -2, "YJCX-MONOMER": -1}	null	{}
 "ABC-45-CPLX_RXN"	{"ABC-45-CPLX": 1, "G7658-MONOMER": -2, "EG12799-MONOMER": -6, "YRBE-MONOMER": -2, "YRBF-MONOMER": -2}	"intermembrane phospholipid transport system"	{}
-"ABC-46-CPLX_RXN"	{"ABC-46-CPLX": 1, "YJFF-MONOMER": -1, "YTFR-MONOMER": -1, "YTFT-MONOMER": -1, "YTFQ-MONOMER": -1}	"galactofuranose ABC transporter"	{}
+"ABC-46-CPLX_RXN"	{"ABC-46-CPLX": 1, "YJFF-MONOMER": -1, "YTFR-MONOMER": -1, "YTFT-MONOMER": -1, "YTFQ-MONOMER": -1}	"L-arabinofuranose/D-galactofuranose ABC transporter"	{}
 "ABC-48-CPLX_RXN"	{"ABC-48-CPLX": 1, "YNJC-MONOMER": null, "YNJD-MONOMER": null, "G6949-MONOMER": null}	"putative transport complex, ABC superfamily"	{}
 "ABC-49-CPLX_RXN"	{"ABC-49-CPLX": 1, "YLIA-MONOMER": -1, "YLIB-MONOMER": -1, "YLID-MONOMER": -1, "YLIC-MONOMER": -1}	"glutathione ABC transporter"	{}
 "ABC-5-CPLX_RXN"	{"ABC-5-CPLX": 1, "BTUD-MONOMER": -2, "BTUC-MONOMER": -2, "EG12334-MONOMER": -1}	"vitamin B<sub>12</sub> ABC transporter"	{}
@@ -235,8 +235,9 @@
 "CPLX0-13346_RXN"	{"CPLX0-13346": 1, "G7595-MONOMER": -2}	"aerotaxis receptor"	{}
 "CPLX0-13399_RXN"	{"CPLX0-13399": 1, "EG12691-MONOMER": -2}	"lipopolysaccharide assembly protein B"	{}
 "CPLX0-1341_RXN"	{"CPLX0-1341": 1, "G6909-MONOMER": -1, "G6908-MONOMER": -2, "G6907-MONOMER": -1}	"SufBC<sub>2</sub>D Fe-S cluster scaffold complex"	{}
-"CPLX0-13742_RXN"	{"CPLX0-13742": 1, "TREHALOSE6PSYN-MONOMER": -2}	null	{}
+"CPLX0-13742_RXN"	{"CPLX0-13742": 1, "TREHALOSE6PSYN-MONOMER": -2}	"OtsA homodimer"	{}
 "CPLX0-13749_RXN"	{"CPLX0-13749": 1, "CPLX0-13742": -2}	null	{}
+"CPLX0-13978_RXN"	{"CPLX0-13978": 1, "EG11966-MONOMER": -4}	"DNA-binding transcriptional activator AdiY"	{}
 "CPLX0-1401_RXN"	{"CPLX0-1401": 1, "G7490-MONOMER": -2}	null	{"PYRIDOXAL_PHOSPHATE": 1}
 "CPLX0-1421_RXN"	{"CPLX0-1421": 1, "EG10113-MONOMER": -24}	"bacterioferritin"	{}
 "CPLX0-1441_RXN"	{"CPLX0-1441": 1, "EG10255-MONOMER": -2}	"serine protease inhibitor ecotin"	{}
@@ -303,7 +304,7 @@
 "CPLX0-253_RXN"	{"CPLX0-253": 1, "EG12656-MONOMER": -2}	"NADPH:quinone oxidoreductase MdaB"	{"FAD": 1}
 "CPLX0-2541_RXN"	{"CPLX0-2541": 1, "MONOMER0-185": -2}	"DNA-binding transcriptional dual regulator ModE"	{}
 "CPLX0-254_RXN"	{"CPLX0-254": 1, "G7516-MONOMER": -6}	null	{}
-"CPLX0-255_RXN"	{"CPLX0-255": 1, "G7492-MONOMER": -4}	null	{"MN+2": 1}
+"CPLX0-255_RXN"	{"CPLX0-255": 1, "G7492-MONOMER": -4}	"cyclic amidohydrolase / phenylhydantoinase"	{"MN+2": 1}
 "CPLX0-2561_RXN"	{"CPLX0-2561": 1, "CPLX0-7696": null, "CPLX0-7697": null}	"bacterial condensin MukBEF"	{}
 "CPLX0-2621_RXN"	{"CPLX0-2621": 1, "MONOMER0-1564": -2}	"small toxic polypeptide HokC"	{}
 "CPLX0-263_RXN"	{"CPLX0-263": 1, "MONOMER0-2": -2, "MONOMER0-3": -2}	"isoaspartyl dipeptidase / asparaginase 3"	{}
@@ -529,7 +530,6 @@
 "CPLX0-7748_RXN"	{"CPLX0-7748": 1, "PHOSPHO-CPXR": -2}	"DNA-binding transcriptional dual regulator CpxR-phosphorylated"	{}
 "CPLX0-7754_RXN"	{"CPLX0-7754": 1, "PHOSPHO-UHPA": -2}	"DNA-binding transcriptional activator UhpA-phosphorylated"	{}
 "CPLX0-7755_RXN"	{"CPLX0-7755": 1, "EG12172-MONOMER": -2}	null	{}
-"CPLX0-7756_RXN"	{"CPLX0-7756": 1, "EG11212-MONOMER": -2}	"DNA-binding transcriptional dual regulator NsrR"	{}
 "CPLX0-7757_RXN"	{"CPLX0-7757": 1, "EG10442-MONOMER": -2}	"HipB antitoxin / DNA-binding transcriptional repressor"	{}
 "CPLX0-7758_RXN"	{"CPLX0-7758": 1, "G6550-MONOMER": -2}	"2'-<i>O</i>-acetyl-ADP-ribose deacetylase, regulator of RNase III activity"	{}
 "CPLX0-7759_RXN"	{"CPLX0-7759": 1, "PD03938": -2}	"DNA-binding transcriptional dual regulator MetR"	{}

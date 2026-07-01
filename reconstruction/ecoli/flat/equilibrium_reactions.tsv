@@ -1,8 +1,8 @@
 # Organism: Escherichia coli K-12 substr. MG1655 (ECOLI)
 # Database: EcoCyc
-# Version: 30.0
+# Version: 30.5
 # Orthologs: true
-# Date and time generated: December 3, 2025, 10:41:51
+# Date and time generated: June 29, 2026, 14:29:53
 "id"	"stoichiometry"	"common_name"
 "CPLX-123_RXN"	{"CPLX-123": 1, "PC00033": null, "HYPOXANTHINE": null}	"DNA-binding transcriptional repressor PurR-hypoxanthine"
 "CPLX-124_CPD0-1112_RXN"	{"CPLX-124": 1, "CPD0-1112": null, "PC00086": null}	"RhaS-L-rhamnose DNA-binding transcriptional activator"
@@ -53,6 +53,7 @@
 "CPLX0-7750_RXN"	{"CPLX0-7750": 1, "G6799-MONOMER": null, "CPD-10551": null}	"LsrR-(2<i>S</i>)-2-hydroxy-3,4-dioxopentyl phosphate"
 "CPLX0-7751_RXN"	{"CPLX0-7751": 1, "EG11212-MONOMER": null, "NITRIC-OXIDE": null}	"NsrR-nitric oxide"
 "CPLX0-7752_RXN"	{"CPLX0-7752": 1, "CPLX0-7759": null, "HOMO-CYS": null}	"MetR-L-homocysteine"
+"CPLX0-7756_RXN"	{"CPLX0-7756": 1, "CPD-6": null, "EG11212-MONOMER": -2}	"DNA-binding transcriptional dual regulator NsrR-a [2Fe-2S] iron-sulfur cluster"
 "CPLX0-8026_RXN"	{"CPLX0-8026": 1, "5-METHYLTHIOADENOSINE": null, "PD04032": null}	"MetJ-MTA"
 "CPLX0-8027_RXN"	{"CPLX0-8027": 1, "ADENINE": null, "PD04032": null}	"MetJ-adenine"
 "CPLX0-8048_RXN"	{"CPLX0-8048": 1, "EG12694-MONOMER": null, "TARTRATE": null}	"Dan-L-tartrate DNA-binding transcriptional activator"
@@ -77,7 +78,7 @@
 "CPLX0-8210_RXN"	{"CPLX0-8210": 1, "PD03270": null, "CPD-12523": null}	"ExuR-&alpha;-D-galacturonate, &alpha;-D-glucuronate-DNA-binding transcriptional repressor"
 "CPLX0-8235_RXN"	{"CPLX0-8235": 1, "CPLX0-8234": null, "FORMALDEHYDE": null}	"FrmR-formaldehyde"
 "CPLX0-8246_RXN"	{"CPLX0-8246": 1, "PD03270": null, "CPD-14488": null}	"ExuR-&alpha;-D-glucuronate"
-"CPLX0-8257_RXN"	{"CPLX0-8257": 1, "G6144-MONOMER": null, "D-XYLONATE": null}	"XynR-D-xylonate"
+"CPLX0-8257_RXN"	{"CPLX0-8257": 1, "G6144-MONOMER": null, "D-XYLONATE": null}	"XynR-2-dehydro-3-deoxy-D-pentonate"
 "CPLX0-8258_RXN"	{"CPLX0-8258": 1, "CPLX0-8595": null, "CPD0-2705": null}	"ChbR-6-phospho-&beta;-D-glucosaminyl-(1->4)-<i>N</i>-acetyl-D-glucosamine"
 "CPLX0-8286_CPD-21685_RXN"	{"CPLX0-8286": 1, "CPD-21685": null, "EG11849-MONOMER": null}	"CsqR-6-sulfo-D-quinovose"
 "CPLX0-8286_CPD-21686_RXN"	{"CPLX0-8286": 1, "CPD-21686": null, "EG11849-MONOMER": null}	"CsqR-6-sulfo-D-quinovose"

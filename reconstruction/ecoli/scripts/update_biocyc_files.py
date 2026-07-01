@@ -14,7 +14,7 @@ import time
 from wholecell.utils.filepath import ROOT_PATH
 
 BASE_API_URL = 'https://websvc.biocyc.org/wc-get?type='
-BASE_API_URL_PREVIEW = 'https://brg-preview.ai.sri.com/wc-get?type='
+BASE_API_URL_PREVIEW = 'https://brg-preview.ai.sri.com/wc-get?orgid=ECOLI&type='
 BIOCYC_FILE_IDS = [
     'complexation_reactions',
     'dna_sites',
