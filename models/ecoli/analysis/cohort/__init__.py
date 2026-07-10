@@ -2,6 +2,7 @@
 # Tip: Edit this during development to run ones you're working on first.
 ACTIVE = [
 	"aa_conc.py",
+	"cell_health_metrics.py",
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
 	"doubling_times_histogram_all.py",
