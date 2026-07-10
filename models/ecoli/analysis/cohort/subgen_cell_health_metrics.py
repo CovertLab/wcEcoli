@@ -292,9 +292,66 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('MEDIAN(all)\t-\t%.1f\t%.2e\t%.0f\t%.1f' % (
 				medians[0], medians[1], medians[6], medians[7]))
 
+		# Full-run lineage completeness: how far each seed's lineage got before it
+		# died or reached the final generation. Independent of IGNORE_FIRST_N_GENS,
+		# so lineages that die in the first few generations are still captured.
+		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
+		final_gen = self.ap.n_generation - 1
+		successful_gens_by_seed = {}
+		for path in self.ap.get_cells(only_successful=True):
+			seed, gen = _parse_cell_id(path)
+			successful_gens_by_seed.setdefault(seed, set()).add(gen)
+		seeds_present = set()
+		for path in self.ap.get_cells(only_successful=False):
+			seed, _ = _parse_cell_id(path)
+			seeds_present.add(seed)
+
+		completeness_rows = []
+		for seed in sorted(seeds_present):
+			gens = successful_gens_by_seed.get(seed, set())
+			if gens:
+				first_gen, last_gen = min(gens), max(gens)
+				missing_gens = sorted(set(range(first_gen, last_gen + 1)) - gens)
+			else:
+				first_gen = last_gen = -1
+				missing_gens = []
+			completeness_rows.append([
+				seed, first_gen, last_gen, len(gens),
+				last_gen == final_gen,
+				';'.join(str(g) for g in missing_gens),
+				])
+
+		completeness_path = os.path.join(
+			plotOutDir, plotOutFileName + '_lineage_completeness.tsv')
+		print('Writing %s' % completeness_path)
+		with open(completeness_path, 'w') as f:
+			writer = csv.writer(f, delimiter='\t')
+			writer.writerow(['seed', 'first_gen', 'last_gen', 'n_gens_present',
+				'reached_final', 'missing_gens'])
+			for row in completeness_rows:
+				writer.writerow(row)
+
+		n_reached_final = sum(1 for row in completeness_rows if row[4])
+		n_died_early = len(completeness_rows) - n_reached_final
+		total_init_sims = sim_metadata.get('total_init_sims')
+		n_never_ran = (total_init_sims - len(seeds_present)
+			if total_init_sims is not None else None)
+		print('\nLineage completeness (final generation = %d):' % final_gen)
+		print('  seeds present            : %d' % len(seeds_present))
+		if n_never_ran is not None:
+			print('  seeds that never ran     : %d (of %d expected)'
+				% (n_never_ran, total_init_sims))
+		print('  reached final generation : %d' % n_reached_final)
+		print('  died before final gen    : %d' % n_died_early)
+		if n_died_early:
+			incomplete = sorted(
+				(row for row in completeness_rows if not row[4]),
+				key=lambda row: row[2])
+			print('  incomplete seeds (seed@last_gen): '
+				+ ', '.join('%s@%d' % (row[0], row[2]) for row in incomplete))
+
 		# Provenance metadata: which cells were included, when the analysis ran,
 		# when the sims ran, and the git hash of each.
-		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
 		repo_dir = os.path.dirname(os.path.abspath(__file__))
 		run_metadata = {
 			'analysis': {
@@ -326,6 +383,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				'n_included': n_cells,
 				'n_skipped': len(skipped_cells),
 				'skipped': skipped_cells,
+				},
+			'lineage': {
+				'final_generation': final_gen,
+				'n_seeds_present': len(seeds_present),
+				'n_seeds_never_ran': n_never_ran,
+				'n_reached_final': n_reached_final,
+				'n_died_before_final': n_died_early,
 				},
 			}
 		metadata_path = os.path.join(

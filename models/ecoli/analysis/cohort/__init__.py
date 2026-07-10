@@ -23,6 +23,7 @@ ACTIVE = [
 	"rnaCopyNumberDistribution.py",
 	"subgenerational_expression_table.py",
 	"subgen_expression_definitions.py",
+	"subgen_expression_definitions_complete.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
 	# "transcriptionGenomeCoverageSecondHalf.py",

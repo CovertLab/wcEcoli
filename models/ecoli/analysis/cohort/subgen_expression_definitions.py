@@ -100,7 +100,25 @@ def _load_sim_metadata(variant_dir):
 	return None, {}
 
 
+def _parse_cell_id(cell_path):
+	"""Split a cell path into (seed, generation).
+
+	Cell paths look like .../<variant>/<seed>/generation_<gen>/<daughter>.
+	"""
+	parts = cell_path.rstrip(os.sep).split(os.sep)
+	for i, part in enumerate(parts):
+		if part.startswith('generation_'):
+			seed = parts[i - 1] if i > 0 else ''
+			return seed, int(part.split('_')[1])
+	return '', -1
+
+
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
+	# When True, restrict the analysis to seeds whose lineage reached the final
+	# generation (subgen_expression_definitions_complete.py sets this) so that
+	# cells from lineages that died mid-run do not contribute absences.
+	REQUIRE_COMPLETE_LINEAGE = False
+
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		analysis_run_time = datetime.now().isoformat(timespec='seconds')
 
@@ -137,6 +155,26 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
+
+		# Optionally keep only lineages that completed every generation: a seed
+		# qualifies when its last successful generation is the final one. Cells from
+		# lineages that died mid-run (a major source of near-ubiquitous absences)
+		# are then excluded.
+		if self.REQUIRE_COMPLETE_LINEAGE:
+			final_gen = self.ap.n_generation - 1
+			last_gen_by_seed = {}
+			for path in self.ap.get_cells(only_successful=True):
+				seed, gen = _parse_cell_id(path)
+				last_gen_by_seed[seed] = max(last_gen_by_seed.get(seed, -1), gen)
+			complete_seeds = {
+				seed for seed, last in last_gen_by_seed.items()
+				if last == final_gen}
+			cell_paths = np.array([
+				path for path in cell_paths
+				if _parse_cell_id(path)[0] in complete_seeds])
+			print('Restricting to %d complete lineages (reached generation %d).'
+				% (len(complete_seeds), final_gen))
+
 		print('Analyzing %d cells...' % len(cell_paths))
 
 		if len(cell_paths) == 0:
@@ -395,6 +433,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					'remove_first_timestep': REMOVE_FIRST_TIMESTEP,
 					'thresholds': THRESHOLDS,
 					'max_absent_cells_to_report': MAX_ABSENT_CELLS_TO_REPORT,
+					'require_complete_lineage': self.REQUIRE_COMPLETE_LINEAGE,
 					'countRnaCistronSynthesized_available': has_synth,
 					},
 				},
