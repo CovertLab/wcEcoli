@@ -24,6 +24,7 @@ ACTIVE = [
 	"subgenerational_expression_table.py",
 	"subgen_expression_definitions.py",
 	"subgen_expression_definitions_complete.py",
+	"subgen_definition5_lineage_ci.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
 	# "transcriptionGenomeCoverageSecondHalf.py",
