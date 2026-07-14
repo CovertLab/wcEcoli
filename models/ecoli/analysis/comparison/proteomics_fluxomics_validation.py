@@ -76,8 +76,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 			monomer_counts = read_stacked_columns(
 				cell_paths, 'MonomerCounts', 'monomerCounts', ignore_exception=True)
 
-			sim_monomer_counts, val_monomer_counts_filtered = get_simulated_validation_counts(
-				val_monomer_counts, monomer_counts, val_monomer_ids, monomer_ids)
+			sim_monomer_counts, val_monomer_counts_filtered, matching_ids = (
+				get_simulated_validation_counts(val_monomer_counts,
+				monomer_counts, val_monomer_ids, monomer_ids))
 
 			return sim_monomer_counts, val_monomer_counts_filtered
 
