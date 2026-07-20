@@ -14,6 +14,7 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -35,7 +36,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
 			only_successful=True)
-		
+
+		# Restrict to strict-successful lineages (completed every generation and
+		# no cell at the 180-min doubling cap).
+		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		cell_paths = sc.filter_cells_to_successful(
+			cell_paths, success['successful_seeds'])
+
 		if len(cell_paths) == 0:
 			print('No valid cell paths found for this variant. Skipping analysis.')
 			return
@@ -121,12 +128,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Free memory
 			del batch_monomer, batch_mRNA
 
-			# Calculate means
-			mean_monomer_counts /= n_cells
-			mean_mRNA_counts /= n_cells
-
-		
-		# import ipdb; ipdb.set_trace()
+		# Calculate means once, after all batches have been accumulated. (This
+		# was previously inside the loop, which divided the running sums by a
+		# growing n_cells every batch and corrupted the means.)
+		mean_monomer_counts /= n_cells
+		mean_mRNA_counts /= n_cells
 
 		# Write data to table
 		with open(os.path.join(plotOutDir, plotOutFileName + '_40_seeds_last_11_gens.tsv'), 'w') as f:

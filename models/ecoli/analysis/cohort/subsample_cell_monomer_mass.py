@@ -29,6 +29,7 @@ import numpy as np
 import csv
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
@@ -54,6 +55,10 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if len(cell_paths) == 0:
 			print('No valid cell paths found for this variant. Skipping analysis.')
 			return
+
+		# Strict-successful lineages (completed every generation and no cell at
+		# the 180-min doubling cap).
+		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
 
 		print('Analyzing %d cells...' % len(cell_paths))
 
@@ -83,7 +88,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if len(cell_paths_per_seed) == 0:
 				continue
 
-			if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
+			if seed not in success['successful_seeds']:
 				continue
 
 			# Load data in batches to avoid passing too many paths to TableReader at once.

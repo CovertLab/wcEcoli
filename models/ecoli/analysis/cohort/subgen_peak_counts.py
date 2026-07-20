@@ -14,6 +14,7 @@ import csv
 
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
     read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -117,17 +118,23 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=SEED_RANGE,
             only_successful=True)
 
+        # Restrict to strict-successful lineages (completed every generation and
+        # no cell at the 180-min doubling cap).
+        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        cell_paths = sc.filter_cells_to_successful(
+            cell_paths, success['successful_seeds'])
+        print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+        if len(cell_paths) == 0:
+            print('No successful-lineage cells found. Skipping.')
+            return
 
-        # should only be capturing the deltas from 0 to >0 transcripts, otherwise tracking transcript by second
+        # Count 0 -> >0 onsets: the number of times a gene's transcript count
+        # rises from zero to non-zero (a "new appearance"). Working on the
+        # boolean presence series makes 0->2 count as one onset and ignores
+        # increases between two non-zero counts (e.g. 5->6).
         def count_peaks(time_series_data):
-            # Convert counts to a boolean array: True if count > 0, False otherwise
-            #is_present = time_series_data > 0
-            # look at all new mRNA appearances
-
-            # Use np.diff to find the difference between adjacent time steps (rows, axis=0).
-            transition_deltas = np.diff(time_series_data.astype(int), axis=0)
-
-            # Count only the '1's (the False -> True transitions) along the time axis (axis=0).
+            is_present = (time_series_data > 0).astype(int)
+            transition_deltas = np.diff(is_present, axis=0)
             on_event_count = (transition_deltas == 1).sum(axis=0)
             return on_event_count
 

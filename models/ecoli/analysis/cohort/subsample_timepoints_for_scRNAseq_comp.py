@@ -14,6 +14,7 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -36,7 +37,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         cell_paths = self.ap.get_cells(
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
             only_successful=True)
-        
+
+        # Strict-successful lineages (completed every generation and no cell at
+        # the 180-min doubling cap).
+        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        # Seed the RNG once for reproducible timepoint subsampling.
+        np.random.seed(0)
+
         # Load from sim_data
         transcription = sim_data.process.transcription
         cistron_data = transcription.cistron_data
@@ -101,7 +108,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             if len(cell_paths_per_seed) == 0:
                 continue
 
-            if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
+            if seed not in success['successful_seeds']:
                 continue
 
             # Load data

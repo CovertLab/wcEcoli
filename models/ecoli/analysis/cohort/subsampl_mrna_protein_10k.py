@@ -14,6 +14,7 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -36,7 +37,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         cell_paths = self.ap.get_cells(
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
             only_successful=True)
-        
+
+        # Strict-successful lineages (completed every generation and no cell at
+        # the 180-min doubling cap).
+        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+
         # Load from sim_data
         transcription = sim_data.process.transcription
         cistron_data = transcription.cistron_data
@@ -114,7 +119,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
                 only_successful=True)
             
-            if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
+            if seed not in success['successful_seeds']:
+                continue
+            if len(cell_paths_per_seed) == 0:
                 continue
 
             # Load data
@@ -147,8 +154,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 remove_first=True)[time_step_rows, mRNA_cistron_indices]
             
             # Get maximum counts of monomers for each gene across all timepoints
+            # (read from this seed's cells, not the whole cohort).
             monomer_counts = read_stacked_columns(
-            cell_paths, 'MonomerCounts', 'monomerCounts', remove_first=True)[time_step_rows, monomer_indexes]
+            cell_paths_per_seed, 'MonomerCounts', 'monomerCounts', remove_first=True)[time_step_rows, monomer_indexes]
 
             # Partial rRNAs count, the model doesn't seem to have just "rRNA cistron counts", get counts for each rRNA gene
             partial_rRNA_cistron_counts = read_stacked_columns(
