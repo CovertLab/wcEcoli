@@ -47,14 +47,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			else np.zeros(n_genes)
 
 		cat = stats['cat']
-		columns = ['gene_name', 'cistron_name', 'protein_name', 'def5_category',
-			'def5_mean', 'ci_lower', 'ci_upper', 'formA_pooled_mean',
-			'p_any_synth_def4', 'max_mRNA_count', 'max_protein_count']
+		# monomer_name is the untrimmed protein id (e.g. FOO-MONOMER[c]);
+		# protein_name is the same with the [c]/[m]... location suffix removed.
+		# (This column subsumes the former id_subgen_monomers_def5.py output.)
+		columns = ['gene_name', 'cistron_name', 'protein_name', 'monomer_name',
+			'def5_category', 'def5_mean', 'ci_lower', 'ci_upper',
+			'formA_pooled_mean', 'p_any_synth_def4', 'max_mRNA_count',
+			'max_protein_count']
 
 		def row(i):
 			return [
-				gene_ids[i], cistron_ids[i], monomer_ids[i][:-3], cat[i],
-				'%.6g' % stats['mean'][i], '%.6g' % stats['ci_low'][i],
+				gene_ids[i], cistron_ids[i], monomer_ids[i][:-3], monomer_ids[i],
+				cat[i], '%.6g' % stats['mean'][i], '%.6g' % stats['ci_low'][i],
 				'%.6g' % stats['ci_high'][i], '%.6g' % clf['formA'][i],
 				'%.6g' % clf['p_any_synth'][i], int(max_mRNA_count[i]),
 				int(max_protein_count[i])]

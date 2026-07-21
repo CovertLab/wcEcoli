@@ -33,6 +33,11 @@ from wholecell.utils import constants
 
 # Skip the first few generations (transient from initial conditions).
 IGNORE_FIRST_N_GENS = 8
+# Default cohort seed range. The sims run 0..127 seeds; scripts pass this to
+# ap.get_cells(seed=...) (absent seeds are tolerated) and then gate on the strict
+# successful-lineage set, so no seed is silently excluded by a too-small range.
+N_SEEDS = 128
+SEED_RANGE = np.arange(0, N_SEEDS)
 # Max simulation length is lengthSec = 3*60*60 s = 180 min; a generation whose
 # doubling time reaches this never divided within the simulation window.
 MAX_DOUBLING_MIN = 180.0
@@ -323,6 +328,64 @@ def pooled_mean(synth_matrix, row_mask=None):
 	if synth_matrix.shape[0] == 0:
 		return np.full(synth_matrix.shape[1], np.nan)
 	return synth_matrix.mean(axis=0)
+
+
+# --- Timepoint-subsampling helpers -----------------------------------------
+
+def subsample_seed_timepoints(cell_paths_per_seed, sample_per_seed):
+	"""Draw up to `sample_per_seed` random timesteps (no replacement) from one
+	lineage's cells and align each sampled timestep to its generation.
+
+	Reads only Main/time. The caller MUST seed numpy's RNG once before the loop
+	over seeds (``np.random.seed(0)``) so the subsample is reproducible; this
+	helper does not reseed. Returns None if the lineage has no timesteps.
+
+	The returned ``time_indices`` are row indices into this seed's
+	``read_stacked_columns(..., remove_first=True)`` output for any per-timestep
+	table (RNACounts, MonomerCounts, Mass, ...), so callers read their own count
+	tables with ``remove_first=True`` and index with ``time_indices``.
+
+	Returns dict:
+	  time_indices     (S,) row indices into remove_first-stacked per-timestep tables
+	  time_steps       (S,) sampled absolute time values (seconds)
+	  gen_start_times  (S,) generation start time (s) for each sampled timestep
+	  gen_index        (S,) index of the containing cell/generation within
+	                   cell_paths_per_seed
+	"""
+	from wholecell.analysis.analysis_tools import read_stacked_columns
+	time = read_stacked_columns(
+		cell_paths_per_seed, 'Main', 'time', remove_first=True).flatten()
+	if time.size == 0:
+		return None
+	gen_starts = read_stacked_columns(
+		cell_paths_per_seed, 'Main', 'time', remove_first=True,
+		fun=lambda x: x[0]).flatten()
+	n = min(sample_per_seed, time.size)
+	idx = np.random.choice(time.size, size=n, replace=False)
+	steps = time[idx]
+	# side='right' minus 1 -> the cell whose start time is <= the sample time,
+	# i.e. the generation containing that timestep (time is monotonic across a
+	# lineage, and gen_starts is increasing).
+	gen_index = np.clip(
+		np.searchsorted(gen_starts, steps, side='right') - 1, 0, None)
+	return {
+		'time_indices': idx,
+		'time_steps': steps,
+		'gen_start_times': gen_starts[gen_index],
+		'gen_index': gen_index,
+		}
+
+
+def collapse_trna_to_aa(charged_counts, uncharged_counts, aa_from_trna):
+	"""Sum charged+uncharged tRNA counts per amino acid.
+
+	`aa_from_trna` is sim_data's transcription.aa_from_trna, a (n_aa, n_trna)
+	0/1 map (pass it as-is, not transposed). `charged_counts`/`uncharged_counts`
+	are (rows, n_trna) in uncharged_trna_names/charged_trna_names order. Returns
+	(rows, n_aa).
+	"""
+	m = aa_from_trna.T
+	return charged_counts @ m + uncharged_counts @ m
 
 
 # --- Raw-extraction TSV IO --------------------------------------------------

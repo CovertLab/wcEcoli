@@ -20,8 +20,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 60)
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
                         'RIBULOKIN-MONOMER[c]',  # araB
@@ -139,12 +139,22 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             return on_event_count
 
         
-        cistron_peaks_per_gen_full = read_stacked_columns(
-            cell_paths, 
-            'RNACounts', 
-            'mRNA_cistron_counts',
-            ignore_exception=True, 
-            fun=count_peaks)[:, mRNA_ids_indices]
+        # Read one cell at a time so each onset-count row stays paired with its
+        # own cell path. (A single read_stacked_columns(ignore_exception=True)
+        # call silently DROPS unreadable cells, which would shift every later
+        # row off its cell_id label and eventually IndexError.)
+        peak_rows = []
+        kept_cell_ids = []
+        for cell_path in cell_paths:
+            try:
+                cell_peaks = read_stacked_columns(
+                    [cell_path], 'RNACounts', 'mRNA_cistron_counts',
+                    fun=count_peaks)
+            except Exception as e:
+                print('  Warning: could not read %s: %s' % (cell_path, e))
+                continue
+            peak_rows.append(cell_peaks[0][mRNA_ids_indices])
+            kept_cell_ids.append(cell_path)
 
         tabel_cols = ['cell_id'] + monomers_of_interest
         # Write data to table so that the first col is the cell id and the rest are the counts per monomer
@@ -152,9 +162,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             writer = csv.writer(f, delimiter='\t')
             writer.writerow(tabel_cols)
 
-            for i in np.arange(0, len(cell_paths)):
-                cell_id = cell_paths[i]
-                counts_row = cistron_peaks_per_gen_full[i]
+            for cell_id, counts_row in zip(kept_cell_ids, peak_rows):
                 full_row = [cell_id] + counts_row.tolist()
                 writer.writerow(full_row)
 

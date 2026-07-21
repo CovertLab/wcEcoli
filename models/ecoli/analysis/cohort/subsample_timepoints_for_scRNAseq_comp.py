@@ -20,8 +20,8 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 128)
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 TIMEPOINTS_TO_SAMPLE = 10000
 SAMPLE_PER_SEED = TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)
 
@@ -51,7 +51,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         cistron_ids = cistron_data['id']
         uncharged_trna_names = transcription.uncharged_trna_names
         charged_trna_names = transcription.charged_trna_names
-        aa_from_trna = transcription.aa_from_trna.T # to map trnas to amino acids, but not sure what the values represent
+        aa_from_trna = transcription.aa_from_trna  # (n_aa, n_trna) 0/1 map; sc.collapse_trna_to_aa transposes it
         molecule_groups = sim_data.molecule_groups
         aa_ids = molecule_groups.amino_acids
 
@@ -111,36 +111,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             if seed not in success['successful_seeds']:
                 continue
 
-            # Load data
-            time = read_stacked_columns(cell_paths_per_seed, 'Main', 'time', remove_first=True).flatten()
-
-            if len(time) == 0:
+            # Draw random timepoints and align them to generation starts (shared
+            # helper: clamps the draw to the available timesteps).
+            sample = sc.subsample_seed_timepoints(cell_paths_per_seed, SAMPLE_PER_SEED)
+            if sample is None:
                 continue
-
-            gen_start_times = read_stacked_columns(cell_paths_per_seed, 'Main', 'time', remove_first=True, fun=lambda x: x[0]).flatten()
-            actual_sample_size = min(SAMPLE_PER_SEED, len(time))
-
-            if actual_sample_size == 0:
-                continue
-            # Select 10,000 unique random time steps to represent 10,000 single cells
-            
-            random_time_indices = np.random.choice(
-                a=len(time),
-                size=actual_sample_size,         
-                replace=False # Ensures that each time step is selected only once
-            )
-
-            time_step_rows = random_time_indices[:, np.newaxis]  # Shape (10000, 1)
-            # Use the selected indices to get the actual time step values
-            random_time_steps = time[random_time_indices]
-            # figure out how to aling this with corresponding generation start times
-            indices_gen_after = np.searchsorted(
-                a=gen_start_times,
-                v=random_time_steps,
-                side='right'
-                )
-            indices_gen_start = np.clip(indices_gen_after - 1, a_min=0, a_max=None)
-            aligned_start_times = gen_start_times[indices_gen_start]
+            random_time_indices = sample['time_indices']
+            random_time_steps = sample['time_steps']
+            aligned_start_times = sample['gen_start_times']
+            time_step_rows = random_time_indices[:, np.newaxis]
 
             # Get counts of mRNAs for each gene across random timepoints
             mRNA_counts = read_stacked_columns(
@@ -149,14 +128,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             # Partial rRNAs count, the model doesn't seem to have just "rRNA cistron counts", get counts for each rRNA gene
             partial_rRNA_cistron_counts = read_stacked_columns(
                 cell_paths_per_seed,'RNACounts', 'partial_rRNA_cistron_counts', remove_first=True)[random_time_indices]
-            
+
             # Get counts of tRNAs by amino acid type
             (uncharged_trna_counts, charged_trna_counts, ) = read_stacked_bulk_molecules(
                 cell_paths_per_seed, (uncharged_trna_names, charged_trna_names, ),
                 remove_first=True)
-            charged_trna_counts = charged_trna_counts[random_time_indices] @ aa_from_trna # matrix multiply to get counts per amino acid
-            uncharged_trna_counts = uncharged_trna_counts[random_time_indices] @ aa_from_trna
-            full_trna_counts = charged_trna_counts + uncharged_trna_counts
+            full_trna_counts = sc.collapse_trna_to_aa(
+                charged_trna_counts[random_time_indices],
+                uncharged_trna_counts[random_time_indices], aa_from_trna)
             total_seed_ids = total_seed_ids + [seed] * len(random_time_steps)
             total_random_time_steps = total_random_time_steps + random_time_steps.tolist()
             total_gen_start_times = total_gen_start_times + aligned_start_times.tolist()

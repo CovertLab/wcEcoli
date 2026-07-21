@@ -271,10 +271,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		unknown = {'r': 0, 'g': 0, 'b': 0}
 		resistance = {'r': 0, 'g': 0, 'b': 0}
 		for frameID, function_ in geneFunctions.items():
-			try:
-				i = np.where([frameID in x for x in mRNA_ids_ordered])[0][0]
-			except IndexError:
+			# geneFunctions is keyed by gene frame id (e.g. EG10001); the mRNA
+			# cistron id is that frame id + '_RNA'. Match exactly (like 5E) rather
+			# than by substring, which could false-match a longer variable-length
+			# id (e.g. G7263 inside G72631_RNA).
+			matches = np.where(mRNA_ids_ordered == frameID + '_RNA')[0]
+			if matches.size == 0:
 				continue
+			i = matches[0]
 			key = self._classify_mean(def5MeanOrdered[i])
 			if function_ in ['Unknown function', 'Unclear/under-characterized']:
 				unknown[key] += 1

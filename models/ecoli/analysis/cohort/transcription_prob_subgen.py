@@ -21,8 +21,8 @@ from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 60)
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 BATCH_SIZE = 100  # Process cells in batches to avoid memory issues
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):

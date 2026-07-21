@@ -31,7 +31,6 @@ import pickle
 import os
 import csv
 import json
-import subprocess
 from datetime import datetime
 
 import numpy as np
@@ -42,124 +41,31 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import constants
 
 
-# Skip the first few generations (transient from initial conditions).
-IGNORE_FIRST_N_GENS = 8
-# Max simulation length is lengthSec = 3*60*60 s = 180 min; a generation whose
-# doubling time reaches this never divided within the simulation window.
-MAX_DOUBLING_MIN = 180.0
-DOUBLING_AT_MAX_TOL = 0.01  # treat >= 179.99 min as "hit the cap"
-# 95% confidence interval from the standard error of the mean (normal approx;
-# t vs z is negligible at ~100 lineages).
-CI_Z = 1.96
-CONFIDENCE = 0.95
+# All shared constants and the Form B classifier now live in subgen_common, so
+# this from-scratch reference implementation and the raw-extraction pipeline
+# classify genes identically and cannot drift. The module-level aliases keep the
+# local names used throughout this file.
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+MAX_DOUBLING_MIN = sc.MAX_DOUBLING_MIN
+DOUBLING_AT_MAX_TOL = sc.DOUBLING_AT_MAX_TOL
+CI_Z = sc.CI_Z
+CONFIDENCE = sc.CONFIDENCE
+SYNTH_TABLE = sc.SYNTH_TABLE
+SYNTH_COLUMN = sc.SYNTH_COLUMN
+CATEGORIES = sc.CATEGORIES
+PALETTE = sc.PALETTE
+CAT_LABEL = sc.CAT_LABEL
+INK, MUTED, GRID, SURF = sc.INK, sc.MUTED, sc.GRID, sc.SURF
 
-SYNTH_TABLE = 'TranscriptElongationListener'
-SYNTH_COLUMN = 'countRnaCistronSynthesized'
-
-CATEGORIES = ['subgen', 'possibly_subgen', 'not_subgen', 'never_expressed']
-
-# Validated categorical palette (dataviz validator, light + dark). Grey for the
-# never-expressed null category is a deliberate neutral, always shown separately
-# and directly labeled.
-PALETTE = {
-	'subgen': '#1667B8',
-	'possibly_subgen': '#109C9C',
-	'not_subgen': '#C7362F',
-	'never_expressed': '#8A828C',
-	}
-CAT_LABEL = {
-	'subgen': 'Subgenerational (CI < 1)',
-	'possibly_subgen': 'Possibly subgen (CI includes 1)',
-	'not_subgen': 'Not subgen (CI > 1)',
-	'never_expressed': 'Never expressed (mean = 0)',
-	}
-INK = '#1b2530'
-MUTED = '#5b6672'
-GRID = '#e4e8ec'
-SURF = '#fcfcfb'
-
-
-def _parse_cell_id(cell_path):
-	"""Split a cell path into (seed_int, generation_int).
-
-	Cell paths look like .../<variant>/<seed>/generation_<gen>/<daughter>.
-	"""
-	parts = cell_path.rstrip(os.sep).split(os.sep)
-	for i, part in enumerate(parts):
-		if part.startswith('generation_'):
-			seed = int(parts[i - 1]) if i > 0 and parts[i - 1].isdigit() else -1
-			return seed, int(part.split('_')[1])
-	return -1, -1
-
-
-def _git_info(repo_dir):
-	"""Return the current git hash, branch, and dirty flag for repo_dir."""
-	def run(args):
-		return subprocess.check_output(
-			['git', '-C', repo_dir] + args,
-			stderr=subprocess.DEVNULL).decode().strip()
-	try:
-		return {
-			'git_hash': run(['rev-parse', 'HEAD']),
-			'git_branch': run(['rev-parse', '--abbrev-ref', 'HEAD']),
-			'git_dirty': bool(run(['status', '--porcelain'])),
-			}
-	except Exception as e:
-		return {'git_hash': None, 'git_branch': None, 'git_dirty': None,
-			'error': str(e)}
-
-
-def _load_sim_metadata(variant_dir):
-	"""Load the simulation's metadata.json (git hash, run time, options)."""
-	candidates = [
-		os.path.join(os.path.dirname(variant_dir),
-			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
-		os.path.join(variant_dir,
-			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
-		]
-	for path in candidates:
-		if os.path.isfile(path):
-			with open(path) as f:
-				return path, json.load(f)
-	return None, {}
-
-
-def _classify(mean, ci_low, ci_high):
-	"""Assign each gene to a subgenerational category from its mean and CI."""
-	n = len(mean)
-	out = np.empty(n, dtype=object)
-	for i in range(n):
-		if mean[i] == 0:
-			out[i] = 'never_expressed'
-		elif ci_high[i] < 1:
-			out[i] = 'subgen'
-		elif ci_low[i] > 1:
-			out[i] = 'not_subgen'
-		else:
-			out[i] = 'possibly_subgen'
-	return out
-
-
-def _stats(lambda_matrix, row_indices, n_genes):
-	"""Per-gene mean/std/se/CI/category over the selected lineage rows."""
-	rows = lambda_matrix[row_indices, :]
-	n = rows.shape[0]
-	mean = rows.mean(axis=0) if n else np.full(n_genes, np.nan)
-	std = rows.std(axis=0, ddof=1) if n >= 2 else np.zeros(n_genes)
-	se = std / np.sqrt(n) if n else np.full(n_genes, np.nan)
-	ci_low = np.maximum(0.0, mean - CI_Z * se)
-	ci_high = mean + CI_Z * se
-	cat = _classify(mean, ci_low, ci_high)
-	return {'n': n, 'mean': mean, 'std': std, 'se': se,
-		'ci_low': ci_low, 'ci_high': ci_high, 'cat': cat}
-
-
-def _category_counts(cat):
-	return {c: int(np.sum(cat == c)) for c in CATEGORIES}
+# Thin aliases onto the canonical implementations in subgen_common.
+_stats = sc.classify_def5_ci
+_category_counts = sc.category_counts
+_git_info = sc.git_info
+_load_sim_metadata = sc.load_sim_metadata
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -175,23 +81,24 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 
 		# --- Gene set: protein-coding mRNA cistrons, in cistron order ---
-		cistron_data = sim_data.process.transcription.cistron_data
-		cistron_id_to_protein_id = {
-			p['cistron_id']: p['id']
-			for p in sim_data.process.translation.monomer_data}
-		cistron_id_to_gene_id = {
-			c['id']: c['gene_id'] for c in cistron_data}
-		mRNA_cistron_ids = [
-			c for c in cistron_data['id'] if c in cistron_id_to_protein_id]
-		monomer_ids = [cistron_id_to_protein_id[c] for c in mRNA_cistron_ids]
-		gene_ids = [cistron_id_to_gene_id[c] for c in mRNA_cistron_ids]
+		mRNA_cistron_ids, monomer_ids, gene_ids = sc.get_mrna_gene_set(sim_data)
 		n_genes = len(mRNA_cistron_ids)
 
-		seeds = sorted(int(s) for s in self.ap.get_seeds())
 		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
 		total_init_sims = sim_metadata.get('total_init_sims')
-		all_seed_ids = sorted(set(seeds) | set(
-			range(total_init_sims))) if total_init_sims else list(seeds)
+
+		# Strict successful-lineage classification (the canonical implementation
+		# shared with every other subgen analysis).
+		success = sc.compute_lineage_success(
+			self.ap, n_generation, total_init_sims=total_init_sims)
+		seeds = success['seeds']
+		all_seed_ids = success['all_seed_ids']
+		doubling = success['doubling']
+		successful_gens = success['successful_gens']
+		n_at_180 = success['n_at_180']
+		gens_at_180 = success['gens_at_180']
+		completed_all = success['completed_all']
+		in_successful = success['in_successful']
 		print('Seeds present: %d ; generations: %d ; genes: %d'
 			% (len(seeds), n_generation, n_genes))
 
@@ -205,37 +112,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				'listener was added to populate definition 5.'
 				% (SYNTH_TABLE, SYNTH_COLUMN))
 
-		# --- Per-seed pass: doubling times, successful gens, per-lineage lambda ---
-		doubling = {s: -np.ones(n_generation) for s in all_seed_ids}
-		successful_gens = {s: set() for s in all_seed_ids}
-		n_at_180 = {s: 0 for s in all_seed_ids}
-		gens_at_180 = {s: [] for s in all_seed_ids}
+		# --- Per-lineage definition 5: mean completed transcripts per cell ---
 		lineage_seeds = []
 		lambda_rows = []
-
-		for s in seeds:
-			# Doubling time for every generation that produced a directory.
-			for cell_path in self.ap.get_cells(seed=[s], only_successful=False):
-				_, gen = _parse_cell_id(cell_path)
-				if 0 <= gen < n_generation:
-					try:
-						time = TableReader(os.path.join(cell_path, 'simOut', 'Main')
-							).readColumn('time')
-						doubling[s][gen] = (time[-1] - time[0]) / 60.0
-					except Exception:
-						pass
-			at_max = np.where(
-				doubling[s] >= MAX_DOUBLING_MIN - DOUBLING_AT_MAX_TOL)[0]
-			n_at_180[s] = int(at_max.size)
-			gens_at_180[s] = at_max.tolist()
-
-			# Which generations completed successfully (for the completeness check).
-			successful_gens[s] = set(
-				_parse_cell_id(cp)[1]
-				for cp in self.ap.get_cells(seed=[s], only_successful=True))
-
-			# Per-lineage definition 5: mean completed transcripts per cell.
-			if has_synth:
+		if has_synth:
+			for s in seeds:
 				included = self.ap.get_cells(
 					seed=[s],
 					generation=np.arange(IGNORE_FIRST_N_GENS, n_generation),
@@ -253,12 +134,6 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				if n_cells > 0:
 					lineage_seeds.append(s)
 					lambda_rows.append(accum / n_cells)
-
-		# --- Lineage filtering ---
-		def completed_all(s):
-			return set(range(n_generation)).issubset(successful_gens[s])
-		in_successful = {
-			s: (completed_all(s) and n_at_180[s] == 0) for s in all_seed_ids}
 
 		# --- Aggregate to per-gene statistics (all and successful) ---
 		if has_synth and lineage_seeds:
@@ -314,23 +189,21 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	# ------------------------------------------------------------------ helpers
 
 	def _synth_index_map(self, seeds, n_generation, mRNA_cistron_ids):
-		"""Find a cell with the def-5 column and map genes to its cistron order."""
+		"""Find a cell with the def-5 column and map genes to its cistron order.
+
+		Tries cells until one reads successfully; a single unreadable cell no
+		longer disables Definition 5 for the whole cohort.
+		"""
 		for s in seeds:
 			cells = self.ap.get_cells(
 				seed=[s],
 				generation=np.arange(IGNORE_FIRST_N_GENS, n_generation),
 				only_successful=True)
 			for cell_path in cells:
-				try:
-					reader = TableReader(
-						os.path.join(cell_path, 'simOut', SYNTH_TABLE))
-					full_ids = reader.readAttribute('cistron_ids')
-					reader.readColumn(SYNTH_COLUMN)
-					id_to_index = {cid: i for i, cid in enumerate(full_ids)}
-					return True, np.array([
-						id_to_index[c] for c in mRNA_cistron_ids])
-				except Exception:
-					return False, None
+				ok, idx = sc.cistron_index_map(
+					cell_path, SYNTH_TABLE, mRNA_cistron_ids)
+				if ok:
+					return True, idx
 		return False, None
 
 	def _write_pergene(self, path, st, gene_ids, cistron_ids, monomer_ids,
@@ -379,7 +252,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				gens = successful_gens[s]
 				valid = doubling[s][doubling[s] >= 0]
 				max_dt = float(valid.max()) if valid.size else -1
-				comp = completed_all(s)
+				comp = completed_all[s]
 				passed180 = n_at_180[s] == 0 and (s in seeds)
 				if s not in seeds and not gens:
 					reason = 'never ran'

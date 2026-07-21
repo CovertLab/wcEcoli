@@ -33,8 +33,8 @@ from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 128)
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 TIMEPOINTS_TO_SAMPLE = 10000
 SAMPLE_PER_SEED = TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)
 BATCH_SIZE = 100  # max cell paths passed to TableReader at once
@@ -80,6 +80,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		total_monomer_counts = np.empty((0, len(monomer_ids)), dtype=np.float64)
 		total_dry_mass = []
 
+		# Seed the RNG once (not per seed) so each lineage draws independently.
+		np.random.seed(0)
 		for seed in SEED_RANGE:
 			cell_paths_per_seed = self.ap.get_cells(
 				generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
@@ -91,63 +93,39 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			if seed not in success['successful_seeds']:
 				continue
 
-			# Load data in batches to avoid passing too many paths to TableReader at once.
-			# Record per-batch row counts so sampled indices can be mapped back to
-			# specific batches when reading MonomerCounts and Mass.
-			time_parts = []
-			gen_start_parts = []
-			for b in range(0, len(cell_paths_per_seed), BATCH_SIZE):
-				batch = cell_paths_per_seed[b:b + BATCH_SIZE]
-				time_parts.append(
-					read_stacked_columns(batch, 'Main', 'time', remove_first=True).flatten())
-				gen_start_parts.append(
-					read_stacked_columns(batch, 'Main', 'time', remove_first=True,
-						fun=lambda x: x[0]).flatten())
-			time = np.concatenate(time_parts)
-			batch_sizes = [len(p) for p in time_parts]
-			del time_parts
-			gen_start_times = np.concatenate(gen_start_parts)
-			del gen_start_parts
-
-			if len(time) == 0:
+			# Draw random timepoints and align them to generation starts (shared
+			# helper reads Main/time once; clamps the draw to available timesteps).
+			sample = sc.subsample_seed_timepoints(cell_paths_per_seed, SAMPLE_PER_SEED)
+			if sample is None:
 				continue
+			random_time_indices = sample['time_indices']
+			random_time_steps = sample['time_steps']
+			aligned_start_times = sample['gen_start_times']
+			actual_sample_size = len(random_time_indices)
 
-			actual_sample_size = min(SAMPLE_PER_SEED, len(time))
-
-			np.random.seed(0)
-			random_time_indices = np.random.choice(
-				a=len(time),
-				size=actual_sample_size,
-				replace=False  # Ensures that each time step is selected only once
-			)
-
-			random_time_steps = time[random_time_indices]
-			# figure out generation start times for each random time step
-			indices_gen_after = np.searchsorted(
-				a=gen_start_times,
-				v=random_time_steps,
-				side='right'
-				)
-			indices_gen_start = np.clip(indices_gen_after - 1, a_min=0, a_max=None)
-			aligned_start_times = gen_start_times[indices_gen_start]
-
-			# Map each sampled time step to its generation number
+			# Map each sampled time step to its generation number.
 			gen_indices_per_cell = [
 				int(os.path.basename(os.path.dirname(cp))[-6:])
 				for cp in cell_paths_per_seed
 				]
-			generation_ids = np.array(gen_indices_per_cell)[indices_gen_start]
+			generation_ids = np.array(gen_indices_per_cell)[sample['gen_index']]
 
-			# Read monomer counts and dry mass in the same batches.
-			# Skip batches that contain none of the sampled time steps.
-			cumulative = np.cumsum([0] + batch_sizes)
+			# Per-cell row counts (remove_first) give the row offsets used to map
+			# global sampled indices back into per-batch reads of the heavy tables.
+			per_cell_rows = read_stacked_columns(
+				cell_paths_per_seed, 'Main', 'time', remove_first=True,
+				fun=lambda x: len(x)).flatten().astype(int)
+			cell_row_offsets = np.concatenate([[0], np.cumsum(per_cell_rows)])
+
+			# Read monomer counts and dry mass in batches to bound memory; only
+			# read a batch if it contains at least one sampled timestep.
 			monomer_counts_sampled = np.empty((actual_sample_size, len(monomer_ids)))
 			dry_mass_sampled = np.empty(actual_sample_size)
 
-			for b_num, b in enumerate(range(0, len(cell_paths_per_seed), BATCH_SIZE)):
+			for b in range(0, len(cell_paths_per_seed), BATCH_SIZE):
 				batch = cell_paths_per_seed[b:b + BATCH_SIZE]
-				row_start = cumulative[b_num]
-				row_end = cumulative[b_num + 1]
+				row_start = cell_row_offsets[b]
+				row_end = cell_row_offsets[b + len(batch)]
 
 				mask = (random_time_indices >= row_start) & (random_time_indices < row_end)
 				if not mask.any():
