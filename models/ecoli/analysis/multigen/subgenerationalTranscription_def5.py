@@ -50,7 +50,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		if 0 not in self.ap._path_data['seed']:
 			print('Skipping -- only runs for seed 0')
 			return
-		allDir = self.ap.get_cells(seed=[0])
+		# only_successful=True drops generations that did not finish dividing
+		# (and therefore may be missing listener tables), so we never try to read
+		# a simOut dir for an incomplete generation.
+		allDir = self.ap.get_cells(seed=[0], only_successful=True)
 		if len(allDir) <= 1:
 			print('Skipping -- only runs for multigen')
 			return
@@ -91,18 +94,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		for gen, simDir in enumerate(freqDir):
 			simOutDir = os.path.join(simDir, 'simOut')
 
-			synth = TableReader(os.path.join(simOutDir, sc.SYNTH_TABLE)
-				).readColumn(sc.SYNTH_COLUMN)
-			# Column order here is the full cistron_ids; subset to mRNA cistrons.
-			synth = synth[:, mRNA_cistron_indexes]
+			# Read this generation's tables together; if any is missing or
+			# unreadable (e.g. a generation that divided but did not write every
+			# listener), skip the whole generation so the per-gen arrays stay
+			# aligned rather than crashing the plot.
+			try:
+				synth = TableReader(os.path.join(simOutDir, sc.SYNTH_TABLE)
+					).readColumn(sc.SYNTH_COLUMN)
+				# Column order here is the full cistron_ids; subset to mRNAs.
+				synth = synth[:, mRNA_cistron_indexes]
+				synth_prob = TableReader(os.path.join(simOutDir, 'RnaSynthProb')
+					).readColumn('actual_rna_synth_prob_per_cistron'
+						)[:, mRNA_cistron_indexes]
+			except Exception as e:
+				print('  Skipping generation %d (%s): %s' % (gen, simDir, e))
+				continue
+
 			synthSum = synth.sum(axis=0)
 			transcribedBool.append(synthSum > 0)
 			synthPerGen.append(synthSum)
-
-			rnaSynthProb = TableReader(os.path.join(simOutDir, 'RnaSynthProb'))
-			simulatedSynthProbs.append(np.mean(
-				rnaSynthProb.readColumn('actual_rna_synth_prob_per_cistron'
-					)[:, mRNA_cistron_indexes], axis=0))
+			simulatedSynthProbs.append(np.mean(synth_prob, axis=0))
 
 			if gen < RASTER_N_GENS:
 				main_reader = TableReader(os.path.join(simOutDir, 'Main'))
