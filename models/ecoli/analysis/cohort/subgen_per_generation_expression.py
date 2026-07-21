@@ -13,8 +13,12 @@ expressed := (sum > 0). This reads the pre-computed raw extraction rather than
 simulation output, so run subgen_raw_extract.py first.
 
 Outputs (to plotOutDir, prefixed by plotOutFileName):
-  <name>.tsv          long: seed, generation, gene_name, cistron_id,
-                      expressed (0/1), synth_count.
+  <name>_expressed.tsv    wide: seed, generation, then one column per gene
+                          (header = gene_id) = 1 if the gene had >= 1 completed
+                          transcript that generation, else 0. One row per
+                          successful-lineage (seed, generation).
+  <name>_synth_count.tsv  same shape/row order as _expressed.tsv, but each gene
+                          column holds the raw completed-transcript count S(c,g).
   <name>_metrics.tsv  per-gene summary across successful lineages/generations:
                       n_generations, n_generations_expressed, frac_expressed,
                       n_seeds, n_seeds_ever_expressed.
@@ -62,21 +66,24 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		prefix = os.path.join(plotOutDir, plotOutFileName)
 
-		# --- Long per-(seed, generation, gene) table ---
-		long_path = prefix + '.tsv'
-		print('Writing %s (%d rows)' % (long_path, n_cells * n_genes))
-		with open(long_path, 'w') as f:
-			w = csv.writer(f, delimiter='\t')
-			w.writerow(['seed', 'generation', 'gene_name', 'cistron_id',
-				'expressed', 'synth_count'])
-			for ci in range(n_cells):
-				seed = int(seeds[ci])
-				gen = int(generations[ci])
-				exp_row = expressed[ci]
-				synth_row = synth[ci]
-				for gi in range(n_genes):
-					w.writerow([seed, gen, gene_ids[gi], cistron_ids[gi],
-						int(exp_row[gi]), int(synth_row[gi])])
+		# --- Two wide per-(seed, generation) tables: seed, generation, then one
+		# column per gene (header = gene_id). One is the binary expressed flag,
+		# the other the raw completed-transcript count; same shape and row order.
+		meta_header = ['seed', 'generation']
+		meta_rows = [[int(seeds[ci]), int(generations[ci])]
+			for ci in range(n_cells)]
+
+		expressed_path = prefix + '_expressed.tsv'
+		print('Writing %s (%d rows x %d genes)'
+			% (expressed_path, n_cells, n_genes))
+		sc.write_per_cell_matrix(expressed_path, meta_header, meta_rows,
+			gene_ids, expressed.astype(np.int64), value_fmt=None)
+
+		synth_path = prefix + '_synth_count.tsv'
+		print('Writing %s (%d rows x %d genes)'
+			% (synth_path, n_cells, n_genes))
+		sc.write_per_cell_matrix(synth_path, meta_header, meta_rows,
+			gene_ids, synth, value_fmt=None)
 
 		# --- Per-gene metrics across successful lineages/generations ---
 		n_gens_expressed = expressed.sum(axis=0)             # over all cells
