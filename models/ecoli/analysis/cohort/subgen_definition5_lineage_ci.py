@@ -45,7 +45,7 @@ from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.io.tablereader import TableReader
 
 
-# All shared constants and the Form B classifier now live in subgen_common, so
+# All shared constants and the def5_CI classifier now live in subgen_common, so
 # this from-scratch reference implementation and the raw-extraction pipeline
 # classify genes identically and cannot drift. The module-level aliases keep the
 # local names used throughout this file.

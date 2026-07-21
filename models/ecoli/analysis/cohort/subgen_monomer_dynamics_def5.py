@@ -2,7 +2,7 @@
 Definition-5 rewrite of subgen_monomer_dynamics.py.
 
 Plots mRNA and monomer count dynamics (per generation) for subgenerational
-genes, but selects those genes from the canonical Definition-5 Form B
+genes, but selects those genes from the canonical Definition-5 def5_CI
 classification (subgen iff the 95% CI is below 1 completed transcript/gen across
 successful lineages) instead of the original hardcoded curated list.
 

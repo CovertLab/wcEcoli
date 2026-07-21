@@ -10,8 +10,8 @@ provides the canonical implementation of:
   * the gene set (protein-coding mRNA cistrons, in cistron order),
   * the STRICT "successful lineage" filter (completed every generation AND no
     cell hit the 180-min doubling cap),
-  * Definition 5 classifiers -- Form B (per-lineage confidence interval, the
-    canonical subgen label) and Form A (pooled-cell threshold),
+  * Definition 5 classifiers -- def5_CI (per-lineage confidence interval, the
+    canonical subgen label) and def5 (pooled-cell threshold),
   * small TSV IO helpers for the raw-extraction pipeline.
 
 Definition 5 is the mean number of *completed* mRNA transcripts per generation,
@@ -247,7 +247,7 @@ def filter_cells_to_successful(cell_paths, successful_seeds):
 # --- Definition-5 classifiers ----------------------------------------------
 
 def _classify_ci(mean, ci_low, ci_high):
-	"""Assign each gene to a Def-5 category from its mean and CI (Form B)."""
+	"""Assign each gene to a Def-5 category from its mean and CI (def5_CI)."""
 	n = len(mean)
 	out = np.empty(n, dtype=object)
 	for i in range(n):
@@ -263,7 +263,7 @@ def _classify_ci(mean, ci_low, ci_high):
 
 
 def classify_def5_ci(lambda_matrix, row_indices, n_genes):
-	"""Form B: per-gene mean/std/se/CI/category over selected lineage rows.
+	"""def5_CI: per-gene mean/std/se/CI/category over selected lineage rows.
 
 	`lambda_matrix` is (n_lineages, n_genes) of per-lineage Def-5 rates.
 	`row_indices` selects which lineage rows to include (e.g. successful ones).
@@ -288,7 +288,7 @@ def category_counts(cat):
 
 
 def build_lineage_lambda(seeds_arr, synth_matrix, restrict_seeds=None):
-	"""Collapse a per-cell synth matrix to per-lineage Def-5 rates (Form B input).
+	"""Collapse a per-cell synth matrix to per-lineage Def-5 rates (def5_CI input).
 
 	`seeds_arr` is (n_cells,) of seed ints; `synth_matrix` is (n_cells, n_genes)
 	of completed-transcript counts per cell (already burned-in). For each seed,
@@ -313,7 +313,7 @@ def build_lineage_lambda(seeds_arr, synth_matrix, restrict_seeds=None):
 
 
 def classify_def5_threshold(values, threshold=1.0):
-	"""Form A: pooled-cell subgen mask, subgen iff 0 < value < threshold.
+	"""def5: pooled-cell subgen mask, subgen iff 0 < value < threshold.
 
 	`values` is the per-gene pooled mean of completed transcripts per cell.
 	"""
@@ -322,7 +322,7 @@ def classify_def5_threshold(values, threshold=1.0):
 
 
 def pooled_mean(synth_matrix, row_mask=None):
-	"""Form A pooled value: cell-weighted mean completed transcripts per gene."""
+	"""def5 pooled value: cell-weighted mean completed transcripts per gene."""
 	if row_mask is not None:
 		synth_matrix = synth_matrix[row_mask]
 	if synth_matrix.shape[0] == 0:
@@ -489,18 +489,18 @@ def load_raw_max(plot_out_dir, which):
 
 
 def canonical_def5_classification(plot_out_dir):
-	"""Canonical subgen classification (Form B) from the raw extraction.
+	"""Canonical subgen classification (def5_CI) from the raw extraction.
 
 	Restricts to strict-successful lineages, collapses to per-lineage Def-5
 	rates, and classifies each gene by its 95% CI vs 1 transcript/gen. Also
-	returns Form A (pooled cell-weighted mean over successful cells) and
+	returns def5 (pooled cell-weighted mean over successful cells) and
 	Definition 4 (fraction of successful cells with >= 1 completed transcript).
 
 	Returns a dict:
 	  gene_ids        column key (list)
-	  stats           Form B dict (mean/std/se/ci_low/ci_high/cat/n) -- 'cat' is
+	  stats           def5_CI dict (mean/std/se/ci_low/ci_high/cat/n) -- 'cat' is
 	                  the canonical per-gene subgen label
-	  formA           per-gene pooled mean completed transcripts (Form A)
+	  def5            per-gene pooled mean completed transcripts (def5)
 	  p_any_synth     per-gene Definition-4 probability
 	  n_lineages      number of successful lineages used
 	  lineage_seeds   the successful seeds used, in row order
@@ -514,14 +514,14 @@ def canonical_def5_classification(plot_out_dir):
 		seeds, synth, restrict_seeds=successful_seeds)
 	stats = classify_def5_ci(
 		lambda_matrix, np.arange(len(lineage_seeds)), n_genes)
-	formA = pooled_mean(synth, row_mask=is_successful)
+	def5 = pooled_mean(synth, row_mask=is_successful)
 	succ_synth = synth[is_successful]
 	p_any_synth = (succ_synth > 0).mean(axis=0) if succ_synth.shape[0] \
 		else np.full(n_genes, np.nan)
 	return {
 		'gene_ids': gene_ids,
 		'stats': stats,
-		'formA': formA,
+		'def5': def5,
 		'p_any_synth': p_any_synth,
 		'n_lineages': len(lineage_seeds),
 		'lineage_seeds': lineage_seeds,

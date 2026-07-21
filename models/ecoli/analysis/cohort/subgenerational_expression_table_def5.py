@@ -2,7 +2,7 @@
 Definition-5 rewrite of subgenerational_expression_table.py.
 
 Classifies genes as subgenerational using Definition 5 (mean completed mRNA
-transcripts per generation), with the canonical Form B rule: a gene is `subgen`
+transcripts per generation), with the canonical def5_CI rule: a gene is `subgen`
 iff its 95% confidence interval (estimated across successful lineages) is
 entirely below 1 transcript per generation. This replaces the original's
 mRNA-presence-frequency definition and fixes its read-failure denominator bug by
@@ -11,7 +11,7 @@ consuming the consistent per-cell matrix from the raw extraction.
 Reads the pre-computed raw extraction (run subgen_raw_extract.py first). Writes:
   <name>.tsv          all protein-coding genes with their Def-5 classification
                       and descriptive copy numbers.
-  <name>_subgen.tsv   the subset classified `subgen` (Form B).
+  <name>_subgen.tsv   the subset classified `subgen` (def5_CI).
 """
 
 import csv
@@ -51,15 +51,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# protein_name is the same with the [c]/[m]... location suffix removed.
 		# (This column subsumes the former id_subgen_monomers_def5.py output.)
 		columns = ['gene_name', 'cistron_name', 'protein_name', 'monomer_name',
-			'def5_category', 'def5_mean', 'ci_lower', 'ci_upper',
-			'formA_pooled_mean', 'p_any_synth_def4', 'max_mRNA_count',
+			'def5_CI_category', 'def5_CI_mean', 'ci_lower', 'ci_upper',
+			'def5_pooled_mean', 'p_any_synth_def4', 'max_mRNA_count',
 			'max_protein_count']
 
 		def row(i):
 			return [
 				gene_ids[i], cistron_ids[i], monomer_ids[i][:-3], monomer_ids[i],
 				cat[i], '%.6g' % stats['mean'][i], '%.6g' % stats['ci_low'][i],
-				'%.6g' % stats['ci_high'][i], '%.6g' % clf['formA'][i],
+				'%.6g' % stats['ci_high'][i], '%.6g' % clf['def5'][i],
 				'%.6g' % clf['p_any_synth'][i], int(max_mRNA_count[i]),
 				int(max_protein_count[i])]
 

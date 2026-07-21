@@ -6,7 +6,7 @@ BulkMolecules counts. This variant produces the intended frequency figure using
 Definition 5: for every protein-coding gene it plots the Definition-4 expression
 frequency (fraction of successful cell-generations with >= 1 completed
 transcript) against the gene's rank by mean completed transcripts per
-generation, colored by the canonical Form B subgen category. A companion
+generation, colored by the canonical def5_CI subgen category. A companion
 histogram shows the distribution of the per-gene Def-5 mean.
 
 Reads the pre-computed raw extraction (run subgen_raw_extract.py first).

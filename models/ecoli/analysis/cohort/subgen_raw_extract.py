@@ -4,7 +4,7 @@ Single-pass raw extraction for the subgenerational-expression pipeline.
 Reads each cell's simOut EXACTLY ONCE and persists the granular per-cell data
 that every downstream subgenerational analysis needs, so those analyses never
 re-read simulation output. From this one extraction you can derive Definition 5
-Form A (pooled-cell threshold), Form B (per-lineage confidence interval, the
+def5 (pooled-cell threshold), def5_CI (per-lineage confidence interval, the
 canonical subgen label), Definition 4 (any completed transcript), and the
 per-generation expression matrix (Task 4).
 
