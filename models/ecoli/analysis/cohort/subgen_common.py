@@ -439,6 +439,9 @@ RAW_EXTRACT_BASENAME = 'subgen_raw_extract'
 SYNTH_PER_CELL_SUFFIX = '_synth_per_cell.tsv'
 MAX_MRNA_PER_CELL_SUFFIX = '_max_mrna_per_cell.tsv'
 MAX_PROTEIN_PER_CELL_SUFFIX = '_max_protein_per_cell.tsv'
+# Time-weighted fraction of each generation's cell-cycle spent with zero protein
+# copies, per gene (the "protein absence rate" for the protein-memory analysis).
+FRAC_PROTEIN_ZERO_PER_CELL_SUFFIX = '_frac_protein_zero_per_cell.tsv'
 LINEAGE_SUCCESS_SUFFIX = '_lineage_success.tsv'
 GENES_SUFFIX = '_genes.tsv'
 # Number of leading index columns in the per-cell matrices.

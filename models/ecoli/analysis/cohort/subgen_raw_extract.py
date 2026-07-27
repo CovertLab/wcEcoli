@@ -18,6 +18,9 @@ Outputs (written to plotOutDir, prefixed by plotOutFileName):
                                  that generation. PRIMARY substrate.
   <name>_max_mrna_per_cell.tsv   wide: same index + per-gene max mRNA count.
   <name>_max_protein_per_cell.tsv wide: same index + per-gene max protein count.
+  <name>_frac_protein_zero_per_cell.tsv wide: same index + per-gene time-weighted
+                                 fraction of the generation's cell cycle spent at
+                                 zero protein copies (the protein-absence rate).
   <name>_lineage_success.tsv     per seed: strict successful-lineage flags.
   <name>_genes.tsv               gene_id, cistron_id, monomer_id (column key).
   <name>_run_metadata.json       provenance.
@@ -37,6 +40,25 @@ import numpy as np
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.io.tablereader import TableReader
+
+
+def _time_weighted_frac_zero(counts, time):
+	"""Fraction of the cell cycle each column spends at zero copies.
+
+	`counts` is a [n_timesteps, n_genes] per-timestep count array; `time` is the
+	[n_timesteps] cumulative simulation time (s). Weight each timestep by its
+	duration so the result is a true fraction of the cell's lifetime (the
+	snapshot probability of observing zero copies), returning a [n_genes] vector
+	in [0, 1]. Fall back to an unweighted timestep fraction if the clock is
+	degenerate (near-identical at ~1 s steps).
+	"""
+	zero = counts == 0
+	if time is not None and len(time) == len(counts) and len(time) > 1:
+		dt = np.diff(np.asarray(time, dtype=float))
+		total = dt.sum()
+		if total > 0:
+			return (dt[:, None] * zero[1:]).sum(axis=0) / total
+	return zero.mean(axis=0)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -123,6 +145,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		synth_list = []
 		max_mrna_list = []
 		max_protein_list = []
+		frac_protein_zero_list = []
 		skipped = []
 		included = []
 
@@ -136,6 +159,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					).readColumn('mRNA_cistron_counts')[:, mrna_indexes]
 				monomer_counts = TableReader(os.path.join(sim_out, 'MonomerCounts')
 					).readColumn('monomerCounts')[:, monomer_indexes]
+				time = TableReader(os.path.join(sim_out, 'Main')
+					).readColumn('time')
 				if has_synth:
 					synth_events = TableReader(
 						os.path.join(sim_out, sc.SYNTH_TABLE)
@@ -149,6 +174,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			meta_rows.append([seed, gen, is_succ])
 			max_mrna_list.append(mRNA_counts.max(axis=0))
 			max_protein_list.append(monomer_counts.max(axis=0))
+			frac_protein_zero_list.append(
+				_time_weighted_frac_zero(monomer_counts, time))
 			if has_synth:
 				synth_list.append(synth_events.sum(axis=0))
 			included.append(cell_path)
@@ -174,6 +201,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sc.write_per_cell_matrix(
 			prefix + sc.MAX_PROTEIN_PER_CELL_SUFFIX, meta_header, meta_rows,
 			gene_ids, np.array(max_protein_list, dtype=np.int64), value_fmt=None)
+
+		# Time-weighted fraction of the cell cycle at zero protein copies (the
+		# protein-absence rate for the protein-memory analysis).
+		sc.write_per_cell_matrix(
+			prefix + sc.FRAC_PROTEIN_ZERO_PER_CELL_SUFFIX, meta_header, meta_rows,
+			gene_ids, np.array(frac_protein_zero_list, dtype=np.float64),
+			value_fmt='%.6g')
+		print('Wrote %s' % (prefix + sc.FRAC_PROTEIN_ZERO_PER_CELL_SUFFIX))
 
 		self._write_metadata(
 			prefix + '_run_metadata.json', analysis_run_time,
