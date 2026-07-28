@@ -163,12 +163,9 @@ def _git_info():
 def figure_vs_transcript_off(x, y, out_dir, error_bars):
 	"""Scatter: transcript-off frequency (x) vs protein-absence rate (y)."""
 	fig, ax = plt.subplots(figsize=(5.6, 5.4))
+	# Reference diagonal: genes below it keep protein even when transcription is
+	# off (the memory signal).
 	ax.plot([0, 1], [0, 1], color=MUTED, lw=1.4, ls='--', zorder=1)
-	# Genes below the diagonal keep protein even when transcription is off
-	# (the memory signal); label that corner.
-	ax.text(0.97, 0.06, 'protein present\nmore often than\ntranscript\n(memory)',
-		transform=ax.transAxes, ha='right', va='bottom', fontsize=10.5,
-		color=MUTED)
 	if error_bars:
 		ax.errorbar(x['mean'], y['mean'],
 			xerr=CI_Z * x['se'], yerr=CI_Z * y['se'], fmt='none',
@@ -178,8 +175,8 @@ def figure_vs_transcript_off(x, y, out_dir, error_bars):
 	ax.set_xlim(-0.02, 1.02)
 	ax.set_ylim(-0.02, 1.02)
 	ax.set_aspect('equal')
-	ax.set_xlabel('Transcript-off frequency\n(fraction of generations with 0 transcripts)')
-	ax.set_ylabel('Protein-absence rate\n(fraction of cell-cycle time at 0 copies)')
+	ax.set_xlabel('Fraction of cells with\nno transcription event')
+	ax.set_ylabel('Fraction of cell-cycle time\nwith absent protein')
 	_despine(ax)
 	_save(fig, out_dir, 'subgen_protein_memory_vs_transcript_off')
 
