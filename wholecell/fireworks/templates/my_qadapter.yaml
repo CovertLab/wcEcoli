@@ -5,7 +5,15 @@ rocket_launch: rlaunch -w {WCECOLI_PATH}/wholecell/fireworks/my_fworker.yaml -l 
 queue: mcovert
 account: null
 job_name: null
-pre_rocket: null
+# Each sim job runs with cpus_per_node: 1, but sbatch --export=ALL copies
+# OMP_NUM_THREADS from the launching allocation (SLURM sets it from that
+# allocation's --cpus-per-task). An allocation with -c 4 therefore puts 4
+# threads inside a 1-CPU cgroup, where they spin against each other. On AMD
+# nodes that is harmless; on the Intel Broadwell nodes that make up most of
+# the owners partition it is fatal -- a cell that takes 21 min with threads
+# pinned makes ~7% of that progress in 40 min without. Pin them here so the
+# jobs no longer depend on how the launching session was allocated.
+pre_rocket: export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 GOTO_NUM_THREADS=1 BLIS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1
 post_rocket: null
 ntasks: 1
 cpus_per_node: 1
