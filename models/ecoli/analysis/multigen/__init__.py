@@ -11,6 +11,7 @@ ACTIVE = [
 	"centralCarbonMetabolismCorrelationTimeCourse.py",
 	"centralCarbonMetabolismScatter.py",
 	"charging_molecules.py",
+	"copy_number_lineage_trace.py",
 	"environmental_shift_fluxes.py",
 	"functionalUnits.py",
 	"functionalUnitsFC.py",
