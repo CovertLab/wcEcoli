@@ -7,6 +7,7 @@ ACTIVE = [
 	"active_ribosome_counts_histogram.py",
 	"adder_sizer.py",
 	"cell_growth.py",
+	"dosage_channel_decomposition.py",
 	"doubling_time_histogram.py",
 	"doubling_time_histogram_downsample.py",
 	"growthConditionComparison.py",
