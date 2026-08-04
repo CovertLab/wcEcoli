@@ -506,12 +506,11 @@ class KnowledgeBaseEcoli(object):
 			'each noncontiguous insertion should be in its own directory')
 		insert_pos = insert_loc_data[0]['insertion_pos']
 
-		if not tu_data:
-			# Check if specified insertion location is in another gene
-			data_to_check = genes_data.copy()
-		else:
-			# Check if specified insertion location is in a transcription unit
-			data_to_check = tu_data.copy()
+		# Check transcription units AND genes. This used to be either/or, so
+		# whenever transcription unit data was loaded (the normal case) genes
+		# were never examined -- and 104 genes overlap no transcription unit
+		# at all, including the essential yidC.
+		data_to_check = list(tu_data) + list(genes_data)
 
 		# Add important DNA sites to the list of locations to check
 		# TODO: Check for other DNA sites if we include any in the future
@@ -520,16 +519,33 @@ class KnowledgeBaseEcoli(object):
 			site['common_name'] == 'TerC']
 		data_to_check += sites_data_to_check
 
-		conflicts = [
-			row for row in data_to_check
+		spans = [
+			(row['left_end_pos'], row['right_end_pos'])
+			for row in data_to_check
 			if ((row['left_end_pos'] is not None) and (row['left_end_pos'] != ''))
-			and ((row['right_end_pos'] is not None) and (row['left_end_pos'] != ''))
-			and (row['left_end_pos'] < insert_pos)
-			and (row['right_end_pos'] >= insert_pos)]
-		# Change insertion location to after conflicts
-		if conflicts:
-			shift = max([sub['right_end_pos'] for sub in conflicts]) - insert_pos + 1
-			insert_pos = insert_pos + shift
+			and ((row['right_end_pos'] is not None) and (row['right_end_pos'] != ''))]
+
+		# Shifting past one feature can land inside an overlapping one, so
+		# repeat until the location is clear. Transcription units overlap
+		# often enough that a single pass leaves ~10% of shifted insertions
+		# still inside a feature. Each pass moves strictly past at least one
+		# feature's right end, so len(spans) + 1 iterations is a safe bound.
+		requested_pos = insert_pos
+		for _ in range(len(spans) + 1):
+			conflicts = [
+				right for left, right in spans if left < insert_pos <= right]
+			if not conflicts:
+				break
+			# Change insertion location to after conflicts
+			insert_pos = max(conflicts) + 1
+		else:
+			raise ValueError(
+				'Could not find a conflict-free new gene insertion location'
+				f' starting from {requested_pos}.')
+
+		assert insert_pos <= len(self.genome_sequence), (
+			f'Resolved new gene insertion location {insert_pos} is past the'
+			f' end of the genome (requested {requested_pos}).')
 
 		return insert_pos
 
