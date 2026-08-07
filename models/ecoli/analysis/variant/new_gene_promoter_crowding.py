@@ -217,10 +217,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# is n_RNAPs_to_activate. Do not reach for RnaSynthProb/total_rna_init
 		# instead: it is set on the listener object but never registered in
 		# tableAppend, so it reads back empty and silently NaNs the ceiling.
+		# The two reads must cover the same cells. read_stacked_columns skips
+		# a cell whose table is unreadable rather than failing
+		# (analysis_tools.py:289 continues), so reading the two tables from
+		# the full path list lets a gappy cell drop out of one read and not
+		# the other. The lengths then diverge and the ceiling is lost for the
+		# whole variant -- which is what NaN'd this column on Batches 1 and 2,
+		# both of which carry fizzled and blocked cells. Restrict to cells
+		# that have both tables before reading either.
+		paired_paths = [p for p in cell_paths
+			if os.path.exists(os.path.join(
+				p, 'simOut', 'RnaSynthProb', 'attributes.json'))
+			and os.path.exists(os.path.join(
+				p, 'simOut', 'RnapData', 'attributes.json'))]
 		max_p = read_stacked_columns(
-			cell_paths, 'RnaSynthProb', 'max_p', ignore_exception=True)
+			paired_paths, 'RnaSynthProb', 'max_p', ignore_exception=True)
 		n_act = read_stacked_columns(
-			cell_paths, 'RnapData', 'rnaInitEvent', ignore_exception=True,
+			paired_paths, 'RnapData', 'rnaInitEvent', ignore_exception=True,
 			fun=lambda x: x.sum(axis=1, keepdims=True))
 		copies = read_stacked_columns(
 			cell_paths, 'RnaSynthProb', 'promoter_copy_number',
