@@ -25,7 +25,7 @@ import numpy as np
 from models.ecoli.analysis import variantAnalysisPlot
 from models.ecoli.analysis.variant.dosage_channel_decomposition import _window
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_columns)
+	first_cell_with_table, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
 # A terminus-proximal reference gene. Chosen for position, not function: it is
@@ -51,7 +51,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print('Need at least two variants. Found %d.' % len(variants))
 			return
 
-		generations = _window(self.ap.n_generation, 0)
+		generations = _window(self.ap.n_generation)
 		if generations is None:
 			generations = np.arange(self.ap.n_generation)
 
@@ -77,8 +77,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				continue
 
 			if cistron_ids is None:
+				readable = first_cell_with_table(cell_paths, 'RnaSynthProb')
+				if readable is None:
+					print('No readable RnaSynthProb for variant %d.' % variant)
+					continue
 				rsp = TableReader(os.path.join(
-					cell_paths[0], 'simOut', 'RnaSynthProb'))
+					readable, 'simOut', 'RnaSynthProb'))
 				cistron_ids = rsp.readAttribute('cistron_ids')
 				coords = np.array(
 					[coord_of.get(c, 0) for c in cistron_ids], dtype=float)

@@ -246,6 +246,34 @@ def read_stacked_bulk_molecules(
 	# Use vstack for 2D or hstack for 1D to get proper dimension alignments
 	return [np.vstack(d) if len(d[0].shape) > 1 else np.hstack(d) for d in data]
 
+def first_cell_with_table(cell_paths: Sequence[str], table: str
+		) -> Optional[str]:
+	"""
+	Returns the first cell path whose `table` is actually readable, or None.
+
+	`cell_paths[0]` is not safe to read attributes from. A cell that fizzled,
+	was preempted, or never launched still leaves its directory (and often an
+	empty simOut/) on disk, so the first path in generation order can have no
+	tables in it at all. `read_stacked_columns(ignore_exception=True)` skips
+	those, but a bare `TableReader(cell_paths[0], ...)` used to fetch column
+	IDs raises VersionError and takes the whole analysis down.
+
+	Args:
+		cell_paths: paths to cells, typically from AnalysisPaths.get_cells()
+		table: name of the table that has to exist
+
+	Returns:
+		A path from cell_paths that contains simOut/<table>, or None if no
+		cell in the list does.
+	"""
+	for cell_path in cell_paths:
+		attributes = os.path.join(
+			cell_path, 'simOut', table, 'attributes.json')
+		if os.path.isfile(attributes):
+			return cell_path
+	return None
+
+
 def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 		remove_first: bool = False, ignore_exception: bool = False,
 		fun: Optional[Callable] = None) -> np.ndarray:

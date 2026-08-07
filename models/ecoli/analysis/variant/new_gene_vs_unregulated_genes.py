@@ -73,7 +73,7 @@ import numpy as np
 
 from models.ecoli.analysis import variantAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_columns)
+	first_cell_with_table, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
 IGNORE_FIRST_N_GENS = 16
@@ -170,11 +170,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if len(cell_paths) == 0:
 			return None
 
-		sim_out_dir = os.path.join(cell_paths[0], 'simOut')
-		rnap_ids = TableReader(
-			os.path.join(sim_out_dir, 'RnapData')).readAttribute('rnaIds')
-		synth_ids = TableReader(
-			os.path.join(sim_out_dir, 'RnaSynthProb')).readAttribute('rnaIds')
+		rnap_cell = first_cell_with_table(cell_paths, 'RnapData')
+		synth_cell = first_cell_with_table(cell_paths, 'RnaSynthProb')
+		if rnap_cell is None or synth_cell is None:
+			print('No cell with readable listeners for variant %d.' % variant)
+			return None
+		rnap_ids = TableReader(os.path.join(
+			rnap_cell, 'simOut', 'RnapData')).readAttribute('rnaIds')
+		synth_ids = TableReader(os.path.join(
+			synth_cell, 'simOut', 'RnaSynthProb')).readAttribute('rnaIds')
 
 		init = read_stacked_columns(
 			cell_paths, 'RnapData', 'rnaInitEvent',

@@ -31,7 +31,7 @@ import numpy as np
 
 from models.ecoli.analysis import multigenAnalysisPlot
 from wholecell.analysis.analysis_tools import (exportFigure,
-	read_stacked_columns)
+	first_cell_with_table, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
 # Terminus-proximal reference, resolved by position at run time.
@@ -51,8 +51,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		cistron_data = sim_data.process.transcription.cistron_data.struct_array
 		replication = sim_data.process.replication
 
-		sim_out_dir = os.path.join(cell_paths[0], 'simOut')
-		rsp = TableReader(os.path.join(sim_out_dir, 'RnaSynthProb'))
+		readable = first_cell_with_table(cell_paths, 'RnaSynthProb')
+		if readable is None:
+			print('No cell in this lineage has a readable RnaSynthProb.')
+			return
+		rsp = TableReader(os.path.join(readable, 'simOut', 'RnaSynthProb'))
 		cistron_ids = rsp.readAttribute('cistron_ids')
 
 		coord_of = dict(zip(
