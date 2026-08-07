@@ -44,8 +44,9 @@ Per variant, for the construct's transcription units:
 
   overcrowded_frac   mean of `RnaSynthProb/tu_is_overcrowded`, i.e. the
                      fraction of timesteps the TU is pinned at the ceiling
-  ceiling            mean of `max_p * total_rna_init`, the physical initiation
-                     rate a pinned promoter achieves, per promoter per timestep
+  ceiling            mean of `max_p * summed rnaInitEvent`, the physical
+                     initiation rate a pinned promoter achieves, per promoter
+                     per timestep
   measured_rate      realised `rnaInitEvent / promoter_copy_number`
   ratio              measured_rate / ceiling; ~1.0 means pinned
 
@@ -212,9 +213,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# unreduced and multiplied per timestep. They are perfectly
 		# anti-correlated by construction, so the mean of the product is not
 		# the product of the means -- do not reduce these separately.
-		# RnaSynthProb/total_rna_init is set on the listener object but never
-		# registered in tableAppend, so it is not readable. The same quantity
-		# is rnaInitEvent summed across TUs.
+		# The total-initiations term is rnaInitEvent summed across TUs, which
+		# is n_RNAPs_to_activate. Do not reach for RnaSynthProb/total_rna_init
+		# instead: it is set on the listener object but never registered in
+		# tableAppend, so it reads back empty and silently NaNs the ceiling.
 		max_p = read_stacked_columns(
 			cell_paths, 'RnaSynthProb', 'max_p', ignore_exception=True)
 		n_act = read_stacked_columns(
@@ -230,7 +232,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if max_p.size and n_act.size and max_p.size == n_act.size:
 			ceiling = float(np.mean(max_p.ravel() * n_act.ravel()))
 		elif max_p.size != n_act.size:
-			print('max_p and total_rna_init differ in length for variant '
+			print('max_p and summed rnaInitEvent differ in length for variant '
 				'%d (%d vs %d); the ceiling is not computed.'
 				% (variant, max_p.size, n_act.size))
 

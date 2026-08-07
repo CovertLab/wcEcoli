@@ -8,6 +8,11 @@ genomes are directly comparable. The only thing that varies between those
 batches is NEW_GENES (which flat-file directory supplies the construct), not
 the variant definition.
 
+What is held constant across insertion positions is the construct's per-copy
+promoter strength, not its per-cell expression -- see PIN_WT_COORDINATE below.
+That is the choice that lets gene dosage differ between positions instead of
+cancelling out.
+
 Layout (8 indices total):
 
   0:     Knockout control. Expression factor 0 -- no construct transcription
@@ -23,6 +28,7 @@ Layout (8 indices total):
 Modifies:
 	sim_data.condition
 	sim_data.external_state.current_timeline_id
+	sim_data.process.transcription.rna_data['wt_replication_coordinate']
 
 Modifies (after shift):
 	sim_data.process.transcription.rna_synth_prob
@@ -77,6 +83,59 @@ EXPRESSION_FACTOR = 8
 N_TRL_EFF = len(TRL_EFF_VALUES)  # 7
 N_VARIANTS = N_TRL_EFF + 1  # 8 (knockout + trl_eff 0 control + 6 burden levels)
 
+# Hold the construct's per-copy promoter strength constant across insertion
+# positions, rather than its per-cell expression.
+#
+# transcription.synth_prob_from_ppgpp converts fitted per-cell expression into a
+# per-copy initiation probability by dividing by the Cooper-Helmstetter
+# expectation at wt_replication_coordinate (transcription.py:1938-1942). New
+# genes are inserted before the Parca runs, so that field holds each construct's
+# own insertion coordinate: the divisor moves with the gene and the dosage
+# advantage cancels exactly on the way back out. Measured P1/P4 assigned rate
+# 0.7865 against a 0.7869 prediction -- agreement to 0.05%, i.e. no position
+# effect can survive at any expression factor.
+#
+# Pinning the divisor to one reference locus leaves the per-copy probability
+# untouched by position, so realized output tracks realized copy number. This is
+# the same mechanism PR #1420 added for the rrna_location variant, which
+# relocates rRNA operons post-Parca and would otherwise cancel itself out the
+# same way; the guard simply cannot fire for a gene that was already in place
+# when the snapshot was taken.
+#
+# Only what all positions share matters, not the particular value -- a different
+# reference shifts every position's promoter strength by the same factor. P4 is
+# used because it is the existing `gfp` locus, which makes that batch identical
+# to the unpinned behaviour and P1/P6 measured against it.
+#
+# Set PIN_WT_COORDINATE = False to reproduce the unpinned Batches 1 and 2.
+PIN_WT_COORDINATE = True
+
+# Measured from Batch 1's sim_data: NG001_RNA[c] wt_replication_coordinate at
+# the `gfp` locus (requested insertion 400,000, realized 400,924 after the
+# collision shift). 48.0% of the right replichore.
+REFERENCE_WT_COORDINATE = 1116717
+
+
+def _pin_wt_coordinate(sim_data):
+	"""
+	Pin the construct's wildtype replication coordinate to the reference locus.
+
+	Mutates rna_data in place. For unitless fields UnitStructArray._field
+	returns the underlying numpy view (unit_struct_array.py:44), which is the
+	same access pattern rrna_location uses to relocate rRNA operons.
+
+	Has no effect unless ppGpp regulation is enabled, since
+	synth_prob_from_ppgpp is the only consumer of this field; it is on by
+	default (wholecell/sim/simulation.py:36).
+	"""
+	wt_coordinates = sim_data.process.transcription.rna_data[
+		'wt_replication_coordinate']
+	new_gene_mRNA_ids, new_gene_indices, new_gene_monomer_ids, \
+		new_gene_monomer_indices = determine_new_gene_ids_and_indices(sim_data)
+
+	for gene_index in new_gene_indices:
+		wt_coordinates[gene_index] = REFERENCE_WT_COORDINATE
+
 
 def is_control(index):
 	"""Return True if this variant is the control (GFP knockout)."""
@@ -128,6 +187,13 @@ def new_gene_burden_ladder(sim_data, index):
 	assert 0 <= index < N_VARIANTS, (
 		f"new_gene_burden_ladder index must be in [0, {N_VARIANTS - 1}],"
 		f" got {index}")
+
+	# Applied to every index including the knockout, where it is a no-op
+	# because the construct's expression is zero. Must happen before the
+	# simulation starts; the generation-8 internal shift only rewrites
+	# expression arrays, so the pin persists through induction.
+	if PIN_WT_COORDINATE:
+		_pin_wt_coordinate(sim_data)
 
 	# Always minimal media
 	condition(sim_data, 0)

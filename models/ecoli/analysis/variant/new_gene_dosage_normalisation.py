@@ -30,8 +30,14 @@ abundance. It has two consequences for the copy-number study:
   Position axis. The construct is inserted pre-ParCa, so its
   `wt_replication_coordinate` IS its insertion coordinate and differs between
   position batches. Moving it toward the origin raises n_avg_copy, lowers
-  basal_prob by the same factor, and can cancel the dosage advantage in the
-  cycle-average.
+  basal_prob by the same factor, and cancels the dosage advantage in the
+  cycle-average. Measured on Batches 1 and 2: P1/P4 assigned rate 0.7865
+  against a 0.7869 prediction.
+
+  From 2026-08-07 `new_gene_burden_ladder` pins the construct's
+  wt_replication_coordinate to one reference locus (PIN_WT_COORDINATE), so
+  position no longer cancels. Which regime a batch was run in decides how the
+  numbers below read -- see "What the answer should look like".
 
 What this script measures
 -------------------------
@@ -53,12 +59,32 @@ The construct's share of total RNAP initiation is also reported, because the
 cancellation argument assumes the construct is a small perturbation on the
 global `normalize()` denominator. At high expression factors it may not be.
 
+What the answer should look like
+--------------------------------
+Read the burden axis and the position axis separately; the pin only touches the
+second.
+
+Burden axis, either regime. `product` flat across variants means the normaliser
+is setting the per-copy rate. Unchanged by the pin, which is position-only.
+
+Position axis, unpinned (Batches 1 and 2). Across batches, `basal_prob` for the
+construct scales as 1/n_ch, so `product` matches between positions. Position is
+being cancelled -- that is the finding those batches produced.
+
+Position axis, pinned (2026-08-07 onward). `basal_prob` for the construct is
+the SAME at every position, and `product` therefore differs between positions in
+proportion to n_ch. **A flat `product` across positions here means the pin did
+not take, not that the model cancels position.** The expectation inverts; the
+measurement does not.
+
 Cross-batch use
 ---------------
 The position-axis test needs two batches. Run this on each insertion-position
-batch and compare `basal_prob` for the construct at the same variant index. If
-the ratio matches `n_ch` inverted between the two positions, the normaliser
-moved with the gene.
+batch and compare `basal_prob` for the construct at the same variant index.
+Unpinned, a ratio matching `n_ch` inverted means the normaliser moved with the
+gene. Pinned, the ratio should be 1.000 to within about 0.2% -- the residue is
+the ~7.2 kb of downstream coordinate shift that insertion imposes on the rest of
+the genome, which slightly changes the `normalize()` denominator.
 
 Index-matching warning: `basal_prob_ppgpp_synth_prob` and
 `promoter_copy_number` are TU-indexed against the `rnaIds` attribute, while
@@ -152,10 +178,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		mask = np.isin(rna_data['id'], new_gene_tu_ids)
 		wt_coords = rna_data['wt_replication_coordinate'][mask]
 		coords = rna_data['replication_coordinate'][mask]
-		if not np.array_equal(wt_coords, coords):
-			print('Note: wt_replication_coordinate differs from '
-				'replication_coordinate for the construct (%s vs %s). The '
-				'normaliser uses the wt value.' % (wt_coords, coords))
+		# Print unconditionally: which coordinate the normaliser used is the
+		# single most important provenance fact for this analysis, and the two
+		# regimes are told apart by exactly this comparison.
+		if np.array_equal(wt_coords, coords):
+			print('Construct wt_replication_coordinate == '
+				'replication_coordinate (%s). Either the reference locus, or '
+				'the batch predates PIN_WT_COORDINATE -- in the latter case '
+				'position is cancelled and cross-batch basal_prob will scale '
+				'as 1/n_ch.' % coords)
+		else:
+			print('Construct wt_replication_coordinate is pinned away from '
+				'replication_coordinate (%s vs %s). Per-copy promoter '
+				'strength is held at the reference locus, so this batch '
+				'should show a position effect in realised output.'
+				% (wt_coords, coords))
 		# One construct locus, possibly several tandem TUs; they share a
 		# coordinate to within a few kb, so the mean is the right summary.
 		wt_coord = float(np.mean(wt_coords))
