@@ -82,28 +82,36 @@ IGNORE_FIRST_N_GENS = 16
 MIN_WINDOW_GENS = 4
 
 
-def _window(n_generation, offset=0):
+def _window(n_generation):
 	"""
-	Return the generation indices of an analysis window.
+	Return the generation indices of the analysis window.
 
-	offset=0 is the primary window, generations IGNORE_FIRST_N_GENS to the end
-	of the run -- Riley's convention. offset=1 is the trailing half of that
-	window, reported alongside so the two can be compared and any residual
-	drift within the primary window is visible. Returns None if unusable.
+	Generations IGNORE_FIRST_N_GENS to the end of the run -- Riley's
+	convention. Induction is at generation 8, so this drops the pre-induction
+	generations and the settling that follows. It is a burn-in exclusion, not a
+	choice of window length. Returns None if unusable.
+
+	A trailing-half window used to be reported alongside this one as a drift
+	check. It was removed on 2026-08-07: the two windows overlapped, so they
+	were never independent estimates, and the burn-in is established
+	separately. Precision is now reported as a standard error across cells.
 	"""
-	if offset == 0:
-		lo = IGNORE_FIRST_N_GENS
-		if n_generation - lo < MIN_WINDOW_GENS:
-			# Run too short for the standing convention (e.g. smoke test).
-			lo = max(0, n_generation - MIN_WINDOW_GENS)
-		if lo >= n_generation:
-			return None
-		return np.arange(lo, n_generation)
-
-	lo = IGNORE_FIRST_N_GENS + (n_generation - IGNORE_FIRST_N_GENS) // 2
-	if lo >= n_generation or n_generation - lo < 2:
+	lo = IGNORE_FIRST_N_GENS
+	if n_generation - lo < MIN_WINDOW_GENS:
+		# Run too short for the standing convention (e.g. smoke test).
+		lo = max(0, n_generation - MIN_WINDOW_GENS)
+	if lo >= n_generation:
 		return None
 	return np.arange(lo, n_generation)
+
+
+def _sem(values):
+	"""Standard error of the mean across cells. NaN if fewer than two."""
+	v = np.asarray(values, dtype=float).ravel()
+	v = v[np.isfinite(v)]
+	if v.size < 2:
+		return float('nan')
+	return float(np.std(v, ddof=1) / np.sqrt(v.size))
 
 
 def _decompose(n0, r0, n1, r1):
@@ -157,10 +165,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		n_generation = self.ap.n_generation
-		windows = {'primary': _window(n_generation, 0)}
-		late = _window(n_generation, 1)
-		if late is not None:
-			windows['late_half'] = late
+		windows = {'primary': _window(n_generation)}
 
 		if windows['primary'] is None:
 			print('Run has only %d generations, too few for the standing '
@@ -168,8 +173,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				% (n_generation, IGNORE_FIRST_N_GENS))
 			windows = {'primary': np.arange(n_generation)}
 
-		control_variant = variants[0]
+		# Variant 0 is the GFP knockout, so its new-gene output is exactly
+		# zero and a product decomposition against it is undefined -- that is
+		# where the spurious negative dosage share came from. From 2026-08-07
+		# the ladder carries a transcription-only control at index 1 (full
+		# expression, translation efficiency 0), which transcribes and is
+		# therefore a valid baseline. Prefer it when it exists.
+		control_variant = variants[1] if len(variants) > 2 else variants[0]
 		burden_variant = variants[-1]
+		print('Baseline variant %d, burden variant %d.'
+			% (control_variant, burden_variant))
 
 		try:
 			with open(simDataFile, 'rb') as handle:
@@ -210,6 +223,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					target=target,
 					control_variant=control_variant,
 					burden_variant=burden_variant,
+					# Precision, across cells. Reported in the CSV only; the
+					# plots are deliberately left unadorned.
+					n_control_sem=ctrl[target].get('n_sem', float('nan')),
+					n_burden_sem=burd[target].get('n_sem', float('nan')),
+					r_control_sem=ctrl[target].get('r_sem', float('nan')),
+					r_burden_sem=burd[target].get('r_sem', float('nan')),
+					n_cells_control=ctrl[target].get('n_cells', 0),
+					n_cells_burden=burd[target].get('n_cells', 0),
 					)
 				rows.append(result)
 				if window_name == 'primary':
@@ -288,6 +309,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		total_init = init_events.sum(axis=1)
 		total_copies = copy_numbers.sum(axis=1)
 
+		# Per-cell aggregates, for the standard error only. The point
+		# estimates below are unchanged -- they still average over all
+		# timesteps, so these extra reads cannot move any published number.
+		per_cell_init = read_stacked_columns(
+			cell_paths, 'RnapData', 'rnaInitEvent', ignore_exception=True,
+			fun=lambda x: np.array([[float(x[:, rnap_idx].sum())]]))
+		per_cell_cop = read_stacked_columns(
+			cell_paths, 'RnaSynthProb', 'promoter_copy_number',
+			ignore_exception=True,
+			fun=lambda x: np.array([[float(x[:, synth_idx].mean(axis=0).sum())]]
+				) if x.size else np.array([[0.0]]))
+		with np.errstate(divide='ignore', invalid='ignore'):
+			per_cell_rate = per_cell_init.ravel() / np.where(
+				per_cell_cop.ravel() > 0, per_cell_cop.ravel(), np.nan)
+
 		mean_copies = float(np.mean(total_copies))
 		# Guard against a control variant with a knocked-out construct.
 		if mean_copies <= 0:
@@ -295,7 +331,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		valid = total_copies > 0
 		mean_rate = float(np.mean(total_init[valid] / total_copies[valid]))
-		return dict(n=mean_copies, r=mean_rate)
+		return dict(n=mean_copies, r=mean_rate,
+			n_sem=_sem(per_cell_cop), r_sem=_sem(per_cell_rate),
+			n_cells=int(per_cell_cop.size))
 
 	def _new_gene_tu_ids(self, sim_data, rnap_ids, synth_ids):
 		"""Return the construct's TU ids, or [] if it cannot be located."""
@@ -328,6 +366,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'control_variant', 'burden_variant',
 			'n_control', 'n_burden', 'r_control', 'r_burden',
 			'output_control', 'output_burden', 'd_output',
+			'n_control_sem', 'n_burden_sem', 'r_control_sem', 'r_burden_sem',
+			'n_cells_control', 'n_cells_burden',
 			'dosage_term', 'per_copy_term', 'dosage_share_pct',
 			'dosage_term_ordered', 'per_copy_term_ordered',
 			'interaction_term', 'identity_residual',

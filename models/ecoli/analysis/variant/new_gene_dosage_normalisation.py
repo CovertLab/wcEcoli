@@ -84,16 +84,26 @@ from wholecell.io.tablereader import TableReader
 IGNORE_FIRST_N_GENS = 16
 
 
-def _window(n_generation, half):
-	"""Generation indices for the primary (half=0) or late (half=1) window."""
+def _window(n_generation):
+	"""Generations to analyse: everything past the burn-in.
+
+	Induction is at generation 8 and the burn-in runs to 16, so this drops the
+	pre-induction generations and the settling that follows them. It is not a
+	choice about window length -- without it the averages would include
+	generations in which the construct does not exist.
+	"""
 	if n_generation <= IGNORE_FIRST_N_GENS:
 		return None
-	start = IGNORE_FIRST_N_GENS
-	if half:
-		start = IGNORE_FIRST_N_GENS + (n_generation - IGNORE_FIRST_N_GENS) // 2
-	if start >= n_generation:
-		return None
-	return np.arange(start, n_generation)
+	return np.arange(IGNORE_FIRST_N_GENS, n_generation)
+
+
+def _sem(values):
+	"""Standard error of the mean across cells. NaN if fewer than two."""
+	v = np.asarray(values, dtype=float).ravel()
+	v = v[np.isfinite(v)]
+	if v.size < 2:
+		return float('nan')
+	return float(np.std(v, ddof=1) / np.sqrt(v.size))
 
 
 def _tau_minutes(x):
@@ -121,7 +131,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print('No variants found.')
 			return
 
-		generations = _window(self.ap.n_generation, 0)
+		generations = _window(self.ap.n_generation)
 		if generations is None:
 			print('Run has only %d generations, fewer than the standing '
 				'window start of %d. Using all generations.'
@@ -251,15 +261,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		return dict(
 			basal_prob=float(np.mean(basal)),
+			basal_prob_sem=_sem(basal),
 			n_copies=float(np.mean(copies)),
+			n_copies_sem=_sem(copies),
 			tau=float(np.mean(taus)),
+			tau_sem=_sem(taus),
 			init_share=share,
 			n_cells=int(basal.shape[0]),
 			)
 
 	def _write_csv(self, plot_out_dir, plot_out_file_name, rows):
-		fields = ['variant', 'tau', 'wt_coordinate', 'basal_prob', 'n_copies',
-			'n_ch', 'product', 'n_over_n_ch', 'init_share', 'n_cells']
+		fields = ['variant', 'tau', 'tau_sem', 'wt_coordinate', 'basal_prob',
+			'basal_prob_sem', 'n_copies', 'n_copies_sem', 'n_ch', 'product',
+			'n_over_n_ch', 'init_share', 'n_cells']
 		path = os.path.join(plot_out_dir, plot_out_file_name + '.csv')
 		with open(path, 'w') as handle:
 			writer = csv.DictWriter(handle, fieldnames=fields)
@@ -281,7 +295,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		# Variant 0 is the knockout: its basal_prob is ~0 and would dominate
 		# any ratio, so the trend is measured over the expressing variants.
-		expressing = [r for r in rows if r['basal_prob'] > 0][1:] or rows[1:]
+		# The filter alone is sufficient -- an additional [1:] here silently
+		# dropped the first expressing variant and reported v2->v6 as if it
+		# were v1->v6 (x1.080 against the correct x1.104).
+		expressing = [r for r in rows if r['basal_prob'] > 0] or rows[1:]
 		if len(expressing) < 2:
 			return
 		first, final = expressing[0], expressing[-1]

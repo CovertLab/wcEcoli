@@ -8,10 +8,17 @@ genomes are directly comparable. The only thing that varies between those
 batches is NEW_GENES (which flat-file directory supplies the construct), not
 the variant definition.
 
-Layout (7 indices total):
+Layout (8 indices total):
 
-  0:     Control (GFP knockout, expression factor = 0)
-  1-6:   exp = EXPRESSION_FACTOR, trl_eff = TRL_EFF_VALUES[index - 1]
+  0:     Knockout control. Expression factor 0 -- no construct transcription
+         and no construct protein.
+  1:     Transcription-only control. Full expression, translation efficiency 0
+         -- the construct is transcribed (~7% of mRNA mass at exp 8) but makes
+         no protein, so it imposes transcriptional load without ribosome load.
+         This is also the correct baseline for the product decomposition: it
+         has non-zero output, so unlike the knockout it does not make the
+         dosage share undefined.
+  2-7:   exp = EXPRESSION_FACTOR, trl_eff = TRL_EFF_VALUES[index - 1]
 
 Modifies:
 	sim_data.condition
@@ -37,15 +44,38 @@ from models.ecoli.sim.variants.new_gene_internal_shift import (
 )
 
 # Ascending burden. Index 0 of this list is variant index 1.
-TRL_EFF_VALUES = [0.1, 0.5, 1.0, 2.0, 3.5, 5.0]
+#
+# Extended to 10.0 on 2026-08-07, alongside the drop to expression factor 8.
+# Lowering the expression factor alone would have compressed the burden range
+# badly -- over the old 0.1-5.0 ladder, exp 8 gives tau 54 -> 73 min against
+# 52.5 -> 103 at exp 8.5. Pushing translation efficiency to 10 recovers most of
+# it (tau 54 -> 87, RNAP -50%) and costs nothing on the crowding axis, because
+# the cap depends on promoter strength rather than on translation. Dashboard
+# figures, exp 8: overcrowded fraction 0.0 at every translation efficiency
+# including 10, and 88% of sims still reach generation 24.
+#
+# The leading 0.0 is the transcription-only control described above.
+TRL_EFF_VALUES = [0.0, 0.5, 1.0, 2.5, 5.0, 7.5, 10.0]
 
 # Per the convention in new_gene_internal_shift, an expression factor of x
-# multiplies new gene expression by 10^(x - 1). 8.5 matches the ladder the
-# PLAN's burden-range and copy-number predictions are calibrated against.
-EXPRESSION_FACTOR = 8.5
+# multiplies new gene expression by 10^(x - 1).
+#
+# Lowered from 8.5 to 8 on 2026-08-07. At 8.5 the construct's promoter is
+# overcrowded in 94.6% of timesteps -- pinned at the RNAP-footprint cap in
+# transcript_initiation.py:269 -- which makes its per-copy initiation rate
+# insensitive to burden by construction and drives the measured dosage share
+# toward 100% artefactually. The existing exp/trl_eff dashboard shows the
+# transition is a cliff between 8 and 9: overcrowded fraction 0.0 at 8 and 1.0
+# at 9, with initiation rate 0.45-0.73 against 0.98-0.99. 8 is the highest
+# value with headroom at every translation efficiency, and it also clears the
+# generation-24 completion problem in the exp 9/10 corner.
+#
+# NOTE: Batches 1 and 2 were run at 8.5. Anything compared across that boundary
+# is not comparable.
+EXPRESSION_FACTOR = 8
 
-N_TRL_EFF = len(TRL_EFF_VALUES)  # 6
-N_VARIANTS = N_TRL_EFF + 1  # 7 (1 control + 6 burden levels)
+N_TRL_EFF = len(TRL_EFF_VALUES)  # 7
+N_VARIANTS = N_TRL_EFF + 1  # 8 (knockout + trl_eff 0 control + 6 burden levels)
 
 
 def is_control(index):
@@ -60,7 +90,8 @@ def _induce(sim_data, index):
 
 	For index == 0 (control), expression is set to 0 (knockout). For
 	index >= 1, expression is set to 10^(EXPRESSION_FACTOR - 1) and
-	translation efficiency is set to TRL_EFF_VALUES[index - 1].
+	translation efficiency is set to TRL_EFF_VALUES[index - 1]. Index 1 is
+	therefore full expression at zero translation efficiency.
 
 	Every new gene index returned by determine_new_gene_ids_and_indices is
 	given the same settings, so tandem copies at one locus are all induced

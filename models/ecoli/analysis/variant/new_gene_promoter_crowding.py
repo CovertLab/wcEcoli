@@ -94,6 +94,15 @@ def _window(n_generation):
 	return np.arange(IGNORE_FIRST_N_GENS, n_generation)
 
 
+def _sem(values):
+	"""Standard error of the mean across cells. NaN if fewer than two."""
+	v = np.asarray(values, dtype=float).ravel()
+	v = v[np.isfinite(v)]
+	if v.size < 2:
+		return float('nan')
+	return float(np.std(v, ddof=1) / np.sqrt(v.size))
+
+
 def _time_mean(x):
 	"""Per cell: mean over that cell's timesteps, one row per cell."""
 	return x.mean(axis=0, keepdims=True)
@@ -203,11 +212,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# unreduced and multiplied per timestep. They are perfectly
 		# anti-correlated by construction, so the mean of the product is not
 		# the product of the means -- do not reduce these separately.
+		# RnaSynthProb/total_rna_init is set on the listener object but never
+		# registered in tableAppend, so it is not readable. The same quantity
+		# is rnaInitEvent summed across TUs.
 		max_p = read_stacked_columns(
 			cell_paths, 'RnaSynthProb', 'max_p', ignore_exception=True)
 		n_act = read_stacked_columns(
-			cell_paths, 'RnaSynthProb', 'total_rna_init',
-			ignore_exception=True)
+			cell_paths, 'RnapData', 'rnaInitEvent', ignore_exception=True,
+			fun=lambda x: x.sum(axis=1, keepdims=True))
 		copies = read_stacked_columns(
 			cell_paths, 'RnaSynthProb', 'promoter_copy_number',
 			ignore_exception=True,
@@ -239,6 +251,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		measured = float(init.sum()) / total_copies if total_copies else 0.0
 		return dict(
 			overcrowded_frac=ng_frac,
+			overcrowded_frac_sem=_sem(crowd[:, synth_idx].mean(axis=1)),
 			ceiling=ceiling,
 			measured_rate=measured,
 			ratio=measured / ceiling if ceiling else float('nan'),
@@ -249,8 +262,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			)
 
 	def _write_csv(self, plot_out_dir, plot_out_file_name, rows):
-		fields = ['variant', 'overcrowded_frac', 'ceiling', 'measured_rate',
-			'ratio', 'n_pinned_tus', 'construct_rank', 'n_tus', 'n_cells']
+		fields = ['variant', 'overcrowded_frac', 'overcrowded_frac_sem',
+			'ceiling', 'measured_rate', 'ratio', 'n_pinned_tus',
+			'construct_rank', 'n_tus', 'n_cells']
 		path = os.path.join(plot_out_dir, plot_out_file_name + '.csv')
 		with open(path, 'w') as handle:
 			w = csv.DictWriter(handle, fieldnames=fields)
