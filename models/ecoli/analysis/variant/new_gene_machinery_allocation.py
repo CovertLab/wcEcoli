@@ -134,9 +134,9 @@ def _sum_over(idx):
 	return fn
 
 
-def _mean_all(x):
-	"""Per cell: sum across all subcolumns, then average over time."""
-	return np.array([[float(np.mean(x.sum(axis=1)))]])
+def _time_mean(x):
+	"""Per cell: mean over that cell's timesteps, one row per cell, all TUs."""
+	return x.mean(axis=0, keepdims=True)
 
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
@@ -319,11 +319,6 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		row['total_rnap'] = row['active_rnap'] + row['inactive_rnap']
 		row['total_ribosome'] = row['active_ribosome'] + row['inactive_ribosome']
 
-		total_init = read_stacked_columns(cell_paths, 'RnapData',
-			'rnaInitEvent', ignore_exception=True, fun=_mean_all)
-		row['total_init'] = float(np.mean(total_init)) if total_init.size \
-			else float('nan')
-
 		# Engaged polymerases, split by transcript type. rRNA has its own
 		# column because rRNA transcription units are absent from mRNA_ids.
 		engaged = {}
@@ -338,7 +333,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				engaged[column] = []
 
 		# ---- per class ---------------------------------------------------
+		# Read each wide column ONCE per variant and slice the class index sets
+		# out of the in-memory array, rather than re-reading per class. The
+		# per-class version did 7 classes x 3 columns = 21 passes over every
+		# cell and was entirely latency-bound on Lustre -- 1h45m for one batch.
 		get_n_ch = sim_data.process.replication.get_average_copy_number
+		copies_all = read_stacked_columns(cell_paths, 'RnaSynthProb',
+			'promoter_copy_number', ignore_exception=True, fun=_time_mean)
+		init_all = read_stacked_columns(cell_paths, 'RnapData',
+			'rnaInitEvent', ignore_exception=True, fun=_time_mean)
+		# Total initiation is that same array summed across every TU, so it
+		# does not need its own pass over the cells.
+		row['total_init'] = (float(np.mean(init_all.sum(axis=1)))
+			if init_all.size else float('nan'))
+		eng_all = {}
+		for column in ('partial_mRNA_counts', 'partial_rRNA_counts'):
+			if engaged.get(column):
+				eng_all[column] = read_stacked_columns(cell_paths, 'RNACounts',
+					column, ignore_exception=True, fun=_time_mean)
+
+		def _slice(data, idx):
+			"""Per-cell class total from an already-read (cells x TUs) array."""
+			if data is None or not data.size or idx.size == 0:
+				return np.array([])
+			return data[:, idx].sum(axis=1)
+
 		for name, spec in classes.items():
 			tu_ids = spec['tu_ids']
 			s_idx = np.array([synth_ids.index(t) for t in tu_ids
@@ -346,11 +365,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			r_idx = np.array([rnap_ids.index(t) for t in tu_ids
 				if t in rnap_ids], dtype=int)
 
-			copies = read_stacked_columns(cell_paths, 'RnaSynthProb',
-				'promoter_copy_number', ignore_exception=True,
-				fun=_sum_over(s_idx))
-			init = read_stacked_columns(cell_paths, 'RnapData',
-				'rnaInitEvent', ignore_exception=True, fun=_sum_over(r_idx))
+			copies = _slice(copies_all, s_idx)
+			init = _slice(init_all, r_idx)
 
 			n = float(np.mean(copies)) if copies.size else float('nan')
 			v = float(np.mean(init)) if init.size else float('nan')
@@ -362,23 +378,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			row['%s_n_ch' % name] = float(
 				get_n_ch(tau, np.array([spec['f_mean'] * 1.0])))
 
-			# Engaged polymerases. rRNA reads its own column; everything else
-			# is mRNA. The construct and the genome row are mRNA-side too.
-			column = ('partial_rRNA_counts' if name == 'rrna'
-				else 'partial_mRNA_counts')
-			names = engaged.get(column, [])
-			e_idx = np.array([names.index(t) for t in tu_ids if t in names],
-				dtype=int)
-			if len(names) and e_idx.size:
-				eng = read_stacked_columns(cell_paths, 'RNACounts', column,
-					ignore_exception=True, fun=_sum_over(e_idx))
-				row['%s_rnap_engaged' % name] = (
-					float(np.mean(eng)) if eng.size else float('nan'))
-			else:
-				row['%s_rnap_engaged' % name] = float('nan')
+			# Engaged polymerases. A class can span both transcript types --
+			# machinery_any and genome both do -- so BOTH columns are summed.
+			# Picking one by class name silently dropped the rRNA part of any
+			# mixed class: machinery_any came out identical to
+			# ribosomal_proteins because its 291 rRNA-engaged polymerases were
+			# discarded, and the genome row reported the mRNA share (0.42)
+			# while reading as though it were the whole genome.
+			total_eng, found_any = 0.0, False
+			for column, attribute in (('partial_mRNA_counts', 'mRNA_ids'),
+					('partial_rRNA_counts', 'rRNA_ids')):
+				names = engaged.get(column, [])
+				if not names or column not in eng_all:
+					continue
+				e_idx = np.array([names.index(t) for t in tu_ids
+					if t in names], dtype=int)
+				if e_idx.size == 0:
+					continue
+				part = _slice(eng_all[column], e_idx)
+				if part.size:
+					total_eng += float(np.mean(part))
+					found_any = True
+			row['%s_rnap_engaged' % name] = (
+				total_eng if found_any else float('nan'))
 			row['%s_rnap_portion' % name] = (
 				row['%s_rnap_engaged' % name] / row['active_rnap']
-				if row['active_rnap'] else float('nan'))
+				if row['active_rnap'] and found_any else float('nan'))
 			row['%s_f' % name] = spec['f_mean']
 
 		return row
@@ -477,3 +502,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_file_name, metadata)
 		plt.close('all')
+
+
+if __name__ == '__main__':
+	Plot().cli()

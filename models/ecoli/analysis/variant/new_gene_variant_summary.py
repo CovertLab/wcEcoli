@@ -314,3 +314,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plot_out_dir, plot_out_file_name, metadata)
 		plt.close('all')
+
+
+if __name__ == '__main__':
+	Plot().cli()
