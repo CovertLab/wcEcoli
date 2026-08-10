@@ -30,6 +30,7 @@ ACTIVE = [
 	"transcriptFrequency_def5.py",
 	"subgen_monomer_dynamics_def5.py",
 	"subgen_per_generation_expression.py",
+	"subgen_set_uniqueness.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
 	# "transcriptionGenomeCoverageSecondHalf.py",
