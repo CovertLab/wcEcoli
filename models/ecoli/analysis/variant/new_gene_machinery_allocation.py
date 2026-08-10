@@ -238,15 +238,29 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'ribosomal-protein classes (co-transcribed operons). Do not '
 				'sum those two rows; use machinery_any for a total.' % overlap)
 
+		# The construct is an mRNA, so it sits inside any mRNA aggregate. Both
+		# are reported because a rising mRNA share is uninteresting if it is
+		# just the construct arriving -- mrna_not_construct is the row that
+		# says whether the native mRNA sector really gained.
+		is_mrna = np.asarray(rna_data['is_mRNA'], dtype=bool)
+
 		masks = {
 			'rrna': is_rrna,
 			'rnap_subunits': is_rnap,
 			'ribosomal_proteins': is_rprot,
 			'machinery_any': is_rrna | is_rnap | is_rprot,
+			'mrna': is_mrna,
+			'mrna_not_construct': is_mrna & ~new_tu,
 			'construct': new_tu,
 			'terminus_ref': frac > TERMINUS_FRACTION,
 			'genome': np.ones(len(ids), dtype=bool),
 		}
+
+		# RNACounts publishes engaged-polymerase counts for mRNA and rRNA only,
+		# so the genome row's rnap_portion is mRNA + rRNA and stops short of
+		# 1.0 by whatever tRNA and misc ncRNA are using. That residual is
+		# recoverable as 1 - genome_rnap_portion and is worth reporting: it was
+		# 17.0% of engaged RNAP at variant 0 and fell to 13.7% under burden.
 
 		classes = {}
 		for name, mask in masks.items():
@@ -459,8 +473,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	def _plot(self, plot_out_dir, plot_out_file_name, rows, classes, metadata):
 		show = [n for n in
-			('rrna', 'rnap_subunits', 'ribosomal_proteins', 'construct',
-				'terminus_ref')
+			('rrna', 'rnap_subunits', 'ribosomal_proteins',
+				'mrna_not_construct', 'construct', 'terminus_ref')
 			if n in classes]
 		variants = [r['variant'] for r in rows]
 
