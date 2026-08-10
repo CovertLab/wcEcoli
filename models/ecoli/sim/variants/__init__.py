@@ -16,6 +16,7 @@ variants = [
 	'metabolism_kinetic_objective_weight',
 	'metabolism_secretion_penalty',
 	'new_gene_burden_ladder',
+	'new_gene_burden_ladder_rich',
 	'new_gene_internal_shift',
 	'new_gene_internal_shift_with_kcat',
 	'new_gene_phased_internal_shift',
