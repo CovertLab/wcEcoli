@@ -14,13 +14,14 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 60)
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 BATCH_SIZE = 50
 
 
@@ -35,7 +36,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cell_paths = self.ap.get_cells(
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
 			only_successful=True)
-		
+
+		# Restrict to strict-successful lineages (completed every generation and
+		# no cell at the 180-min doubling cap).
+		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		cell_paths = sc.filter_cells_to_successful(
+			cell_paths, success['successful_seeds'])
+
 		if len(cell_paths) == 0:
 			print('No valid cell paths found for this variant. Skipping analysis.')
 			return
@@ -99,34 +106,38 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		mean_monomer_counts = np.zeros(len(monomer_indices))
 		mean_mRNA_counts = np.zeros(len(mRNA_ids_indices))
-		n_cells = 0
+		# Total number of timesteps summed across all cells (each stacked row is
+		# one timestep of one cell), NOT the number of cells: the reported means
+		# are per-timestep averages, matching mean_mRNA_counts in
+		# subgen_expression_definitions.py.
+		total_timesteps = 0
 
 		for i in range(0, len(cell_paths), BATCH_SIZE):
 			batch_paths = cell_paths[i:i+BATCH_SIZE]
 			print(f'Processing batch {i//BATCH_SIZE + 1}/{(len(cell_paths)-1)//BATCH_SIZE + 1}...')
-			
-			# Read batch data
+
+			# Read batch data. remove_first drops the inherited boundary timestep
+			# so the per-timestep mean is not double-counting generation handoffs.
 			batch_monomer = read_stacked_columns(
 				batch_paths, 'MonomerCounts', 'monomerCounts',
-				ignore_exception=True)[:, monomer_indices]
+				remove_first=True, ignore_exception=True)[:, monomer_indices]
 			batch_mRNA = read_stacked_columns(
 				batch_paths, 'RNACounts', 'mRNA_cistron_counts',
-				ignore_exception=True)[:, mRNA_ids_indices]
-			
+				remove_first=True, ignore_exception=True)[:, mRNA_ids_indices]
+
 			# Accumulate sums
 			mean_monomer_counts += batch_monomer.sum(axis=0)
 			mean_mRNA_counts += batch_mRNA.sum(axis=0)
-			n_cells += batch_monomer.shape[0]
-			
+			total_timesteps += batch_monomer.shape[0]
+
 			# Free memory
 			del batch_monomer, batch_mRNA
 
-			# Calculate means
-			mean_monomer_counts /= n_cells
-			mean_mRNA_counts /= n_cells
-
-		
-		# import ipdb; ipdb.set_trace()
+		# Calculate means once, after all batches have been accumulated. (This
+		# was previously inside the loop, which divided the running sums by a
+		# growing count every batch and corrupted the means.)
+		mean_monomer_counts /= total_timesteps
+		mean_mRNA_counts /= total_timesteps
 
 		# Write data to table
 		with open(os.path.join(plotOutDir, plotOutFileName + '_40_seeds_last_11_gens.tsv'), 'w') as f:

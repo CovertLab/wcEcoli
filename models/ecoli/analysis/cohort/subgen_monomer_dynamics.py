@@ -14,6 +14,7 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 											   read_bulk_molecule_counts, read_stacked_bulk_molecules,
 											   read_stacked_columns)
@@ -201,9 +202,15 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			# Determine doubling time
 			doubling_times = read_stacked_columns(cell_paths, 'Main', 'time', fun=lambda x: (x[-1] - x[0])).squeeze().astype(int)
 			end_generation_times = np.cumsum(doubling_times) + time[0] #
-			start_generation_indices = np.searchsorted(time, end_generation_times[:-1], side = 'left').astype(int)
-			start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(len(doubling_times))
-			end_generation_indices = start_generation_indices + doubling_times
+			# Per-generation row boundaries from actual row counts. read_stacked_columns
+			# stacks one cell (= one generation) per block, so labeling each row by its
+			# source cell segments generations exactly, with no assumption that a row is
+			# 1 s and no boundary-duplicate drift.
+			cell_ids = stacked_cell_identification(cell_paths, 'Main', 'time').squeeze().astype(int)
+			n_cells = len(cell_paths)
+			start_generation_indices = np.searchsorted(cell_ids, np.arange(n_cells), side='left')
+			# Inclusive last row of each generation; callers slice time[start:end + 1].
+			end_generation_indices = np.append(start_generation_indices[1:], len(cell_ids)) - 1
 			return time.astype(int), doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
 		def plot_counts_dynamics(counts, color, molecules_of_interest, molecule_type, time, end_generation_times, seed):
@@ -314,12 +321,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_gen_{seed}_{color}', metadata)
 			
 
+		# Strict-successful lineages (completed every generation and no cell at
+		# the 180-min doubling cap).
+		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+
 		for seed in SEEDS:
 			cell_paths_per_seed = self.ap.get_cells(
 				generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=[seed],
 				only_successful=True)
 
-			if not np.all([self.ap.get_successful(cell) for cell in cell_paths_per_seed]):
+			if seed not in success['successful_seeds']:
 				continue
 			
 			monomer_counts = read_stacked_columns(cell_paths_per_seed, 'MonomerCounts', 'monomerCounts')[:, monomer_indices]

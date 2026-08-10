@@ -14,13 +14,14 @@ import csv
 
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
     read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 60)
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
                         'RIBULOKIN-MONOMER[c]',  # araB
@@ -117,27 +118,43 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=SEED_RANGE,
             only_successful=True)
 
+        # Restrict to strict-successful lineages (completed every generation and
+        # no cell at the 180-min doubling cap).
+        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        cell_paths = sc.filter_cells_to_successful(
+            cell_paths, success['successful_seeds'])
+        print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+        if len(cell_paths) == 0:
+            print('No successful-lineage cells found. Skipping.')
+            return
 
-        # should only be capturing the deltas from 0 to >0 transcripts, otherwise tracking transcript by second
+        # Count 0 -> >0 onsets: the number of times a gene's transcript count
+        # rises from zero to non-zero (a "new appearance"). Working on the
+        # boolean presence series makes 0->2 count as one onset and ignores
+        # increases between two non-zero counts (e.g. 5->6).
         def count_peaks(time_series_data):
-            # Convert counts to a boolean array: True if count > 0, False otherwise
-            #is_present = time_series_data > 0
-            # look at all new mRNA appearances
-
-            # Use np.diff to find the difference between adjacent time steps (rows, axis=0).
-            transition_deltas = np.diff(time_series_data.astype(int), axis=0)
-
-            # Count only the '1's (the False -> True transitions) along the time axis (axis=0).
+            is_present = (time_series_data > 0).astype(int)
+            transition_deltas = np.diff(is_present, axis=0)
             on_event_count = (transition_deltas == 1).sum(axis=0)
             return on_event_count
 
         
-        cistron_peaks_per_gen_full = read_stacked_columns(
-            cell_paths, 
-            'RNACounts', 
-            'mRNA_cistron_counts',
-            ignore_exception=True, 
-            fun=count_peaks)[:, mRNA_ids_indices]
+        # Read one cell at a time so each onset-count row stays paired with its
+        # own cell path. (A single read_stacked_columns(ignore_exception=True)
+        # call silently DROPS unreadable cells, which would shift every later
+        # row off its cell_id label and eventually IndexError.)
+        peak_rows = []
+        kept_cell_ids = []
+        for cell_path in cell_paths:
+            try:
+                cell_peaks = read_stacked_columns(
+                    [cell_path], 'RNACounts', 'mRNA_cistron_counts',
+                    fun=count_peaks)
+            except Exception as e:
+                print('  Warning: could not read %s: %s' % (cell_path, e))
+                continue
+            peak_rows.append(cell_peaks[0][mRNA_ids_indices])
+            kept_cell_ids.append(cell_path)
 
         tabel_cols = ['cell_id'] + monomers_of_interest
         # Write data to table so that the first col is the cell id and the rest are the counts per monomer
@@ -145,9 +162,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             writer = csv.writer(f, delimiter='\t')
             writer.writerow(tabel_cols)
 
-            for i in np.arange(0, len(cell_paths)):
-                cell_id = cell_paths[i]
-                counts_row = cistron_peaks_per_gen_full[i]
+            for cell_id, counts_row in zip(kept_cell_ids, peak_rows):
                 full_row = [cell_id] + counts_row.tolist()
                 writer.writerow(full_row)
 
