@@ -36,11 +36,29 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('No successful lineages found. Skipping.')
 			return
 
+		# The gene key and the synth matrix are written from the same list, so
+		# their column order matches today; check it anyway, since every column
+		# below is indexed positionally against the synth matrix's gene_ids.
+		# Same guard as subgen_per_generation_expression.py.
 		gene_key, cistron_ids, monomer_ids = sc.load_raw_genes(plotOutDir)
+		if gene_key != gene_ids:
+			print('WARNING: gene column order differs between the synth matrix '
+				'and the gene key; realigning the gene key to the synth-matrix '
+				'order.')
+			cistron_by_gene = dict(zip(gene_key, cistron_ids))
+			monomer_by_gene = dict(zip(gene_key, monomer_ids))
+			cistron_ids = [cistron_by_gene.get(g, '') for g in gene_ids]
+			monomer_ids = [monomer_by_gene.get(g, '') for g in gene_ids]
+
 		# Descriptive copy numbers: max over successful cells only.
 		is_succ = clf['is_successful']
-		_, _, _, _, max_mrna = sc.load_raw_max(plotOutDir, 'mrna')
-		_, _, _, _, max_prot = sc.load_raw_max(plotOutDir, 'protein')
+		_, _, _, mrna_gene_ids, max_mrna = sc.load_raw_max(plotOutDir, 'mrna')
+		_, _, _, prot_gene_ids, max_prot = sc.load_raw_max(plotOutDir, 'protein')
+		for which, ids in (('mrna', mrna_gene_ids), ('protein', prot_gene_ids)):
+			if ids != gene_ids:
+				print('WARNING: the max-%s matrix gene columns do not match the '
+					'synth matrix; its max counts may be misattributed. Re-run '
+					'subgen_raw_extract.py.' % which)
 		max_mRNA_count = max_mrna[is_succ].max(axis=0) if is_succ.any() \
 			else np.zeros(n_genes)
 		max_protein_count = max_prot[is_succ].max(axis=0) if is_succ.any() \

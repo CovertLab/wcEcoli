@@ -1,7 +1,7 @@
 """
 Definition-5 rewrite of subgenerationalTranscription.py (Figure 5B/5E/5F/5G).
 
-Two changes from the original, both to align it with Definition 5:
+Three changes from the original, all to align it with Definition 5:
 
   1. A gene counts as transcribed in a generation when it produced at least one
      COMPLETED transcript (TranscriptElongationListener/
@@ -11,10 +11,18 @@ Two changes from the original, both to align it with Definition 5:
   2. The first IGNORE_FIRST_N_GENS generations are dropped as burn-in, so the
      per-lineage frequency is not contaminated by initial-condition transients.
      The original averaged over every generation including startup.
+  3. The original ran on the seed-0 lineage unconditionally. Seed 0 is not
+     necessarily healthy -- a lineage that stalls out (cells pinned at the
+     180-minute length cap) still passes ap.get_cells(only_successful=True),
+     because those cells did write daughter state, and its collapsing
+     transcription inflates the subgenerational fraction. This version instead
+     plots the first N_LINEAGES_TO_PLOT STRICT-successful lineages (completed
+     every generation, no cell at the doubling cap), the same gate every other
+     def-5 analysis uses.
 
 Genes are classified by their per-lineage Definition-5 rate (mean completed
 transcripts per generation): never (mean == 0), subgen (0 < mean < 1), or
-not_subgen (mean >= 1). Runs on the seed-0 lineage, like the original.
+not_subgen (mean >= 1). One figure set per plotted lineage, seed-suffixed.
 """
 
 import os
@@ -25,13 +33,20 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from wholecell.io.tablereader import TableReader
+from wholecell.utils import constants
 from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
+from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
 from models.ecoli.analysis.cohort import subgen_common as sc
 
 # Number of post-burn-in generations to draw in the transcription-event raster.
 RASTER_N_GENS = 5
+# How many strict-successful lineages to plot (one figure set each). This figure
+# is inherently single-lineage, so a few lineages give a sense of the
+# lineage-to-lineage spread. Mirrors N_SEEDS_TO_PLOT in
+# subgen_monomer_dynamics_def5.py.
+N_LINEAGES_TO_PLOT = 3
 
 COLOR_NEVER = 'y'      # never expressed (freq/mean == 0)
 COLOR_NOTSUB = 'r'     # not subgenerational (mean >= 1)
@@ -47,24 +62,53 @@ def remove_xaxis(axis):
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
-		if 0 not in self.ap._path_data['seed']:
-			print('Skipping -- only runs for seed 0')
-			return
-		# only_successful=True drops generations that did not finish dividing
-		# (and therefore may be missing listener tables), so we never try to read
-		# a simOut dir for an incomplete generation.
-		allDir = self.ap.get_cells(seed=[0], only_successful=True)
-		if len(allDir) <= 1:
+		# The multigen framework hands us one seed directory, but this figure is
+		# only meaningful on a lineage that stayed healthy for the whole run, so
+		# the lineage choice is made here rather than by the caller. self.ap is
+		# scoped to seedOutDir; a cohort view over the parent variant directory
+		# is needed both to reach the other seeds' simOut and to get the
+		# cohort-wide generation count -- self.ap.n_generation counts only the
+		# generations THIS seed produced, which would make a truncated lineage
+		# look like it had completed every generation.
+		variant_dir = os.path.dirname(os.path.normpath(seedOutDir))
+		requested_seed = self._requested_seed(seedOutDir)
+		coh_ap = AnalysisPaths(variant_dir, cohort_plot=True)
+		n_generation = coh_ap.n_generation
+		if n_generation <= 1:
 			print('Skipping -- only runs for multigen')
 			return
 
-		# Burn-in: drop the first IGNORE_FIRST_N_GENS generations if enough remain.
+		successful, n_seeds, reasons = self._lineage_success(
+			variant_dir, coh_ap, n_generation)
+		if not successful:
+			print('WARNING: no strict-successful lineage among %d seeds (needs '
+				'all %d generations with no cell at the %g-min doubling cap); '
+				'skipping.' % (n_seeds, n_generation, sc.MAX_DOUBLING_MIN))
+			return
+
+		ordered = sorted(successful)
+		if requested_seed in successful:
+			seeds_to_plot = [requested_seed] + [
+				s for s in ordered if s != requested_seed]
+		else:
+			print('WARNING: seed %s is NOT a strict-successful lineage%s.'
+				% (requested_seed, reasons.get(requested_seed, '')))
+			print('  Plotting strict-successful lineages instead; this figure '
+				'is not meaningful on a lineage that died or stalled.')
+			seeds_to_plot = ordered
+		seeds_to_plot = seeds_to_plot[:N_LINEAGES_TO_PLOT]
+		print('Strict-successful lineages: %d of %d seeds. Plotting %s.'
+			% (len(successful), n_seeds,
+				', '.join(str(s) for s in seeds_to_plot)))
+
+		# Burn-in: drop the first IGNORE_FIRST_N_GENS generations if enough
+		# remain. Computed against the cohort generation count, not the number
+		# of directories returned, so the boundary is a generation index.
 		burn_in = sc.IGNORE_FIRST_N_GENS
-		if len(allDir) <= burn_in + 1:
+		if n_generation <= burn_in + 1:
 			print('Only %d generations; using all after a reduced burn-in.'
-				% len(allDir))
-			burn_in = max(0, len(allDir) - 2)
-		freqDir = allDir[burn_in:]
+				% n_generation)
+			burn_in = max(0, n_generation - 2)
 
 		sim_data = self.read_pickle_file(simDataFile)
 		validation_data = self.read_pickle_file(validationDataFile)
@@ -74,15 +118,83 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_cistron_indexes = np.where(is_mRNA)[0]
 		mRNA_cistron_ids = np.array([cistron_ids[x] for x in mRNA_cistron_indexes])
 
-		# Detect the completed-transcript column.
-		first_out = os.path.join(freqDir[0], 'simOut')
+		gens = np.arange(burn_in, n_generation)
+		for seed in seeds_to_plot:
+			freqDir = coh_ap.get_cells(
+				seed=[seed], generation=gens, only_successful=True)
+			if len(freqDir) <= 1:
+				print('Skipping seed %d -- %d post-burn-in generations.'
+					% (seed, len(freqDir)))
+				continue
+
+			# Detect the completed-transcript column.
+			first_out = os.path.join(freqDir[0], 'simOut')
+			try:
+				TableReader(os.path.join(first_out, sc.SYNTH_TABLE)
+					).readColumn(sc.SYNTH_COLUMN)
+			except Exception:
+				print('WARNING: %s/%s not found; cannot run the Definition-5 '
+					'variant on this cohort.' % (sc.SYNTH_TABLE, sc.SYNTH_COLUMN))
+				return
+
+			self._plot_lineage(plotOutDir, plotOutFileName, metadata,
+				validation_data, seed, burn_in, freqDir, mRNA_cistron_indexes,
+				mRNA_cistron_ids)
+
+	def _requested_seed(self, seedOutDir):
+		"""The seed the framework was pointed at (the seed dir's basename)."""
+		name = os.path.basename(os.path.normpath(seedOutDir))
 		try:
-			TableReader(os.path.join(first_out, sc.SYNTH_TABLE)
-				).readColumn(sc.SYNTH_COLUMN)
-		except Exception:
-			print('WARNING: %s/%s not found; cannot run the Definition-5 '
-				'variant on this cohort.' % (sc.SYNTH_TABLE, sc.SYNTH_COLUMN))
-			return
+			return int(name)
+		except ValueError:
+			return -1
+
+	def _lineage_success(self, variant_dir, coh_ap, n_generation):
+		"""Strict successful-lineage set for this cohort.
+
+		Prefers the flags already persisted by subgen_raw_extract.py (cheap);
+		falls back to recomputing them, which reads every cell's Main/time.
+		Returns (successful_seeds, n_seeds_seen, {seed: rejection reason}).
+		"""
+		rows = sc.load_lineage_success_rows(
+			os.path.join(variant_dir, constants.PLOTOUT_DIR))
+		if rows:
+			print('Using the strict lineage flags from the raw extraction.')
+			successful = {s for s, r in rows.items()
+				if r['is_successful'].strip() == 'True'}
+			reasons = {
+				s: ' (completed_all_gens=%s, %s/%d gens ran, n_cells_at_180=%s,'
+					' gens_at_180=%s)'
+					% (r['completed_all_gens'], r['n_gens_ran'], n_generation,
+						r['n_cells_at_180'], r['gens_at_180'] or '-')
+				for s, r in rows.items() if s not in successful}
+			return successful, len(rows), reasons
+
+		print('No raw-extraction lineage table found; recomputing the strict '
+			'successful-lineage set (reads every cell\'s Main/time).')
+		_, sim_metadata = sc.load_sim_metadata(variant_dir)
+		success = sc.compute_lineage_success(coh_ap, n_generation,
+			total_init_sims=sim_metadata.get('total_init_sims'))
+		reasons = {}
+		for s in success['all_seed_ids']:
+			if success['in_successful'][s]:
+				continue
+			missing = sorted(
+				set(range(n_generation)) - success['successful_gens'][s])
+			reasons[s] = (' (completed_all_gens=%s, %d of %d gens missing,'
+				' n_cells_at_180=%d, gens_at_180=%s)'
+				% (success['completed_all'][s], len(missing), n_generation,
+					success['n_at_180'][s],
+					','.join(str(g) for g in success['gens_at_180'][s]) or '-'))
+		return (success['successful_seeds'], len(success['all_seed_ids']),
+			reasons)
+
+	def _plot_lineage(self, plotOutDir, plotOutFileName, metadata,
+			validation_data, seed, burn_in, freqDir, mRNA_cistron_indexes,
+			mRNA_cistron_ids):
+		"""Produce the 5B/5E/5F/5G panels for one strict-successful lineage."""
+		# Seed-suffixed so one lineage never overwrites another's panels.
+		name = '%s_seed%06d' % (plotOutFileName, seed)
 
 		transcribedBool = []       # per gen: bool, >=1 completed transcript
 		synthPerGen = []           # per gen: completed transcript count per gene
@@ -124,6 +236,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				transcriptionEvents = events if transcriptionEvents is None \
 					else np.vstack((transcriptionEvents, events))
 
+		if not synthPerGen:
+			print('Skipping seed %d -- no readable generation.' % seed)
+			return
+
 		time = np.array(time)
 		if time.size:
 			time_eachGen.append(time[-1])
@@ -131,6 +247,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		transcribedBool = np.array(transcribedBool)
 		synthPerGen = np.array(synthPerGen)
 		simulatedSynthProbs = np.array(simulatedSynthProbs)
+		n_gens_used = synthPerGen.shape[0]
+		print('Seed %d: %d post-burn-in generations (burn-in=%d).'
+			% (seed, n_gens_used, burn_in))
 
 		# Order genes by mean simulated synthesis probability (x-axis only).
 		indexingOrder = np.argsort(np.mean(simulatedSynthProbs, axis=0))
@@ -149,6 +268,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		colors = np.repeat(COLOR_SUB, len(freqOrdered))
 		colors[neverIdx] = COLOR_NEVER
 		colors[notSubIdx] = COLOR_NOTSUB
+		print('  never=%d, subgen=%d (%.1f%%), not_subgen=%d'
+			% (len(neverIdx), len(subIdx),
+				100. * len(subIdx) / len(freqOrdered), len(notSubIdx)))
 
 		# --- Figure 5B top: frequency scatter + histogram ---
 		fig = plt.figure(figsize=(16, 8))
@@ -160,13 +282,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		scatterAxis.set_xlim([0, len(freqOrdered)])
 		scatterAxis.set_ylim([-.01, 1.01])
 		whitePadSparklineAxis(scatterAxis)
-		histAxis.hist(freqOrdered, bins=len(freqDir) + 1, orientation='horizontal',
+		histAxis.hist(freqOrdered, bins=n_gens_used + 1, orientation='horizontal',
 			color=COLOR_SUB)
 		histAxis.set_xscale('log')
 		whitePadSparklineAxis(histAxis)
 		histAxis.xaxis.tick_bottom()
 		plt.suptitle('Frequency of >=1 COMPLETED transcript per generation '
-			'(Definition 5, burn-in=%d gens)' % burn_in, fontsize=14)
+			'(Definition 5, seed %d strict-successful lineage, burn-in=%d gens, '
+			'%d gens)' % (seed, burn_in, n_gens_used), fontsize=14)
 		scatterAxis.set_xlabel(
 			'Genes ordered by simulated synthesis probability', fontsize=12)
 		scatterAxis.set_ylabel('Fraction of generations', fontsize=12)
@@ -179,7 +302,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		histAxis.text(histAxis.get_xlim()[1] * 1.6, 0.5, '%s subgen\n(%0.1f%%)'
 			% (len(subIdx), 100. * len(subIdx) / len(freqOrdered)),
 			fontsize=12, va='center', color=COLOR_SUB)
-		exportFigure(plt, plotOutDir, plotOutFileName + '_5B_top', metadata)
+		exportFigure(plt, plotOutDir, name + '_5B_top', metadata)
 		plt.close('all')
 
 		# --- Figure 5B bottom: completed-transcript event raster ---
@@ -213,13 +336,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			botAxis.set_xlabel('Time (gens)', fontsize=14)
 			botAxis.set_xticks(time_eachGen / 3600.)
 			botAxis.set_xticklabels(np.arange(len(time_eachGen)))
-			plt.suptitle('Completed-transcript events (Definition 5)', fontsize=14)
-			exportFigure(plt, plotOutDir, plotOutFileName + '_5B_bottom', metadata)
+			plt.suptitle('Completed-transcript events (Definition 5, seed %d)'
+				% seed, fontsize=14)
+			exportFigure(plt, plotOutDir, name + '_5B_bottom', metadata)
 			plt.close('all')
 
 		# --- Figures 5E/5F/5G: gene-category composition by freq group ---
-		self._category_bars(plotOutDir, plotOutFileName, metadata,
-			validation_data, mRNA_ids_ordered, def5MeanOrdered)
+		self._category_bars(plotOutDir, name, metadata, validation_data,
+			mRNA_ids_ordered, def5MeanOrdered)
 
 	def _classify_mean(self, m):
 		if m == 0:
@@ -228,8 +352,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			return 'b'  # not subgen
 		return 'g'      # subgen
 
-	def _category_bars(self, plotOutDir, plotOutFileName, metadata,
-			validation_data, mRNA_ids_ordered, def5MeanOrdered):
+	def _category_bars(self, plotOutDir, name, metadata, validation_data,
+			mRNA_ids_ordered, def5MeanOrdered):
 		xloc = np.arange(3)
 		width = 0.8
 		id_set = set(mRNA_ids_ordered)
@@ -264,7 +388,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			n_ess += 1
 		bar(counts, n_ess, 'Percentage of essential genes',
 			'Total essential genes: %s' % n_ess,
-			plotOutFileName + '_5E')
+			name + '_5E')
 
 		# 5F/5G: gene functions (unknown, resistance)
 		geneFunctions = validation_data.geneFunctions.geneFunctions
@@ -287,11 +411,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		bar(unknown, sum(unknown.values()),
 			'Percentage of poorly understood genes',
 			'Total poorly understood genes: %s' % sum(unknown.values()),
-			plotOutFileName + '_5F')
+			name + '_5F')
 		bar(resistance, sum(resistance.values()),
 			'Percentage of antibiotic-related genes',
 			'Total antibiotic-related genes: %s' % sum(resistance.values()),
-			plotOutFileName + '_5G')
+			name + '_5G')
 
 
 if __name__ == '__main__':

@@ -536,6 +536,40 @@ def canonical_def5_classification(plot_out_dir):
 		}
 
 
+def load_lineage_success_rows(plot_out_dir):
+	"""Load the raw extraction's lineage table as {seed: {column: value}}.
+
+	Column keys are the file's own header names (seed, n_gens_ran,
+	reached_final_gen, completed_all_gens, n_cells_at_180, gens_at_180,
+	max_doubling_min, is_successful); values are the raw strings apart from the
+	int seed key. Returns {} when the file is absent.
+	"""
+	path = raw_extract_prefix(plot_out_dir) + LINEAGE_SUCCESS_SUFFIX
+	if not os.path.isfile(path):
+		return {}
+	out = {}
+	with open(path) as f:
+		for row in csv.DictReader(f, delimiter='\t'):
+			# The seed is written zero-padded ('%06d').
+			out[int(row['seed'])] = row
+	return out
+
+
+def load_lineage_success(plot_out_dir):
+	"""Load {seed: is_successful} from the raw extraction's lineage table.
+
+	This is the cheap way to get the strict successful-lineage set: the flags
+	were already computed cohort-wide by subgen_raw_extract.py, so a consumer
+	does not have to re-walk every cell's Main/time column.
+
+	Returns {} (not an error) when the file is absent, so callers can fall back
+	to compute_lineage_success().
+	"""
+	# is_successful is written as a bare Python bool.
+	return {s: row['is_successful'].strip() == 'True'
+		for s, row in load_lineage_success_rows(plot_out_dir).items()}
+
+
 def load_raw_genes(plot_out_dir):
 	"""Load the gene key (gene_id, cistron_id, monomer_id) as parallel lists."""
 	path = _require_raw_file(plot_out_dir, GENES_SUFFIX)
