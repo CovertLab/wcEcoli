@@ -360,11 +360,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# does not need its own pass over the cells.
 		row['total_init'] = (float(np.mean(init_all.sum(axis=1)))
 			if init_all.size else float('nan'))
+		# Whether each TU sat at the RNAP-footprint cap. Rich media has a much
+		# larger polymerase pool, so max_p (which is inversely proportional to
+		# it) is TIGHTER there and native promoters clamp at low burden --- 9
+		# transcription units were pinned in rich at variant 0 with no
+		# construct present. If the rRNA operons are among them their variant-1
+		# per-copy rate is capped and every rRNA retention number is biased
+		# toward "rRNA does better". This column settles that per class.
+		crowd_all = read_stacked_columns(cell_paths, 'RnaSynthProb',
+			'tu_is_overcrowded', ignore_exception=True, fun=_time_mean)
+
 		eng_all = {}
 		for column in ('partial_mRNA_counts', 'partial_rRNA_counts'):
 			if engaged.get(column):
 				eng_all[column] = read_stacked_columns(cell_paths, 'RNACounts',
 					column, ignore_exception=True, fun=_time_mean)
+
+		def _slice_mean(data, idx):
+			"""Per-cell class MEAN from an already-read (cells x TUs) array.
+
+			Used for fractions, where summing across a class is meaningless.
+			"""
+			if data is None or not data.size or idx.size == 0:
+				return np.array([])
+			return data[:, idx].mean(axis=1)
 
 		def _slice(data, idx):
 			"""Per-cell class total from an already-read (cells x TUs) array."""
@@ -391,6 +410,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			row['%s_r' % name] = v / n if n else float('nan')
 			row['%s_n_ch' % name] = float(
 				get_n_ch(tau, np.array([spec['f_mean'] * 1.0])))
+
+			crowd = _slice_mean(crowd_all, s_idx)
+			row['%s_overcrowded' % name] = (
+				float(np.mean(crowd)) if crowd.size else float('nan'))
+			row['%s_overcrowded_sem' % name] = _sem(crowd)
 
 			# Engaged polymerases. A class can span both transcript types --
 			# machinery_any and genome both do -- so BOTH columns are summed.
@@ -430,7 +454,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		for name in classes:
 			fields += ['%s_%s' % (name, s) for s in
 				('f', 'n', 'n_sem', 'n_ch', 'init', 'init_sem', 'r',
-					'rnap_engaged', 'rnap_portion')]
+					'rnap_engaged', 'rnap_portion', 'overcrowded',
+					'overcrowded_sem')]
 		path = os.path.join(plot_out_dir, plot_out_file_name + '.csv')
 		with open(path, 'w', newline='') as handle:
 			writer = csv.DictWriter(handle, fieldnames=fields)
@@ -467,6 +492,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					('x%.3f' % (n1 / n0)) if n0 else '--',
 					('%.4f -> %.4f' % (p0, p1))
 						if p0 and np.isfinite(p0) else '--'))
+		print('\n  %-20s %14s %14s' % ('class', 'overcrowded v0', 'overcrowded vN'))
+		for name in classes:
+			a = first.get('%s_overcrowded' % name)
+			b = last.get('%s_overcrowded' % name)
+			if a is None or not np.isfinite(a):
+				continue
+			flag = '  <-- CLAMPED' if max(a, b) > 0.05 else ''
+			print('  %-20s %14.5f %14.5f%s' % (name, a, b, flag))
+		print('\n  A class clamped at low burden and free at high burden will '
+			'look like it\n  RETAINS per-copy rate, because its early rate was '
+			'capped. Check this\n  before reading any retention number.')
 		print('\n  Dosage loss ordered by position is expected and is a '
 			'validation.\n  The finding is whether RNAP portion tracks it or '
 			'holds steady.\n')

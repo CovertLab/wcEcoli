@@ -135,11 +135,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print('Could not locate the construct; nothing to test.')
 			return
 		print('Construct transcription units: %s' % tu_ids)
+		classify = self._tu_classifier(sim_data, tu_ids)
 		self._report_expected_ceiling(sim_data)
 
 		rows = []
 		for variant in variants:
-			m = self._measure(variant, generations, tu_ids)
+			m = self._measure(variant, generations, tu_ids, classify)
 			if m is None:
 				print('No usable cells for variant %d; skipping.' % variant)
 				continue
@@ -150,6 +151,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		self._write_csv(plotOutDir, plotOutFileName, rows)
+		self._write_pinned_csv(plotOutDir, plotOutFileName, rows)
+		self._report_pinned(rows)
 		self._report(rows)
 		self._plot(plotOutDir, plotOutFileName, rows, metadata)
 
@@ -165,6 +168,36 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		except Exception as exc:  # noqa: BLE001 - informational only
 			print('Could not read the footprint size (%s); the measured '
 				'ceiling below is the one that matters.' % exc)
+
+	def _tu_classifier(self, sim_data, construct_tu_ids):
+		"""
+		Map every transcription unit id to a short class label, so a pinned TU
+		can be named as rRNA / RNAP / r-protein rather than left as an opaque
+		identifier. Uses the same rna_data flags as
+		new_gene_machinery_allocation, so the two cannot disagree.
+		"""
+		try:
+			rna_data = sim_data.process.transcription.rna_data.struct_array
+			labels = {}
+			construct = set(construct_tu_ids)
+			for i, tu in enumerate(rna_data['id']):
+				tu = str(tu)
+				if tu in construct:
+					labels[tu] = 'construct'
+				elif rna_data['is_rRNA'][i]:
+					labels[tu] = 'rRNA'
+				elif rna_data['includes_RNAP'][i]:
+					labels[tu] = 'RNAP subunit'
+				elif rna_data['includes_ribosomal_protein'][i]:
+					labels[tu] = 'r-protein'
+				elif not rna_data['is_mRNA'][i]:
+					labels[tu] = 'other stable'
+				else:
+					labels[tu] = 'mRNA'
+			return labels
+		except Exception as exc:  # noqa: BLE001 - naming is informative only
+			print('Could not classify transcription units (%s).' % exc)
+			return {}
 
 	def _new_gene_tu_ids(self, sim_data):
 		try:
@@ -185,7 +218,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print('Could not locate new gene TUs (%s).' % exc)
 			return []
 
-	def _measure(self, variant, generations, tu_ids):
+	def _measure(self, variant, generations, tu_ids, classify=None):
 		cell_paths = self.ap.get_cells(
 			variant=[variant], generation=generations)
 		if len(cell_paths) == 0:
@@ -261,6 +294,19 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fun=lambda x: np.array([[float(x[:, rnap_idx].sum())]]))
 
 		per_tu = crowd.mean(axis=0)
+		# WHICH transcription units are at the cap, not just how many. In rich
+		# media nine are pinned at variant 0, before the construct exists, and
+		# the count alone cannot say whether the rRNA operons are among them --
+		# which decides whether rich's rRNA retention numbers are real.
+		order = np.argsort(per_tu)[::-1]
+		pinned_rows = []
+		for j in order:
+			if per_tu[j] <= PINNED_THRESHOLD:
+				break
+			tu = str(synth_ids[j])
+			pinned_rows.append(dict(variant=variant, tu_id=tu,
+				tu_class=(classify or {}).get(tu, 'unknown'),
+				overcrowded_frac=float(per_tu[j])))
 		ng_frac = float(per_tu[synth_idx].mean())
 		pinned = per_tu > PINNED_THRESHOLD
 		# rank 1 = the most-pinned TU in the genome
@@ -278,6 +324,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			construct_rank=rank,
 			n_tus=int(per_tu.size),
 			n_cells=int(crowd.shape[0]),
+			pinned_rows=pinned_rows,
 			)
 
 	def _write_csv(self, plot_out_dir, plot_out_file_name, rows):
@@ -290,6 +337,43 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			w.writeheader()
 			for r in rows:
 				w.writerow({k: r.get(k, '') for k in fields})
+
+	def _write_pinned_csv(self, plot_out_dir, plot_out_file_name, rows):
+		"""One row per pinned transcription unit per variant."""
+		path = os.path.join(
+			plot_out_dir, plot_out_file_name + '_pinned_tus.csv')
+		fields = ['variant', 'tu_id', 'tu_class', 'overcrowded_frac']
+		with open(path, 'w') as handle:
+			w = csv.DictWriter(handle, fieldnames=fields)
+			w.writeheader()
+			for r in rows:
+				for p in r.get('pinned_rows', []):
+					w.writerow(p)
+
+	def _report_pinned(self, rows):
+		"""Name the pinned transcription units, grouped by class."""
+		print('\nTranscription units at the initiation cap '
+			'(overcrowded in > %.0f%% of timesteps)' % (100 * PINNED_THRESHOLD))
+		for r in rows:
+			pinned = r.get('pinned_rows', [])
+			if not pinned:
+				print('  variant %d: none' % r['variant'])
+				continue
+			counts = {}
+			for p in pinned:
+				counts[p['tu_class']] = counts.get(p['tu_class'], 0) + 1
+			summary = ', '.join('%d %s' % (v, k)
+				for k, v in sorted(counts.items(), key=lambda x: -x[1]))
+			print('  variant %d: %d pinned  (%s)'
+				% (r['variant'], len(pinned), summary))
+			for p in pinned[:12]:
+				print('      %-18s %-14s %.4f'
+					% (p['tu_id'], p['tu_class'], p['overcrowded_frac']))
+			if len(pinned) > 12:
+				print('      ... and %d more' % (len(pinned) - 12))
+		print('\n  If rRNA appears here at low burden and not at high burden, '
+			'its early\n  per-copy rate was capped and its apparent retention '
+			'is inflated.\n')
 
 	def _report(self, rows):
 		print('\nPromoter crowding for the construct')
