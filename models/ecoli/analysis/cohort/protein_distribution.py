@@ -1,26 +1,26 @@
 """
-Template for cohort analysis plots
+Per-cell net change in monomer counts for  10 curated genes.
+
+Writes <plotOutFileName>_new_monomers_per_gen.tsv: one row per cell generation,
+first column the cell path, then one column per curated monomer holding
+monomerCounts[last] - monomerCounts[first] for that generation.
 """
 
-import pickle
 import os
 
-from matplotlib import pyplot as plt
 # noinspection PyUnresolvedReferences
 import numpy as np
-from matplotlib import cm
 
 import csv
 
-from wholecell.utils import units
-from models.ecoli.analysis import cohortAnalysisPlot
-from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
-    read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
-from wholecell.io.tablereader import TableReader
-from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 2
-SEED_RANGE = np.arange(1, 3)
+from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
+from wholecell.analysis.analysis_tools import read_stacked_columns
+from wholecell.io.tablereader import TableReader
+
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
 monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
                         'BETAGALACTOSID-MONOMER[c]',  # lacZ
                         'RIBULOKIN-MONOMER[c]',  # araB
@@ -47,9 +47,7 @@ monomers_of_interest_name_dict = {'GLYCDEH-MONOMER[c]': 'gldA',
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
-        with open(simDataFile, 'rb') as f:
-            sim_data = pickle.load(f)
-            # Ignore data from predefined number of generations per seed
+        # Ignore data from predefined number of generations per seed
         if self.ap.n_generation <= IGNORE_FIRST_N_GENS:
             print('Skipping analysis - not enough generations run.')
             return
@@ -59,34 +57,20 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         print('Analyzing %d cells...' % len(cell_paths))
 
-        # There are 4346 mRNA ids with counts
-        RNA_reader = TableReader(
-                os.path.join(cell_paths[0], 'simOut', 'RNACounts'))
-        mRNA_ids = RNA_reader.readAttribute('mRNA_cistron_ids')
-        RNA_reader.close()
-
-        mRNA_id_to_index = {
-            cistron_id: i for (i, cistron_id)
-            in enumerate(mRNA_ids)
-        }
-
-        # There are 4539 mRNA ids total w/ gene names
-        cistron_id_to_gene_id = {
-            cistron['id']: cistron['gene_id']
-            for cistron in sim_data.process.transcription.cistron_data
-        }
-
-        # There are 4310 mRNA ids with associated protein/monomer ids
-        protein_id_to_cistron_id = {
-            protein['id']: protein['cistron_id']
-            for protein in sim_data.process.translation.monomer_data
-        }
+        # Restrict to strict-successful lineages (completed every generation and
+        # no cell at the 180-min doubling cap).
+        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        cell_paths = sc.filter_cells_to_successful(
+            cell_paths, success['successful_seeds'])
+        print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+        if len(cell_paths) == 0:
+            print('No successful-lineage cells found. Skipping.')
+            return
 
         monomer_reader = TableReader(
             os.path.join(cell_paths[0], 'simOut', 'MonomerCounts'))
         monomer_ids = monomer_reader.readAttribute('monomerIds')
         monomer_reader.close()
-
 
         # Get indexes of monomers in this subcolumn
         monomer_id_to_index = {
@@ -98,39 +82,46 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             monomer_id_to_index[monomer_id] for monomer_id in monomers_of_interest
         ])
 
-        # order cistrons in the order of monomers ids
-        cistron_ids_in_order = np.array([
-            protein_id_to_cistron_id[monomer_id] for monomer_id in monomers_of_interest
-        ])
+        def net_new_monomers(time_series_data):
+            """Net change in monomer count over the cell generation: last - first.
 
-        gene_names_in_order = np.array([
-            monomers_of_interest_name_dict[monomer_id] for monomer_id in monomers_of_interest
-        ])
+            Equal to the old np.diff(...).sum(axis=0), written explicitly. Row 0 is the
+            daughter's inherited count (Listener.initialUpdate runs before the logger's
+            first write, so it is a real state, not the allocate() zeros) and the last row
+            is the pre-division count, so this is a NET quantity: synthesis minus
+            degradation, which can be negative. Under balanced growth it is close to the
+            inherited count, i.e. about half the final count -- it is not gross synthesis.
 
-        cell_paths = self.ap.get_cells(
-            generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=SEED_RANGE,
-            only_successful=True)
+            There is no per-monomer count of *completed* proteins in the listeners
+            (RibosomeData/didTerminate and actualElongations are scalars over all
+            monomers). The nearest gross per-monomer quantity is
+            RibosomeData/ribosome_init_event_per_monomer (translation initiation events,
+            monomerIds order). This script deliberately reproduces the original net-delta
+            quantity that protein_distribution_new_monomers_per_gen.tsv has always held.
 
+            Cast to int64 before subtracting: monomerCounts is int64 today (BulkMolecules
+            uses BulkObjectsContainer's default dtype), but on an unsigned dtype the
+            negative values this quantity depends on would silently wrap to huge positives.
+            """
+            return (time_series_data[-1].astype(np.int64)
+                - time_series_data[0].astype(np.int64))
 
-        # should only be capturing the deltas from 0 to >0 transcripts, otherwise tracking transcript by second
-        def count_peaks(time_series_data):
-            # Convert counts to a boolean array: True if count > 0, False otherwise
-            #is_present = time_series_data > 0
-            # look at all new mRNA appearances
-
-            # Use np.diff to find the difference between adjacent time steps (rows, axis=0).
-            transition_deltas = np.diff(time_series_data.astype(int), axis=0)
-
-            # Count newly formed monomers
-            new_proteins = transition_deltas.sum(axis = 0)
-
-            return new_proteins
-        
-        new_monomer_per_gen = read_stacked_columns(
-            cell_paths, 'MonomerCounts', 'monomerCounts',
-            ignore_exception=True, 
-            fun=count_peaks)[:, monomer_indices]
-
+        # Read one cell at a time so each delta row stays paired with its own
+        # cell path. (A single read_stacked_columns(ignore_exception=True) call
+        # silently DROPS unreadable cells, which would shift every later row off
+        # its cell_id label and eventually IndexError.)
+        delta_rows = []
+        kept_cell_ids = []
+        for cell_path in cell_paths:
+            try:
+                cell_delta = read_stacked_columns(
+                    [cell_path], 'MonomerCounts', 'monomerCounts',
+                    fun=net_new_monomers)
+            except Exception as e:
+                print('  Warning: could not read %s: %s' % (cell_path, e))
+                continue
+            delta_rows.append(cell_delta[0][monomer_indices])
+            kept_cell_ids.append(cell_path)
 
         tabel_cols = ['cell_id'] + monomers_of_interest
         # Write data to table so that the first col is the cell id and the rest are the counts per monomer
@@ -138,9 +129,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             writer = csv.writer(f, delimiter='\t')
             writer.writerow(tabel_cols)
 
-            for i in np.arange(0, len(cell_paths)):
-                cell_id = cell_paths[i]
-                counts_row = new_monomer_per_gen[i]
+            for cell_id, counts_row in zip(kept_cell_ids, delta_rows):
                 full_row = [cell_id] + counts_row.tolist()
                 writer.writerow(full_row)
 
