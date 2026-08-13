@@ -53,8 +53,9 @@ init_per_copy for anything cross-batch.
 What it answers
 ---------------
 The dosage gradient between the extreme positions, at the bottom and the top of
-the burden ladder. Predictions to beat, from Cooper-Helmstetter at the exp-8
-ladder endpoints (tau 54 -> 87 min):
+the burden ladder. The Cooper-Helmstetter null is computed at run time from the
+coordinates actually present, so it is right for whatever pair is passed. For
+reference, at the exp-8 ladder endpoints (tau 54 -> 87 min) the P1/P6 pair gives:
 
   P1/P6 gradient        1.594x -> 1.336x
   flattening            16.2% if tau is position-independent
@@ -380,7 +381,7 @@ def analyse_batch(sim_dir, label):
 		rows.append(row)
 
 	return dict(label=label, rows=rows, real_coord=real_coord,
-		wt_coord=wt_coord)
+		wt_coord=wt_coord, get_n_ch=get_n_ch)
 
 
 def _gradient(batches, variant):
@@ -395,6 +396,37 @@ def _gradient(batches, variant):
 	if not first or not last:
 		return None
 	return first / last
+
+
+def _ch_gradient(batches, variant, fixed_tau=False):
+	"""Cooper-Helmstetter copy-number ratio between the extreme positions.
+
+	The null for the measured gradient. With fixed_tau, both coordinates are
+	evaluated at the first batch's doubling time, which removes the burden
+	feedback and isolates the positional term.
+	"""
+	def row_of(batch):
+		for row in batch['rows']:
+			if row['variant'] == variant:
+				return row
+		return None
+
+	first, last = batches[0], batches[-1]
+	r_first, r_last = row_of(first), row_of(last)
+	if r_first is None or r_last is None:
+		return None
+	if not fixed_tau:
+		if not r_last['n_ch']:
+			return None
+		return r_first['n_ch'] / r_last['n_ch']
+
+	get_n_ch = first.get('get_n_ch')
+	if get_n_ch is None:
+		return None
+	tau = r_first['tau']
+	a = float(get_n_ch(tau, np.array([first['real_coord']])))
+	b = float(get_n_ch(tau, np.array([last['real_coord']])))
+	return a / b if b else None
 
 
 def report(batches):
@@ -455,9 +487,28 @@ def report(batches):
 	print('    at variant %d (min burden) : %.4f' % (MIN_BURDEN_VARIANT, lo))
 	print('    at variant %d (max burden) : %.4f' % (MAX_BURDEN_VARIANT, hi))
 	print('    flattening                : %.1f%%' % (100 * (1 - hi / lo)))
-	print('\n  Cooper-Helmstetter at fixed tau predicts 16.2%% for P1/P6.')
-	print('  More than that is the burden feedback: the position carrying more')
-	print('  construct runs slower, so its own gradient flattens further.')
+
+	# The null used to be a hardcoded 16.2% for P1/P6, which printed even on
+	# runs containing neither position. Compute it for the pair actually in
+	# hand, from their real coordinates and their own measured doubling times.
+	ch_lo = _ch_gradient(batches, MIN_BURDEN_VARIANT)
+	ch_hi = _ch_gradient(batches, MAX_BURDEN_VARIANT)
+	fixed = _ch_gradient(batches, MIN_BURDEN_VARIANT, fixed_tau=True)
+	print('\n  Cooper-Helmstetter null for %s/%s, from the real coordinates'
+		% (first, last))
+	if ch_lo and ch_hi:
+		print('    at each variant\'s own tau : %.4f -> %.4f  '
+			'(flattening %.1f%%)' % (ch_lo, ch_hi, 100 * (1 - ch_hi / ch_lo)))
+	if fixed:
+		print('    at a common tau           : %.4f  (no burden feedback)'
+			% fixed)
+	if ch_lo and ch_hi and lo and hi:
+		print('    measured minus null       : %+.4f at variant %d, '
+			'%+.4f at variant %d'
+			% (lo - ch_lo, MIN_BURDEN_VARIANT, hi - ch_hi, MAX_BURDEN_VARIANT))
+	print('  Flattening beyond the null is the burden feedback: the position')
+	print('  carrying more construct runs slower, so its own gradient flattens')
+	print('  further. Note the null already contains most of the effect.')
 
 
 def main():

@@ -249,6 +249,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		targets = self._target_indices(sim_data, synth_ids)
 		if not targets:
 			return None
+		all_idx = np.arange(len(synth_ids))
 
 		max_p = read_stacked_columns(cell_paths, 'RnaSynthProb', 'max_p',
 			ignore_exception=True)
@@ -259,23 +260,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		rows = []
 		for name, idx in sorted(targets.items()):
-			row = self._measure_one(variant, name, idx, cell_paths, max_p)
+			row = self._measure_one(variant, name, idx, cell_paths, max_p,
+				all_idx)
 			if row is not None:
 				rows.append(row)
 		return rows
 
-	def _measure_one(self, variant, name, idx, cell_paths, max_p):
-		reader = lambda column: read_stacked_columns(cell_paths,
+	def _measure_one(self, variant, name, idx, cell_paths, max_p, all_idx):
+		reader = lambda column, i=idx: read_stacked_columns(cell_paths,
 			'RnaSynthProb', column, ignore_exception=True,
-			fun=_summed_over(idx)).ravel()
+			fun=_summed_over(i)).ravel()
 		target = reader('target_rna_synth_prob')
 		actual = reader('actual_rna_synth_prob')
 		copies = reader('promoter_copy_number')
 		crowded = reader('tu_is_overcrowded')
+		# Summed over EVERY transcription unit, not just this class. Two uses:
+		# it must come out at 1.0 because the per-promoter probabilities are L1
+		# normalised, which validates the reads; and dividing this class's own
+		# target by it gives its share of the normalisation denominator, which
+		# is what a cross-position comparison of per-promoter probability
+		# actually turns on.
+		target_all = reader('target_rna_synth_prob', all_idx)
+		copies_all = reader('promoter_copy_number', all_idx)
 
 		lengths = {'target': target.size, 'actual': actual.size,
 			'copies': copies.size, 'overcrowded': crowded.size,
-			'max_p': max_p.size}
+			'max_p': max_p.size, 'target_all': target_all.size,
+			'copies_all': copies_all.size}
 		if len(set(lengths.values())) != 1 or target.size == 0:
 			print('  variant %d, %s: column lengths disagree (%s); skipping.'
 				% (variant, name, lengths))
@@ -314,6 +325,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			suppression=_nanmean(suppression[expressing]),
 			suppression_sem=_sem(suppression[expressing]),
 			suppression_when_clamped=_nanmean(suppression[clamped]),
+			# Must be 1.0. Anything else means the reads are not covering the
+			# whole TU axis and every ratio above is suspect.
+			total_target_prob=_nanmean(target_all),
+			# This class's share of all initiation probability, and the
+			# copy-weighted denominator the per-promoter probability divides by.
+			# Two positions with a matched per-TU basal_prob can still get very
+			# different per-promoter probabilities if this differs.
+			share_of_total=_nanmean(
+				np.where(target_all > MIN_PROB, target / target_all, np.nan)),
+			total_promoters=_nanmean(copies_all),
 			)
 
 	# -------------------------------------------------------------- output ----
@@ -323,7 +344,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		'demand_per_promoter', 'demand_per_promoter_sem',
 		'actual_per_promoter', 'actual_per_promoter_sem', 'demand_over_cap',
 		'demand_over_cap_when_clamped', 'suppression', 'suppression_sem',
-		'suppression_when_clamped']
+		'suppression_when_clamped', 'total_target_prob', 'share_of_total',
+		'total_promoters']
 
 	def _write_csv(self, plot_out_dir, plot_out_file_name, rows):
 		path = os.path.join(plot_out_dir, plot_out_file_name + '.csv')
@@ -349,10 +371,28 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						r['actual_per_promoter'], r['max_p'],
 						r['demand_over_cap'], r['suppression']))
 
+			bad = [r for r in subset
+				if np.isfinite(r['total_target_prob'])
+				and abs(r['total_target_prob'] - 1.0) > 0.01]
+			if bad:
+				print('  WARNING: target_rna_synth_prob does not sum to 1.0 '
+					'over all TUs (%s at variant %d). The per-promoter '
+					'probabilities are L1 normalised, so this should be exact; '
+					'every ratio above is suspect until it is explained.'
+					% (', '.join('%.4f' % r['total_target_prob']
+						for r in bad[:3]), bad[0]['variant']))
+
 			expressing = [r for r in subset if r['frac_expressing'] > 0.01]
 			if not expressing:
 				print('  Never transcribes; no verdict.')
 				continue
+			print('  share of all initiation probability: %.5f at variant %d '
+				'-> %.5f at variant %d, over %.0f -> %.0f promoters'
+				% (expressing[0]['share_of_total'], expressing[0]['variant'],
+					expressing[-1]['share_of_total'],
+					expressing[-1]['variant'],
+					expressing[0]['total_promoters'],
+					expressing[-1]['total_promoters']))
 			supp = max(r['suppression'] for r in expressing
 				if np.isfinite(r['suppression']))
 			flagged = max(r['overcrowded_frac'] for r in expressing)
