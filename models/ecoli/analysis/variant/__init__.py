@@ -24,6 +24,7 @@ ACTIVE = [
 	"meneSensitivity.py",
 	"metabolism_kinetic_objective_weight.py",
 	"metabolism_secretion_penalty.py",
+	"new_gene_clamp_suppression.py",
 	"new_gene_counts.py",
 	"new_gene_dosage_normalisation.py",
 	"new_gene_machinery_allocation.py",

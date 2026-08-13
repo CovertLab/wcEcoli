@@ -190,6 +190,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					labels[tu] = 'RNAP subunit'
 				elif rna_data['includes_ribosomal_protein'][i]:
 					labels[tu] = 'r-protein'
+				elif rna_data['is_tRNA'][i]:
+					# tRNA needs its own branch. Without it these fell through
+					# to 'other stable', which hid the distinction the rich
+					# crowding result turned on: every pinned TU in rich is
+					# tRNA and none is rRNA, but the label said neither.
+					labels[tu] = 'tRNA'
 				elif not rna_data['is_mRNA'][i]:
 					labels[tu] = 'other stable'
 				else:

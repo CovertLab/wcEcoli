@@ -243,12 +243,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# just the construct arriving -- mrna_not_construct is the row that
 		# says whether the native mRNA sector really gained.
 		is_mrna = np.asarray(rna_data['is_mRNA'], dtype=bool)
+		# tRNA as a first-class row. It was previously only reachable as the
+		# 1 - rRNA - mRNA residual, which is correct in total but says nothing
+		# per class -- and in rich media the tRNA promoters are the ones pinned
+		# at the initiation ceiling, so that band needed to be measurable.
+		is_trna = np.asarray(rna_data['is_tRNA'], dtype=bool)
 
 		masks = {
 			'rrna': is_rrna,
 			'rnap_subunits': is_rnap,
 			'ribosomal_proteins': is_rprot,
 			'machinery_any': is_rrna | is_rnap | is_rprot,
+			'trna': is_trna,
 			'mrna': is_mrna,
 			'mrna_not_construct': is_mrna & ~new_tu,
 			'construct': new_tu,

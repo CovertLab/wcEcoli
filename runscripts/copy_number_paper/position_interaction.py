@@ -20,10 +20,17 @@ timesteps:
 
   tau              measured doubling time, birth to division
   n_copies         realised construct promoter copy number
-  per_copy_prob    basal_prob_ppgpp_synth_prob / n_copies -- what the
-                   normaliser assigns each copy. Pinned, this should be
-                   position-independent; that is the fix working
-  init_rate        realised RnapData/rnaInitEvent for the construct
+  basal_prob       basal_prob_ppgpp_synth_prob for the construct. This is the
+                   L1-normalised share of ONE transcription unit, already a
+                   per-TU quantity. Pinned, it should be position-independent;
+                   that is the fix working, and this is the column to check it on
+  init_rate        realised RnapData/rnaInitEvent per TIMESTEP
+  init_per_copy    init_rate / n_copies -- realised initiations per promoter per
+                   timestep. The quantity to compare between positions
+  init_total       rnaInitEvent summed over the whole cell cycle. DO NOT compare
+                   this between batches, or ratios of it: it carries the cycle
+                   length, and tau differs by up to 1.44x across a burden
+                   ladder. Kept only because it is the natural per-cell total
   aborted_frac     incomplete_transcription_event / rnaInitEvent -- transcripts
                    killed by a replisome sweeping the parent domain
   protein          construct monomer counts
@@ -33,6 +40,15 @@ timesteps:
 Note n_ch uses the real coordinate, not the pinned one. The pin governs what
 promoter strength the model assigns; realised copy number still follows the
 gene's actual position, and that is what n_ch predicts.
+
+On per-cell-cycle quantities
+----------------------------
+Any column accumulated over a cell cycle is proportional to that cycle's length.
+Comparing such a column, or a per-copy version of it, between two positions
+mixes the positional effect with the ratio of doubling times -- which on the
+exp-8 ladder runs from 1.00x at variant 1 to 1.44x at variant 7 and manufactures
+a trend that looks like a burden-dependent positional effect. Use init_rate and
+init_per_copy for anything cross-batch.
 
 What it answers
 ---------------
@@ -60,13 +76,18 @@ Usage
 -----
 	export PYTHONPATH="$(pwd):$PYTHONPATH"
 	python runscripts/copy_number_paper/position_interaction.py \
-		--label P4 out/<p4_batch> \
-		--label P1 out/<p1_batch> \
-		--label P6 out/<p6_batch> \
-		--out out/files_for_claude/copy_number_plan/results
+		--label P4 --label P1 --label P6 \
+		--out out/files_for_claude/copy_number_plan/results \
+		out/<p4_batch> out/<p1_batch> out/<p6_batch>
 
-Labels are optional; without them the batch directory name is used. Writes
-position_interaction.csv and prints the summary.
+All flags first, all directories last, in matching order. Interleaving them --
+`--label P4 out/<p4> --label P1 out/<p1>` -- does NOT parse: sim_dirs is a greedy
+nargs='+' positional, so it swallows the first directory and argparse then
+rejects the second as an unrecognised argument.
+
+Labels are optional; without them the batch directory name is used. Budget at
+least three hours for two batches. Writes position_interaction.csv and prints the
+summary.
 """
 
 import argparse
@@ -157,6 +178,32 @@ def _coordinates(sim_data, tu_ids):
 	return real, wt
 
 
+def _load_variant_sim_data(ap, variant, sim_dir, label):
+	"""Load one variant's modified sim_data, falling back to the base ParCa.
+
+	Returns (sim_data, source) where source names which pickle was read, since
+	only the modified one can show PIN_WT_COORDINATE.
+	"""
+	try:
+		path = ap.get_variant_kb(variant)
+		with open(path, 'rb') as f:
+			return pickle.load(f), 'simData_Modified.cPickle'
+	except (AssertionError, OSError, IndexError) as exc:
+		print('  %s: could not read variant %d modified sim_data (%s); falling '
+			'back to the base ParCa output. THE PIN CANNOT BE VERIFIED from '
+			'that file, so a pin check below is not meaningful.'
+			% (label, variant, exc))
+
+	base = os.path.join(
+		sim_dir, constants.KB_DIR, constants.SERIALIZED_SIM_DATA_FILENAME)
+	try:
+		with open(base, 'rb') as f:
+			return pickle.load(f), 'simData.cPickle (base ParCa)'
+	except OSError as exc:
+		print('  %s: no readable sim_data at all (%s); skipping.' % (label, exc))
+		return None, None
+
+
 def _measure(ap, variant, generations, tu_ids, monomer_ids):
 	"""Per-cell quantities for one variant of one batch."""
 	cell_paths = ap.get_cells(variant=[variant], generation=generations)
@@ -211,22 +258,42 @@ def _measure(ap, variant, generations, tu_ids, monomer_ids):
 		n_cells=int(taus.size),
 		tau=float(np.mean(taus)), tau_sem=_sem(taus),
 		n_copies=float(np.mean(copies)), n_copies_sem=_sem(copies),
+		basal_prob=float(np.mean(basal)), basal_prob_sem=_sem(basal),
 		)
 
-	# Per copy, cell by cell -- not mean(basal) / mean(copies), which is a
-	# different quantity when copy number varies between cells.
+	# basal_prob is already a per-transcription-unit share, so dividing it by
+	# copy number does NOT give a per-copy promoter strength -- it gives a
+	# matched share divided by an unmatched copy number, which reads as a pin
+	# failure when the pin is working. Kept because it is occasionally the
+	# quantity wanted, but check the pin on basal_prob above.
 	with np.errstate(divide='ignore', invalid='ignore'):
 		per_copy = np.where(copies > 0, basal / copies, np.nan)
 	row.update(
-		per_copy_prob=float(np.nanmean(per_copy)),
-		per_copy_prob_sem=_sem(per_copy),
+		basal_prob_over_copies=float(np.nanmean(per_copy)),
+		basal_prob_over_copies_sem=_sem(per_copy),
 		)
 
 	if rnap_idx.size:
+		# Per timestep, which is what compares across batches. The per-cell-cycle
+		# total is kept alongside but must not be ratioed between positions.
+		rates = read_stacked_columns(cell_paths, 'RnapData', 'rnaInitEvent',
+			ignore_exception=True, fun=_mean_of(rnap_idx))
 		inits = read_stacked_columns(cell_paths, 'RnapData', 'rnaInitEvent',
 			ignore_exception=True, fun=_total_of(rnap_idx))
-		row.update(init_total=float(np.mean(inits)),
+		row.update(init_rate=float(np.mean(rates)),
+			init_rate_sem=_sem(rates),
+			init_total=float(np.mean(inits)),
 			init_total_sem=_sem(inits))
+
+		# Per copy, cell by cell -- not mean(rate) / mean(copies), which is a
+		# different quantity when copy number varies between cells.
+		if rates.size == copies.size:
+			with np.errstate(divide='ignore', invalid='ignore'):
+				per_promoter = np.where(copies > 0, rates / copies, np.nan)
+			row.update(
+				init_per_copy=float(np.nanmean(per_promoter)),
+				init_per_copy_sem=_sem(per_promoter),
+				)
 
 		# Registered in tableAppend and indexed against RnapData's own rnaIds,
 		# unlike RnaSynthProb/total_rna_init which is set on the listener but
@@ -265,18 +332,6 @@ def _measure(ap, variant, generations, tu_ids, monomer_ids):
 
 def analyse_batch(sim_dir, label):
 	"""Every variant of one batch, plus the construct's coordinates."""
-	sim_data_path = os.path.join(
-		sim_dir, constants.KB_DIR, constants.SERIALIZED_SIM_DATA_FILENAME)
-	with open(sim_data_path, 'rb') as f:
-		sim_data = pickle.load(f)
-
-	tu_ids, cistron_ids = _construct_tu_ids(sim_data)
-	if not tu_ids:
-		print('%s: no new gene transcription units; skipping.' % label)
-		return None
-	monomer_ids = _construct_monomer_ids(sim_data, cistron_ids)
-	real_coord, wt_coord = _coordinates(sim_data, tu_ids)
-
 	ap = AnalysisPaths(sim_dir, variant_plot=True)
 	if ap.n_generation <= IGNORE_FIRST_N_GENS:
 		print('%s: only %d generations, fewer than the %d-generation burn-in.'
@@ -284,9 +339,30 @@ def analyse_batch(sim_dir, label):
 		return None
 	generations = np.arange(IGNORE_FIRST_N_GENS, ap.n_generation)
 
+	# PIN_WT_COORDINATE is applied by the variant function, so it exists only in
+	# a variant's simData_Modified.cPickle. Reading the base ParCa output --
+	# kb/simData.cPickle -- can never show the pin, and the guard in report()
+	# then refuses to report gradients on correctly pinned batches. Load the
+	# sim_data the simulations actually ran with instead.
+	variants = sorted(set(ap.get_variants()))
+	pin_variant = (MIN_BURDEN_VARIANT if MIN_BURDEN_VARIANT in variants
+		else variants[0])
+	sim_data, source = _load_variant_sim_data(ap, pin_variant, sim_dir, label)
+	if sim_data is None:
+		return None
+
+	tu_ids, cistron_ids = _construct_tu_ids(sim_data)
+	if not tu_ids:
+		print('%s: no new gene transcription units; skipping.' % label)
+		return None
+	monomer_ids = _construct_monomer_ids(sim_data, cistron_ids)
+	real_coord, wt_coord = _coordinates(sim_data, tu_ids)
+	print('  %s: coordinates read from %s (variant %d): real=%.0f wt=%.0f'
+		% (label, source, pin_variant, real_coord, wt_coord))
+
 	get_n_ch = sim_data.process.replication.get_average_copy_number
 	rows = []
-	for variant in sorted(set(ap.get_variants())):
+	for variant in variants:
 		row = _measure(ap, variant, generations, tu_ids, monomer_ids)
 		if row is None:
 			continue
@@ -337,23 +413,30 @@ def report(batches):
 		print('\n  REFUSING TO REPORT GRADIENTS. The batches do not share a '
 			'wildtype\n  coordinate (%s), so per-copy promoter strength '
 			'differs between\n  positions and the normaliser has divided '
-			'position out. These batches\n  predate PIN_WT_COORDINATE and '
+			'position out. Either these\n  batches predate PIN_WT_COORDINATE, '
+			'or REFERENCE_WT_COORDINATE was changed\n  between them, and they '
 			'cannot be compared this way.'
 			% sorted(pinned_values))
 		return
 
 	print('\n%s\nPer position x variant\n%s' % ('=' * 78, '=' * 78))
-	print('  %-6s %4s %6s %8s %9s %12s %9s %8s'
-		% ('pos', 'var', 'cells', 'tau', 'copies', 'per_copy', 'n_ch',
-			'abort'))
+	print('  %-6s %4s %6s %8s %9s %12s %10s %9s %8s'
+		% ('pos', 'var', 'cells', 'tau', 'copies', 'basal_prob', 'init/copy',
+			'n_ch', 'abort'))
 	for batch in batches:
 		for row in batch['rows']:
-			print('  %-6s %4d %6d %8.1f %9.3f %12.6g %9.3f %8s'
+			print('  %-6s %4d %6d %8.1f %9.3f %12.6g %10s %9.3f %8s'
 				% (row['position'], row['variant'], row['n_cells'],
-					row['tau'], row['n_copies'], row['per_copy_prob'],
+					row['tau'], row['n_copies'], row['basal_prob'],
+					('%.4f' % row['init_per_copy'])
+						if 'init_per_copy' in row else '--',
 					row['n_ch'],
 					('%.4f' % row['aborted_frac'])
 						if 'aborted_frac' in row else '--'))
+	print('\n  basal_prob is the per-TU assigned share and should be matched '
+		'between\n  positions if the pin took. init/copy is realised '
+		'initiations per promoter\n  per timestep -- per timestep, so it can be '
+		'compared across batches whose\n  doubling times differ.')
 
 	if len(batches) < 2:
 		return
