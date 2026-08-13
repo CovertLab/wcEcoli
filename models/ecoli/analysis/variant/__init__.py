@@ -26,6 +26,7 @@ ACTIVE = [
 	"metabolism_secretion_penalty.py",
 	"new_gene_clamp_suppression.py",
 	"new_gene_counts.py",
+	"new_gene_dosage_compensation.py",
 	"new_gene_dosage_normalisation.py",
 	"new_gene_machinery_allocation.py",
 	"new_gene_vs_unregulated_genes.py",
