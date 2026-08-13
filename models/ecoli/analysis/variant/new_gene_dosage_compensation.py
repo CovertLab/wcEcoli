@@ -372,10 +372,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			print(line)
 		print('\n  Only the SPREAD between classes survives the L1 '
 			'normalisation; a common shift cancels.')
-		print('  a_vs_real_tau is the same ratio against Cooper-Helmstetter at '
-			'the REALISED\n  tau -- it should stay near 1, confirming that '
-			'actual copy number tracks the\n  real doubling time and that any '
-			'gap in `a` is the sensor rather than the cell.')
+
+		# The control was previously described but never printed, which made it
+		# look like a missing block. Print the numbers.
+		print('\nControl: a_vs_real_tau = n_actual / Cooper-Helmstetter at the '
+			'REALISED tau')
+		hdr = '  %-22s %-6s' % ('class', 'f')
+		for v in variants:
+			hdr += ' %8s' % ('v%d' % v)
+		print(hdr)
+		for name in CLASS_ORDER:
+			sub = [r for r in rows if r['gene_class'] == name]
+			if not sub:
+				continue
+			line = '  %-22s %-6.3f' % (name, sub[0]['mean_replichore_fraction'])
+			for r in sub:
+				line += ' %8.4f' % r['a_vs_real_tau']
+			print(line)
+		ctrl = [r['a_vs_real_tau'] for r in rows if r['variant'] >= 1
+			and np.isfinite(r['a_vs_real_tau'])]
+		if ctrl:
+			print('  range %.4f - %.4f over every class and variant'
+				% (min(ctrl), max(ctrl)))
+			print('  This should stay near 1 and be FLAT across classes. Flat '
+				'means actual copy\n  number tracks the realised doubling '
+				'time uniformly, so any f-dependence in\n  `a` above is the '
+				'ppGpp sensor rather than the cell. If this column develops '
+				'its\n  own ordering in f, that interpretation fails.')
 
 	def _plot(self, plot_out_dir, plot_out_file_name, rows, metadata):
 		gen = [r for r in rows if r['gene_class'] == 'genome']
