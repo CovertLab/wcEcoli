@@ -1,5 +1,11 @@
 """
-Template for cohort analysis plots
+Per-generation mRNA and monomer count traces for selected subgen and anaerobic genes
+
+x is normalized so each generation spans unit width:
+  x(t) = gen_number + (t - t_start) / (t_end - t_start)
+
+Writes one figure pair (monomer + mRNA) per plotted seed:
+  <plotOutFileName>_{monomer,mRNA}_dynamics_seed<SSSSSS>_<color>.pdf
 """
 
 import pickle
@@ -21,111 +27,17 @@ from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identi
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 20
-SEEDS = np.arange(20, 25)
-COLOR_LINE = 'mediumseagreen' # 'skyblue'
-monomers_of_interest = ['CYTOCHROMEC-MONOMER[p]', 
-						# 'CYTOCHROMEC552-MONOMER[p]',
-						'DMSA-MONOMER[i]', 
-						# 'DMSB-MONOMER[i]', 'DMSC-MONOMER[i]',
-						'EG11800-MONOMER[i]', 
-						'EG11815-MONOMER[p]', 
-						'EG12244-MONOMER[i]',
-						'FDNG-MONOMER[m]', 
-						# 'FDNH-MONOMER[m]', 'FDNI-MONOMER[m]',
-						'FDOG-MONOMER[c]', 
-						# 'FDOH-MONOMER[m]', 'FDOI-MONOMER[i]',
-						'FORMATEDEHYDROGH-MONOMER[c]', 
-						'FUM-FE-S[c]', 
-						# 'FUM-FLAVO[c]','FUM-MEMB1[m]', 'FUM-MEMB2[m]', 
-						'G6848-MONOMER[i]',
-						'G7022-MONOMER[p]', 
-						# 'G7023-MONOMER[m]', 
-						'HYAA-MONOMER[i]',
-						# 'HYAB-MONOMER[i]', 'HYAC-MONOMER[i]', 
-						'HYCBSMALL-MONOMER[c]',
-						# 'HYCC-MONOMER[i]', 'HYCD-MONOMER[i]', 'HYCELARGE-MONOMER[c]',
-						# 'HYCF-MONOMER[m]', 'HYCG-MONOMER[i]', 
-						'MONOMER0-141[i]',
-						# 'MONOMER0-142[i]', 
-						# 'MONOMER0-143[i]', 'MONOMER0-150[c]',
-						# 'MONOMER0-153[i]', 'MONOMER0-154[m]', 
-						'NARG-MONOMER[m]',
-						# 'NARH-MONOMER[m]', 'NARI-MONOMER[m]', 
-						'NARV-MONOMER[m]',
-						# 'NARY-MONOMER[m]', 'NARZ-MONOMER[m]', 
-						'NRFC-MONOMER[c]',
-						# 'NRFD-MONOMER[i]', 
-						'TORA-MONOMER[p]']
-monomers_of_interest_name_dict = {'CYTOCHROMEC-MONOMER[p]': 'nrfB',
-								'CYTOCHROMEC552-MONOMER[p]': 'nrfA',
-								'DMSA-MONOMER[i]': 'dmsA',
-								'DMSB-MONOMER[i]': 'dmsB',
-								'DMSC-MONOMER[i]': 'dmsC',
-								'EG11800-MONOMER[i]': 'hybB',
-								'EG11815-MONOMER[p]': 'torC',
-								'EG12244-MONOMER[i]': 'ccp',
-								'FDNG-MONOMER[m]': 'fdnG',
-								'FDNH-MONOMER[m]': 'fdnH',
-								'FDNI-MONOMER[m]': 'fdnI',
-								'FDOG-MONOMER[c]': 'fdoG',
-								'FDOH-MONOMER[m]': 'fdoH',
-								'FDOI-MONOMER[i]': 'fdoI',
-								'FORMATEDEHYDROGH-MONOMER[c]': 'fdhF',
-								'FUM-FE-S[c]': 'frdB',
-								'FUM-FLAVO[c]': 'frdA',
-								'FUM-MEMB1[m]': 'frdC',
-								'FUM-MEMB2[m]': 'frdD',
-								'G6848-MONOMER[i]': 'ynfH',
-								'G7022-MONOMER[p]': 'torZ',
-								'G7023-MONOMER[m]': 'torY',
-								'HYAA-MONOMER[i]': 'hyaA',
-								'HYAB-MONOMER[i]': 'hyaB',
-								'HYAC-MONOMER[i]': 'hyaC',
-								'HYCBSMALL-MONOMER[c]': 'hycB',
-								'HYCC-MONOMER[i]': 'hycC',
-								'HYCD-MONOMER[i]': 'hycD',
-								'HYCELARGE-MONOMER[c]': 'hycE',
-								'HYCF-MONOMER[m]': 'hycF',
-								'HYCG-MONOMER[i]': 'hycG',
-								'MONOMER0-141[i]': 'hyfD',
-								'MONOMER0-142[i]': 'hyfE',
-								'MONOMER0-143[i]': 'hyfF',
-								'MONOMER0-150[c]': 'hyfG',
-								'MONOMER0-153[i]': 'hyfB',
-								'MONOMER0-154[m]': 'hyfC',
-								'NARG-MONOMER[m]': 'narG',
-								'NARH-MONOMER[m]': 'narH',
-								'NARI-MONOMER[m]': 'narI',
-								'NARV-MONOMER[m]': 'narV',
-								'NARY-MONOMER[m]': 'narY',
-								'NARZ-MONOMER[m]': 'narZ',
-								'NRFC-MONOMER[c]': 'nrfC',
-								'NRFD-MONOMER[i]': 'nrfD',
-								'TORA-MONOMER[p]': 'torA'}
-# monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
-# 						'BETAGALACTOSID-MONOMER[c]',  # lacZ
-# 						'RIBULOKIN-MONOMER[c]',  # araB
-# 						'BAES-MONOMER[i]',  # baeS
-# 						'G6504-MONOMER[o]',  # gfcE
-# 						'EG11250-MONOMER[c]',  # chpS
-# 						'EG11222-MONOMER[c]',  # alkA
-# 						'G7263-MONOMER[c]',  # murQ
-# 						'EG11249-MONOMER[c]',  # mazF const
-# 						'EG10466-MONOMER[c]'  # hupA const
-# 						]
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 
-# monomers_of_interest_name_dict = {'GLYCDEH-MONOMER[c]': 'gldA',
-# 						'BETAGALACTOSID-MONOMER[c]': 'lacZ',
-# 						'RIBULOKIN-MONOMER[c]': 'araB',
-# 						'BAES-MONOMER[i]': 'baeS',
-# 						'G6504-MONOMER[o]': 'gfcE',
-# 						'EG11250-MONOMER[c]': 'chpS',
-# 						'EG11222-MONOMER[c]': 'alkA',
-# 						'G7263-MONOMER[c]': 'murQ',
-# 						'EG11249-MONOMER[c]': 'mazF',
-# 						'EG10466-MONOMER[c]': 'hupA'
-# 								  }
+# not so random subset of seeds 
+SEEDS = np.arange(20, 25)
+COLOR_LINE = 'mediumseagreen'  # 'skyblue'
+
+#   'anaerobic'  -- anaerobic-respiration complexes, one subunit each
+#   'curated10'  -- the 10-gene panel shared by subgen_peak_counts.py /
+#                   protein_distribution.py
+PANEL = 'anaerobic'
+monomers_of_interest, monomers_of_interest_name_dict = sc.curated_panel(PANEL)
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -306,24 +218,38 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 					ax.spines['right'].set_visible(False)
 					ax.spines['top'].set_visible(False)
-					
-					# Add vertical lines for generation boundaries
-					for x in end_generation_times / 60:
-						ax.axvline(x=x,
-								color='grey',
-								linestyle='dashed')
+
+					# Generation boundaries are already the integer x ticks above:
+					# x is normalized to generation number, so every tick IS a
+					# boundary. The old code drew axvlines at
+					# `end_generation_times / 60` -- minutes on a generation-number
+					# axis, which put them far off the right of the plot (or all at
+					# ~0 early on). subgen_monomer_dynamics_def5.py omits them for
+					# the same reason.
 
 			# Remove any empty subplots
 			for i in range(num_groups, rows * cols):
 				fig.delaxes(axes.flat[i])
 
 			plt.tight_layout()
-			exportFigure(plt, plotOutDir, plotOutFileName + f'_{molecule_type}_dynamics_gen_{seed}_{color}', metadata)
+			# `_seed%06d`, matching subgenerationalTranscription_def5.py. The old
+			# infix was `_gen_{seed}`, which read as a generation number when it has
+			# always been the seed.
+			exportFigure(plt, plotOutDir,
+				plotOutFileName
+					+ f'_{molecule_type}_dynamics_seed{seed:06d}_{color}',
+				metadata)
 			
 
 		# Strict-successful lineages (completed every generation and no cell at
 		# the 180-min doubling cap).
 		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		plotted = [s for s in SEEDS if s in success['successful_seeds']]
+		print('Plotting %d of %d requested seeds (%s); the rest are not '
+			'strict-successful lineages. This is the only reason the figure count '
+			'differs between cohorts.'
+			% (len(plotted), len(SEEDS),
+				', '.join(str(s) for s in plotted) or 'none'))
 
 		for seed in SEEDS:
 			cell_paths_per_seed = self.ap.get_cells(

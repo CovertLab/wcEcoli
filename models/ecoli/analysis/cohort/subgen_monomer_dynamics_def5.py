@@ -2,12 +2,9 @@
 Definition-5 rewrite of subgen_monomer_dynamics.py.
 
 Plots mRNA and monomer count dynamics (per generation) for subgenerational
-genes, but selects those genes from the canonical Definition-5 def5_CI
-classification (subgen iff the 95% CI is below 1 completed transcript/gen across
-successful lineages) instead of the original hardcoded curated list.
+gene using definition5 with CI with the highest subgen ranking
 
-Gene *selection* comes from the pre-computed raw extraction (run
-subgen_raw_extract.py first); the time-series traces themselves are read from
+Subgen genes decideded using subgen_raw_extract outputs, time-series traces themselves are read from
 simOut, since dynamics need the full within-generation trace.
 """
 
@@ -25,8 +22,7 @@ from wholecell.analysis.analysis_tools import (
 	exportFigure, read_stacked_columns, stacked_cell_identification)
 from wholecell.io.tablereader import TableReader
 
-# How many subgen genes to plot (highest Def-5 mean first, for clearest traces)
-# and how many successful seeds to draw.
+# How many subgen genes to plot (highest Def-5 mean first)
 N_SUBGEN_TO_PLOT = 12
 N_SEEDS_TO_PLOT = 3
 COLOR_LINE = 'mediumseagreen'
@@ -46,7 +42,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		cat = clf['stats']['cat']
 		mean = clf['stats']['mean']
 
-		# Select the N subgen genes with the highest Def-5 mean (clearest traces).
+		# Select the N subgen genes with the highest Def-5 mean.
 		subgen_idx = np.where(cat == 'subgen')[0]
 		if subgen_idx.size == 0:
 			print('No subgenerational genes under Definition 5. Skipping.')
@@ -114,7 +110,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				chosen_names, 'mRNA', time, start_generation_indices,
 				end_generation_indices, end_generation_times, seed)
 
-	# ------------------------------------------------------------------ helpers
+	# helpers
 
 	def _extract_doubling_times(self, cell_paths):
 		time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
@@ -123,9 +119,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			fun=lambda x: (x[-1] - x[0])).squeeze().astype(int)
 		end_generation_times = np.cumsum(doubling_times) + time[0]
 		# Per-generation row boundaries from actual row counts. read_stacked_columns
-		# stacks one cell (= one generation) per block, so labeling each row by its
-		# source cell segments generations exactly, with no assumption that a row is
-		# 1 s and no boundary-duplicate drift.
+		# stacks one cell (= one generation) per block
 		cell_ids = stacked_cell_identification(
 			cell_paths, 'Main', 'time').squeeze().astype(int)
 		n_cells = len(cell_paths)

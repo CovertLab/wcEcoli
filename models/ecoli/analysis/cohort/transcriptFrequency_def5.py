@@ -1,13 +1,8 @@
 """
-Definition-5 rewrite of transcriptFrequency.py.
+adapted from Nora's transcriptFrequency cohort script, now in 'old_subgen_scripts' folder 
+now uses updated def 5 with CI subgen definition 
 
-The original was disabled (early `return`) and operated on legacy TU-level
-BulkMolecules counts. This variant produces the intended frequency figure using
-Definition 5: for every protein-coding gene it plots the Definition-4 expression
-frequency (fraction of successful cell-generations with >= 1 completed
-transcript) against the gene's rank by mean completed transcripts per
-generation, colored by the canonical def5_CI subgen category. A companion
-histogram shows the distribution of the per-gene Def-5 mean.
+produces the frequency figure 
 
 Reads the pre-computed raw extraction (run subgen_raw_extract.py first).
 """
@@ -43,7 +38,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		fig, (ax_scatter, ax_hist) = plt.subplots(
 			1, 2, figsize=(13, 5), gridspec_kw={'width_ratios': [2, 1]})
 
-		# --- Scatter: expression frequency vs rank, colored by category ---
+		# Scatter: expression frequency vs rank, colored by category 
 		for category in sc.CATEGORIES:
 			sel = cat[order] == category
 			if not np.any(sel):
@@ -61,7 +56,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax_scatter.legend(handles=handles, fontsize=8, loc='lower right',
 			frameon=False)
 
-		# --- Histogram of the per-gene Def-5 mean (log-x for the positive tail) ---
+		# Histogram of the per-gene Def-5 mean (log-x for the positive tail) 
 		pos = mean[mean > 0]
 		if pos.size:
 			bins = np.logspace(

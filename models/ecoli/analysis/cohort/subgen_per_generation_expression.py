@@ -1,5 +1,5 @@
 """
-Per-generation expression audit (Task 4).
+Per-generation expression audit
 
 For every successful lineage (strict filter: completed every generation and no
 cell hit the 180-min doubling cap), and for every generation of that lineage,
@@ -7,9 +7,7 @@ determine which protein-coding genes had at least one SUCCESSFUL (completed) mRN
 transcription event that generation. A gene counts as "expressed" for the whole
 generation if it produced >= 1 completed transcript at any timestep during it.
 
-Completed transcripts come from TranscriptElongationListener/
-countRnaCistronSynthesized (attenuation-excluded), summed over the generation;
-expressed := (sum > 0). This reads the pre-computed raw extraction rather than
+This reads the pre-computed raw extraction rather than
 simulation output, so run subgen_raw_extract.py first.
 
 Outputs (to plotOutDir, prefixed by plotOutFileName):
@@ -66,7 +64,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		prefix = os.path.join(plotOutDir, plotOutFileName)
 
-		# --- Two wide per-(seed, generation) tables: seed, generation, then one
+		# tables: seed, generation, then one
 		# column per gene (header = gene_id). One is the binary expressed flag,
 		# the other the raw completed-transcript count; same shape and row order.
 		meta_header = ['seed', 'generation']
@@ -85,7 +83,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sc.write_per_cell_matrix(synth_path, meta_header, meta_rows,
 			gene_ids, synth, value_fmt=None)
 
-		# --- Per-gene metrics across successful lineages/generations ---
+		#  Per-gene metrics across successful lineages/generations 
 		n_gens_expressed = expressed.sum(axis=0)             # over all cells
 		frac_expressed = n_gens_expressed / n_cells
 		# Per-seed "ever expressed": did the gene fire in >=1 gen of that seed?
@@ -107,7 +105,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					int(n_gens_expressed[gi]), '%.6g' % frac_expressed[gi],
 					len(unique_seeds), int(ever_by_seed[gi])])
 
-		# --- Per-(seed, generation) summary ---
+		# Per-(seed, generation) summary 
 		summary_path = prefix + '_per_generation_summary.tsv'
 		print('Writing %s' % summary_path)
 		genes_expressed_per_cell = expressed.sum(axis=1)

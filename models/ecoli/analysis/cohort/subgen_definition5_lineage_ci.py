@@ -1,7 +1,7 @@
 """
 Per-lineage definition-5 subgenerational classification with confidence intervals.
 
-Definition 5 is the mean number of completed transcripts per generation, per gene.
+Definition 5 is the mean number of completed transcripts per generation, per gene for a successful seed.
 This analysis estimates it independently for each lineage (one seed = one
 independent multi-generation simulation), then aggregates across lineages into a
 mean, standard deviation, and 95% confidence interval (from the standard error of
@@ -20,17 +20,23 @@ changes the list.
 
 A rate estimated across independent lineages scales well with the number of seeds:
 the standard error shrinks as std / sqrt(n_lineages), so more seeds tighten the
-confidence interval and let more genes be classified confidently -- unlike a
-presence-frequency-at-1 definition, whose "always on" count degrades as the sample
-grows.
+confidence interval and let more genes be classified confidently 
 
-This module is self-contained and imports no other subgenerational analysis.
+This script shares its CLASSIFIER with subgen_raw_extract.py's consumers (both call
+sc.classify_def5_ci, so the rule cannot drift), but it reads simOut over its OWN
+independent pass rather than consuming the raw extraction. That duplication is
+deliberate: it makes this an independent reference implementation, so a bug in
+subgen_raw_extract.py's reduction would show up as a disagreement instead of being
+invisible. `_crosscheck_raw_extract` below compares the two whenever the raw
+extraction is present in the same plotOut, and prints the maximum discrepancy.
+
+Imports subgen_common for the shared constants, classifier, and strict-successful
+filter; imports no other subgenerational analysis.
 """
 
 import pickle
 import os
 import csv
-import json
 from datetime import datetime
 
 import numpy as np
@@ -45,10 +51,7 @@ from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.io.tablereader import TableReader
 
 
-# All shared constants and the def5_CI classifier now live in subgen_common, so
-# this from-scratch reference implementation and the raw-extraction pipeline
-# classify genes identically and cannot drift. The module-level aliases keep the
-# local names used throughout this file.
+# All shared constants and the def5_CI classifier now live in subgen_common
 IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 MAX_DOUBLING_MIN = sc.MAX_DOUBLING_MIN
 DOUBLING_AT_MAX_TOL = sc.DOUBLING_AT_MAX_TOL
@@ -80,15 +83,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('Skipping analysis - not enough generations run.')
 			return
 
-		# --- Gene set: protein-coding mRNA cistrons, in cistron order ---
+		#  Gene set: protein-coding mRNA cistrons, in cistron order 
 		mRNA_cistron_ids, monomer_ids, gene_ids = sc.get_mrna_gene_set(sim_data)
 		n_genes = len(mRNA_cistron_ids)
 
 		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
 		total_init_sims = sim_metadata.get('total_init_sims')
 
-		# Strict successful-lineage classification (the canonical implementation
-		# shared with every other subgen analysis).
+		# Strict successful-lineage classification 
 		success = sc.compute_lineage_success(
 			self.ap, n_generation, total_init_sims=total_init_sims)
 		seeds = success['seeds']
@@ -102,7 +104,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		print('Seeds present: %d ; generations: %d ; genes: %d'
 			% (len(seeds), n_generation, n_genes))
 
-		# --- Detect the def-5 listener column and build its index map ---
+		#  use def-5 listener column and build its index map 
 		has_synth, synth_indexes = self._synth_index_map(
 			seeds, n_generation, mRNA_cistron_ids)
 		if not has_synth:
@@ -112,7 +114,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				'listener was added to populate definition 5.'
 				% (SYNTH_TABLE, SYNTH_COLUMN))
 
-		# --- Per-lineage definition 5: mean completed transcripts per cell ---
+		#  Per-lineage definition 5: mean completed transcripts per cell 
 		lineage_seeds = []
 		lambda_rows = []
 		if has_synth:
@@ -135,7 +137,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					lineage_seeds.append(s)
 					lambda_rows.append(accum / n_cells)
 
-		# --- Aggregate to per-gene statistics (all and successful) ---
+		#  Aggregate to per-gene statistics (all and successful) 
 		if has_synth and lineage_seeds:
 			lambda_matrix = np.array(lambda_rows)  # (n_lineages_all, n_genes)
 			all_idx = np.arange(len(lineage_seeds))
@@ -151,7 +153,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			lambda_matrix = np.zeros((0, n_genes))
 			stats_all = stats_succ = None
 
-		# --- Write outputs ---
+		# Independent cross-check against raw extraction, when available.
+		if stats_succ is not None:
+			self._crosscheck_raw_extract(plotOutDir, gene_ids, stats_succ)
+
+		# Write outputs 
 		prefix = os.path.join(plotOutDir, plotOutFileName)
 		if stats_all is not None:
 			self._write_pergene(prefix + '_pergene_all.tsv', stats_all,
@@ -168,7 +174,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			all_seed_ids, seeds, successful_gens, doubling, n_at_180,
 			gens_at_180, in_successful, completed_all, n_generation)
 
-		# --- Plots ---
+		# Plots 
 		if stats_all is not None:
 			self._plot_histogram(prefix + '_hist_all.png', stats_all, 'all lineages')
 			self._plot_all_vs_successful(
@@ -180,20 +186,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				gene_ids, mRNA_cistron_ids)
 			self._plot_ranked(prefix + '_ranked_ci.png', stats_succ)
 
-		# --- Provenance metadata ---
+		# metadata 
 		self._write_metadata(prefix + '_run_metadata.json', variantDir,
 			analysis_run_time, sim_metadata_path, sim_metadata, has_synth,
 			n_genes, lineage_seeds, in_successful, stats_all, stats_succ)
 		print('Done.')
 
-	# ------------------------------------------------------------------ helpers
+	#  helpers
 
 	def _synth_index_map(self, seeds, n_generation, mRNA_cistron_ids):
-		"""Find a cell with the def-5 column and map genes to its cistron order.
-
-		Tries cells until one reads successfully; a single unreadable cell no
-		longer disables Definition 5 for the whole cohort.
-		"""
+		"""Find a cell with the def-5 column and map genes to its cistron order."""
 		for s in seeds:
 			cells = self.ap.get_cells(
 				seed=[s],
@@ -205,6 +207,40 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				if ok:
 					return True, idx
 		return False, None
+
+	def _crosscheck_raw_extract(self, plot_out_dir, gene_ids, stats_succ):
+		"""Compare this independent simOut pass against the raw extraction.
+
+		Both compute the same per-gene def-5 mean over strict-successful lineages by
+		different routes, so any disagreement means one of the two reductions is
+		wrong. Reports the worst discrepancy and any category flips."""
+		try:
+			clf = sc.canonical_def5_classification(plot_out_dir)
+		except FileNotFoundError:
+			print('No raw extraction in this plotOut; skipping the independent '
+				'cross-check (nothing depends on it).')
+			return
+		if clf['n_lineages'] == 0:
+			return
+		raw_mean = dict(zip(clf['gene_ids'], clf['stats']['mean']))
+		raw_cat = dict(zip(clf['gene_ids'], clf['stats']['cat']))
+		shared = [g for g in gene_ids if g in raw_mean]
+		if not shared:
+			print('Cross-check: no gene ids in common with the raw extraction.')
+			return
+		index = {g: i for i, g in enumerate(gene_ids)}
+		diffs = np.array(
+			[abs(stats_succ['mean'][index[g]] - raw_mean[g]) for g in shared])
+		flips = [g for g in shared
+			if stats_succ['cat'][index[g]] != raw_cat[g]]
+		print('Cross-check vs subgen_raw_extract.py over %d shared genes: '
+			'max |mean difference| = %.3g, category disagreements = %d'
+			% (len(shared), diffs.max(), len(flips)))
+		if len(flips):
+			print('  WARNING: the two independent Definition-5 reductions DISAGREE '
+				'on %d gene(s). One of them is wrong -- do not publish until this '
+				'is resolved. First few: %s'
+				% (len(flips), ', '.join(flips[:10])))
 
 	def _write_pergene(self, path, st, gene_ids, cistron_ids, monomer_ids,
 			n_genes):
@@ -275,51 +311,42 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def _write_metadata(self, path, variantDir, analysis_run_time,
 			sim_metadata_path, sim_metadata, has_synth, n_genes, lineage_seeds,
 			in_successful, stats_all, stats_succ):
-		repo_dir = os.path.dirname(os.path.abspath(__file__))
-		meta = {
-			'analysis': {
-				'script': os.path.basename(__file__),
-				'run_time': analysis_run_time,
-				'git': _git_info(repo_dir),
-				'parameters': {
-					'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
-					'ci_confidence': CONFIDENCE,
-					'ci_z_multiplier': CI_Z,
-					'max_doubling_min': MAX_DOUBLING_MIN,
-					'definition5_available': has_synth,
-					},
-				},
-			'simulation': {
-				'metadata_source': sim_metadata_path,
-				'git_hash': sim_metadata.get('git_hash'),
-				'git_branch': sim_metadata.get('git_branch'),
-				'run_time': sim_metadata.get('time'),
-				'description': sim_metadata.get('description'),
-				'variant': sim_metadata.get('variant'),
-				'total_gens': sim_metadata.get('total_gens'),
-				'total_init_sims': sim_metadata.get('total_init_sims'),
-				},
-			'genes': {'n_genes': n_genes},
-			'lineages': {
-				'n_all': len(lineage_seeds),
-				'n_successful': int(sum(
-					1 for s in lineage_seeds if in_successful[s])),
-				'seeds_all': lineage_seeds,
-				'seeds_successful': [
-					s for s in lineage_seeds if in_successful[s]],
-				},
-			'category_counts': {
-				'all': _category_counts(stats_all['cat'])
-					if stats_all else None,
-				'successful': _category_counts(stats_succ['cat'])
-					if stats_succ else None,
-				},
-			}
+		# Layout comes from sc.write_run_metadata so every subgen script's metedata
+		# stays comparable; the blocks below are this script's own.
 		print('Writing %s' % path)
-		with open(path, 'w') as f:
-			json.dump(meta, f, indent=2)
+		sc.write_run_metadata(
+			path,
+			script=os.path.basename(__file__),
+			parameters={
+				'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
+				'ci_confidence': CONFIDENCE,
+				'ci_z_multiplier': CI_Z,
+				'max_doubling_min': MAX_DOUBLING_MIN,
+				'definition5_available': has_synth,
+				},
+			sim_metadata_path=sim_metadata_path,
+			sim_metadata=sim_metadata,
+			run_time=analysis_run_time,
+			quiet=True,
+			extra={
+				'genes': {'n_genes': n_genes},
+				'lineages': {
+					'n_all': len(lineage_seeds),
+					'n_successful': int(sum(
+						1 for s in lineage_seeds if in_successful[s])),
+					'seeds_all': lineage_seeds,
+					'seeds_successful': [
+						s for s in lineage_seeds if in_successful[s]],
+					},
+				'category_counts': {
+					'all': _category_counts(stats_all['cat'])
+						if stats_all else None,
+					'successful': _category_counts(stats_succ['cat'])
+						if stats_succ else None,
+					},
+				})
 
-	# -------------------------------------------------------------------- plots
+	# plots
 
 	def _base_axes(self):
 		plt.rcParams.update({

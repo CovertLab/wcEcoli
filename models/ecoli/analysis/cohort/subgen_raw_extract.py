@@ -1,36 +1,35 @@
 """
-Single-pass raw extraction for the subgenerational-expression pipeline.
+this is the script that does the bulk of data extraction.
 
-Reads each cell's simOut EXACTLY ONCE and persists the granular per-cell data
-that every downstream subgenerational analysis needs, so those analyses never
-re-read simulation output. From this one extraction you can derive Definition 5
-def5 (pooled-cell threshold), def5_CI (per-lineage confidence interval, the
-canonical subgen label), Definition 4 (any completed transcript), and the
-per-generation expression matrix (Task 4).
+reads each cells simOut just once and retain the data used for downstream analysis by other scripts. This should alsways be done first 
 
-Definition 5 substrate is `countRnaCistronSynthesized` (completed transcripts,
-insulated from tRNA attenuation) summed over each generation's timesteps, per
-protein-coding mRNA cistron.
+From this data we should be able to derive def 5_CI classifiaction with a 95% CI, along with the base subgen definitions 4 and 5 
 
-Outputs (written to plotOutDir, prefixed by plotOutFileName):
-  <name>_synth_per_cell.tsv      wide: seed, generation, is_successful_lineage +
-                                 one column per gene = completed transcripts
-                                 that generation. PRIMARY substrate.
-  <name>_max_mrna_per_cell.tsv   wide: same index + per-gene max mRNA count.
-  <name>_max_protein_per_cell.tsv wide: same index + per-gene max protein count.
-  <name>_frac_protein_zero_per_cell.tsv wide: same index + per-gene time-weighted
-                                 fraction of the generation's cell cycle spent at
-                                 zero protein copies (the protein-absence rate).
-  <name>_lineage_success.tsv     per seed: strict successful-lineage flags.
-  <name>_genes.tsv               gene_id, cistron_id, monomer_id (column key).
-  <name>_run_metadata.json       provenance.
+Outputs are written to plotOutDir under the FIXED basename `subgen_raw_extract`
+(sc.raw_extract_prefix), NOT under plotOutFileName, so consumers can always find
+them regardless of what invoked this script:
+  ..._synth_per_cell.tsv      wide: seed, generation, is_successful_lineage +
+                              one column per gene = completed transcripts that
+                              generation. PRIMARY substrate.
+  ..._max_mrna_per_cell.tsv   wide: same index + per-gene max mRNA count.
+  ..._max_protein_per_cell.tsv wide: same index + per-gene max protein count.
+  ..._frac_protein_zero_per_cell.tsv wide: same index + per-gene time-weighted
+                              fraction of the generation's cell cycle spent at
+                              zero protein copies (the protein-absence rate).
+  ..._lineage_success.tsv     per seed: strict successful-lineage flags.
+  ..._doubling_times.tsv      per seed: doubling time (min) for each generation,
+                              -1 where the generation did not run or was
+                              unreadable. Already computed for the strict filter,
+                              so persisting it saves every consumer a walk over
+                              every cell's Main/time.
+  ..._genes.tsv               gene_id, cistron_id, monomer_id (column key).
+  ..._run_metadata.json       provenance.
 
 Run this ONCE before the downstream subgenerational plots:
   python runscripts/manual/analysisCohort.py --plot subgen_raw_extract.py <dir>
 """
 
 import csv
-import json
 import os
 import pickle
 from datetime import datetime
@@ -68,6 +67,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
 
+		# check for generation number being greater than ignore_first
+	
 		n_generation = self.ap.n_generation
 		if n_generation <= sc.IGNORE_FIRST_N_GENS:
 			print('Skipping extraction - not enough generations run.')
@@ -82,7 +83,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			self.ap, n_generation, total_init_sims=total_init_sims)
 
 		# Write under the fixed raw-extract basename (not plotOutFileName) so the
-		# downstream consumers can always find these files.
+		# downstream script can always find these files.
 		prefix = sc.raw_extract_prefix(plotOutDir)
 
 		# Gene metadata / column key (always writable).
@@ -210,13 +211,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			value_fmt='%.6g')
 		print('Wrote %s' % (prefix + sc.FRAC_PROTEIN_ZERO_PER_CELL_SUFFIX))
 
+		# compute_lineage_success already walked every cell's Main/time to build the
+		# strict filter, so persisting the per-generation doubling times here is free
+		# and saves every consumer that walk.
+		self._write_doubling_times(
+			prefix + sc.DOUBLING_TIMES_SUFFIX, success, n_generation)
+
 		self._write_metadata(
 			prefix + '_run_metadata.json', analysis_run_time,
 			sim_metadata_path, sim_metadata, has_synth, n_genes,
 			success, included, skipped)
 		print('Done.')
 
-	# ------------------------------------------------------------------ writers
 
 	def _write_genes(self, path, gene_ids, cistron_ids, monomer_ids):
 		with open(path, 'w') as f:
@@ -243,45 +249,49 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					'%.4g' % max_dt, success['in_successful'][s]])
 		print('Wrote %s' % path)
 
+	def _write_doubling_times(self, path, success, n_generation):
+		"""Per-seed doubling time for each generation, in minutes (-1 if absent).
+
+		Same layout as subgen_definition5_lineage_ci.py's _doubling_times table, so
+		either file can be read interchangeably.
+		"""
+		with open(path, 'w') as f:
+			w = csv.writer(f, delimiter='\t')
+			w.writerow(['seed'] + ['gen_%d' % g for g in range(n_generation)])
+			for s in success['all_seed_ids']:
+				row = success['doubling'][s]
+				w.writerow(['%06d' % s]
+					+ ['%.4g' % v if v >= 0 else '-1' for v in row])
+		print('Wrote %s' % path)
+
 	def _write_metadata(self, path, analysis_run_time, sim_metadata_path,
 			sim_metadata, has_synth, n_genes, success, included, skipped):
-		repo_dir = os.path.dirname(os.path.abspath(__file__))
-		meta = {
-			'analysis': {
-				'script': os.path.basename(__file__),
-				'run_time': analysis_run_time,
-				'git': sc.git_info(repo_dir),
-				'parameters': {
-					'ignore_first_n_gens': sc.IGNORE_FIRST_N_GENS,
-					'max_doubling_min': sc.MAX_DOUBLING_MIN,
-					'synth_available': has_synth,
+		# Layout comes from sc.write_run_metadata so every subgen script's
+		# provenance stays comparable; the blocks below are this script's own.
+		sc.write_run_metadata(
+			path,
+			script=os.path.basename(__file__),
+			parameters={
+				'ignore_first_n_gens': sc.IGNORE_FIRST_N_GENS,
+				'max_doubling_min': sc.MAX_DOUBLING_MIN,
+				'synth_available': has_synth,
+				},
+			sim_metadata_path=sim_metadata_path,
+			sim_metadata=sim_metadata,
+			run_time=analysis_run_time,
+			extra={
+				'genes': {'n_genes': n_genes},
+				'lineages': {
+					'n_seeds': len(success['seeds']),
+					'n_successful': len(success['successful_seeds']),
+					'successful_seeds': sorted(success['successful_seeds']),
 					},
-				},
-			'simulation': {
-				'metadata_source': sim_metadata_path,
-				'git_hash': sim_metadata.get('git_hash'),
-				'git_branch': sim_metadata.get('git_branch'),
-				'run_time': sim_metadata.get('time'),
-				'description': sim_metadata.get('description'),
-				'variant': sim_metadata.get('variant'),
-				'total_gens': sim_metadata.get('total_gens'),
-				'total_init_sims': sim_metadata.get('total_init_sims'),
-				},
-			'genes': {'n_genes': n_genes},
-			'lineages': {
-				'n_seeds': len(success['seeds']),
-				'n_successful': len(success['successful_seeds']),
-				'successful_seeds': sorted(success['successful_seeds']),
-				},
-			'cells': {
-				'n_included': len(included),
-				'n_skipped': len(skipped),
-				'skipped': skipped,
-				},
-			}
-		with open(path, 'w') as f:
-			json.dump(meta, f, indent=2)
-		print('Wrote %s' % path)
+				'cells': {
+					'n_included': len(included),
+					'n_skipped': len(skipped),
+					'skipped': skipped,
+					},
+				})
 
 
 if __name__ == '__main__':
