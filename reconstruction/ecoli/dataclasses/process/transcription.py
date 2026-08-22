@@ -1903,7 +1903,8 @@ class Transcription(object):
 		f_ppgpp = self.fraction_rnap_bound_ppgpp(ppgpp)
 		return normalize(self.exp_free * (1 - f_ppgpp) + self.exp_ppgpp * f_ppgpp)
 
-	def synth_prob_from_ppgpp(self, ppgpp, copy_number, balanced_rRNA_prob=True):
+	def synth_prob_from_ppgpp(self, ppgpp, copy_number, balanced_rRNA_prob=True,
+			tau_override=None):
 		"""
 		Calculates the synthesis probability of each gene at a given concentration
 		of ppGpp.
@@ -1914,6 +1915,10 @@ class Transcription(object):
 				number given a doubling time and gene replication coordinate
 			balanced_rRNA_prob (bool): if True, set the synthesis probabilities
 				of rRNA promoters to be equal to one another
+			tau_override (Optional[float]): if given, doubling time in minutes to
+				use for the expected copy number instead of the doubling time
+				inferred from ppgpp. Only the expectation is affected; the loss
+				term still uses the inferred growth rate
 
 		Returns
 			prob (ndarray[float]): normalized synthesis probability for each gene
@@ -1935,8 +1940,14 @@ class Transcription(object):
 		# Use the wildtype replication coordinates that were used to calculate
 		# exp_free and exp_ppgpp, instead of coordinates that can be adjusted
 		# via variants
+		#
+		# tau_override freezes the doubling time entering the expectation while
+		# leaving `loss` on the inferred growth rate, which is what the
+		# new_gene_burden_ladder_frozen counterfactual isolates. It is None
+		# everywhere else, so every other simulation is unchanged.
 		n_avg_copy = copy_number(
-			tau, self.rna_data['wt_replication_coordinate'])
+			tau if tau_override is None else tau_override,
+			self.rna_data['wt_replication_coordinate'])
 
 		# Return values
 		factor = loss / n_avg_copy

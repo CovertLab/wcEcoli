@@ -101,6 +101,13 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.ppgpp = self.bulkMoleculeView(sim_data.molecule_ids.ppGpp)
 		self.synth_prob = sim_data.process.transcription.synth_prob_from_ppgpp
 		self.copy_number = sim_data.process.replication.get_average_copy_number
+		# Counterfactual hook. When a variant sets this, the expected copy number
+		# in synth_prob_from_ppgpp is held at a fixed doubling time instead of the
+		# one inferred from ppGpp, so gene dosage loss is no longer cancelled on
+		# its way into transcription. None for every other variant, which leaves
+		# the call identical to before.
+		self.frozen_expectation_tau = getattr(
+			sim_data.process.transcription, 'frozen_expectation_tau', None)
 		self.get_rnap_active_fraction_from_ppGpp = sim_data.process.transcription.get_rnap_active_fraction_from_ppGpp
 
 		# import ipdb
@@ -124,7 +131,9 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				cell_volume = cell_mass / self.cell_density
 				counts_to_molar = 1 / (self.n_avogadro * cell_volume)
 				ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
-				basal_prob, _ = self.synth_prob(ppgpp_conc, self.copy_number)
+				basal_prob, _ = self.synth_prob(
+					ppgpp_conc, self.copy_number,
+					tau_override=self.frozen_expectation_tau)
 				# print("\nIn transcript_initiation calculateRequest")
 				# print("ppGpp concentration:", ppgpp_conc)
 				self.basal_prob_synth_prob = basal_prob.copy()
