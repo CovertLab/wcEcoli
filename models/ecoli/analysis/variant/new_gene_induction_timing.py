@@ -11,10 +11,16 @@ Traces, all normalised to their own pre-induction mean so they share one axis:
 
 	new gene monomer count            the driver
 	mean rRNA operon copy number      the dosage arm's input, origin-proximal
-	a terminus-proximal control gene  dosage control, should barely move
+	a terminus-proximal control gene  dosage control, falls less than rRNA
 	total ribosome pool               the machinery, hit two ways
 	total RNAP pool
 	instantaneous growth rate
+
+The terminus gene is a dosage control, not a null control: it loses copies too,
+just fewer. At replichore fraction 0.95 Cooper-Helmstetter gives 2**(22/tau), so
+over the minimal ladder's 52 -> 89 min it should fall about 11%, against about
+25% for the rRNA operons at fraction 0.20. A terminus trace that rises, or that
+falls as far as rRNA does, means something upstream is wrong.
 
 What this can and cannot establish
 ----------------------------------
@@ -62,14 +68,44 @@ GENS_BEFORE = 2
 GENS_AFTER = 8
 
 # Common time grid, in minutes relative to the start of the induction
-# generation. Cells sit at different points of their division cycle at any given
-# moment, so binning across seeds averages over cycle phase rather than
-# resolving it. Copy number oscillates within a cycle and that oscillation is
-# real, but it is present in the baseline too, so normalising to the
-# pre-induction mean leaves the step intact.
+# generation. The grid is fixed so that batches remain comparable; how much of
+# it is usable is decided from the data, by COVERAGE_FRAC below.
+#
+# Cells sit at different points of their division cycle at any given moment, so
+# binning across seeds averages over cycle phase rather than resolving it. Copy
+# number oscillates strongly within a cycle, so that averaging is not cosmetic:
+# a bin holding only two or three seeds samples a narrow slice of cycle phase
+# instead of the mean over it, and can come out on either side of the truth.
+#
+# The grid is piecewise. Coverage is complete in the first hour and the
+# half-times of interest all fall there, so bins are fine early; later bins only
+# need to establish a plateau, so they are coarse.
+BIN_MINUTES_EARLY = 2.0
+EARLY_UNTIL_MIN = 60.0
 BIN_MINUTES = 10.0
 WINDOW_BEFORE_MIN = 150.0
 WINDOW_AFTER_MIN = 900.0
+
+# A post-induction bin is usable only if this fraction of the seeds reached it.
+#
+# Without this the analysis fails silently and in the worst possible direction.
+# Eight generations after induction spans about 420 min in minimal media and 220
+# in rich, so a fixed 900-minute window puts its tail beyond where any seed
+# reaches: the tail then holds only the seeds that happened to divide slowest,
+# which are the most burden-affected ones, while the output still reports all 16
+# seeds. Measured on the P4 minimal batch, that produced a terminus-gene change
+# of +20.9% where Cooper-Helmstetter predicts -9.6%, and an rRNA change of -9.4%
+# against a predicted -24.6%. Both signs and magnitudes were set by which seeds
+# survived into the tail.
+#
+# Note this must be counted in SEEDS, not in samples. Each seed contributes
+# hundreds of timesteps to a ten-minute bin, so a threshold on the sample count
+# would be met by any single seed and would mask nothing at all.
+COVERAGE_FRAC = 0.8
+
+# Fraction of the covered post-induction span used as the plateau, measured in
+# time rather than in bins because the grid is piecewise.
+TAIL_FRAC = 0.25
 
 # Terminus-proximal reference, resolved by position at run time. Same convention
 # as models/ecoli/analysis/multigen/copy_number_lineage_trace.py.
@@ -89,32 +125,52 @@ TRACES = [
 
 
 def _bin_edges():
-	"""Return the common time grid edges and centres, in minutes."""
-	edges = np.arange(-WINDOW_BEFORE_MIN, WINDOW_AFTER_MIN + BIN_MINUTES,
-		BIN_MINUTES)
+	"""Return the common time grid edges and centres, in minutes.
+
+	Coarse before induction, fine for the first EARLY_UNTIL_MIN afterwards,
+	coarse again beyond it.
+	"""
+	edges = np.concatenate([
+		np.arange(-WINDOW_BEFORE_MIN, 0.0, BIN_MINUTES),
+		np.arange(0.0, EARLY_UNTIL_MIN, BIN_MINUTES_EARLY),
+		np.arange(EARLY_UNTIL_MIN, WINDOW_AFTER_MIN + BIN_MINUTES,
+			BIN_MINUTES)])
 	return edges, 0.5 * (edges[:-1] + edges[1:])
 
 
-def _t_half(centres, values, baseline):
+def _plateau(centres, values, usable):
+	"""
+	Return the post-induction plateau value and the last covered time.
+
+	The plateau is the mean over the last TAIL_FRAC of the *covered* span, so it
+	moves with wherever the data actually ends rather than sitting at a fixed
+	offset that may be past the end of every lineage.
+	"""
+	if not np.any(usable):
+		return float('nan'), float('nan')
+	t_max = float(centres[usable].max())
+	tail = usable & (centres >= (1.0 - TAIL_FRAC) * t_max)
+	if not np.any(tail):
+		return float('nan'), t_max
+	return float(np.nanmean(values[tail])), t_max
+
+
+def _t_half(centres, values, baseline, final, usable):
 	"""
 	Return the time at which a trace first covers HALF of its total change.
 
-	The total change is taken as the mean of the last quarter of the window
-	minus the baseline, which is more stable than the single final point. Returns
-	nan if the trace never gets there or if the total change is too small to
-	time meaningfully.
+	Searches only covered bins, and takes the plateau from _plateau rather than
+	recomputing it, so the timing and the magnitude cannot disagree about which
+	part of the window they trust.
 	"""
-	post = values[centres > 0]
-	if post.size < 8 or not np.isfinite(baseline) or baseline == 0:
+	if not (np.isfinite(baseline) and np.isfinite(final)) or baseline == 0:
 		return float('nan')
-	tail = post[-max(2, post.size // 4):]
-	final = np.nanmean(tail)
 	total = final - baseline
 	if abs(total / baseline) < 0.02:
 		# Under a 2% move there is no step to time, only noise.
 		return float('nan')
 	target = baseline + HALF * total
-	post_t = centres[centres > 0]
+	post, post_t = values[usable], centres[usable]
 	if total < 0:
 		reached = np.where(post <= target)[0]
 	else:
@@ -150,6 +206,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					final=result['final'][key],
 					change=result['change'][key],
 					t_half_min=result['t_half'][key],
+					t_max_covered_min=result['t_max'][key],
 					n_seeds=result['n_seeds']))
 
 		if not curves:
@@ -179,8 +236,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if c in cistron_to_monomer]
 
 		# Accumulate sum and count per bin so seeds of unequal length combine.
+		# `covered` is separate and counts SEEDS, not samples: it is incremented
+		# once per seed per bin the seed reaches at all. A threshold on `counts`
+		# would not work, because one seed puts hundreds of timesteps into a
+		# ten-minute bin.
 		totals = {key: np.zeros(centres.size) for key, _, _ in TRACES}
 		counts = {key: np.zeros(centres.size) for key, _, _ in TRACES}
+		covered = np.zeros(centres.size)
 		n_seeds = 0
 
 		for seed in seeds:
@@ -193,6 +255,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			idx = np.digitize(t, edges) - 1
 			keep = (idx >= 0) & (idx < centres.size)
 			idx = idx[keep]
+			np.add.at(covered, np.unique(idx), 1.0)
 			for key, values in series.items():
 				v = np.asarray(values, dtype=float)[keep]
 				good = np.isfinite(v)
@@ -210,22 +273,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				mean[key] = np.where(counts[key] > 0,
 					totals[key] / np.maximum(counts[key], 1), np.nan)
 
+		# The usable window is decided by seed coverage, not by the grid.
+		usable = (centres > 0) & (covered >= COVERAGE_FRAC * n_seeds)
 		pre = centres < 0
-		baseline, final, change, t_half, normed = {}, {}, {}, {}, {}
+		baseline, final, change, t_half, t_max, normed = {}, {}, {}, {}, {}, {}
 		for key, _, _ in TRACES:
 			b = float(np.nanmean(mean[key][pre])) if np.any(
 				np.isfinite(mean[key][pre])) else float('nan')
 			baseline[key] = b
-			post = mean[key][centres > 0]
-			tail = post[-max(2, post.size // 4):] if post.size else post
-			f = float(np.nanmean(tail)) if tail.size else float('nan')
+			f, tm = _plateau(centres, mean[key], usable)
 			final[key] = f
+			t_max[key] = tm
 			change[key] = f / b - 1.0 if b else float('nan')
-			t_half[key] = _t_half(centres, mean[key], b)
+			t_half[key] = _t_half(centres, mean[key], b, f, usable)
 			normed[key] = mean[key] / b if b else mean[key] * np.nan
 
 		return dict(normed=normed, baseline=baseline, final=final,
-			change=change, t_half=t_half, n_seeds=n_seeds)
+			change=change, t_half=t_half, t_max=t_max, n_seeds=n_seeds,
+			usable=usable, covered=covered)
 
 	def _one_seed(self, variant, seed, cistron_data, replication,
 			new_monomers, sim_data):
@@ -384,6 +449,22 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	@staticmethod
 	def _print_summary(curves):
 		print()
+		print('G1 — covered window per variant. The grid runs to %.0f min, but '
+			'only bins' % WINDOW_AFTER_MIN)
+		print('reached by at least %.0f%% of seeds are used. A short covered '
+			'window is not' % (COVERAGE_FRAC * 100))
+		print('a failure — it is how long the lineages actually ran.')
+		print()
+		print('%-8s %7s %17s %10s' % ('variant', 'seeds', 'covered to (min)',
+			'bins used'))
+		for variant in sorted(curves):
+			d = curves[variant]
+			tm = [v for v in d['t_max'].values() if np.isfinite(v)]
+			print('%-8d %7d %17s %10d' % (variant, d['n_seeds'],
+				'%.0f' % max(tm) if tm else 'none',
+				int(d['usable'].sum())))
+
+		print()
 		print('G1 — time to half of the post-induction change, in minutes.')
 		print('nan means the trace moved less than 2%, i.e. there was no step '
 			'to time.')
@@ -430,7 +511,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def _write_csv(plotOutDir, plotOutFileName, rows):
 		path = os.path.join(plotOutDir, plotOutFileName + '.csv')
 		fields = ['variant', 'trace', 'n_seeds', 'baseline', 'final', 'change',
-			't_half_min']
+			't_half_min', 't_max_covered_min']
 		with open(path, 'w', newline='') as f:
 			writer = csv.DictWriter(f, fieldnames=fields)
 			writer.writeheader()
@@ -444,6 +525,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		fig, axes = plt.subplots(len(TRACES), 1, figsize=(8.5,
 			1.5 * len(TRACES)), sharex=True)
 		cmap = plt.get_cmap('viridis')
+		# Where every variant has run out of covered bins.
+		all_tmax = [v for d in curves.values() for v in d['t_max'].values()
+			if np.isfinite(v)]
+		t_uncovered = max(all_tmax) if all_tmax else float('nan')
 		shades = {v: cmap(0.1 + 0.75 * i / max(1, len(variants) - 1))
 			for i, v in enumerate(variants)}
 
@@ -458,6 +543,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						ls=':', alpha=0.8)
 			ax.axhline(1.0, color='0.7', lw=0.7, ls='--')
 			ax.axvline(0.0, color='C3', lw=1.0)
+			# Grey out where too few seeds reached, so a short window reads as
+			# a short window rather than as a plateau.
+			if np.isfinite(t_uncovered):
+				ax.axvspan(t_uncovered / 60.0, centres[-1] / 60.0,
+					color='0.92', zorder=0)
 			ax.set_ylabel(label, fontsize='x-small')
 			ax.tick_params(labelsize='x-small')
 
@@ -472,3 +562,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		plt.tight_layout()
 		exportFigure(plt, plotOutDir, plotOutFileName, metadata=None)
 		plt.close('all')
+
+
+if __name__ == '__main__':
+	Plot().cli()
