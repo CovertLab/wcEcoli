@@ -1,9 +1,9 @@
 """
 Cohort analysis: export subsampled monomer counts + cell dry mass.
 
-Randomly samples TIMEPOINTS_TO_SAMPLE total timepoints spread evenly across
-seeds (SAMPLE_PER_SEED per seed), matching the pattern in
-subsample_timepoints_for_scRNAseq_comp.py.
+Randomly samples TIMEPOINTS_TO_SAMPLE total timepoints spread evenly across the
+STRICT-successful lineages (sc.sample_per_seed(n_lineages) per lineage), matching
+the pattern in subsample_timepoints_for_scRNAseq_comp.py.
 
 Produces two TSV files:
   <plotOutFileName>_monomer_counts_dry_mass.tsv
@@ -35,9 +35,8 @@ from wholecell.io.tablereader import TableReader
 
 IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 SEED_RANGE = sc.SEED_RANGE
-TIMEPOINTS_TO_SAMPLE = 10000
-SAMPLE_PER_SEED = TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)
-BATCH_SIZE = 100  # max cell paths passed to TableReader at once
+TIMEPOINTS_TO_SAMPLE = sc.TIMEPOINTS_TO_SAMPLE
+BATCH_SIZE = 100  
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -56,9 +55,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('No valid cell paths found for this variant. Skipping analysis.')
 			return
 
-		# Strict-successful lineages (completed every generation and no cell at
-		# the 180-min doubling cap).
+		# Strict-successful lineages 
 		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		seeds_to_sample = sorted(
+			s for s in success['successful_seeds'] if s in set(SEED_RANGE.tolist()))
+		sample_per_seed = sc.sample_per_seed(len(seeds_to_sample))
+		print('Sampling %d timepoints from each of %d successful lineages '
+			'(target %d total).'
+			% (sample_per_seed, len(seeds_to_sample), TIMEPOINTS_TO_SAMPLE))
+		if not seeds_to_sample:
+			print('No successful lineages found. Skipping.')
+			return
 
 		print('Analyzing %d cells...' % len(cell_paths))
 
@@ -95,7 +102,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 			# Draw random timepoints and align them to generation starts (shared
 			# helper reads Main/time once; clamps the draw to available timesteps).
-			sample = sc.subsample_seed_timepoints(cell_paths_per_seed, SAMPLE_PER_SEED)
+			sample = sc.subsample_seed_timepoints(
+				cell_paths_per_seed, sample_per_seed)
 			if sample is None:
 				continue
 			random_time_indices = sample['time_indices']
@@ -169,6 +177,31 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				monomer_counts_row = total_monomer_counts[i].tolist()
 				counts_row = [seed] + [time_step] + [generation] + [gen_start] + [dry_mass] + monomer_counts_row
 				writer.writerow(counts_row)
+
+		# metadata. The subsample scripts wrote none until now, which meant the row
+		# counts in their outputs could not be traced back to a lineage count --
+		# exactly the information needed to spot the old
+		# `TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)` bug.
+		sim_metadata_path, sim_metadata = sc.load_sim_metadata(variantDir)
+		sc.write_run_metadata(
+			os.path.join(plotOutDir, plotOutFileName + '_run_metadata.json'),
+			script=os.path.basename(__file__),
+			parameters={
+				'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
+				'max_doubling_min': sc.MAX_DOUBLING_MIN,
+				'timepoints_to_sample': TIMEPOINTS_TO_SAMPLE,
+				'sample_per_seed': sample_per_seed,
+				'numpy_seed': 0,
+				},
+			sim_metadata_path=sim_metadata_path,
+			sim_metadata=sim_metadata,
+			extra={
+				'lineages': {
+					'n_successful': len(seeds_to_sample),
+					'successful_seeds': seeds_to_sample,
+					},
+				'timepoints': {'n_sampled': len(total_random_time_steps)},
+				})
 
 
 if __name__ == '__main__':

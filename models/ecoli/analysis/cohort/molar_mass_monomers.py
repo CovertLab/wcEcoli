@@ -1,5 +1,8 @@
 """
-Template for cohort analysis plots
+Cohort-wide time-averaged mean mRNA and monomer copy number, for every monomer.
+
+Despite the module name it does NOT write molar masses; the molecular-weight table
+lives in subsample_cell_monomer_mass.py (`_monomer_mws.tsv`).
 """
 
 import pickle
@@ -14,16 +17,15 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = 8
-SEED_RANGE = np.arange(0, 60)
-TIMEPOINTS_TO_SAMPLE = 10000
-SAMPLE_PER_SEED = TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)
-BATCH = 100
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
+SEED_RANGE = sc.SEED_RANGE
+
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -34,11 +36,19 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('Skipping analysis - not enough generations run.')
 			return
 		cell_paths = self.ap.get_cells(
-			
-			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
-			only_successful=True)
-		
+			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
+			seed=SEED_RANGE, only_successful=True)
+
 		print('Analyzing %d cells...' % len(cell_paths))
+
+		# Restrict to strict-successful lineages 
+		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		cell_paths = sc.filter_cells_to_successful(
+			cell_paths, success['successful_seeds'])
+		print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+		if len(cell_paths) == 0:
+			print('No successful-lineage cells found. Skipping.')
+			return
 
 		# There are 4346 mRNA ids with counts
 		RNA_reader = TableReader(
@@ -104,10 +114,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				ignore_exception=True).mean(axis=0)[mRNA_ids_indices]
 
 		
-		# import ipdb; ipdb.set_trace()
-
 		# Write data to table
-		with open(os.path.join(plotOutDir, plotOutFileName + '_40_seeds_last_11_gens.tsv'), 'w') as f:
+		with open(os.path.join(plotOutDir, plotOutFileName + '_mean_counts.tsv'), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow([
 				'gene_name', 'cistron_name', 'monomer_name',

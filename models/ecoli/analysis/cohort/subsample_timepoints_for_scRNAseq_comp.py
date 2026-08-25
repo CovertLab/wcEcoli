@@ -1,7 +1,3 @@
-"""
-Template for cohort analysis plots
-"""
-
 import pickle
 import os
 
@@ -11,7 +7,6 @@ import numpy as np
 from matplotlib import cm
 
 import csv
-
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
 from models.ecoli.analysis.cohort import subgen_common as sc
@@ -22,8 +17,7 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 SEED_RANGE = sc.SEED_RANGE
-TIMEPOINTS_TO_SAMPLE = 10000
-SAMPLE_PER_SEED = TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)
+TIMEPOINTS_TO_SAMPLE = sc.TIMEPOINTS_TO_SAMPLE
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -38,9 +32,17 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
             only_successful=True)
 
-        # Strict-successful lineages (completed every generation and no cell at
-        # the 180-min doubling cap).
+        # Strict-successful lineages 
         success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        seeds_to_sample = sorted(
+            s for s in success['successful_seeds'] if s in set(SEED_RANGE.tolist()))
+        sample_per_seed = sc.sample_per_seed(len(seeds_to_sample))
+        print('Sampling %d timepoints from each of %d successful lineages '
+            '(target %d total).'
+            % (sample_per_seed, len(seeds_to_sample), TIMEPOINTS_TO_SAMPLE))
+        if not seeds_to_sample:
+            print('No successful lineages found. Skipping.')
+            return
         # Seed the RNG once for reproducible timepoint subsampling.
         np.random.seed(0)
 
@@ -113,7 +115,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
             # Draw random timepoints and align them to generation starts (shared
             # helper: clamps the draw to the available timesteps).
-            sample = sc.subsample_seed_timepoints(cell_paths_per_seed, SAMPLE_PER_SEED)
+            sample = sc.subsample_seed_timepoints(
+                cell_paths_per_seed, sample_per_seed)
             if sample is None:
                 continue
             random_time_indices = sample['time_indices']
@@ -157,7 +160,28 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
                 trna_counts_row = total_trna_counts[i].tolist()
                 counts_row = [seed]+ [time_step]+ [gen_start] + mRNA_counts_row + rRNA_counts_row + trna_counts_row
                 writer.writerow(counts_row)
-                #import ipdb; ipdb.set_trace()
+
+        # metadata. 
+        sim_metadata_path, sim_metadata = sc.load_sim_metadata(variantDir)
+        sc.write_run_metadata(
+            os.path.join(plotOutDir, plotOutFileName + '_run_metadata.json'),
+            script=os.path.basename(__file__),
+            parameters={
+                'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
+                'max_doubling_min': sc.MAX_DOUBLING_MIN,
+                'timepoints_to_sample': TIMEPOINTS_TO_SAMPLE,
+                'sample_per_seed': sample_per_seed,
+                'numpy_seed': 0,
+                },
+            sim_metadata_path=sim_metadata_path,
+            sim_metadata=sim_metadata,
+            extra={
+                'lineages': {
+                    'n_successful': len(seeds_to_sample),
+                    'successful_seeds': seeds_to_sample,
+                    },
+                'timepoints': {'n_sampled': len(total_random_time_steps)},
+                })
 
 if __name__ == '__main__':
 	Plot().cli()

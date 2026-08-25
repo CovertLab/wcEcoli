@@ -1,5 +1,14 @@
 """
-Template for cohort analysis plots
+Per-cell count of transcript initiation expression for a curated monomer panel. This means it only
+tracks when there is 0 to a nonzero value in transcription Uses only successful 
+Lineages. 
+
+An onset is a 0 -> >0 transition of the transcript count, counted on the boolean
+presence series so 0->2 counts once and 5->6 is ignored.
+
+Writes <plotOutFileName>_count_transcipt_peaks.tsv (note the historical typo in
+"transcipt", kept so existing outputs stay findable): one row per cell, first
+column the cell path, then one column per curated monomer.
 """
 
 import pickle
@@ -22,35 +31,14 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 SEED_RANGE = sc.SEED_RANGE
-monomers_of_interest = ['GLYCDEH-MONOMER[c]',  # gldA
-                        'BETAGALACTOSID-MONOMER[c]',  # lacZ
-                        'RIBULOKIN-MONOMER[c]',  # araB
-                        'BAES-MONOMER[i]',  # baeS
-                        'G6504-MONOMER[o]',  # gfcE
-                        'EG11250-MONOMER[c]',  # chpS
-                        'EG11222-MONOMER[c]',  # alkA
-                        'G7263-MONOMER[c]',  # murQ
-                        'EG11249-MONOMER[c]',  # mazF const
-                        'EG10466-MONOMER[c]'  # hupA const
-                        ]
-
-monomers_of_interest_name_dict = {'GLYCDEH-MONOMER[c]': 'gldA',
-                                  'BETAGALACTOSID-MONOMER[c]': 'lacZ',
-                                  'RIBULOKIN-MONOMER[c]': 'araB',
-                                  'BAES-MONOMER[i]': 'baeS',
-                                  'G6504-MONOMER[o]': 'gfcE',
-                                  'EG11250-MONOMER[c]': 'chpS',
-                                  'EG11222-MONOMER[c]': 'alkA',
-                                  'G7263-MONOMER[c]': 'murQ',
-                                  'EG11249-MONOMER[c]': 'mazF',
-                                  'EG10466-MONOMER[c]': 'hupA'
-                                  }
+# Curated 10-gene panel, shared with protein_distribution.py via subgen_common, main list of subgen genes we're analyzing
+PANEL = 'curated10'
+monomers_of_interest, monomers_of_interest_name_dict = sc.curated_panel(PANEL)
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
-            # Ignore data from predefined number of generations per seed
         if self.ap.n_generation <= IGNORE_FIRST_N_GENS:
             print('Skipping analysis - not enough generations run.')
             return
@@ -118,8 +106,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed=SEED_RANGE,
             only_successful=True)
 
-        # Restrict to strict-successful lineages (completed every generation and
-        # no cell at the 180-min doubling cap).
+        # Restrict to strict-successful lineages 
         success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
         cell_paths = sc.filter_cells_to_successful(
             cell_paths, success['successful_seeds'])
@@ -129,9 +116,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             return
 
         # Count 0 -> >0 onsets: the number of times a gene's transcript count
-        # rises from zero to non-zero (a "new appearance"). Working on the
-        # boolean presence series makes 0->2 count as one onset and ignores
-        # increases between two non-zero counts (e.g. 5->6).
+        # rises from zero to non-zero (a "new appearance")
         def count_peaks(time_series_data):
             is_present = (time_series_data > 0).astype(int)
             transition_deltas = np.diff(is_present, axis=0)
@@ -140,9 +125,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
         
         # Read one cell at a time so each onset-count row stays paired with its
-        # own cell path. (A single read_stacked_columns(ignore_exception=True)
-        # call silently DROPS unreadable cells, which would shift every later
-        # row off its cell_id label and eventually IndexError.)
+        # own cell path. 
         peak_rows = []
         kept_cell_ids = []
         for cell_path in cell_paths:

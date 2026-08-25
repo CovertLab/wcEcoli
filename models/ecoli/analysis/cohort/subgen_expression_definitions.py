@@ -1,10 +1,10 @@
 """
 Compute five RNA-based definitions of subgenerational gene expression as per-gene
-"expression probabilities", then report how many genes each definition classifies
-as subgenerational across a sweep of probability thresholds.
+"expression probabilities"
 
-Definitions (each computed per cell-generation, then averaged over all cells as
-`value = sum over cells / number of cells`):
+Definitions computed per each cell-generation then averaged over all cells as
+ sum over cells / number of cells :
+	For any gene it is 'subgen' if: 
 
 	1. mRNA present this gen (count >= 1)                  -- matches Science Fig 4C
 	2. any transcription (initiation) event this gen
@@ -29,27 +29,23 @@ import pickle
 import os
 import csv
 import json
-import subprocess
 from datetime import datetime
 
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants
 
 
 IGNORE_FIRST_N_GENS = 8
-# Drop the inherited boundary timestep from each generation when True. Default
-# False to match subgenerational_expression_table.py for direct comparison.
-REMOVE_FIRST_TIMESTEP = False
 # Probability filters for the subgenerational classification sweep.
+REMOVE_FIRST_TIMESTEP = False
 THRESHOLDS = [1.0, 0.99, 0.95]
-# Report the absent-cell list only for near-ubiquitous genes that are absent in at
-# most this many cells (i.e. expression probability close to 1).
+
 MAX_ABSENT_CELLS_TO_REPORT = 10
 
-# Output column label for each definition, in order.
 DEFINITION_LABELS = [
 	'p_present_def1',
 	'p_any_init_def2',
@@ -63,54 +59,15 @@ def _blank_if_nan(value):
 	"""Render NaN values (defs 4/5 on pre-listener-change cohorts) as blank."""
 	return '' if isinstance(value, float) and np.isnan(value) else value
 
-
-def _git_info(repo_dir):
-	"""Return the current git hash, branch, and dirty flag for repo_dir."""
-	def run(args):
-		return subprocess.check_output(
-			['git', '-C', repo_dir] + args,
-			stderr=subprocess.DEVNULL).decode().strip()
-	try:
-		return {
-			'git_hash': run(['rev-parse', 'HEAD']),
-			'git_branch': run(['rev-parse', '--abbrev-ref', 'HEAD']),
-			'git_dirty': bool(run(['status', '--porcelain'])),
-			}
-	except Exception as e:
-		return {'git_hash': None, 'git_branch': None, 'git_dirty': None,
-			'error': str(e)}
-
-
-def _load_sim_metadata(variant_dir):
-	"""Load the simulation's metadata.json (git hash, run time, options).
-
-	The sim-level metadata directory sits one level above the variant directory;
-	fall back to a metadata directory inside the variant directory.
-	"""
-	candidates = [
-		os.path.join(os.path.dirname(variant_dir),
-			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
-		os.path.join(variant_dir,
-			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
-		]
-	for path in candidates:
-		if os.path.isfile(path):
-			with open(path) as f:
-				return path, json.load(f)
-	return None, {}
+_git_info = sc.git_info
+_load_sim_metadata = sc.load_sim_metadata
 
 
 def _parse_cell_id(cell_path):
-	"""Split a cell path into (seed, generation).
-
-	Cell paths look like .../<variant>/<seed>/generation_<gen>/<daughter>.
+	"""Split a cell path into (seed_str, generation_int).
 	"""
-	parts = cell_path.rstrip(os.sep).split(os.sep)
-	for i, part in enumerate(parts):
-		if part.startswith('generation_'):
-			seed = parts[i - 1] if i > 0 else ''
-			return seed, int(part.split('_')[1])
-	return '', -1
+	seed, gen = sc.parse_cell_id(cell_path)
+	return ('' if seed < 0 else str(seed)), gen
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -119,19 +76,36 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	# cells from lineages that died mid-run do not contribute absences.
 	REQUIRE_COMPLETE_LINEAGE = False
 
+	def _def5_ci_summary_rows(self, plotOutDir, n_genes, n_threshold_columns):
+		"""The canonical def5_CI counts
+		"""
+		try:
+			clf = sc.canonical_def5_classification(plotOutDir)
+		except FileNotFoundError:
+			print('\nNote: no raw extraction in %s, so the canonical def5_CI row is '
+				'omitted from the summary. Run subgen_raw_extract.py to include it.'
+				% plotOutDir)
+			return []
+		if clf['n_lineages'] == 0:
+			return []
+		counts = sc.category_counts(clf['stats']['cat'])
+		blank = ['-'] * (n_threshold_columns - 1)
+		return [
+			['def5_CI (CANONICAL: CI entirely below 1)', n_genes,
+				counts['never_expressed'], counts['subgen']] + blank,
+			['def5_CI possibly_subgen (CI includes 1)', n_genes, '-',
+				counts['possibly_subgen']] + blank,
+			]
+
 	def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
 		analysis_run_time = datetime.now().isoformat(timespec='seconds')
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-
-		# Ignore data from a predefined number of generations per seed
 		if self.ap.n_generation <= IGNORE_FIRST_N_GENS:
 			print('Skipping analysis - not enough generations run.')
 			return
 
-		# Canonical gene set: mRNA cistrons with an associated protein/monomer,
-		# in cistron order (matches subgenerational_expression_table.py).
 		cistron_data = sim_data.process.transcription.cistron_data
 		cistron_ids = cistron_data['id']
 		cistron_id_to_protein_id = {
@@ -156,10 +130,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
 
-		# Optionally keep only lineages that completed every generation: a seed
-		# qualifies when its last successful generation is the final one. Cells from
-		# lineages that died mid-run (a major source of near-ubiquitous absences)
-		# are then excluded.
+		# Optionally keep only lineages that completed every generation
 		if self.REQUIRE_COMPLETE_LINEAGE:
 			final_gen = self.ap.n_generation - 1
 			last_gen_by_seed = {}
@@ -234,7 +205,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				'definitions 4/5 will be reported as NA. Re-run simulations after '
 				'the listener change to populate them.')
 
-		# Single memory-efficient pass: read the per-cell tables, reduce each to a
+		# read the per-cell tables, reduce each to a
 		# per-generation statistic, and accumulate O(n_genes) arrays. A cell is
 		# only counted if all required tables read successfully, so every
 		# definition shares an identical cell set.
@@ -247,15 +218,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sum_synth_events = np.zeros(n_genes)
 		max_mRNA_counts = np.zeros(n_genes, dtype=np.int64)
 		max_protein_counts = np.zeros(n_genes, dtype=np.int64)
-		# Time-and-population-averaged copy numbers: accumulate the sum over all
-		# timesteps of all cells, then divide by the total timestep count.
 		sum_mRNA_counts = np.zeros(n_genes)
 		sum_protein_counts = np.zeros(n_genes)
 		total_timesteps = 0
-		# For near-ubiquitous genes (absent in only a handful of cells), record which
-		# cells lacked the mRNA so repeated offenders can be spotted. Once a gene is
-		# absent in more than the report cap it can never be "close to 1", so drop its
-		# record and disqualify it to keep memory bounded.
 		absent_cells_by_gene = {}
 		disqualified_absent = np.zeros(n_genes, dtype=bool)
 		included_cells = []
@@ -353,10 +318,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					max_protein_counts[i], mean_protein_counts[i],
 					])
 
-		# Definition comparison: how many genes are subgenerational under each
-		# definition, swept across probability thresholds. A gene is subgen for a
-		# definition at threshold t if 0 < value < t (the > 0 excludes genes that
-		# are never expressed; subsets are nested as t shrinks).
+		# Definition comparison
 		summary_path = os.path.join(
 			plotOutDir, plotOutFileName + '_definition_summary.tsv')
 		print('Writing %s' % summary_path)
@@ -374,6 +336,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				int(np.sum((values > 0) & (values < t))) for t in THRESHOLDS]
 			summary_rows.append([label, n_genes, n_never] + subgen_counts)
 
+		summary_rows.extend(self._def5_ci_summary_rows(plotOutDir, n_genes,
+			n_threshold_columns=len(THRESHOLDS)))
+
 		with open(summary_path, 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow(header)
@@ -381,7 +346,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				writer.writerow(row)
 
 		# Echo the comparison to stdout for quick inspection
-		print('\nSubgenerational gene counts (0 < value < threshold):')
+		print('\nSubgenerational gene counts (0 < value < threshold; the def5_CI '
+			'rows are the canonical classification, not a threshold sweep):')
 		print('\t'.join(header))
 		for row in summary_rows:
 			print('\t'.join(str(x) for x in row))
@@ -419,7 +385,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		print('  %d near-ubiquitous genes absent in 1-%d cells (%d gene-cell rows).'
 			% (n_reported_genes, MAX_ABSENT_CELLS_TO_REPORT, len(absent_rows)))
 
-		# Provenance metadata: which cells were included, when the analysis ran,
+		# metadata: which cells were included, when the analysis ran,
 		# when the sims ran, and the git hash of each.
 		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
 		repo_dir = os.path.dirname(os.path.abspath(__file__))
