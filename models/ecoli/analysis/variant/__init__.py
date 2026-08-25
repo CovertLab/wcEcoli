@@ -33,6 +33,7 @@ ACTIVE = [
 	"new_gene_vs_unregulated_genes.py",
 	"new_gene_variant_summary.py",
 	"new_gene_output_decomposition.py",
+	"new_gene_replication_cascade.py",
 	"new_gene_promoter_crowding.py",
 	"new_gene_protein_mass_fraction_histogram.py",
 	"new_gene_translation_efficiency_heatmaps.py",
