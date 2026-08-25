@@ -155,6 +155,23 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self.get_n_avg = sim_data.process.replication.get_average_copy_number
 		self.masks, self.frac = masks, frac
 
+		# A counterfactual variant can hold the expectation at a fixed doubling
+		# time instead of the ppGpp-inferred one. Without this the script
+		# reconstructs tau from ppGpp and reports the UNFROZEN availability
+		# term, which on a frozen batch is not what the model did -- it ran
+		# clean and answered the wrong question. None for every ordinary batch.
+		self.frozen_tau = getattr(
+			transcription, 'frozen_expectation_tau', None)
+		if self.frozen_tau is not None:
+			print('This batch FREEZES the copy-number expectation at '
+				'%.1f min.' % self.frozen_tau)
+			print('  `a` and `factor` are computed against that constant, '
+				'which is what the model used.')
+			print('  `tau_inferred` and `a_vs_inferred` are the unfrozen '
+				'quantities, kept as a diagnostic:')
+			print('  they say what the sensor would have reported had anything '
+				'been listening.')
+
 		rows = []
 		for variant in variants:
 			measured = self._measure(variant, generations)
@@ -265,12 +282,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# transcription unit. One call per cell rather than per timestep; the
 		# within-cycle variation in ppGpp is second order for this purpose.
 		n_avg = np.zeros_like(copies)
+		n_avg_inf = np.zeros_like(copies)
 		growths = np.zeros(taus.size)
 		taus_inf = np.zeros(taus.size)
+		taus_used = np.zeros(taus.size)
 		for i, p in enumerate(ppgpp):
 			growths[i], taus_inf[i] = self._inferred(float(p))
+			taus_used[i] = (taus_inf[i] if self.frozen_tau is None
+				else self.frozen_tau)
 			n_avg[i, :] = np.asarray(
-				self.get_n_avg(taus_inf[i], self.wt_coords))
+				self.get_n_avg(taus_used[i], self.wt_coords))
+			n_avg_inf[i, :] = (n_avg[i, :] if self.frozen_tau is None
+				else np.asarray(self.get_n_avg(taus_inf[i], self.wt_coords)))
 		n_ch_real = np.array([np.asarray(self.get_n_avg(t, self.wt_coords))
 			for t in taus])
 
@@ -282,9 +305,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			# Copy-weighted, because the share allocation is copy-weighted.
 			act = copies[:, mask].sum(axis=1)
 			exp = n_avg[:, mask].sum(axis=1)
+			exp_inf = n_avg_inf[:, mask].sum(axis=1)
 			ref = n_ch_real[:, mask].sum(axis=1)
 			with np.errstate(divide='ignore', invalid='ignore'):
 				a = np.where(exp > 0, act / exp, np.nan)
+				a_inf = np.where(exp_inf > 0, act / exp_inf, np.nan)
 				a_ref = np.where(ref > 0, act / ref, np.nan)
 			loss = growths[:, None] + self.deg_rate[None, mask]
 			with np.errstate(divide='ignore', invalid='ignore'):
@@ -298,10 +323,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				ppgpp_conc=float(np.mean(ppgpp)),
 				tau_inferred=float(np.mean(taus_inf)),
 				tau_inferred_sem=_sem(taus_inf),
+				tau_used=float(np.mean(taus_used)),
 				n_actual=float(np.mean(act)),
 				n_avg=float(np.mean(exp)),
 				n_ch_real=float(np.mean(ref)),
 				a=float(np.nanmean(a)), a_sem=_sem(a),
+				a_vs_inferred=float(np.nanmean(a_inf)),
 				a_vs_real_tau=float(np.nanmean(a_ref)),
 				factor_mean=float(np.nanmean(factor)),
 				))
@@ -311,8 +338,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	FIELDS = ['variant', 'gene_class', 'n_cells', 'n_tus',
 		'mean_replichore_fraction', 'tau_real', 'tau_real_sem', 'ppgpp_conc',
-		'tau_inferred', 'tau_inferred_sem', 'n_actual', 'n_avg', 'n_ch_real',
-		'a', 'a_sem', 'a_vs_real_tau', 'factor_mean']
+		'tau_inferred', 'tau_inferred_sem', 'tau_used', 'n_actual', 'n_avg',
+		'n_ch_real', 'a', 'a_sem', 'a_vs_inferred', 'a_vs_real_tau',
+		'factor_mean']
 
 	def _write_csv(self, plot_out_dir, plot_out_file_name, rows):
 		path = os.path.join(plot_out_dir, plot_out_file_name + '.csv')
@@ -340,11 +368,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sees = d_inf / d_real if d_real else float('nan')
 			print('\n  The sensor sees %.0f%% of the realised slowdown '
 				'(%.1f of %.1f min).' % (100 * sees, d_inf, d_real))
-			if sees > 0.9:
+			if self.frozen_tau is not None:
+				# On a frozen batch nothing consulted the sensor, so its
+				# fidelity is a diagnostic and not a mechanism. Saying
+				# otherwise would invite reading the verdict as causal.
+				print('  VERDICT: not applicable — the expectation was FROZEN '
+					'at %.1f min, so the model never' % self.frozen_tau)
+				print('  consulted the sensor. The number above says what it '
+					'would have reported; the gap between')
+				print('  that and the frozen value is what freed the dosage '
+					'arm. Read the spread in `a` below.')
+			elif sees > 0.9:
 				print('  VERDICT: compensation is essentially complete. Gene '
 					'dosage loss cancels, so it cannot drive a feedback loop, '
 					'and any reallocation must come from the dilution term.')
-			elif sees > 0.4:
+			elif sees > 0.3:
+				# The boundary is 0.3 to match the outcome table in
+				# P0_DOSAGE_COMPENSATION.md, which puts 30-60% at partial
+				# compensation and reserves "blind" for near zero. The
+				# threshold and the message used to disagree at exactly 30%.
 				print('  VERDICT: compensation is PARTIAL. A real copy-number '
 					'feedback survives, sized by the spread in `a` below.')
 			else:
@@ -355,7 +397,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					'measure. Expect stable RNA to show no extra loss in '
 					'new_gene_vs_unregulated_genes on this run.')
 
-		print('\nAvailability term a = n_actual / n_avg, by class')
+		frozen_note = ('' if self.frozen_tau is None
+			else ' (expectation frozen at %.1f min)' % self.frozen_tau)
+		print('\nAvailability term a = n_actual / n_avg, by class%s'
+			% frozen_note)
 		hdr = '  %-22s %-6s' % ('class', 'f')
 		for v in variants:
 			hdr += ' %8s' % ('v%d' % v)

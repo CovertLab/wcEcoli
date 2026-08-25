@@ -107,6 +107,28 @@ COVERAGE_FRAC = 0.8
 # time rather than in bins because the grid is piecewise.
 TAIL_FRAC = 0.25
 
+# Variant index of the no-construct control, used as the reference trace.
+#
+# Seeds are aligned at the START of the induction generation, which is
+# immediately after a division, so every trace opens at its cycle minimum --
+# measured, about 18% below its own baseline -- and recovers over the following
+# generation. That opening dip is present in the knockout control, where nothing
+# is induced, so it is mechanical rather than a response to burden. The control
+# also drifts +5 to +7% over the window for the same reason.
+#
+# Dividing every variant's trace by the control's trace at the same time offset
+# cancels both, because both are common to every variant. Statistics are
+# reported for the raw traces as well, so the size of what was removed stays
+# visible instead of being silently corrected.
+CONTROL_VARIANT = 0
+
+# An ordering claim is emitted only if the lead exceeds this many bin widths.
+#
+# Without it the first-crossing search fires in bin 1 for every trace whenever
+# the opening dip is deeper than half the eventual change, which made the lead
+# exactly zero and printed the loop-supporting branch for the knockout control.
+MIN_LEAD_BINS = 2.0
+
 # Terminus-proximal reference, resolved by position at run time. Same convention
 # as models/ecoli/analysis/multigen/copy_number_lineage_trace.py.
 TERMINUS_TARGET_FRACTION = 0.95
@@ -180,6 +202,32 @@ def _t_half(centres, values, baseline, final, usable):
 	return float(post_t[reached[0]])
 
 
+def _statistics(centres, mean, covered, n_seeds):
+	"""Baseline, plateau, fractional change and half-time for each trace."""
+	# The usable window is decided by seed coverage, not by the grid.
+	usable = (centres > 0) & (covered >= COVERAGE_FRAC * n_seeds)
+	pre = centres < 0
+	baseline, final, change, t_half, t_max, normed = {}, {}, {}, {}, {}, {}
+	for key, _, _ in TRACES:
+		b = float(np.nanmean(mean[key][pre])) if np.any(
+			np.isfinite(mean[key][pre])) else float('nan')
+		baseline[key] = b
+		f, tm = _plateau(centres, mean[key], usable)
+		final[key] = f
+		t_max[key] = tm
+		change[key] = f / b - 1.0 if b else float('nan')
+		t_half[key] = _t_half(centres, mean[key], b, f, usable)
+		normed[key] = mean[key] / b if b else mean[key] * np.nan
+	return dict(normed=normed, baseline=baseline, final=final, change=change,
+		t_half=t_half, t_max=t_max, n_seeds=n_seeds, usable=usable,
+		covered=covered)
+
+
+def _bin_width_at(t):
+	"""Width of the grid bin containing time t, in minutes."""
+	return BIN_MINUTES_EARLY if t < EARLY_UNTIL_MIN else BIN_MINUTES
+
+
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
@@ -193,29 +241,54 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		edges, centres = _bin_edges()
-		rows = []
-		curves = {}
+		raw = {}
 		for variant in variants:
 			result = self._one_variant(variant, sim_data, edges, centres)
-			if result is None:
-				continue
-			curves[variant] = result
-			for key, _, _ in TRACES:
-				rows.append(dict(variant=variant, trace=key,
-					baseline=result['baseline'][key],
-					final=result['final'][key],
-					change=result['change'][key],
-					t_half_min=result['t_half'][key],
-					t_max_covered_min=result['t_max'][key],
-					n_seeds=result['n_seeds']))
+			if result is not None:
+				raw[variant] = result
 
-		if not curves:
+		if not raw:
 			print('No variant had a readable induction window.')
 			return
 
-		self._print_summary(curves)
+		# Two views of the same data. `raw` keeps the alignment dip and the
+		# baseline drift; `vs_control` divides them out. Both are reported.
+		control = raw.get(CONTROL_VARIANT)
+		if control is None:
+			print('Variant %d is absent, so traces cannot be referenced to the '
+				'control. Reporting raw traces only, and NO ordering claim '
+				'will be made.' % CONTROL_VARIANT)
+
+		views, rows = {}, []
+		for name in ('raw', 'vs_control'):
+			if name == 'vs_control' and control is None:
+				continue
+			curves = {}
+			for variant, d in raw.items():
+				mean = d['mean']
+				if name == 'vs_control':
+					with np.errstate(invalid='ignore', divide='ignore'):
+						mean = {k: mean[k] / control['mean'][k]
+							for k, _, _ in TRACES}
+				curves[variant] = _statistics(centres, mean, d['covered'],
+					d['n_seeds'])
+			views[name] = curves
+			for variant in sorted(curves):
+				c = curves[variant]
+				for key, _, _ in TRACES:
+					rows.append(dict(variant=variant, trace=key,
+						normalisation=name,
+						baseline=c['baseline'][key], final=c['final'][key],
+						change=c['change'][key],
+						t_half_min=c['t_half'][key],
+						t_max_covered_min=c['t_max'][key],
+						n_seeds=c['n_seeds']))
+
+		primary = 'vs_control' if 'vs_control' in views else 'raw'
+		self._print_summary(views, primary, centres)
 		self._write_csv(plotOutDir, plotOutFileName, rows)
-		self._plot(plotOutDir, plotOutFileName, centres, curves)
+		self._plot(plotOutDir, plotOutFileName, centres, views[primary],
+			primary)
 
 	# ---- extraction ------------------------------------------------------
 
@@ -273,24 +346,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				mean[key] = np.where(counts[key] > 0,
 					totals[key] / np.maximum(counts[key], 1), np.nan)
 
-		# The usable window is decided by seed coverage, not by the grid.
-		usable = (centres > 0) & (covered >= COVERAGE_FRAC * n_seeds)
-		pre = centres < 0
-		baseline, final, change, t_half, t_max, normed = {}, {}, {}, {}, {}, {}
-		for key, _, _ in TRACES:
-			b = float(np.nanmean(mean[key][pre])) if np.any(
-				np.isfinite(mean[key][pre])) else float('nan')
-			baseline[key] = b
-			f, tm = _plateau(centres, mean[key], usable)
-			final[key] = f
-			t_max[key] = tm
-			change[key] = f / b - 1.0 if b else float('nan')
-			t_half[key] = _t_half(centres, mean[key], b, f, usable)
-			normed[key] = mean[key] / b if b else mean[key] * np.nan
-
-		return dict(normed=normed, baseline=baseline, final=final,
-			change=change, t_half=t_half, t_max=t_max, n_seeds=n_seeds,
-			usable=usable, covered=covered)
+		# Statistics are deferred, because they have to be computed after the
+		# control-variant division and that needs every variant in hand.
+		return dict(mean=mean, covered=covered, n_seeds=n_seeds)
 
 	def _one_seed(self, variant, seed, cistron_data, replication,
 			new_monomers, sim_data):
@@ -447,7 +505,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	# ---- output ----------------------------------------------------------
 
 	@staticmethod
-	def _print_summary(curves):
+	def _print_summary(views, primary, centres):
+		curves = views[primary]
 		print()
 		print('G1 — covered window per variant. The grid runs to %.0f min, but '
 			'only bins' % WINDOW_AFTER_MIN)
@@ -464,54 +523,86 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				'%.0f' % max(tm) if tm else 'none',
 				int(d['usable'].sum())))
 
-		print()
-		print('G1 — time to half of the post-induction change, in minutes.')
-		print('nan means the trace moved less than 2%, i.e. there was no step '
-			'to time.')
-		print()
-		header = '%-8s %7s' % ('variant', 'seeds')
-		for key, _, _ in TRACES:
-			header += ' %18s' % key
-		print(header)
-		for variant in sorted(curves):
-			d = curves[variant]
-			line = '%-8d %7d' % (variant, d['n_seeds'])
-			for key, _, _ in TRACES:
-				line += ' %18s' % ('%.0f (%+.1f%%)' % (d['t_half'][key],
-					d['change'][key] * 100)
-					if np.isfinite(d['t_half'][key])
-					else 'flat (%+.1f%%)' % (d['change'][key] * 100))
-			print(line)
+		# How much the control-variant division removed. Printed because it is
+		# the systematic uncertainty on every raw magnitude.
+		if 'vs_control' in views and 'raw' in views:
+			ctrl = views['raw'].get(CONTROL_VARIANT)
+			if ctrl is not None:
+				drift = ', '.join('%s %+.1f%%' % (k, ctrl['change'][k] * 100)
+					for k, _, _ in TRACES
+					if np.isfinite(ctrl['change'][k]))
+				print()
+				print('Control variant %d drift over the window: %s.'
+					% (CONTROL_VARIANT, drift))
+				print('That drift is the alignment artefact, not a response — '
+					'variant %d has no construct.' % CONTROL_VARIANT)
+				print('Every number below is referenced to it. Raw values are '
+					'in the CSV under normalisation=raw.')
 
-		# The one comparison this analysis exists to make.
+		for name in ('raw', 'vs_control'):
+			if name not in views:
+				continue
+			print()
+			print('G1 — time to half of the post-induction change, in minutes '
+				'(%s).' % name)
+			print('nan means the trace moved less than 2%, i.e. there was no '
+				'step to time.')
+			print()
+			header = '%-8s %7s' % ('variant', 'seeds')
+			for key, _, _ in TRACES:
+				header += ' %18s' % key
+			print(header)
+			for variant in sorted(views[name]):
+				d = views[name][variant]
+				line = '%-8d %7d' % (variant, d['n_seeds'])
+				for key, _, _ in TRACES:
+					line += ' %18s' % ('%.0f (%+.1f%%)' % (d['t_half'][key],
+						d['change'][key] * 100)
+						if np.isfinite(d['t_half'][key])
+						else 'flat (%+.1f%%)' % (d['change'][key] * 100))
+				print(line)
+
+		# The one comparison this analysis exists to make. Gated three ways:
+		# the control is excluded because it has nothing to respond to, the
+		# lead must clear MIN_LEAD_BINS bins to be resolvable at all, and the
+		# claim is only made on the control-referenced view.
 		print()
+		if primary != 'vs_control':
+			print('No ordering claim: traces are not referenced to a control, '
+				'so the alignment dip is still in them.')
+			return
 		for variant in sorted(curves):
+			if variant == CONTROL_VARIANT:
+				continue
 			d = curves[variant]
 			t_pool = d['t_half']['ribosome_pool']
 			t_cn = d['t_half']['cn_rrna']
 			if not (np.isfinite(t_pool) and np.isfinite(t_cn)):
 				continue
 			lead = t_cn - t_pool
-			print('Variant %d: the ribosome pool reaches half its change at '
-				'%.0f min, rRNA operon copy number at %.0f min — the pool '
-				'leads by %.0f min (%.2f generations at the pre-induction '
-				'doubling time).' % (variant, t_pool, t_cn, lead,
-				lead / 60.0))
-			if lead > 0:
-				print('  The pool moves first, so the early transient cannot '
-					'be dosage-mediated; only the part of the pool loss after '
-					'%.0f min is available for the copy-number arm to '
-					'explain.' % t_cn)
+			floor = MIN_LEAD_BINS * max(_bin_width_at(t_pool),
+				_bin_width_at(t_cn))
+			print('Variant %d: ribosome pool at %.0f min, rRNA operon copy '
+				'number at %.0f min.' % (variant, t_pool, t_cn))
+			if abs(lead) < floor:
+				print('  Separation %.0f min is under the %.0f min resolution '
+					'floor, so NO ordering claim is made.' % (abs(lead), floor))
+			elif lead > 0:
+				print('  The pool moves first by %.0f min, so the early '
+					'transient cannot be dosage-mediated; only the pool loss '
+					'after %.0f min is available for the copy-number arm to '
+					'explain.' % (lead, t_cn))
 			else:
-				print('  Copy number moves first, which is the ordering the '
-					'loop requires. It does not by itself establish '
-					'causation — see this module docstring.')
+				print('  Copy number moves first by %.0f min, which is the '
+					'ordering the loop requires. It does not by itself '
+					'establish causation — see this module docstring.'
+					% abs(lead))
 
 	@staticmethod
 	def _write_csv(plotOutDir, plotOutFileName, rows):
 		path = os.path.join(plotOutDir, plotOutFileName + '.csv')
-		fields = ['variant', 'trace', 'n_seeds', 'baseline', 'final', 'change',
-			't_half_min', 't_max_covered_min']
+		fields = ['variant', 'trace', 'normalisation', 'n_seeds', 'baseline',
+			'final', 'change', 't_half_min', 't_max_covered_min']
 		with open(path, 'w', newline='') as f:
 			writer = csv.DictWriter(f, fieldnames=fields)
 			writer.writeheader()
@@ -520,7 +611,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print('\nWrote %s' % path)
 
 	@staticmethod
-	def _plot(plotOutDir, plotOutFileName, centres, curves):
+	def _plot(plotOutDir, plotOutFileName, centres, curves, view):
 		variants = sorted(curves)
 		fig, axes = plt.subplots(len(TRACES), 1, figsize=(8.5,
 			1.5 * len(TRACES)), sharex=True)
@@ -554,8 +645,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		np.atleast_1d(axes)[0].legend(fontsize='xx-small', ncol=3,
 			frameon=False)
 		np.atleast_1d(axes)[0].set_title('Timing of the copy-number chain '
-			'across induction — dotted lines mark half of each total change',
-			fontsize='small')
+			'across induction (%s) — dotted lines mark half of each total '
+			'change' % view, fontsize='small')
 		np.atleast_1d(axes)[-1].set_xlabel(
 			'hours from induction (generation %d)' % INDUCTION_GEN,
 			fontsize='small')
