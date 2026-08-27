@@ -20,9 +20,26 @@ Three changes from the original, all to align it with Definition 5:
      every generation, no cell at the doubling cap), the same gate every other
      def-5 analysis uses.
 
-Genes are classified by their per-lineage Definition-5 rate (mean completed
-transcripts per generation): never (mean == 0), subgen (0 < mean < 1), or
-not_subgen (mean >= 1). One figure set per plotted lineage, seed-suffixed.
+  4. Genes are labelled by the CANONICAL Definition-5 classification -- the
+     cohort-wide def5_CI categories from sc.canonical_def5_classification(), i.e.
+     the 95% CI of the per-lineage rate against 1 transcript/generation. Earlier
+     versions of this script classified by the per-lineage POINT ESTIMATE
+     (mean == 0 / 0 < mean < 1 / mean >= 1), which silently disagreed with every
+     def-5 table: on sim set 1 it called 1652-1687 genes subgen per lineage where
+     the cohort CI calls 1859, and inflated never_expressed from 135 to ~330
+     (a single lineage never fires many genes that some lineage does). The
+     per-lineage point estimate is still printed as a diagnostic, but it no longer
+     labels anything.
+
+Definition 5 always means the CI form. Categories are sc.CATEGORIES -- subgen /
+possibly_subgen / not_subgen / never_expressed -- coloured from sc.PALETTE, so
+these panels and the per-gene tables always describe the same gene sets. Because
+the categories are cohort-wide, all plotted lineages report the same counts; what
+varies per lineage is the frequency scatter and the event raster.
+
+Requires the raw extraction (subgen_raw_extract.py) to have been run on the cohort
+first: the classification is read from the COHORT plotOut directory, one level
+above this multigen plotOut. One figure set per plotted lineage, seed-suffixed.
 """
 
 import os
@@ -48,9 +65,11 @@ RASTER_N_GENS = 5
 # subgen_monomer_dynamics_def5.py.
 N_LINEAGES_TO_PLOT = 3
 
-COLOR_NEVER = 'y'      # never expressed (freq/mean == 0)
-COLOR_NOTSUB = 'r'     # not subgenerational (mean >= 1)
-COLOR_SUB = 'b'        # subgenerational (0 < mean < 1)
+# Category colors and labels come from subgen_common (sc.PALETTE / sc.CAT_LABEL)
+# so these panels match every other def-5 figure. The 5B raster keeps two rows --
+# the confident calls -- because an event raster of `possibly_subgen` genes would
+# be read as a claim the CI explicitly declines to make.
+RASTER_CATEGORIES = ['not_subgen', 'subgen']
 
 
 def remove_xaxis(axis):
@@ -71,12 +90,33 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		# generations THIS seed produced, which would make a truncated lineage
 		# look like it had completed every generation.
 		variant_dir = os.path.dirname(os.path.normpath(seedOutDir))
+		cohort_plot_out = os.path.join(variant_dir, constants.PLOTOUT_DIR)
 		requested_seed = self._requested_seed(seedOutDir)
 		coh_ap = AnalysisPaths(variant_dir, cohort_plot=True)
 		n_generation = coh_ap.n_generation
 		if n_generation <= 1:
 			print('Skipping -- only runs for multigen')
 			return
+
+		# The canonical def-5 labels are cohort-wide, so they come from the COHORT
+		# plotOut (one level up from this multigen plotOut -- see
+		# runscripts/manual/analysisMultigen.py, which appends the seed directory).
+		try:
+			clf = sc.canonical_def5_classification(cohort_plot_out)
+		except FileNotFoundError as e:
+			print('Cannot classify genes: %s' % e)
+			print('This figure now uses the canonical cohort def5_CI categories, '
+				'so the raw extraction must run first:\n'
+				'  python runscripts/manual/analysisCohort.py '
+				'--plot subgen_raw_extract.py <sim_dir>')
+			return
+		if clf['n_lineages'] == 0:
+			print('No successful lineages in the cohort classification. Skipping.')
+			return
+		cat_counts = sc.category_counts(clf['stats']['cat'])
+		print('Canonical def5_CI classification over %d successful lineages: %s'
+			% (clf['n_lineages'],
+				', '.join('%s=%d' % (c, cat_counts[c]) for c in sc.CATEGORIES)))
 
 		successful, n_seeds, reasons = self._lineage_success(
 			variant_dir, coh_ap, n_generation)
@@ -118,6 +158,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_cistron_indexes = np.where(is_mRNA)[0]
 		mRNA_cistron_ids = np.array([cistron_ids[x] for x in mRNA_cistron_indexes])
 
+		# Align the gene set with the classification. `is_mRNA` covers every mRNA
+		# cistron, while the canonical def-5 gene set is the protein-coding subset
+		# (sc.get_mrna_gene_set: cistrons that have an associated monomer), so a
+		# handful of cistrons here have no category. Drop them, so this figure and
+		# the per-gene tables describe exactly the same genes.
+		cat_by_cistron = self._category_by_cistron(cohort_plot_out, clf)
+		keep = np.array([cid in cat_by_cistron for cid in mRNA_cistron_ids])
+		n_dropped = int((~keep).size - keep.sum())
+		if n_dropped:
+			print('Dropping %d of %d mRNA cistrons with no def-5 category '
+				'(not protein-coding); %d genes remain.'
+				% (n_dropped, keep.size, int(keep.sum())))
+		if not keep.any():
+			print('No mRNA cistron matched the def-5 gene key. Skipping.')
+			return
+		mRNA_cistron_indexes = mRNA_cistron_indexes[keep]
+		mRNA_cistron_ids = mRNA_cistron_ids[keep]
+		categories = np.array(
+			[cat_by_cistron[cid] for cid in mRNA_cistron_ids], dtype=object)
+
 		gens = np.arange(burn_in, n_generation)
 		for seed in seeds_to_plot:
 			freqDir = coh_ap.get_cells(
@@ -139,7 +199,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 			self._plot_lineage(plotOutDir, plotOutFileName, metadata,
 				validation_data, seed, burn_in, freqDir, mRNA_cistron_indexes,
-				mRNA_cistron_ids)
+				mRNA_cistron_ids, categories, clf['n_lineages'])
+
+	def _category_by_cistron(self, cohort_plot_out, clf):
+		"""{cistron_id: def5_CI category} from the canonical classification.
+
+		The classification is keyed by gene id, so it is joined to cistron ids
+		through the raw extraction's gene key, which was written from the same
+		ordered gene list as the synth matrix.
+		"""
+		gene_ids, cistron_ids, _ = sc.load_raw_genes(cohort_plot_out)
+		cat_by_gene = dict(zip(clf['gene_ids'], clf['stats']['cat']))
+		out = {}
+		for gene_id, cistron_id in zip(gene_ids, cistron_ids):
+			if gene_id in cat_by_gene:
+				out[cistron_id] = cat_by_gene[gene_id]
+		return out
 
 	def _requested_seed(self, seedOutDir):
 		"""The seed the framework was pointed at (the seed dir's basename)."""
@@ -191,8 +266,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
 	def _plot_lineage(self, plotOutDir, plotOutFileName, metadata,
 			validation_data, seed, burn_in, freqDir, mRNA_cistron_indexes,
-			mRNA_cistron_ids):
-		"""Produce the 5B/5E/5F/5G panels for one strict-successful lineage."""
+			mRNA_cistron_ids, categories, n_lineages):
+		"""Produce the 5B/5E/5F/5G panels for one strict-successful lineage.
+
+		`categories` is the cohort-wide def5_CI label per gene, parallel to
+		`mRNA_cistron_ids` -- it does NOT depend on this lineage, so every plotted
+		lineage reports the same category counts by construction.
+		"""
 		# Seed-suffixed so one lineage never overwrites another's panels.
 		name = '%s_seed%06d' % (plotOutFileName, seed)
 
@@ -259,49 +339,58 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			if transcriptionEvents is not None else None
 		mRNA_ids_ordered = mRNA_cistron_ids[indexingOrder]
 
-		# Definition-5 categories on this lineage.
-		neverIdx = np.where(def5MeanOrdered == 0)[0]
-		notSubIdx = np.where(def5MeanOrdered >= 1)[0]
-		subIdx = np.array([i for i in np.arange(len(def5MeanOrdered))
-			if i not in set(neverIdx.tolist()) | set(notSubIdx.tolist())],
-			dtype=int)
-		colors = np.repeat(COLOR_SUB, len(freqOrdered))
-		colors[neverIdx] = COLOR_NEVER
-		colors[notSubIdx] = COLOR_NOTSUB
-		print('  never=%d, subgen=%d (%.1f%%), not_subgen=%d'
-			% (len(neverIdx), len(subIdx),
-				100. * len(subIdx) / len(freqOrdered), len(notSubIdx)))
+		# Canonical def5_CI categories, reordered onto the x-axis order. These are
+		# cohort-wide, so they are identical for every plotted lineage.
+		catOrdered = categories[indexingOrder]
+		idx_by_cat = {c: np.where(catOrdered == c)[0] for c in sc.CATEGORIES}
+		colors = np.array(
+			[sc.PALETTE[c] for c in catOrdered], dtype=object)
+		n_genes = len(freqOrdered)
+		print('  def5_CI categories (cohort-wide, %d lineages): %s'
+			% (n_lineages, ', '.join(
+				'%s=%d (%.1f%%)'
+				% (c, len(idx_by_cat[c]), 100. * len(idx_by_cat[c]) / n_genes)
+				for c in sc.CATEGORIES)))
+		# Diagnostic only: what this single lineage's point estimate would have
+		# said. Kept visible because the gap is the reason the CI form is canonical,
+		# but it labels nothing.
+		lin_never = int(np.sum(def5MeanOrdered == 0))
+		lin_notsub = int(np.sum(def5MeanOrdered >= 1))
+		print('  [diagnostic] this lineage\'s point estimate would say: '
+			'never=%d, 0<mean<1=%d, mean>=1=%d'
+			% (lin_never, n_genes - lin_never - lin_notsub, lin_notsub))
 
 		# --- Figure 5B top: frequency scatter + histogram ---
 		fig = plt.figure(figsize=(16, 8))
 		scatterAxis = plt.subplot2grid((2, 4), (0, 0), colspan=3, rowspan=2)
 		histAxis = plt.subplot2grid((2, 4), (0, 3), colspan=1, rowspan=2,
 			sharey=scatterAxis)
-		scatterAxis.scatter(np.arange(len(freqOrdered)), freqOrdered, marker='o',
-			facecolors=colors, edgecolors='none', s=20)
-		scatterAxis.set_xlim([0, len(freqOrdered)])
+		scatterAxis.scatter(np.arange(n_genes), freqOrdered, marker='o',
+			facecolors=list(colors), edgecolors='none', s=20)
+		scatterAxis.set_xlim([0, n_genes])
 		scatterAxis.set_ylim([-.01, 1.01])
 		whitePadSparklineAxis(scatterAxis)
 		histAxis.hist(freqOrdered, bins=n_gens_used + 1, orientation='horizontal',
-			color=COLOR_SUB)
+			color=sc.PALETTE['subgen'])
 		histAxis.set_xscale('log')
 		whitePadSparklineAxis(histAxis)
 		histAxis.xaxis.tick_bottom()
 		plt.suptitle('Frequency of >=1 COMPLETED transcript per generation '
-			'(Definition 5, seed %d strict-successful lineage, burn-in=%d gens, '
-			'%d gens)' % (seed, burn_in, n_gens_used), fontsize=14)
+			'(Definition 5, def5_CI categories over %d lineages | seed %d '
+			'strict-successful lineage, burn-in=%d gens, %d gens)'
+			% (n_lineages, seed, burn_in, n_gens_used), fontsize=13)
 		scatterAxis.set_xlabel(
 			'Genes ordered by simulated synthesis probability', fontsize=12)
 		scatterAxis.set_ylabel('Fraction of generations', fontsize=12)
-		histAxis.text(histAxis.get_xlim()[1] * 1.6, 0, '%s never\n(%0.1f%%)'
-			% (len(neverIdx), 100. * len(neverIdx) / len(freqOrdered)),
-			fontsize=12, va='center', color=COLOR_NEVER)
-		histAxis.text(histAxis.get_xlim()[1] * 1.6, 1, '%s not-subgen\n(%0.1f%%)'
-			% (len(notSubIdx), 100. * len(notSubIdx) / len(freqOrdered)),
-			fontsize=12, va='center', color=COLOR_NOTSUB)
-		histAxis.text(histAxis.get_xlim()[1] * 1.6, 0.5, '%s subgen\n(%0.1f%%)'
-			% (len(subIdx), 100. * len(subIdx) / len(freqOrdered)),
-			fontsize=12, va='center', color=COLOR_SUB)
+		# Category counts stacked down the right-hand side of the histogram, in the
+		# canonical order rather than at fixed y positions (four categories no
+		# longer fit the old 0 / 0.5 / 1 anchors).
+		x_text = histAxis.get_xlim()[1] * 1.6
+		for row, c in enumerate(sc.CATEGORIES):
+			histAxis.text(x_text, 1.0 - 0.18 * row, '%d %s\n(%0.1f%%)'
+				% (len(idx_by_cat[c]), c,
+					100. * len(idx_by_cat[c]) / n_genes),
+				fontsize=11, va='center', color=sc.PALETTE[c])
 		exportFigure(plt, plotOutDir, name + '_5B_top', metadata)
 		plt.close('all')
 
@@ -314,49 +403,43 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					v = (time[mask] / 3600.).tolist()
 					out.append(v if mask.sum() else [-1])
 				return out
-			notSubEvents = event_times(notSubIdx)
-			subEvents = event_times(subIdx)
 			fig = plt.figure(figsize=(16, 8))
 			topAxis = plt.subplot(2, 1, 1)
 			botAxis = plt.subplot(2, 1, 2, sharex=topAxis)
-			if notSubEvents:
-				topAxis.eventplot(notSubEvents, orientation='horizontal',
-					linewidths=2., linelengths=4., color=COLOR_NOTSUB)
-			topAxis.set_xlim([0, time[-1] / 3600.])
-			topAxis.set_ylim([-1, max(len(notSubIdx), 1)])
-			topAxis.set_yticks([])
-			topAxis.set_ylabel('mean >= 1', fontsize=14)
-			if subEvents:
-				botAxis.eventplot(subEvents, orientation='horizontal',
-					linewidths=2., linelengths=4., color=COLOR_SUB)
-			botAxis.set_xlim([0, time[-1] / 3600.])
-			botAxis.set_ylim([-1, max(len(subIdx), 1)])
-			botAxis.set_yticks([])
-			botAxis.set_ylabel('0 < mean < 1', fontsize=14)
+			top_cat, bot_cat = RASTER_CATEGORIES
+			for axis, cat in ((topAxis, top_cat), (botAxis, bot_cat)):
+				idx = idx_by_cat[cat]
+				events = event_times(idx)
+				if events:
+					axis.eventplot(events, orientation='horizontal',
+						linewidths=2., linelengths=4., color=sc.PALETTE[cat])
+				axis.set_xlim([0, time[-1] / 3600.])
+				axis.set_ylim([-1, max(len(idx), 1)])
+				axis.set_yticks([])
+				axis.set_ylabel('%s\n(n=%d)' % (sc.CAT_LABEL[cat], len(idx)),
+					fontsize=12)
 			botAxis.set_xlabel('Time (gens)', fontsize=14)
 			botAxis.set_xticks(time_eachGen / 3600.)
 			botAxis.set_xticklabels(np.arange(len(time_eachGen)))
-			plt.suptitle('Completed-transcript events (Definition 5, seed %d)'
-				% seed, fontsize=14)
+			plt.suptitle('Completed-transcript events (Definition 5, def5_CI over '
+				'%d lineages | seed %d)' % (n_lineages, seed), fontsize=13)
 			exportFigure(plt, plotOutDir, name + '_5B_bottom', metadata)
 			plt.close('all')
 
-		# --- Figures 5E/5F/5G: gene-category composition by freq group ---
+		# --- Figures 5E/5F/5G: gene-category composition by def5_CI category ---
 		self._category_bars(plotOutDir, name, metadata, validation_data,
-			mRNA_ids_ordered, def5MeanOrdered)
-
-	def _classify_mean(self, m):
-		if m == 0:
-			return 'r'  # never
-		elif m >= 1:
-			return 'b'  # not subgen
-		return 'g'      # subgen
+			mRNA_ids_ordered, catOrdered, n_lineages)
 
 	def _category_bars(self, plotOutDir, name, metadata, validation_data,
-			mRNA_ids_ordered, def5MeanOrdered):
-		xloc = np.arange(3)
+			mRNA_ids_ordered, catOrdered, n_lineages):
+		"""Composition of a gene group across the four def5_CI categories."""
+		xloc = np.arange(len(sc.CATEGORIES))
 		width = 0.8
-		id_set = set(mRNA_ids_ordered)
+		# Index by id so a gene is looked up once instead of by np.where per hit.
+		index_by_id = {str(g): i for i, g in enumerate(mRNA_ids_ordered)}
+
+		def new_counts():
+			return {c: 0 for c in sc.CATEGORIES}
 
 		def bar(counts, total, ylabel, xlabel, fname):
 			if total == 0:
@@ -364,56 +447,56 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			fig = plt.figure()
 			ax = plt.subplot(1, 1, 1)
 			ax.bar(xloc + width,
-				[counts['r'] / float(total), counts['g'] / float(total),
-					counts['b'] / float(total)], width,
-				color=[COLOR_NEVER, COLOR_SUB, COLOR_NOTSUB], edgecolor='none')
+				[counts[c] / float(total) for c in sc.CATEGORIES], width,
+				color=[sc.PALETTE[c] for c in sc.CATEGORIES], edgecolor='none')
 			whitePadSparklineAxis(ax)
 			ax.set_ylabel(ylabel)
 			ax.set_xticks(xloc + 1.5 * width)
-			ax.set_xticklabels(['never', 'subgen', 'not-subgen'])
-			ax.set_xlabel(xlabel)
-			plt.subplots_adjust(right=0.9, bottom=0.15, left=0.2, top=0.9)
+			ax.set_xticklabels(
+				['never' if c == 'never_expressed' else c.replace('_', '-')
+					for c in sc.CATEGORIES], fontsize=8)
+			ax.set_xlabel('%s (def5_CI, %d lineages)' % (xlabel, n_lineages))
+			plt.subplots_adjust(right=0.9, bottom=0.2, left=0.2, top=0.9)
 			exportFigure(plt, plotOutDir, fname, metadata)
 			plt.close()
 
 		# 5E: essential genes
 		essential = validation_data.essential_genes.essential_cistrons
-		counts = {'r': 0, 'g': 0, 'b': 0}
+		counts = new_counts()
 		n_ess = 0
 		for g in essential:
-			if str(g) not in id_set:
+			i = index_by_id.get(str(g))
+			if i is None:
 				continue
-			i = np.where(mRNA_ids_ordered == str(g))[0][0]
-			counts[self._classify_mean(def5MeanOrdered[i])] += 1
+			counts[catOrdered[i]] += 1
 			n_ess += 1
-		bar(counts, n_ess, 'Percentage of essential genes',
+		bar(counts, n_ess, 'Fraction of essential genes',
 			'Total essential genes: %s' % n_ess,
 			name + '_5E')
 
 		# 5F/5G: gene functions (unknown, resistance)
 		geneFunctions = validation_data.geneFunctions.geneFunctions
-		unknown = {'r': 0, 'g': 0, 'b': 0}
-		resistance = {'r': 0, 'g': 0, 'b': 0}
+		unknown = new_counts()
+		resistance = new_counts()
 		for frameID, function_ in geneFunctions.items():
 			# geneFunctions is keyed by gene frame id (e.g. EG10001); the mRNA
 			# cistron id is that frame id + '_RNA'. Match exactly (like 5E) rather
 			# than by substring, which could false-match a longer variable-length
 			# id (e.g. G7263 inside G72631_RNA).
-			matches = np.where(mRNA_ids_ordered == frameID + '_RNA')[0]
-			if matches.size == 0:
+			i = index_by_id.get(frameID + '_RNA')
+			if i is None:
 				continue
-			i = matches[0]
-			key = self._classify_mean(def5MeanOrdered[i])
+			key = catOrdered[i]
 			if function_ in ['Unknown function', 'Unclear/under-characterized']:
 				unknown[key] += 1
 			elif function_ in ['Antibiotic resistance', 'Toxin/antitoxin']:
 				resistance[key] += 1
 		bar(unknown, sum(unknown.values()),
-			'Percentage of poorly understood genes',
+			'Fraction of poorly understood genes',
 			'Total poorly understood genes: %s' % sum(unknown.values()),
 			name + '_5F')
 		bar(resistance, sum(resistance.values()),
-			'Percentage of antibiotic-related genes',
+			'Fraction of antibiotic-related genes',
 			'Total antibiotic-related genes: %s' % sum(resistance.values()),
 			name + '_5G')
 

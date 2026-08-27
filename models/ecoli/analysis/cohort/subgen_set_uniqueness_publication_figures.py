@@ -36,6 +36,7 @@ Self-contained: numpy + matplotlib only.
 """
 
 import os
+import sys
 import csv
 import argparse
 
@@ -47,6 +48,16 @@ from matplotlib.colors import ListedColormap
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
 from matplotlib.ticker import FuncFormatter
+
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
+# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# script still needs nothing beyond numpy (+ matplotlib/scipy where used).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+	os.path.dirname(os.path.abspath(__file__))))))
+if _REPO_ROOT not in sys.path:
+	sys.path.insert(0, _REPO_ROOT)
+from models.ecoli.analysis.cohort import subgen_common as sc
 
 
 ACCENT = '#1667B8'      # single blue accent (matches panels 3C/D/E)
@@ -95,14 +106,13 @@ def load_binary_matrix(path):
 
 def load_subgen_ids(path, category='subgen'):
 	"""Return (gene_id_set, cistron_id_set) for rows with the given category, so
-	the matrix can be matched on whichever id it is keyed by."""
-	gene_ids, cistron_ids = set(), set()
-	with open(path) as f:
-		for r in csv.DictReader(f, delimiter='\t'):
-			if r['category'] == category:
-				gene_ids.add(r['gene_id'])
-				cistron_ids.add(r['cistron_id'])
-	return gene_ids, cistron_ids
+	the matrix can be matched on whichever id it is keyed by.
+
+	Delegates to sc.load_def5_categories, which accepts either canonical per-gene
+	table's column spelling. See subgen_set_uniqueness.py for the details.
+	"""
+	sel = sc.load_def5_categories(path, category=category)
+	return set(sel['gene_ids']), set(sel['cistron_ids'])
 
 
 def subset_to_subgen(M, row_ids, subgen_gene_ids, subgen_cistron_ids):

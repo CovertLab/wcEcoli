@@ -35,6 +35,7 @@ Self-contained: numpy + scipy + the sim_data pickle.
 """
 
 import os
+import sys
 import csv
 import json
 import pickle
@@ -42,6 +43,16 @@ import argparse
 
 import numpy as np
 import scipy.sparse as sp
+
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
+# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# script still needs nothing beyond numpy (+ matplotlib/scipy where used).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+	os.path.dirname(os.path.abspath(__file__))))))
+if _REPO_ROOT not in sys.path:
+	sys.path.insert(0, _REPO_ROOT)
+from models.ecoli.analysis.cohort import subgen_common as sc
 
 
 # ------------------------------------------------------------------ loading
@@ -66,13 +77,13 @@ def load_binary_matrix(path):
 
 
 def load_subgen(path, category='subgen'):
-	"""Return dict gene_id -> cistron_id for rows with the given category."""
-	out = {}
-	with open(path) as f:
-		for r in csv.DictReader(f, delimiter='\t'):
-			if r['category'] == category:
-				out[r['gene_id']] = r['cistron_id']
-	return out
+	"""Return dict gene_id -> cistron_id for rows with the given category.
+
+	Delegates to sc.load_def5_categories, which accepts either canonical per-gene
+	table's column spelling. See subgen_set_uniqueness.py for the details.
+	"""
+	sel = sc.load_def5_categories(path, category=category)
+	return dict(zip(sel['gene_ids'], sel['cistron_ids']))
 
 
 # --------------------------------------------- jaccard + nulls (from uniqueness)

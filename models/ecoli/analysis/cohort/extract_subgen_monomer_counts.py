@@ -1,7 +1,3 @@
-"""
-Template for cohort analysis plots
-"""
-
 import pickle
 import os
 
@@ -37,8 +33,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
 			only_successful=True)
 
-		# Restrict to strict-successful lineages (completed every generation and
-		# no cell at the 180-min doubling cap).
+		# Restrict to strict-successful lineages 
 		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
 		cell_paths = sc.filter_cells_to_successful(
 			cell_paths, success['successful_seeds'])
@@ -140,7 +135,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		mean_mRNA_counts /= total_timesteps
 
 		# Write data to table
-		with open(os.path.join(plotOutDir, plotOutFileName + '_40_seeds_last_11_gens.tsv'), 'w') as f:
+		with open(os.path.join(plotOutDir, plotOutFileName + '_mean_counts.tsv'), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow([
 				'gene_name', 'cistron_name', 'monomer_name',

@@ -1,5 +1,51 @@
 """
-Plots Figure 5B.
+LEGACY -- superseded by subgenerationalTranscription_def5.py. Kept for provenance;
+not in ACTIVE, runnable via the SUBGEN_LEGACY tag.
+
+Plots Figure 5B (and 5E/5F/5G).
+
+Definition it implements (NOT Definition 5)
+-------------------------------------------
+mRNA-PRESENCE FREQUENCY per generation, tri-classified by point estimate:
+freq == 1 -> always present, freq == 0 -> never, otherwise subgenerational. No
+confidence interval.
+
+Differences from the def5 replacement
+-------------------------------------
+  * Presence, not completed transcripts, so it counts mRNA inherited from the
+    mother and initiations later lost to tRNA attenuation.
+  * Runs on seed 0 UNCONDITIONALLY (`if 0 not in self.ap._path_data["seed"]:
+    return`). Seed 0 is not necessarily healthy: a lineage that stalls with cells
+    pinned at the 180-min length cap still passes only_successful=True, and its
+    collapsing transcription inflates the subgenerational fraction.
+  * No burn-in -- averages over every generation including startup transients.
+  * Ignores plotOutFileName and hardcodes output names ("figure5B__top" etc.), so
+    its figures do not carry the script name and cannot be seed-disambiguated.
+
+Content NOT carried over to the def5 version
+--------------------------------------------
+Three development-only extras, all default-off or cosmetic, live only here:
+  * PLOT_GENES_OF_INTEREST (default False) -- annotates dcuR / clpP / dcuC on the
+    5B scatter and writes `figure5B__top__clean__genes`.
+  * PLOT_DENOMINATOR_N_EACH_FREQ_GROUP (default False) -- the `_v2` variants of
+    5E/5F/5G, normalized within each frequency group instead of by group total.
+  * `__clean` variants of several panels (no titles/annotations, for figure
+    assembly).
+If any of these is wanted again, port it onto the def5 script rather than reviving
+this one, so the gene categories stay CI-based.
+
+Note it no longer feeds anything: the `figure5B.pickle` that functionalUnits.py,
+functionalUnitsFC.py and rnaVsProteinPerCell.py look for is never written (the only
+pickle.dump here is commented out, and the script they name, figure5B_E_F_G.py, no
+longer exists). Those three consumers are dormant -- each is guarded by
+os.path.exists and prints "Requires figure5B.pickle". Reviving them means reading
+the canonical def-5 table via sc.load_def5_categories(), not this script's colors.
+
+Replacement
+-----------
+subgenerationalTranscription_def5.py: completed transcripts, burn-in applied, plots
+the first 3 STRICT-successful lineages with seed-suffixed filenames, and labels
+genes with the cohort-wide def5_CI categories.
 """
 
 import os

@@ -4,7 +4,8 @@ Operon membership of the subgenerational gene set.
 Quantifies how many subgenerational genes are co-transcribed with other genes,
 to assess whether operon structure could confound the per-cell uniqueness /
 Jaccard-vs-chance analysis (co-transcribed cistrons are not independently
-expressed). Uses the cistron -> transcription-unit (TU) mapping from sim_data;
+expressed). Uses the cistron -> transcription-unit (TU) 
+mapping from sim_data;
 a "polycistronic" TU (>= 2 cistrons) is an operon.
 
 Note: the mean pairwise cell-to-cell Jaccard is governed by each gene's
@@ -38,6 +39,7 @@ Self-contained: numpy + scipy + the sim_data pickle only.
 """
 
 import os
+import sys
 import csv
 import json
 import pickle
@@ -47,15 +49,24 @@ import subprocess
 import numpy as np
 import scipy.sparse as sp
 
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
+# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# script still needs nothing beyond numpy (+ matplotlib/scipy where used).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+	os.path.dirname(os.path.abspath(__file__))))))
+if _REPO_ROOT not in sys.path:
+	sys.path.insert(0, _REPO_ROOT)
+from models.ecoli.analysis.cohort import subgen_common as sc
+
 
 def load_subgen_cistrons(path, category='subgen'):
-	"""Return an ordered list of cistron_ids whose category matches."""
-	cistrons = []
-	with open(path) as f:
-		for r in csv.DictReader(f, delimiter='\t'):
-			if r['category'] == category:
-				cistrons.append(r['cistron_id'])
-	return cistrons
+	"""Return an ordered list of cistron_ids whose category matches.
+
+	Delegates to sc.load_def5_categories, which accepts either canonical per-gene
+	table's column spelling. See subgen_set_uniqueness.py for the details.
+	"""
+	return sc.load_def5_categories(path, category=category)['cistron_ids']
 
 
 def git_info():

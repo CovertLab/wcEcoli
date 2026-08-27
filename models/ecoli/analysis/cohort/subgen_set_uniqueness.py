@@ -45,6 +45,16 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
+# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# script still needs nothing beyond numpy (+ matplotlib/scipy where used).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+	os.path.dirname(os.path.abspath(__file__))))))
+if _REPO_ROOT not in sys.path:
+	sys.path.insert(0, _REPO_ROOT)
+from models.ecoli.analysis.cohort import subgen_common as sc
+
 
 INK = '#1b2530'
 MUTED = '#5b6672'
@@ -53,9 +63,6 @@ SURF = '#fcfcfb'
 ACCENT = '#1667B8'      # observed
 NULLCLR = '#C7362F'     # null / reference
 TEAL = '#109C9C'
-
-
-# ------------------------------------------------------------------ loading
 
 def _to01(values):
 	return [1 if v not in ('', '0', '0.0', 'False') else 0 for v in values]
@@ -114,17 +121,19 @@ def _seeds_from_labels(cell_ids):
 
 def load_subgen_ids(path, category='subgen'):
 	"""Return (gene_id_set, cistron_id_set) for rows with the given category, so
-	the matrix can be matched on whichever id it is keyed by."""
-	gene_ids, cistron_ids = set(), set()
-	with open(path) as f:
-		for r in csv.DictReader(f, delimiter='\t'):
-			if r['category'] == category:
-				gene_ids.add(r['gene_id'])
-				cistron_ids.add(r['cistron_id'])
-	return gene_ids, cistron_ids
+	the matrix can be matched on whichever id it is keyed by.
+
+	Delegates to sc.load_def5_categories, which accepts EITHER canonical per-gene
+	table -- subgen_definition5_lineage_ci_pergene_successful.tsv (gene_id /
+	cistron_id / category) or subgenerational_expression_table_def5.tsv
+	(gene_name / cistron_name / def5_CI_category). The two carry the same def5_CI
+	labels, verified gene-for-gene. Previously this read only the first spelling.
+	"""
+	sel = sc.load_def5_categories(path, category=category)
+	return set(sel['gene_ids']), set(sel['cistron_ids'])
 
 
-# ------------------------------------------------------------------ analysis
+# analysis
 
 def subset_to_subgen(M, row_ids, subgen_gene_ids, subgen_cistron_ids):
 	"""Keep only the rows (genes) in the subgen set, auto-matching whichever id
@@ -200,7 +209,7 @@ def analyze(B):
 		}
 
 
-# --------------------------------------------------- fixed-margins (curveball)
+# fixed-margins (curveball)
 
 def curveball(B, n_iter, rng):
 	"""Randomize a binary matrix preserving both row and column sums."""
@@ -249,7 +258,7 @@ def pca_cells(B, n_components=10):
 	return evr[:n_components], scores
 
 
-# ------------------------------------------------------------------- plots
+#  plots
 
 def _ax():
 	plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 11,

@@ -1,6 +1,48 @@
 """
+LEGACY -- superseded by subgenerational_expression_table_def5.py. Kept for
+provenance; not in ACTIVE, runnable via the SUBGEN_LEGACY tag.
+
 Generates a table of genes that are subgenerationally expressed, with their
 expression frequencies and average/maximum mRNA/protein counts.
+
+Definition it implements (NOT Definition 5)
+-------------------------------------------
+mRNA-PRESENCE FREQUENCY. For each gene, p_expressed = (number of cells with at
+least one mRNA copy at some timestep) / n_cells, and a gene is called
+subgenerational iff 0 < p_expressed < 1. There is no confidence interval, and the
+threshold is applied to a point estimate.
+
+Why it was superseded
+---------------------
+  * Presence counts transcripts INHERITED from the mother and initiations later
+    lost to tRNA attenuation, so almost every gene is "sometimes absent" in some
+    cell. On sim set 2 this called 3685 (v0) / 3194 (v1) genes subgenerational,
+    against 1859 for the canonical def5_CI rule -- these gene lists are not
+    comparable.
+  * The "always on" count degrades as the cohort grows: add seeds and more genes
+    fall below p == 1. A rate estimated across lineages behaves the opposite way --
+    its standard error shrinks as std/sqrt(n_lineages).
+  * DENOMINATOR BUG: the read-failure handler below `continue`s without
+    decrementing n_cells, so every unreadable cell dilutes every gene's
+    probability.
+  * Uses ap.get_cells(only_successful=True) rather than the strict
+    successful-lineage filter (sc.compute_lineage_success), so stalled lineages
+    still contribute cells.
+
+Output produced (Set 2 only; Set 1 ran the def5 script instead)
+--------------------------------------------------------------
+  <plotOutFileName>.tsv -- ONLY the subgen subset, one row per gene:
+      gene_name, cistron_name, protein_name, p_expressed, max_mRNA_count,
+      max_protein_count
+  Set 2 row counts: condition_000000 3685 x 6, condition_000001 3194 x 6.
+
+Replacement
+-----------
+subgenerational_expression_table_def5.py emits a strict superset of these columns
+and classifies by def5_CI. Its `p_mrna_present_def1` column reproduces
+`p_expressed` -- recovered from the raw extraction's max-mRNA matrix, with a clean
+denominator and gated on strict-successful lineages, so it is the more correct
+version of this number.
 """
 
 import pickle

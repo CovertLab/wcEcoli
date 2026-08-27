@@ -21,28 +21,25 @@ genes that are absent only in a handful of cells; joining that report to this
 table on the cell path tests whether those absences concentrate in unhealthy
 cells rather than reflecting genuine subgenerational regulation.
 
-Uses the same cell set as subgen_expression_definitions.py (skip the first
-IGNORE_FIRST_N_GENS generations, successful cells only) so the two tables join
-directly on the cell path.
+skip the first IGNORE_FIRST_N_GENS generations, and cells from successful seeds only) 
+so the two tables join directly on the cell path.
 """
 
 import pickle
 import os
 import csv
 import json
-import subprocess
 from datetime import datetime
 
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
+from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import constants
 
 
 IGNORE_FIRST_N_GENS = 8
-# Drop the inherited boundary timestep from each generation when True. Default
-# False to match subgen_expression_definitions.py for direct comparison.
 REMOVE_FIRST_TIMESTEP = False
 
 # Sibling report written by subgen_expression_definitions.py: one row per
@@ -63,41 +60,8 @@ METRIC_LABELS = [
 	'mean_ppgpp_conc',
 	]
 
-
-def _git_info(repo_dir):
-	"""Return the current git hash, branch, and dirty flag for repo_dir."""
-	def run(args):
-		return subprocess.check_output(
-			['git', '-C', repo_dir] + args,
-			stderr=subprocess.DEVNULL).decode().strip()
-	try:
-		return {
-			'git_hash': run(['rev-parse', 'HEAD']),
-			'git_branch': run(['rev-parse', '--abbrev-ref', 'HEAD']),
-			'git_dirty': bool(run(['status', '--porcelain'])),
-			}
-	except Exception as e:
-		return {'git_hash': None, 'git_branch': None, 'git_dirty': None,
-			'error': str(e)}
-
-
-def _load_sim_metadata(variant_dir):
-	"""Load the simulation's metadata.json (git hash, run time, options).
-
-	The sim-level metadata directory sits one level above the variant directory;
-	fall back to a metadata directory inside the variant directory.
-	"""
-	candidates = [
-		os.path.join(os.path.dirname(variant_dir),
-			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
-		os.path.join(variant_dir,
-			constants.METADATA_DIR, constants.JSON_METADATA_FILE),
-		]
-	for path in candidates:
-		if os.path.isfile(path):
-			with open(path) as f:
-				return path, json.load(f)
-	return None, {}
+_git_info = sc.git_info
+_load_sim_metadata = sc.load_sim_metadata
 
 
 def _load_absence_counts(plot_out_dir):
@@ -121,16 +85,13 @@ def _load_absence_counts(plot_out_dir):
 
 
 def _parse_cell_id(cell_path):
-	"""Split a cell path into (seed, generation) for grouping by lineage.
+	"""Split a cell path into (seed_str, generation_int) for grouping by lineage.
 
-	Cell paths look like .../<variant>/<seed>/generation_<gen>/<daughter>.
+	Thin wrapper over sc.parse_cell_id that keeps the seed as a string (and '' when
+	the path does not match), which is what this module's grouping keys expect.
 	"""
-	parts = cell_path.rstrip(os.sep).split(os.sep)
-	for i, part in enumerate(parts):
-		if part.startswith('generation_'):
-			seed = parts[i - 1] if i > 0 else ''
-			return seed, int(part.split('_')[1])
-	return '', -1
+	seed, gen = sc.parse_cell_id(cell_path)
+	return ('' if seed < 0 else str(seed)), gen
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):

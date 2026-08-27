@@ -1,3 +1,26 @@
+"""
+LEGACY and DISABLED. Already commented out of ACTIVE
+
+Protein fold change against transcription frequency.
+
+Disabled: `do_plot` opens with a bare `return`, so nothing below it runs and this
+script produces no output.
+
+If revived, note that it does NOT use Definition 5:
+  * presence is tested as `proteinMonomerCounts.sum(axis=0) > 1` -- a `> 1` where
+    `> 0` is meant, so a monomer present exactly once in a generation reads as
+    absent. The same off-by-one is in multigen/proteinExistVsBurstSize.py:39,
+    proteinAvgCountVsBurstSize.py:41, proteinCountVsFoldChange.py:41 and
+    proteinFoldChangeVsTranslationEff.py:39.
+  * `existFractionPerMonomer` is plotted as a continuous fraction with no
+    thresholding, so there is no explicit gene classification to correct -- but the
+    quantity is presence frequency, not a def-5 rate.
+  * it reads seed 0 only (`self.ap.get_cells(seed=[0])`), with no burn-in and no
+    lineage-health gate.
+For a CI-based subgen gene set, read the canonical per-gene table via
+sc.load_def5_categories().
+"""
+
 import os
 import pickle
 

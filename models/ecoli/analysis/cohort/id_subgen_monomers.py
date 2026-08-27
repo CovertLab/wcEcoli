@@ -1,5 +1,19 @@
 """
-Template for cohort analysis plots
+LEGACY -- superseded by subgenerational_expression_table_def5.py. Kept for
+provenance; not in ACTIVE, runnable via the SUBGEN_LEGACY tag.
+
+Identifies subgenerationally expressed monomers from PROTEIN presence frequency.
+
+Definition it implements (NOT Definition 5)
+-------------------------------------------
+MONOMER-PRESENCE FREQUENCY. p_monomer_exists_in_gen = (generations in which the
+monomer count was > 0 at some timestep) / n_generations, and a gene is called
+subgen iff 0 < p_monomer_exists_in_gen < 1, never_expressed iff == 0.
+
+Output produced
+---------------
+  <plotOutFileName>.tsv -- gene_name, cistron_name, monomer_name,
+      prob_monomer_expressed
 """
 
 import pickle
