@@ -160,8 +160,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# reconstructs tau from ppGpp and reports the UNFROZEN availability
 		# term, which on a frozen batch is not what the model did -- it ran
 		# clean and answered the wrong question. None for every ordinary batch.
-		self.frozen_tau = getattr(
-			transcription, 'frozen_expectation_tau', None)
+		#
+		# It has to be read from the PER-VARIANT pickle. `simDataFile` is the
+		# base one, and variant functions mutate a copy, so a first attempt at
+		# this read got None on a frozen batch and silently took the unfrozen
+		# path -- the exact failure the read exists to prevent, and the same
+		# bug class as position_interaction.py reading kb/simData.cPickle where
+		# it needed the variant's simData_Modified.cPickle. Per-variant is the
+		# right granularity anyway: nothing stops a batch freezing a different
+		# tau per rung.
+		self.frozen_tau = self._frozen_tau_for(variants)
 		if self.frozen_tau is not None:
 			print('This batch FREEZES the copy-number expectation at '
 				'%.1f min.' % self.frozen_tau)
@@ -243,6 +251,38 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if growth <= 0:
 			return 0.0, float('inf')
 		return growth, float(np.log(2) / growth / 60)
+
+	def _frozen_tau_for(self, variants):
+		"""
+		Return the frozen expectation tau, from the per-variant sim_data.
+
+		Reads every variant rather than one, and warns if they disagree, since
+		a silent disagreement would make the ladder incomparable.
+		"""
+		found = {}
+		for variant in variants:
+			try:
+				with open(self.ap.get_variant_kb(variant), 'rb') as handle:
+					sd = pickle.load(handle)
+			except Exception as exc:  # noqa: BLE001 - fall back to unfrozen
+				print('Could not read variant %d sim_data (%s); assuming the '
+					'expectation is not frozen.' % (variant, exc))
+				return None
+			found[variant] = getattr(sd.process.transcription,
+				'frozen_expectation_tau', None)
+		values = {v for v in found.values() if v is not None}
+		if not values:
+			return None
+		if len(values) > 1:
+			print('WARNING: variants freeze the expectation at DIFFERENT '
+				'doubling times %s. Reporting against the lowest; the ladder '
+				'is not comparable as it stands.' % sorted(values))
+		missing = [v for v, t in found.items() if t is None]
+		if missing:
+			print('WARNING: variants %s do not freeze the expectation while '
+				'others do. `a` is not comparable across this ladder.'
+				% missing)
+		return min(values)
 
 	def _measure(self, variant, generations):
 		cell_paths = self.ap.get_cells(

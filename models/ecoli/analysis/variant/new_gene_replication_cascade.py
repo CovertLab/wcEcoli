@@ -127,6 +127,56 @@ def _sem(x):
 	return float(np.std(x, ddof=1) / np.sqrt(x.size))
 
 
+def _window_clean(t_event, window, divisions=None):
+	"""
+	True if this event's measurement window is safe to read.
+
+	The window must not straddle generation 8. An event shortly before induction
+	has its POST window after it, and the change is then filed as a
+	pre-induction observation. Measured, that made the pre-induction ribosome
+	response slide monotonically down the burden ladder -- inside a window that
+	by construction precedes any expression -- so the control the analysis leans
+	on was contaminated in proportion to the effect being measured.
+
+	Division is NOT screened here. It is a real confound: per-cell counts halve
+	at division, so a window spanning one mixes the two halves and dilutes the
+	step being measured. That is what produced a NEGATIVE change in
+	origin-proximal copy number across an initiation on three independent
+	batches -- unfrozen v4, frozen v4, rich v4, all with (C + D) / tau within
+	0.03 of an integer, which is exactly when initiation coincides with
+	division.
+
+	But excluding those windows is not usable. Initiation fires at a fixed cell
+	mass and therefore at a fixed cycle phase, so the exclusion is
+	all-or-nothing per rung, and at a 40-minute window inside a 51-minute cycle
+	it removes every event at every rung but one. The confound is removed by
+	DIVISION-CORRECTING the traces instead -- see _divide_correct.
+
+	`divisions` is accepted and ignored so callers need not know which screens
+	are active.
+	"""
+	_ = divisions
+	hi = window[1]
+	return (t_event - hi < 0.0) == (t_event + hi < 0.0)
+
+
+def _divide_correct(t, values, divisions):
+	"""
+	Undo the halving of a per-cell count at each division.
+
+	Multiplying by 2 ** (divisions so far) turns a per-cell stock into a
+	per-initial-cell one, which is continuous through division. The step at an
+	initiation survives -- copy number goes 2 to 4 at initiation, and at the
+	following division the count halves while the factor doubles, so the
+	corrected trace holds flat rather than dropping.
+
+	Applied only to count-like traces. A ratio such as criticalMassPerOriC and a
+	rate such as the instantaneous growth rate are already continuous.
+	"""
+	k = np.searchsorted(np.sort(divisions), t, side='right')
+	return np.asarray(values, dtype=float) * (2.0 ** k)
+
+
 def _window_change(t, values, t_event, window):
 	"""
 	Fractional change across an initiation, same trace either side of it.
@@ -191,6 +241,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print('\n%d initiation events across %d lineages (%d lineages skipped).'
 			% (len(events), len({(e['variant'], e['seed']) for e in events}),
 			skipped))
+		print('  Per-cell counts are division-corrected, so a window '
+			'spanning a division is usable.')
+		for key in WINDOWS:
+			flag = '%s_window_clean' % key
+			dropped = sum(1 for e in events if not e.get(flag, 1))
+			print('  %-14s %d of %d events dropped: window straddled '
+				'induction.' % (key, dropped, len(events)))
+		n_dirty = sum(1 for e in events
+			if not e.get('interval_clean', 1) and np.isfinite(
+				e.get('interval_min', float('nan'))))
+		print('  %-14s %d intervals dropped: straddled induction.'
+			% ('interval', n_dirty))
 		self._write_events(plotOutDir, plotOutFileName, events)
 		by_variant = self._aggregate(events)
 		self._write_by_variant(plotOutDir, plotOutFileName, by_variant)
@@ -282,11 +344,34 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ribosome=ribosome, growth_rate=growth)
 		n = series['t'].size
 		for key, value in series.items():
+			if key.startswith('_'):
+				continue
 			if np.asarray(value).size != n:
 				print('Variant %d seed %d: %s has %d points against %d; '
 					'dropping lineage.' % (variant, seed, key,
 					np.asarray(value).size, n))
 				return None
+
+		# Division boundaries, on the same clock, so a measurement window can
+		# be screened for spanning one. Each cell's first timestep is a
+		# division except the first in the window.
+		bounds = []
+		for path in sorted(cell_paths):
+			try:
+				tt = TableReader(os.path.join(path, 'simOut',
+					'Main')).readColumn('time')
+			except Exception:  # noqa: BLE001 - a missing cell is skippable
+				continue
+			if tt.size:
+				bounds.append((tt[0] - t0) / 60.0)
+		series['_divisions'] = np.asarray(sorted(bounds)[1:], dtype=float)
+
+		# Per-cell counts are division-corrected before any window is read.
+		# n_oric is left alone because it drives event DETECTION, and
+		# crit_mass and growth_rate are already continuous through division.
+		for key in ('cn_rrna', 'rrna_init', 'ribosome'):
+			series[key] = _divide_correct(series['t'], series[key],
+				series['_divisions'])
 		return series
 
 	@staticmethod
@@ -320,6 +405,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def _events_for(variant, seed, series):
 		"""One row per initiation event in this lineage."""
 		t = series['t']
+		divisions = series['_divisions']
 		times = _initiation_times(t, series['n_oric'])
 		if times.size == 0:
 			return []
@@ -354,10 +440,17 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			row['n_oric_before'] = float(
 				series['n_oric'][max(0, at - 1)])
 			for key, window in WINDOWS.items():
+				if not _window_clean(t_e, window, divisions):
+					row['%s_pre' % key] = float('nan')
+					row['%s_post' % key] = float('nan')
+					row['%s_change' % key] = float('nan')
+					row['%s_window_clean' % key] = 0
+					continue
 				a, b, change = _window_change(t, series[key], t_e, window)
 				row['%s_pre' % key] = a
 				row['%s_post' % key] = b
 				row['%s_change' % key] = change
+				row['%s_window_clean' % key] = 1
 			rows.append(row)
 		return rows
 
@@ -392,8 +485,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				if len(pts) >= MIN_EVENTS_PER_SIDE:
 					x, y = zip(*pts)
 					slopes.append(float(np.polyfit(x, y, 1)[0]))
-			row['interval_slope_post'] = (float(np.mean(slopes)) if slopes
+			# MEDIAN, not mean. One lineage out of sixteen at +44.9 min per
+			# event carried a reported mean of +3.09 where the median was
+			# +0.36; the symptom was a standard error twenty times its
+			# counterpart's. The median leaves genuinely large rungs alone.
+			row['interval_slope_post'] = (float(np.median(slopes)) if slopes
 				else float('nan'))
+			row['interval_slope_post_mean'] = (float(np.mean(slopes))
+				if slopes else float('nan'))
 			row['interval_slope_post_sem'] = _sem(slopes)
 			row['n_lineages_slope'] = len(slopes)
 
@@ -402,7 +501,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					vals = [e['%s_change' % key] for e in sub
 						if e['post_induction'] == flag
 						and np.isfinite(e['%s_change' % key])]
-					row['%s_change_%s' % (key, side)] = (float(np.mean(vals))
+					row['%s_change_%s' % (key, side)] = (float(np.median(vals))
 						if vals else float('nan'))
 					row['%s_change_%s_sem' % (key, side)] = _sem(vals)
 			out[variant] = row
@@ -417,7 +516,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			'interval_min', 'interval_clean', 'crit_mass_at_event',
 			'n_oric_before', 'n_oric_after']
 		for key in WINDOWS:
-			fields += ['%s_pre' % key, '%s_post' % key, '%s_change' % key]
+			fields += ['%s_pre' % key, '%s_post' % key, '%s_change' % key,
+				'%s_window_clean' % key]
 		with open(path, 'w', newline='') as handle:
 			writer = csv.DictWriter(handle, fieldnames=fields)
 			writer.writeheader()
