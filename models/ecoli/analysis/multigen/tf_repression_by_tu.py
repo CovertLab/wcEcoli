@@ -575,7 +575,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax5.fill_between(
                 t_min, 0, this_tu.astype(int), step="post", color="red",
                 alpha=0.85, linewidth=0,
-                label=f"THIS TU capped ({100 * this_tu.mean():.1f}%)")
+                label=f"this TU capped ({100 * this_tu.mean():.1f}%)")
             ax5.set_ylabel("overcrowding")
             ax5.set_ylim(-0.05, 1.05)
             ax5.set_yticks([0, 1])
@@ -591,7 +591,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # ParCa-fit reference numbers (basal_prob + each TF's default delta):
             tf_delta_bits = ", ".join(
                 f"{tf_label(tf)} (default delta_prob={fmt(delta(tf))})"
-                for tf in regulating_tfs) or "none"
+                for tf in regulating_tfs) or "No regulating TFs"
             ppgpp_note = (
                 "\nppGpp active → basal_prob & TF deltas rescaled each timestep"
                 if ppgpp_on else "ppgpp regulation inactive")
@@ -599,8 +599,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 f"{label}\n{exp_id} · {len(gen_end_times)} generation(s) · "
                 f"{ppgpp_title}\n"
                 f"ParCa-fit basal_prob={fmt(b0)}; {tf_delta_bits}{ppgpp_note}",
-                fontsize=11)
-            fig.tight_layout(rect=(0, 0, 1, 0.94))
+                fontsize=11, y=0.995)
+            fig.tight_layout(rect=(0, 0, 1, 0.985))
 
             exportFigure(plt, plotOutDir, f"{plotOutFileName}_{label}", metadata)
             plt.close(fig)
