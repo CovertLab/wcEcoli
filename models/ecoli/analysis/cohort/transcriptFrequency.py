@@ -1,8 +1,5 @@
 """
-Old script from Nora no longer being used. Code is also written so no output is made 
-if script is ran for some reason 
-
-Plots transcript frequency (ie. frequency of observing at least
+Plots transcript frequency (ie. frequency of observing at least 
 one copy of transcript) at the 4th generation across 32 seeds.
 """
 

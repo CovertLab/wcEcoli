@@ -1,3 +1,21 @@
+"""
+LEGACY -- superseded by subgen_expression_table.py. Kept for
+provenance; not in ACTIVE, runnable via the SUBGEN_LEGACY tag.
+
+Identifies subgenerationally expressed monomers from PROTEIN presence frequency.
+
+Definition it implements (NOT Definition 5)
+-------------------------------------------
+MONOMER-PRESENCE FREQUENCY. p_monomer_exists_in_gen = (generations in which the
+monomer count was > 0 at some timestep) / n_generations, and a gene is called
+subgen iff 0 < p_monomer_exists_in_gen < 1, never_expressed iff == 0.
+
+Output produced
+---------------
+  <plotOutFileName>.tsv -- gene_name, cistron_name, monomer_name,
+      prob_monomer_expressed
+"""
+
 import pickle
 import os
 
@@ -10,15 +28,12 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
-IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
-SEED_RANGE = sc.SEED_RANGE
-BATCH_SIZE = 50
+IGNORE_FIRST_N_GENS = 8
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -30,17 +45,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('Skipping analysis - not enough generations run.')
 			return
 		cell_paths = self.ap.get_cells(
-			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
+			generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),
 			only_successful=True)
-
-		# Restrict to strict-successful lineages 
-		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
-		cell_paths = sc.filter_cells_to_successful(
-			cell_paths, success['successful_seeds'])
-
-		if len(cell_paths) == 0:
-			print('No valid cell paths found for this variant. Skipping analysis.')
-			return
 		
 		print('Analyzing %d cells...' % len(cell_paths))
 
@@ -55,7 +61,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			in enumerate(mRNA_ids)
 		}
 
-		# There are 4539 mRNA ids total w/ gene namesclau
+		# There are 4539 mRNA ids total w/ gene names
 		cistron_id_to_gene_id = {
 			cistron['id']: cistron['gene_id']
 			for cistron in sim_data.process.transcription.cistron_data
@@ -93,61 +99,41 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			cistron_id_to_gene_id[cistron_id] for cistron_id in cistron_ids_in_order
 		])
 
-		# Get indices of cistron_ids_in_order
-		mRNA_ids_indices = np.array([
-			mRNA_id_to_index[cistron_id] for cistron_id
-			in cistron_ids_in_order
-		])
+		# Monomer exists per gen
+		monomer_exists_in_gen = read_stacked_columns(
+			cell_paths, 'MonomerCounts', 'monomerCounts',
+			ignore_exception=True, fun=lambda x: x.sum(axis=0) > 0)[
+							:, monomer_indices]
 
-		mean_monomer_counts = np.zeros(len(monomer_indices))
-		mean_mRNA_counts = np.zeros(len(mRNA_ids_indices))
-		# Total number of timesteps summed across all cells (each stacked row is
-		# one timestep of one cell), NOT the number of cells: the reported means
-		# are per-timestep averages, matching mean_mRNA_counts in
-		# subgen_expression_definitions.py.
-		total_timesteps = 0
+		# Divide by total number of cells to get probability
+		p_monomer_exists_in_gen = (
+			monomer_exists_in_gen.sum(axis=0) / monomer_exists_in_gen.shape[0]
+			)
+		subgenerational_monomer_mask = (
+				(p_monomer_exists_in_gen > 0)
+				& (p_monomer_exists_in_gen < 1)
+		)
 
-		for i in range(0, len(cell_paths), BATCH_SIZE):
-			batch_paths = cell_paths[i:i+BATCH_SIZE]
-			print(f'Processing batch {i//BATCH_SIZE + 1}/{(len(cell_paths)-1)//BATCH_SIZE + 1}...')
+		expression_status_array = np.full(
+			p_monomer_exists_in_gen.shape,
+			'always_expressed' , dtype='<U20')
 
-			# Read batch data. remove_first drops the inherited boundary timestep
-			# so the per-timestep mean is not double-counting generation handoffs.
-			batch_monomer = read_stacked_columns(
-				batch_paths, 'MonomerCounts', 'monomerCounts',
-				remove_first=True, ignore_exception=True)[:, monomer_indices]
-			batch_mRNA = read_stacked_columns(
-				batch_paths, 'RNACounts', 'mRNA_cistron_counts',
-				remove_first=True, ignore_exception=True)[:, mRNA_ids_indices]
+		expression_status_array[subgenerational_monomer_mask] = 'subgen'
+		expression_status_array[p_monomer_exists_in_gen == 0] = 'never_expressed'
 
-			# Accumulate sums
-			mean_monomer_counts += batch_monomer.sum(axis=0)
-			mean_mRNA_counts += batch_mRNA.sum(axis=0)
-			total_timesteps += batch_monomer.shape[0]
-
-			# Free memory
-			del batch_monomer, batch_mRNA
-
-		# Calculate means once, after all batches have been accumulated. (This
-		# was previously inside the loop, which divided the running sums by a
-		# growing count every batch and corrupted the means.)
-		mean_monomer_counts /= total_timesteps
-		mean_mRNA_counts /= total_timesteps
 
 		# Write data to table
-		with open(os.path.join(plotOutDir, plotOutFileName + '_mean_counts.tsv'), 'w') as f:
+		with open(os.path.join(plotOutDir, plotOutFileName + '.tsv'), 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow([
 				'gene_name', 'cistron_name', 'monomer_name',
-				'mean_mRNA_count', 
-				'mean_protein_count', 
+				'prob_monomer_expressed', 
 			])
 
 			for i in monomer_indices:
 				writer.writerow([
 					gene_ids_in_order[i], cistron_ids_in_order[i], monomer_ids[i],
-					mean_mRNA_counts[i], 
-					mean_monomer_counts[i],					
+					p_monomer_exists_in_gen[i], 		
 				])
 
 

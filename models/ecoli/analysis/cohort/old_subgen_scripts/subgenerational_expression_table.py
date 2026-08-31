@@ -1,5 +1,5 @@
 """
-LEGACY -- superseded by subgenerational_expression_table_def5.py. Kept for
+LEGACY -- superseded by subgen_expression_table.py. Kept for
 provenance; not in ACTIVE, runnable via the SUBGEN_LEGACY tag.
 
 Generates a table of genes that are subgenerationally expressed, with their
@@ -20,13 +20,13 @@ Why it was superseded
     against 1859 for the canonical def5_CI rule -- these gene lists are not
     comparable.
   * The "always on" count degrades as the cohort grows: add seeds and more genes
-    fall below p == 1. A rate estimated across lineages behaves the opposite way --
-    its standard error shrinks as std/sqrt(n_lineages).
+    fall below p == 1. A rate estimated across seeds behaves the opposite way --
+    its standard error shrinks as std/sqrt(n_seeds).
   * DENOMINATOR BUG: the read-failure handler below `continue`s without
     decrementing n_cells, so every unreadable cell dilutes every gene's
     probability.
   * Uses ap.get_cells(only_successful=True) rather than the strict
-    successful-lineage filter (sc.compute_lineage_success), so stalled lineages
+    successful-seed filter (sc.compute_seed_success), so stalled seeds
     still contribute cells.
 
 Output produced (Set 2 only; Set 1 ran the def5 script instead)
@@ -38,10 +38,10 @@ Output produced (Set 2 only; Set 1 ran the def5 script instead)
 
 Replacement
 -----------
-subgenerational_expression_table_def5.py emits a strict superset of these columns
+subgen_expression_table.py emits a strict superset of these columns
 and classifies by def5_CI. Its `p_mrna_present_def1` column reproduces
 `p_expressed` -- recovered from the raw extraction's max-mRNA matrix, with a clean
-denominator and gated on strict-successful lineages, so it is the more correct
+denominator and gated on strict-successful seeds, so it is the more correct
 version of this number.
 """
 

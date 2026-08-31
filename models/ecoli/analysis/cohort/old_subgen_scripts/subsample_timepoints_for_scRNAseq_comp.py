@@ -9,7 +9,7 @@ from matplotlib import cm
 import csv
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -32,16 +32,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation), seed = SEED_RANGE,
             only_successful=True)
 
-        # Strict-successful lineages 
-        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        # Strict-successful seeds 
+        success = sc.compute_seed_success(self.ap, self.ap.n_generation)
         seeds_to_sample = sorted(
             s for s in success['successful_seeds'] if s in set(SEED_RANGE.tolist()))
         sample_per_seed = sc.sample_per_seed(len(seeds_to_sample))
-        print('Sampling %d timepoints from each of %d successful lineages '
+        print('Sampling %d timepoints from each of %d successful seeds '
             '(target %d total).'
             % (sample_per_seed, len(seeds_to_sample), TIMEPOINTS_TO_SAMPLE))
         if not seeds_to_sample:
-            print('No successful lineages found. Skipping.')
+            print('No successful seeds found. Skipping.')
             return
         # Seed the RNG once for reproducible timepoint subsampling.
         np.random.seed(0)
@@ -176,7 +176,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             sim_metadata_path=sim_metadata_path,
             sim_metadata=sim_metadata,
             extra={
-                'lineages': {
+                'seeds': {
                     'n_successful': len(seeds_to_sample),
                     'successful_seeds': seeds_to_sample,
                     },

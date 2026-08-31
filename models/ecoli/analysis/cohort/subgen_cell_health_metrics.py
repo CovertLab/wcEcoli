@@ -16,7 +16,7 @@ For every cell-generation the script records:
 A healthy cell divides on schedule with a stable mass, high polymerase/ribosome
 activity, and low ppGpp; unhealthy cells show a long doubling time, low growth
 rate/mass, depleted RNAP/ribosome activity, and/or elevated ppGpp (stringent
-response). The companion subgen_expression_definitions.py flags near-ubiquitous
+response). The companion subgen_definitions.py flags near-ubiquitous
 genes that are absent only in a handful of cells; joining that report to this
 table on the cell path tests whether those absences concentrate in unhealthy
 cells rather than reflecting genuine subgenerational regulation.
@@ -25,28 +25,25 @@ skip the first IGNORE_FIRST_N_GENS generations, and cells from successful seeds 
 so the two tables join directly on the cell path.
 """
 
-import pickle
 import os
 import csv
-import json
 from datetime import datetime
 
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.io.tablereader import TableReader
-from wholecell.utils import constants
 
 
-IGNORE_FIRST_N_GENS = 8
+IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 REMOVE_FIRST_TIMESTEP = False
 
-# Sibling report written by subgen_expression_definitions.py: one row per
+# Sibling report written by subgen_definitions.py: one row per
 # (near-ubiquitous gene, absent cell). When present in the same plotOut
 # directory, each cell is annotated with how many such genes it is missing.
 NEAR_UBIQUITOUS_ABSENCE_FILE = (
-	'subgen_expression_definitions_near_ubiquitous_absences.tsv')
+	'subgen_definitions_all_near_ubiquitous_absences.tsv')
 
 # Per-cell metric columns, in output order.
 METRIC_LABELS = [
@@ -60,14 +57,12 @@ METRIC_LABELS = [
 	'mean_ppgpp_conc',
 	]
 
-_git_info = sc.git_info
-_load_sim_metadata = sc.load_sim_metadata
 
 
 def _load_absence_counts(plot_out_dir):
 	"""Count near-ubiquitous absences per cell from the subgen report, if present.
 
-	subgen_expression_definitions.py writes a long-format table with one row per
+	subgen_definitions.py writes a long-format table with one row per
 	(gene, absent_cell_path); the per-cell count is how many near-ubiquitous genes
 	that cell is missing. Return (counts_by_cell_path, source_path), or ({}, None)
 	when the report is absent.
@@ -82,16 +77,6 @@ def _load_absence_counts(plot_out_dir):
 			cell_path = row['absent_cell_path']
 			counts[cell_path] = counts.get(cell_path, 0) + 1
 	return counts, path
-
-
-def _parse_cell_id(cell_path):
-	"""Split a cell path into (seed_str, generation_int) for grouping by lineage.
-
-	Thin wrapper over sc.parse_cell_id that keeps the seed as a string (and '' when
-	the path does not match), which is what this module's grouping keys expect.
-	"""
-	seed, gen = sc.parse_cell_id(cell_path)
-	return ('' if seed < 0 else str(seed)), gen
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -148,7 +133,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				skipped_cells.append(cell_path)
 				continue
 
-			seed, generation = _parse_cell_id(cell_path)
+			seed, generation = sc.parse_cell_id(cell_path)
 			# Doubling time in minutes: span of the generation's time axis.
 			doubling_time_min = (time[-1] - time[0]) / 60.0
 			# instantaneous_growth_rate is NaN at the first timestep (no prior step
@@ -253,18 +238,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('MEDIAN(all)\t-\t%.1f\t%.2e\t%.0f\t%.1f' % (
 				medians[0], medians[1], medians[6], medians[7]))
 
-		# Full-run lineage completeness: how far each seed's lineage got before it
+		# Full-run seed completeness: how far each seed got before it
 		# died or reached the final generation. Independent of IGNORE_FIRST_N_GENS,
-		# so lineages that die in the first few generations are still captured.
-		sim_metadata_path, sim_metadata = _load_sim_metadata(variantDir)
+		# so seeds that die in the first few generations are still captured.
+		sim_metadata_path, sim_metadata = sc.load_sim_metadata(variantDir)
 		final_gen = self.ap.n_generation - 1
 		successful_gens_by_seed = {}
 		for path in self.ap.get_cells(only_successful=True):
-			seed, gen = _parse_cell_id(path)
+			seed, gen = sc.parse_cell_id(path)
 			successful_gens_by_seed.setdefault(seed, set()).add(gen)
 		seeds_present = set()
 		for path in self.ap.get_cells(only_successful=False):
-			seed, _ = _parse_cell_id(path)
+			seed, _ = sc.parse_cell_id(path)
 			seeds_present.add(seed)
 
 		completeness_rows = []
@@ -283,7 +268,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				])
 
 		completeness_path = os.path.join(
-			plotOutDir, plotOutFileName + '_lineage_completeness.tsv')
+			plotOutDir, plotOutFileName + '_seed_completeness.tsv')
 		print('Writing %s' % completeness_path)
 		with open(completeness_path, 'w') as f:
 			writer = csv.writer(f, delimiter='\t')
@@ -297,7 +282,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		total_init_sims = sim_metadata.get('total_init_sims')
 		n_never_ran = (total_init_sims - len(seeds_present)
 			if total_init_sims is not None else None)
-		print('\nLineage completeness (final generation = %d):' % final_gen)
+		print('\nSeed completeness (final generation = %d):' % final_gen)
 		print('  seeds present            : %d' % len(seeds_present))
 		if n_never_ran is not None:
 			print('  seeds that never ran     : %d (of %d expected)'
@@ -312,52 +297,38 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				+ ', '.join('%s@%d' % (row[0], row[2]) for row in incomplete))
 
 		# Provenance metadata: which cells were included, when the analysis ran,
-		# when the sims ran, and the git hash of each.
-		repo_dir = os.path.dirname(os.path.abspath(__file__))
-		run_metadata = {
-			'analysis': {
-				'script': os.path.basename(__file__),
-				'run_time': analysis_run_time,
-				'git': _git_info(repo_dir),
-				'parameters': {
-					'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
-					'remove_first_timestep': REMOVE_FIRST_TIMESTEP,
-					},
+		# when the sims ran, and the git hash of each. `near_ubiquitous_join` is
+		# specific to this script, so it rides along as an `extra` block.
+		sc.write_run_metadata(
+			os.path.join(plotOutDir, plotOutFileName + '_run_metadata.json'),
+			os.path.basename(__file__),
+			{
+				'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
+				'remove_first_timestep': REMOVE_FIRST_TIMESTEP,
+				},
+			sim_metadata_path=sim_metadata_path,
+			sim_metadata=sim_metadata,
+			run_time=analysis_run_time,
+			extra={
 				'near_ubiquitous_join': {
 					'source': absence_path,
 					'n_cells_with_absences': sum(
 						1 for row in rows if absence_counts.get(row[0], 0) > 0),
 					},
-				},
-			'simulation': {
-				'metadata_source': sim_metadata_path,
-				'git_hash': sim_metadata.get('git_hash'),
-				'git_branch': sim_metadata.get('git_branch'),
-				'run_time': sim_metadata.get('time'),
-				'description': sim_metadata.get('description'),
-				'variant': sim_metadata.get('variant'),
-				'total_gens': sim_metadata.get('total_gens'),
-				'total_init_sims': sim_metadata.get('total_init_sims'),
-				},
-			'cells': {
-				'n_attempted': len(cell_paths),
-				'n_included': n_cells,
-				'n_skipped': len(skipped_cells),
-				'skipped': skipped_cells,
-				},
-			'lineage': {
-				'final_generation': final_gen,
-				'n_seeds_present': len(seeds_present),
-				'n_seeds_never_ran': n_never_ran,
-				'n_reached_final': n_reached_final,
-				'n_died_before_final': n_died_early,
-				},
-			}
-		metadata_path = os.path.join(
-			plotOutDir, plotOutFileName + '_run_metadata.json')
-		print('Writing %s' % metadata_path)
-		with open(metadata_path, 'w') as f:
-			json.dump(run_metadata, f, indent=2)
+				'cells': {
+					'n_attempted': len(cell_paths),
+					'n_included': n_cells,
+					'n_skipped': len(skipped_cells),
+					'skipped': skipped_cells,
+					},
+				'seeds': {
+					'final_generation': final_gen,
+					'n_seeds_present': len(seeds_present),
+					'n_seeds_never_ran': n_never_ran,
+					'n_reached_final': n_reached_final,
+					'n_died_before_final': n_died_early,
+					},
+				})
 
 
 if __name__ == '__main__':

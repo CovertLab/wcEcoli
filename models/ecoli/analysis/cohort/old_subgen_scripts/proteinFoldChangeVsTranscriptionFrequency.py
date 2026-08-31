@@ -16,7 +16,7 @@ If revived, note that it does NOT use Definition 5:
     thresholding, so there is no explicit gene classification to correct -- but the
     quantity is presence frequency, not a def-5 rate.
   * it reads seed 0 only (`self.ap.get_cells(seed=[0])`), with no burn-in and no
-    lineage-health gate.
+    seed-health gate.
 For a CI-based subgen gene set, read the canonical per-gene table via
 sc.load_def5_categories().
 """

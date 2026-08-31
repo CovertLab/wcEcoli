@@ -15,7 +15,7 @@ import csv
 
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
@@ -36,12 +36,12 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
         print('Analyzing %d cells...' % len(cell_paths))
 
         # Restrict to strict-successful seeds
-        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        success = sc.compute_seed_success(self.ap, self.ap.n_generation)
         cell_paths = sc.filter_cells_to_successful(
             cell_paths, success['successful_seeds'])
-        print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+        print('Analyzing %d cells from successful seeds...' % len(cell_paths))
         if len(cell_paths) == 0:
-            print('No successful-lineage cells found. Skipping.')
+            print('No successful-seed cells found. Skipping.')
             return
 
         monomer_reader = TableReader(

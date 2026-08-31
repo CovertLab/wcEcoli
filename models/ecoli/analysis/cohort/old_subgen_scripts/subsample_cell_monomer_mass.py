@@ -2,7 +2,7 @@
 Cohort analysis: export subsampled monomer counts + cell dry mass.
 
 Randomly samples TIMEPOINTS_TO_SAMPLE total timepoints spread evenly across the
-STRICT-successful lineages (sc.sample_per_seed(n_lineages) per lineage), matching
+STRICT-successful seeds (sc.sample_per_seed(n_seeds) per seed), matching
 the pattern in subsample_timepoints_for_scRNAseq_comp.py.
 
 Produces two TSV files:
@@ -29,7 +29,7 @@ import numpy as np
 import csv
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import read_stacked_columns
 from wholecell.io.tablereader import TableReader
 
@@ -55,16 +55,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('No valid cell paths found for this variant. Skipping analysis.')
 			return
 
-		# Strict-successful lineages 
-		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		# Strict-successful seeds 
+		success = sc.compute_seed_success(self.ap, self.ap.n_generation)
 		seeds_to_sample = sorted(
 			s for s in success['successful_seeds'] if s in set(SEED_RANGE.tolist()))
 		sample_per_seed = sc.sample_per_seed(len(seeds_to_sample))
-		print('Sampling %d timepoints from each of %d successful lineages '
+		print('Sampling %d timepoints from each of %d successful seeds '
 			'(target %d total).'
 			% (sample_per_seed, len(seeds_to_sample), TIMEPOINTS_TO_SAMPLE))
 		if not seeds_to_sample:
-			print('No successful lineages found. Skipping.')
+			print('No successful seeds found. Skipping.')
 			return
 
 		print('Analyzing %d cells...' % len(cell_paths))
@@ -87,7 +87,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		total_monomer_counts = np.empty((0, len(monomer_ids)), dtype=np.float64)
 		total_dry_mass = []
 
-		# Seed the RNG once (not per seed) so each lineage draws independently.
+		# Seed the RNG once (not per seed) so each seed draws independently.
 		np.random.seed(0)
 		for seed in SEED_RANGE:
 			cell_paths_per_seed = self.ap.get_cells(
@@ -179,7 +179,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				writer.writerow(counts_row)
 
 		# metadata. The subsample scripts wrote none until now, which meant the row
-		# counts in their outputs could not be traced back to a lineage count --
+		# counts in their outputs could not be traced back to a seed count --
 		# exactly the information needed to spot the old
 		# `TIMEPOINTS_TO_SAMPLE // len(SEED_RANGE)` bug.
 		sim_metadata_path, sim_metadata = sc.load_sim_metadata(variantDir)
@@ -196,7 +196,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_metadata_path=sim_metadata_path,
 			sim_metadata=sim_metadata,
 			extra={
-				'lineages': {
+				'seeds': {
 					'n_successful': len(seeds_to_sample),
 					'successful_seeds': seeds_to_sample,
 					},

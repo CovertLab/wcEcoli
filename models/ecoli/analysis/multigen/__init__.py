@@ -45,11 +45,7 @@ ACTIVE = [
 	"rnap_crowding.py",
 	"rRNA_operon_expression.py",
 	"rrna_regulation.py",
-	# The def5 version labels genes by the cohort-wide def5_CI categories, so it is
-	# the one that agrees with the per-gene tables. The original is tier legacy
-	# (presence frequency, seed 0 only) -- see the SUBGEN_LEGACY tag.
-	# "subgenerationalTranscription.py",
-	"subgenerationalTranscription_def5.py",
+	"subgenerationalTranscription.py",
 	"tf_binding.py",
 	"timeStep.py",
 	"transcriptionEvents.py",
@@ -141,19 +137,11 @@ TAGS = {
 		"proteinFoldChangeVsRnaDeg.py",
 		"proteinFoldChangeVsTranscriptionEvents.py",
 		"proteinFoldChangeVsTranslationEff.py",
-		"subgenerationalTranscription_def5.py",
+		"subgenerationalTranscription.py",
 		"transcriptionEvents.py",
 		"transcriptionFrequency.py",
 		"transcriptionFrequencyOrdered.py",
 		"translationFrequency.py",
-		],
-	# NOTE: the protein*/transcription* scripts above predate this work and use
-	# presence-frequency colouring, not def5 + CI. Several also test presence with
-	# `counts.sum(axis=0) > 1` where `> 0` is meant (proteinExistVsBurstSize.py:39,
-	# proteinAvgCountVsBurstSize.py:41, proteinCountVsFoldChange.py:41,
-	# proteinFoldChangeVsTranslationEff.py:39). Treat their categories as legacy.
-	'SUBGEN_LEGACY': [
-		"subgenerationalTranscription.py",
 		],
 	'TRANSLATION': [
 		"aa_supply.py",

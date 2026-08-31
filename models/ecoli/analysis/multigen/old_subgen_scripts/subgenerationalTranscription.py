@@ -15,7 +15,7 @@ Differences from the def5 replacement
   * Presence, not completed transcripts, so it counts mRNA inherited from the
     mother and initiations later lost to tRNA attenuation.
   * Runs on seed 0 UNCONDITIONALLY (`if 0 not in self.ap._path_data["seed"]:
-    return`). Seed 0 is not necessarily healthy: a lineage that stalls with cells
+    return`). Seed 0 is not necessarily healthy: a seed that stalls with cells
     pinned at the 180-min length cap still passes only_successful=True, and its
     collapsing transcription inflates the subgenerational fraction.
   * No burn-in -- averages over every generation including startup transients.
@@ -44,7 +44,7 @@ the canonical def-5 table via sc.load_def5_categories(), not this script's color
 Replacement
 -----------
 subgenerationalTranscription_def5.py: completed transcripts, burn-in applied, plots
-the first 3 STRICT-successful lineages with seed-suffixed filenames, and labels
+the first 3 STRICT-successful seeds with seed-suffixed filenames, and labels
 genes with the cohort-wide def5_CI categories.
 """
 

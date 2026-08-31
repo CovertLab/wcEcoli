@@ -9,37 +9,37 @@ Three changes from the original, all to align it with Definition 5:
      present (which also captures transcripts inherited from the mother and
      initiations later lost to tRNA attenuation).
   2. The first IGNORE_FIRST_N_GENS generations are dropped as burn-in, so the
-     per-lineage frequency is not contaminated by initial-condition transients.
+     per-seed frequency is not contaminated by initial-condition transients.
      The original averaged over every generation including startup.
-  3. The original ran on the seed-0 lineage unconditionally. Seed 0 is not
-     necessarily healthy -- a lineage that stalls out (cells pinned at the
+  3. The original ran on the seed-0 seed unconditionally. Seed 0 is not
+     necessarily healthy -- a seed that stalls out (cells pinned at the
      180-minute length cap) still passes ap.get_cells(only_successful=True),
      because those cells did write daughter state, and its collapsing
      transcription inflates the subgenerational fraction. This version instead
-     plots the first N_LINEAGES_TO_PLOT STRICT-successful lineages (completed
+     plots the first N_SEEDS_TO_PLOT STRICT-successful seeds (completed
      every generation, no cell at the doubling cap), the same gate every other
      def-5 analysis uses.
 
   4. Genes are labelled by the CANONICAL Definition-5 classification -- the
      cohort-wide def5_CI categories from sc.canonical_def5_classification(), i.e.
-     the 95% CI of the per-lineage rate against 1 transcript/generation. Earlier
-     versions of this script classified by the per-lineage POINT ESTIMATE
+     the 95% CI of the per-seed rate against 1 transcript/generation. Earlier
+     versions of this script classified by the per-seed POINT ESTIMATE
      (mean == 0 / 0 < mean < 1 / mean >= 1), which silently disagreed with every
-     def-5 table: on sim set 1 it called 1652-1687 genes subgen per lineage where
+     def-5 table: on sim set 1 it called 1652-1687 genes subgen per seed where
      the cohort CI calls 1859, and inflated never_expressed from 135 to ~330
-     (a single lineage never fires many genes that some lineage does). The
-     per-lineage point estimate is still printed as a diagnostic, but it no longer
+     (a single seed never fires many genes that some seed does). The
+     per-seed point estimate is still printed as a diagnostic, but it no longer
      labels anything.
 
 Definition 5 always means the CI form. Categories are sc.CATEGORIES -- subgen /
 possibly_subgen / not_subgen / never_expressed -- coloured from sc.PALETTE, so
 these panels and the per-gene tables always describe the same gene sets. Because
-the categories are cohort-wide, all plotted lineages report the same counts; what
-varies per lineage is the frequency scatter and the event raster.
+the categories are cohort-wide, all plotted seeds report the same counts; what
+varies per seed is the frequency scatter and the event raster.
 
-Requires the raw extraction (subgen_raw_extract.py) to have been run on the cohort
+Requires the raw extraction (subgen_extract.py) to have been run on the cohort
 first: the classification is read from the COHORT plotOut directory, one level
-above this multigen plotOut. One figure set per plotted lineage, seed-suffixed.
+above this multigen plotOut. One figure set per plotted seed, seed-suffixed.
 """
 
 import os
@@ -55,17 +55,17 @@ from wholecell.utils.sparkline import whitePadSparklineAxis
 from wholecell.analysis.analysis_tools import exportFigure
 from models.ecoli.analysis import multigenAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 
 # Number of post-burn-in generations to draw in the transcription-event raster.
 RASTER_N_GENS = 5
-# How many strict-successful lineages to plot (one figure set each). This figure
-# is inherently single-lineage, so a few lineages give a sense of the
-# lineage-to-lineage spread. Mirrors N_SEEDS_TO_PLOT in
+# How many strict-successful seeds to plot (one figure set each). This figure
+# is inherently single-seed, so a few seeds give a sense of the
+# seed-to-seed spread. Mirrors N_SEEDS_TO_PLOT in
 # subgen_monomer_dynamics_def5.py.
-N_LINEAGES_TO_PLOT = 3
+N_SEEDS_TO_PLOT = 3
 
-# Category colors and labels come from subgen_common (sc.PALETTE / sc.CAT_LABEL)
+# Category colors and labels come from subgen_helper_functions (sc.PALETTE / sc.CAT_LABEL)
 # so these panels match every other def-5 figure. The 5B raster keeps two rows --
 # the confident calls -- because an event raster of `possibly_subgen` genes would
 # be read as a claim the CI explicitly declines to make.
@@ -82,12 +82,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 	def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
 			validationDataFile, metadata):
 		# The multigen framework hands us one seed directory, but this figure is
-		# only meaningful on a lineage that stayed healthy for the whole run, so
-		# the lineage choice is made here rather than by the caller. self.ap is
+		# only meaningful on a seed that stayed healthy for the whole run, so
+		# the seed choice is made here rather than by the caller. self.ap is
 		# scoped to seedOutDir; a cohort view over the parent variant directory
 		# is needed both to reach the other seeds' simOut and to get the
 		# cohort-wide generation count -- self.ap.n_generation counts only the
-		# generations THIS seed produced, which would make a truncated lineage
+		# generations THIS seed produced, which would make a truncated seed
 		# look like it had completed every generation.
 		variant_dir = os.path.dirname(os.path.normpath(seedOutDir))
 		cohort_plot_out = os.path.join(variant_dir, constants.PLOTOUT_DIR)
@@ -108,20 +108,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			print('This figure now uses the canonical cohort def5_CI categories, '
 				'so the raw extraction must run first:\n'
 				'  python runscripts/manual/analysisCohort.py '
-				'--plot subgen_raw_extract.py <sim_dir>')
+				'--plot subgen_extract.py <sim_dir>')
 			return
-		if clf['n_lineages'] == 0:
-			print('No successful lineages in the cohort classification. Skipping.')
+		if clf['n_seeds'] == 0:
+			print('No successful seeds in the cohort classification. Skipping.')
 			return
 		cat_counts = sc.category_counts(clf['stats']['cat'])
-		print('Canonical def5_CI classification over %d successful lineages: %s'
-			% (clf['n_lineages'],
+		print('Canonical def5_CI classification over %d successful seeds: %s'
+			% (clf['n_seeds'],
 				', '.join('%s=%d' % (c, cat_counts[c]) for c in sc.CATEGORIES)))
 
-		successful, n_seeds, reasons = self._lineage_success(
+		successful, n_seeds, reasons = self._seed_success(
 			variant_dir, coh_ap, n_generation)
 		if not successful:
-			print('WARNING: no strict-successful lineage among %d seeds (needs '
+			print('WARNING: no strict-successful seed among %d seeds (needs '
 				'all %d generations with no cell at the %g-min doubling cap); '
 				'skipping.' % (n_seeds, n_generation, sc.MAX_DOUBLING_MIN))
 			return
@@ -131,13 +131,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			seeds_to_plot = [requested_seed] + [
 				s for s in ordered if s != requested_seed]
 		else:
-			print('WARNING: seed %s is NOT a strict-successful lineage%s.'
+			print('WARNING: seed %s is NOT a strict-successful seed%s.'
 				% (requested_seed, reasons.get(requested_seed, '')))
-			print('  Plotting strict-successful lineages instead; this figure '
-				'is not meaningful on a lineage that died or stalled.')
+			print('  Plotting strict-successful seeds instead; this figure '
+				'is not meaningful on a seed that died or stalled.')
 			seeds_to_plot = ordered
-		seeds_to_plot = seeds_to_plot[:N_LINEAGES_TO_PLOT]
-		print('Strict-successful lineages: %d of %d seeds. Plotting %s.'
+		seeds_to_plot = seeds_to_plot[:N_SEEDS_TO_PLOT]
+		print('Strict-successful seeds: %d of %d seeds. Plotting %s.'
 			% (len(successful), n_seeds,
 				', '.join(str(s) for s in seeds_to_plot)))
 
@@ -197,9 +197,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 					'variant on this cohort.' % (sc.SYNTH_TABLE, sc.SYNTH_COLUMN))
 				return
 
-			self._plot_lineage(plotOutDir, plotOutFileName, metadata,
+			self._plot_seed(plotOutDir, plotOutFileName, metadata,
 				validation_data, seed, burn_in, freqDir, mRNA_cistron_indexes,
-				mRNA_cistron_ids, categories, clf['n_lineages'])
+				mRNA_cistron_ids, categories, clf['n_seeds'])
 
 	def _category_by_cistron(self, cohort_plot_out, clf):
 		"""{cistron_id: def5_CI category} from the canonical classification.
@@ -224,17 +224,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		except ValueError:
 			return -1
 
-	def _lineage_success(self, variant_dir, coh_ap, n_generation):
-		"""Strict successful-lineage set for this cohort.
+	def _seed_success(self, variant_dir, coh_ap, n_generation):
+		"""Strict successful-seed set for this cohort.
 
-		Prefers the flags already persisted by subgen_raw_extract.py (cheap);
+		Prefers the flags already persisted by subgen_extract.py (cheap);
 		falls back to recomputing them, which reads every cell's Main/time.
 		Returns (successful_seeds, n_seeds_seen, {seed: rejection reason}).
 		"""
-		rows = sc.load_lineage_success_rows(
+		rows = sc.load_seed_success_rows(
 			os.path.join(variant_dir, constants.PLOTOUT_DIR))
 		if rows:
-			print('Using the strict lineage flags from the raw extraction.')
+			print('Using the strict seed flags from the raw extraction.')
 			successful = {s for s, r in rows.items()
 				if r['is_successful'].strip() == 'True'}
 			reasons = {
@@ -245,10 +245,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 				for s, r in rows.items() if s not in successful}
 			return successful, len(rows), reasons
 
-		print('No raw-extraction lineage table found; recomputing the strict '
-			'successful-lineage set (reads every cell\'s Main/time).')
+		print('No raw-extraction seed table found; recomputing the strict '
+			'successful-seed set (reads every cell\'s Main/time).')
 		_, sim_metadata = sc.load_sim_metadata(variant_dir)
-		success = sc.compute_lineage_success(coh_ap, n_generation,
+		success = sc.compute_seed_success(coh_ap, n_generation,
 			total_init_sims=sim_metadata.get('total_init_sims'))
 		reasons = {}
 		for s in success['all_seed_ids']:
@@ -264,16 +264,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		return (success['successful_seeds'], len(success['all_seed_ids']),
 			reasons)
 
-	def _plot_lineage(self, plotOutDir, plotOutFileName, metadata,
+	def _plot_seed(self, plotOutDir, plotOutFileName, metadata,
 			validation_data, seed, burn_in, freqDir, mRNA_cistron_indexes,
-			mRNA_cistron_ids, categories, n_lineages):
-		"""Produce the 5B/5E/5F/5G panels for one strict-successful lineage.
+			mRNA_cistron_ids, categories, n_seeds):
+		"""Produce the 5B/5E/5F/5G panels for one strict-successful seed.
 
 		`categories` is the cohort-wide def5_CI label per gene, parallel to
-		`mRNA_cistron_ids` -- it does NOT depend on this lineage, so every plotted
-		lineage reports the same category counts by construction.
+		`mRNA_cistron_ids` -- it does NOT depend on this seed, so every plotted
+		seed reports the same category counts by construction.
 		"""
-		# Seed-suffixed so one lineage never overwrites another's panels.
+		# Seed-suffixed so one seed never overwrites another's panels.
 		name = '%s_seed%06d' % (plotOutFileName, seed)
 
 		transcribedBool = []       # per gen: bool, >=1 completed transcript
@@ -340,23 +340,23 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		mRNA_ids_ordered = mRNA_cistron_ids[indexingOrder]
 
 		# Canonical def5_CI categories, reordered onto the x-axis order. These are
-		# cohort-wide, so they are identical for every plotted lineage.
+		# cohort-wide, so they are identical for every plotted seed.
 		catOrdered = categories[indexingOrder]
 		idx_by_cat = {c: np.where(catOrdered == c)[0] for c in sc.CATEGORIES}
 		colors = np.array(
 			[sc.PALETTE[c] for c in catOrdered], dtype=object)
 		n_genes = len(freqOrdered)
-		print('  def5_CI categories (cohort-wide, %d lineages): %s'
-			% (n_lineages, ', '.join(
+		print('  def5_CI categories (cohort-wide, %d seeds): %s'
+			% (n_seeds, ', '.join(
 				'%s=%d (%.1f%%)'
 				% (c, len(idx_by_cat[c]), 100. * len(idx_by_cat[c]) / n_genes)
 				for c in sc.CATEGORIES)))
-		# Diagnostic only: what this single lineage's point estimate would have
+		# Diagnostic only: what this single seed's point estimate would have
 		# said. Kept visible because the gap is the reason the CI form is canonical,
 		# but it labels nothing.
 		lin_never = int(np.sum(def5MeanOrdered == 0))
 		lin_notsub = int(np.sum(def5MeanOrdered >= 1))
-		print('  [diagnostic] this lineage\'s point estimate would say: '
+		print('  [diagnostic] this seed\'s point estimate would say: '
 			'never=%d, 0<mean<1=%d, mean>=1=%d'
 			% (lin_never, n_genes - lin_never - lin_notsub, lin_notsub))
 
@@ -376,9 +376,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		whitePadSparklineAxis(histAxis)
 		histAxis.xaxis.tick_bottom()
 		plt.suptitle('Frequency of >=1 COMPLETED transcript per generation '
-			'(Definition 5, def5_CI categories over %d lineages | seed %d '
-			'strict-successful lineage, burn-in=%d gens, %d gens)'
-			% (n_lineages, seed, burn_in, n_gens_used), fontsize=13)
+			'(Definition 5, def5_CI categories over %d seeds | seed %d '
+			'strict-successful seed, burn-in=%d gens, %d gens)'
+			% (n_seeds, seed, burn_in, n_gens_used), fontsize=13)
 		scatterAxis.set_xlabel(
 			'Genes ordered by simulated synthesis probability', fontsize=12)
 		scatterAxis.set_ylabel('Fraction of generations', fontsize=12)
@@ -422,16 +422,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			botAxis.set_xticks(time_eachGen / 3600.)
 			botAxis.set_xticklabels(np.arange(len(time_eachGen)))
 			plt.suptitle('Completed-transcript events (Definition 5, def5_CI over '
-				'%d lineages | seed %d)' % (n_lineages, seed), fontsize=13)
+				'%d seeds | seed %d)' % (n_seeds, seed), fontsize=13)
 			exportFigure(plt, plotOutDir, name + '_5B_bottom', metadata)
 			plt.close('all')
 
 		# --- Figures 5E/5F/5G: gene-category composition by def5_CI category ---
 		self._category_bars(plotOutDir, name, metadata, validation_data,
-			mRNA_ids_ordered, catOrdered, n_lineages)
+			mRNA_ids_ordered, catOrdered, n_seeds)
 
 	def _category_bars(self, plotOutDir, name, metadata, validation_data,
-			mRNA_ids_ordered, catOrdered, n_lineages):
+			mRNA_ids_ordered, catOrdered, n_seeds):
 		"""Composition of a gene group across the four def5_CI categories."""
 		xloc = np.arange(len(sc.CATEGORIES))
 		width = 0.8
@@ -455,7 +455,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 			ax.set_xticklabels(
 				['never' if c == 'never_expressed' else c.replace('_', '-')
 					for c in sc.CATEGORIES], fontsize=8)
-			ax.set_xlabel('%s (def5_CI, %d lineages)' % (xlabel, n_lineages))
+			ax.set_xlabel('%s (def5_CI, %d seeds)' % (xlabel, n_seeds))
 			plt.subplots_adjust(right=0.9, bottom=0.2, left=0.2, top=0.9)
 			exportFigure(plt, plotOutDir, fname, metadata)
 			plt.close()

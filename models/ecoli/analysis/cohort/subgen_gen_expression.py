@@ -1,27 +1,30 @@
 """
 Per-generation expression audit
 
-For every successful lineage (strict filter: completed every generation and no
-cell hit the 180-min doubling cap), and for every generation of that lineage,
+For every successful seed (strict filter: completed every generation and no
+cell hit the 180-min doubling cap), and for every generation of that seed,
 determine which protein-coding genes had at least one SUCCESSFUL (completed) mRNA
 transcription event that generation. A gene counts as "expressed" for the whole
 generation if it produced >= 1 completed transcript at any timestep during it.
 
 This reads the pre-computed raw extraction rather than
-simulation output, so run subgen_raw_extract.py first.
+simulation output, so run subgen_extract.py first.
 
 Outputs (to plotOutDir, prefixed by plotOutFileName):
   <name>_expressed.tsv    wide: seed, generation, then one column per gene
                           (header = gene_id) = 1 if the gene had >= 1 completed
                           transcript that generation, else 0. One row per
-                          successful-lineage (seed, generation).
+                          successful-seed (seed, generation).
   <name>_synth_count.tsv  same shape/row order as _expressed.tsv, but each gene
                           column holds the raw completed-transcript count S(c,g).
-  <name>_metrics.tsv  per-gene summary across successful lineages/generations:
+  <name>_metrics.tsv  per-gene summary across successful seeds/generations:
                       n_generations, n_generations_expressed, frac_expressed,
                       n_seeds, n_seeds_ever_expressed.
   <name>_per_generation_summary.tsv  per (seed, generation): n_genes_expressed,
                       n_genes_total, frac_genes_expressed.
+
+"Expressed" here is subgen definition 4 -- at least one completed transcript in that
+generation -- not Definition 5. 
 """
 
 import csv
@@ -30,7 +33,7 @@ import os
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -47,7 +50,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			gene_to_cistron = dict(zip(gene_ids_key, cistron_ids))
 			cistron_ids = [gene_to_cistron.get(g, '') for g in gene_ids]
 
-		# Restrict to strict-successful lineages.
+		# Restrict to strict-successful seeds.
 		mask = is_successful
 		n_total_cells = len(seeds)
 		seeds = seeds[mask]
@@ -57,7 +60,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		print('Successful cells: %d / %d ; genes: %d'
 			% (n_cells, n_total_cells, n_genes))
 		if n_cells == 0:
-			print('No successful-lineage cells found. Skipping.')
+			print('No successful-seed cells found. Skipping.')
 			return
 
 		expressed = synth > 0  # (n_cells, n_genes) bool
@@ -83,7 +86,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		sc.write_per_cell_matrix(synth_path, meta_header, meta_rows,
 			gene_ids, synth, value_fmt=None)
 
-		#  Per-gene metrics across successful lineages/generations 
+		#  Per-gene metrics across successful seeds/generations 
 		n_gens_expressed = expressed.sum(axis=0)             # over all cells
 		frac_expressed = n_gens_expressed / n_cells
 		# Per-seed "ever expressed": did the gene fire in >=1 gen of that seed?

@@ -6,33 +6,36 @@ out of protein, because long protein half-lives let a cell carry inherited prote
 through a generation that fails to transcribe. For each subgen gene it plots how
 sub-generationally it is transcribed against how often its protein is absent.
 
-Both axes are per-lineage *rates* aggregated to a 95% CI (the def-5 estimator), so
+Both axes are per-seed *rates* aggregated to a 95% CI (the def-5 estimator), so
 they are directly comparable and scale honestly with more seeds:
 
   y  protein-absence rate  = expected fraction of cell-cycle TIME with zero protein
-      copies. Estimated per cell cycle (time-weighted), averaged within a lineage,
-      then averaged across lineages. Read as: freeze a random cell at a random
+      copies. Estimated per cell cycle (time-weighted), averaged within a seed,
+      then averaged across seeds. Read as: freeze a random cell at a random
       instant -- chance of seeing zero copies. Source: the extractor's
-      `_frac_protein_zero_per_cell.tsv` (see subgen_raw_extract.py).
+      `_frac_protein_zero_per_cell.tsv` (see subgen_extract.py).
   x1 transcript-off frequency = fraction of generations with zero completed
       transcripts (same units as y, so the y = x diagonal reads as "memory").
   x2 def-5 rate = mean completed transcripts per generation (log x-axis).
       Both x from `_synth_per_cell.tsv`.
 
-The independent replicate is the lineage (cells within a lineage share inherited
-protein), so every rate is estimated per lineage and CIs come from the spread
-across lineages -- never by pooling cells and never by counting "ever/never absent"
+The independent replicate is the seed (cells within a seed share inherited
+protein), so every rate is estimated per seed and CIs come from the spread
+across seeds -- never by pooling cells and never by counting "ever/never absent"
 genes (that count would drift with sample size like presence-frequency-at-1).
 
 Inputs
 ------
   frac_zero.tsv : `_frac_protein_zero_per_cell.tsv` -- wide, `seed`, `generation`,
-      `is_successful_lineage` + one column per gene (fraction of cycle at zero).
+      `is_successful_seed` + one column per gene (fraction of cycle at zero).
   synth.tsv     : `_synth_per_cell.tsv` -- same layout, completed transcripts per
       generation.
   genes.tsv     : `_genes.tsv` -- gene_id, cistron_id, monomer_id (column key).
   pergene.tsv   : def-5 per-gene table; genes with category == subgen define the
       gene set (matched on gene_id).
+
+The gene set is always DEFINITION 5 in its CI form --category selects a different
+label from that same classification; no other definition is used here.
 
 Usage
 -----
@@ -55,30 +58,30 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_helper_functions` importable even
 # when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
-# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# subgen_helper_functions is imported, and it keeps its `wholecell` imports lazy, so this
 # script still needs nothing beyond numpy + matplotlib.
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 	os.path.dirname(os.path.abspath(__file__))))))
 if _REPO_ROOT not in sys.path:
 	sys.path.insert(0, _REPO_ROOT)
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 
 
 ACCENT = '#1667B8'      # single blue accent (matches the other subgen figures)
 MEAN = '#E8A33D'        # amber reference line
 INK = '#1b2530'
 MUTED = '#5b6672'
-CI_Z = 1.96             # 95% CI from the SE (normal approx; matches subgen_common)
-N_META = 3              # seed, generation, is_successful_lineage
+CI_Z = 1.96             # 95% CI from the SE (normal approx; matches subgen_helper_functions)
+N_META = 3              # seed, generation, is_successful_seed
 COMMA = FuncFormatter(lambda x, _: '{:,.0f}'.format(x))
 
 
 # ------------------------------------------------------------------ loading
 
 def load_per_cell(path):
-	"""Load a wide per-cell matrix (seed, generation, is_successful_lineage +
+	"""Load a wide per-cell matrix (seed, generation, is_successful_seed +
 	one column per gene). Returns (seeds, gens, is_succ, gene_ids, M) with M a
 	float array [n_cells, n_genes]."""
 	with open(path) as f:
@@ -108,21 +111,21 @@ def load_subgen_gene_ids(path, category='subgen'):
 
 # ------------------------------------------------------------------ statistics
 
-def per_lineage_means(values, seeds):
-	"""Mean of `values` (n_cells x n_genes) within each lineage (seed).
+def per_seed_means(values, seeds):
+	"""Mean of `values` (n_cells x n_genes) within each seed.
 
-	Returns (lineage_ids, L) with L an [n_lineages, n_genes] array of per-lineage
-	means -- each lineage contributes one unweighted data point per gene."""
-	lineage_ids = np.unique(seeds)
-	L = np.empty((lineage_ids.size, values.shape[1]), dtype=np.float64)
-	for i, s in enumerate(lineage_ids):
+	Returns (seed_ids, L) with L an [n_seeds, n_genes] array of per-seed
+	means -- each seed contributes one unweighted data point per gene."""
+	seed_ids = np.unique(seeds)
+	L = np.empty((seed_ids.size, values.shape[1]), dtype=np.float64)
+	for i, s in enumerate(seed_ids):
 		L[i] = values[seeds == s].mean(axis=0)
-	return lineage_ids, L
+	return seed_ids, L
 
 
 def summarize(L):
-	"""Across-lineage mean, std, SE and 95% CI for an [n_lineages, n_genes]
-	matrix of per-lineage estimates."""
+	"""Across-seed mean, std, SE and 95% CI for an [n_seeds, n_genes]
+	matrix of per-seed estimates."""
 	n = L.shape[0]
 	mean = L.mean(axis=0)
 	std = L.std(axis=0, ddof=1) if n > 1 else np.zeros(L.shape[1])
@@ -243,16 +246,16 @@ def figure_binned(x_off, y, out_dir, n_bins=10):
 
 # ------------------------------------------------------------------ output
 
-def write_pergene(path, gene_ids, cistron_ids, n_lineages, y, x_off, x_rate):
+def write_pergene(path, gene_ids, cistron_ids, n_seeds, y, x_off, x_rate):
 	with open(path, 'w') as f:
 		w = csv.writer(f, delimiter='\t')
-		cols = ['gene_id', 'cistron_id', 'n_lineages']
+		cols = ['gene_id', 'cistron_id', 'n_seeds']
 		for tag in ('protein_zero_frac', 'transcript_off_freq', 'def5_rate'):
 			cols += ['%s_mean' % tag, '%s_se' % tag,
 				'%s_ci_lower' % tag, '%s_ci_upper' % tag]
 		w.writerow(cols)
 		for i, g in enumerate(gene_ids):
-			row = [g, cistron_ids.get(g, ''), n_lineages]
+			row = [g, cistron_ids.get(g, ''), n_seeds]
 			for s in (y, x_off, x_rate):
 				row += ['%.6g' % s['mean'][i], '%.6g' % s['se'][i],
 					'%.6g' % s['ci_lower'][i], '%.6g' % s['ci_upper'][i]]
@@ -286,7 +289,7 @@ def main():
 		raise ValueError('frac_zero and synth are not row-aligned '
 			'(same extraction run required)')
 
-	# Restrict to successful lineages, then to the subgen gene set.
+	# Restrict to successful seeds, then to the subgen gene set.
 	keep = succ_z == 1
 	seeds = seeds_z[keep]
 	fz = fz[keep]
@@ -305,23 +308,23 @@ def main():
 	print('cells (successful) = %d, subgen genes = %d (%d in set not in matrix)'
 		% (fz.shape[0], len(sub_idx), n_missing))
 
-	# Per lineage, then across lineages, for each axis.
-	lineage_ids, L_y = per_lineage_means(fz, seeds)
-	_, L_xoff = per_lineage_means((synth == 0).astype(np.float64), seeds)
-	_, L_xrate = per_lineage_means(synth, seeds)
+	# Per seed, then across seeds, for each axis.
+	seed_ids, L_y = per_seed_means(fz, seeds)
+	_, L_xoff = per_seed_means((synth == 0).astype(np.float64), seeds)
+	_, L_xrate = per_seed_means(synth, seeds)
 	y = summarize(L_y)
 	x_off = summarize(L_xoff)
 	x_rate = summarize(L_xrate)
-	n_lineages = lineage_ids.size
-	print('lineages = %d; protein-absence rate mean %.3f (range %.3f-%.3f)'
-		% (n_lineages, y['mean'].mean(), y['mean'].min(), y['mean'].max()))
+	n_seeds = seed_ids.size
+	print('seeds = %d; protein-absence rate mean %.3f (range %.3f-%.3f)'
+		% (n_seeds, y['mean'].mean(), y['mean'].min(), y['mean'].max()))
 	below = np.mean(y['mean'] < x_off['mean'])
 	print('fraction of subgen genes below the y=x diagonal (memory): %.1f%%'
 		% (100 * below))
 
 	write_pergene(
 		os.path.join(args.output_dir, 'subgen_protein_memory_pergene.tsv'),
-		sub_gene_ids, cistron_by_gene, n_lineages, y, x_off, x_rate)
+		sub_gene_ids, cistron_by_gene, n_seeds, y, x_off, x_rate)
 	figure_vs_transcript_off(x_off, y, args.output_dir, args.error_bars)
 	figure_vs_def5_rate(x_rate, y, args.output_dir, args.error_bars)
 	figure_binned(x_off, y, args.output_dir)
@@ -332,7 +335,7 @@ def main():
 			'inputs': {'frac_zero': args.frac_zero, 'synth': args.synth,
 				'genes': args.genes, 'pergene': args.pergene,
 				'category': args.category},
-			'n_lineages': int(n_lineages),
+			'n_seeds': int(n_seeds),
 			'n_subgen_genes': len(sub_idx),
 			'n_missing_from_matrix': int(n_missing),
 			'n_successful_cells': int(fz.shape[0]),

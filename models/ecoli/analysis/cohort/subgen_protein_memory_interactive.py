@@ -13,7 +13,7 @@ protein's translation efficiency and degradation rate from sim_data, then:
     OPPOSITE of memory) -- testing whether they are explained by short protein
     half-life (fast degradation) and/or low translation efficiency.
 
-Axes (both per-lineage rates, from subgen_protein_memory_pergene.tsv):
+Axes (both per-seed rates, from subgen_protein_memory_pergene.tsv):
   x = transcript-off frequency (fraction of cell cycles with 0 completed transcripts)
   y = protein-absence rate (fraction of cell-cycle time with 0 protein copies)
   memory_gap = x - y  (positive = memory: protein present more often than transcribed)

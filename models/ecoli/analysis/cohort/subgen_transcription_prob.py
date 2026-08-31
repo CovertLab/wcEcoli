@@ -1,5 +1,13 @@
 """
-Template for cohort analysis plots
+Per-gene probability that a gene has an mRNA present in a generation.
+
+Restricted to strict-successful seeds: for each gene, the number of sampled
+cell-generations with at least one mRNA copy divided by the total number of
+cell-generations sampled.
+
+This is a presence probability, NOT Definition 5, so its numbers are not
+comparable to the def5_CI tables. It also counts mRNA presence rather than
+completed transcripts, so it does not account for attenuation
 """
 
 import pickle
@@ -14,7 +22,7 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -23,7 +31,7 @@ from wholecell.containers.bulk_objects_container import BulkObjectsContainer
 
 IGNORE_FIRST_N_GENS = sc.IGNORE_FIRST_N_GENS
 SEED_RANGE = sc.SEED_RANGE
-BATCH_SIZE = 100  # Process cells in batches to avoid memory issues
+BATCH_SIZE = 100  
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
     def do_plot(self, variantDir, plotOutDir, plotOutFileName, simDataFile, validationDataFile, metadata):
@@ -45,15 +53,14 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
             generation=np.arange(IGNORE_FIRST_N_GENS, self.ap.n_generation),seed=SEED_RANGE,
             only_successful=True)
 
-        # Restrict to strict-successful lineages (completed every generation and
-        # no cell at the 180-min doubling cap).
-        success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+        # Restrict to strict-successful seeds 
+        success = sc.compute_seed_success(self.ap, self.ap.n_generation)
         cell_paths = sc.filter_cells_to_successful(
             cell_paths, success['successful_seeds'])
 
-        print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+        print('Analyzing %d cells from successful seeds...' % len(cell_paths))
         if len(cell_paths) == 0:
-            print('No successful-lineage cells found. Skipping.')
+            print('No successful-seed cells found. Skipping.')
             return
 
         # There are 4346 mRNA ids with counts

@@ -3,27 +3,25 @@ Shared helpers for the subgenerational-expression analyses.
 
 This module is NOT an analysis Plot (it has no `Plot` class and is not listed in
 `__init__.py`), so the analysis runner never imports or runs it directly. It
-consolidates logic that was previously duplicated across
-`subgen_expression_definitions.py` and `subgen_definition5_lineage_ci.py`, it
-provides:
+consolidates logic providing:
 
   * the gene set (protein-coding mRNA cistrons, in cistron order),
-  * the STRICT "successful lineage" filter (completed every generation AND no
+  * the STRICT "successful seed" filter (completed every generation AND no
     cell hit the 180-min doubling cap),
-  * THE Definition-5 classifier: classify_def5_ci / canonical_def5_classification,
+  * THE Definition-5 classifier: classify_def5_ci
   * readers for a per-gene def-5 table (load_def5_categories),
   * curated monomer panels, run-metadata provenance, subsampling, and small TSV
     IO helpers for the raw-extraction pipeline.
 
 Definition 5 is the mean number of *completed* mRNA transcripts per generation,
 per gene, read from TranscriptElongationListener/countRnaCistronSynthesized. The more strict definiton 
-includes using CI if the gene falls in the 95% CI interval of its per-lineage rate lies entirely below 1 transcript per generation 
+includes using CI if the gene falls in the 95% CI interval of its per-seed rate lies entirely below 1 transcript per generation 
 
 
 The pooled cell-weighted mean (`pooled_mean`) is
 reported alongside as a descriptive statistic, but a point estimate compared
 against 1 is a diagnostic and must never be used to label genes: on sim set 1 the
-per-lineage point estimate called 1652-1687 genes subgen where the CI rule calls
+per-seed point estimate called 1652-1687 genes subgen where the CI rule calls
 1859, and inflated `never_expressed` from 135 to ~330.
 """
 
@@ -47,23 +45,16 @@ def _constants():
 
 
 # Shared constants 
-
 IGNORE_FIRST_N_GENS = 8
-
 N_SEEDS = 128
 SEED_RANGE = np.arange(0, N_SEEDS)
 MAX_DOUBLING_MIN = 180.0 # mins
 DOUBLING_AT_MAX_TOL = 0.01  
 # treat >= 179.99 min as "hit the cap"
-
 CI_Z = 1.96
 CONFIDENCE = 0.95
-
 SYNTH_TABLE = 'TranscriptElongationListener'
 SYNTH_COLUMN = 'countRnaCistronSynthesized'
-
-# Definition-5 categories and a validated categorical palette (dataviz
-# validator, light + dark). Grey is the neutral null category.
 CATEGORIES = ['subgen', 'possibly_subgen', 'not_subgen', 'never_expressed']
 PALETTE = {
 	'subgen': '#1667B8',
@@ -77,29 +68,28 @@ CAT_LABEL = {
 	'not_subgen': 'Not subgen (CI > 1)',
 	'never_expressed': 'Never expressed (mean = 0)',
 	}
-# Neutral figure colors (shared by the def-5 figure scripts).
+# Neutral figure colors 
 INK = '#1b2530'
 MUTED = '#5b6672'
 GRID = '#e4e8ec'
 SURF = '#fcfcfb'
 
-# pseudo-single-cell timepoints the subsample scripts aim to draw across the
-# whole cohort. 
+# pseudo-single-cell timepoints the subsample scripts aim to draw across the whole cohort. 
 TIMEPOINTS_TO_SAMPLE = 10000
 
-def sample_per_seed(n_lineages, total=None):
-	"""Per-lineage timepoint draw for the subsample scripts.
+def sample_per_seed(n_seeds, total=None):
+	"""Per-seed timepoint draw for the subsample scripts.
 
-	Divides the cohort-wide budget by the number of lineages ACTUALLY sampled, not
+	Divides the cohort-wide budget by the number of seeds ACTUALLY sampled, not
 	by len(SEED_RANGE). 
 	"""
 	total = TIMEPOINTS_TO_SAMPLE if total is None else total
-	if n_lineages <= 0:
+	if n_seeds <= 0:
 		return 0
-	return max(1, int(total // n_lineages))
+	return max(1, int(total // n_seeds))
 
 
-# Hand-picked subgen genes that strains were made out of The genes are used by subgen_peak_counts.py and protein_distribution.py.
+# Hand-picked subgen genes that strains were made out of The genes are used by subgen_peak_counts.py and subgen_protein_distribution.py.
 
 PANEL_CURATED10 = [
 	'GLYCDEH-MONOMER[c]',        # gldA
@@ -213,7 +203,6 @@ def curated_panel(name):
 
 
 # path helpers 
-
 def parse_cell_id(cell_path):
 	"""Split a cell path into (seed_int, generation_int).
 
@@ -284,13 +273,9 @@ def write_run_metadata(path, script, parameters, sim_metadata_path=None,
 	"""Write a subgen run_metadata.json with the standard metadata layout.
 
 	`script` is the analysis module's filename, `parameters` its run parameters,
-	and `extra` any additional top-level blocks (e.g. `lineages`, `cells`,
+	and `extra` any additional top-level blocks (e.g. `seeds`, `cells`,
 	`category_counts`) merged in as-is. The git block is read from this module's
 	repository, and `run_time` defaults to now.
-
-	Every subgen script previously hand-rolled this JSON, duplicating the 8-key
-	`simulation` block and the analysis header verbatim; keep new scripts on this
-	helper so metadata stays comparable across the whole family.
 	"""
 	repo_dir = os.path.dirname(os.path.abspath(__file__))
 	meta = {
@@ -312,7 +297,6 @@ def write_run_metadata(path, script, parameters, sim_metadata_path=None,
 
 
 #  Gene set 
-
 def get_mrna_gene_set(sim_data):
 	"""protein-coding mRNA cistrons, in cistron order.
 
@@ -355,12 +339,11 @@ def cistron_index_map(cell_path, table, ids):
 		return False, None
 
 
-#  Strict "successful lineage" filter
+#  Strict "successful seed" filter
+def compute_seed_success(ap, n_generation, total_init_sims=None):
 
-def compute_lineage_success(ap, n_generation, total_init_sims=None):
 
-
-	"""A lineage (seed) is "successful" if it completed EVERY generation AND no
+	"""A seed is "successful" if it completed EVERY generation AND no
 	cell hit the 180-minute doubling cap. 
 
 	Returns a dict with:
@@ -431,7 +414,6 @@ def filter_cells_to_successful(cell_paths, successful_seeds):
 
 
 # Definition-5 classifiers 
-
 def _classify_ci(mean, ci_low, ci_high):
 	"""Assign each gene to a Def-5 category from its mean and CI (def5_CI)."""
 	n = len(mean)
@@ -449,10 +431,10 @@ def _classify_ci(mean, ci_low, ci_high):
 
 
 def classify_def5_ci(lambda_matrix, row_indices, n_genes):
-	"""def5_CI: per-gene mean/std/se/CI/category over selected lineage rows.
+	"""def5_CI: per-gene mean/std/se/CI/category over selected seed rows.
 
-	`lambda_matrix` is (n_lineages, n_genes) of per-lineage Def-5 rates.
-	`row_indices` selects which lineage rows to include (e.g. successful ones).
+	`lambda_matrix` is (n_seeds, n_genes) of per-seed Def-5 rates.
+	`row_indices` selects which seed rows to include (e.g. successful ones).
 	The 95% CI is the normal-approx SE of the mean; a gene is `subgen` if its
 	CI upper bound is below 1 completed transcript per generation.
 	"""
@@ -473,18 +455,18 @@ def category_counts(cat):
 	return {c: int(np.sum(cat == c)) for c in CATEGORIES}
 
 
-def build_lineage_lambda(seeds_arr, synth_matrix, restrict_seeds=None):
-	"""Collapse a per-cell synth matrix to per-lineage Def-5 rates (def5_CI input).
+def build_seed_lambda(seeds_arr, synth_matrix, restrict_seeds=None):
+	"""Collapse a per-cell synth matrix to per-seed Def-5 rates (def5_CI input).
 
 	`seeds_arr` is (n_cells,) of seed ints; `synth_matrix` is (n_cells, n_genes)
 	of completed-transcript counts per cell (already burned-in). For each seed,
-	the lineage rate is the mean over that seed's cells. Returns
-	(lambda_matrix (n_lineages, n_genes), lineage_seeds list).
+	the seed rate is the mean over that seed's cells. Returns
+	(lambda_matrix (n_seeds, n_genes), seeds_used list).
 	"""
 	seeds_arr = np.asarray(seeds_arr)
 	unique_seeds = sorted(set(int(s) for s in seeds_arr))
 	rows = []
-	lineage_seeds = []
+	seeds_used = []
 	for s in unique_seeds:
 		if restrict_seeds is not None and s not in restrict_seeds:
 			continue
@@ -492,10 +474,10 @@ def build_lineage_lambda(seeds_arr, synth_matrix, restrict_seeds=None):
 		if not mask.any():
 			continue
 		rows.append(synth_matrix[mask].mean(axis=0))
-		lineage_seeds.append(s)
+		seeds_used.append(s)
 	lambda_matrix = np.array(rows) if rows \
 		else np.zeros((0, synth_matrix.shape[1]))
-	return lambda_matrix, lineage_seeds
+	return lambda_matrix, seeds_used
 
 
 def pooled_mean(synth_matrix, row_mask=None):
@@ -508,9 +490,8 @@ def pooled_mean(synth_matrix, row_mask=None):
 
 
 # Timepoint-subsampling helpers
-
 def subsample_seed_timepoints(cell_paths_per_seed, sample_per_seed):
-	"""randomly select timepoints in a selected lineage to pool randomly selected data.
+	"""randomly select timepoints in a selected seed to pool randomly selected data.
 	currently using np.random.seed(0) so it is reproducible 
 
 
@@ -534,7 +515,7 @@ def subsample_seed_timepoints(cell_paths_per_seed, sample_per_seed):
 	steps = time[idx]
 	# side='right' minus 1 -> the cell whose start time is <= the sample time,
 	# i.e. the generation containing that timestep (time is monotonic across a
-	# lineage, and gen_starts is increasing).
+	# seed, and gen_starts is increasing).
 	gen_index = np.clip(
 		np.searchsorted(gen_starts, steps, side='right') - 1, 0, None)
 	return {
@@ -600,30 +581,30 @@ def read_per_cell_matrix(path, n_meta):
 
 
 # harcdcoded output names so that they can be found later by downstream analysis scripts
-RAW_EXTRACT_BASENAME = 'subgen_raw_extract'
+EXTRACT_BASENAME = 'subgen_extract'
 SYNTH_PER_CELL_SUFFIX = '_synth_per_cell.tsv'
 MAX_MRNA_PER_CELL_SUFFIX = '_max_mrna_per_cell.tsv'
 MAX_PROTEIN_PER_CELL_SUFFIX = '_max_protein_per_cell.tsv'
 FRAC_PROTEIN_ZERO_PER_CELL_SUFFIX = '_frac_protein_zero_per_cell.tsv'
-LINEAGE_SUCCESS_SUFFIX = '_lineage_success.tsv'
+SEED_SUCCESS_SUFFIX = '_seed_success.tsv'
 DOUBLING_TIMES_SUFFIX = '_doubling_times.tsv'
 GENES_SUFFIX = '_genes.tsv'
 # Number of index columns in the per-cell matrices.
-PER_CELL_N_META = 3  # seed, generation, is_successful_lineage
+PER_CELL_N_META = 3  # seed, generation, is_successful_seed
 
 
-def raw_extract_prefix(plot_out_dir):
+def extract_prefix(plot_out_dir):
 	"""Path prefix the raw-extraction writes to (and consumers read from)."""
-	return os.path.join(plot_out_dir, RAW_EXTRACT_BASENAME)
+	return os.path.join(plot_out_dir, EXTRACT_BASENAME)
 
 
 def _require_raw_file(plot_out_dir, suffix):
-	path = raw_extract_prefix(plot_out_dir) + suffix
+	path = extract_prefix(plot_out_dir) + suffix
 	if not os.path.isfile(path):
 		raise FileNotFoundError(
 			'Raw-extraction file not found: %s\nRun the extraction first:\n'
 			'  python runscripts/manual/analysisCohort.py '
-			'--plot subgen_raw_extract.py <sim_dir>' % path)
+			'--plot subgen_extract.py <sim_dir>' % path)
 	return path
 
 
@@ -658,7 +639,7 @@ def load_raw_max(plot_out_dir, which):
 def canonical_def5_classification(plot_out_dir):
 	"""subgen classification (def5_CI) from raw extraction.
 
-	Restricts to strict-successful lineages, collapses to per-lineage Def-5
+	Restricts to strict-successful seeds, collapses to per-seed Def-5
 	rates, and classifies each gene by its 95% CI vs 1 transcript/gen. Also
 	returns def5 (pooled cell-weighted mean over successful cells) and
 	Definition 4 (fraction of successful cells with >= 1 completed transcript).
@@ -669,18 +650,18 @@ def canonical_def5_classification(plot_out_dir):
 	                  the canonical per-gene subgen label
 	  def5            per-gene pooled mean completed transcripts (def5)
 	  p_any_synth     per-gene Definition-4 probability
-	  n_lineages      number of successful lineages used
-	  lineage_seeds   the successful seeds used, in row order
+	  n_seeds      number of successful seeds used
+	  seeds_used   the successful seeds used, in row order
 	  seeds/generations/is_successful/synth  the raw per-cell arrays
 	"""
 	seeds, generations, is_successful, gene_ids, synth = load_raw_synth(
 		plot_out_dir)
 	n_genes = len(gene_ids)
 	successful_seeds = {int(s) for s in seeds[is_successful]}
-	lambda_matrix, lineage_seeds = build_lineage_lambda(
+	lambda_matrix, seeds_used = build_seed_lambda(
 		seeds, synth, restrict_seeds=successful_seeds)
 	stats = classify_def5_ci(
-		lambda_matrix, np.arange(len(lineage_seeds)), n_genes)
+		lambda_matrix, np.arange(len(seeds_used)), n_genes)
 	def5 = pooled_mean(synth, row_mask=is_successful)
 	succ_synth = synth[is_successful]
 	p_any_synth = (succ_synth > 0).mean(axis=0) if succ_synth.shape[0] \
@@ -690,8 +671,8 @@ def canonical_def5_classification(plot_out_dir):
 		'stats': stats,
 		'def5': def5,
 		'p_any_synth': p_any_synth,
-		'n_lineages': len(lineage_seeds),
-		'lineage_seeds': lineage_seeds,
+		'n_seeds': len(seeds_used),
+		'seeds_used': seeds_used,
 		'successful_seeds': successful_seeds,
 		'seeds': seeds,
 		'generations': generations,
@@ -703,11 +684,11 @@ def canonical_def5_classification(plot_out_dir):
 # Reading a per-gene def-5 table back in 
 # The two tables carry the SAME def5_CI classification under different
 # column names, so every reader must accept either spelling:
-#   subgen_definition5_lineage_ci_pergene_*.tsv -> gene_id / cistron_id / category
-#   subgenerational_expression_table_def5.tsv   -> gene_name / cistron_name /
+#   subgen_seed_ci_pergene_*.tsv -> gene_id / cistron_id / category
+#   subgen_expression_table.tsv   -> gene_name / cistron_name /
 #                                                  def5_CI_category
-# (subgenerational_expression_table_def5.py now also emits the first spelling as
-# aliases, but older outputs do not, and the lineage_ci tables never will.)
+# (subgen_expression_table.py now also emits the first spelling as
+# aliases, but older outputs do not, and the seed_ci tables never will.)
 DEF5_GENE_COLUMNS = ('gene_id', 'gene_name')
 DEF5_CISTRON_COLUMNS = ('cistron_id', 'cistron_name')
 DEF5_CATEGORY_COLUMNS = ('category', 'def5_CI_category')
@@ -747,7 +728,7 @@ def load_def5_categories(path, category='subgen'):
 	"""Genes in one def-5 category, from either per-gene table.
 
 	`category` defaults to 'subgen', i.e. the CI-based subgenerational set: a gene
-	whose 95% CI on the per-lineage completed-transcript rate lies entirely below
+	whose 95% CI on the per-seed completed-transcript rate lies entirely below
 	1 transcript/generation. Definition 5 always means the CI form -- a point
 	estimate compared against 1 is a diagnostic, never a classification.
 
@@ -776,15 +757,15 @@ def load_def5_categories(path, category='subgen'):
 		}
 
 
-def load_lineage_success_rows(plot_out_dir):
-	"""Load the raw extraction's lineage table as {seed: {column: value}}.
+def load_seed_success_rows(plot_out_dir):
+	"""Load the raw extraction's seed table as {seed: {column: value}}.
 
 	Column keys are the file's own header names (seed, n_gens_ran,
 	reached_final_gen, completed_all_gens, n_cells_at_180, gens_at_180,
 	max_doubling_min, is_successful); values are the raw strings apart from the
 	int seed key. Returns {} when the file is absent.
 	"""
-	path = raw_extract_prefix(plot_out_dir) + LINEAGE_SUCCESS_SUFFIX
+	path = extract_prefix(plot_out_dir) + SEED_SUCCESS_SUFFIX
 	if not os.path.isfile(path):
 		return {}
 	out = {}

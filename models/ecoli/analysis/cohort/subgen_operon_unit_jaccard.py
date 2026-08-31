@@ -26,6 +26,11 @@ Inputs
   sim_data.cPickle  : SimulationDataEcoli pickle (operons ON) for the cistron->TU
       mapping.
 
+The gene set is always DEFINITION 5 in its CI form: the rows of the per-gene
+table whose `category` is `subgen` (95% CI of the per-seed completed-transcript
+rate entirely below 1 transcript/generation). --category selects a different
+label from that same classification; no other definition is used here.
+
 Usage
 -----
   python subgen_operon_unit_jaccard.py <binary_matrix.tsv> <pergene.tsv> \
@@ -44,15 +49,15 @@ import argparse
 import numpy as np
 import scipy.sparse as sp
 
-# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_helper_functions` importable even
 # when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
-# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# subgen_helper_functions is imported, and it keeps its `wholecell` imports lazy, so this
 # script still needs nothing beyond numpy (+ matplotlib/scipy where used).
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 	os.path.dirname(os.path.abspath(__file__))))))
 if _REPO_ROOT not in sys.path:
 	sys.path.insert(0, _REPO_ROOT)
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 
 
 # ------------------------------------------------------------------ loading

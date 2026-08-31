@@ -45,15 +45,15 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_common` importable even
+# Standalone CLI: make `models.ecoli.analysis.cohort.subgen_helper_functions` importable even
 # when this file is run by path from an arbitrary cwd with no PYTHONPATH set. Only
-# subgen_common is imported, and it keeps its `wholecell` imports lazy, so this
+# subgen_helper_functions is imported, and it keeps its `wholecell` imports lazy, so this
 # script still needs nothing beyond numpy (+ matplotlib/scipy where used).
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 	os.path.dirname(os.path.abspath(__file__))))))
 if _REPO_ROOT not in sys.path:
 	sys.path.insert(0, _REPO_ROOT)
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 
 
 INK = '#1b2530'
@@ -77,7 +77,7 @@ def load_binary_matrix(path):
 	- cells-as-rows (Adrian's `_expressed.tsv`): columns are `seed`, `generation`,
 	  then one per gene (header = gene id); each row is one cell.
 
-	`seeds` is an int array of the lineage seed for each cell (parsed from the
+	`seeds` is an int array of the seed for each cell (parsed from the
 	`seed` column or from `seed<N>_gen<N>` labels), or None if unavailable.
 	"""
 	with open(path) as f:
@@ -106,7 +106,7 @@ def load_binary_matrix(path):
 
 
 def _seeds_from_labels(cell_ids):
-	"""Parse lineage seed from `seed<N>_gen<N>` cell labels, else None."""
+	"""Parse seed from `seed<N>_gen<N>` cell labels, else None."""
 	seeds = []
 	for c in cell_ids:
 		if c.startswith('seed') and '_gen' in c:
@@ -124,8 +124,8 @@ def load_subgen_ids(path, category='subgen'):
 	the matrix can be matched on whichever id it is keyed by.
 
 	Delegates to sc.load_def5_categories, which accepts EITHER canonical per-gene
-	table -- subgen_definition5_lineage_ci_pergene_successful.tsv (gene_id /
-	cistron_id / category) or subgenerational_expression_table_def5.tsv
+	table -- subgen_seed_ci_pergene_successful.tsv (gene_id /
+	cistron_id / category) or subgen_expression_table.tsv
 	(gene_name / cistron_name / def5_CI_category). The two carry the same def5_CI
 	labels, verified gene-for-gene. Previously this read only the first spelling.
 	"""
@@ -371,7 +371,12 @@ def plot_pca(scores, evr, k, path):
 
 def within_between_lineage(B, seeds):
 	"""Mean pairwise Jaccard for cell pairs in the SAME lineage vs DIFFERENT
-	lineages. Higher within-than-between overlap = inherited (lineage) memory."""
+	lineages. Higher within-than-between overlap = inherited (lineage) memory.
+
+	This is the one place the suite still says "lineage" rather than "seed":
+	same lineage IS same seed mechanically, but the claim here is about
+	inherited relatedness (sister/descendant cells), not about a seed index.
+	"""
 	Bi = B.astype(np.int32)
 	inter = Bi.T @ Bi
 	k = np.diag(inter).astype(np.float64)

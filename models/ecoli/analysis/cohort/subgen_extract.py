@@ -1,14 +1,12 @@
 """
 this is the script that does the bulk of data extraction.
-
 reads each cells simOut just once and retain the data used for downstream analysis by other scripts. This should alsways be done first 
-
 From this data we should be able to derive def 5_CI classifiaction with a 95% CI, along with the base subgen definitions 4 and 5 
 
-Outputs are written to plotOutDir under the FIXED basename `subgen_raw_extract`
-(sc.raw_extract_prefix), NOT under plotOutFileName, so consumers can always find
+Outputs are written to plotOutDir under the FIXED basename `subgen_extract`
+(sc.extract_prefix), NOT under plotOutFileName, so consumers can always find
 them regardless of what invoked this script:
-  ..._synth_per_cell.tsv      wide: seed, generation, is_successful_lineage +
+  ..._synth_per_cell.tsv      wide: seed, generation, is_successful_seed +
                               one column per gene = completed transcripts that
                               generation. PRIMARY substrate.
   ..._max_mrna_per_cell.tsv   wide: same index + per-gene max mRNA count.
@@ -16,7 +14,7 @@ them regardless of what invoked this script:
   ..._frac_protein_zero_per_cell.tsv wide: same index + per-gene time-weighted
                               fraction of the generation's cell cycle spent at
                               zero protein copies (the protein-absence rate).
-  ..._lineage_success.tsv     per seed: strict successful-lineage flags.
+  ..._seed_success.tsv     per seed: strict successful-seed flags.
   ..._doubling_times.tsv      per seed: doubling time (min) for each generation,
                               -1 where the generation did not run or was
                               unreadable. Already computed for the strict filter,
@@ -26,7 +24,7 @@ them regardless of what invoked this script:
   ..._run_metadata.json       provenance.
 
 Run this ONCE before the downstream subgenerational plots:
-  python runscripts/manual/analysisCohort.py --plot subgen_raw_extract.py <dir>
+  python runscripts/manual/analysisCohort.py --plot subgen_extract.py <dir>
 """
 
 import csv
@@ -37,7 +35,7 @@ from datetime import datetime
 import numpy as np
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.io.tablereader import TableReader
 
 
@@ -79,18 +77,18 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		sim_metadata_path, sim_metadata = sc.load_sim_metadata(variantDir)
 		total_init_sims = sim_metadata.get('total_init_sims')
-		success = sc.compute_lineage_success(
+		success = sc.compute_seed_success(
 			self.ap, n_generation, total_init_sims=total_init_sims)
 
 		# Write under the fixed raw-extract basename (not plotOutFileName) so the
 		# downstream script can always find these files.
-		prefix = sc.raw_extract_prefix(plotOutDir)
+		prefix = sc.extract_prefix(plotOutDir)
 
 		# Gene metadata / column key (always writable).
 		self._write_genes(prefix + sc.GENES_SUFFIX,
 			gene_ids, mRNA_cistron_ids, monomer_ids)
-		# Lineage-success table (always writable, independent of the def-5 column).
-		self._write_lineage_success(prefix + sc.LINEAGE_SUCCESS_SUFFIX,
+		# Seed-success table (always writable, independent of the def-5 column).
+		self._write_seed_success(prefix + sc.SEED_SUCCESS_SUFFIX,
 			success, n_generation)
 
 		cell_paths = self.ap.get_cells(
@@ -137,7 +135,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			has_synth = False
 			print('WARNING: %s/%s not found in this cohort. The synth matrix '
 				'(and thus Definition 5 / Task 4) cannot be produced; only the '
-				'max-count matrices, gene key, and lineage-success table are '
+				'max-count matrices, gene key, and seed-success table are '
 				'written. Re-run simulations after the listener change.'
 				% (sc.SYNTH_TABLE, sc.SYNTH_COLUMN))
 
@@ -186,7 +184,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			return
 		print('Extracted %d cells.' % len(included))
 
-		meta_header = ['seed', 'generation', 'is_successful_lineage']
+		meta_header = ['seed', 'generation', 'is_successful_seed']
 
 		# Completed-transcript counts per cell (the def-5 / Task-4 substrate).
 		if has_synth:
@@ -211,7 +209,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			value_fmt='%.6g')
 		print('Wrote %s' % (prefix + sc.FRAC_PROTEIN_ZERO_PER_CELL_SUFFIX))
 
-		# compute_lineage_success already walked every cell's Main/time to build the
+		# compute_seed_success already walked every cell's Main/time to build the
 		# strict filter, so persisting the per-generation doubling times here is free
 		# and saves every consumer that walk.
 		self._write_doubling_times(
@@ -232,7 +230,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				w.writerow([g, c, m])
 		print('Wrote %s' % path)
 
-	def _write_lineage_success(self, path, success, n_generation):
+	def _write_seed_success(self, path, success, n_generation):
 		with open(path, 'w') as f:
 			w = csv.writer(f, delimiter='\t')
 			w.writerow(['seed', 'n_gens_ran', 'reached_final_gen',
@@ -252,7 +250,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 	def _write_doubling_times(self, path, success, n_generation):
 		"""Per-seed doubling time for each generation, in minutes (-1 if absent).
 
-		Same layout as subgen_definition5_lineage_ci.py's _doubling_times table, so
+		Same layout as subgen_seed_ci.py's _doubling_times table, so
 		either file can be read interchangeably.
 		"""
 		with open(path, 'w') as f:
@@ -281,7 +279,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			run_time=analysis_run_time,
 			extra={
 				'genes': {'n_genes': n_genes},
-				'lineages': {
+				'seeds': {
 					'n_seeds': len(success['seeds']),
 					'n_successful': len(success['successful_seeds']),
 					'successful_seeds': sorted(success['successful_seeds']),

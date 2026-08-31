@@ -4,7 +4,7 @@ now uses updated def 5 with CI subgen definition
 
 produces the frequency figure 
 
-Reads the pre-computed raw extraction (run subgen_raw_extract.py first).
+Reads the pre-computed raw extraction (run subgen_extract.py first).
 """
 
 import numpy as np
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import exportFigure
 
 
@@ -23,8 +23,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			validationDataFile, metadata):
 		clf = sc.canonical_def5_classification(plotOutDir)
 		stats = clf['stats']
-		if clf['n_lineages'] == 0:
-			print('No successful lineages found. Skipping.')
+		if clf['n_seeds'] == 0:
+			print('No successful seeds found. Skipping.')
 			return
 
 		mean = stats['mean']
@@ -71,8 +71,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		ax_hist.legend(fontsize=8, frameon=False)
 
 		counts = sc.category_counts(cat)
-		fig.suptitle('%d successful lineages | subgen=%d, possibly=%d, not=%d, '
-			'never=%d' % (clf['n_lineages'], counts['subgen'],
+		fig.suptitle('%d successful seeds | subgen=%d, possibly=%d, not=%d, '
+			'never=%d' % (clf['n_seeds'], counts['subgen'],
 			counts['possibly_subgen'], counts['not_subgen'],
 			counts['never_expressed']), fontsize=10)
 		plt.tight_layout(rect=[0, 0, 1, 0.96])

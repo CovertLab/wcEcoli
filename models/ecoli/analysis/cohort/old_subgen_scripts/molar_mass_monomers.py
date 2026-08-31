@@ -17,7 +17,7 @@ import csv
 
 from wholecell.utils import units
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import (exportFigure, stacked_cell_identification,
 	read_bulk_molecule_counts, read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
@@ -41,13 +41,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		print('Analyzing %d cells...' % len(cell_paths))
 
-		# Restrict to strict-successful lineages 
-		success = sc.compute_lineage_success(self.ap, self.ap.n_generation)
+		# Restrict to strict-successful seeds 
+		success = sc.compute_seed_success(self.ap, self.ap.n_generation)
 		cell_paths = sc.filter_cells_to_successful(
 			cell_paths, success['successful_seeds'])
-		print('Analyzing %d cells from successful lineages...' % len(cell_paths))
+		print('Analyzing %d cells from successful seeds...' % len(cell_paths))
 		if len(cell_paths) == 0:
-			print('No successful-lineage cells found. Skipping.')
+			print('No successful-seed cells found. Skipping.')
 			return
 
 		# There are 4346 mRNA ids with counts

@@ -4,7 +4,7 @@ Definition-5 rewrite of subgen_monomer_dynamics.py.
 Plots mRNA and monomer count dynamics (per generation) for subgenerational
 gene using definition5 with CI with the highest subgen ranking
 
-Subgen genes decideded using subgen_raw_extract outputs, time-series traces themselves are read from
+Subgen genes decideded using subgen_extract outputs, time-series traces themselves are read from
 simOut, since dynamics need the full within-generation trace.
 """
 
@@ -17,7 +17,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from models.ecoli.analysis import cohortAnalysisPlot
-from models.ecoli.analysis.cohort import subgen_common as sc
+from models.ecoli.analysis.cohort import subgen_helper_functions as sc
 from wholecell.analysis.analysis_tools import (
 	exportFigure, read_stacked_columns, stacked_cell_identification)
 from wholecell.io.tablereader import TableReader
@@ -35,8 +35,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			sim_data = pickle.load(f)
 
 		clf = sc.canonical_def5_classification(plotOutDir)
-		if clf['n_lineages'] == 0:
-			print('No successful lineages found. Skipping.')
+		if clf['n_seeds'] == 0:
+			print('No successful seeds found. Skipping.')
 			return
 		gene_ids, cistron_ids, monomer_ids = sc.load_raw_genes(plotOutDir)
 		cat = clf['stats']['cat']
