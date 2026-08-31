@@ -341,6 +341,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 fun=lambda x: x[:, [active_rib_idx]]).squeeze().astype(float)
 
         exp_id = metadata.get('description', '?')
+        seed_str = metadata.get('seed', '?')
 
         # Create one figure per TU inputted:
         for tu_full, tu_idx in resolved_tus:
@@ -583,22 +584,24 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax5.set_title(
                 f"RNAP overcrowding | this TU capped {this_tu.sum()}/{this_tu.size} "
                 f"timesteps ({100 * this_tu.mean():.1f}%) | "
-                f"cell-wide renorm {100 * cellwide.mean():.1f}%",
+                f"cell-wide renorm: {100 * cellwide.mean():.1f}%",
                 loc="left")
             ax5.legend(loc="upper right", fontsize=8, framealpha=0.9)
             ax5.set_xlabel("Time (min)")
 
             # ParCa-fit reference numbers (basal_prob + each TF's default delta):
             tf_delta_bits = ", ".join(
-                f"{tf_label(tf)} (default delta_prob={fmt(delta(tf))})"
-                for tf in regulating_tfs) or "No regulating TFs"
+                f"{tf_label(tf)} ({fmt(delta(tf))})"
+                for tf in regulating_tfs) or "No TFs regulate this TU"
             ppgpp_note = (
-                "\nppGpp active → basal_prob & TF deltas rescaled each timestep"
+                "\nppGpp is active, so basal_prob & TF deltas are rescaled each timestep"
                 if ppgpp_on else "ppgpp regulation inactive")
             fig.suptitle(
-                f"{label}\n{exp_id} · {len(gen_end_times)} generation(s) · "
+                f"{label}\n{exp_id} · seed {seed_str} · "
+                f"{len(gen_end_times)} generation(s) · "
                 f"{ppgpp_title}\n"
-                f"ParCa-fit basal_prob={fmt(b0)}; {tf_delta_bits}{ppgpp_note}",
+                f"ParCa-fit basal_prob: {fmt(b0)}\n"
+                f"ParCa-fit TF delta_prob(s): {tf_delta_bits}{ppgpp_note}",
                 fontsize=11, y=0.995)
             fig.tight_layout(rect=(0, 0, 1, 0.985))
 
