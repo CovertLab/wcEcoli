@@ -20,8 +20,20 @@ Panels plotted:
      (typically ranging from 1-2). The stack total can exceed that line since
      one promoter copy can be bound by several TFs at once (distinct sites),
      so note that Σ_TF n_bound is not capped by the copy number.
-  3. Transcript counts: total/full/partial mRNA existance. The title reports
-     the TU's mRNA half-life as well.
+  3. Transcript/molecule counts, branched by RNA type:
+       - mRNA: total/full/partial transcript counts (per-TU). The title
+         reports the TU's mRNA half-life as well.
+       - rRNA: nascent partial (this TU), free mature rRNA (all rRNA), rRNA
+         held in ribosomes (all rRNA). The mature and in-ribosome series are
+         cell-wide pools because RnaMaturation consolidates all rRNA variants
+         into one shared 16S/23S/5S species, so the counts aren't attributable
+         to a single operon/TU (see more info on this below).
+       - tRNA: unprocessed precursor (this TU), mature uncharged, mature
+         charged, summed over the tRNA cistrons this TU encodes. The mature
+         uncharged/charged pools are cell-wide because each matured tRNA is a
+         single bulk-molecule pool shared across the whole cell (and, for some
+         tRNAs, produced by more than one TU), so the count isn't attributable
+         to this operon alone (see more info on this below).
   4. ``max_p``: the per-timestep cap on any single promoter's share of the
      multinomial (the most initiations one promoter can physically fit in a
      timestep, expressed as a fraction of the RNAPs being activated). On the
@@ -41,9 +53,22 @@ with B_ppgpp together — that is why fold repression is invariant to ppGpp. The
 ParCa-fit reference numbers (basal_prob for this TU and each TF's default
 delta_prob) are still shown in the figure title for reference.
 
+Note on stable-RNA (tRNA/rRNA) counts in panel 3:
+Unlike mRNAs (unique molecules with genuine per-TU transcript counts) matured
+tRNAs/rRNAs are bulk molecules held in shared, cell-wide pools. rRNA variants
+are consolidated by the RnaMaturation process into a single 16S/23S/5S species
+used by ribosomal subunits, so an rRNA TU's "mature"/"in-ribosome" counts are
+whole-cell pools, not attributable to that operon. For tRNA, the mature molecule
+keeps its own cistron id (no consolidation), so most tRNA species trace to a
+single TU, but the count is still the cell-wide pool of that species. Only the
+nascent (partial) and unprocessed-precursor stages are truly per-TU. Panel 3
+labels each series accordingly; the mature/in-ribosome means are on a much
+larger scale than the nascent/precursor series, so a twin axis is used.
+
 # TODOs:
-- add the availablity to plot tRNA and rRNA (have the mature vs immature tRNA counts shown instead
-of full/partial/etc.) in panel 3
+- random, but figure out if it is ok that partial tRNA do not appear to be
+counted anywhere while rRNA do?
+- consider changing the axis sharing methodology in panel 3 for rRNAs and tRNAs
 """
 
 import os
@@ -53,13 +78,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from models.ecoli.analysis import multigenAnalysisPlot
-from wholecell.analysis.analysis_tools import exportFigure, read_stacked_columns
+from wholecell.analysis.analysis_tools import (
+    exportFigure, read_stacked_columns, read_stacked_bulk_molecules)
 from wholecell.io.tablereader import TableReader
 from wholecell.utils import units
 
 # USER INPUTS
 # List the TU(s) to be plotted (with or without compartment tag):
-TU_IDS = ["TU103[c]", "TU355[c]"]
+TU_IDS = ["TU103[c]", "TU00415[c]", "TU0-1181[c]", "TU0-13035[c]", "TU00507",
+          "TU0-13001[c]", "TU0-1182[c]"]
 
 # Short names for TFs to be used in the figure legend (otherwise the raw TF id
 # is used, see tf_condition.tsv for the full list of TFs in the model):
@@ -153,6 +180,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         def fmt(x):
             return "0" if abs(x) < 1e-30 else f"{x:.2e}"
 
+        def favg(series):
+            # mean of a time series, formatted with magnitude-appropriate
+            # precision, for the panel-3 legend labels
+            m = float(np.nanmean(series))
+            if abs(m) >= 100:
+                return f"{m:.0f}"
+            if abs(m) >= 1:
+                return f"{m:.1f}"
+            return f"{m:.2f}"
+
         # Build the time axis + generation boundaries:
         time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
         t_min = time / 60.0
@@ -195,9 +232,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             cell_paths, 'RnaSynthProb', 'n_bound_TF_per_TU',
             fun=lambda x: x[:, nbound_cols])
 
-        # RNA counts: only the resolved TUs that are mRNAs (have a count column):
-        # TODO (mia): for tRNA and rRNA, make this plot the mature vs immature
-        #  counts, or the # in ribosomes etc.
+        # mRNA transcript counts: only the resolved TUs that are mRNAs (have a
+        # count column). tRNA/rRNA counts are handled separately below.
         count_cols = []
         count_pos = {}
         for tu_full, _ in resolved_tus:
@@ -214,6 +250,95 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             partial_all = read_stacked_columns(
                 cell_paths, 'RNACounts', 'partial_mRNA_counts',
                 fun=lambda x: x[:, count_cols])
+
+        # Stable-RNA (tRNA/rRNA) count sources for panel 3
+        # RnaSynthProb rnaIds are aligned with transcription.rna_data, so a TU's
+        # index (tu_idx) indexes the type flags directly. Unlike mRNAs (unique
+        # molecules with per-TU transcript counts), matured tRNA/rRNA live as
+        # bulk molecules in shared, cell-wide pools (rRNA variants are even
+        # consolidated into a single 16S/23S/5S species), so their "mature" and
+        # "in-ribosome" counts are not attributable to a single TU. Only the
+        # nascent/unprocessed-precursor stages remain per-TU.
+        rna_data = trans.rna_data
+        cistron_ids = list(trans.cistron_data['id'])
+        cistron_is_tRNA = np.asarray(trans.cistron_data['is_tRNA'])
+        ctu = trans.cistron_tu_mapping_matrix  # (n_cistron, n_TU)
+        uncharged_names = list(trans.uncharged_trna_names)
+        charged_names = list(trans.charged_trna_names)
+        uncharged_pos = {n: i for i, n in enumerate(uncharged_names)}
+
+        # rRNA mature/ribosome species (cell-wide, consolidated pools):
+        mg = sim_data.molecule_groups
+        mi = sim_data.molecule_ids
+        rrna_16s_ids = list(mg.s30_16s_rRNA)
+        rrna_23s_ids = list(mg.s50_23s_rRNA)
+        rrna_5s_ids = list(mg.s50_5s_rRNA)
+        s30_id = mi.s30_full_complex
+        s50_id = mi.s50_full_complex
+
+        def trna_species_for_tu(ti):
+            # mature uncharged/charged bulk ids for the tRNA cistrons in this TU
+            col = np.asarray(ctu[:, ti].todense()).ravel()
+            unids, chids = [], []
+            for c in np.nonzero(col)[0]:
+                if not cistron_is_tRNA[c]:
+                    continue
+                key = f"{cistron_ids[c]}[c]"
+                if key in uncharged_pos:
+                    unids.append(key)
+                    chids.append(charged_names[uncharged_pos[key]])
+            return unids, chids
+
+        # Gather every bulk molecule id needed across the resolved TUs, so they
+        # can be read in a single pass and indexed per TU below:
+        trna_species = {}   # tu_full -> (uncharged_ids, charged_ids)
+        precursor_id = {}   # tu_full -> unprocessed-precursor bulk id
+        any_rRNA = False
+        bulk_ids_needed = set()
+        for tu_full, ti in resolved_tus:
+            if rna_data['is_unprocessed'][ti]:
+                precursor_id[tu_full] = tu_full
+                bulk_ids_needed.add(tu_full)
+            if rna_data['is_tRNA'][ti]:
+                unids, chids = trna_species_for_tu(ti)
+                trna_species[tu_full] = (unids, chids)
+                bulk_ids_needed.update(unids)
+                bulk_ids_needed.update(chids)
+            if rna_data['is_rRNA'][ti]:
+                any_rRNA = True
+        if any_rRNA:
+            bulk_ids_needed.update(rrna_16s_ids)
+            bulk_ids_needed.update(rrna_23s_ids)
+            bulk_ids_needed.update(rrna_5s_ids)
+            bulk_ids_needed.update([s30_id, s50_id])
+
+        bulk_ids_needed = sorted(bulk_ids_needed)
+        bulk_col = {name: i for i, name in enumerate(bulk_ids_needed)}
+        if bulk_ids_needed:
+            bulk_counts = read_stacked_bulk_molecules(
+                cell_paths, (bulk_ids_needed,))[0].astype(float)
+            if bulk_counts.ndim == 1:
+                bulk_counts = bulk_counts[:, np.newaxis]
+        else:
+            bulk_counts = np.zeros((t_min.size, 0))
+
+        def bulk_sum(ids):
+            if not ids:
+                return np.zeros_like(t_min, dtype=float)
+            return bulk_counts[:, [bulk_col[i] for i in ids]].sum(axis=1)
+
+        # rRNA nascent (partial) per-TU counts + active-ribosome counts:
+        if any_rRNA:
+            rrna_ids_attr = list(rc.readAttribute('rRNA_ids'))
+            rrna_partial_all = read_stacked_columns(
+                cell_paths, 'RNACounts', 'partial_rRNA_counts').astype(float)
+            rrna_partial_col = {r: i for i, r in enumerate(rrna_ids_attr)}
+            umc = TableReader(os.path.join(sim_out_dir, 'UniqueMoleculeCounts'))
+            unique_ids = list(umc.readAttribute('uniqueMoleculeIds'))
+            active_rib_idx = unique_ids.index('active_ribosome')
+            active_ribosome = read_stacked_columns(
+                cell_paths, 'UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+                fun=lambda x: x[:, [active_rib_idx]]).squeeze().astype(float)
 
         exp_id = metadata.get('description', '?')
 
@@ -251,8 +376,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 for tf in regulating_tfs}
             have_binding = len(regulating_tfs) > 0
 
-            # obtain transcript counts (only if this TU is an mRNA):
-            # TODO (mia): expand to tRNA and rRNA here too
+            # obtain mRNA transcript counts (only if this TU is an mRNA):
             have_counts = tu_full in count_pos
             if have_counts:
                 ci = count_pos[tu_full]
@@ -276,10 +400,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.plot(t_min, actual, color="#1f77b4", lw=1, alpha=0.2,
                      label="actual synth prob")
             ax1.set_ylabel("synth prob")
+
+            # Calculate avg. absolute deviation of actual from target over the sim
+            # (how much the multinomial capping/renorm pushed this TU off target):
+            mean_abs_dev = np.nanmean(np.abs(actual - target))
             ax1.set_title(
                 f"RNA synthesis probability  "
                 f"(mean target={np.nanmean(target):.2e}, "
-                f"mean actual={np.nanmean(actual):.2e})",
+                f"mean actual={np.nanmean(actual):.2e}, "
+                f"mean |actual−target|={mean_abs_dev:.2e})",
                 loc="left")
             ax1.set_ylim(bottom=0)
             ax1.legend(loc="upper right", fontsize=8, framealpha=0.9)
@@ -300,11 +429,47 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                          label="promoter copies available (max)")
                 ax2.legend(loc="upper right", fontsize=8, framealpha=0.9)
             ax2.set_ylabel("# promoters bound")
-            ax2.set_title("Promoters bound per TF (stacked)", loc="left")
+            # Per-TF occupancy over the whole sim, matching the scatter hover
+            # stat (see
+            # models/ecoli/analysis/comparison/rna_synth_prob_comparison_plotly.py):
+            # the ratio of the two time-means (mean n_bound over mean
+            # promoter copies), i.e. the fraction of available promoter-copy
+            # opportunities this TF occupied, shown as "bound/copies (pct%)".
+            #
+            if have_binding:
+                copies_mean = float(np.mean(copies))
+                occ_bits = []
+                for tf in regulating_tfs:
+                    bound_mean = float(np.mean(nbound[tf]))
+                    if copies_mean > 0:
+                        occ = (f"{tf_label(tf)} {bound_mean:.2f}/{copies_mean:.2f} "
+                               f"({100.0 * bound_mean / copies_mean:.0f}%)")
+                    else:
+                        occ = f"{tf_label(tf)} {bound_mean:.2f}/N/A"
+                    occ_bits.append(occ)
+                occ_txt = "; ".join(occ_bits)
+            else:
+                occ_txt = "no regulating TFs"
+            ax2.set_title(
+                f"Promoters bound per TF | occupancy "
+                f"(avg. bound/avg. available promoter copies): {occ_txt}",
+                loc="left")
             ax2.set_ylim(bottom=0)
 
-            # panel 3: transcript counts
+            # panel 3: transcript/molecule counts (structure based on RNA type)
+            # mRNA is per-TU, tRNA/rRNA mature & in-ribosome/charged tRNA
+            # series are shared cell-wide pools (see docstring), with only the
+            # nascent/unprocessed-precursor stage attributable to this TU.
+            is_rrna = bool(rna_data['is_rRNA'][tu_idx])
+            is_trna = bool(rna_data['is_tRNA'][tu_idx])
+            # For tRNA/rRNA the counts span ~3 orders of magnitude, so the
+            # panel uses a right-hand twin axis (ax3_twin). Series are grouped by
+            # magnitude, not scope, so every line is visible: the dominant
+            # reservoir (rRNA-in-ribosomes / charged tRNA) sits alone on the
+            # right axis, and the smaller pools share the left axis.
+            ax3_twin = None
             if have_counts:
+                # mRNA: per-TU total / full / partial transcript counts
                 for series, color, ls, tag in [
                     (total_c, "#2c782c", "-", "total"),
                     (full_c, "#1f77b4", "--", "full"),
@@ -312,17 +477,83 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 ]:
                     ax3.plot(t_min, series, color=color, lw=1.8, ls=ls,
                              label=f"{tag} mRNA")
-                ax3.legend(loc="upper right", fontsize=8, framealpha=0.9)
                 counts_txt = (
                     f", mean total={np.nanmean(total_c):.2f}"
                     f", full={np.nanmean(full_c):.2f}")
+                ax3.set_ylabel("mRNA count")
+                ax3.set_title(
+                    f"Transcript counts (mRNA half-life ≈ {hl_txt}{counts_txt})",
+                    loc="left")
+            elif is_rrna:
+                # rRNA: nascent (this TU) + free mature (cell-wide) share the
+                # left axis, and the dominant in-ribosome pool (cell-wide) is
+                # alone on the right twin axis:
+                nascent = (rrna_partial_all[:, rrna_partial_col[tu_full]]
+                           if tu_full in rrna_partial_col
+                           else np.zeros_like(t_min, dtype=float))
+                free_mature = (bulk_sum(rrna_16s_ids) + bulk_sum(rrna_23s_ids)
+                               + bulk_sum(rrna_5s_ids))
+                # rRNA molecules held in ribosomal machinery: a 30S carries one
+                # rRNA (16S), a 50S two (23S+5S), and an active 70S all three:
+                in_ribosomes = (bulk_sum([s30_id]) + 2.0 * bulk_sum([s50_id])
+                                + 3.0 * active_ribosome)
+                for series, color, ls, tag in [
+                    (nascent, "#d62728", ":",
+                     f"nascent partial (this TU, avg. = {favg(nascent)})"),
+                    (free_mature, "#1f77b4", "--",
+                     f"free mature rRNA (cell-wide, avg. = {favg(free_mature)})"),
+                ]:
+                    ax3.plot(t_min, series, color=color, lw=1.8, ls=ls, label=tag)
+                ax3.set_ylabel("count: nascent + free mature")
+                ax3_twin = ax3.twinx()
+                ax3_twin.plot(
+                    t_min, in_ribosomes, color="#2c782c", lw=1.8, ls="-",
+                    label=f"rRNA in ribosomes (cell-wide, avg. = {favg(in_ribosomes)})")
+                ax3_twin.set_ylabel("count: in ribosomes\n(cell-wide)")
+                ax3.set_title("rRNA counts", loc="left")
+            elif is_trna:
+                # tRNA: unprocessed precursor (this TU) + mature uncharged
+                # (cell-wide) share the left axis; the dominant charged pool
+                # (cell-wide) is alone on the right twin axis. Both mature pools
+                # are summed over this TU's tRNA cistrons:
+                unids, chids = trna_species.get(tu_full, ([], []))
+                uncharged = bulk_sum(unids)
+                charged = bulk_sum(chids)
+                precursor = (bulk_sum([precursor_id[tu_full]])
+                             if tu_full in precursor_id else None)
+                if precursor is not None:
+                    ax3.plot(
+                        t_min, precursor, color="#d62728", lw=1.8, ls=":",
+                        label=f"unprocessed precursor (this TU, avg. = {favg(precursor)})")
+                ax3.plot(
+                    t_min, uncharged, color="#1f77b4", lw=1.8, ls="--",
+                    label=f"mature uncharged (cell-wide, avg. = {favg(uncharged)})")
+                ax3.set_ylabel(
+                    "count: uncharged"
+                    + ("" if precursor is None else " + precursor"))
+                ax3_twin = ax3.twinx()
+                ax3_twin.plot(
+                    t_min, charged, color="#ff7f0e", lw=1.8, ls="-",
+                    label=f"mature charged (cell-wide, avg. = {favg(charged)})")
+                ax3_twin.set_ylabel("count: charged\n(cell-wide)")
+                ax3.set_title("tRNA counts", loc="left")
             else:
-                counts_txt = " — not an mRNA (no counts)"
-            ax3.set_ylabel("mRNA count")
-            ax3.set_title(
-                f"Transcript counts (mRNA half-life ≈ {hl_txt}{counts_txt})",
-                loc="left")
+                ax3.set_ylabel("count")
+                ax3.set_title(
+                    "Transcript counts — not an mRNA/tRNA/rRNA (no counts)",
+                    loc="left")
+            # Combined legend (fold in the twin axis handles when it is in use):
+            if have_counts or is_rrna or is_trna:
+                handles, labels = ax3.get_legend_handles_labels()
+                if ax3_twin is not None:
+                    h2, l2 = ax3_twin.get_legend_handles_labels()
+                    handles += h2
+                    labels += l2
+                ax3.legend(handles, labels, loc="upper right", fontsize=8,
+                           framealpha=0.9)
             ax3.set_ylim(bottom=0)
+            if ax3_twin is not None:
+                ax3_twin.set_ylim(bottom=0)
 
             # panel 4: max_p
             ax4.plot(t_min, max_p, color="0.3", lw=1.5, label="max_p")
