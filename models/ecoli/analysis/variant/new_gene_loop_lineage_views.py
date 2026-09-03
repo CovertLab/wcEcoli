@@ -391,8 +391,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		tr['gen_bounds'] = [(a / 60.0, b / 60.0, g) for a, b, g in bounds]
 		tr['_events'] = ev
 		if n_stale:
-			self._note('v%d seed %d: %d timesteps with no origin, '
-				'criticalMassPerOriC is stale there' % (variant, seed, n_stale))
+			self._note('v%d seed %d: %d timesteps (about one per generation) '
+				'where the replication listener had not yet assigned '
+				'criticalInitiationMass; both replication-threshold rows are '
+				'blanked there' % (variant, seed, n_stale))
 		self._note('v%d seed %d: %d generations, %d timesteps'
 			% (variant, seed, len(bounds), tr['time'].size))
 		return tr
@@ -468,13 +470,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		out['critical_init_mass'] = repl.readColumn('criticalInitiationMass')
 		with np.errstate(invalid='ignore', divide='ignore'):
 			out['mass_per_origin'] = np.where(n_oric > 0, cell / n_oric, np.nan)
-		# Both criticalMassPerOriC and criticalInitiationMass are assigned only
-		# inside calculateRequest, which returns early when there is no origin,
-		# so they read 0 there rather than their real value. Blank those out --
-		# left in, the zero spikes make criticalInitiationMass look variable
-		# when the whole point of the row is that it is constant. The count is
-		# reported in the manifest, so this is not a silent drop.
-		stale = n_oric == 0
+		# criticalMassPerOriC and criticalInitiationMass are initialised to 0. in
+		# the listener's allocate() and only assigned inside calculateRequest.
+		# On the first timestep of each generation the listener therefore
+		# reports 0 for both while numberOfOric is already 4 -- so the stale
+		# condition is the VALUE being non-positive, not n_oric == 0 (which
+		# never happens here). Blank those out: left in, the one zero per
+		# generation makes criticalInitiationMass look variable when the whole
+		# point of that row is that it is constant. The count is reported in the
+		# manifest, so this is not a silent drop.
+		stale = ~(out['critical_init_mass'] > 0)
 		out['_stale'] = int(np.count_nonzero(stale))
 		out['critical_mass_per_oric'] = np.where(
 			stale, np.nan, out['critical_mass_per_oric'])
@@ -557,10 +562,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# Gate: the threshold is constant within the batch.
 		#
 		# criticalInitiationMass is initialised to 0. in the listener's
-		# allocate() and only assigned inside calculateRequest, which returns
-		# early when there is no origin -- so genuine zeros appear and must be
-		# excluded, or the range reads as the whole mean and the gate
-		# false-fails. Same stale-value trap as criticalMassPerOriC.
+		# allocate() and only assigned inside calculateRequest, so on the first
+		# timestep of each generation it reads 0 while numberOfOric is already
+		# 4. Those zeros must be excluded or the range reads as the whole mean
+		# and this gate false-fails. _one_cell blanks them to NaN; this filter
+		# is belt-and-braces so the gate cannot be fooled by either form.
 		raw = np.concatenate([tr['critical_init_mass'] for tr in
 			traces.values()])
 		n_masked = int(np.count_nonzero(~np.isfinite(raw)))
@@ -570,7 +576,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		spread = float(np.ptp(allv)) if allv.size else float('nan')
 		self._gates['critical_mass_constant'] = (
 			'criticalInitiationMass range %.6g over %d positive timesteps '
-			'(mean %.6g; %d no-origin timesteps excluded)%s'
+			'(mean %.6g; %d unassigned timesteps excluded)%s'
 			% (spread, allv.size,
 				float(np.mean(allv)) if allv.size else float('nan'), n_masked,
 				'' if spread < 1e-6 else '   *** NOT CONSTANT, section C '
