@@ -29,6 +29,7 @@ ACTIVE = [
 	"new_gene_dosage_compensation.py",
 	"new_gene_induction_timing.py",
 	"new_gene_initiation_chain.py",
+	"new_gene_loop_lineage_views.py",
 	"new_gene_generation_time.py",
 	"new_gene_dosage_normalisation.py",
 	"new_gene_machinery_allocation.py",
