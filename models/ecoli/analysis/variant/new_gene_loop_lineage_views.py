@@ -233,6 +233,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ctx = self._context(sim_data)
 		self._notes = []
 		self._gates = {}
+		self._bn_rows = []
 
 		available = sorted(set(self.ap.get_variants()) & set(VARIANTS))
 		if not available:
@@ -257,6 +258,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		self._check_gates(traces)
 		self._write_by_gen(out_dir, traces)
+		self._write_bottleneck(out_dir)
 		self._write_timeseries(out_dir, traces)
 		self._write_events(out_dir, events)
 		self._render(out_dir, traces, available)
@@ -320,6 +322,37 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		rnap_sub_ids = list(mg.RNAP_subunits)
 		rnap_sub_stoich = stoich_of(mi.full_RNAP, rnap_sub_ids)
 
+		# Per-gene bottleneck set: every ribosomal-protein and RNAP subunit,
+		# resolved to the TU carrying its cistron so its promoter copy number
+		# can be read alongside its free monomer count. Ribosome and RNAP
+		# assembly are bounded by min(free subunit / stoichiometry), so these
+		# are the genes through which a dosage effect could actually propagate
+		# -- unlike rRNA, which runs in large surplus.
+		monomer_data = sim_data.process.translation.monomer_data.struct_array
+		mono_to_cistron = dict(zip(monomer_data['id'],
+			monomer_data['cistron_id']))
+		cistron_index = {c: i for i, c in enumerate(cistron_ids)}
+		bottleneck = []
+		for group, ids, stoichs in (
+				('s30_protein', mg.s30_proteins,
+					stoich_of(mi.s30_full_complex, mg.s30_proteins)),
+				('s50_protein', mg.s50_proteins,
+					stoich_of(mi.s50_full_complex, mg.s50_proteins)),
+				('rnap_subunit', rnap_sub_ids, rnap_sub_stoich)):
+			for mid, st in zip(list(ids), stoichs):
+				cis = mono_to_cistron.get(mid)
+				ci = cistron_index.get(cis)
+				if ci is None:
+					continue
+				tus = np.where(cistron_tu[ci, :].toarray().ravel() > 0)[0]
+				if not tus.size:
+					continue
+				bottleneck.append(dict(group=group, monomer=mid, cistron=cis,
+					stoich=float(st), tus=tus,
+					frac=float(frac[tus].mean())))
+		print('Bottleneck set: %d subunit genes resolved to TUs'
+			% len(bottleneck))
+
 		# GFP monomer mass, for the proteome fraction.
 		gfp_mass = float(sum(
 			sim_data.getter.get_mass(m).asNumber(units.fg / units.count)
@@ -342,6 +375,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			s5=list(mg.s50_5s_rRNA),
 			s30=[mi.s30_full_complex], s50=[mi.s50_full_complex],
 			free_rnap=[mi.full_RNAP],
+			bottleneck=bottleneck,
 			)
 		print('Construct TUs %s; rRNA TUs %d; RNAP-subunit TUs %d; '
 			'terminus control %s at f=%.3f'
@@ -368,6 +402,9 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				continue
 			t = one.pop('_time')
 			n_stale += one.pop('_stale')
+			for row in one.pop('_bottleneck', []):
+				self._bn_rows.append(dict(variant=variant, seed=seed,
+					generation=gen, **row))
 			# Doubling time is a per-generation scalar, drawn as a step.
 			one['doubling_time'] = np.full(
 				t.size, (t[-1] - t[0]) / 60.0 if t.size > 1 else np.nan)
@@ -541,6 +578,33 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				rnap.readColumn('actualElongations') / dt / out['active_rnap'],
 				np.nan)
 		out['ppgpp'] = gl.readColumn('ppgpp_conc')
+
+		# Per-gene bottleneck traces. Free monomer counts come from
+		# BulkMolecules, so these are FREE pools -- subunits already inside an
+		# assembled ribosome or RNAP are excluded, which is what makes
+		# free/stoich an assembly bound rather than a total-supply figure.
+		bn = ctx['bottleneck']
+		if bn:
+			(free_sub,) = read_bulk_molecule_counts(sim_out,
+				([b['monomer'] for b in bn],))
+			free_sub = np.atleast_2d(free_sub).astype(float)
+			bn_rows = []
+			for j, b in enumerate(bn):
+				bn_rows.append(dict(group=b['group'], monomer=b['monomer'],
+					stoich=b['stoich'], frac=b['frac'],
+					# Summed over every TU variant carrying this cistron, so
+					# this is the total PROMOTER copy number driving the gene,
+					# not its physical chromosomal dosage. rplB sits in three
+					# TU variants, so the two differ by that multiplicity.
+					# Promoter copies is the right quantity for transcription;
+					# do not read it as gene dosage. n_tus relates the two.
+					promoter_copies=float(
+						copies[:, b['tus']].sum(axis=1).mean()),
+					n_tus=int(b['tus'].size),
+					free_count=float(free_sub[:, j].mean()),
+					assembly_bound=float(
+						(free_sub[:, j] / b['stoich']).mean())))
+			out['_bottleneck'] = bn_rows
 
 		for k, v in list(out.items()):
 			if k.startswith('_'):
@@ -791,6 +855,31 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 							'%.4f' % (b - a)] + vals)
 		print('  %s (%.2f MB)'
 			% (os.path.basename(path), os.path.getsize(path) / 1e6))
+
+	def _write_bottleneck(self, out_dir):
+		"""Per-gene traces for every ribosomal-protein and RNAP subunit.
+
+		The point of this table: ribosome and RNAP assembly are bounded by
+		min(free subunit / stoichiometry), so if a gene-dosage effect
+		propagates to the machinery at all, it propagates through these genes.
+		It cannot propagate through rRNA, which runs at 100-200x surplus under
+		burden. Emitting gene copy number beside the free pool for each subunit
+		is what makes the per-gene mediation testable.
+		"""
+		if not self._bn_rows:
+			return
+		path = os.path.join(out_dir, 'loop_lineage_bottleneck.csv')
+		cols = ['variant', 'seed', 'generation', 'group', 'monomer', 'stoich',
+			'frac', 'n_tus', 'promoter_copies', 'free_count',
+			'assembly_bound']
+		with open(path, 'w', newline='') as fh:
+			w = csv.DictWriter(fh, fieldnames=cols)
+			w.writeheader()
+			for r in self._bn_rows:
+				w.writerow({c: ('%.6g' % r[c] if isinstance(r[c], float)
+					else r[c]) for c in cols})
+		print('  %s (%d rows, %.2f MB)' % (os.path.basename(path),
+			len(self._bn_rows), os.path.getsize(path) / 1e6))
 
 	def _write_timeseries(self, out_dir, traces):
 		"""One row per timestep, one column per quantity.
