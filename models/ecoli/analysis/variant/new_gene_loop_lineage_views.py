@@ -119,6 +119,13 @@ SMOOTH_TIMESTEPS = 7
 # Stated in the manifest and on every figure rather than applied silently.
 PLOT_STRIDE_SEC = 10.0
 
+# Derivative views only. At division every count halves, so d/dt has a huge
+# negative spike at each generation junction that dominates the y-axis and
+# hides the within-cycle signal. The spike is an artefact of the discontinuity,
+# not a rate, so samples within this many seconds of a division boundary are
+# blanked. Stated on every derivative figure rather than dropped silently.
+DERIV_BLANK_SEC = 20.0
+
 # Rows, grouped so that each arrow of the hypothesis sits between adjacent
 # blocks. Blocks F and G feed back into block B, which is what closes the loop.
 # (key, label, prefer_log)
@@ -148,11 +155,16 @@ BLOCKS = (
 	('D. gene dosage', (
 		('rrna_gene_copies', 'rRNA operon\ncopies', False),
 		('rnap_gene_copies', 'RNAP subunit\ngene copies', False),
+		('rprot_gene_copies', 'r-protein\ngene copies', False),
 		('terminus_gene_copies', 'terminus control\ngene copies', False),
+		('term_class_gene_copies', 'terminus CLASS\ngene copies', False),
 		)),
 	('E. transcription', (
 		('rrna_init_events', 'rRNA transcript\ninits', False),
 		('rnap_init_events', 'RNAP subunit\ntranscript inits', False),
+		('rprot_init_events', 'r-protein\ntranscript inits', False),
+		('terminus_init_events', 'terminus control\ntranscript inits', False),
+		('term_class_init_events', 'terminus CLASS\ntranscript inits', False),
 		('total_init_events', 'total transcript\ninits', False),
 		('rnap_budget', 'RNAP budget\n(activations)', False),
 		('free_rnap', 'free RNAP\n(APORNAP)', False),
@@ -198,9 +210,11 @@ NOT_RELATIVE = frozenset(('limiting_rprotein_idx', 'limiting_rnap_idx'))
 
 VIEWS = (
 	('view1-counts', 'raw counts'),
-	('view2-derivative', 'd/dt per minute'),
-	('view3-smoothed-derivative', 'd/dt, smoothed over %d timesteps'
-		% SMOOTH_TIMESTEPS),
+	('view2-derivative', 'd/dt per minute; blanked within %.0f s of division'
+		% DERIV_BLANK_SEC),
+	('view3-smoothed-derivative',
+		'd/dt smoothed over %d timesteps; blanked within %.0f s of division'
+		% (SMOOTH_TIMESTEPS, DERIV_BLANK_SEC)),
 	('view4-relative', 'value / value at generation start'),
 	('view5-per-mass', 'value / dry mass'),
 	('view6-phaseplane', 'x = GFP proteome mass fraction'),
@@ -298,6 +312,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		is_rrna = rna_data['is_rRNA'].copy()
 		is_rnap = rna_data['includes_RNAP'].copy()
+		# Ribosomal-protein TUs. These OVERLAP the RNAP-subunit set -- four of
+		# five RNAP-bearing TUs also carry r-proteins -- so the two classes
+		# must never be summed. They are kept separate here because the
+		# event-anchored test needs r-protein transcription specifically: the
+		# limiting r-protein FREE POOL sits at about one integer copy and is
+		# unusable at event resolution, whereas initiation counts are not.
+		is_rprot = rna_data['includes_ribosomal_protein'].copy()
 
 		# Terminus control: the non-rRNA, non-RNAP, non-construct TU closest to
 		# TERMINUS_TARGET_FRACTION.
@@ -358,14 +379,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_data.getter.get_mass(m).asNumber(units.fg / units.count)
 			for m in new_monomer_ids))
 
+		# Terminus CLASS for the event-anchored control. The single terminus
+		# control gene initiates ~once per 1000 timesteps (mean 0.001), so it
+		# works as a copy-number control but not as a transcription outcome.
+		# A class of terminus-proximal TUs, excluding machinery and the
+		# construct, gives a count large enough to compare against.
+		term_class = np.where((frac > 0.90)
+			& ~(is_rrna | is_rnap | is_rprot | is_new_tu))[0]
+
 		ctx = dict(
 			rna_ids=rna_ids,
+			term_class_tu=term_class,
 			new_tu=np.where(is_new_tu)[0],
 			new_mrna_ids=new_mrna_ids,
 			new_monomer_ids=new_monomer_ids,
 			gfp_monomer_mass_fg=gfp_mass,
 			rrna_tu=np.where(is_rrna)[0],
 			rnap_tu=np.where(is_rnap)[0],
+			rprot_tu=np.where(is_rprot)[0],
 			term_tu=np.array([term_idx]),
 			term_frac=float(frac[term_idx]),
 			term_id=rna_ids[term_idx],
@@ -377,10 +408,13 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			free_rnap=[mi.full_RNAP],
 			bottleneck=bottleneck,
 			)
+		overlap = np.intersect1d(ctx['rnap_tu'], ctx['rprot_tu']).size
 		print('Construct TUs %s; rRNA TUs %d; RNAP-subunit TUs %d; '
-			'terminus control %s at f=%.3f'
+			'r-protein TUs %d (%d overlap the RNAP set -- do not sum); '
+			'terminus control %s at f=%.3f; terminus class %d TUs at f>0.90'
 			% (ctx['new_tu'], ctx['rrna_tu'].size, ctx['rnap_tu'].size,
-				ctx['term_id'], ctx['term_frac']))
+				ctx['rprot_tu'].size, overlap, ctx['term_id'],
+				ctx['term_frac'], ctx['term_class_tu'].size))
 		return ctx
 
 	# ---- reading ---------------------------------------------------------
@@ -480,8 +514,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		out['rrna_gene_copies'] = take(copies, ctx['rrna_tu'], np.mean)
 		out['rnap_gene_copies'] = take(copies, ctx['rnap_tu'], np.mean)
 		out['terminus_gene_copies'] = take(copies, ctx['term_tu'], np.mean)
+		out['rprot_gene_copies'] = take(copies, ctx['rprot_tu'], np.mean)
 		out['rrna_init_events'] = take(inits, ctx['rrna_tu'], np.sum)
 		out['rnap_init_events'] = take(inits, ctx['rnap_tu'], np.sum)
+		out['rprot_init_events'] = take(inits, ctx['rprot_tu'], np.sum)
+		# The terminus control's own transcription. At a replication
+		# initiation its copy number stays exactly flat while origin-proximal
+		# copies step up, so this is the within-cell negative control for the
+		# event-anchored test: same cell, same instant, same mass change, no
+		# copy step.
+		out['terminus_init_events'] = take(inits, ctx['term_tu'], np.sum)
+		out['term_class_gene_copies'] = take(
+			copies, ctx['term_class_tu'], np.mean)
+		out['term_class_init_events'] = take(
+			inits, ctx['term_class_tu'], np.sum)
 		out['total_init_events'] = np.sum(inits, axis=1)
 		out['rnap_budget'] = rnap.readColumn('didInitialize').astype(float)
 
@@ -688,10 +734,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return t, {k: tr[k] for k in KEYS}
 		if view in ('view2-derivative', 'view3-smoothed-derivative'):
 			dt = np.gradient(t)
+			# Mask the division discontinuities before differentiating, so the
+			# halving spike neither appears nor leaks into the smoother.
+			near_div = np.zeros(t.size, bool)
+			w = DERIV_BLANK_SEC / 60.0
+			for a, b, _g in tr['gen_bounds']:
+				near_div |= np.abs(t - b) <= w
+				near_div |= np.abs(t - a) <= w
 			out = {}
 			for k in KEYS:
 				with np.errstate(invalid='ignore', divide='ignore'):
 					d = np.gradient(tr[k]) / dt
+				d = np.where(near_div, np.nan, d)
 				out[k] = (_smooth(d, SMOOTH_TIMESTEPS)
 					if view.startswith('view3') else d)
 			return t, out
@@ -778,12 +832,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						ax.axhline(1.0, color='#767469', lw=.7, ls=':')
 						ax.axhline(2.0, color='#0d8f63', lw=.9, ls='--')
 					if not phase:
-						self._mark(ax, tr, wrange)
+						self._mark(ax, tr, wrange,
+							label_induction=(key == KEYS[0]))
 				axes[-1].set_xlabel('GFP proteome mass fraction' if phase
 					else 'time (min, continuous across generations)')
 				fig.suptitle('variant %d, seed %d  |  %s  |  %s  |  %s\n'
-					'dashed grey = division, dotted orange = replication '
-					'initiation%s  |  plotted every %d timesteps '
+					'SOLID RED = GFP induction; dashed grey = division; '
+					'dotted orange = replication initiation%s  |  '
+					'plotted every %d timesteps '
 					'(~%.0f s); the CSV keeps every timestep'
 					% (variant, seed, view, view_desc, wname,
 						'  (not marked in the phase plane)' if phase else '',
@@ -797,8 +853,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						dpi=110, bbox_inches='tight')
 				plt.close(fig)
 
-	def _mark(self, ax, tr, wrange):
-		"""Division and replication-initiation markers."""
+	def _induction_time(self, tr):
+		"""Time at which the construct switches on, in minutes.
+
+		Induction is scheduled into internal_shift_dict and applied at the
+		start of generation INDUCTION_GEN, so it is the left edge of that
+		generation's bounds rather than anything logged.
+		"""
+		for a, b, g in tr['gen_bounds']:
+			if g == INDUCTION_GEN:
+				return a
+		return None
+
+	def _mark(self, ax, tr, wrange, label_induction=False):
+		"""Division, replication-initiation and GFP-induction markers."""
 		for a, b, g in tr['gen_bounds']:
 			if wrange is not None and not (wrange[0] <= g <= wrange[1]):
 				continue
@@ -812,6 +880,18 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					or not (wrange[0] <= g <= wrange[1])):
 				continue
 			ax.axvline(t[i], color='#c2410c', lw=.7, ls=':', alpha=.85)
+		# GFP induction, drawn last and heaviest so it reads over the top of
+		# the division and replication marks.
+		ti = self._induction_time(tr)
+		if ti is not None and (wrange is None
+				or wrange[0] <= INDUCTION_GEN <= wrange[1]):
+			ax.axvline(ti, color='#b3123c', lw=2.2, ls='-', alpha=.9,
+				zorder=6)
+			if label_induction:
+				ax.text(ti, 1.04, ' GFP induced (gen %d)' % INDUCTION_GEN,
+					transform=ax.get_xaxis_transform(), fontsize=9,
+					color='#b3123c', fontweight='650', ha='left',
+					va='bottom', zorder=7)
 
 	# ---- writing ---------------------------------------------------------
 
