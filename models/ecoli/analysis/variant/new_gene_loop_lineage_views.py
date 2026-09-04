@@ -96,11 +96,15 @@ VARIANTS = (0, 4, 7)
 # per-generation summary covers every available seed.
 SEEDS = tuple(range(16))
 
-# Seeds rendered as FIGURES, and the only ones written at full per-timestep
-# resolution. Figures and the full-resolution CSV are what make the output
-# large (~200 MB per batch for 4 seeds), and they are for eyeballing, which
-# does not need 16 of them. The per-generation summary that carries the
-# statistics is tiny and covers all of SEEDS.
+# Seeds written at full PER-TIMESTEP resolution. The event-anchored test
+# (report 42) needs this resolution, and its events cluster within a lineage --
+# so 4 seeds would put it back at the n=4 power ceiling that the 16-seed run
+# exists to remove. Kept equal to SEEDS by default for that reason; the cost is
+# CSV size, roughly 200 MB per batch, not runtime.
+TRACE_SEEDS = SEEDS
+
+# Seeds rendered as FIGURES. This is the expensive one -- 36 multi-page PDFs --
+# and it is for eyeballing, which does not need 16 lineages.
 FIGURE_SEEDS = (0, 1, 2, 3)
 
 # Terminus-proximal negative control, resolved by replichore position at run
@@ -155,14 +159,22 @@ BLOCKS = (
 	('D. gene dosage', (
 		('rrna_gene_copies', 'rRNA operon\ncopies', False),
 		('rnap_gene_copies', 'RNAP subunit\ngene copies', False),
-		('rprot_gene_copies', 'r-protein\ngene copies', False),
+		('rprot_gene_copies', 'r-protein ALL\ngene copies', False),
+		('rp_origin_gene_copies', 'r-protein ORIGIN\ngene copies (f<0.20)',
+			False),
+		('rp_term_gene_copies', 'r-protein TERMINUS\ngene copies (f>0.75)',
+			False),
 		('terminus_gene_copies', 'terminus control\ngene copies', False),
 		('term_class_gene_copies', 'terminus CLASS\ngene copies', False),
 		)),
 	('E. transcription', (
 		('rrna_init_events', 'rRNA transcript\ninits', False),
 		('rnap_init_events', 'RNAP subunit\ntranscript inits', False),
-		('rprot_init_events', 'r-protein\ntranscript inits', False),
+		('rprot_init_events', 'r-protein ALL\ntranscript inits', False),
+		('rp_origin_init_events', 'r-protein ORIGIN\ntranscript inits',
+			False),
+		('rp_term_init_events', 'r-protein TERMINUS\ntranscript inits',
+			False),
 		('terminus_init_events', 'terminus control\ntranscript inits', False),
 		('term_class_init_events', 'terminus CLASS\ntranscript inits', False),
 		('total_init_events', 'total transcript\ninits', False),
@@ -379,6 +391,26 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			sim_data.getter.get_mass(m).asNumber(units.fg / units.count)
 			for m in new_monomer_ids))
 
+		# Ribosomal proteins SPLIT BY POSITION. The r-protein set spans nearly
+		# the whole copy-number channel -- 13 TUs at f<0.20 lose ~9% of
+		# promoter share relative to the genome average while 8 TUs at f>0.75
+		# GAIN ~9% -- so summing all 42 cancels the signal almost exactly.
+		# That is the same L1-normalisation cancellation that has caught this
+		# study before.
+		#
+		# Split by POSITION, never by which gene happens to be limiting.
+		# Limiting-ness is an outcome (and an unstable one: 18 different
+		# r-proteins hold the title at v7), so selecting on it would bias the
+		# analysis. Position is fixed in the genome and cannot respond to
+		# burden.
+		#
+		# The two groups are matched on everything else that matters --
+		# co-regulation, expression regime, assembly demand, and the global
+		# consumption rate -- which makes origin-vs-terminus r-proteins a
+		# tighter control than the generic terminus class.
+		rp_origin = np.where(is_rprot & (frac < 0.20))[0]
+		rp_term = np.where(is_rprot & (frac > 0.75))[0]
+
 		# Terminus CLASS for the event-anchored control. The single terminus
 		# control gene initiates ~once per 1000 timesteps (mean 0.001), so it
 		# works as a copy-number control but not as a transcription outcome.
@@ -390,6 +422,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ctx = dict(
 			rna_ids=rna_ids,
 			term_class_tu=term_class,
+			rp_origin_tu=rp_origin,
+			rp_term_tu=rp_term,
 			new_tu=np.where(is_new_tu)[0],
 			new_mrna_ids=new_mrna_ids,
 			new_monomer_ids=new_monomer_ids,
@@ -411,10 +445,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		overlap = np.intersect1d(ctx['rnap_tu'], ctx['rprot_tu']).size
 		print('Construct TUs %s; rRNA TUs %d; RNAP-subunit TUs %d; '
 			'r-protein TUs %d (%d overlap the RNAP set -- do not sum); '
-			'terminus control %s at f=%.3f; terminus class %d TUs at f>0.90'
+			'terminus control %s at f=%.3f; terminus class %d TUs at f>0.90; '
+			'r-protein split %d origin (f<0.20) / %d terminus (f>0.75)'
 			% (ctx['new_tu'], ctx['rrna_tu'].size, ctx['rnap_tu'].size,
 				ctx['rprot_tu'].size, overlap, ctx['term_id'],
-				ctx['term_frac'], ctx['term_class_tu'].size))
+				ctx['term_frac'], ctx['term_class_tu'].size,
+				ctx['rp_origin_tu'].size, ctx['rp_term_tu'].size))
 		return ctx
 
 	# ---- reading ---------------------------------------------------------
@@ -524,6 +560,12 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# event-anchored test: same cell, same instant, same mass change, no
 		# copy step.
 		out['terminus_init_events'] = take(inits, ctx['term_tu'], np.sum)
+		out['rp_origin_gene_copies'] = take(
+			copies, ctx['rp_origin_tu'], np.mean)
+		out['rp_term_gene_copies'] = take(copies, ctx['rp_term_tu'], np.mean)
+		out['rp_origin_init_events'] = take(
+			inits, ctx['rp_origin_tu'], np.sum)
+		out['rp_term_init_events'] = take(inits, ctx['rp_term_tu'], np.sum)
 		out['term_class_gene_copies'] = take(
 			copies, ctx['term_class_tu'], np.mean)
 		out['term_class_init_events'] = take(
@@ -977,7 +1019,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			w.writerow(['variant', 'seed', 'generation', 'time_min']
 				+ list(KEYS))
 			for (variant, seed), tr in sorted(traces.items()):
-				if seed not in FIGURE_SEEDS:
+				if seed not in TRACE_SEEDS:
 					continue
 				t = tr['time']
 				gens = np.full(t.size, -1)
@@ -1015,10 +1057,14 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fh.write('  %s\n' % msg)
 			fh.write('\nTERMINUS CONTROL\n  %s at replichore fraction %.3f\n'
 				% (ctx['term_id'], ctx['term_frac']))
-			fh.write('\nSEED COVERAGE\n  loop_lineage_by_gen.csv: seeds %s '
-				'(statistics)\n  loop_lineage_timeseries.csv.gz and all '
-				'figures: seeds %s only\n'
-				% (list(SEEDS), list(FIGURE_SEEDS)))
+			fh.write('\nSEED COVERAGE\n'
+				'  loop_lineage_by_gen.csv:        seeds %s\n'
+				'  loop_lineage_bottleneck.csv:    seeds %s\n'
+				'  loop_lineage_timeseries.csv.gz: seeds %s '
+				'(per-timestep; needed for the event-anchored test)\n'
+				'  figures:                        seeds %s only\n'
+				% (list(SEEDS), list(SEEDS), list(TRACE_SEEDS),
+					list(FIGURE_SEEDS)))
 			fh.write('\nFIGURE THINNING\n  figures plot one point per ~%.0f s '
 				'(PLOT_STRIDE_SEC); loop_lineage_timeseries.csv.gz keeps every '
 				'timestep at full resolution\n' % PLOT_STRIDE_SEC)
