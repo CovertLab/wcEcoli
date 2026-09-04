@@ -90,7 +90,18 @@ from wholecell.utils import units
 INDUCTION_GEN = 8
 
 VARIANTS = (0, 4, 7)
-SEEDS = (0, 1, 2, 3)
+
+# Seeds read for the DATA. Statistics on 4 seeds cannot reach significance --
+# the smallest attainable two-sided Wilcoxon p at n=4 is 0.125 -- so the
+# per-generation summary covers every available seed.
+SEEDS = tuple(range(16))
+
+# Seeds rendered as FIGURES, and the only ones written at full per-timestep
+# resolution. Figures and the full-resolution CSV are what make the output
+# large (~200 MB per batch for 4 seeds), and they are for eyeballing, which
+# does not need 16 of them. The per-generation summary that carries the
+# statistics is tiny and covers all of SEEDS.
+FIGURE_SEEDS = (0, 1, 2, 3)
 
 # Terminus-proximal negative control, resolved by replichore position at run
 # time. Reused from multigen/copy_number_lineage_trace.py.
@@ -245,6 +256,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			return
 
 		self._check_gates(traces)
+		self._write_by_gen(out_dir, traces)
 		self._write_timeseries(out_dir, traces)
 		self._write_events(out_dir, events)
 		self._render(out_dir, traces, available)
@@ -654,7 +666,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		matplotlib.rcParams.update({'font.size': 8,
 			'axes.spines.top': False, 'axes.spines.right': False})
 		for variant in variants:
-			seeds = [s for s in SEEDS if (variant, s) in traces]
+			seeds = [s for s in FIGURE_SEEDS if (variant, s) in traces]
 			if not seeds:
 				continue
 			for view, view_desc in VIEWS:
@@ -739,6 +751,47 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 	# ---- writing ---------------------------------------------------------
 
+	def _write_by_gen(self, out_dir, traces):
+		"""Per-(variant, seed, generation) summary for EVERY seed.
+
+		This is what the statistics run on. Four seeds cannot support an
+		inferential claim -- the smallest attainable two-sided Wilcoxon p at
+		n=4 is 0.125, so a real effect and a null are indistinguishable -- and
+		this table is small enough (a few thousand rows) to cover all 16
+		without the download cost of full per-timestep traces.
+
+		Three aggregations per generation, because copy number oscillates about
+		two-fold within a cycle and a mean over the cycle hides where in it a
+		quantity sits: the generation mean, the value at birth (first 5% of the
+		cycle) and the value at the end (last 5%).
+		"""
+		path = os.path.join(out_dir, 'loop_lineage_by_gen.csv')
+		with open(path, 'w', newline='') as fh:
+			w = csv.writer(fh)
+			w.writerow(['variant', 'seed', 'generation', 'aggregation',
+				'n_timesteps', 'duration_min'] + list(KEYS))
+			for (variant, seed), tr in sorted(traces.items()):
+				t = tr['time']
+				for a, b, g in tr['gen_bounds']:
+					m = (t >= a) & (t <= b)
+					n = int(np.count_nonzero(m))
+					if not n:
+						continue
+					e = max(1, n // 20)
+					idx = np.where(m)[0]
+					for label, sel in (('mean', idx),
+							('birth', idx[:e]), ('end', idx[-e:])):
+						vals = []
+						for k in KEYS:
+							y = tr[k][sel]
+							y = y[np.isfinite(y)]
+							vals.append('' if not y.size
+								else '%.6g' % float(np.mean(y)))
+						w.writerow([variant, seed, g, label, n,
+							'%.4f' % (b - a)] + vals)
+		print('  %s (%.2f MB)'
+			% (os.path.basename(path), os.path.getsize(path) / 1e6))
+
 	def _write_timeseries(self, out_dir, traces):
 		"""One row per timestep, one column per quantity.
 
@@ -755,6 +808,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			w.writerow(['variant', 'seed', 'generation', 'time_min']
 				+ list(KEYS))
 			for (variant, seed), tr in sorted(traces.items()):
+				if seed not in FIGURE_SEEDS:
+					continue
 				t = tr['time']
 				gens = np.full(t.size, -1)
 				for a, b, g in tr['gen_bounds']:
@@ -791,6 +846,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fh.write('  %s\n' % msg)
 			fh.write('\nTERMINUS CONTROL\n  %s at replichore fraction %.3f\n'
 				% (ctx['term_id'], ctx['term_frac']))
+			fh.write('\nSEED COVERAGE\n  loop_lineage_by_gen.csv: seeds %s '
+				'(statistics)\n  loop_lineage_timeseries.csv.gz and all '
+				'figures: seeds %s only\n'
+				% (list(SEEDS), list(FIGURE_SEEDS)))
 			fh.write('\nFIGURE THINNING\n  figures plot one point per ~%.0f s '
 				'(PLOT_STRIDE_SEC); loop_lineage_timeseries.csv.gz keeps every '
 				'timestep at full resolution\n' % PLOT_STRIDE_SEC)
