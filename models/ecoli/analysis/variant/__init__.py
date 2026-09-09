@@ -40,6 +40,8 @@ ACTIVE = [
 	"new_gene_promoter_crowding.py",
 	"new_gene_protein_mass_fraction_histogram.py",
 	"new_gene_translation_efficiency_heatmaps.py",
+	"new_gene_tf_derepression.py",
+	"new_gene_stress_proteome_scan.py",
 	"param_sensitivity.py",
 	"ppgpp_conc.py",
 	"ppgpp_concentration_histogram.py",
