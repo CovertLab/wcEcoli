@@ -175,6 +175,9 @@ BLOCKS = (
 			False),
 		('rp_term_init_events', 'r-protein TERMINUS\ntranscript inits',
 			False),
+		('rp_origin_monomer', 'r-protein ORIGIN\nprotein supply', False),
+		('rp_term_monomer', 'r-protein TERMINUS\nprotein supply', False),
+		('rnap_monomer', 'RNAP subunit\nprotein supply', False),
 		('terminus_init_events', 'terminus control\ntranscript inits', False),
 		('term_class_init_events', 'terminus CLASS\ntranscript inits', False),
 		('total_init_events', 'total transcript\ninits', False),
@@ -185,7 +188,11 @@ BLOCKS = (
 		('free_16s', 'free 16S\nrRNA', False),
 		('free_23s', 'free 23S\nrRNA', False),
 		('free_5s', 'free 5S\nrRNA', False),
-		('limiting_rprotein', 'limiting r-protein\n(per stoich)', False),
+		('s30_assembly_bound', '30S assembly bound\n(ALL subunits)', False),
+		('s30_limiting_idx', 'WHICH 30S subunit\nlimits', False),
+		('s50_assembly_bound', '50S assembly bound\n(ALL subunits)', False),
+		('s50_limiting_idx', 'WHICH 50S subunit\nlimits', False),
+		('limiting_rprotein', 'limiting r-protein\n(PROTEINS only)', False),
 		('limiting_rprotein_idx', 'WHICH r-protein\nis limiting', False),
 		('free_30s', 'free 30S', False),
 		('free_50s', 'free 50S', False),
@@ -198,7 +205,36 @@ BLOCKS = (
 		('total_rnap', 'total\nRNAP', False),
 		('rnap_elong_rate', 'RNAP elong.\nrate (nt/s)', False),
 		)),
-	('G. context', (
+	('G. rRNA chain: init -> mature -> free -> subunit', (
+		('rrna_init_16s', '16S transcription\ninits', False),
+		('matured_16s', '16S matured\n(supply flux)', False),
+		('s30_formation', '30S formation\nevents (output)', False),
+		('rrna_init_23s', '23S transcription\ninits', False),
+		('matured_23s', '23S matured\n(supply flux)', False),
+		('rrna_init_5s', '5S transcription\ninits', False),
+		('matured_5s', '5S matured\n(supply flux)', False),
+		('s50_formation', '50S formation\nevents (output)', False),
+		('rrna_matured', 'all rRNA matured\n(total supply)', False),
+		('rnap_formation', 'RNAP formation\nevents', False),
+		)),
+	('H. the 70S gate: min(free 30S, free 50S)', (
+		('inactive_ribosome', 'inactive ribosome\n= min(30S, 50S)', False),
+		('ribo_gate_is_50s', 'is 50S the gate?\n(1 = yes)', False),
+		('ribo_gate_margin', 'gate margin\n(frac. above min)', False),
+		('translation_inits', '70S formation\n(translation inits)', False),
+		('ribosome_terminations', 'ribosome\nterminations', False),
+		('ribo_activation_reduced', 'ribosome activation cut\n(mRNA overcrowding)', False),
+		('rnap_terminations', 'RNAP\nterminations', False),
+		)),
+	('I. per-gene chain: transcription -> translation, by position', (
+		('rp_origin_trs_init', 'origin r-prot\ntranscript inits', False),
+		('rp_origin_trl_init', 'origin r-prot\ntranslation inits', False),
+		('rp_term_trs_init', 'terminus r-prot\ntranscript inits', False),
+		('rp_term_trl_init', 'terminus r-prot\ntranslation inits', False),
+		('rnap_sub_trs_init', 'RNAP subunit\ntranscript inits', False),
+		('rnap_sub_trl_init', 'RNAP subunit\ntranslation inits', False),
+		)),
+	('J. context', (
 		('ppgpp', 'ppGpp\n(uM)', False),
 		)),
 	)
@@ -260,6 +296,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self._notes = []
 		self._gates = {}
 		self._bn_rows = []
+		self._lim_rows = []
 
 		available = sorted(set(self.ap.get_variants()) & set(VARIANTS))
 		if not available:
@@ -285,6 +322,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self._check_gates(traces)
 		self._write_by_gen(out_dir, traces)
 		self._write_bottleneck(out_dir)
+		self._write_limiting(out_dir)
 		self._write_timeseries(out_dir, traces)
 		self._write_events(out_dir, events)
 		self._render(out_dir, traces, available)
@@ -355,6 +393,61 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		rnap_sub_ids = list(mg.RNAP_subunits)
 		rnap_sub_stoich = stoich_of(mi.full_RNAP, rnap_sub_ids)
 
+		# TRUE assembly bounds. The complexes include their rRNAs as subunits
+		# -- 30S is 21 proteins PLUS 16S, 50S is 33 proteins PLUS 23S and 5S --
+		# so a bound minimised over proteins alone can name the wrong subunit,
+		# and does: at the unburdened control free 16S sits at ~1.1 against
+		# ~5.3 for the scarcest protein, so the rRNA is the real constraint
+		# there. These take the minimum over EVERY subunit of the complex, at
+		# the stoichiometry the complexation reaction actually uses.
+		# RNAP needs no such fix: its subunit set is only alpha/beta/beta-prime
+		# and contains no RNA.
+		def full_subunits(cplx):
+			m = complexation.get_monomers(cplx)
+			return list(m['subunitIds']), np.array(m['subunitStoich'], float)
+
+		s30_all_ids, s30_all_stoich = full_subunits(mi.s30_full_complex)
+		s50_all_ids, s50_all_stoich = full_subunits(mi.s50_full_complex)
+
+		# Assembly OUTPUT. Scarcity of a subunit only matters if it actually
+		# caps the rate at which the machine is made, and that rate is logged:
+		# ComplexationListener/complexationEvents, indexed by the complex
+		# produced. Without this column we can say what is scarce but never
+		# whether the scarcity binds.
+		# ComplexationListener/complexationEvents is REACTION-indexed, but the
+		# listener's complexIDs attribute is a DIFFERENT ordering of the same
+		# length (1107), so looking a complex up in complexIDs silently returns
+		# the wrong column. It happens to be right for 30S and 50S and wrong for
+		# RNAP (reaction 99 vs complexID 104), which is the kind of error that
+		# passes every smoke test. Resolve the producing reaction from the
+		# stoichiometry matrix instead, and sum if more than one produces it.
+		cx = sim_data.process.complexation
+		cx_mol = list(cx.molecule_names)
+		cx_S = cx.stoich_matrix()
+		def formation_rxns(cplx):
+			if cplx not in cx_mol:
+				return np.array([], int)
+			row = np.asarray(cx_S[cx_mol.index(cplx), :]).ravel()
+			return np.where(row > 0)[0]
+		self._cplx_targets = [(formation_rxns(c), lab) for c, lab in (
+			(mi.s30_full_complex, 's30_formation'),
+			(mi.s50_full_complex, 's50_formation'),
+			(mi.full_RNAP, 'rnap_formation'))]
+		self._n_cx_rxns = int(cx_S.shape[1])
+		for rx, lab in self._cplx_targets:
+			print('  %s <- complexation reaction(s) %s' % (lab, list(rx)))
+		# rRNA SUPPLY. Free rRNA is set by maturation, not transcription
+		# directly, so this separates "scarce because little is made" from
+		# "scarce because it is consumed instantly".
+		# Split by species, and take EVERY operon's copy of each. 16S feeds
+		# 30S while 23S and 5S feed 50S, so a single summed column cannot say
+		# which machine a change in supply acts on. An earlier version sliced
+		# [:1] from each group and so counted 3 of the 22 rRNA molecules.
+		self._mature_rrna = dict(
+			matured_16s=list(mg.s30_16s_rRNA),
+			matured_23s=list(mg.s50_23s_rRNA),
+			matured_5s=list(mg.s50_5s_rRNA))
+
 		# Per-gene bottleneck set: every ribosomal-protein and RNAP subunit,
 		# resolved to the TU carrying its cistron so its promoter copy number
 		# can be read alongside its free monomer count. Ribosome and RNAP
@@ -408,8 +501,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# co-regulation, expression regime, assembly demand, and the global
 		# consumption rate -- which makes origin-vs-terminus r-proteins a
 		# tighter control than the generic terminus class.
-		rp_origin = np.where(is_rprot & (frac < 0.20))[0]
-		rp_term = np.where(is_rprot & (frac > 0.75))[0]
+		# Define the positional groups ONCE, at gene level, and derive both the
+		# TU list and the monomer list from the same set. Selecting TUs and
+		# monomers independently gave different gene sets (13 vs 10 origin,
+		# 8 vs 3 terminus), which would make transcription and protein supply
+		# non-comparable -- the whole point is that they describe the same
+		# genes.
+		rp_genes_o = [b for b in bottleneck
+			if b['group'] != 'rnap_subunit' and b['frac'] < 0.20]
+		rp_genes_t = [b for b in bottleneck
+			if b['group'] != 'rnap_subunit' and b['frac'] > 0.75]
+		rp_origin = np.unique(np.concatenate([b['tus'] for b in rp_genes_o])
+			) if rp_genes_o else np.array([], int)
+		rp_term = np.unique(np.concatenate([b['tus'] for b in rp_genes_t])
+			) if rp_genes_t else np.array([], int)
 
 		# Terminus CLASS for the event-anchored control. The single terminus
 		# control gene initiates ~once per 1000 timesteps (mean 0.001), so it
@@ -419,9 +524,78 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		term_class = np.where((frac > 0.90)
 			& ~(is_rrna | is_rnap | is_rprot | is_new_tu))[0]
 
+		# Monomer-id lists for the positional groups, so PROTEIN SUPPLY can be
+		# read the same way transcription is. Free pools are consumed on
+		# arrival and sit at ~1 integer copy, which is unusable; TOTAL monomer
+		# counts (MonomerCounts, including protein already inside an assembled
+		# complex) accumulate, so they integrate the transcription pulse.
+		rp_o_mon = [b['monomer'] for b in rp_genes_o]
+		rp_t_mon = [b['monomer'] for b in rp_genes_t]
+		rnap_mon = [b['monomer'] for b in bottleneck
+			if b['group'] == 'rnap_subunit']
+		# Index tables for the per-gene FLUX columns. Transcription flux comes
+		# from RnapData/rna_init_event_per_cistron, which is cistron-indexed and
+		# so needs no TU mapping; translation flux from
+		# RibosomeData/ribosome_init_event_per_monomer. Together they give the
+		# transcript-initiation -> protein-synthesis step measured as RATES on
+		# the same genes the positional contrast is defined on. Monomer COUNTS
+		# integrate history and so cannot date a change; these can.
+		mono_index = {m: i for i, m in enumerate(monomer_data['id'])}
+		rnap_genes = [b for b in bottleneck if b['group'] == 'rnap_subunit']
+		def cis_idx(genes):
+			return np.array([cistron_index[b['cistron']] for b in genes
+				if b['cistron'] in cistron_index], int)
+		def mon_idx(genes):
+			return np.array([mono_index[b['monomer']] for b in genes
+				if b['monomer'] in mono_index], int)
+
+		print('  positional r-protein groups: origin %d genes / %d TUs, '
+			'terminus %d genes / %d TUs (same gene set drives both '
+			'transcription and protein supply)'
+			% (len(rp_o_mon), rp_origin.size, len(rp_t_mon), rp_term.size))
+
+		# Metadata for the limiting-fraction table: every subunit of every
+		# machine, with its stoichiometry, its chromosomal position and the
+		# TUs that transcribe it, so "how often is this the bottleneck" sits
+		# in the same row as "how many copies of its gene are there".
+		mono_to_tus = {b['monomer']: b['tus'] for b in bottleneck}
+		mono_to_frac = {b['monomer']: b['frac'] for b in bottleneck}
+		def subunit_meta(ids, stoich, cplx):
+			out = []
+			for k, (mid, st) in enumerate(zip(ids, stoich)):
+				is_rna = 'RNA' in mid
+				tus = mono_to_tus.get(mid)
+				if tus is None and is_rna:
+					# rRNA subunit: find the TUs whose cistrons carry it
+					cis = mid.split('[')[0]
+					ci = cistron_index.get(cis)
+					tus = (np.where(
+						cistron_tu[ci, :].toarray().ravel() > 0)[0]
+						if ci is not None else np.array([], int))
+				out.append(dict(cplx=cplx, idx=k, subunit=mid,
+					stoich=float(st), is_rna=bool(is_rna),
+					frac=mono_to_frac.get(mid, float(frac[tus].mean())
+						if tus is not None and len(tus) else float('nan')),
+					tus=tus if tus is not None else np.array([], int)))
+			return out
+
+		limiting_meta = (subunit_meta(s30_all_ids, s30_all_stoich, '30S')
+			+ subunit_meta(s50_all_ids, s50_all_stoich, '50S')
+			+ subunit_meta(rnap_sub_ids, rnap_sub_stoich, 'RNAP'))
+
 		ctx = dict(
 			rna_ids=rna_ids,
+			limiting_meta=limiting_meta,
 			term_class_tu=term_class,
+			rp_origin_mon=rp_o_mon,
+			rp_term_mon=rp_t_mon,
+			rnap_mon=rnap_mon,
+			rp_origin_cis=cis_idx(rp_genes_o),
+			rp_term_cis=cis_idx(rp_genes_t),
+			rnap_cis=cis_idx(rnap_genes),
+			rp_origin_mon_idx=mon_idx(rp_genes_o),
+			rp_term_mon_idx=mon_idx(rp_genes_t),
+			rnap_mon_idx=mon_idx(rnap_genes),
 			rp_origin_tu=rp_origin,
 			rp_term_tu=rp_term,
 			new_tu=np.where(is_new_tu)[0],
@@ -441,6 +615,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			s30=[mi.s30_full_complex], s50=[mi.s50_full_complex],
 			free_rnap=[mi.full_RNAP],
 			bottleneck=bottleneck,
+			s30_all_ids=s30_all_ids, s30_all_stoich=s30_all_stoich,
+			s50_all_ids=s50_all_ids, s50_all_stoich=s50_all_stoich,
 			)
 		overlap = np.intersect1d(ctx['rnap_tu'], ctx['rprot_tu']).size
 		print('Construct TUs %s; rRNA TUs %d; RNAP-subunit TUs %d; '
@@ -472,6 +648,25 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				continue
 			t = one.pop('_time')
 			n_stale += one.pop('_stale')
+			limpack = one.pop('_limiting', None)
+			if limpack is not None:
+				lim, nts, cop = limpack
+				for m in ctx['limiting_meta']:
+					key = (m['cplx'], m['idx'])
+					if key not in lim:
+						continue
+					cnt, mean_, med_, frac_lt1 = lim[key]
+					pc = (float(cop[:, m['tus']].sum(axis=1).mean())
+						if len(m['tus']) else float('nan'))
+					self._lim_rows.append(dict(
+						variant=variant, seed=seed, generation=gen,
+						complex=m['cplx'], subunit=m['subunit'],
+						is_rna=int(m['is_rna']), stoich=m['stoich'],
+						replichore_frac=m['frac'], n_timesteps=nts,
+						limiting_frac=cnt / nts if nts else float('nan'),
+						free_per_stoich_mean=mean_,
+						free_per_stoich_median=med_,
+						frac_below_one=frac_lt1, promoter_copies=pc))
 			for row in one.pop('_bottleneck', []):
 				self._bn_rows.append(dict(variant=variant, seed=seed,
 					generation=gen, **row))
@@ -589,6 +784,16 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		out['gfp_protein'] = (counts[:, mj].sum(axis=1) if mj
 			else np.full(n, np.nan))
 
+		# Protein supply per positional group. Total counts, not free pools.
+		def mon_sum(ids):
+			idx = [mono_ids.index(i) for i in ids if i in mono_ids]
+			return (counts[:, idx].sum(axis=1).astype(float) if idx
+				else np.full(n, np.nan))
+
+		out['rp_origin_monomer'] = mon_sum(ctx['rp_origin_mon'])
+		out['rp_term_monomer'] = mon_sum(ctx['rp_term_mon'])
+		out['rnap_monomer'] = mon_sum(ctx['rnap_mon'])
+
 		protein_mass = mass.readColumn('proteinMass')
 		dry = mass.readColumn('dryMass')
 		cell = mass.readColumn('cellMass')
@@ -627,10 +832,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			if forks.ndim > 1 else np.full(n, np.nan))
 
 		# Bulk molecules: one call for everything, as the helper requires.
-		(free_rnap, s30, s50, s16, s23, s5, r_prot, rnap_sub
-			) = read_bulk_molecule_counts(sim_out, (
+		(free_rnap, s30, s50, s16, s23, s5, r_prot, rnap_sub,
+				s30_all, s50_all) = read_bulk_molecule_counts(sim_out, (
 				ctx['free_rnap'], ctx['s30'], ctx['s50'], ctx['s16'],
-				ctx['s23'], ctx['s5'], ctx['r_prot_ids'], ctx['rnap_sub_ids']))
+				ctx['s23'], ctx['s5'], ctx['r_prot_ids'], ctx['rnap_sub_ids'],
+				ctx['s30_all_ids'], ctx['s50_all_ids']))
 		out['free_rnap'] = np.ravel(free_rnap).astype(float)
 		out['free_30s'] = np.ravel(s30).astype(float)
 		out['free_50s'] = np.ravel(s50).astype(float)
@@ -649,6 +855,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		out['limiting_rnap_subunit'] = per_rnap.min(axis=1)
 		out['limiting_rnap_idx'] = per_rnap.argmin(axis=1).astype(float)
 
+		# The true bounds, over every subunit including the rRNAs.
+		p30 = np.atleast_2d(s30_all).astype(float) / ctx['s30_all_stoich']
+		p50 = np.atleast_2d(s50_all).astype(float) / ctx['s50_all_stoich']
+		out['s30_assembly_bound'] = p30.min(axis=1)
+		out['s30_limiting_idx'] = p30.argmin(axis=1).astype(float)
+		out['s50_assembly_bound'] = p50.min(axis=1)
+		out['s50_limiting_idx'] = p50.argmin(axis=1).astype(float)
+
+		# Per-subunit limiting counts. The argmin columns above are indices,
+		# so averaging them over a generation is meaningless; what is wanted
+		# is the FRACTION OF TIMESTEPS each subunit holds the minimum. Count
+		# it here and aggregate per generation in _write_limiting.
+		lim = {}
+		for cplx, per, meta_n in (('30S', p30, p30.shape[1]),
+				('50S', p50, p50.shape[1]),
+				('RNAP', per_rnap, per_rnap.shape[1])):
+			am = per.argmin(axis=1)
+			cnt = np.bincount(am, minlength=meta_n)
+			for k in range(meta_n):
+				lim[(cplx, k)] = (int(cnt[k]),
+					float(per[:, k].mean()), float(np.median(per[:, k])),
+					float((per[:, k] < 1).mean()))
+		out['_limiting'] = (lim, n, copies)
+
 		uids = list(umc.readAttribute('uniqueMoleculeIds'))
 		ucounts = umc.readColumn('uniqueMoleculeCounts')
 		out['active_ribosome'] = ucounts[:, uids.index('active_ribosome')
@@ -666,6 +896,99 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				rnap.readColumn('actualElongations') / dt / out['active_rnap'],
 				np.nan)
 		out['ppgpp'] = gl.readColumn('ppgpp_conc')
+
+		# Assembly output rates, and the supply/demand terms around them.
+		try:
+			cl = TableReader(os.path.join(sim_out, 'ComplexationListener'))
+			cev = cl.readColumn('complexationEvents')
+			if cev.shape[1] != self._n_cx_rxns:
+				raise ValueError('complexationEvents has %d columns but the '
+					'complexation network has %d reactions; the '
+					'reaction indexing assumption is broken'
+					% (cev.shape[1], self._n_cx_rxns))
+			for rx, lab in self._cplx_targets:
+				out[lab] = (cev[:, rx].sum(axis=1).astype(float) if rx.size
+					else np.full(n, np.nan))
+		except Exception:  # noqa: BLE001 - listener absent in older batches
+			for _, lab in self._cplx_targets:
+				out[lab] = np.full(n, np.nan)
+		try:
+			ml = TableReader(os.path.join(sim_out, 'RnaMaturationListener'))
+			mids = list(ml.readAttribute('mature_rna_ids'))
+			mgen = ml.readColumn('mature_rnas_generated')
+			tot = np.zeros(n)
+			for lab, species in self._mature_rrna.items():
+				idx = [mids.index(i) for i in species if i in mids]
+				v = (mgen[:, idx].sum(axis=1).astype(float) if idx
+					else np.full(n, np.nan))
+				out[lab] = v
+				tot = tot + np.nan_to_num(v)
+			out['rrna_matured'] = tot
+		except Exception:  # noqa: BLE001
+			for lab in self._mature_rrna:
+				out[lab] = np.full(n, np.nan)
+			out['rrna_matured'] = np.full(n, np.nan)
+		out['translation_inits'] = ribo.readColumn('didInitialize').astype(
+			float)
+
+		# THE 70S GATE. polypeptide_initiation.py:90 activates
+		# activationProb * min(free 30S, free 50S), so the smaller free subunit
+		# pool is not merely correlated with 70S formation -- it is the term in
+		# the rate law. Log which subunit holds the minimum and how far apart
+		# the two are, because the median gap is only a few percent and could
+		# flip under burden.
+		out['inactive_ribosome'] = np.minimum(out['free_30s'], out['free_50s'])
+		out['ribo_gate_is_50s'] = (out['free_50s']
+			< out['free_30s']).astype(float)
+		with np.errstate(invalid='ignore', divide='ignore'):
+			out['ribo_gate_margin'] = np.where(out['inactive_ribosome'] > 0,
+				(np.maximum(out['free_30s'], out['free_50s'])
+					- out['inactive_ribosome']) / out['inactive_ribosome'],
+				np.nan)
+		# NOTE: this flag is mRNA OVERCROWDING, not subunit shortage --
+		# polypeptide_initiation.py:183 sets it when per-transcript initiation
+		# probability exceeds the ribosome-footprint maximum and cannot be
+		# rescaled away. It is a second, independent constraint on translation,
+		# so it is worth logging, but it does NOT test the 30S/50S gate.
+		out['ribo_activation_reduced'] = ribo.readColumn(
+			'is_n_ribosomes_to_activate_reduced').astype(float)
+		# Termination rates, so formation can be read as NET accumulation
+		# rather than gross flux. Ribosomes and RNAPs recycle, so initiation
+		# alone does not say whether the pool is growing.
+		out['ribosome_terminations'] = ribo.readColumn(
+			'didTerminate').astype(float)
+		out['rnap_terminations'] = rnap.readColumn('didTerminate').astype(float)
+		# rRNA transcription initiation per species, to pair with maturation
+		# per species and complete the rRNA chain init -> mature -> free -> 30S/50S.
+		for lab, col in (('rrna_init_16s', 'rRNA16S_initiated'),
+			('rrna_init_23s', 'rRNA23S_initiated'),
+			('rrna_init_5s', 'rRNA5S_initiated')):
+			try:
+				out[lab] = ribo.readColumn(col).astype(float)
+			except Exception:  # noqa: BLE001 - absent in older batches
+				out[lab] = np.full(n, np.nan)
+
+		# Per-gene transcription and translation FLUX on the positional groups.
+		# This is the transcript -> protein step: if copy loss reaches protein
+		# supply, origin-proximal r-protein genes must lose translation
+		# initiations relative to terminus-proximal ones, on the same gene set
+		# whose transcription is measured directly above.
+		try:
+			cis_ev = rnap.readColumn('rna_init_event_per_cistron')
+			mon_ev = ribo.readColumn('ribosome_init_event_per_monomer')
+			for lab in ('rp_origin', 'rp_term', 'rnap_sub'):
+				ci = ctx[lab.replace('rnap_sub', 'rnap') + '_cis']
+				mo = ctx[lab.replace('rnap_sub', 'rnap') + '_mon_idx']
+				out[lab + '_trs_init'] = (
+					cis_ev[:, ci].sum(axis=1).astype(float) if ci.size
+					else np.full(n, np.nan))
+				out[lab + '_trl_init'] = (
+					mon_ev[:, mo].sum(axis=1).astype(float) if mo.size
+					else np.full(n, np.nan))
+		except Exception:  # noqa: BLE001 - absent in older batches
+			for lab in ('rp_origin', 'rp_term', 'rnap_sub'):
+				out[lab + '_trs_init'] = np.full(n, np.nan)
+				out[lab + '_trl_init'] = np.full(n, np.nan)
 
 		# Per-gene bottleneck traces. Free monomer counts come from
 		# BulkMolecules, so these are FREE pools -- subunits already inside an
@@ -978,6 +1301,32 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		print('  %s (%.2f MB)'
 			% (os.path.basename(path), os.path.getsize(path) / 1e6))
 
+	def _write_limiting(self, out_dir):
+		"""How often each subunit is the bottleneck, beside its gene dosage.
+
+		This is the table that answers the three questions together: which
+		component limits each machine, what fraction of the time it does so,
+		and how many gene copies it has while doing it. One row per
+		(variant, seed, generation, complex, subunit) over every subunit of
+		30S, 50S and RNAP -- rRNAs included, which the protein-only version
+		could not represent.
+		"""
+		if not self._lim_rows:
+			return
+		path = os.path.join(out_dir, 'loop_lineage_limiting.csv')
+		cols = ['variant', 'seed', 'generation', 'complex', 'subunit',
+			'is_rna', 'stoich', 'replichore_frac', 'n_timesteps',
+			'limiting_frac', 'free_per_stoich_mean',
+			'free_per_stoich_median', 'frac_below_one', 'promoter_copies']
+		with open(path, 'w', newline='') as fh:
+			w = csv.DictWriter(fh, fieldnames=cols)
+			w.writeheader()
+			for r in self._lim_rows:
+				w.writerow({c: ('%.6g' % r[c] if isinstance(r[c], float)
+					else r[c]) for c in cols})
+		print('  %s (%d rows, %.2f MB)' % (os.path.basename(path),
+			len(self._lim_rows), os.path.getsize(path) / 1e6))
+
 	def _write_bottleneck(self, out_dir):
 		"""Per-gene traces for every ribosomal-protein and RNAP subunit.
 
@@ -1073,6 +1422,15 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			for i, mid in enumerate(ctx['r_prot_ids']):
 				fh.write('    %3d  %s (stoich %g)\n'
 					% (i, mid, ctx['r_prot_stoich'][i]))
+			for nm, ids, st in (('s30_limiting_idx', ctx['s30_all_ids'],
+						ctx['s30_all_stoich']),
+					('s50_limiting_idx', ctx['s50_all_ids'],
+						ctx['s50_all_stoich'])):
+				fh.write('  %s -> index into (RNA entries marked):\n' % nm)
+				for i, mid in enumerate(ids):
+					tag = '  <-- rRNA' if 'RNA' in mid else ''
+					fh.write('    %3d  %s (stoich %g)%s\n'
+						% (i, mid, st[i], tag))
 			fh.write('  limiting_rnap_idx -> index into:\n')
 			for i, mid in enumerate(ctx['rnap_sub_ids']):
 				fh.write('    %3d  %s (stoich %g)\n'
