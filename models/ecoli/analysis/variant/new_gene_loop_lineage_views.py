@@ -103,9 +103,14 @@ SEEDS = tuple(range(16))
 # CSV size, roughly 200 MB per batch, not runtime.
 TRACE_SEEDS = SEEDS
 
-# Seeds rendered as FIGURES. This is the expensive one -- 36 multi-page PDFs --
-# and it is for eyeballing, which does not need 16 lineages.
-FIGURE_SEEDS = (0, 1, 2, 3)
+# Seeds rendered as FIGURES: 36 multi-page PDFs, one page per seed. This is
+# the expensive output -- at 16 seeds it is 576 pages and roughly 850 MB per
+# batch, against ~210 MB at 4 seeds. Kept equal to SEEDS anyway: the
+# lineage-to-lineage spread is itself part of what these figures are for, and
+# judging which lineages are typical from a quarter of them is how the n=4
+# reading went wrong before. Cut this back to a subset if the download size
+# becomes the binding constraint.
+FIGURE_SEEDS = SEEDS
 
 # Terminus-proximal negative control, resolved by replichore position at run
 # time. Reused from multigen/copy_number_lineage_trace.py.
@@ -314,6 +319,24 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					continue
 				traces[(variant, seed)] = tr
 				events.extend(tr.pop('_events'))
+
+		# Seeds that do not exist are skipped silently by get_cells, so a batch
+		# with fewer seeds than requested yields a quietly smaller result. That
+		# is the failure mode this run exists to avoid -- analysing 4 lineages
+		# while believing there are 16 puts the statistics back under the n=4
+		# two-sided Wilcoxon floor of p=0.125. Report found-vs-requested per
+		# variant, and warn if any variant is short.
+		self._found = {v: sorted(s for (vv, s) in traces if vv == v)
+			for v in available}
+		for v in available:
+			got = self._found[v]
+			missing = [s for s in SEEDS if s not in got]
+			msg = 'v%d: %d of %d requested seeds found' % (
+				v, len(got), len(SEEDS))
+			if missing:
+				msg += ('  *** MISSING %s -- statistics will run on fewer '
+					'lineages than intended ***' % (missing,))
+			self._note(msg)
 
 		if not traces:
 			print('No readable lineages.')
@@ -1406,14 +1429,20 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fh.write('  %s\n' % msg)
 			fh.write('\nTERMINUS CONTROL\n  %s at replichore fraction %.3f\n'
 				% (ctx['term_id'], ctx['term_frac']))
-			fh.write('\nSEED COVERAGE\n'
-				'  loop_lineage_by_gen.csv:        seeds %s\n'
-				'  loop_lineage_bottleneck.csv:    seeds %s\n'
-				'  loop_lineage_timeseries.csv.gz: seeds %s '
-				'(per-timestep; needed for the event-anchored test)\n'
-				'  figures:                        seeds %s only\n'
-				% (list(SEEDS), list(SEEDS), list(TRACE_SEEDS),
-					list(FIGURE_SEEDS)))
+			# Report the seeds actually READ, per variant, not the ones requested.
+			# An earlier version printed list(SEEDS) unconditionally, so a 2-seed
+			# batch produced a manifest claiming 16.
+			found = getattr(self, '_found', {})
+			fh.write('\nSEED COVERAGE\n  requested: %s\n' % (list(SEEDS),))
+			for v in sorted(found):
+				got = found[v]
+				missing = [x for x in SEEDS if x not in got]
+				fh.write('  v%d FOUND %d of %d: %s%s\n'
+					% (v, len(got), len(SEEDS), got,
+						('   *** MISSING %s ***' % (missing,)) if missing else ''))
+			fh.write('  per-timestep trace written for the found seeds in %s\n'
+				'  figures rendered for the found seeds in %s\n'
+				% (list(TRACE_SEEDS), list(FIGURE_SEEDS)))
 			fh.write('\nFIGURE THINNING\n  figures plot one point per ~%.0f s '
 				'(PLOT_STRIDE_SEC); loop_lineage_timeseries.csv.gz keeps every '
 				'timestep at full resolution\n' % PLOT_STRIDE_SEC)
