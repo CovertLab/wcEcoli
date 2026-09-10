@@ -191,7 +191,10 @@ LOOP_CHAIN = (
 # time. Reused from multigen/copy_number_lineage_trace.py.
 TERMINUS_TARGET_FRACTION = 0.95
 
-OUT_SUBDIR = 'loop_lineage_views'
+# New folder per analysis generation, so a re-run never overwrites or sits
+# beside stale output from a previous pass. The earlier folder
+# ('loop_lineage_views') is left untouched.
+OUT_SUBDIR = 'loop_lineage_rpoc_chain'
 WINDOWS = (('gens06-14', (6, 14)), ('all-gens', None))
 SMOOTH_TIMESTEPS = 7
 
