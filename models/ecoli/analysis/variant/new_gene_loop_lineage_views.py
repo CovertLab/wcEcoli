@@ -112,6 +112,81 @@ TRACE_SEEDS = SEEDS
 # becomes the binding constraint.
 FIGURE_SEEDS = SEEDS
 
+# Named subunits that actually hold the assembly bottleneck, measured in
+# loop_lineage_views_minimal_v4. Group sums average these away: RNAP is held by
+# rpoC 71-87% of the time, and 2-4 r-proteins carry 80% of the protein-limited
+# time once rRNA clears. Each gets its own dosage / transcription / translation
+# / free-pool quartet so every step of the chain can be followed on ONE gene.
+#
+# rpoB and rpoC share an operon and a promoter position (f=0.109), so dosage
+# cannot separate them; the difference is production cost (rpoB efficiency
+# 0.830 vs rpoC 0.810, length 1342 vs 1407 aa). Both are logged for that
+# contrast. Labels are common names; ids are resolved at run time and a
+# missing id yields NaN columns rather than an error, since the limiting
+# identity is ParCa-dependent and may differ in another batch.
+NAMED_LIMITERS = (
+	('rpoA', 'EG10893-MONOMER[c]'),
+	('rpoB', 'RPOB-MONOMER[c]'),
+	('rpoC', 'RPOC-MONOMER[c]'),
+	('rpsQ', 'EG10916-MONOMER[c]'),
+	('rpsT', 'EG10919-MONOMER[c]'),
+	('rplL', 'EG10873-MONOMER[c]'),
+	('rplM', 'EG10874-MONOMER[c]'),
+	)
+
+# The 36 multi-page PDFs are the expensive output (~850 MB and most of the
+# runtime at 16 seeds). Set False to skip them and keep only the CSVs and the
+# loop-chain figure, which is what a re-run for new columns needs.
+MAKE_BIG_FIGURES = False
+
+# THE LOOP, one row per step, for a single named gene. The last row returns
+# to the first: copy number -> ... -> replication timing -> copy number. This
+# is the figure to read top to bottom and then wrap around.
+#
+# Step 4 is deliberately the TOTAL protein count, not the free pool. The free
+# pool is a residual of a nearly balanced flux and does not fall under burden
+# even for the gene that holds the bottleneck.
+# Event-rate rows are sparse -- rpoC initiates transcription about once every
+# 300 timesteps -- so at one point per PLOT_STRIDE_SEC they render as isolated
+# spikes with no readable trend. They are shown as a centred rolling mean over
+# this many timesteps (~2 min), stated on the figure. Level rows are untouched.
+LOOP_CHAIN_ROLL = 120
+
+# Generation window for the loop-chain figure. The whole lineage compresses
+# 24 generations into one axis, which hides the per-generation structure the
+# figure exists to show; this brackets the GFP induction at generation 8 with
+# two generations before and six after.
+LOOP_CHAIN_WINDOW = (6, 14)
+
+LOOP_CHAIN_GENE = 'rpoC'
+LOOP_CHAIN_RATES = frozenset((
+	'{g}_trs_init', '{g}_trl_init', 'rnap_formation', 'rrna_init_events',
+	's50_formation',
+	))
+
+LOOP_CHAIN = (
+	('gfp_mrna', '1. GFP mRNA', 'the driver'),
+	('gfp_protein', '2. GFP protein', 'the driver'),
+	('gfp_proteome_frac', '3. GFP proteome\nfraction', 'realised burden'),
+	('{g}_copies', '4. {g} gene\ncopies', 'dosage in'),
+	('{g}_trs_init', '5. {g}\ntranscript inits', 'transcription'),
+	('{g}_trl_init', '6. {g}\ntranslation inits', 'translation'),
+	('{g}_monomer', '7. {g} protein\n(total count)', 'protein supply'),
+	('rnap_formation', '8. RNAP formation\nevents', 'machine assembly'),
+	('total_rnap', '9. total RNAP', 'machine pool'),
+	('rnap_budget', '10. transcription\nbudget', 'global capacity'),
+	('rrna_init_events', '11. rRNA\ntranscript inits', 'downstream demand'),
+	('s50_formation', '12. 50S formation\nevents', 'ribosome assembly'),
+	('total_ribosome', '13. total\nribosomes', 'machine pool'),
+	('active_ribosome', '14. active\nribosomes', 'translation capacity'),
+	('cell_mass', '15. cell mass', 'the output'),
+	('growth_rate', '16. instantaneous\ngrowth rate', 'mass accumulation'),
+	('doubling_time', '17. doubling time', 'the phenotype'),
+	('critical_mass_per_oric', '18. critical mass\nper oriC', 'replication trigger'),
+	('n_oric', '19. origins\nper cell', 'LOOP CLOSES -> row 4'),
+	)
+
+
 # Terminus-proximal negative control, resolved by replichore position at run
 # time. Reused from multigen/copy_number_lineage_trace.py.
 TERMINUS_TARGET_FRACTION = 0.95
@@ -239,12 +314,64 @@ BLOCKS = (
 		('rnap_sub_trs_init', 'RNAP subunit\ntranscript inits', False),
 		('rnap_sub_trl_init', 'RNAP subunit\ntranslation inits', False),
 		)),
-	('J. context', (
+	('J. named bottleneck subunits (one row per step, per gene)', (
+		('rpoA_copies', 'rpoA\ngene copies', False),
+		('rpoA_trs_init', 'rpoA\ntranscript inits', False),
+		('rpoA_trl_init', 'rpoA\ntranslation inits', False),
+		('rpoA_monomer', 'rpoA\nprotein (total)', False),
+		('rpoA_free', 'rpoA\nfree pool', False),
+		('rpoB_copies', 'rpoB\ngene copies', False),
+		('rpoB_trs_init', 'rpoB\ntranscript inits', False),
+		('rpoB_trl_init', 'rpoB\ntranslation inits', False),
+		('rpoB_monomer', 'rpoB\nprotein (total)', False),
+		('rpoB_free', 'rpoB\nfree pool', False),
+		('rpoC_copies', 'rpoC\ngene copies', False),
+		('rpoC_trs_init', 'rpoC\ntranscript inits', False),
+		('rpoC_trl_init', 'rpoC\ntranslation inits', False),
+		('rpoC_monomer', 'rpoC\nprotein (total)', False),
+		('rpoC_free', 'rpoC\nfree pool', False),
+		('rpsQ_copies', 'rpsQ\ngene copies', False),
+		('rpsQ_trs_init', 'rpsQ\ntranscript inits', False),
+		('rpsQ_trl_init', 'rpsQ\ntranslation inits', False),
+		('rpsQ_monomer', 'rpsQ\nprotein (total)', False),
+		('rpsQ_free', 'rpsQ\nfree pool', False),
+		('rpsT_copies', 'rpsT\ngene copies', False),
+		('rpsT_trs_init', 'rpsT\ntranscript inits', False),
+		('rpsT_trl_init', 'rpsT\ntranslation inits', False),
+		('rpsT_monomer', 'rpsT\nprotein (total)', False),
+		('rpsT_free', 'rpsT\nfree pool', False),
+		('rplL_copies', 'rplL\ngene copies', False),
+		('rplL_trs_init', 'rplL\ntranscript inits', False),
+		('rplL_trl_init', 'rplL\ntranslation inits', False),
+		('rplL_monomer', 'rplL\nprotein (total)', False),
+		('rplL_free', 'rplL\nfree pool', False),
+		('rplM_copies', 'rplM\ngene copies', False),
+		('rplM_trs_init', 'rplM\ntranscript inits', False),
+		('rplM_trl_init', 'rplM\ntranslation inits', False),
+		('rplM_monomer', 'rplM\nprotein (total)', False),
+		('rplM_free', 'rplM\nfree pool', False),
+		)),
+	('K. context', (
 		('ppgpp', 'ppGpp\n(uM)', False),
 		)),
 	)
 
 KEYS = tuple(k for _, rows in BLOCKS for k, _, _ in rows)
+
+
+def _rolling_mean(y, w):
+	"""Centred rolling mean that ignores NaN, without a pandas dependency.
+
+	Used only for the sparse event-rate rows of the loop-chain figure: rpoC
+	initiates transcription about once every 300 timesteps, so a raw trace is
+	unreadable at any plotting stride.
+	"""
+	k = np.ones(int(w))
+	ok = np.isfinite(y).astype(float)
+	num = np.convolve(np.where(np.isfinite(y), y, 0.0), k, mode='same')
+	den = np.convolve(ok, k, mode='same')
+	return np.where(den > 0, num / np.maximum(den, 1e-9), np.nan)
+
 LABEL = {k: lab for _, rows in BLOCKS for k, lab, _ in rows}
 
 # Rows that are counts of a thing and so make sense per unit mass (view 5).
@@ -349,6 +476,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		self._write_timeseries(out_dir, traces)
 		self._write_events(out_dir, events)
 		self._render(out_dir, traces, available)
+		self._render_loop_chain(out_dir, traces, available)
 		self._write_manifest(out_dir, ctx)
 		print('\nWrote %s' % out_dir)
 
@@ -565,6 +693,21 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		# integrate history and so cannot date a change; these can.
 		mono_index = {m: i for i, m in enumerate(monomer_data['id'])}
 		rnap_genes = [b for b in bottleneck if b['group'] == 'rnap_subunit']
+		# Per-gene index quartet for each named bottleneck subunit. Cistron index
+		# drives transcription, monomer index drives translation, the TU set
+		# drives promoter copy number and the bulk id drives the free pool.
+		named = []
+		for lab, mid in NAMED_LIMITERS:
+			cis = mono_to_cistron.get(mid)
+			ci = cistron_index.get(cis) if cis else None
+			mi_ = mono_index.get(mid)
+			tus = (np.where(cistron_tu[ci, :].toarray().ravel() > 0)[0]
+				if ci is not None else np.array([], int))
+			named.append(dict(lab=lab, monomer=mid, cistron=cis, ci=ci, mi=mi_,
+				tus=tus, ok=(ci is not None and mi_ is not None and tus.size > 0)))
+			print('  named limiter %-5s %-22s %s'
+				% (lab, mid, 'resolved (%d TUs)' % tus.size
+					if named[-1]['ok'] else '*** NOT FOUND -- columns will be NaN ***'))
 		def cis_idx(genes):
 			return np.array([cistron_index[b['cistron']] for b in genes
 				if b['cistron'] in cistron_index], int)
@@ -619,6 +762,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			rp_origin_mon_idx=mon_idx(rp_genes_o),
 			rp_term_mon_idx=mon_idx(rp_genes_t),
 			rnap_mon_idx=mon_idx(rnap_genes),
+			named=named,
 			rp_origin_tu=rp_origin,
 			rp_term_tu=rp_term,
 			new_tu=np.where(is_new_tu)[0],
@@ -1013,6 +1157,43 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				out[lab + '_trs_init'] = np.full(n, np.nan)
 				out[lab + '_trl_init'] = np.full(n, np.nan)
 
+		# Named bottleneck subunits, one quartet each. These are the columns
+		# that let the chain be followed on a single gene instead of a group
+		# mean: dosage -> transcription -> translation -> protein.
+		named = ctx.get('named') or []
+		try:
+			cis_ev = rnap.readColumn('rna_init_event_per_cistron')
+			mon_ev = ribo.readColumn('ribosome_init_event_per_monomer')
+		except Exception:  # noqa: BLE001
+			cis_ev = mon_ev = None
+		for g in named:
+			lab = g['lab']
+			if g['ok'] and cis_ev is not None:
+				out[lab + '_copies'] = copies[:, g['tus']].sum(axis=1).astype(float)
+				out[lab + '_trs_init'] = cis_ev[:, g['ci']].astype(float)
+				out[lab + '_trl_init'] = mon_ev[:, g['mi']].astype(float)
+			else:
+				for suf in ('_copies', '_trs_init', '_trl_init'):
+					out[lab + suf] = np.full(n, np.nan)
+			# TOTAL monomer count, which accumulates, alongside the FREE pool.
+			# The free pool is a residual of a nearly balanced flux and does not
+			# track supply -- rpoC is the RNAP bottleneck yet its free pool does
+			# not fall under burden. Total count is the supply instrument; the
+			# free pool is kept only for the assembly-bound arithmetic.
+			out[lab + '_monomer'] = mon_sum([g['monomer']])
+
+		ok_named = [g for g in named if g['ok']]
+		if ok_named:
+			(free_named,) = read_bulk_molecule_counts(sim_out,
+				([g['monomer'] for g in ok_named],))
+			free_named = np.atleast_2d(free_named).astype(float)
+			for j, g in enumerate(ok_named):
+				out[g['lab'] + '_free'] = free_named[:, j]
+		for g in named:
+			if not g['ok']:
+				out[g['lab'] + '_free'] = np.full(n, np.nan)
+				out[g['lab'] + '_monomer'] = np.full(n, np.nan)
+
 		# Per-gene bottleneck traces. Free monomer counts come from
 		# BulkMolecules, so these are FREE pools -- subunits already inside an
 		# assembled ribosome or RNAP are excluded, which is what makes
@@ -1171,6 +1352,10 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def _render(self, out_dir, traces, variants):
 		matplotlib.rcParams.update({'font.size': 8,
 			'axes.spines.top': False, 'axes.spines.right': False})
+		if not MAKE_BIG_FIGURES:
+			self._note('MAKE_BIG_FIGURES is False -- skipped the 36 multi-page '
+				'PDFs; CSVs and the loop-chain figure are unaffected')
+			return
 		for variant in variants:
 			seeds = [s for s in FIGURE_SEEDS if (variant, s) in traces]
 			if not seeds:
@@ -1179,6 +1364,111 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				for wname, wrange in WINDOWS:
 					self._one_pdf(out_dir, variant, seeds, traces, view,
 						view_desc, wname, wrange)
+
+	def _render_loop_chain(self, out_dir, traces, variants):
+		"""One page per lineage: every step of the loop as its own row.
+
+		Two passes -- raw counts and a smoothed derivative -- because the level
+		and the rate answer different questions. The level shows where a
+		quantity ends up; the derivative shows when it turned, which is what
+		ordering an eight-step chain needs.
+		"""
+		g = LOOP_CHAIN_GENE
+		rows = [(k.format(g=g), lab.format(g=g), note)
+			for k, lab, note in LOOP_CHAIN]
+		missing = [k for k, _, _ in rows if k not in KEYS]
+		if missing:
+			self._note('loop-chain figure skipped, missing columns: %s'
+				% (missing,))
+			return
+		matplotlib.rcParams.update({'font.size': 8,
+			'axes.spines.top': False, 'axes.spines.right': False})
+		for variant in variants:
+			seeds = [sd for sd in FIGURE_SEEDS if (variant, sd) in traces]
+			if not seeds:
+				continue
+			for mode in ('counts', 'derivative'):
+				path = os.path.join(out_dir, 'v%02d_loopchain_%s_%s_gens%02d-%02d.pdf'
+					% (variant, g, mode,
+						LOOP_CHAIN_WINDOW[0], LOOP_CHAIN_WINDOW[1]))
+				with PdfPages(path) as pdf:
+					for seed in seeds:
+						fig = self._loop_chain_page(traces[(variant, seed)],
+							rows, variant, seed, mode, g)
+						if fig is None:
+							continue
+						pdf.savefig(fig)
+						if seed == seeds[0]:
+							fig.savefig(os.path.join(out_dir,
+								'v%02d_loopchain_%s_%s_gens%02d-%02d.png'
+								% (variant, g, mode, LOOP_CHAIN_WINDOW[0],
+									LOOP_CHAIN_WINDOW[1])), dpi=110,
+								bbox_inches='tight')
+						plt.close(fig)
+				print('  %s' % os.path.basename(path))
+
+	def _loop_chain_page(self, tr, rows, variant, seed, mode, gene):
+		x, ys = self._transform(tr, 'view1-counts' if mode == 'counts'
+			else 'view3-smoothed-derivative')
+		stride = self._stride(tr)
+		keep = np.zeros(x.size, bool)
+		keep[::stride] = True
+		if LOOP_CHAIN_WINDOW is not None:
+			gens = np.full(tr['time'].size, -1)
+			for a, b, g in tr['gen_bounds']:
+				gens[(tr['time'] >= a) & (tr['time'] <= b)] = g
+			keep &= ((gens >= LOOP_CHAIN_WINDOW[0])
+				& (gens <= LOOP_CHAIN_WINDOW[1]))
+		if not np.any(keep):
+			return None
+		fig, axes = plt.subplots(len(rows), 1, sharex=True,
+			figsize=(16, 1.25 * len(rows)))
+		for i, (ax, (key, lab, note)) in enumerate(zip(axes, rows)):
+			y = ys[key]
+			raw_key = LOOP_CHAIN[i][0]
+			if mode == 'counts' and raw_key in LOOP_CHAIN_RATES:
+				y = _rolling_mean(y, LOOP_CHAIN_ROLL)
+			ax.plot(x[keep], y[keep], lw=.95, color='#4a3aa7')
+			ax.set_ylabel(lab, fontsize=7.5, rotation=0, ha='right',
+				va='center', labelpad=10)
+			ax.tick_params(labelsize=7)
+			ax.margins(x=.01)
+			# The step name sits inside the axes so the row reads as a stage of
+			# the chain rather than as one more unlabelled trace.
+			ax.text(.998, .90, note, transform=ax.transAxes, ha='right',
+				va='top', fontsize=7, color='#8a7f2f' if i == len(rows) - 1
+				else '#96999e',
+				fontweight='bold' if i in (0, len(rows) - 1) else 'normal')
+			if key == 'critical_mass_per_oric' and mode == 'counts':
+				ax.axhline(1.0, color='#b3123c', lw=1.0)
+			if mode == 'derivative':
+				ax.axhline(0.0, color='#c9ced4', lw=.7)
+			self._mark(ax, tr, LOOP_CHAIN_WINDOW, label_induction=(i == 0))
+		# Clamp to the plotted span. Masking the data does not move the axis,
+		# so without this a 9-generation window renders on a 24-generation
+		# axis with the data squeezed into a third of the width.
+		xv = x[keep]
+		if xv.size:
+			pad = 0.01 * (xv.max() - xv.min() or 1.0)
+			for ax in axes:
+				ax.set_xlim(xv.min() - pad, xv.max() + pad)
+		axes[-1].set_xlabel('time (min, continuous across generations)')
+		# Build the title in two steps. Adjacent string literals concatenate
+		# BEFORE % is applied, so a second % operator inside the literal block
+		# tries to fill every placeholder in the whole title.
+		roll_note = ('event-rate rows are a %d-timestep rolling mean; '
+			'level rows are raw' % LOOP_CHAIN_ROLL) if mode == 'counts' else (
+			'derivative smoothed over %d timesteps' % SMOOTH_TIMESTEPS)
+		fig.suptitle('THE LOOP, STEP BY STEP -- %s  |  variant %d, seed %d  |  %s'
+			'  |  generations %s'
+			'\nread top to bottom, then wrap: row 19 feeds row 4.  %s.'
+			'\nSOLID RED = GFP induction; dashed grey = division; '
+			'dotted orange = replication initiation'
+			% (gene, variant, seed, mode,
+				'%d-%d' % LOOP_CHAIN_WINDOW if LOOP_CHAIN_WINDOW
+				else 'all', roll_note), fontsize=10, y=.997)
+		fig.tight_layout(rect=(0, 0, 1, .988))
+		return fig
 
 	def _one_pdf(self, out_dir, variant, seeds, traces, view, view_desc,
 			wname, wrange):
