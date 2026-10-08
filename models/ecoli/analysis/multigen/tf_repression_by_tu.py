@@ -69,6 +69,7 @@ larger scale than the nascent/precursor series, so a twin axis is used.
 - random, but figure out if it is ok that partial tRNA do not appear to be
 counted anywhere while rRNA do?
 - consider changing the axis sharing methodology in panel 3 for rRNAs and tRNAs
+- add all TF short names to TF_SHORT_NAMES dict
 """
 
 import os
@@ -85,8 +86,8 @@ from wholecell.utils import units
 
 # USER INPUTS
 # List the TU(s) to be plotted (with or without compartment tag):
-TU_IDS = ["TU103[c]", "TU00415[c]", "TU0-1181[c]", "TU0-13035[c]", "TU00507",
-          "TU0-13001[c]", "TU0-1182[c]"]
+TU_IDS =["TU00352[c]","TU00434[c]", "TU00435[c]", "TU00472[c]","TU00436[c]", "TU00437[c]", "TU00438[c]", "TU0-14460[c]"] #["TU103[c]", "TU00415[c]", "TU0-1181[c]", "TU0-13035[c]", "TU00507",
+          #"TU0-13001[c]", "TU0-1182[c]"]
 
 # Short names for TFs to be used in the figure legend (otherwise the raw TF id
 # is used, see tf_condition.tsv for the full list of TFs in the model):
