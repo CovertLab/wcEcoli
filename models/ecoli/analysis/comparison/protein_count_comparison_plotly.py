@@ -95,6 +95,8 @@ single doubling time rather than a per-timepoint value.
 TF note: while there are technically many TFs in the model, the only TFs that get
 a "Transcription factor subunit" category here are those actively modeled (the
 list in reconstruction/ecoli/flat/condition/tf_condition.tsv).
+
+# TODO: the default pyenv used for the model does not have sklearn, so maybe get rid of COD. I think its only working rn bc the configuration uses a different pyenv version
 """
 
 import os
@@ -104,7 +106,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import pearsonr
-from sklearn.metrics import r2_score
+#from sklearn.metrics import r2_score
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
@@ -1222,7 +1224,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
 
         r_value = pearsonr(sim1_log, sim2_log)[0]
         pearson_r2 = r_value ** 2
-        cod_r2 = r2_score(sim2_log, sim1_log)
+        #cod_r2 = r2_score(sim2_log, sim1_log)
+        cod_r2 = 0
 
         # Highlight list -> compartment-tagged monomer ids (matching plotted ids):
         converted_proteins = [
