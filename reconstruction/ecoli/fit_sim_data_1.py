@@ -29,7 +29,7 @@ from wholecell.utils.fitting import normalize, masses_and_counts_for_homeostatic
 
 # Fitting parameters
 FITNESS_THRESHOLD = 1e-9
-MAX_FITTING_ITERATIONS = 100
+MAX_FITTING_ITERATIONS = 200
 N_SEEDS = 10
 
 # Parameters used in fitPromoterBoundProbability()
