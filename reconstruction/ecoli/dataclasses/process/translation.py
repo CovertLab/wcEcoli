@@ -190,8 +190,13 @@ class Translation(object):
 			# from Tobias et al., 1991
 			for i, protein in enumerate(all_proteins):
 				self.determine_protease_involvement(protein['id'], i, protease_dict)
-				# Use measured degradation rates if available
-				if protein['id'] in measured_deg_rates:
+				# artificially set the half-life of PD00205 to 600 min:
+				if protein['id'] == "PD00205":
+					# use 600 min half life:
+					deg_rate[i] = np.log(2) / (60.0 * 600.0)
+					half_life_source_ID[i] = 'PD00205_half_life_600min'
+
+				elif protein['id'] in measured_deg_rates:
 					deg_rate[i] = measured_deg_rates[protein['id']]
 					half_life_source_ID[i] = 'CL_measured_deg_rates_2020'
 				elif protein['id'] in pulsed_silac_deg_rates:
