@@ -1879,8 +1879,9 @@ class Transcription(object):
 			# ppGpp-regulated synthesis probability before any TF effect.
 			# This is done because exp_free and exp_ppgpp are rescaled below
 			# so that synth_prob_from_ppgpp returns this new_prob at the basal
-			# condition's ppGpp concentration (i.e. after rescaling,
-			# synth_prob_from_ppgpp(basal ppgpp_conc) / new_prob ≈ 1).
+			# condition's ppGpp concentration (i.e. in the basal condition, the
+			# ppGpp-on synthesis probability then matches the ppGpp-off one:
+			# basal_prob + delta_no_ppgpp).
 			# Then, during the sim, when TF binding multiplies it by
 			# (1 + delta_with_ppgpp), the result matches the measured basal
 			# expression, rather than the measured expression with the TF
