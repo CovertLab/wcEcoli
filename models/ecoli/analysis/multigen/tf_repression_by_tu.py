@@ -69,7 +69,6 @@ larger scale than the nascent/precursor series, so a twin axis is used.
 - random, but figure out if it is ok that partial tRNA do not appear to be
 counted anywhere while rRNA do?
 - consider changing the axis sharing methodology in panel 3 for rRNAs and tRNAs
-- add all TF short names to TF_SHORT_NAMES dict
 """
 
 import os
@@ -91,17 +90,30 @@ TU_IDS =["TU00352[c]","TU00434[c]", "TU00435[c]", "TU00472[c]","TU00436[c]", "TU
 
 # Short names for TFs to be used in the figure legend (otherwise the raw TF id
 # is used, see tf_condition.tsv for the full list of TFs in the model):
-# TODO (mia): put all names in
 TF_SHORT_NAMES = {
-    "CPLX0-228": "ArgR",
+    "CPLX-125": "trpR",
+    "CPLX0-228": "argR",
+    "CPLX0-7669": "argP",
+    "MONOMER0-155": "lrp",
+    "MONOMER0-162": "tyrR",
+    "PUTA-CPLX": "putA",
+    "CPLX-172": "araC",
+    "CPLX0-7916": "bglJ",
+    "MONOMER0-160": "dnaA",
+    "CPLX0-7705": "fis",
+    "PD00288": "hns",
+    "PC00027": "ihfA",
+    "PD00519": "leuO",
     "PC00010": "lexA",
-    "MONOMER0-155": "Lrp",
+    "CPLX0-7796": "metJ",
+    "CPLX0-7740": "cytR",
+    "FNR-4FE-4S-CPLX": "fnr",
+    "PHOSPHO-ARCA": "arcA",
+    "PHOSPHO-BAER": "baeR",
+    "PHOSPHO-DCUR": "dcuR",
+    "PHOSPHO-NARL": "narL",
     "CPLX0-226": "crp",
-    "CPLX0-7669": "ArgP",
-"PHOSPHO-ARCA": "ArcA",
-"MONOMER0-160": "dnaA",
-"CPLX0-7705":"fis",
-    "PUTA-CPLX":"putA"
+    "EG12123-MONOMER": "lrhA",
 }
 
 # Colors for each TF in the stacked bar plot (panel 2):
