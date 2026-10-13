@@ -63,10 +63,13 @@ class EcoliSimulation(Simulation):
 			TfUnbinding,
 		),
 		# Must run after TfUnbinding and before TfBinding
+		# (ProteinDegradation runs here so that DNA-bound transcription factors
+		# are in the bulk pool and can be degraded)
 		(
 			Equilibrium,
 			TwoComponentSystem,
 			RnaMaturation,
+			ProteinDegradation,
 		),
 		# Must run before TranscriptInitiation
 		(
@@ -76,7 +79,6 @@ class EcoliSimulation(Simulation):
 			TranscriptInitiation,
 			PolypeptideInitiation,
 			ChromosomeReplication,
-			ProteinDegradation,
 			RnaDegradation,
 			Complexation,
 		),
