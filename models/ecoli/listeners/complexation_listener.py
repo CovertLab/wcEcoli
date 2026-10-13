@@ -25,8 +25,9 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 	def initialize(self, sim, sim_data):
 		super(ComplexationListener, self).initialize(sim, sim_data)
 
-		# Get the IDs of the complexation reactions:
+		# Get the IDs of the complexation reactions and complexes:
 		self.reactionIDs = sim_data.process.complexation.ids_reactions
+		self.complexIDs = sim_data.process.complexation.ids_complexes
 
 	# Allocate memory
 	def allocate(self):
@@ -34,13 +35,22 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 
 		self.complexationEvents = np.zeros(len(self.reactionIDs), np.int64)
 
+		# Per-complex dissociation counts written by ProteinDegradation when it
+		# breaks complexes apart to degrade their subunits:
+		self.complexesDissociated = np.zeros(len(self.complexIDs), np.int64)
+
+		# Total unique complexes dissociated this timestep (overlap accounting):
+		self.dissociationIterations = 0
+
 	def tableCreate(self, tableWriter):
 		subcolumns = {
-			'complexationEvents': 'reactionIDs'
+			'complexationEvents': 'reactionIDs',
+			'complexesDissociated': 'complexIDs',
 		}
 
 		tableWriter.writeAttributes(
 			reactionIDs = self.reactionIDs,
+			complexIDs = self.complexIDs,
 			subcolumns = subcolumns)
 
 
@@ -49,4 +59,6 @@ class ComplexationListener(wholecell.listeners.listener.Listener):
 			time = self.time(),
 			simulationStep = self.simulationStep(),
 			complexationEvents = self.complexationEvents,
+			complexesDissociated = self.complexesDissociated,
+			dissociationIterations = self.dissociationIterations,
 			)
