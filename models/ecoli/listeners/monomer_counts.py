@@ -124,6 +124,24 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			np.int64
 		)
 
+		# Grand-total degradation (monomersDegraded) split by pool of origin:
+		self.monomersDegradedFree = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		self.monomersDegradedFromComplexes = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
+		# Monomers returned to the free pool when a complex was dissociated to
+		# degrade one of its other subunits:
+		self.monomersProducedViaDissociation = np.zeros(
+			len(self.monomer_ids),
+			np.int64
+		)
+
 		self.monomersElongated = np.zeros(
 			len(self.monomer_ids),
 			np.int64
@@ -192,6 +210,9 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			'freeMonomerCounts': 'monomerIds',
 			'monomersElongated': 'monomerIds',
 			'monomersDegraded': 'monomerIds',
+			'monomersDegradedFree': 'monomerIds',
+			'monomersDegradedFromComplexes': 'monomerIds',
+			'monomersProducedViaDissociation': 'monomerIds',
 			}
 
 		tableWriter.writeAttributes(
@@ -206,4 +227,7 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			freeMonomerCounts=self.freeMonomerCounts,
 			monomersElongated = self.monomersElongated,
 			monomersDegraded = self.monomersDegraded,
+			monomersDegradedFree = self.monomersDegradedFree,
+			monomersDegradedFromComplexes = self.monomersDegradedFromComplexes,
+			monomersProducedViaDissociation = self.monomersProducedViaDissociation,
 			)
