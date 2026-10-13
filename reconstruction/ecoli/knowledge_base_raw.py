@@ -148,6 +148,32 @@ REMOVED_DATA = {
 	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
+# TF-gene pairs in fold_changes_removed.tsv that were removed as workarounds
+# to get enough expression with ppGpp regulation. With
+# CORRECT_PPGPP_TF_DOUBLE_COUNT in transcription.py on, these may no longer
+# be needed. Add a group name to RESTORE_PPGPP_WORKAROUND_GROUPS to keep that
+# group's regulation (i.e. skip its removal) in the next ParCa run.
+PPGPP_WORKAROUND_FOLD_CHANGES = {
+	# "Remove to get stable growth with ppGpp regulation and amino acid supply"
+	'lrp_aa_synthesis': [
+		('lrp', 'ilvA'), ('lrp', 'glnA'), ('lrp', 'serA'), ('lrp', 'aspC'),
+		('lrp', 'can'), ('lrp', 'ilvD'), ('lrp', 'pyrI'), ('lrp', 'ilvE'),
+		],
+	# "Remove to get sufficient expression of ... rpsU when ppGpp regulation ... used"
+	'lexA_rpsU': [('lexA', 'rpsU')],
+	# "Remove to get sufficient expression of histidine biosynthesis enzymes"
+	'argR_hisL': [('argR', 'hisL')],
+	# "Remove to increase ribosome counts ... when simulating with ppGpp"
+	'ribosome_counts': [
+		('lrp', 'rplR'), ('argR', 'rpsO'), ('crp', 'rpsO'), ('fis', 'rpsO'),
+		],
+	# "Remove to get higher charging ... when simulating with ppGpp"
+	'fis_gltX': [('fis', 'gltX')],
+	# "Remove to get expression in ppGpp" (added with the ppGpp TF adjustment, #1161)
+	'crp_rproteins': [('crp', 'rplI'), ('crp', 'rpsF'), ('crp', 'rpsR')],
+	}
+RESTORE_PPGPP_WORKAROUND_GROUPS: List[str] = []  # e.g. ['lrp_aa_synthesis', 'lexA_rpsU']
+
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',
 	'metabolic_reactions': 'metabolic_reactions_modified',
@@ -356,6 +382,11 @@ class KnowledgeBaseEcoli(object):
 			ids_to_remove = set()
 			for row in data_to_remove:
 				ids_to_remove.add(tuple([row[col] for col in removed_cols]))
+
+			# Keep regulation for any ppGpp workaround groups being restored
+			if data_attr.startswith('fold_changes'):
+				for group in RESTORE_PPGPP_WORKAROUND_GROUPS:
+					ids_to_remove -= set(PPGPP_WORKAROUND_FOLD_CHANGES[group])
 
 			# Remove any matching rows
 			data = getattr(self, data_attr)
