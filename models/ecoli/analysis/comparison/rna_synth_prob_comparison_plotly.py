@@ -122,9 +122,8 @@ SKIP_INITIAL_GENERATIONS = 2
 SYNTH_PROB_FLOOR = 1e-8
 
 # TUs (rnaIds) to highlight in red in the highlighted plot:
-plot_set = ["TU00352[c]","TU00434[c]", "TU00435[c]", "TU00472[c]","TU00436[c]", "TU00437[c]", "TU00438[c]", "TU0-14460[c]"]
-lexA_TUS = ["TU0-12809[c]", "TU0-12849[c]", "TU0-12853[c]", "TU0-12854[c]", "TU0-13128[c]", "TU0-13438[c]", "TU0-13487[c]", "TU0-13744[c]", "TU0-14002[c]", "TU0-14047[c]", "TU0-1422[c]", "TU0-1423[c]", "TU0-14368[c]", "TU0-14447[c]", "TU0-14460[c]", "TU0-14679[c]", "TU0-14730[c]", "TU0-2[c]", "TU0-3941[c]", "TU0-4525[c]", "TU0-45271[c]", "TU0-6301[c]", "TU0-6559[c]", "TU0-6563[c]", "TU0-6661[c]", "TU0-6683[c]", "TU0-6686[c]", "TU0-7043[c]", "TU0-7581[c]", "TU0-8261[c]", "TU0-8264[c]", "TU0-8265[c]", "TU0-8267[c]", "TU00037[c]", "TU00062[c]", "TU00066[c]", "TU00069[c]", "TU00180[c]", "TU00352[c]", "TU365[c]", "EG10214_RNA[c]", "EG10341_RNA[c]", "EG10344_RNA[c]", "EG10604_RNA[c]", "EG10619_RNA[c]", "EG10620_RNA[c]", "EG10621_RNA[c]", "EG10622_RNA[c]", "EG10623_RNA[c]", "EG11086_RNA[c]"]
-PLOT_TUS_OF_INTEREST = plot_set
+new_tus = ["TU00352[c]","TU00434[c]", "TU00435[c]", "TU00472[c]","TU00436[c]", "TU00437[c]", "TU00438[c]", "TU0-14460[c]", "TU67[c]", "TU00374[c]", "TU68[c]"]
+PLOT_TUS_OF_INTEREST = new_tus
 
 # Fixed styling for the "No TF" group in the categorized plot.
 NO_TF_LABEL = 'No TF'
