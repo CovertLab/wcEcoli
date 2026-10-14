@@ -68,20 +68,12 @@ NOTE: here is how we define if/how a protein has metabolic involvement:
     reactions where this is the case may not even be active in the model).
 
 
-STATS BOX (all three computed on the log10(count+1) values, see
+STATS BOX (all computed on the log10(count+1) values, see
 _add_parity_and_stats):
   - Pearson r: linear correlation of the two sims' log counts (symmetric, so it
     does not depend on which sim is x vs y).
   - Pearson R² = r**2: the fraction of variance explained by the best-fit line,
     which is NOT the y = x parity line drawn on the plot.
-  - COD R² (coefficient of determination via sklearn r2_score, measured against
-    the y = x line): how close the points actually are to y=x. It is computed
-    as r2_score(y_true=sim2_log, y_pred=sim1_log), i.e. the fraction of Sim 2's
-    variance the y = x line accounts for. Because the denominator is the y-axis
-    sim's variance it is asymmetric, swapping x and y changes it, and it can
-    go negative when the sims disagree worse than predicting the mean. A high
-    Pearson R² with a low/negative COD R² means the sims are well correlated but
-    systematically off the y=x line.
 
 AVERAGING NOTE:
 Monomer counts (and the hover breakdown counts, fluxes, and counts_to_molar) are
@@ -128,7 +120,7 @@ MAX_HOVER_IDS = 5
 SKIP_INITIAL_GENERATIONS = 2
 
 # Proteins to highlight (each its own color) in the highlighted plot:
-PLOT_PROTEINS_OF_INTEREST = ["RPOD-MONOMER", "EG10239-MONOMER"]
+PLOT_PROTEINS_OF_INTEREST = ["RPOD-MONOMER", "EG10239-MONOMER", "XYLISOM-MONOMER", "XYLULOKIN-MONOMER", "PD00205", "PD00196", "PD00197", "PD00353"]
 
 # Flux unit string shown in hover text (FBAResults.reactionFluxes are mmol/L/s):
 FLUX_UNIT = "mM/s"
@@ -865,8 +857,7 @@ def _add_parity_and_stats(fig, sim1_log, sim2_log, r_value, pearson_r2, cod_r2):
     stats_text = (
         f"<b>Statistics:</b><br>"
         f"Pearson r = {r_value:.3f}<br>"
-        f"Pearson R² = {pearson_r2:.3f}<br>"
-        f"COD R² = {cod_r2:.3f}"
+        f"Pearson R² = {pearson_r2:.3f}"
     )
     fig.add_annotation(
         x=0.95,
