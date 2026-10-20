@@ -130,7 +130,7 @@ class Translation(object):
 		clim_deg_rates = {
 			p['id']: (np.log(2) / p['half_life']).asNumber(deg_rate_units)
 			for p in
-			raw_data.protein_half_lives_clim
+			raw_data.protein_half_lives_Clim4a
 		}
 
 
