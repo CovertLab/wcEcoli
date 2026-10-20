@@ -148,10 +148,9 @@ REMOVED_DATA = {
 	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
-# TF-gene pairs in fold_changes_removed.tsv that were removed as workarounds
-# to get enough expression with ppGpp regulation. With
-# CORRECT_PPGPP_TF_DOUBLE_COUNT in transcription.py on, these may no longer
-# be needed. Add a group name to RESTORE_PPGPP_WORKAROUND_GROUPS to keep that
+# TF-gene pairs in fold_changes_removed.tsv that were likely removed as
+# workarounds to get enough expression with ppGpp regulation on. Add a group
+# name to RESTORE_PPGPP_WORKAROUND_GROUPS to keep that
 # group's regulation (i.e. skip its removal) in the next ParCa run.
 PPGPP_WORKAROUND_FOLD_CHANGES = {
 	# "Remove to get stable growth with ppGpp regulation and amino acid supply"
@@ -172,7 +171,7 @@ PPGPP_WORKAROUND_FOLD_CHANGES = {
 	# "Remove to get expression in ppGpp" (added with the ppGpp TF adjustment, #1161)
 	'crp_rproteins': [('crp', 'rplI'), ('crp', 'rpsF'), ('crp', 'rpsR')],
 	}
-RESTORE_PPGPP_WORKAROUND_GROUPS: List[str] = []  # e.g. ['lrp_aa_synthesis', 'lexA_rpsU']
+RESTORE_PPGPP_WORKAROUND_GROUPS: List[str] = ['lexA_rpsU']  # e.g. ['lrp_aa_synthesis', 'lexA_rpsU']
 
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',
