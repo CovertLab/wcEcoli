@@ -122,7 +122,7 @@ SKIP_INITIAL_GENERATIONS = 2
 SYNTH_PROB_FLOOR = 1e-8
 
 # TUs (rnaIds) to highlight in red in the highlighted plot:
-new_tus = ["TU00352[c]","TU00434[c]", "TU00435[c]", "TU00472[c]","TU00436[c]", "TU00437[c]", "TU00438[c]", "TU0-14460[c]", "TU67[c]", "TU00374[c]", "TU68[c]"]
+new_tus = ["TU0-8221[c]","TU0-42471[c]","TU00352[c]","TU00434[c]", "TU00435[c]", "TU00472[c]","TU00436[c]", "TU00437[c]", "TU00438[c]", "TU0-14460[c]", "TU67[c]", "TU00374[c]", "TU68[c]"]
 PLOT_TUS_OF_INTEREST = new_tus
 
 # Fixed styling for the "No TF" group in the categorized plot.

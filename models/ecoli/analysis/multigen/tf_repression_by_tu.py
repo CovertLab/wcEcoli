@@ -85,7 +85,7 @@ from wholecell.utils import units
 
 # USER INPUTS
 # List the TU(s) to be plotted (with or without compartment tag):
-TU_IDS =["TU00352[c]", "TU00472[c]", "TU0-14460[c]", "TU67[c]", "TU00374[c]", "TU68[c]", "TU0-1181"] #["TU103[c]", "TU00415[c]", "TU0-1181[c]", "TU0-13035[c]", "TU00507",
+TU_IDS =["TU0-8221[c]","TU0-42471[c]"] #["TU00352[c]", "TU00472[c]", "TU0-14460[c]", "TU67[c]", "TU00374[c]", "TU68[c]", "TU0-1181"] #["TU103[c]", "TU00415[c]", "TU0-1181[c]", "TU0-13035[c]", "TU00507",
           #"TU0-13001[c]", "TU0-1182[c]"]
 
 # Short names for TFs to be used in the figure legend (otherwise the raw TF id
