@@ -1446,8 +1446,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             replisome_counts.append(active_replisome_counts)
 
             # Find the replisome complexation events by subtracting the counts
-            # of the previous time step from the current time step:
-            replisome_complexation_events = np.diff(active_replisome_counts, prepend=0)
+            # of the previous time step from the current time step (prepending
+            # the first count so inherited replisomes are not counted as
+            # assembly events at the start of every generation):
+            replisome_complexation_events = np.diff(
+                active_replisome_counts, prepend=active_replisome_counts[0])
 
             # Delete all negative values (which correspond to replisomes
             # deleting from the simulations):
