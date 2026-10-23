@@ -1486,6 +1486,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         sim_dir = cell_paths[0]
         simOutDir = os.path.join(sim_dir, 'simOut')
 
+        # Check if replication sequestered replisome subunits. With mechanistic
+        # replisome off (the default setting), chromosome replication never
+        # removes replisome subunits from the bulk pool, so active replisomes
+        # contain no real subunits. If it is on, then subunits are pulled from
+        # bullk to generate replilsomes in the unique molecule space.
+        mechanistic_replisome = metadata.get('mechanistic_replisome', False)
+
         # Extract protein indexes for each monomer:
         monomer_counts_reader = TableReader(
             os.path.join(simOutDir, "MonomerCounts"))
@@ -1799,16 +1806,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     self.get_replisome_subunit_counts(sim_data, cell_paths, complex_id))
                 subunit_counts_within_replisomes = (
                         replisome_counts * replisome_stoich)
-                ax1.plot(time, subunit_counts_within_replisomes, color='gold',
-                         label=f'{complex_id} counts within active replisomes, '
-                               f'{replisome_stoich} per',
-                         linewidth=0.75, alpha=0.75, linestyle="--")
-                ax3.plot(time, np.negative(replisome_events), color='gold',
-                         label=f'Active replisome assebly events\n(consumes '
-                               f'{replisome_stoich} {complex_id})',
-                         linewidth=0.75, alpha=0.75)
-                # Add the replisome subunit counts to the total counts of the complex:
-                total_counts += (subunit_counts_within_replisomes)
+                if mechanistic_replisome:
+                    ax1.plot(time, subunit_counts_within_replisomes, color='gold',
+                             label=f'{complex_id} counts within active replisomes, '
+                                   f'{replisome_stoich} per',
+                             linewidth=0.75, alpha=0.75, linestyle="--")
+                    ax3.plot(time, np.negative(replisome_events), color='gold',
+                             label=f'Active replisome assebly events\n(consumes '
+                                   f'{replisome_stoich} {complex_id})',
+                             linewidth=0.75, alpha=0.75)
+                    # Add the replisome subunit counts to the total counts of the complex:
+                    total_counts += (subunit_counts_within_replisomes)
+                else:
+                    # Not real protein: not added to the total counts, and
+                    # replisome assembly never consumes the free complex
+                    ax1.plot(time, subunit_counts_within_replisomes, color='gold',
+                             label=f'# of {complex_id} chromosome replication\n'
+                                   f'assumes are available to make active\n'
+                                   f'replisomes, but mechanistic_replisome is\n'
+                                   f'off so they are never actually removed\n'
+                                   f'from bulk ({replisome_stoich:g} per)',
+                             linewidth=0.75, alpha=0.75, linestyle=":")
 
             # Check if the complex is an inactive RNAP (1:1 ratio):
             if self.is_an_RNAP_subunit(sim_data, complex_id) != []:
@@ -1854,15 +1872,26 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     # Multiply the replisome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the replisome:
                     subunit_counts = replisome_counts * total_stoich * replisome_stoich
+                    if mechanistic_replisome:
+                        ax1.plot(time, subunit_counts, color='gold',
+                                 label=f'{complex_id} counts within active replisomes,'
+                                       f'\n{replisome_stoich*total_stoich} per '
+                                       f'(via {parent_complex})',
+                                 linewidth=0.75, alpha=0.75, linestyle="--")
 
-                    ax1.plot(time, subunit_counts, color='gold',
-                             label=f'{complex_id} counts within active replisomes,'
-                                   f'\n{replisome_stoich*total_stoich} per '
-                                   f'(via {parent_complex})',
-                             linewidth=0.75, alpha=0.75, linestyle="--")
-
-                    # Add the replisome counts to the total counts of the complex:
-                    total_counts += subunit_counts
+                        # Add the replisome counts to the total counts of the complex:
+                        total_counts += subunit_counts
+                    else:
+                        # monomers are not actually used to create replisomes
+                        # and mechanistic replisome assumes they are unlimited:
+                        ax1.plot(time, subunit_counts, color='gold',
+                                 label=f'# of {complex_id} chromosome replication\n'
+                                       f'assumes are available to make active\n'
+                                       f'replisomes, but mechanistic_replisome is\n'
+                                       f'off so they are never actually removed\n'
+                                       f'from bulk ({replisome_stoich*total_stoich:g} '
+                                       f'per, via {parent_complex})',
+                                 linewidth=0.75, alpha=0.75, linestyle=":")
 
                 if self.is_a_TF(sim_data, parent_complex) != []:
                     tf_idx = self.tf_index(sim_data, parent_complex)
