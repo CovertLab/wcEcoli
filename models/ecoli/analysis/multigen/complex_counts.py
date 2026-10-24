@@ -1559,20 +1559,39 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Generate a plot for each complex:
         for complex_id in valid_complexes:
             # Extract the upstream monomers and sentences describing their paths:
-            upstream_monomers, upstream_monomer_paths = self.analyze_complex(complex_id)
+            upstream_monomers, _ = self.analyze_complex(complex_id)
+
+            # Keep each distinct path from a monomer into the complex only. As
+            # of 10/24/2026, CPLX0-3803 is the only complex with more than one
+            # path for a monomer: EG11413-MONOMER and EG11414-MONOMER are in it
+            # both via CPLX0-7910 directly, and via CPLX0-3801 (and each route
+            # contributes its own copies of the monomers). Currently CPLX0-3803
+            # never actually forms becuase its DnaX subunit (EG10245-MONOMER)
+            # is never made (since translation.py only translates the first
+            # protein listed for each cistron and dnaX lists the frameshift
+            # product first):
+            unique_upstream_paths = {}
+            for monomer, path_list in upstream_monomers.items():
+                unique_paths = []
+                for path_info in path_list:
+                    if not any(path_info['path'] == unique_path['path']
+                               and path_info['total_stoich'] == unique_path['total_stoich']
+                               for unique_path in unique_paths):
+                        unique_paths.append(path_info)
+                unique_upstream_paths[monomer] = unique_paths
+            upstream_path_pairs = [
+                (monomer, path_info)
+                for monomer, path_list in unique_upstream_paths.items()
+                for path_info in path_list]
 
             # Extract all downstream complexes the complex is a subunit of:
             downstream_complexes, _ = self.analyze_molecule_parents(complex_id)
 
-            # The path tracer can record the same path to a parent complex more
-            # than once, so keep each distinct path only (as of 10/26 there is
-            # only one case of a complex forming a parent through different
-            # association routes that each contribute its own copies: CPLX0-7910
-            # is in CPLX0-3803 both directly and via CPLX0-3801. However,
-            # CPLX0-3803 never actually forms because its DnaX subunit
-            # (EG10245-MONOMER) is never made, since translation.py only
-            # translates the first protein listed for each cistron and dnaX
-            # lists gamma (the frameshift product) first):
+            # The path tracer records each path to a parent complex more than
+            # once (it does so for every complex that is inside another
+            # complex), so only each distinct path should be kept. Without
+            # this, the labels for some complexes in 2+ parents could
+            # be shifted onto the wrong parent lines in the legend:
             unique_downstream_paths = {}
             for parent_complex, path_list in downstream_complexes.items():
                 unique_paths = []
@@ -1623,28 +1642,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.plot(time, complex_counts, color='lightseagreen',
                      label=f'{complex_id} free complex counts', linewidth=.75, alpha=0.75)
 
-            # Also plot the counts of each base monomer within the complex:
-            monomer_ids = list(upstream_monomers.keys())
+            # Also plot the counts of each base monomer within the complex
+            # (plot one line per distinct path, labeled with that path):
+            for monomer, path_list in unique_upstream_paths.items():
+                for path_num, path_info in enumerate(path_list, 1):
+                    path = self.format_monomer_path_sentence(
+                        monomer, complex_id, path_info)
+                    if len(path_list) > 1:
+                        path += f'\n[Path {path_num} of {len(path_list)}]'
+                    monomer_counts = complex_counts * path_info['total_stoich']
 
-            # If there happens to be a situation where there are more than one
-            # path per monomer, then the lengths of monomer_ids and
-            # upstream_monomer_paths will not match.
-            assert len(monomer_ids) == len(upstream_monomer_paths), \
-                (f"Length mismatch: {len(monomer_ids)} monomers but "
-                 f"{len(upstream_monomer_paths)} paths")
-
-            for i in range(len(monomer_ids)):
-                monomer = monomer_ids[i]
-                path = upstream_monomer_paths[i]
-                # Note: 0 just indexes to the value of an array that holds the
-                # "total_stoich" dictionary, and is not related to index i here.
-                total_stoich = upstream_monomers[monomer][0]['total_stoich']
-                monomer_counts = complex_counts * total_stoich
-
-                # Plot the counts within the complex itself:
-                ax1.plot(time, monomer_counts, alpha=1,
-                         label=path,
-                         linewidth=1, linestyle=":")
+                    # Plot the counts within the complex itself:
+                    ax1.plot(time, monomer_counts, alpha=1,
+                             label=path,
+                             linewidth=1, linestyle=":")
 
                 # Second, plot the free monomer subunits on the available free
                 # monomer subunit counts plot:
@@ -1681,10 +1692,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             tcs_rxn_ids = sim_data.process.two_component_system.rxn_ids
 
             # Plot the reactions that generate the complex:
-            for i in range(len(monomer_ids)):
-                monomer = monomer_ids[i]
-                # Find the reaction that makes the complex from this monomer:
-                rxn_id = upstream_monomers[monomer][0]['path'][-1][3]
+            for monomer, path_info in upstream_path_pairs:
+                # Find the reaction that makes the complex from this monomer
+                # (the last step of each distinct path):
+                rxn_id = path_info['path'][-1][3]
                 if rxn_id in rxns_plotted:
                     continue # skip if the reacion has been plotted
                 else:
