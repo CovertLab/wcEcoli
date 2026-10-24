@@ -2035,6 +2035,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Save the plot:
             file_name = plotOutFileName + "_" + complex_id
             exportFigure(plt, plotOutDir, file_name, metadata)
+            plt.close()
 
 
 if __name__ == '__main__':
