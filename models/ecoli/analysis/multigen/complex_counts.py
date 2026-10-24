@@ -1849,7 +1849,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                          label=f'transcription unit bound\n {complex_id} '
                                f'transcription factors',
                          linewidth=0.75, alpha=0.75)
-                ax3.plot(time, (tf_counts * -1), color='lightcoral',
+                # nActualBound is TF occupancy at the end of each step, which
+                # works as binding events because TfUnbinding releases every
+                # bound TF at the start of each step. The exception is the
+                # first row/timestep of each generation, which is the initial state
+                # inherited from the parent cell (with no matching unbinding
+                # row), so those rows are set to 0 to avoid a fake drop at
+                # every generation start:
+                tf_binding = tf_counts.astype(float)
+                tf_binding[start_generation_indices] = 0
+                ax3.plot(time, (tf_binding * -1), color='lightcoral',
                          label=f'{complex_id} Transcription factor\nbinding events',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, tfs_unbound, color='purple',
