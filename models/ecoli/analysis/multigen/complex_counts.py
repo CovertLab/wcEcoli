@@ -29,6 +29,10 @@ PLOT_COMPLEXES = ["APORNAP-CPLX"]
 # reaction events, see build_tcs_reaction_event_estimates):
 TCS_SHARED_MOLECULES = {"ATP[c]", "ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"}
 
+# Number of steps at the start of the first generation left out when setting
+# the y range of the events panel (see the clipping in do_plot for more info):
+N_INITIAL_STEPS_TO_CLIP = 3
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
         """
@@ -2016,6 +2020,49 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 f"{complex_id}\n Sim ID: {metadata['description']}", fontsize=6)
             ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
+
+            # The first steps of the first generation can dwarf every other
+            # event becuase equilibrium (1CS ligand binding) and TCS reactions
+            # do not execute during initialization to create complexes for the
+            # initial state the way complexation complexes do, so there are
+            # usually large spikes for these molecules at the start of the
+            # first generation (later generations start from the inherited
+            # state of the previous cell that did have nonzero counts for
+            # these). So, to not obscure the events graph from these changes,
+            # these large spikes are clipped and labeled:
+            initial_rows = np.arange(min(N_INITIAL_STEPS_TO_CLIP, len(time)))
+            event_lines = [line for line in ax3.get_lines()
+                           if len(line.get_ydata()) == len(time)]
+            if event_lines:
+                rest_mask = np.ones(len(time), bool)
+                rest_mask[initial_rows] = False
+                all_rest = np.concatenate(
+                    [np.asarray(line.get_ydata(), float)[rest_mask]
+                     for line in event_lines])
+                y_low, y_high = min(all_rest.min(), 0), max(all_rest.max(), 0)
+                pad = 0.1 * max(y_high - y_low, 1)
+                y_low, y_high = y_low - pad, y_high + pad
+                clipped = []
+                for line in event_lines:
+                    y = np.asarray(line.get_ydata(), float)[initial_rows]
+                    i = np.argmax(np.abs(y))
+                    # Only clip values that dwarf the rest of the panel:
+                    if y[i] < 1.5 * y_low or y[i] > 1.5 * y_high:
+                        clipped.append((y[i], time[initial_rows[i]], line.get_color()))
+                if clipped:
+                    ax3.set_ylim(y_low, y_high)
+                    n_below = n_above = 0
+                    for value, x, color in sorted(clipped, key=lambda c: -abs(c[0])):
+                        below = value < y_low
+                        n_stacked = n_below if below else n_above
+                        ax3.annotate(f'{value:.0f}', xy=(x, y_low if below else y_high),
+                                     xytext=(4, (3 + 7 * n_stacked) * (1 if below else -1)),
+                                     textcoords='offset points', color=color, fontsize=6,
+                                     ha='left', va='bottom' if below else 'top')
+                        if below:
+                            n_below += 1
+                        else:
+                            n_above += 1
 
             ax3.set_xlabel("Time (s)")
             ax3.set_ylabel("Free Complex\nReaction Events")
