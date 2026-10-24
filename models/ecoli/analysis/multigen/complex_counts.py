@@ -1562,8 +1562,32 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             upstream_monomers, upstream_monomer_paths = self.analyze_complex(complex_id)
 
             # Extract all downstream complexes the complex is a subunit of:
-            downstream_complexes, downstream_complex_paths = (
-                self.analyze_molecule_parents(complex_id))
+            downstream_complexes, _ = self.analyze_molecule_parents(complex_id)
+
+            # The path tracer can record the same path to a parent complex more
+            # than once, so keep each distinct path only (a complex can reach a
+            # parent by genuinely different routes, e.g. CPLX0-7910 is in
+            # CPLX0-3803 both directly and via CPLX0-3801, and each route
+            # contributes its own copies):
+            unique_downstream_paths = {}
+            for parent_complex, path_list in downstream_complexes.items():
+                unique_paths = []
+                for path_info in path_list:
+                    if not any(path_info['path'] == unique_path['path']
+                               and path_info['total_stoich'] == unique_path['total_stoich']
+                               for unique_path in unique_paths):
+                        unique_paths.append(path_info)
+                unique_downstream_paths[parent_complex] = unique_paths
+            parent_path_pairs = [
+                (parent_complex, path_info)
+                for parent_complex, path_list in unique_downstream_paths.items()
+                for path_info in path_list]
+
+            # Copies of the complex per parent complex, summed over all
+            # distinct paths:
+            parent_total_stoich = {
+                parent_complex: sum(path_info['total_stoich'] for path_info in path_list)
+                for parent_complex, path_list in unique_downstream_paths.items()}
 
             # Determine the complex type (complexation vs. equilibrium vs. TCS):
             complex_type = complex_type_dict[complex_id]
@@ -1626,20 +1650,22 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                          label=f'{monomer}', linewidth=0.75)
 
             # Add the parent complexes to the complex counts plot as well:
-            complexes = list(downstream_complexes.keys())
-            for i in range(len(complexes)):
-                parent_complex = complexes[i]
-                path = downstream_complex_paths[i]
-                # Note: 0 just indexes to the value of an array that holds the
-                # "total_stoich" dictionary, and is not related to index i here.
-                total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+            # (one line per distinct path, labeled with that path):
+            complexes = list(unique_downstream_paths.keys())
+            for parent_complex, path_list in unique_downstream_paths.items():
                 parent_complex_free_counts = (
                     read_stacked_bulk_molecules(cell_paths, [parent_complex]))[0]
-                parent_complex_counts = parent_complex_free_counts * total_stoich
-                ax1.plot(time, parent_complex_counts, alpha=0.5,
-                         label=path,
-                         linewidth=0.75, linestyle="-.")
-                total_counts += parent_complex_counts
+                for path_num, path_info in enumerate(path_list, 1):
+                    total_stoich = path_info['total_stoich']
+                    path = self.format_parent_path_sentence(
+                        complex_id, parent_complex, path_info)
+                    if len(path_list) > 1:
+                        path += f'\n[Path {path_num} of {len(path_list)}]'
+                    parent_complex_counts = parent_complex_free_counts * total_stoich
+                    ax1.plot(time, parent_complex_counts, alpha=0.5,
+                             label=path,
+                             linewidth=0.75, linestyle="-.")
+                    total_counts += parent_complex_counts
 
             # Third, add a plot of the complexation events over time:
             rxns_plotted = []
@@ -1719,14 +1745,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Next, Find the reactions that consume the complex as a subunit
             # of a larger complex, and plot those as well:
-            for i in range(len(complexes)):
-                parent_complex = complexes[i]
-                rxn_id = downstream_complexes[parent_complex][0]['path'][0][3]
+            # (the first step of each distinct path):
+            for parent_complex, path_info in parent_path_pairs:
+                rxn_id = path_info['path'][0][3]
                 if rxn_id in consumption_rxns_plotted or rxn_id in rxns_plotted:
                     continue # skip if the reacion has been plotted
                 else:
                     consumption_rxns_plotted.append(rxn_id)
-                rxn_stoich = downstream_complexes[parent_complex][0]['path'][0][1]
+                rxn_stoich = path_info['path'][0][1]
                 name = f'{rxn_id} \n(consumes {rxn_stoich} {complex_id})'
 
                 if rxn_id in complexation_rxn_ids:
@@ -1870,7 +1896,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             sim_data, cell_paths, parent_complex))
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the replisome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the replisome:
@@ -1902,7 +1928,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         'RnaSynthProb',"nActualBound")[:,tf_idx]
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the TF counts by the stoich of the complex to
                     # the parent complex:
@@ -1922,7 +1948,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         self.get_ribosome_subunit_counts(cell_paths))
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the ribosome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the ribosome:
