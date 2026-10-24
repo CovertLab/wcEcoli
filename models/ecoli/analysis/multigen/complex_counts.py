@@ -1565,10 +1565,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             downstream_complexes, _ = self.analyze_molecule_parents(complex_id)
 
             # The path tracer can record the same path to a parent complex more
-            # than once, so keep each distinct path only (a complex can reach a
-            # parent by genuinely different routes, e.g. CPLX0-7910 is in
-            # CPLX0-3803 both directly and via CPLX0-3801, and each route
-            # contributes its own copies):
+            # than once, so keep each distinct path only (as of 10/26 there is
+            # only one case of a complex forming a parent through different
+            # association routes that each contribute its own copies: CPLX0-7910
+            # is in CPLX0-3803 both directly and via CPLX0-3801. However,
+            # CPLX0-3803 never actually forms because its DnaX subunit
+            # (EG10245-MONOMER) is never made, since translation.py only
+            # translates the first protein listed for each cistron and dnaX
+            # lists gamma (the frameshift product) first):
             unique_downstream_paths = {}
             for parent_complex, path_list in downstream_complexes.items():
                 unique_paths = []
