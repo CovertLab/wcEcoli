@@ -25,6 +25,10 @@ from wholecell.io.tablereader import TableReader
 # List complexes you would like to plot here (with or without compartment tags):
 PLOT_COMPLEXES = ["APORNAP-CPLX"]
 
+# Small molecules shared by all TCS reactions (left out when estimating TCS
+# reaction events, see build_tcs_reaction_event_estimates):
+TCS_SHARED_MOLECULES = {"ATP[c]", "ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"}
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
         """
@@ -1120,29 +1124,40 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             molecule_changes: (n_molecules,) array of molecule count changes
             from the ODE integration
         Returns:
-            reaction_fluxes: (n_reactions,) array of ESTIMATED reaction counts
+            (n_timesteps, n_reactions) array of ESTIMATED reaction counts
         """
         # Extract the molecule changes for each TCS molecule across the cell paths:
         all_molecule_changes = read_stacked_columns(
             cell_paths, 'TwoComponentSystems', 'moleculeChanges')
         sm = sim_data.process.two_component_system.stoich_matrix()
+        molecule_names = sim_data.process.two_component_system.molecule_names
         n_timesteps = all_molecule_changes.shape[0]
         n_reactions = sm.shape[1]
 
-        # Estimate the reaction fluxes for each step using non-negative least squares:
+        # Estimate the reaction fluxes for each step using non-negative least
+        # squares on the protein rows only. The emitted ATP/ADP/Pi/H2O/H+
+        # changes are not the sum of the individual reactions because the TCS
+        # process sets ATP use to the net phosphorylation summed over all
+        # systems and never records Pi, so whenever a protein is
+        # dephosphorylated they understate what the reactions used. Matching
+        # them would need negative reaction counts, which NNLS can't give, so
+        # including those rows would pull the estimates too low:
+        protein_rows = np.array(
+            [name not in TCS_SHARED_MOLECULES for name in molecule_names])
+        sm_proteins = sm[protein_rows]
         estimated_reaction_fluxes = np.zeros((n_timesteps, n_reactions))
-
         for i in range(n_timesteps):
-            reaction_fluxes, residual = scipy.optimize.nnls(sm, all_molecule_changes[i])
-            estimated_reaction_fluxes[i] = np.round(reaction_fluxes).astype(int)
+            reaction_fluxes, _ = scipy.optimize.nnls(
+                sm_proteins, all_molecule_changes[i, protein_rows])
+            estimated_reaction_fluxes[i] = np.round(reaction_fluxes)
 
-            # Print a warning if the fit was not good::
-            reconstructed = sm.dot(estimated_reaction_fluxes[i])
-            max_error = np.max(np.abs(reconstructed - all_molecule_changes[i]))
-
-            if max_error > 0.5:
-                print(f"Warning: reaction flux reconstruction error (t={i}) = {max_error}")
-                print(f"Residual from NNLS: {residual}")
+        # Check the fit on the protein rows:
+        misfit = np.abs(estimated_reaction_fluxes @ sm_proteins.T
+                        - all_molecule_changes[:, protein_rows]) > 0.5
+        n_bad = misfit.any(axis=1).sum()
+        if n_bad:
+            print(f"Warning: TCS reaction estimate misfits some protein at "
+                  f"{n_bad}/{n_timesteps} timesteps")
 
         return estimated_reaction_fluxes
 
