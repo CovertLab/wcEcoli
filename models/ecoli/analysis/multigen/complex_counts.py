@@ -1581,7 +1581,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # path for a monomer: EG11413-MONOMER and EG11414-MONOMER are in it
             # both via CPLX0-7910 directly, and via CPLX0-3801 (and each route
             # contributes its own copies of the monomers). Currently CPLX0-3803
-            # never actually forms becuase its DnaX subunit (EG10245-MONOMER)
+            # never actually forms because its DnaX subunit (EG10245-MONOMER)
             # is never made (since translation.py only translates the first
             # protein listed for each cistron and dnaX lists the frameshift
             # product first):
@@ -1880,7 +1880,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                                    f'{replisome_stoich} per',
                              linewidth=0.75, alpha=0.75, linestyle="--")
                     ax3.plot(time, np.negative(replisome_events), color='gold',
-                             label=f'Active replisome assebly events\n(consumes '
+                             label=f'Active replisome assembly events\n(consumes '
                                    f'{replisome_stoich} {complex_id})',
                              linewidth=0.75, alpha=0.75)
                     # Add the replisome subunit counts to the total counts of the complex:
