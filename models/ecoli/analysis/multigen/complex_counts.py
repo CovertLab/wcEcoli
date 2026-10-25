@@ -12,8 +12,10 @@ Supported complex types:
 In total, there are 1131 unique complexation complexes, 39 unique equilibrium
 complexes, and 18 unique two component system complexes.
 """
+import html
 import pickle
 import os
+import re
 from matplotlib import pyplot as plt
 import numpy as np
 import scipy.optimize
@@ -32,6 +34,36 @@ TCS_SHARED_MOLECULES = {"ATP[c]", "ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"}
 # Number of steps at the start of the first generation left out when setting
 # the y range of the events panel (see the clipping in do_plot for more info):
 N_INITIAL_STEPS_TO_CLIP = 3
+
+# Title wording for the TCS role labels from build_tcs_dictionaries (assumes
+# only the phosphorylated forms are TCS complexes themselves):
+TCS_ROLE_NAMES = {
+    "PHOSPHO-RR": "TCS phosphorylated response regulator",
+    "PHOSPHO-HK": "TCS phosphorylated histidine kinase",
+    "PHOSPHO-HK-LIGAND": "TCS phosphorylated ligand-bound histidine kinase",
+}
+
+
+def get_clean_common_name(sim_data, molecule_id):
+    """
+    Get a molecule's common name for use in plot text, without HTML entities
+    or tags (i.e. "&beta;", "<i>sn</i>").
+
+    Args:
+        sim_data: simulation data
+        molecule_id: ID of the molecule (with or without compartment tag)
+    Returns:
+        str or None: the common name, or None if there is none (some
+        equilibrium and TCS complexes only have a note about the reaction that
+        makes them in place of a name, e.g. "Reaction required to produce 1CS
+        TF ...", so those are left out too)
+    """
+    base_id = molecule_id.split('[')[0]
+    name = sim_data.common_names.get_common_name(base_id)
+    name = re.sub(r'<[^>]+>', '', html.unescape(name))
+    if name == base_id or name.startswith('Reaction required'):
+        return None
+    return name
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
@@ -1522,6 +1554,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             enumerate(monomer_counts_reader.readAttribute(
                                 'monomerIds'))}
 
+        # Map each monomer to its gene's common name (e.g. dnaE) for the
+        # subunit availability legend:
+        monomer_data = sim_data.process.translation.monomer_data
+        monomer_to_gene_name = {
+            monomer: get_clean_common_name(sim_data, cistron)
+            for monomer, cistron in zip(monomer_data['id'], monomer_data['cistron_id'])}
+
         # Extract the monomer IDs:
         self.monomerIDs = monomer_counts_reader.readAttribute("monomerIds")
 
@@ -1680,8 +1719,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 # monomer subunit counts plot:
                 protein_idx = monomer_idx_dict[monomer]
                 protein_FMC = free_monomer_counts[:, protein_idx]
+                gene_name = monomer_to_gene_name.get(monomer)
                 ax2.plot(time, protein_FMC, alpha=0.75,
-                         label=f'{monomer}', linewidth=0.75)
+                         label=f'{monomer}' + (f' ({gene_name})' if gene_name else ''),
+                         linewidth=0.75)
 
             # Add the parent complexes to the complex counts plot as well:
             # (one line per distinct path, labeled with that path):
@@ -2006,18 +2047,63 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     total_counts += subunit_counts
 
 
-            # Plot the total theoretical complex counts:
-            ax1.plot(time, total_counts, color='black',
-                     label=f'Theoretical total {complex_id} counts\n(free complex '
-                           f'counts + counts within parent complexes)',
-                     linewidth=.25, alpha=1)
+            # Plot the total theoretical complex counts behind the other lines
+            # (so a free count that flips every step doesn't get covered).
+            # If the total equals the free count at every step, keep the
+            # legend entry but don't draw it on top of the free line:
+            if np.array_equal(total_counts, complex_counts):
+                ax1.plot([], [], color='black',
+                         label=f'Theoretical total {complex_id} counts\n(not '
+                               f'drawn here becuase free = total '
+                               f'complex counts at every step)',
+                         linewidth=.25, alpha=1)
+            else:
+                ax1.plot(time, total_counts, color='black',
+                         label=f'Theoretical total {complex_id} counts\n(free complex '
+                               f'counts + counts within parent complexes)',
+                         linewidth=.25, alpha=1, zorder=0)
 
             # Set the axes and legends :
             ax1.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
             ax1.set_ylabel("Complex Counts")
+
+            # Create stats above the counts panel ("in other complexes" is
+            # everything in the theoretical total that is not free):
+            in_other_complexes = total_counts - complex_counts
             ax1.set_title(
-                f"Complex counts for the {complex_makeup} {complex_type} complex "
-                f"{complex_id}\n Sim ID: {metadata['description']}", fontsize=6)
+                f"Mean counts - Total: {np.mean(total_counts):.1f} | "
+                f"Free: {np.mean(complex_counts):.1f} | "
+                f"In other complexes: {np.mean(in_other_complexes):.1f} | "
+                f"Median counts - Total: {np.median(total_counts):.1f} | "
+                f"Free: {np.median(complex_counts):.1f} | "
+                f"In other complexes: {np.median(in_other_complexes):.1f}",
+                fontsize=7)
+
+            # Title: bold first line drawn separately above a grey subtitle,
+            # both inside the figure since exportFigure does not expand the
+            # canvas to fit outside text. Positions are set in inches from the
+            # top so they work for both figure sizes:
+            if complex_makeup in TCS_ROLE_NAMES:
+                classification = TCS_ROLE_NAMES[complex_makeup]
+            else:
+                classification = f"{complex_makeup} {complex_type} complex"
+            tf_type = sim_data.process.transcription_regulation.tf_to_tf_type.get(
+                complex_id.split('[')[0])
+            if tf_type is not None:
+                classification += f" | {tf_type} transcription factor"
+            common_name = get_clean_common_name(sim_data, complex_id)
+            if common_name:
+                classification += f" | {common_name}"
+            fig_height = fig.get_figheight()
+            fig.text(0.4, 1 - 0.024 / fig_height,
+                     f"Count trajectory for {complex_id}",
+                     fontsize=10, fontweight='bold', ha='center', va='top')
+            fig.suptitle(
+                f"{classification[0].upper() + classification[1:]}\n"
+                f"Sim ID: {metadata['description']} | "
+                f"variant {metadata.get('variant', '?')} {metadata.get('variant_index', '')} | "
+                f"seed {int(metadata.get('seed', 0))} | {len(cell_paths)} gen(s)",
+                fontsize=9, x=0.4, y=1 - 0.288 / fig_height, color='grey')
             ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
 
@@ -2078,10 +2164,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             if self.is_a_ribosome_subunit(sim_data, complex_id) == []:
                 plt.tight_layout()
+            # Leave room at the top for the two title blocks:
+            plt.subplots_adjust(top=1 - 0.95 / fig_height)
 
             # Save the plot:
             file_name = plotOutFileName + "_" + complex_id
-            exportFigure(plt, plotOutDir, file_name, metadata)
+            exportFigure(plt, plotOutDir, file_name, metadata, dpi=300)
             plt.close()
 
 
