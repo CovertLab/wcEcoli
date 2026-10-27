@@ -33,9 +33,15 @@ from wholecell.io.tablereader import TableReader
 # List complexes you would like to plot here (with or without compartment tags):
 PLOT_COMPLEXES = ["APORNAP-CPLX"]
 
-# Number of steps at the start of each generation left out when setting the y
-# range of the events panel based on the average max event magnitude (see the
-# clipping in do_plot for more info):
+# Specify the # of timesteps at the start of each generation where lines can be
+# truncated in the events panel to avoid having large spikes throw off the
+# y axis. The first generation starts with no equilibrium or TCS complexes
+# (initialization only forms complexation complexes), so those reactions form
+# a significant number of molecules in its first steps after initialization to
+# hit steady state. Later generations inherit a count level closer to steady
+# state, so their first steps only spike a few times above the usual, but can
+# still be large relative to the average activity of these reactions (see
+# the truncating logic in the code for more details):
 N_INITIAL_STEPS_TO_CLIP = 5
 
 # END USER INPUTS
@@ -2113,7 +2119,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 f"variant {metadata.get('variant', '?')} {metadata.get('variant_index', '')} | "
                 f"seed {int(metadata.get('seed', 0))} | {len(cell_paths)} gen(s)",
                 fontsize=9, x=0.4, y=1 - 0.288 / fig_height, color='grey')
-            ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
+            ax2.set_ylabel("Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
 
             # In the first generation, equilibrium (1CS ligand binding) and TCS
@@ -2123,7 +2129,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # start. Later generations can also have smaller spikes as these
             # reactions relax after division (i.e. a +/- pair at the 3rd and
             # 4th steps). To avoid obscuring the y axis on the events graph
-            # from these changes, these large spikes are trunkated and labeled
+            # from these changes, these large spikes are truncated and labeled
             # instead:
             initial_rows = np.unique(np.minimum(
                 start_generation_indices[:, None] + np.arange(N_INITIAL_STEPS_TO_CLIP),
