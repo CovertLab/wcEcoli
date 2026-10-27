@@ -1296,9 +1296,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         ribosome50s_subunits = sim_data.process.complexation.get_monomers(
             sim_data.molecule_ids.s50_full_complex)
         ribosome50s_subunit_ids = ribosome50s_subunits["subunitIds"].tolist()
-
         ribosome_subunits = (ribosome30s_subunit_ids + ribosome50s_subunit_ids
-                             + ["CPLX0-3956[c]","CPLX0-3955[c]"]
                              + [sim_data.molecule_ids.s30_full_complex]
                              + [sim_data.molecule_ids.s50_full_complex])
 
