@@ -273,7 +273,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             """
             mol_type = determine_molecule_type(molecule_id)
 
-            # Skip molecules that aren't in our database
+            # Skip molecules that are not monomers or complexes, e.g. rRNAs
+            # in the 30S/50S, metabolite ligands in equilibrium complexes:
             if mol_type == 'unknown':
                 print(f"  → Skipping {molecule_id} (not a monomer or complex)")
                 return
@@ -490,11 +491,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 is_start: True if this is the starting molecule (to avoid saving it as its own parent)
             """
             mol_type = determine_molecule_type(current_molecule)
-
-            # Skip molecules not in our database
-            if mol_type == 'unknown':
-                print(f"  → Skipping {current_molecule} (not a monomer or complex)")
-                return
 
             # Get all complexes that directly use this molecule as a subunit
             parents = get_parent_complexes(current_molecule)
