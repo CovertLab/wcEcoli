@@ -25,6 +25,7 @@ variants = [
 	'rrna_operon_knockout',
 	'rrna_location',
 	'rrna_orientation',
+	'rpoc_translation_boost',
 	'tf_activity',
 	'time_step',
 	'timelines',
