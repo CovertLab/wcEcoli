@@ -1355,7 +1355,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Bold first line, drawn separately (one title can't mix weights)
             # and placed just above the suptitle (inside the figure, since
             # exportFigure does not expand the canvas to fit outside text):
-            fig.text(0.4, 0.998, f"Monomer counts for {monomer_id} ({common_name})",
+            fig.text(0.4, 0.998, f"Monomer count trajectory of {monomer_id} ({common_name})",
                      fontsize=10, fontweight='bold', ha='center', va='top')
 
             # PLOT 2: Events affecting the free monomer pool
