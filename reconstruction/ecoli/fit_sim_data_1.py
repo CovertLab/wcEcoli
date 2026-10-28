@@ -32,6 +32,11 @@ FITNESS_THRESHOLD = 1e-9
 MAX_FITTING_ITERATIONS = 100
 N_SEEDS = 10
 
+# If True, the mRNA expression targets of RNA polymerase subunits account for
+# transcripts that start decaying (and stop binding ribosomes) before RNA
+# polymerase reaches the subunit's cistron. See partialTranscriptSurvival().
+CORRECT_RNAP_PARTIAL_TRANSCRIPT_DECAY = True
+
 # Parameters used in fitPromoterBoundProbability()
 PROMOTER_PDIFF_THRESHOLD = 0.06  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive
 PROMOTER_REG_COEFF = 1e-3  # Optimization weight on how much probability should stay close to original values
@@ -1358,8 +1363,12 @@ def totalCountIdDistributionProtein(sim_data, expression, doubling_time):
 	total_mass_protein = sim_data.mass.get_component_masses(doubling_time)["proteinMass"] / sim_data.mass.avg_cell_to_initial_cell_conversion_factor
 	individual_masses_protein = sim_data.process.translation.monomer_data["mw"] / sim_data.constants.n_avogadro
 
-	mRNA_cistron_expression = sim_data.process.transcription.cistron_tu_mapping_matrix.dot(
-		expression)[sim_data.process.transcription.cistron_data['is_mRNA']]
+	# Only copies that survive until RNA polymerase reaches the cistron can be
+	# translated
+	survival = partialTranscriptSurvival(sim_data, expression, doubling_time)
+	mRNA_cistron_expression = (
+		sim_data.process.transcription.cistron_tu_mapping_matrix.dot(expression)
+		* survival)[sim_data.process.transcription.cistron_data['is_mRNA']]
 	distribution_transcripts_by_protein = normalize(
 		sim_data.relation.monomer_to_mRNA_cistron_mapping().dot(mRNA_cistron_expression)
 		)
@@ -1778,6 +1787,14 @@ def fitExpression(sim_data, bulkContainer, doubling_time, avgCellDryMassInit, Km
 			mRNA_cistron_distribution_per_protein)
 		)
 
+	# Raise targets of cistrons whose transcripts can decay before RNA
+	# polymerase reaches them so that the translatable copies match the
+	# targets
+	survival = partialTranscriptSurvival(
+		sim_data, view_RNA.counts(), doubling_time)
+	mRNA_cistron_distribution = normalize(
+		mRNA_cistron_distribution / survival[transcription.cistron_data['is_mRNA']])
+
 	# Replace mRNA cistron expression with values calculated from monomer counts
 	fit_cistron_expression[transcription.cistron_data['is_mRNA']] = (
 		mRNA_cistron_expression_frac * mRNA_cistron_distribution)
@@ -2103,6 +2120,67 @@ def totalCountFromMassesAndRatios(totalMass, individualMasses, distribution):
 	assert np.allclose(np.sum(distribution), 1)
 	counts = 1 / units.dot(individualMasses, distribution) * totalMass
 	return units.strip_empty_units(counts)
+
+def partialTranscriptSurvival(sim_data, tu_expression, doubling_time):
+	"""
+	Calculates, for each cistron, the fraction of copies counted from
+	transcription unit expression that can be translated in the simulation.
+	In the simulation, an mRNA selected for degradation while it is still
+	being transcribed is deactivated immediately, so ribosomes cannot
+	initiate on cistrons that RNA polymerase reaches after deactivation.
+	Applied only to RNA polymerase subunit cistrons, whose counts are set by
+	physiology and limit transcription. All other cistrons are given 1.
+
+	For a cistron starting at position p (nt) in a transcription unit of
+	length L with degradation rate k and RNA polymerase elongation rate v,
+	the ratio of translatable cistron copies to transcription unit copies at
+	steady state with growth rate mu is:
+
+		f = (k + mu)/k * (exp(-k*p/v) - exp(-k*L/v)) + exp(-k*L/v)
+
+	and the ratios of the transcription units containing the cistron are
+	averaged with weights from tu_expression.
+
+	Inputs
+	------
+	- tu_expression (array of floats) - expression or counts of each
+	transcription unit
+	- doubling_time (float with units of time) - doubling time
+
+	Returns
+	--------
+	- survival (array of floats) - fraction of copies of each cistron that
+	can be translated
+	"""
+	transcription = sim_data.process.transcription
+	survival = np.ones(len(transcription.cistron_data))
+	if not CORRECT_RNAP_PARTIAL_TRANSCRIPT_DECAY:
+		return survival
+
+	deg_rates = transcription.rna_data['deg_rate'].asNumber(1 / units.s)
+	tu_lengths = transcription.rna_data['length'].asNumber(units.nt)
+	growth_rate = np.log(2) / doubling_time.asNumber(units.s)
+	elongation_rate = sim_data.growth_rate_parameters.get_rnap_elongation_rate(
+		doubling_time).asNumber(units.nt / units.s)
+	mapping_matrix = transcription.cistron_tu_mapping_matrix
+
+	for cistron_index in np.where(transcription.cistron_data['is_RNAP'])[0]:
+		tu_indexes = mapping_matrix[cistron_index].nonzero()[1]
+		start_positions = np.array([
+			transcription.cistron_start_end_pos_in_tu[(cistron_index, tu_index)][0]
+			for tu_index in tu_indexes])
+		k = deg_rates[tu_indexes]
+		start_term = np.exp(-k * start_positions / elongation_rate)
+		end_term = np.exp(-k * tu_lengths[tu_indexes] / elongation_rate)
+		ratios = (k + growth_rate) / k * (start_term - end_term) + end_term
+
+		weights = tu_expression[tu_indexes]
+		if weights.sum() > 0:
+			survival[cistron_index] = np.dot(weights, ratios) / weights.sum()
+		else:
+			survival[cistron_index] = ratios.mean()
+
+	return survival
 
 def proteinDistributionFrommRNA(distribution_mRNA, translation_efficiencies, netLossRate):
 	"""
