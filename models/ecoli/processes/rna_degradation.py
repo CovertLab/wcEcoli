@@ -123,6 +123,7 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Build Views
 		self.bulk_RNAs = self.bulkMoleculesView(all_rna_ids)
 		self.unique_RNAs = self.uniqueMoleculesView('RNA')
+		self.active_ribosomes = self.uniqueMoleculesView('active_ribosome')
 		self.water = self.bulkMoleculeView(sim_data.molecule_ids.water)
 		self.nmps = self.bulkMoleculesView(sim_data.molecule_groups.nmps)
 		self.proton = self.bulkMoleculeView(sim_data.molecule_ids.proton)
@@ -155,8 +156,8 @@ class RnaDegradation(wholecell.processes.process.Process):
 		bulk_RNA_counts = self.bulk_RNAs.total_counts().copy()
 		bulk_RNA_counts[self.uncharged_trna_indexes] += self.charged_trnas.total_counts()
 
-		TU_index, can_translate, is_full_transcript = self.unique_RNAs.attrs(
-			'TU_index', 'can_translate', 'is_full_transcript')
+		TU_index, can_translate, is_full_transcript, unique_index = self.unique_RNAs.attrs(
+			'TU_index', 'can_translate', 'is_full_transcript', 'unique_index')
 		TU_index_translatable_mRNAs = TU_index[can_translate]
 		unique_RNA_counts = np.bincount(
 			TU_index_translatable_mRNAs, minlength=self.n_total_RNAs)
@@ -239,7 +240,9 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# (mRNAs) are immediately deactivated (becomes unable to bind
 		# ribosomes), but not degraded until transcription is finished and the
 		# mRNA becomes a full transcript to simplify the transcript elongation
-		# process.
+		# process. Deactivated mRNAs are also kept until all ribosomes already
+		# translating them have finished, so that polypeptides that have
+		# initiated are not lost.
 		n_bulk_RNAs_to_degrade = n_RNAs_to_degrade.copy()
 		n_bulk_RNAs_to_degrade[self.is_mRNA.astype(bool)] = 0
 		self.n_unique_RNAs_to_deactivate = n_RNAs_to_degrade.copy()
@@ -252,8 +255,11 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Calculate the amount of water required for total RNA hydrolysis by
 		# endo and exonucleases. We first calculate the number of unique RNAs
 		# that should be degraded at this timestep.
-		self.unique_mRNAs_to_degrade = np.logical_and(
-			np.logical_not(can_translate), is_full_transcript)
+		has_ribosomes = np.isin(
+			unique_index, self.active_ribosomes.attr('mRNA_index'))
+		self.unique_mRNAs_to_degrade = np.logical_and.reduce((
+			np.logical_not(can_translate), is_full_transcript,
+			np.logical_not(has_ribosomes)))
 		self.n_unique_RNAs_to_degrade = np.bincount(
 			TU_index[self.unique_mRNAs_to_degrade],
 			minlength=self.n_total_RNAs)
