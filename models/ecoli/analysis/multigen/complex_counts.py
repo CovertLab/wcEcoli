@@ -67,6 +67,29 @@ def get_clean_common_name(sim_data, molecule_id):
         return None
     return name
 
+def count_replisomes_formed_and_removed(cell_path):
+    """
+    Number of replisomes formed and removed at each timestep of one cell, from
+    the ReplicationData listener's fork_unique_index (the unique index of each
+    active replisome, NaN-padded). Comparing which replisomes exist at
+    successive timesteps counts initiation and termination separately, even
+    when both happen in the same timestep, where the net change in the
+    active_replisome count would cancel them out. The first timestep has no
+    events, since the cell inherited those replisomes.
+    """
+    fork_indices = TableReader(
+        os.path.join(cell_path, 'simOut', 'ReplicationData')).readColumn(
+        'fork_unique_index', squeeze=False)
+    forks_by_step = [set(row[~np.isnan(row)].astype(np.int64))
+                     for row in fork_indices]
+    formed = np.zeros(len(forks_by_step))
+    removed = np.zeros(len(forks_by_step))
+    for i in range(1, len(forks_by_step)):
+        formed[i] = len(forks_by_step[i] - forks_by_step[i - 1])
+        removed[i] = len(forks_by_step[i - 1] - forks_by_step[i])
+    return formed, removed
+
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
         """
@@ -1499,17 +1522,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 "uniqueMoleculeCounts")[:, replisome_idx]
             replisome_counts.append(active_replisome_counts)
 
-            # Find the replisome complexation events by subtracting the counts
-            # of the previous time step from the current time step (prepending
-            # the first count so inherited replisomes are not counted as
-            # assembly events at the start of every generation):
-            replisome_complexation_events = np.diff(
-                active_replisome_counts, prepend=active_replisome_counts[0])
-
-            # Delete all negative values (which correspond to replisomes
-            # deleting from the simulations):
-            replisome_complexation_events[replisome_complexation_events < 0] = 0
-            replisome_events.append(replisome_complexation_events)
+            # Replisome assembly events are the replisomes formed in each step
+            # (see count_replisomes_formed_and_removed), so inherited
+            # replisomes are not counted as assembly at each generation start
+            # and terminations in the same step can't cancel them out:
+            replisomes_formed, _ = count_replisomes_formed_and_removed(sim_dir)
+            replisome_events.append(replisomes_formed)
 
         # Concatenate the replisome counts and events from each simulation into one array:
         replisome_counts = np.concatenate(replisome_counts)

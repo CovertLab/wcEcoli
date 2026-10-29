@@ -83,6 +83,29 @@ EVENT_REACTION_COLORS = ['cornflowerblue', 'tab:orange', 'tab:purple', 'tab:oliv
                          'tab:pink', 'tab:brown', 'tab:gray', 'tab:green']
 # END USER INPUTS
 
+def count_replisomes_formed_and_removed(cell_path):
+    """
+    Number of replisomes formed and removed at each timestep of one cell, from
+    the ReplicationData listener's fork_unique_index (the unique index of each
+    active replisome, NaN-padded). Comparing which replisomes exist at
+    successive timesteps counts initiation and termination separately, even
+    when both happen in the same timestep, where the net change in the
+    active_replisome count would cancel them out. The first timestep has no
+    events, since the cell inherited those replisomes.
+    """
+    fork_indices = TableReader(
+        os.path.join(cell_path, 'simOut', 'ReplicationData')).readColumn(
+        'fork_unique_index', squeeze=False)
+    forks_by_step = [set(row[~np.isnan(row)].astype(np.int64))
+                     for row in fork_indices]
+    formed = np.zeros(len(forks_by_step))
+    removed = np.zeros(len(forks_by_step))
+    for i in range(1, len(forks_by_step)):
+        formed[i] = len(forks_by_step[i] - forks_by_step[i - 1])
+        removed[i] = len(forks_by_step[i - 1] - forks_by_step[i])
+    return formed, removed
+
+
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
         """
@@ -1480,18 +1503,20 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         self.is_a_replisome_subunit(sim_data, c) != []
                         for c, _ in unique_complex_path_pairs)):
                 rep_stoich = self.replisome_subunit_stoich(sim_data, monomer_id)
-                # Within a generation, replisome count increases are assembly
-                # (consumes subunits) and decreases are termination (returns
-                # them to the free pool). Changes across division are not
-                # events, so those rows are 0.
-                replisome_changes = np.diff(active_replisome, prepend=active_replisome[0])
-                replisome_changes[generation_start_idxs] = 0
-                ax2.plot(time, np.minimum(replisome_changes, 0) * -rep_stoich,
+                # Replisomes formed in a step consume subunits (assembly) and
+                # replisomes removed return them to the free pool (termination),
+                # counted separately (see count_replisomes_formed_and_removed).
+                # Changes across division are not events, so those rows are 0:
+                replisomes_formed, replisomes_removed = (
+                    np.concatenate(counts) for counts in zip(*(
+                        count_replisomes_formed_and_removed(cell_path)
+                        for cell_path in cell_paths)))
+                ax2.plot(time, replisomes_removed * rep_stoich,
                          color='purple',
                          label=f'Replisome disassembly\n'
                                f'(releases {rep_stoich:g} free {monomer_id})',
                          linewidth=0.75, alpha=0.75)
-                ax2.plot(time, np.maximum(replisome_changes, 0) * -rep_stoich,
+                ax2.plot(time, -replisomes_formed * rep_stoich,
                          color='purple',
                          label=f'Replisome assembly\n'
                                f'(consumes {rep_stoich:g} free {monomer_id})',
