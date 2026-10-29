@@ -1428,8 +1428,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
             print("Skipping analysis -- not enough sims run.")
             return
 
-        exp_id_1 = reference_sim_dir.split("out/")[-1].rstrip("/")
-        exp_id_2 = input_sim_dir.split("out/")[-1].rstrip("/")
+        exp_id_1 = os.path.basename(os.path.normpath(reference_sim_dir))
+        exp_id_2 = os.path.basename(os.path.normpath(input_sim_dir))
         print(f"Comparing {exp_id_1} (Sim 1; x-axis) vs {exp_id_2} (Sim 2; y-axis)")
 
         # Whether each sim actually sequestered replisome subunits (see the module
