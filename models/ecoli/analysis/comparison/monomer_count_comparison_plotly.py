@@ -63,6 +63,14 @@ In the hover breakdown, it describes:
     "Assumed counts available to form active replisomes (not actually
     sequestered with MR off)", which is not part of the marker total (those
     subunits were never removed from the free pool)
+  - with it off, but in a sim run before the listener fix (when the listener
+    added active replisome subunits to the totals regardless of the option),
+    the same number is shown as "In replisomes (counted by the pre-fix
+    MonomerCounts listener, but not actually sequestered with MR off)", which
+    is part of the marker total. Such sims can't be told apart by their
+    metadata, so this is detected from the data (see
+    relabel_listener_counted_replisomes()), and do_plot() prints a note for
+    each sim where it applies.
 
 Hover text overview:
 The marker value is the exact MonomerCounts total (which already folds in free
@@ -670,7 +678,8 @@ def build_monomer_state_breakdown(
 
     Active replisome subunits go in 'replisome' only when mechanistic_replisome
     is on (matching the listener). When it is off they go in 'replisome_assumed'
-    instead, which is not part of the marker total (see the module docstring).
+    instead, which is not part of the marker total (see the module docstring
+    and relabel_listener_counted_replisomes()).
     """
     monomer_set = set(monomer_ids)
     def registry_data(molecule_names, complex_ids, smm):
@@ -852,6 +861,38 @@ def build_monomer_state_breakdown(
     return breakdown
 
 
+def relabel_listener_counted_replisomes(breakdown, monomer_means):
+    """
+    Detect whether a sim's MonomerCounts listener added active replisome
+    subunits to the totals even with mechanistic_replisome off, as the listener
+    did before the fix in models/ecoli/listeners/monomer_counts.py. Such sims
+    can't be told apart by their metadata, so this checks the data: for each
+    monomer with a 'replisome_assumed' bucket, the gap between its listener
+    total (monomer_means) and the sum of its other buckets is compared to its
+    assumed count. If the gaps are closer to the assumed counts than to 0, the
+    assumed counts are moved to 'replisome_listener' (part of the marker
+    total) in breakdown.
+
+    Returns True if the counts were moved.
+    """
+    mismatch_if_counted = 0.0
+    mismatch_if_not_counted = 0.0
+    for monomer_id, bd in breakdown.items():
+        assumed = bd.get('replisome_assumed', 0.0)
+        if assumed <= 0:
+            continue
+        gap = monomer_means[monomer_id] - sum(
+            v for k, v in bd.items() if k != 'replisome_assumed')
+        mismatch_if_counted += abs(gap - assumed)
+        mismatch_if_not_counted += abs(gap)
+    if mismatch_if_counted >= mismatch_if_not_counted:
+        return False
+    for bd in breakdown.values():
+        if 'replisome_assumed' in bd:
+            bd['replisome_listener'] = bd.pop('replisome_assumed')
+    return True
+
+
 def _fmt_id_list(ids):
     """
     Format a list of ids for hover, one per line, capping at MAX_HOVER_IDS.
@@ -973,6 +1014,8 @@ def monomer_breakdown_hover(bd, ctm=None):
         ("In ribosomes", "ribosome"),
         ("In RNAPs", "rnap"),
         ("In replisomes", "replisome"),
+        ("In replisomes (counted by the pre-fix MonomerCounts listener, but "
+         "not actually sequestered with MR off)", "replisome_listener"),
         ("DNA-bound (as TF)", "bound"),
         ("Assumed counts available to form active replisomes (not actually "
          "sequestered with MR off)", "replisome_assumed"),
@@ -1411,6 +1454,14 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         breakdown_2 = build_monomer_state_breakdown(
             sim_data2, monomer_ids, bulk_by_id_2, active_means_2, bound_means_2,
             mechanistic_replisome_2)
+        for sim_label, breakdown, means in (("Sim 1", breakdown_1, means_1),
+                                            ("Sim 2", breakdown_2, means_2)):
+            if relabel_listener_counted_replisomes(breakdown, means):
+                print(f"NOTE: {sim_label}'s MonomerCounts totals include "
+                      f"active replisome subunits even though mechanistic "
+                      f"replisome is off (the sim was run with the pre-fix "
+                      f"listener), so the hover shows them as part of the "
+                      f"total.")
 
         # Average counts_to_molar (mM/count) per sim, to annotate counts with µM:
         ctm_1 = self.read_counts_to_molar(cell_paths_1)
