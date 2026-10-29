@@ -1209,25 +1209,35 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         Cell paths for all generations after the first SKIP_INITIAL_GENERATIONS
         of each seed, the single cell set every per-sim read below averages over.
 
-        Only cells where every listener table this plot reads can be opened
-        are kept, so all reads average over the same cells and the cell count in
-        the titles is the number of cells actually used. Any cells left out are
-        listed in a printed warning.
+        Only cells where every column this plot reads can be fully read
+        (i.e. not missing or truncated) are kept, so all reads average over the
+        same cells and the cell count in the titles is the number of cells
+        actually used. Any cells left out are listed in a printed warning. The
+        reads below don't ignore exceptions, so they can never silently drop a
+        cell from just one average.
         """
         all_cells = ap.get_cells(
             generation=np.arange(SKIP_INITIAL_GENERATIONS, ap.n_generation)
         )
-        # Every listener table this plot reads:
-        listener_tables = [
-            "MonomerCounts", "BulkMolecules", "UniqueMoleculeCounts",
-            "RnaSynthProb", "EnzymeKinetics", "Main", "FBAResults",
-        ]
+        # Every listener table this plot reads, and the columns read from it:
+        listener_columns = {
+            "MonomerCounts": ["monomerCounts"],
+            "BulkMolecules": ["counts"],
+            "UniqueMoleculeCounts": ["uniqueMoleculeCounts"],
+            "RnaSynthProb": ["nActualBound"],
+            "EnzymeKinetics": ["countsToMolar"],
+            "Main": ["time"],
+            "FBAResults": ["reactionFluxes"],
+        }
         readable_cells = []
         skipped_cells = []
         for cell_path in all_cells:
             try:
-                for table in listener_tables:
-                    TableReader(os.path.join(cell_path, "simOut", table))
+                for table, columns in listener_columns.items():
+                    reader = TableReader(
+                        os.path.join(cell_path, "simOut", table))
+                    for column in columns:
+                        reader.readColumn(column, squeeze=False)
             except Exception as e:
                 skipped_cells.append((cell_path, e))
                 continue
@@ -1248,7 +1258,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         listener's own id labels (its emit order).
         """
         avg, conc = _step_means(read_stacked_columns(
-            cell_paths, "MonomerCounts", "monomerCounts", ignore_exception=True
+            cell_paths, "MonomerCounts", "monomerCounts"
         ), ctm_per_step)
         reader = TableReader(
             os.path.join(cell_paths[0], "simOut", "MonomerCounts")
@@ -1268,7 +1278,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         if not wanted:
             return {}, None
         (arr,) = read_stacked_bulk_molecules(
-            cell_paths, wanted, ignore_exception=True
+            cell_paths, wanted
         )
         means, conc = _step_means(arr, ctm_per_step)
         return (dict(zip(wanted, means.tolist())),
@@ -1282,8 +1292,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         """
         try:
             umc = read_stacked_columns(
-                cell_paths, "UniqueMoleculeCounts", "uniqueMoleculeCounts",
-                ignore_exception=True,
+                cell_paths, "UniqueMoleculeCounts", "uniqueMoleculeCounts"
             )
             reader = TableReader(
                 os.path.join(cell_paths[0], "simOut", "UniqueMoleculeCounts"))
@@ -1316,7 +1325,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         tf_ids = list(sim_data.process.transcription_regulation.tf_ids)
         try:
             nab = read_stacked_columns(
-                cell_paths, "RnaSynthProb", "nActualBound", ignore_exception=True
+                cell_paths, "RnaSynthProb", "nActualBound"
             )
         except Exception as e:
             print(f"NOTE: could not read nActualBound: {e!r}")
@@ -1336,7 +1345,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         """
         try:
             arr = read_stacked_columns(
-                cell_paths, "EnzymeKinetics", "countsToMolar", ignore_exception=True
+                cell_paths, "EnzymeKinetics", "countsToMolar"
             )
         except Exception as e:
             print(f"NOTE: could not read countsToMolar: {e!r}")
@@ -1351,8 +1360,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         try:
             per_cell = read_stacked_columns(
                 cell_paths, "Main", "time",
-                fun=lambda x: np.array([[x[-1, 0] - x[0, 0]]]),
-                ignore_exception=True,
+                fun=lambda x: np.array([[x[-1, 0] - x[0, 0]]])
             )
         except Exception as e:
             print(f"NOTE: could not read doubling time: {e!r}")
@@ -1367,7 +1375,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         """
         try:
             flux = read_stacked_columns(
-                cell_paths, "FBAResults", "reactionFluxes", ignore_exception=True
+                cell_paths, "FBAResults", "reactionFluxes"
             )
             reader = TableReader(
                 os.path.join(cell_paths[0], "simOut", "FBAResults"))
