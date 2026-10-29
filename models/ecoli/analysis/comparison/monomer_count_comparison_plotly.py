@@ -31,6 +31,16 @@ many were dropped from each sim. The first subtitle line of each plot,
 protein that appears in either sim, so <plotted> < <total> means some proteins
 were dropped, without having to check the printed output.
 
+Note about variants:
+This plot is meant for comparing sim dirs that each have a single variant
+(wildtype). It reads each sim's root kb/simData.cPickle and averages over
+the cells of every variant directory in the sim dir, so for a sim dir with
+several variants, cells from different variants would be averaged together,
+and the hover half-lives and categories would come from the unmodified sim_data
+rather than each variant's simData_Modified.cPickle. Consider making this into
+a multivariant plot if one is interested in running this between variants in
+the same sim.
+
 Note about hover data construction and category labels:
 Category labels, complex membership, and reaction participation info in the hover
 lists are built from Sim 1's sim_data only (see get_protein_categories).
