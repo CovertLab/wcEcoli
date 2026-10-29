@@ -38,7 +38,7 @@ from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
 # If True, deactivated mRNAs are kept until all ribosomes already translating
 # them have finished. If False, deactivated full-length mRNAs are deleted
 # immediately and the polypeptides being translated on them are lost.
-KEEP_MRNAS_WITH_ACTIVE_RIBOSOMES = False
+KEEP_MRNAS_WITH_ACTIVE_RIBOSOMES = True
 
 class RnaDegradation(wholecell.processes.process.Process):
 	""" RnaDegradation """
