@@ -1000,7 +1000,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
-        cell_paths = self.ap.get_cells()
+        # Only the first-daughter lineage (daughter cell 000000 of every
+        # generation) is plotted. With SINGLE_DAUGHTERS=0, each generation also
+        # has sibling cells, and stacking those would join unrelated cells into
+        # one trajectory with time jumping backwards:
+        all_cell_paths = self.ap.get_cells()
+        cell_paths = np.array([
+            cell_path for cell_path in all_cell_paths
+            if int(os.path.basename(os.path.normpath(cell_path))) == 0])
+        if len(cell_paths) < len(all_cell_paths):
+            print(f"NOTE: plotting only the first-daughter lineage "
+                  f"({len(cell_paths)} of {len(all_cell_paths)} cells), so "
+                  f"sibling cells are left out.")
 
         # Check if replication actually sequestered replisome subunits (see module
         # docstring). If this is missing from the metadata, it means the
