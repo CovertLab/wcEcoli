@@ -95,7 +95,7 @@ The hover data additionally reports the following per sim for each protein:
     concentration is the mean over timepoints of each timepoint's count times
     that timepoint's countsToMolar (EnzymeKinetics listener), not the mean count
     times the mean countsToMolar, since counts and cell volume change together
-    as the cell grows (see _step_means()). The buckets are built from
+    as the cell grows (see _cell_means()). The buckets are built from
     separately-averaged free complex bulk counts, active unique-molecule counts,
     and DNA-bound TF counts, so their sum only approximates the exact marker total
     (small differences come from per-timestep integer rounding in the listener)
@@ -914,26 +914,41 @@ def rename_bucket(breakdown, old_key, new_key):
             bd[new_key] = bd.pop(old_key)
 
 
-def _step_means(arr, ctm_per_step):
+def _cell_means(cell_paths, read_cell, ctm_by_cell):
     """
-    Return (mean counts, mean concentrations in mM) over the timepoints (rows)
-    of arr. Each timepoint's counts are multiplied by that timepoint's own
-    countsToMolar (ctm_per_step, mM/count) before averaging, since counts and
-    cell volume change together as the cell grows, so mean(count) *
-    mean(countsToMolar) would be biased. The concentrations are None when
-    ctm_per_step is None or does not have one entry per row of arr.
+    Return (mean counts, mean concentrations in mM) over every timepoint of
+    every cell, with equal weight per timepoint. read_cell(cell_path) returns
+    one cell's (timepoints x n) counts. Cells are read one at a time and only
+    running sums are kept, so the stacked array of all cells' timepoints is
+    never held in memory (it can be many GB for multi-seed runs).
+
+    Each timepoint's counts are multiplied by that timepoint's own
+    countsToMolar (ctm_by_cell, one mM/count array per cell) before averaging,
+    since counts and cell volume change together as the cell grows, so
+    mean(count) * mean(countsToMolar) would be biased. The concentrations are
+    None when ctm_by_cell is None or a cell's countsToMolar does not have one
+    entry per timepoint of its counts.
     """
-    arr = np.asarray(arr, dtype=float)
-    if arr.ndim == 1:
-        arr = arr.reshape(-1, 1)
-    means = arr.mean(axis=0)
-    if ctm_per_step is None:
-        return means, None
-    if len(ctm_per_step) != arr.shape[0]:
-        print(f"NOTE: countsToMolar has {len(ctm_per_step)} timepoints but "
-              f"the counts have {arr.shape[0]}, so concentrations are left out.")
-        return means, None
-    return means, (arr * ctm_per_step[:, None]).mean(axis=0)
+    count_sum = 0.0
+    conc_sum = 0.0 if ctm_by_cell is not None else None
+    n_timepoints = 0
+    for i, cell_path in enumerate(cell_paths):
+        arr = np.asarray(read_cell(cell_path), dtype=float)
+        if arr.ndim == 1:
+            arr = arr.reshape(-1, 1)
+        count_sum = count_sum + arr.sum(axis=0)
+        n_timepoints += arr.shape[0]
+        if conc_sum is not None:
+            ctm = ctm_by_cell[i]
+            if len(ctm) != arr.shape[0]:
+                print(f"NOTE: {cell_path}: countsToMolar has {len(ctm)} "
+                      f"timepoints but the counts have {arr.shape[0]}, so "
+                      f"concentrations are left out.")
+                conc_sum = None
+            else:
+                conc_sum = conc_sum + ctm @ arr
+    means = count_sum / n_timepoints
+    return means, (conc_sum / n_timepoints if conc_sum is not None else None)
 
 
 def _fmt_id_list(ids):
@@ -1021,7 +1036,7 @@ def membership_hover_lines(monomer_id, protein_categories, flux_map_1, flux_map_
 
 def _fmt_conc(conc_mM):
     """
-    Format an average concentration (mM, see _step_means) for hover as
+    Format an average concentration (mM, see _cell_means) for hover as
     ' (<x> µM)'. Returns '' when conc_mM is None (countsToMolar unavailable).
     """
     if conc_mM is None:
@@ -1045,7 +1060,7 @@ def monomer_breakdown_hover(bd, bd_conc=None):
     """
     Format one monomer's average per-state breakdown for hover (nonzero only),
     each state annotated with its average concentration in µM from bd_conc
-    (the same breakdown built from concentrations, see _step_means), when given.
+    (the same breakdown built from concentrations, see _cell_means), when given.
     """
     order = [
         ("Free counts", "free"),
@@ -1246,63 +1261,63 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
             print(f"WARNING: {sim_label}: skipped {len(skipped_cells)} of "
                   f"{len(all_cells)} cells with missing or unreadable listener "
                   f"output (not included in the averages or the cell count):")
-            for cell_path, e in skipped_cells:
-                print(f"  {cell_path}: {e!r}")
+            for cell_path, error in skipped_cells:
+                print(f"  {cell_path}: {error!r}")
         return np.array(readable_cells)
 
-    def read_monomer_means(self, cell_paths, ctm_per_step):
+    def read_monomer_means(self, cell_paths, ctm_by_cell):
         """
         Return (monomer_ids, mean_count_per_monomer, mean_conc_per_monomer).
         Counts are the mean over all timepoints of all cells, and concentrations
-        (mM, or None) are from _step_means. monomer_ids are the MonomerCounts
+        (mM, or None) are from _cell_means. monomer_ids are the MonomerCounts
         listener's own id labels (its emit order).
         """
-        avg, conc = _step_means(read_stacked_columns(
-            cell_paths, "MonomerCounts", "monomerCounts"
-        ), ctm_per_step)
+        avg, conc = _cell_means(cell_paths, lambda cell_path: read_stacked_columns(
+            np.array([cell_path]), "MonomerCounts", "monomerCounts"
+        ), ctm_by_cell)
         reader = TableReader(
             os.path.join(cell_paths[0], "simOut", "MonomerCounts")
         )
         monomer_ids = list(reader.readAttribute("monomerIds"))
         return monomer_ids, avg, conc
 
-    def read_bulk_by_id(self, cell_paths, ids, ctm_per_step):
+    def read_bulk_by_id(self, cell_paths, ids, ctm_by_cell):
         """
         Average bulk count (over all timepoints) for each requested id that is
         present in this sim's BulkMolecules listener. Returns ({id: mean count},
-        {id: mean conc in mM} or None), see _step_means.
+        {id: mean conc in mM} or None), see _cell_means.
         """
         reader = TableReader(os.path.join(cell_paths[0], "simOut", "BulkMolecules"))
         bulk_set = set(reader.readAttribute("objectNames"))
         wanted = [i for i in ids if i in bulk_set]
         if not wanted:
             return {}, None
-        (arr,) = read_stacked_bulk_molecules(
-            cell_paths, wanted
-        )
-        means, conc = _step_means(arr, ctm_per_step)
+        means, conc = _cell_means(
+            cell_paths,
+            lambda cell_path: read_stacked_bulk_molecules(
+                np.array([cell_path]), wanted)[0],
+            ctm_by_cell)
         return (dict(zip(wanted, means.tolist())),
                 dict(zip(wanted, conc.tolist())) if conc is not None else None)
 
-    def read_active_means(self, cell_paths, ctm_per_step):
+    def read_active_means(self, cell_paths, ctm_by_cell):
         """
         Average active-unique-molecule counts: ({'ribosome'|'rnap'|'replisome':
         mean count}, the same keyed mean concs in mM or None) from the
-        UniqueMoleculeCounts listener, see _step_means.
+        UniqueMoleculeCounts listener, see _cell_means.
         """
         try:
-            umc = read_stacked_columns(
-                cell_paths, "UniqueMoleculeCounts", "uniqueMoleculeCounts"
-            )
+            mean, conc = _cell_means(
+                cell_paths, lambda cell_path: read_stacked_columns(
+                    np.array([cell_path]), "UniqueMoleculeCounts",
+                    "uniqueMoleculeCounts"),
+                ctm_by_cell)
             reader = TableReader(
                 os.path.join(cell_paths[0], "simOut", "UniqueMoleculeCounts"))
             ids = list(reader.readAttribute("uniqueMoleculeIds"))
         except Exception as e:
             print(f"NOTE: could not read UniqueMoleculeCounts: {e!r}")
             return {}, None
-        if umc.size == 0:
-            return {}, None
-        mean, conc = _step_means(umc, ctm_per_step)
         out = {}
         out_conc = {} if conc is not None else None
         for key, name in (
@@ -1316,41 +1331,40 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
                     out_conc[name] = float(conc[ids.index(key)])
         return out, out_conc
 
-    def read_bound_means(self, cell_paths, sim_data, ctm_per_step):
+    def read_bound_means(self, cell_paths, sim_data, ctm_by_cell):
         """
         Average DNA-bound TF counts ({bare_tf_id: mean count}, {bare_tf_id: mean
         conc in mM} or None) from the RnaSynthProb listener's nActualBound column
-        (emitted in that sim's tf_ids order), see _step_means.
+        (emitted in that sim's tf_ids order), see _cell_means.
         """
         tf_ids = list(sim_data.process.transcription_regulation.tf_ids)
         try:
-            nab = read_stacked_columns(
-                cell_paths, "RnaSynthProb", "nActualBound"
-            )
+            mean, conc = _cell_means(
+                cell_paths, lambda cell_path: read_stacked_columns(
+                    np.array([cell_path]), "RnaSynthProb", "nActualBound"),
+                ctm_by_cell)
         except Exception as e:
             print(f"NOTE: could not read nActualBound: {e!r}")
             return {}, None
-        if nab.size == 0:
-            return {}, None
-        mean, conc = _step_means(nab, ctm_per_step)
         n = min(len(tf_ids), mean.shape[0])
         return (dict(zip(tf_ids[:n], mean[:n].tolist())),
                 dict(zip(tf_ids[:n], conc[:n].tolist())) if conc is not None else None)
 
-    def read_counts_to_molar_per_step(self, cell_paths):
+    def read_counts_to_molar_by_cell(self, cell_paths):
         """
         countsToMolar (mM/count) at every timepoint from the EnzymeKinetics
-        listener (one entry per row of the other stacked listener reads), or
-        None if unavailable.
+        listener, as one array per cell (each with one entry per timepoint of
+        that cell's other listener reads), or None if unavailable.
         """
         try:
-            arr = read_stacked_columns(
-                cell_paths, "EnzymeKinetics", "countsToMolar"
-            )
+            return [
+                np.asarray(read_stacked_columns(
+                    np.array([cell_path]), "EnzymeKinetics", "countsToMolar"
+                ), dtype=float).reshape(-1)
+                for cell_path in cell_paths]
         except Exception as e:
             print(f"NOTE: could not read countsToMolar: {e!r}")
             return None
-        return np.asarray(arr, dtype=float).reshape(-1) if arr.size else None
 
     def read_doubling_time(self, cell_paths):
         """
@@ -1374,18 +1388,16 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         both forward and ' (reverse)'-tagged entries.
         """
         try:
-            flux = read_stacked_columns(
-                cell_paths, "FBAResults", "reactionFluxes"
-            )
+            mean, _ = _cell_means(
+                cell_paths, lambda cell_path: read_stacked_columns(
+                    np.array([cell_path]), "FBAResults", "reactionFluxes"),
+                None)
             reader = TableReader(
                 os.path.join(cell_paths[0], "simOut", "FBAResults"))
             rxn_ids = list(reader.readAttribute("reactionIDs"))
         except Exception as e:
             print(f"NOTE: could not read FBAResults fluxes: {e!r}")
             return {}
-        if flux.size == 0:
-            return {}
-        mean = flux.mean(axis=0)
         return {rxn_ids[i]: float(mean[i]) for i in range(min(len(rxn_ids), mean.shape[0]))}
 
     def read_mechanistic_replisome(self, sim_dir):
@@ -1449,9 +1461,9 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         # sims can differ in their monomer set/order, so counts are never indexed
         # positionally across sims.
         # countsToMolar (mM/count) at every timepoint per sim, to annotate counts
-        # with their average µM concentration (see _step_means):
-        ctm_1 = self.read_counts_to_molar_per_step(cell_paths_1)
-        ctm_2 = self.read_counts_to_molar_per_step(cell_paths_2)
+        # with their average µM concentration (see _cell_means):
+        ctm_1 = self.read_counts_to_molar_by_cell(cell_paths_1)
+        ctm_2 = self.read_counts_to_molar_by_cell(cell_paths_2)
 
         monomer_ids_1, sim1_all, sim1_all_conc = self.read_monomer_means(
             cell_paths_1, ctm_1)
