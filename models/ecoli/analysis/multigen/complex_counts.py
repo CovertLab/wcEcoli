@@ -144,16 +144,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         """
         time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
 
-        doubling_times = read_stacked_columns(
+        # Generation boundaries come from each generation's own row count and
+        # recorded timestamps, so they stay exact when timesteps are not 1 s
+        # (the sim shortens a timestep whenever a process requires it):
+        rows_per_generation = read_stacked_columns(
             cell_paths, 'Main', 'time',
-            fun=lambda x: (x[-1] - x[0])).squeeze().astype(int)
-
-        end_generation_times = np.cumsum(doubling_times) + time[0]
-        start_generation_indices = np.searchsorted(
-            time, end_generation_times[:-1], side='left').astype(int)
-        start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(
-            len(doubling_times))
-        end_generation_indices = start_generation_indices + doubling_times
+            fun=lambda x: np.array([[x.shape[0]]])).reshape(-1).astype(int)
+        start_generation_indices = np.concatenate(
+            ([0], np.cumsum(rows_per_generation)[:-1]))
+        end_generation_indices = start_generation_indices + rows_per_generation - 1
+        end_generation_times = time[end_generation_indices]
+        doubling_times = end_generation_times - time[start_generation_indices]
 
         return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
