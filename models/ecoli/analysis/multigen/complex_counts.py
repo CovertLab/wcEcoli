@@ -2166,7 +2166,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 len(time) - 1))
             event_lines = [line for line in ax3.get_lines()
                            if len(line.get_ydata()) == len(time)]
-            if event_lines:
+            # Clipping needs both initial rows and rows outside them (none when
+            # N_INITIAL_STEPS_TO_CLIP is 0 or the generations are that short):
+            if event_lines and 0 < len(initial_rows) < len(time):
                 rest_mask = np.ones(len(time), bool)
                 rest_mask[initial_rows] = False
                 all_rest = np.concatenate(
