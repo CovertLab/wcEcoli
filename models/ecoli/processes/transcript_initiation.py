@@ -282,6 +282,8 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			is_mRNA=is_mRNA,
 			is_full_transcript=np.zeros(cast(int, n_RNAPs_to_activate), dtype=bool),
 			can_translate=is_mRNA,
+			is_decaying=np.zeros(cast(int, n_RNAPs_to_activate), dtype=bool),
+			decay_front=np.zeros(cast(int, n_RNAPs_to_activate), dtype=np.int64),
 			RNAP_index=RNAP_indexes)
 
 		# Create masks for ribosomal RNAs

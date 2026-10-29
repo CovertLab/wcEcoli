@@ -35,7 +35,9 @@ N_SEEDS = 10
 # If True, the mRNA expression targets of RNA polymerase subunits account for
 # transcripts that start decaying (and stop binding ribosomes) before RNA
 # polymerase reaches the subunit's cistron. See partialTranscriptSurvival().
-CORRECT_RNAP_PARTIAL_TRANSCRIPT_DECAY = True
+# Not needed if DIRECTIONAL_MRNA_DECAY is True in rna_degradation.py, since
+# cistrons are then not lost to decay that starts before they are transcribed.
+CORRECT_RNAP_PARTIAL_TRANSCRIPT_DECAY = False
 
 # Parameters used in fitPromoterBoundProbability()
 PROMOTER_PDIFF_THRESHOLD = 0.06  # Minimum difference between binding probabilities of a TF in conditions where TF is active and inactive

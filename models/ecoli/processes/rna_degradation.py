@@ -40,6 +40,16 @@ from wholecell.utils.constants import REQUEST_PRIORITY_DEGRADATION
 # immediately and the polypeptides being translated on them are lost.
 KEEP_MRNAS_WITH_ACTIVE_RIBOSOMES = True
 
+# If True, mRNAs targeted for degradation are degraded in the 5' to 3'
+# direction: a degradation front starts at the 5' end and moves toward the 3'
+# end at the RNA polymerase elongation rate without passing the RNA polymerase.
+# Each cistron stops binding new ribosomes once the front passes its start
+# position, so cistrons synthesized after the mRNA is targeted are still
+# translated for the same amount of time as upstream cistrons. If False, the
+# entire mRNA stops binding ribosomes as soon as it is targeted, including
+# cistrons that have not yet been transcribed.
+DIRECTIONAL_MRNA_DECAY = True
+
 class RnaDegradation(wholecell.processes.process.Process):
 	""" RnaDegradation """
 
@@ -59,6 +69,18 @@ class RnaDegradation(wholecell.processes.process.Process):
 			+ list(transcription.mature_rna_data['id']))
 		rna_id_to_index = {rna_id: i for (i, rna_id) in enumerate(all_rna_ids)}
 		self.n_total_RNAs = len(all_rna_ids)
+
+		# Load parameters for directional mRNA decay
+		self.rnap_elongation_rate_dict = transcription.rnaPolymeraseElongationRateDict
+		# Start position of the most downstream cistron of each TU. Once the
+		# degradation front passes this position, no cistron of the mRNA can
+		# bind new ribosomes.
+		self.last_cistron_start_positions = np.zeros(
+			len(transcription.rna_data), np.int64)
+		for (cistron_index, TU_index), (start_position, _) in \
+				transcription.cistron_start_end_pos_in_tu.items():
+			self.last_cistron_start_positions[TU_index] = max(
+				self.last_cistron_start_positions[TU_index], start_position)
 
 		# Load constants
 		self.n_avogadro = sim_data.constants.n_avogadro
@@ -161,9 +183,11 @@ class RnaDegradation(wholecell.processes.process.Process):
 		bulk_RNA_counts = self.bulk_RNAs.total_counts().copy()
 		bulk_RNA_counts[self.uncharged_trna_indexes] += self.charged_trnas.total_counts()
 
-		TU_index, can_translate, is_full_transcript, unique_index = self.unique_RNAs.attrs(
-			'TU_index', 'can_translate', 'is_full_transcript', 'unique_index')
-		TU_index_translatable_mRNAs = TU_index[can_translate]
+		TU_index, can_translate, is_full_transcript, is_decaying, unique_index = self.unique_RNAs.attrs(
+			'TU_index', 'can_translate', 'is_full_transcript', 'is_decaying',
+			'unique_index')
+		# mRNAs that are already being degraded cannot be targeted again
+		TU_index_translatable_mRNAs = TU_index[can_translate & ~is_decaying]
 		unique_RNA_counts = np.bincount(
 			TU_index_translatable_mRNAs, minlength=self.n_total_RNAs)
 		total_RNA_counts = bulk_RNA_counts + unique_RNA_counts
@@ -297,8 +321,12 @@ class RnaDegradation(wholecell.processes.process.Process):
 		self.bulk_RNAs.countsIs(0)
 
 		# Deactivate and degrade unique RNAs
-		TU_index, can_translate = self.unique_RNAs.attrs(
-			'TU_index', 'can_translate')
+		TU_index, can_translate, is_decaying, decay_front, transcript_length = self.unique_RNAs.attrs(
+			'TU_index', 'can_translate', 'is_decaying', 'decay_front',
+			'transcript_length')
+		can_translate = can_translate.copy()
+		is_decaying = is_decaying.copy()
+		decay_front = decay_front.copy()
 		n_deactivated_unique_RNA = self.n_unique_RNAs_to_deactivate
 
 		# Deactive unique RNAs
@@ -308,13 +336,44 @@ class RnaDegradation(wholecell.processes.process.Process):
 				np.arange(n_deactivated_unique_RNA.size)[non_zero_deactivation],
 				n_deactivated_unique_RNA[non_zero_deactivation]):
 			# Get mask for translatable mRNAs belonging to the degraded species
-			mask = np.logical_and(TU_index == index, can_translate)
+			# that are not already being degraded
+			mask = (TU_index == index) & can_translate & ~is_decaying
 
 			# Choose n_degraded indexes randomly to deactivate
-			can_translate[self.randomState.choice(
-				size=n_degraded, a=np.where(mask)[0], replace=False)] = False
+			chosen_indexes = self.randomState.choice(
+				size=n_degraded, a=np.where(mask)[0], replace=False)
+			if DIRECTIONAL_MRNA_DECAY:
+				# Start a degradation front at the 5' end
+				is_decaying[chosen_indexes] = True
+				decay_front[chosen_indexes] = 0
+			else:
+				can_translate[chosen_indexes] = False
 
-		self.unique_RNAs.attrIs(can_translate=can_translate)
+		if DIRECTIONAL_MRNA_DECAY:
+			# Move degradation fronts toward the 3' end at the RNA polymerase
+			# elongation rate. Fronts cannot pass the 3' end of the transcript,
+			# which is the position of the RNA polymerase for partial
+			# transcripts.
+			current_media_id = self._external_states['Environment'].current_media_id
+			front_step = np.int64(np.round(
+				self.rnap_elongation_rate_dict[current_media_id].asNumber(
+					units.nt / units.s) * self.timeStepSec()))
+			decay_front[is_decaying] = np.minimum(
+				decay_front[is_decaying] + front_step,
+				transcript_length[is_decaying])
+
+			# mRNAs whose fronts have passed the start of every cistron can no
+			# longer bind ribosomes, and are deleted once fully transcribed
+			# (and once all ribosomes on them have finished if
+			# KEEP_MRNAS_WITH_ACTIVE_RIBOSOMES is True)
+			is_front_past_all_cistrons = np.zeros_like(is_decaying)
+			is_front_past_all_cistrons[is_decaying] = (decay_front[is_decaying]
+				> self.last_cistron_start_positions[TU_index[is_decaying]])
+			can_translate[is_front_past_all_cistrons] = False
+
+		self.unique_RNAs.attrIs(
+			can_translate=can_translate, is_decaying=is_decaying,
+			decay_front=decay_front)
 
 		# Degrade full mRNAs that are inactive
 		self.unique_RNAs.delByIndexes(
