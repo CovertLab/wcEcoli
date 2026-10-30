@@ -1,4 +1,6 @@
 """
+Multigen analysis plot for tracking monomer counts and their trajectories over time.
+
 Multigeneration analysis for analyzing monomer counts and their trajectories
 over time. The output contains four panels to help track the dynamics
 of monomer usage and complex formation for each monomer of interest:
