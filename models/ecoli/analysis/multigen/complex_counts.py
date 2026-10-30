@@ -1,4 +1,6 @@
 """
+complex_counts.py plot for looking at complex count trajectories over time.
+
 This plot visualizes the counts of a specified complex over time, along with:
 - Free monomer subunit availability
 - Complexation events that produce or consume the complex
