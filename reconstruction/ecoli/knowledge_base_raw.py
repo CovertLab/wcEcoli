@@ -148,31 +148,21 @@ REMOVED_DATA = {
 	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
-# TF-gene pairs in fold_changes_removed.tsv that were removed as workarounds
-# to get enough expression with ppGpp regulation. With
-# CORRECT_PPGPP_TF_DOUBLE_COUNT in transcription.py on, these may no longer
-# be needed. Add a group name to RESTORE_PPGPP_WORKAROUND_GROUPS to keep that
-# group's regulation (i.e. skip its removal) in the next ParCa run.
+# TF-gene pairs in fold_changes_removed.tsv that were likely removed as
+# workarounds to get enough expression with ppGpp regulation on, grouped by
+# workaround. Add a group name to RESTORE_PPGPP_WORKAROUND_GROUPS to keep that
+# group's regulation (i.e. skip its manual removal) in the ParCa run. Groups
+# are only restored when the PDR combo is in RESTORE_PPGPP_WORKAROUND_PDR_COMBOS;
+# with any other combo, the workaround removals are kept as before.
+# TODO (mia): add more groups to this list as they are further investigated
+#  and fixed. At the moment, only lexA-rpsU can be restored, and only with
+#  PDR_combo_2020 (other PDR combos require some sort of complex degradation
+#  to be turned on, which is not yet fully implemented in the model).
 PPGPP_WORKAROUND_FOLD_CHANGES = {
-	# "Remove to get stable growth with ppGpp regulation and amino acid supply"
-	'lrp_aa_synthesis': [
-		('lrp', 'ilvA'), ('lrp', 'glnA'), ('lrp', 'serA'), ('lrp', 'aspC'),
-		('lrp', 'can'), ('lrp', 'ilvD'), ('lrp', 'pyrI'), ('lrp', 'ilvE'),
-		],
-	# "Remove to get sufficient expression of ... rpsU when ppGpp regulation ... used"
 	'lexA_rpsU': [('lexA', 'rpsU')],
-	# "Remove to get sufficient expression of histidine biosynthesis enzymes"
-	'argR_hisL': [('argR', 'hisL')],
-	# "Remove to increase ribosome counts ... when simulating with ppGpp"
-	'ribosome_counts': [
-		('lrp', 'rplR'), ('argR', 'rpsO'), ('crp', 'rpsO'), ('fis', 'rpsO'),
-		],
-	# "Remove to get higher charging ... when simulating with ppGpp"
-	'fis_gltX': [('fis', 'gltX')],
-	# "Remove to get expression in ppGpp" (added with the ppGpp TF adjustment, #1161)
-	'crp_rproteins': [('crp', 'rplI'), ('crp', 'rpsF'), ('crp', 'rpsR')],
 	}
-RESTORE_PPGPP_WORKAROUND_GROUPS: List[str] = []  # e.g. ['lrp_aa_synthesis', 'lexA_rpsU']
+RESTORE_PPGPP_WORKAROUND_PDR_COMBOS: List[str] = ['PDR_combo_2020']
+RESTORE_PPGPP_WORKAROUND_GROUPS: List[str] = ['lexA_rpsU']
 
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',
@@ -384,7 +374,10 @@ class KnowledgeBaseEcoli(object):
 				ids_to_remove.add(tuple([row[col] for col in removed_cols]))
 
 			# Keep regulation for any ppGpp workaround groups being restored
-			if data_attr.startswith('fold_changes'):
+			# (only for PDR combos where restoring them is supported)
+			if (data_attr.startswith('fold_changes')
+					and self.protein_degradation_combo_option
+					in RESTORE_PPGPP_WORKAROUND_PDR_COMBOS):
 				for group in RESTORE_PPGPP_WORKAROUND_GROUPS:
 					ids_to_remove -= set(PPGPP_WORKAROUND_FOLD_CHANGES[group])
 

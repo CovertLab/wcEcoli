@@ -27,12 +27,6 @@ PROCESS_MAX_TIME_STEP = 2.
 RNA_SEQ_ANALYSIS = "rsem_tpm"
 PPGPP_CONC_UNITS = units.umol / units.L
 PRINT_VALUES = False  # print values for supplemental table if True
-# If True, adjust_ppgpp_expression_for_tfs applies the average basal TF effect
-# only once. The original formula added the TF effect to an expression that
-# already accounts for it, over-repressing repressed TUs and over-activating
-# activated TUs. Default set to True, but can be set to False to reproduce the
-# behavior prior to 10/09/26:
-CORRECT_PPGPP_TF_DOUBLE_COUNT = True
 
 
 class TranscriptionDirectionError(Exception):
@@ -1838,70 +1832,60 @@ class Transcription(object):
 			sim_data.process.replication.get_average_copy_number)
 
 		# Calculate the average expected effect of TFs under basal conditions:
-		# for each TU, sum over the following for each TF that regulates it:
-		# (TF's delta prob) * P(TF bound).
+		# for each TU, sum over the following for each TF that regulates it
+		# (TF's delta prob) * P(TF bound):
 		p_promoter_bound = np.array([
 			sim_data.pPromoterBound[condition][tf]
 			for tf in sim_data.process.transcription_regulation.tf_ids
 			])
-		# TU x TF matrices of each TF's effect on each TU when bound:
-		# delta_prob_no_ppgpp[j, i] = delta_prob[j, i] (absolute change in
-		# synthesis probability), and delta_prob_with_ppgpp[j, i] =
-		# delta_prob[j, i] / basal_prob[j] (relative change, and divides by 1
-		# where basal_prob is 0). Multiplying each by p_promoter_bound
-		# (@ below) collapses them into one value per TU:
-		delta_prob_no_ppgpp = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=False)
+		# TU x TF matrix of each TF's relative effect on each TU when bound:
+		# delta_prob_with_ppgpp[j, i] = delta_prob[j, i] / basal_prob[j]
+		# (divides by 1 where basal_prob is 0). Multiplying by
+		# p_promoter_bound (@ below) collapses it into one value per TU.
 		delta_prob_with_ppgpp = sim_data.process.transcription_regulation.get_delta_prob_matrix(ppgpp=True)
-		# delta_no_ppgpp is the absolute change in synthesis probability
-		# from TF binding (the form used when ppGpp regulation is off, which
-		# is simply added to basal_prob: prob = basal_prob + delta_no_ppgpp):
-		delta_no_ppgpp = delta_prob_no_ppgpp @ p_promoter_bound
-		# delta_with_ppgpp expresses the same TF effect as a relative change
-		# (delta_no_ppgpp / basal_prob), which is the form used when ppGpp
-		# regulation is on. This relative change is fixed and does not depend
-		# on the ppGpp level. At runtime, it multiplies the
-		# ppGpp-regulated probability (prob = base * (1 + delta_with_ppgpp)),
-		# so only the absolute size of the TF effect shifts with ppGpp:
+		# delta_with_ppgpp is the average basal TF effect as a relative
+		# change, which is the form used when ppGpp regulation is on. The
+		# relative change is fixed and does not depend on the ppGpp level.
+		# At runtime, it multiplies the ppGpp-regulated probability
+		# (prob = base * (1 + delta_with_ppgpp)), so only the absolute size
+		# of the TF effect shifts with ppGpp:
 		delta_with_ppgpp = delta_prob_with_ppgpp @ p_promoter_bound
 
 		# Find the ppGpp regulated synthesis probability, using exp_free and
-		# exp_ppgpp, such that after TF binding scales it at runtime, will
-		# reproduce the measured basal expression (when ppGpp isn't on):
-		if CORRECT_PPGPP_TF_DOUBLE_COUNT:
-			# Measured basal expression converted to synthesis probability
-			# (rna_expression already includes the average basal TF effect):
-			new_prob = normalize(self.rna_expression[condition] * factor)
+		# exp_ppgpp, such that after TF binding scales it at runtime, it will
+		# reproduce the measured basal expression (i.e. should collapse into
+		# the same thing as when ppGpp isn't on).
 
-			# During the sim, the ppGpp-regulated synthesis probability is
-			# multiplied by (1 + delta_with_ppgpp). new_prob currently holds
-			# the measured basal expression, which already includes the TF
-			# effect, so divide by (1 + delta_with_ppgpp) once here to get the
-			# ppGpp-regulated synthesis probability before any TF effect.
-			# This is done because exp_free and exp_ppgpp are rescaled below
-			# so that synth_prob_from_ppgpp returns this new_prob at the basal
-			# condition's ppGpp concentration (i.e. in the basal condition, the
-			# ppGpp-on synthesis probability then matches the ppGpp-off one:
-			# basal_prob + delta_no_ppgpp).
-			# Then, during the sim, when TF binding multiplies it by
-			# (1 + delta_with_ppgpp), the result matches the measured basal
-			# expression, rather than the measured expression with the TF
-			# effect applied a second time on top (NOTE: The original formula
-			# below in the "else" section adds delta_no_ppgpp, which
-			# incorrectly counts the TF effect twice).
+		# Start from the measured basal RNA expression, converted to a
+		# synthesis probability by multiplying by factor (see above). Since
+		# rna_expression comes from RNA-seq of cells in which TFs are already
+		# active, this probability already includes the average basal TF
+		# effect:
+		new_prob = normalize(self.rna_expression[condition] * factor)
 
-			# Only divide where (1 + delta_with_ppgpp) is safely above 0. A value
-			# <= 0 means an always-bound repressor shuts the TU off, and a tiny positive
-			# value (e.g. float rounding) would blow the TU up to a huge
-			# probability that swamps all others after normalizing. Thus, those
-			# TUs keep their current probability to avoid this happening:
-			can_divide = (1 + delta_with_ppgpp) > 1e-6 # valid value mask
-			new_prob[can_divide] /= 1 + delta_with_ppgpp[can_divide]
-			new_prob[~can_divide] = old_prob[~can_divide]
-		else:
-			# Original formula: adds the TF effect onto expression that
-			# already includes it, thus, likely double counting TF(s) regulation:
-			new_prob = (normalize(self.rna_expression[condition] * factor) + delta_no_ppgpp) / (1 + delta_with_ppgpp)
-			new_prob[new_prob < 0] = old_prob[new_prob < 0]
+		# During the sim, the ppGpp-regulated synthesis probability is
+		# multiplied by (1 + delta_with_ppgpp). new_prob currently holds
+		# the measured basal expression, which already includes the TF
+		# effect, so divide by (1 + delta_with_ppgpp) once here to get the
+		# ppGpp-regulated synthesis probability before any TF effect.
+		# This is done because exp_free and exp_ppgpp are rescaled below
+		# so that synth_prob_from_ppgpp returns this new_prob at the basal
+		# condition's ppGpp concentration (i.e. in the basal condition, the
+		# ppGpp-on synthesis probability then matches the ppGpp-off one,
+		# basal_prob plus the absolute TF effect).
+		# Then, during the sim, when TF binding multiplies it by
+		# (1 + delta_with_ppgpp), the result matches the measured basal
+		# expression, rather than the measured expression with the TF
+		# effect applied a second time on top.
+
+		# Only divide where (1 + delta_with_ppgpp) is safely above 0. A value
+		# <= 0 means an always-bound repressor shuts the TU off, and a tiny positive
+		# value (e.g. float rounding) would blow the TU up to a huge
+		# probability that swamps all others after normalizing. Thus, those
+		# TUs keep their current probability to avoid this happening:
+		can_divide = (1 + delta_with_ppgpp) > 1e-6 # valid value mask
+		new_prob[can_divide] /= 1 + delta_with_ppgpp[can_divide]
+		new_prob[~can_divide] = old_prob[~can_divide]
 		new_prob = normalize(new_prob)
 
 		# Determine adjustments to the current ppGpp expression to scale

@@ -3283,6 +3283,14 @@ def calculatePromoterBoundProbability(sim_data, cell_specs):
 	regulation = scipy.sparse.csr_matrix(
 		(regulation_v, (regulation_i, regulation_j)),
 		shape=(len(tf_idx), len(sim_data.process.transcription.rna_data)))
+	# A TU containing several cistrons regulated by the same TF gets one
+	# entry per cistron above, and csr_matrix sums duplicate entries, so that
+	# TU would be counted as several promoter targets. Each TU has a single
+	# promoter that the TF binds once (as in tf_binding at runtime), so
+	# collapse duplicates to 1. Without this, large operons inflate
+	# n_promoter_targets and underestimate the TF's probability of being bound:
+	regulation.sum_duplicates()
+	regulation.data[:] = 1
 	rna_coords = sim_data.process.transcription.rna_data['replication_coordinate']
 
 	for conditionKey in sorted(cell_specs):
