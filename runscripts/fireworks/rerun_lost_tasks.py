@@ -154,8 +154,11 @@ while True:
 				continue
 			if fw['state'] == 'RUNNING' or fw['state'] == 'RESERVED':
 				fw_id = str(fw['fw_id'])
-				rerun_counts[fw_id] = rerun_counts.get(fw_id, 0) + 1
-				if rerun_counts[fw_id] <= MAX_RERUN:
+				# Only count actual reruns so a dry run (no -f) would otherwise
+				# drop a task from the report after MAX_RERUN checks:
+				if RUN_CMD:
+					rerun_counts[fw_id] = rerun_counts.get(fw_id, 0) + 1
+				if rerun_counts.get(fw_id, 0) <= MAX_RERUN:
 					fws.append(fw_id)
 		fws_to_rerun = ','.join(fws)
 		if fws_to_rerun:
