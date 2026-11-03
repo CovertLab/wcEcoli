@@ -1,7 +1,11 @@
 """
 This plot visualizes the counts of a specified complex over time, along with:
 - Free monomer subunit availability
-- Complexation events that produce or consume the complex
+- Complexation events that produce or consume the complex. Each legend entry
+  gives the line's average |events| per timestep ("avg. X/step"), leaving out
+  the first steps of each generation (which may be truncated so they do not
+  throw off the y-axis from the typical average range). Equilibrium lines
+  are net events per step, so they can go both ways.
 - Counts within parent complexes and unique molecules (ribosomes, RNAPs, etc.)
 
 Supported complex types:
@@ -12,8 +16,10 @@ Supported complex types:
 In total, there are 1131 unique complexation complexes, 39 unique equilibrium
 complexes, and 18 unique two component system complexes.
 """
+import html
 import pickle
 import os
+import re
 from matplotlib import pyplot as plt
 import numpy as np
 import scipy.optimize
@@ -22,8 +28,67 @@ from wholecell.analysis.analysis_tools import (exportFigure,
          read_stacked_bulk_molecules, read_stacked_columns)
 from wholecell.io.tablereader import TableReader
 
+# USER INPUTS:
+
 # List complexes you would like to plot here (with or without compartment tags):
 PLOT_COMPLEXES = ["APORNAP-CPLX"]
+
+# Specify the # of timesteps at the start of each generation where lines can be
+# truncated in the events panel to avoid having large spikes throw off the
+# y axis. The first generation starts with no equilibrium or TCS complexes
+# (initialization only forms complexation complexes), so those reactions form
+# a significant number of molecules in its first steps after initialization to
+# hit steady state. Later generations inherit a count level closer to steady
+# state, so their first steps only spike a few times above the usual, but can
+# still be large relative to the average activity of these reactions (see
+# the truncating logic in the code for more details):
+N_INITIAL_STEPS_TO_CLIP = 5
+
+# END USER INPUTS
+
+def get_clean_common_name(sim_data, molecule_id):
+    """
+    Get a molecule's common name for use in plot text, without HTML entities
+    or tags (i.e. "&beta;", "<i>sn</i>").
+
+    Args:
+        sim_data: simulation data
+        molecule_id: ID of the molecule (with or without compartment tag)
+    Returns:
+        str or None: the common name, or None if there is none (some
+        equilibrium and TCS complexes only have a note about the reaction that
+        makes them in place of a name, e.g. "Reaction required to produce 1CS
+        TF ...", so those are left out too)
+    """
+    base_id = molecule_id.split('[')[0]
+    name = sim_data.common_names.get_common_name(base_id)
+    name = re.sub(r'<[^>]+>', '', html.unescape(name))
+    if name == base_id or name.startswith('Reaction required'):
+        return None
+    return name
+
+def count_replisomes_formed_and_removed(cell_path):
+    """
+    Number of replisomes formed and removed at each timestep of one cell, from
+    the ReplicationData listener's fork_unique_index (the unique index of each
+    active replisome, NaN-padded). Comparing which replisomes exist at
+    successive timesteps counts initiation and termination separately, even
+    when both happen in the same timestep, where the net change in the
+    active_replisome count would cancel them out. The first timestep has no
+    events, since the cell inherited those replisomes.
+    """
+    fork_indices = TableReader(
+        os.path.join(cell_path, 'simOut', 'ReplicationData')).readColumn(
+        'fork_unique_index', squeeze=False)
+    forks_by_step = [set(row[~np.isnan(row)].astype(np.int64))
+                     for row in fork_indices]
+    formed = np.zeros(len(forks_by_step))
+    removed = np.zeros(len(forks_by_step))
+    for i in range(1, len(forks_by_step)):
+        formed[i] = len(forks_by_step[i] - forks_by_step[i - 1])
+        removed[i] = len(forks_by_step[i - 1] - forks_by_step[i])
+    return formed, removed
+
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
     def check_validity_and_get_compartment(self, sim_data, molecule_list):
@@ -102,16 +167,17 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         """
         time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
 
-        doubling_times = read_stacked_columns(
+        # Generation boundaries come from each generation's own row count and
+        # recorded timestamps, so they stay exact when timesteps are not 1 s
+        # (the sim shortens a timestep whenever a process requires it):
+        rows_per_generation = read_stacked_columns(
             cell_paths, 'Main', 'time',
-            fun=lambda x: (x[-1] - x[0])).squeeze().astype(int)
-
-        end_generation_times = np.cumsum(doubling_times) + time[0]
-        start_generation_indices = np.searchsorted(
-            time, end_generation_times[:-1], side='left').astype(int)
-        start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(
-            len(doubling_times))
-        end_generation_indices = start_generation_indices + doubling_times
+            fun=lambda x: np.array([[x.shape[0]]])).reshape(-1).astype(int)
+        start_generation_indices = np.concatenate(
+            ([0], np.cumsum(rows_per_generation)[:-1]))
+        end_generation_indices = start_generation_indices + rows_per_generation - 1
+        end_generation_times = time[end_generation_indices]
+        doubling_times = end_generation_times - time[start_generation_indices]
 
         return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
@@ -237,7 +303,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             """
             mol_type = determine_molecule_type(molecule_id)
 
-            # Skip molecules that aren't in our database
+            # Skip molecules that are not monomers or complexes, e.g. rRNAs
+            # in the 30S/50S, metabolite ligands in equilibrium complexes:
             if mol_type == 'unknown':
                 print(f"  → Skipping {molecule_id} (not a monomer or complex)")
                 return
@@ -323,7 +390,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Add all molecules in the path with their stoichiometries
         # Each entry shows how many copies are needed at that assembly step
         for molecule_id, stoich, mol_type, reaction_id in path:
-            path_parts.append(f"{stoich} {molecule_id}")
+            path_parts.append(f"{stoich:g} {molecule_id}")
 
         # Add the final target complex (always 1 copy at the end of the path)
         path_parts.append(f"1 {complex_id}")
@@ -338,7 +405,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Construct the final sentence:
         sentence = (f"{monomer_id} counts within {complex_id}, "
-                    f"{total_stoich} per\n(via {path_string})")
+                    f"{total_stoich:g} per\n(via {path_string})")
 
         return sentence
 
@@ -455,11 +522,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             """
             mol_type = determine_molecule_type(current_molecule)
 
-            # Skip molecules not in our database
-            if mol_type == 'unknown':
-                print(f"  → Skipping {current_molecule} (not a monomer or complex)")
-                return
-
             # Get all complexes that directly use this molecule as a subunit
             parents = get_parent_complexes(current_molecule)
 
@@ -530,7 +592,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Add all steps in the path with their stoichiometries:
         for mol_id, stoich, mol_type, reaction_id in path:
-            path_parts.append(f"{abs(stoich)} {mol_id}")
+            path_parts.append(f"{abs(stoich):g} {mol_id}")
 
         # Join with line breaks every 2 arrows to prevent very long lines:
         path_string_parts = []
@@ -540,7 +602,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         path_string = " →\n".join(path_string_parts)
 
         sentence = (f"{molecule_id} counts within {parent_complex_id}, "
-                    f"\n{abs(total_stoich)} per (via {path_string})")
+                    f"\n{abs(total_stoich):g} per (via {path_string})")
 
         return sentence
 
@@ -1120,29 +1182,46 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             molecule_changes: (n_molecules,) array of molecule count changes
             from the ODE integration
         Returns:
-            reaction_fluxes: (n_reactions,) array of ESTIMATED reaction counts
+            (n_timesteps, n_reactions) array of ESTIMATED reaction counts
         """
         # Extract the molecule changes for each TCS molecule across the cell paths:
         all_molecule_changes = read_stacked_columns(
             cell_paths, 'TwoComponentSystems', 'moleculeChanges')
         sm = sim_data.process.two_component_system.stoich_matrix()
+        molecule_types = sim_data.process.two_component_system.molecule_types
         n_timesteps = all_molecule_changes.shape[0]
         n_reactions = sm.shape[1]
 
-        # Estimate the reaction fluxes for each step using non-negative least squares:
+        # Estimate the reaction fluxes for each step using non-negative least
+        # squares on the protein rows only. The emitted ATP/ADP/Pi/H2O/H+
+        # changes are not the sum of the individual reactions because the TCS
+        # process sets ATP use to the net phosphorylation summed over all
+        # systems and never records Pi, so whenever a protein is
+        # dephosphorylated they understate what the reactions used. Matching
+        # them would need negative reaction counts, which NNLS can't give, so
+        # including those rows would pull the estimates too low. The protein
+        # rows are the response regulators, histidine kinases and ligand-bound
+        # histidine kinases (plus their phosphorylated forms), identified by the
+        # TCS molecule types. Every other row is a small molecule shared by all
+        # TCS reactions (ATP, ADP, Pi, water and H+):
+        protein_types = {"RR", "PHOSPHO-RR", "HK", "PHOSPHO-HK", "HK-LIGAND",
+            "PHOSPHO-HK-LIGAND"}
+        protein_rows = np.array(
+            [molecule_type in protein_types for molecule_type in molecule_types])
+        sm_proteins = sm[protein_rows]
         estimated_reaction_fluxes = np.zeros((n_timesteps, n_reactions))
-
         for i in range(n_timesteps):
-            reaction_fluxes, residual = scipy.optimize.nnls(sm, all_molecule_changes[i])
-            estimated_reaction_fluxes[i] = np.round(reaction_fluxes).astype(int)
+            reaction_fluxes, _ = scipy.optimize.nnls(
+                sm_proteins, all_molecule_changes[i, protein_rows])
+            estimated_reaction_fluxes[i] = np.round(reaction_fluxes)
 
-            # Print a warning if the fit was not good::
-            reconstructed = sm.dot(estimated_reaction_fluxes[i])
-            max_error = np.max(np.abs(reconstructed - all_molecule_changes[i]))
-
-            if max_error > 0.5:
-                print(f"Warning: reaction flux reconstruction error (t={i}) = {max_error}")
-                print(f"Residual from NNLS: {residual}")
+        # Check the fit on the protein rows:
+        misfit = np.abs(estimated_reaction_fluxes @ sm_proteins.T
+                        - all_molecule_changes[:, protein_rows]) > 0.5
+        n_bad = misfit.any(axis=1).sum()
+        if n_bad:
+            print(f"Warning: TCS reaction estimate misfits some protein at "
+                  f"{n_bad}/{n_timesteps} timesteps")
 
         return estimated_reaction_fluxes
 
@@ -1243,9 +1322,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         ribosome50s_subunits = sim_data.process.complexation.get_monomers(
             sim_data.molecule_ids.s50_full_complex)
         ribosome50s_subunit_ids = ribosome50s_subunits["subunitIds"].tolist()
-
         ribosome_subunits = (ribosome30s_subunit_ids + ribosome50s_subunit_ids
-                             + ["CPLX0-3956[c]","CPLX0-3955[c]"]
                              + [sim_data.molecule_ids.s30_full_complex]
                              + [sim_data.molecule_ids.s50_full_complex])
 
@@ -1445,14 +1522,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 "uniqueMoleculeCounts")[:, replisome_idx]
             replisome_counts.append(active_replisome_counts)
 
-            # Find the replisome complexation events by subtracting the counts
-            # of the previous time step from the current time step:
-            replisome_complexation_events = np.diff(active_replisome_counts, prepend=0)
-
-            # Delete all negative values (which correspond to replisomes
-            # deleting from the simulations):
-            replisome_complexation_events[replisome_complexation_events < 0] = 0
-            replisome_events.append(replisome_complexation_events)
+            # Replisome assembly events are the replisomes formed in each step
+            # (see count_replisomes_formed_and_removed), so inherited
+            # replisomes are not counted as assembly at each generation start
+            # and terminations in the same step can't cancel them out:
+            replisomes_formed, _ = count_replisomes_formed_and_removed(sim_dir)
+            replisome_events.append(replisomes_formed)
 
         # Concatenate the replisome counts and events from each simulation into one array:
         replisome_counts = np.concatenate(replisome_counts)
@@ -1482,9 +1557,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
-        cell_paths = self.ap.get_cells()
+        # Only the first-daughter lineage (daughter cell 000000 of every
+        # generation) is plotted. With SINGLE_DAUGHTERS=0, each generation also
+        # has sibling cells, and stacking those would join unrelated cells into
+        # one trajectory with time jumping backwards:
+        all_cell_paths = self.ap.get_cells()
+        cell_paths = np.array([
+            cell_path for cell_path in all_cell_paths
+            if int(os.path.basename(os.path.normpath(cell_path))) == 0])
+        if len(cell_paths) < len(all_cell_paths):
+            print(f"NOTE: plotting only the first-daughter lineage "
+                  f"({len(cell_paths)} of {len(all_cell_paths)} cells), so "
+                  f"sibling cells are left out.")
         sim_dir = cell_paths[0]
         simOutDir = os.path.join(sim_dir, 'simOut')
+
+        # Check if replication sequestered replisome subunits. With mechanistic
+        # replisome off (the default setting), chromosome replication never
+        # removes replisome subunits from the bulk pool, so active replisomes
+        # contain no real subunits. If it is on, then subunits are pulled from
+        # bullk to generate replilsomes in the unique molecule space.
+        mechanistic_replisome = metadata.get('mechanistic_replisome', False)
 
         # Extract protein indexes for each monomer:
         monomer_counts_reader = TableReader(
@@ -1492,6 +1585,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         monomer_idx_dict = {monomer: i for i, monomer in
                             enumerate(monomer_counts_reader.readAttribute(
                                 'monomerIds'))}
+
+        # Map each monomer to its gene's common name (e.g. dnaE) for the
+        # subunit availability legend:
+        monomer_data = sim_data.process.translation.monomer_data
+        monomer_to_gene_name = {
+            monomer: get_clean_common_name(sim_data, cistron)
+            for monomer, cistron in zip(monomer_data['id'], monomer_data['cistron_id'])}
 
         # Extract the monomer IDs:
         self.monomerIDs = monomer_counts_reader.readAttribute("monomerIds")
@@ -1549,11 +1649,58 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Generate a plot for each complex:
         for complex_id in valid_complexes:
             # Extract the upstream monomers and sentences describing their paths:
-            upstream_monomers, upstream_monomer_paths = self.analyze_complex(complex_id)
+            upstream_monomers, _ = self.analyze_complex(complex_id)
+
+            # Keep each distinct path from a monomer into the complex only. As
+            # of 10/24/2026, CPLX0-3803 is the only complex with more than one
+            # path for a monomer: EG11413-MONOMER and EG11414-MONOMER are in it
+            # both via CPLX0-7910 directly, and via CPLX0-3801 (and each route
+            # contributes its own copies of the monomers). Currently CPLX0-3803
+            # never actually forms because its DnaX subunit (EG10245-MONOMER)
+            # is never made (since translation.py only translates the first
+            # protein listed for each cistron and dnaX lists the frameshift
+            # product first):
+            unique_upstream_paths = {}
+            for monomer, path_list in upstream_monomers.items():
+                unique_paths = []
+                for path_info in path_list:
+                    if not any(path_info['path'] == unique_path['path']
+                               and path_info['total_stoich'] == unique_path['total_stoich']
+                               for unique_path in unique_paths):
+                        unique_paths.append(path_info)
+                unique_upstream_paths[monomer] = unique_paths
+            upstream_path_pairs = [
+                (monomer, path_info)
+                for monomer, path_list in unique_upstream_paths.items()
+                for path_info in path_list]
 
             # Extract all downstream complexes the complex is a subunit of:
-            downstream_complexes, downstream_complex_paths = (
-                self.analyze_molecule_parents(complex_id))
+            downstream_complexes, _ = self.analyze_molecule_parents(complex_id)
+
+            # The path tracer records each path to a parent complex more than
+            # once (it does so for every complex that is inside another
+            # complex), so only each distinct path should be kept. Without
+            # this, the labels for some complexes in 2+ parents could
+            # be shifted onto the wrong parent lines in the legend:
+            unique_downstream_paths = {}
+            for parent_complex, path_list in downstream_complexes.items():
+                unique_paths = []
+                for path_info in path_list:
+                    if not any(path_info['path'] == unique_path['path']
+                               and path_info['total_stoich'] == unique_path['total_stoich']
+                               for unique_path in unique_paths):
+                        unique_paths.append(path_info)
+                unique_downstream_paths[parent_complex] = unique_paths
+            parent_path_pairs = [
+                (parent_complex, path_info)
+                for parent_complex, path_list in unique_downstream_paths.items()
+                for path_info in path_list]
+
+            # Copies of the complex per parent complex, summed over all
+            # distinct paths:
+            parent_total_stoich = {
+                parent_complex: sum(path_info['total_stoich'] for path_info in path_list)
+                for parent_complex, path_list in unique_downstream_paths.items()}
 
             # Determine the complex type (complexation vs. equilibrium vs. TCS):
             complex_type = complex_type_dict[complex_id]
@@ -1585,51 +1732,47 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.plot(time, complex_counts, color='lightseagreen',
                      label=f'{complex_id} free complex counts', linewidth=.75, alpha=0.75)
 
-            # Also plot the counts of each base monomer within the complex:
-            monomer_ids = list(upstream_monomers.keys())
+            # Also plot the counts of each base monomer within the complex
+            # (plot one line per distinct path, labeled with that path):
+            for monomer, path_list in unique_upstream_paths.items():
+                for path_num, path_info in enumerate(path_list, 1):
+                    path = self.format_monomer_path_sentence(
+                        monomer, complex_id, path_info)
+                    if len(path_list) > 1:
+                        path += f'\n[Path {path_num} of {len(path_list)}]'
+                    monomer_counts = complex_counts * path_info['total_stoich']
 
-            # If there happens to be a situation where there are more than one
-            # path per monomer, then the lengths of monomer_ids and
-            # upstream_monomer_paths will not match.
-            assert len(monomer_ids) == len(upstream_monomer_paths), \
-                (f"Length mismatch: {len(monomer_ids)} monomers but "
-                 f"{len(upstream_monomer_paths)} paths")
-
-            for i in range(len(monomer_ids)):
-                monomer = monomer_ids[i]
-                path = upstream_monomer_paths[i]
-                # Note: 0 just indexes to the value of an array that holds the
-                # "total_stoich" dictionary, and is not related to index i here.
-                total_stoich = upstream_monomers[monomer][0]['total_stoich']
-                monomer_counts = complex_counts * total_stoich
-
-                # Plot the counts within the complex itself:
-                ax1.plot(time, monomer_counts, alpha=1,
-                         label=path,
-                         linewidth=1, linestyle=":")
+                    # Plot the counts within the complex itself:
+                    ax1.plot(time, monomer_counts, alpha=1,
+                             label=path,
+                             linewidth=1, linestyle=":")
 
                 # Second, plot the free monomer subunits on the available free
                 # monomer subunit counts plot:
                 protein_idx = monomer_idx_dict[monomer]
                 protein_FMC = free_monomer_counts[:, protein_idx]
+                gene_name = monomer_to_gene_name.get(monomer)
                 ax2.plot(time, protein_FMC, alpha=0.75,
-                         label=f'{monomer}', linewidth=0.75)
+                         label=f'{monomer}' + (f' ({gene_name})' if gene_name else ''),
+                         linewidth=0.75)
 
             # Add the parent complexes to the complex counts plot as well:
-            complexes = list(downstream_complexes.keys())
-            for i in range(len(complexes)):
-                parent_complex = complexes[i]
-                path = downstream_complex_paths[i]
-                # Note: 0 just indexes to the value of an array that holds the
-                # "total_stoich" dictionary, and is not related to index i here.
-                total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+            # (one line per distinct path, labeled with that path):
+            complexes = list(unique_downstream_paths.keys())
+            for parent_complex, path_list in unique_downstream_paths.items():
                 parent_complex_free_counts = (
                     read_stacked_bulk_molecules(cell_paths, [parent_complex]))[0]
-                parent_complex_counts = parent_complex_free_counts * total_stoich
-                ax1.plot(time, parent_complex_counts, alpha=0.5,
-                         label=path,
-                         linewidth=0.75, linestyle="-.")
-                total_counts += parent_complex_counts
+                for path_num, path_info in enumerate(path_list, 1):
+                    total_stoich = path_info['total_stoich']
+                    path = self.format_parent_path_sentence(
+                        complex_id, parent_complex, path_info)
+                    if len(path_list) > 1:
+                        path += f'\n[Path {path_num} of {len(path_list)}]'
+                    parent_complex_counts = parent_complex_free_counts * total_stoich
+                    ax1.plot(time, parent_complex_counts, alpha=0.5,
+                             label=path,
+                             linewidth=0.75, linestyle="-.")
+                    total_counts += parent_complex_counts
 
             # Third, add a plot of the complexation events over time:
             rxns_plotted = []
@@ -1641,16 +1784,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             tcs_rxn_ids = sim_data.process.two_component_system.rxn_ids
 
             # Plot the reactions that generate the complex:
-            for i in range(len(monomer_ids)):
-                monomer = monomer_ids[i]
-                # Find the reaction that makes the complex from this monomer:
-                rxn_id = upstream_monomers[monomer][0]['path'][-1][3]
+            for monomer, path_info in upstream_path_pairs:
+                # Find the reaction that makes the complex from this monomer
+                # (the last step of each distinct path):
+                rxn_id = path_info['path'][-1][3]
                 if rxn_id in rxns_plotted:
                     continue # skip if the reacion has been plotted
                 else:
                     rxns_plotted.append(rxn_id)
                 rxn_stoich = 1 # always 1 for complex formation
-                name = f'{rxn_id} \n(generates {rxn_stoich} {complex_id})'
+                name = f'{rxn_id} \n(generates {rxn_stoich:g} {complex_id})'
 
                 # Plot the reaction events based on the type of complex:
                 if complex_type == "complexation":
@@ -1662,7 +1805,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     rxn_idx = equilibrium_rxn_ids.index(rxn_id)
                     rxn_events = read_stacked_columns(cell_paths,
                         'EquilibriumListener', "complexationEvents")[:, rxn_idx]
-                    ax3.plot(time, rxn_events, alpha=0.5, label=name, linewidth=0.75)
+                    # Equilibrium events are net per step, so the same line
+                    # generates (formation) or dissociates the complex:
+                    ax3.plot(time, rxn_events, alpha=0.5, linewidth=0.75,
+                             label=f'{rxn_id} net events\n(generates/dissociates '
+                                   f'{rxn_stoich:g} {complex_id})')
                 else: # TCS reactions
                     rxn_idx = tcs_rxn_ids.index(rxn_id)
                     rxn_events = self.tcs_reaction_events[:, rxn_idx]
@@ -1709,15 +1856,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Next, Find the reactions that consume the complex as a subunit
             # of a larger complex, and plot those as well:
-            for i in range(len(complexes)):
-                parent_complex = complexes[i]
-                rxn_id = downstream_complexes[parent_complex][0]['path'][0][3]
+            # (the first step of each distinct path):
+            for parent_complex, path_info in parent_path_pairs:
+                rxn_id = path_info['path'][0][3]
                 if rxn_id in consumption_rxns_plotted or rxn_id in rxns_plotted:
                     continue # skip if the reacion has been plotted
                 else:
                     consumption_rxns_plotted.append(rxn_id)
-                rxn_stoich = downstream_complexes[parent_complex][0]['path'][0][1]
-                name = f'{rxn_id} \n(consumes {rxn_stoich} {complex_id})'
+                rxn_stoich = path_info['path'][0][1]
+                name = f'{rxn_id} \n(consumes {rxn_stoich:g} {complex_id})'
 
                 if rxn_id in complexation_rxn_ids:
                     rxn_idx = complexation_rxn_ids.index(rxn_id)
@@ -1730,8 +1877,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     rxn_idx = equilibrium_rxn_ids.index(rxn_id)
                     rxn_events = read_stacked_columns(cell_paths,
                         'EquilibriumListener', "complexationEvents")[:, rxn_idx]
-                    ax3.plot(time, np.negative(rxn_events),
-                             alpha=0.5, label=name, linewidth=0.75)
+                    # Equilibrium events are net per step, so the same line
+                    # consumes (parent formation) or releases (dissociation):
+                    ax3.plot(time, np.negative(rxn_events), alpha=0.5,
+                             linewidth=0.75,
+                             label=f'{rxn_id} net events\n(consumes/releases '
+                                   f'{rxn_stoich:g} {complex_id})')
 
                 else:
                     rxn_idx = tcs_rxn_ids.index(rxn_id)
@@ -1783,7 +1934,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                          label=f'transcription unit bound\n {complex_id} '
                                f'transcription factors',
                          linewidth=0.75, alpha=0.75)
-                ax3.plot(time, (tf_counts * -1), color='lightcoral',
+                # nActualBound is TF occupancy at the end of each step, which
+                # works as binding events because TfUnbinding releases every
+                # bound TF at the start of each step. The exception is the
+                # first row/timestep of each generation, which is the initial state
+                # inherited from the parent cell (with no matching unbinding
+                # row), so those rows are set to 0 to avoid a fake drop at
+                # every generation start:
+                tf_binding = tf_counts.astype(float)
+                tf_binding[start_generation_indices] = 0
+                ax3.plot(time, (tf_binding * -1), color='lightcoral',
                          label=f'{complex_id} Transcription factor\nbinding events',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, tfs_unbound, color='purple',
@@ -1799,16 +1959,27 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     self.get_replisome_subunit_counts(sim_data, cell_paths, complex_id))
                 subunit_counts_within_replisomes = (
                         replisome_counts * replisome_stoich)
-                ax1.plot(time, subunit_counts_within_replisomes, color='gold',
-                         label=f'{complex_id} counts within active replisomes, '
-                               f'{replisome_stoich} per',
-                         linewidth=0.75, alpha=0.75, linestyle="--")
-                ax3.plot(time, np.negative(replisome_events), color='gold',
-                         label=f'Active replisome assebly events\n(consumes '
-                               f'{replisome_stoich} {complex_id})',
-                         linewidth=0.75, alpha=0.75)
-                # Add the replisome subunit counts to the total counts of the complex:
-                total_counts += (subunit_counts_within_replisomes)
+                if mechanistic_replisome:
+                    ax1.plot(time, subunit_counts_within_replisomes, color='gold',
+                             label=f'{complex_id} counts within active replisomes, '
+                                   f'{replisome_stoich:g} per',
+                             linewidth=0.75, alpha=0.75, linestyle="--")
+                    ax3.plot(time, np.negative(replisome_events), color='gold',
+                             label=f'Active replisome assembly events\n(consumes '
+                                   f'{replisome_stoich:g} {complex_id})',
+                             linewidth=0.75, alpha=0.75)
+                    # Add the replisome subunit counts to the total counts of the complex:
+                    total_counts += (subunit_counts_within_replisomes)
+                else:
+                    # Not real protein: not added to the total counts, and
+                    # replisome assembly never consumes the free complex
+                    ax1.plot(time, subunit_counts_within_replisomes, color='gold',
+                             label=f'# of {complex_id} chromosome replication\n'
+                                   f'assumes are available to make active\n'
+                                   f'replisomes, but mechanistic_replisome is\n'
+                                   f'off so they are never actually removed\n'
+                                   f'from bulk ({replisome_stoich:g} per)',
+                             linewidth=0.75, alpha=0.75, linestyle=":")
 
             # Check if the complex is an inactive RNAP (1:1 ratio):
             if self.is_an_RNAP_subunit(sim_data, complex_id) != []:
@@ -1849,20 +2020,31 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             sim_data, cell_paths, parent_complex))
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the replisome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the replisome:
                     subunit_counts = replisome_counts * total_stoich * replisome_stoich
+                    if mechanistic_replisome:
+                        ax1.plot(time, subunit_counts, color='gold',
+                                 label=f'{complex_id} counts within active replisomes,'
+                                       f'\n{replisome_stoich*total_stoich:g} per '
+                                       f'(via {parent_complex})',
+                                 linewidth=0.75, alpha=0.75, linestyle="--")
 
-                    ax1.plot(time, subunit_counts, color='gold',
-                             label=f'{complex_id} counts within active replisomes,'
-                                   f'\n{replisome_stoich*total_stoich} per '
-                                   f'(via {parent_complex})',
-                             linewidth=0.75, alpha=0.75, linestyle="--")
-
-                    # Add the replisome counts to the total counts of the complex:
-                    total_counts += subunit_counts
+                        # Add the replisome counts to the total counts of the complex:
+                        total_counts += subunit_counts
+                    else:
+                        # monomers are not actually used to create replisomes
+                        # and mechanistic replisome assumes they are unlimited:
+                        ax1.plot(time, subunit_counts, color='gold',
+                                 label=f'# of {complex_id} chromosome replication\n'
+                                       f'assumes are available to make active\n'
+                                       f'replisomes, but mechanistic_replisome is\n'
+                                       f'off so they are never actually removed\n'
+                                       f'from bulk ({replisome_stoich*total_stoich:g} '
+                                       f'per, via {parent_complex})',
+                                 linewidth=0.75, alpha=0.75, linestyle=":")
 
                 if self.is_a_TF(sim_data, parent_complex) != []:
                     tf_idx = self.tf_index(sim_data, parent_complex)
@@ -1870,14 +2052,14 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         'RnaSynthProb',"nActualBound")[:,tf_idx]
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the TF counts by the stoich of the complex to
                     # the parent complex:
                     subunit_counts = tf_counts * total_stoich
                     ax1.plot(time, subunit_counts, color='lightcoral',
-                             label=f'transcription unit bound {complex_id} transcription'
-                                   f' factors,\n {total_stoich} per (via {parent_complex})',
+                             label=f'bound {complex_id} transcription'
+                                   f' factors,\n {total_stoich:g} per (via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
                     # Add the TF counts to the total counts of the complex:
@@ -1890,7 +2072,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                         self.get_ribosome_subunit_counts(cell_paths))
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the ribosome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the ribosome:
@@ -1898,31 +2080,173 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                     ax1.plot(time, subunit_counts, color='gold',
                              label=f'{complex_id} counts within active ribosomes,'
-                                   f'\n{total_stoich} per (via {parent_complex})',
+                                   f'\n{total_stoich:g} per (via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
                     # Add the ribosome counts to the total counts of the complex:
                     total_counts += subunit_counts
 
 
-            # Plot the total theoretical complex counts:
-            ax1.plot(time, total_counts, color='black',
-                     label=f'Theoretical total {complex_id} counts\n(free complex '
-                           f'counts + counts within parent complexes)',
-                     linewidth=.25, alpha=1)
+            # Plot the total theoretical complex counts behind the other lines
+            # (so a free count that flips every step doesn't get covered).
+            # If the total equals the free count at every step, keep the
+            # legend entry but don't draw it on top of the free line:
+            if np.array_equal(total_counts, complex_counts):
+                ax1.plot([], [], color='black',
+                         label=f'Theoretical total {complex_id} counts\n(not '
+                               f'drawn here since free = total '
+                               f'complex counts at every step)',
+                         linewidth=.25, alpha=1)
+            else:
+                ax1.plot(time, total_counts, color='black',
+                         label=f'Theoretical total {complex_id} counts\n(free complex '
+                               f'counts + counts within parent complexes)',
+                         linewidth=.25, alpha=1, zorder=0)
 
             # Set the axes and legends :
             ax1.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
             ax1.set_ylabel("Complex Counts")
+
+            # Create stats above the counts panel ("in other complexes" is
+            # everything in the theoretical total that is not free):
+            in_other_complexes = total_counts - complex_counts
             ax1.set_title(
-                f"Complex counts for the {complex_makeup} {complex_type} complex "
-                f"{complex_id}\n Sim ID: {metadata['description']}", fontsize=6)
-            ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
+                f"Mean counts - Total: {np.mean(total_counts):.1f} | "
+                f"Free: {np.mean(complex_counts):.1f} | "
+                f"In other complexes: {np.mean(in_other_complexes):.1f} | "
+                f"Median counts - Total: {np.median(total_counts):.1f} | "
+                f"Free: {np.median(complex_counts):.1f} | "
+                f"In other complexes: {np.median(in_other_complexes):.1f}",
+                fontsize=7)
+
+            # Format the title a bold line drawn separately above grey subtitle
+            # lines. The titles for the TCS role labels are built from
+            # build_tcs_dictionaries (and this assumes only the phosphorylated
+            # forms are TCS complexes themselves):
+            tcs_role_names = {
+                "PHOSPHO-RR": "TCS phosphorylated response regulator",
+                "PHOSPHO-HK": "TCS phosphorylated histidine kinase",
+                "PHOSPHO-HK-LIGAND": "TCS phosphorylated ligand-bound histidine kinase",
+            }
+            if complex_makeup in tcs_role_names:
+                classification = tcs_role_names[complex_makeup]
+            else:
+                classification = f"{complex_makeup} {complex_type} complex"
+            tf_type = sim_data.process.transcription_regulation.tf_to_tf_type.get(
+                complex_id.split('[')[0])
+            if tf_type is not None:
+                classification += f" | {tf_type} transcription factor"
+            common_name = get_clean_common_name(sim_data, complex_id)
+            if common_name:
+                classification += f" | {common_name}"
+            fig_height = fig.get_figheight()
+            fig.text(0.4, 1 - 0.024 / fig_height,
+                     f"Count trajectory for {complex_id}",
+                     fontsize=10, fontweight='bold', ha='center', va='top')
+            fig.suptitle(
+                f"{classification[0].upper() + classification[1:]}\n"
+                f"Sim ID: {metadata['description']} | "
+                f"variant {metadata.get('variant', '?')} {metadata.get('variant_index', '')} | "
+                f"seed {int(metadata.get('seed', 0))} | {len(cell_paths)} gen(s)",
+                fontsize=9, x=0.4, y=1 - 0.288 / fig_height, color='grey')
+            ax2.set_ylabel("Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
+
+            # In the first generation, equilibrium (1CS ligand binding) and TCS
+            # reactions do not execute during initialization to create
+            # complexes for the initial state the way complexation complexes
+            # do, so there are usually large spikes for these molecules at the
+            # start. Later generations can also have smaller spikes as these
+            # reactions relax after division (i.e. a +/- pair at the 3rd and
+            # 4th steps). To avoid obscuring the y axis on the events graph
+            # from these changes, these large spikes are truncated and labeled
+            # instead:
+            initial_rows = np.unique(np.minimum(
+                start_generation_indices[:, None] + np.arange(N_INITIAL_STEPS_TO_CLIP),
+                len(time) - 1))
+            event_lines = [line for line in ax3.get_lines()
+                           if len(line.get_ydata()) == len(time)]
+            # Clipping needs both initial rows and rows outside them (none when
+            # N_INITIAL_STEPS_TO_CLIP is 0 or the generations are that short):
+            if event_lines and 0 < len(initial_rows) < len(time):
+                rest_mask = np.ones(len(time), bool)
+                rest_mask[initial_rows] = False
+                all_rest = np.concatenate(
+                    [np.asarray(line.get_ydata(), float)[rest_mask]
+                     for line in event_lines])
+                y_low, y_high = min(all_rest.min(), 0), max(all_rest.max(), 0)
+                pad = 0.1 * max(y_high - y_low, 1)
+                y_low, y_high = y_low - pad, y_high + pad
+                # Largest and smallest event of each line at the start of
+                # each generation:
+                peaks = []
+                for line in event_lines:
+                    y_all = np.asarray(line.get_ydata(), float)
+                    for gen_idx, start_idx in enumerate(start_generation_indices):
+                        rows = initial_rows[(initial_rows >= start_idx)
+                                            & (initial_rows < start_idx + N_INITIAL_STEPS_TO_CLIP)]
+                        for i in {rows[np.argmax(y_all[rows])], rows[np.argmin(y_all[rows])]}:
+                            peaks.append((y_all[i], time[i], line.get_color(), gen_idx))
+                # Only clip if some value dwarfs the rest of the panel, then
+                # label every value that falls outside the new y range:
+                if any(value < 1.5 * y_low or value > 1.5 * y_high
+                       for value, _, _, _ in peaks):
+                    ax3.set_ylim(y_low, y_high)
+                    n_stacked = {}
+                    for value, x, color, gen_idx in sorted(peaks, key=lambda c: -abs(c[0])):
+                        if y_low <= value <= y_high:
+                            continue
+                        below = value < y_low
+                        # Stack labels from the same generation start:
+                        n = n_stacked.get((gen_idx, below), 0)
+                        n_stacked[(gen_idx, below)] = n + 1
+                        ax3.annotate(f'{value:.0f}', xy=(x, y_low if below else y_high),
+                                     xytext=(4, (3 + 7 * n) * (1 if below else -1)),
+                                     textcoords='offset points', color=color, fontsize=6,
+                                     ha='left', va='bottom' if below else 'top')
+
+            # Order the events by activity so the most active are listed first in
+            # the legend and drawn underneath, and the least active are drawn
+            # on top so sparse events stay visible (note: activity is the
+            # average |events| per timestep, excluding the generation-start
+            # steps clipped above):
+            event_activity = {}
+            for line in event_lines:
+                y = np.abs(np.asarray(line.get_ydata(), float))
+                y[initial_rows] = np.nan
+                event_activity[line] = np.nanmean(y) if len(y) > len(initial_rows) else 0.
+            ordered_event_lines = sorted(event_lines, key=lambda line: -event_activity[line])
+            for rank, line in enumerate(ordered_event_lines):
+                line.set_zorder(2 + rank / len(ordered_event_lines))
+                line.set_linewidth(0.4)
+                line.set_alpha(0.85)
+                # Add the average |events| per timestep to each label, inside
+                # the parentheses on its second line when it has them,
+                # otherwise at the end:
+                activity = event_activity[line]
+                average_str = f'{activity:.0f}' if activity >= 100 else f'{activity:.2g}'
+                first_line, newline, rest = line.get_label().partition('\n')
+                if '(' in rest:
+                    rest = rest.replace('(', f'(avg. {average_str}/step, ', 1)
+                    line.set_label(f'{first_line.rstrip()}{newline}{rest.strip()}')
+                else:
+                    line.set_label(f'{line.get_label()} (avg. {average_str}/step)')
+
+            # Do not put lines along y=0 where an event does not happen to make
+            # the graph less crowded (every nonzero event is still drawn up from 0):
+            for line in ordered_event_lines:
+                y = np.asarray(line.get_ydata(), float).copy()
+                keep = y != 0
+                keep[1:] |= keep[:-1].copy()
+                keep[:-1] |= (y[1:] != 0)
+                y[~keep] = np.nan
+                line.set_ydata(y)
+            ax3.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
 
             ax3.set_xlabel("Time (s)")
             ax3.set_ylabel("Free Complex\nReaction Events")
-            ax3.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
+            ax3.legend(handles=ordered_event_lines, fontsize=5, loc="center left",
+                       bbox_to_anchor=(1, 0.5))
 
             # Add vertical lines for the end of each generation:
             for i in range(len(end_generation_times)):
@@ -1934,10 +2258,13 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             if self.is_a_ribosome_subunit(sim_data, complex_id) == []:
                 plt.tight_layout()
+            # Leave room at the top for the two title blocks:
+            plt.subplots_adjust(top=1 - 0.95 / fig_height)
 
             # Save the plot:
             file_name = plotOutFileName + "_" + complex_id
-            exportFigure(plt, plotOutDir, file_name, metadata)
+            exportFigure(plt, plotOutDir, file_name, metadata, dpi=300)
+            plt.close()
 
 
 if __name__ == '__main__':
