@@ -148,6 +148,22 @@ REMOVED_DATA = {
 	'transcriptional_attenuation': 'transcriptional_attenuation_removed',
 	'trna_charging_reactions': 'trna_charging_reactions_removed',
 	}
+# TF-gene pairs in fold_changes_removed.tsv that were likely removed as
+# workarounds to get enough expression with ppGpp regulation on, grouped by
+# workaround. Add a group name to RESTORE_PPGPP_WORKAROUND_GROUPS to keep that
+# group's regulation (i.e. skip its manual removal) in the ParCa run. Groups
+# are only restored when the PDR combo is in RESTORE_PPGPP_WORKAROUND_PDR_COMBOS;
+# with any other combo, the workaround removals are kept as before.
+# TODO (mia): add more groups to this list as they are further investigated
+#  and fixed. At the moment, only lexA-rpsU can be restored, and only with
+#  PDR_combo_2020 (other PDR combos require some sort of complex degradation
+#  to be turned on, which is not yet fully implemented in the model).
+PPGPP_WORKAROUND_FOLD_CHANGES = {
+	'lexA_rpsU': [('lexA', 'rpsU')],
+	}
+RESTORE_PPGPP_WORKAROUND_PDR_COMBOS: List[str] = ['PDR_combo_2020']
+RESTORE_PPGPP_WORKAROUND_GROUPS: List[str] = ['lexA_rpsU']
+
 MODIFIED_DATA = {
 	'complexation_reactions': 'complexation_reactions_modified',
 	'metabolic_reactions': 'metabolic_reactions_modified',
@@ -356,6 +372,14 @@ class KnowledgeBaseEcoli(object):
 			ids_to_remove = set()
 			for row in data_to_remove:
 				ids_to_remove.add(tuple([row[col] for col in removed_cols]))
+
+			# Keep regulation for any ppGpp workaround groups being restored
+			# (only for PDR combos where restoring them is supported)
+			if (data_attr.startswith('fold_changes')
+					and self.protein_degradation_combo_option
+					in RESTORE_PPGPP_WORKAROUND_PDR_COMBOS):
+				for group in RESTORE_PPGPP_WORKAROUND_GROUPS:
+					ids_to_remove -= set(PPGPP_WORKAROUND_FOLD_CHANGES[group])
 
 			# Remove any matching rows
 			data = getattr(self, data_attr)
