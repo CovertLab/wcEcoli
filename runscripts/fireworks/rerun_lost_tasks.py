@@ -15,6 +15,13 @@ is common for large workflows, where every task shares one lock and a refresh
 can take minutes. Raising WFLOCK_EXPIRATION_SECS in FW_config.yaml makes
 this rarer.
 
+It also clears workflow locks left by a job killed while holding one:
+whenever a rerun, refresh or release fails on a locked workflow (FireWorks
+already waited WFLOCK_EXPIRATION_SECS for it), and when a lock is seen in two
+consecutive checks with no firework job in slurm. Otherwise every task
+completion, refresh and rerun in the workflow fails on the lock and the run
+stalls.
+
 It also releases simulation tasks left WAITING although every parent
 COMPLETED. The workflow document keeps a stale parent state, often with a
 stale RESERVED launch on the child.
@@ -33,7 +40,7 @@ import json
 import os
 import sys
 import time
-from typing import Dict, Set
+from typing import Any, Dict, Set
 
 from fireworks import LaunchPad
 from fireworks.core.launchpad import LockedWorkflowError, WFLock
@@ -104,10 +111,21 @@ def release_waiting(lp, fw_id):
 		lp.cancel_reservation(launch['launch_id'])
 	return refresh(lp, fw_id)
 
+def clear_locks(lp, reason):
+	"""
+	Clear every workflow lock with `lpad admin unlock` when a rerun failed.
+	Only called after FireWorks already waited WFLOCK_EXPIRATION_SECS for a
+	lock, so the lock is almost certainly stale (left by a job killed while
+	holding it).
+	"""
+	n = lp.workflows.update_many({'locked': {'$exists': True}}, {'$unset': {'locked': ''}}).modified_count
+	print(f'Cleared {n} workflow lock(s): {reason}')
+
 lp = LaunchPad.from_file(LAUNCHPAD_FILE)
 rerun_counts = {}  # type: Dict[str, int]
 miss_counts = {}  # type: Dict[str, int]
 stuck_before = set()  # type: Set[int]
+locked_before = set()  # type: Set[Any]
 while True:
 	# Get all fireworks with running status and all active job names
 	running = get_fws('-s RESERVED') + get_fws('-s RUNNING')
@@ -120,6 +138,22 @@ while True:
 		tasks = set(squeue.split('\n'))
 	if VERBOSE:
 		print(tasks)
+
+	# Clear workflow locks left by a job killed while holding one. Every task
+	# completion, refresh and rerun in the workflow waits on the lock, so a
+	# stale one stalls the whole run. A lock is only cleared when it was seen
+	# in two consecutive checks with no firework job in slurm, since then
+	# nothing can be holding it legitimately (a refresh takes minutes at most).
+	fw_names = set(lp.fireworks.distinct('name'))
+	no_fw_jobs = not (tasks & fw_names)
+	locked = {wf['_id'] for wf in lp.workflows.find({'locked': {'$exists': True}}, {'_id': 1})}
+	for wf_id in sorted(locked & locked_before) if no_fw_jobs else []:
+		if RUN_CMD:
+			lp.workflows.update_one({'_id': wf_id, 'locked': {'$exists': True}}, {'$unset': {'locked': ''}})
+			print(f'Cleared stale lock on workflow {wf_id} (locked in 2 checks with no jobs in slurm)')
+		else:
+			print(f'Would clear stale lock on workflow {wf_id} if -f passed as arg')
+	locked_before = locked if no_fw_jobs else set()
 
 	# Count consecutive checks in which each running firework is missing from
 	# the slurm queue
@@ -148,7 +182,7 @@ while True:
 							f'refresh missed): now {refresh(lp, fw["fw_id"])}')
 						miss_counts.pop(str(fw['fw_id']), None)
 					except LockedWorkflowError:
-						print(f'Workflow locked while refreshing fw_id {fw["fw_id"]}; will retry on the next check')
+						clear_locks(lp, f'workflow locked while refreshing fw_id {fw["fw_id"]}; will retry on the next check')
 				else:
 					print(f'Would refresh fw_id {fw["fw_id"]} (launch completed) if -f passed as arg')
 				continue
@@ -166,7 +200,7 @@ while True:
 				print(f'Rerunning fw_ids {fws_to_rerun} (missing from squeue in {MISSES_BEFORE_RERUN} checks)')
 				result = filepath.run_cmdline(f'lpad rerun_fws -i {fws_to_rerun}', input_='y', timeout=None)
 				if result is None:
-					print('Rerun failed; will retry on the next check.')
+					clear_locks(lp, 'rerun failed (usually a locked workflow); will retry on the next check')
 				else:
 					for fw_id in fws:
 						miss_counts.pop(fw_id, None)
@@ -184,7 +218,7 @@ while True:
 			try:
 				print(f'Released stuck WAITING fw_id {fw_id} ({stuck[fw_id]}): now {release_waiting(lp, fw_id)}')
 			except LockedWorkflowError:
-				print(f'Workflow locked while releasing fw_id {fw_id}; will retry on the next check')
+				clear_locks(lp, f'workflow locked while releasing fw_id {fw_id}; will retry on the next check')
 		else:
 			print(f'Would release stuck WAITING fw_id {fw_id} ({stuck[fw_id]}) if -f passed as arg')
 	stuck_before = set(stuck)
