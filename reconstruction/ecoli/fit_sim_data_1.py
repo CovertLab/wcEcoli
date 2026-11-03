@@ -379,8 +379,8 @@ def final_adjustments(sim_data, cell_specs, **kwargs):
 	sim_data.process.transcription.adjust_ppgpp_expression_for_tfs(sim_data)
 
 	# Set supply constants for amino acids based on condition supply requirements
-	average_basal_container = create_bulk_container(sim_data, n_seeds=5)
-	average_with_aa_container = create_bulk_container(sim_data, condition='with_aa', n_seeds=5)
+	average_basal_container = create_bulk_container(sim_data, n_seeds=200)
+	average_with_aa_container = create_bulk_container(sim_data, condition='with_aa', n_seeds=200)
 	sim_data.process.metabolism.set_phenomological_supply_constants(sim_data)
 	sim_data.process.metabolism.set_mechanistic_supply_constants(sim_data, cell_specs,
 		average_basal_container, average_with_aa_container)
