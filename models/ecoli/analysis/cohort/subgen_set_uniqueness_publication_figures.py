@@ -265,10 +265,19 @@ def figure_accumulation(B, out_dir, x_break=250):
 		axr.tick_params(left=False, labelleft=False)
 		for sp in ('left', 'top', 'right'):
 			axr.spines[sp].set_visible(False)
-		# Diagonal break marks on the x-axis at the join between the two panels.
-		d = dict(color=MUTED, lw=1.4, clip_on=False)
-		ax.plot((1 - 0.008, 1 + 0.008), (-0.02, 0.02), transform=ax.transAxes, **d)
-		axr.plot((-0.07, 0.07), (-0.02, 0.02), transform=axr.transAxes, **d)
+		# Diagonal break marks at the join between the two panels, drawn both on
+		# the x-axis and on the curve itself where it is cut. Heights are axes
+		# fractions; the panels share y, so one fraction lines up across both.
+		y0, y1 = ax.get_ylim()
+		left_end = min(int(ax.get_xlim()[1]), n_total) - 1
+		right_start = max(int(np.ceil(axr.get_xlim()[0])), 1) - 1
+		for ax_i, x_mid, half_w, y_curve in (
+				(ax, 1.0, 0.008, acc[left_end]),
+				(axr, 0.0, 0.07, acc[right_start])):
+			for y_mid in (0.0, (y_curve - y0) / (y1 - y0)):
+				ax_i.plot((x_mid - half_w, x_mid + half_w),
+					(y_mid - 0.02, y_mid + 0.02), transform=ax_i.transAxes,
+					color=MUTED, lw=1.4, clip_on=False, zorder=4)
 
 	_save(fig, out_dir, 'fig3D_accumulation_broken_axis', dpi=300)
 	print('fig3D_accumulation_broken_axis: %s; all %d cells -> %.1f expected,'
