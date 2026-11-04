@@ -168,9 +168,15 @@ from scipy.stats import pearsonr, spearmanr
 
 from models.ecoli.analysis import comparisonAnalysisPlot
 from models.ecoli.analysis.AnalysisPaths import AnalysisPaths
+from models.ecoli.analysis.complex_membership_helpers import (
+    build_subunit_categories,
+    check_validity_and_get_compartment,
+    get_subunit_category_names,
+)
 from reconstruction.ecoli.dataclasses.process.metabolism import REVERSE_TAG
 from reconstruction.ecoli.simulation_data import SimulationDataEcoli
 from wholecell.analysis.analysis_tools import (
+    extract_doubling_times,
     read_stacked_bulk_molecules,
     read_stacked_columns,
 )
@@ -180,7 +186,7 @@ from wholecell.utils import constants, units
 # USER INPUTS:
 
 # Proteins to highlight (each its own color) in the highlighted plot, as monomer
-# ids without the compartment tag. Defaults to every replisome subunit monomer:
+# ids (with or without compartment tags). Defaults to every replisome subunit monomer:
 PLOT_PROTEINS_OF_INTEREST = [
     "EG10236-MONOMER",  # dnaB (helicase, hexamer)
     "EG10238-MONOMER",  # dnaE (Pol III core)
@@ -310,152 +316,10 @@ def get_protein_categories(sim_data, monomer_dict):
     ids common to both).
     """
 
-    # COMPLEXATION COMPLEXES
-    complexation_molecule_ids = sim_data.process.complexation.molecule_names
-    complexation_complex_ids = sim_data.process.complexation.ids_complexes
-    complexation_smm = sim_data.process.complexation.stoich_matrix_monomers()
-    complexation_monomers = {}
-    complexes_to_monomers = {}
-
-    for mol_id in complexation_molecule_ids:
-        if mol_id in monomer_dict:
-            complexation_monomers[mol_id] = monomer_dict[mol_id]
-        elif mol_id in complexation_complex_ids:
-            complex_idx = complexation_complex_ids.index(mol_id)
-            monomer_idxs = np.where(complexation_smm[:, complex_idx] < 0)[0]
-            monomers = []
-            for idx in monomer_idxs:
-                monomer_id = complexation_molecule_ids[idx]
-                if monomer_id in monomer_dict:
-                    complexation_monomers[monomer_id] = monomer_dict[monomer_id]
-                    monomers.append(monomer_id)
-            complexes_to_monomers[mol_id] = monomers
-
-    # EQUILIBRIUM COMPLEXES
-    equilibrium_molecule_ids = sim_data.process.equilibrium.molecule_names
-    equilibrium_complex_ids = sim_data.process.equilibrium.ids_complexes
-    eq_smm = sim_data.process.equilibrium.stoich_matrix_monomers()
-    eq_complexes_to_monomers = {}
-    equilibrium_monomers = {}
-
-    for mol_id in equilibrium_molecule_ids:
-        if mol_id in monomer_dict:
-            equilibrium_monomers[mol_id] = monomer_dict[mol_id]
-        elif mol_id in complexation_complex_ids:
-            if mol_id in complexes_to_monomers:
-                for monomer_id in complexes_to_monomers[mol_id]:
-                    if monomer_id in monomer_dict:
-                        equilibrium_monomers[monomer_id] = monomer_dict[monomer_id]
-        elif mol_id in equilibrium_complex_ids:
-            eq_complex_idx = equilibrium_complex_ids.index(mol_id)
-            molecule_idxs = np.where(eq_smm[:, eq_complex_idx] < 0)[0]
-            monomers = []
-            for idx in molecule_idxs:
-                molecule_name = equilibrium_molecule_ids[idx]
-                if molecule_name in monomer_dict:
-                    monomers.append(molecule_name)
-                    equilibrium_monomers[molecule_name] = monomer_dict[molecule_name]
-                elif molecule_name in complexation_complex_ids:
-                    if molecule_name in complexes_to_monomers:
-                        for monomer_id in complexes_to_monomers[molecule_name]:
-                            if monomer_id in monomer_dict:
-                                monomers.append(monomer_id)
-                                equilibrium_monomers[monomer_id] = monomer_dict[monomer_id]
-            eq_complexes_to_monomers[mol_id] = monomers
-
-    # TWO COMPONENT SYSTEM COMPLEXES
-    two_component_system_monomers = {}
-    tcs_complexes_to_monomers = {}
-    two_component_system_complex_ids = []
-
-    try:
-        two_component_system_molecule_ids = list(
-            sim_data.process.two_component_system.modified_molecules)
-        two_component_system_complex_ids = list(
-            sim_data.process.two_component_system.complex_to_monomer.keys())
-        tcs_complex_to_monomer_dict = sim_data.process.two_component_system.complex_to_monomer
-
-        for mol_id in two_component_system_molecule_ids:
-            subunit_ids = []
-            if mol_id in monomer_dict:
-                two_component_system_monomers[mol_id] = monomer_dict[mol_id]
-            elif mol_id in complexation_complex_ids:
-                subunit_ids = complexes_to_monomers[mol_id]
-                tcs_complexes_to_monomers[mol_id] = subunit_ids
-            elif mol_id in equilibrium_complex_ids:
-                subunit_ids = eq_complexes_to_monomers[mol_id]
-                tcs_complexes_to_monomers[mol_id] = subunit_ids
-            elif mol_id in two_component_system_complex_ids:
-                subunit_ids = list(tcs_complex_to_monomer_dict[mol_id].keys())
-                tcs_complexes_to_monomers[mol_id] = subunit_ids
-            for monomer_id in subunit_ids:
-                if monomer_id in monomer_dict:
-                    two_component_system_monomers[monomer_id] = monomer_dict[monomer_id]
-    except AttributeError:
-        # Print a warning if the two_component_system.modified_molecules
-        # attribute is not found since the listener was added in 03/26
-        print("Warning: two_component_system.modified_molecules not found "
-              "(likely due to using an older sim version where sim_data version "
-              "is out of date with current listeners used in the model).")
-
-    # RIBOSOMES
-    ribosome_50s_subunits = sim_data.process.complexation.get_monomers(
-        sim_data.molecule_ids.s50_full_complex)
-    ribosome_30s_subunits = sim_data.process.complexation.get_monomers(
-        sim_data.molecule_ids.s30_full_complex)
-    ribosome_subunits = (ribosome_50s_subunits["subunitIds"].tolist() +
-                         ribosome_30s_subunits["subunitIds"].tolist())
-    ribosome_monomers = {}
-    for subunit in ribosome_subunits:
-        if subunit in monomer_dict:
-            ribosome_monomers[subunit] = monomer_dict[subunit]
-
-    # RNAPs
-    rnap_subunits = sim_data.process.complexation.get_monomers(
-        sim_data.molecule_ids.full_RNAP)
-    rnap_subunit_ids = rnap_subunits["subunitIds"].tolist()
-    rnap_monomers = {}
-    for subunit in rnap_subunit_ids:
-        if subunit in monomer_dict:
-            rnap_monomers[subunit] = monomer_dict[subunit]
-
-    # REPLISOMES
-    replisome_trimer_subunits = sim_data.molecule_groups.replisome_trimer_subunits
-    replisome_monomer_subunits = sim_data.molecule_groups.replisome_monomer_subunits
-    replisome_subunit_ids = replisome_trimer_subunits + replisome_monomer_subunits
-    replisome_monomers = {}
-    for subunit in replisome_subunit_ids:
-        if subunit in monomer_dict:
-            replisome_monomers[subunit] = monomer_dict[subunit]
-        elif subunit in complexation_complex_ids:
-            monomer_ids_list = complexes_to_monomers[subunit]
-            for mol_id in monomer_ids_list:
-                if mol_id in monomer_dict:
-                    replisome_monomers[mol_id] = monomer_dict[mol_id]
-
-    # TRANSCRIPTION FACTORS
-    tfs = sim_data.process.transcription_regulation.tf_ids
-    tf_subunit_ids = [tf_id + f'[{sim_data.getter.get_compartment(tf_id)[0]}]'
-                      for tf_id in tfs]
-    tf_monomers = {}
-    for subunit in tf_subunit_ids:
-        if subunit in monomer_dict:
-            tf_monomers[subunit] = monomer_dict[subunit]
-        elif subunit in complexation_complex_ids:
-            monomer_ids_list = complexes_to_monomers[subunit]
-            for mol_id in monomer_ids_list:
-                if mol_id in monomer_dict:
-                    tf_monomers[mol_id] = monomer_dict[mol_id]
-        elif subunit in equilibrium_complex_ids:
-            monomer_ids_list = eq_complexes_to_monomers[subunit]
-            for mol_id in monomer_ids_list:
-                if mol_id in monomer_dict:
-                    tf_monomers[mol_id] = monomer_dict[mol_id]
-        elif subunit in two_component_system_complex_ids:
-            monomer_ids_list = tcs_complexes_to_monomers[subunit]
-            for mol_id in monomer_ids_list:
-                if mol_id in monomer_dict:
-                    tf_monomers[mol_id] = monomer_dict[mol_id]
+    subunit_categories = build_subunit_categories(sim_data, monomer_dict)
+    complexes_to_monomers = subunit_categories['complexes_to_monomers']
+    eq_complexes_to_monomers = subunit_categories['eq_complexes_to_monomers']
+    tcs_complexes_to_monomers = subunit_categories['tcs_complexes_to_monomers']
 
     # METABOLISM
     # A monomer is a "Metabolic enzyme" if its own id is a catalyst, or if it is
@@ -536,13 +400,7 @@ def get_protein_categories(sim_data, monomer_dict):
         k: _dedup(v) for k, v in monomer_to_reactant_rxns.items()}
 
     return {
-        'ribosome_monomers': ribosome_monomers,
-        'rnap_monomers': rnap_monomers,
-        'replisome_monomers': replisome_monomers,
-        'tf_monomers': tf_monomers,
-        'complexation_monomers': complexation_monomers,
-        'equilibrium_monomers': equilibrium_monomers,
-        'two_component_system_monomers': two_component_system_monomers,
+        **subunit_categories,
         'metabolic_enzyme_monomers': metabolic_enzyme_monomers,
         'metabolic_reactant_monomers': metabolic_reactant_monomers,
         # Reverse maps for hover detail:
@@ -553,7 +411,7 @@ def get_protein_categories(sim_data, monomer_dict):
         'monomer_to_reactant_rxns': monomer_to_reactant_rxns,
     }
 
-def classify_molecule_type(monomer_id, monomer_idx, protein_categories):
+def classify_molecule_type(monomer_id, protein_categories):
     """
     Classify a monomer into all functional-group categories it belongs to.
 
@@ -563,33 +421,8 @@ def classify_molecule_type(monomer_id, monomer_idx, protein_categories):
     'Monomer only' when it is in none. Metabolic involvement is not included
     in the category labels to avoid cluttering the legend.
     """
-    ribosome_monomers = protein_categories['ribosome_monomers']
-    rnap_monomers = protein_categories['rnap_monomers']
-    replisome_monomers = protein_categories['replisome_monomers']
-    tf_monomers = protein_categories['tf_monomers']
-    complexation_monomers = protein_categories['complexation_monomers']
-    equilibrium_monomers = protein_categories['equilibrium_monomers']
-    two_component_system_monomers = protein_categories['two_component_system_monomers']
-
-    # The `[monomer_id] == monomer_idx` guard confirms the category dict's stored
-    # index matches the monomer's plotted-array position:
-    subunit_categories = []
-    if monomer_id in ribosome_monomers and ribosome_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('Ribosome')
-    if monomer_id in rnap_monomers and rnap_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('RNAP')
-    if monomer_id in replisome_monomers and replisome_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('Replisome')
-    if monomer_id in tf_monomers and tf_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('Transcription factor')
-    if monomer_id in complexation_monomers and complexation_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('Complexation complex')
-    if monomer_id in equilibrium_monomers and equilibrium_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('Equilibrium complex')
-    if monomer_id in two_component_system_monomers and two_component_system_monomers[monomer_id] == monomer_idx:
-        subunit_categories.append('Two component system')
-
-    full_labels = [c + ' subunit' for c in subunit_categories]
+    full_labels = [name + ' subunit' for name in
+                   get_subunit_category_names(monomer_id, protein_categories)]
 
     if not full_labels:
         return 'Monomer only'
@@ -1372,10 +1205,7 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         averaged over, but giving equal-weight to each cell in the average.
         """
         try:
-            per_cell = read_stacked_columns(
-                cell_paths, "Main", "time",
-                fun=lambda x: np.array([[x[-1, 0] - x[0, 0]]])
-            )
+            _, per_cell, _, _, _ = extract_doubling_times(cell_paths)
         except Exception as e:
             print(f"NOTE: could not read doubling time: {e!r}")
             return None
@@ -1580,8 +1410,8 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         }
 
         molecule_types = [
-            classify_molecule_type(monomer_id, i, protein_categories)
-            for i, monomer_id in enumerate(monomer_ids)
+            classify_molecule_type(monomer_id, protein_categories)
+            for monomer_id in monomer_ids
         ]
 
         n_metabolic_enzyme = len(protein_categories['metabolic_enzyme_monomers'])
@@ -1596,11 +1426,10 @@ class Plot(comparisonAnalysisPlot.ComparisonAnalysisPlot):
         pearson_r2 = r_value ** 2
         spearman_rho = spearmanr(sim1_log, sim2_log)[0]
 
-        # Highlight list -> compartment-tagged monomer ids (matching plotted ids):
-        converted_proteins = [
-            protein_id + f'[{sim_data1.getter.get_compartment(protein_id)[0]}]'
-            for protein_id in PLOT_PROTEINS_OF_INTEREST
-        ]
+        # Highlight list -> compartment-tagged monomer ids (matching plotted ids).
+        # IDs that are not valid molecules in Sim 1 are dropped with a warning:
+        converted_proteins = check_validity_and_get_compartment(
+            sim_data1, PLOT_PROTEINS_OF_INTEREST)
         highlighted_set = set(converted_proteins)
         background_mask = np.array(
             [mid not in highlighted_set for mid in monomer_ids]
