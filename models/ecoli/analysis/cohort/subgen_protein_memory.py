@@ -173,6 +173,7 @@ def _git_info():
 
 # ------------------------------------------------------------------ figures
 
+# Figure 3G -- protein memory: transcript-off frequency vs protein absence.
 def figure_vs_transcript_off(x, y, out_dir, error_bars):
 	"""Scatter: transcript-off frequency (x) vs protein-absence rate (y)."""
 	fig, ax = plt.subplots(figsize=(5.6, 5.4))
@@ -191,7 +192,7 @@ def figure_vs_transcript_off(x, y, out_dir, error_bars):
 	ax.set_xlabel('Fraction of cells with\nno transcription event')
 	ax.set_ylabel('Fraction of cell-cycle time\nwith absent protein')
 	_despine(ax)
-	_save(fig, out_dir, 'subgen_protein_memory_vs_transcript_off')
+	_save(fig, out_dir, 'fig3G_subgen_protein_memory_vs_transcript_off')
 
 
 def figure_vs_def5_rate(x, y, out_dir, error_bars):
