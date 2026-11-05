@@ -304,8 +304,9 @@ class SimulationDataEcoli(object):
 		rna_expression = prob * (1 + delta) / factor
 
 		# For cases with no basal ppGpp expression, assume the delta prob is the
-		# same as without ppGpp control
-		mask = prob == 0
+		# same as without ppGpp control. Delta prob is only an absolute probability
+		# change for TUs without basal prob since it is otherwise relative to basal prob.
+		mask = (prob == 0) & (self.process.transcription_regulation.basal_prob == 0)
 		rna_expression[mask] = delta[mask] / factor[mask]
 
 		rna_expression[rna_expression < 0] = 0
