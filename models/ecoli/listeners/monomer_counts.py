@@ -77,6 +77,12 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 			(3*np.ones(len(replisome_trimer_subunits)),
 			np.ones(len(replisome_monomer_subunits))))
 
+		# Check if mechanistic replisome is turned on since we only want to
+		# unpack monomer subunits within active replisomes if replication
+		# actually removed them from the bulk pool (see chromosome_replication
+		# for more information):
+		self.mechanistic_replisome = sim._mechanistic_replisome
+
 		# Construct dictionary to quickly find bulk molecule indexes from IDs
 		molecule_dict = {mol: i for i, mol in enumerate(bulk_molecule_ids)}
 
@@ -156,7 +162,13 @@ class MonomerCounts(wholecell.listeners.listener.Listener):
 		# these subunits are bulk molecule complexes):
 		bulkMoleculeCounts[self.ribosome_subunit_idx] += n_ribosome_subunit.astype(int)
 		bulkMoleculeCounts[self.rnap_subunit_idx] += n_rnap_subunit.astype(int)
-		bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
+		# If mechanistic_replisome is off, replisomes are created without
+		# removing any subunits from the bulk pool (i.e. assumed to be
+		# unlimited), and thus should not be added to the total molecule
+		# counts. If the the setting is on, the replisome subunits should be
+		# accounted for in the total monomer counts:
+		if self.mechanistic_replisome:
+			bulkMoleculeCounts[self.replisome_subunit_idx] += n_replisome_subunit.astype(int)
 		bulkMoleculeCounts[self.bound_TF_subunit_idx] += n_bound_TF_subunit.astype(int)
 
 		# Account for monomer subunits that make up TCS complexes

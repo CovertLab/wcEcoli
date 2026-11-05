@@ -292,6 +292,91 @@ def read_stacked_columns(cell_paths: np.ndarray, table: str, column: str,
 
 	return np.vstack(data) if data else np.array([])
 
+def get_first_daughter_lineage(cell_paths: Sequence[str]) -> np.ndarray:
+	"""
+	Selects the first-daughter lineage (daughter cell 000000 of every
+	generation) from a set of cell paths. When a sim keeps both daughters
+	(SINGLE_DAUGHTERS=0), each generation also has sibling cells, and stacking
+	those would join unrelated cells into one trajectory with time jumping
+	backwards. Prints a note if any cells are left out.
+
+	Args:
+		cell_paths: paths to cell directories, typically the return from
+			AnalysisPaths.get_cells()
+
+	Returns:
+		paths to the cells in the first-daughter lineage
+	"""
+	lineage_paths = np.array([
+		cell_path for cell_path in cell_paths
+		if int(os.path.basename(os.path.normpath(cell_path))) == 0])
+	if len(lineage_paths) < len(cell_paths):
+		print(f"NOTE: plotting only the first-daughter lineage "
+			f"({len(lineage_paths)} of {len(cell_paths)} cells), so "
+			f"sibling cells are left out.")
+	return lineage_paths
+
+def extract_doubling_times(cell_paths: np.ndarray) -> Tuple[
+		np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+	"""
+	Extracts time data and generation boundaries from simulation output.
+
+	Args:
+		cell_paths: paths to the cells of one lineage, in generation order
+
+	Returns:
+		tuple: (time, doubling_times, end_generation_times,
+				start_generation_indices, end_generation_indices)
+			- time: Array of simulation timepoints
+			- doubling_times: Duration of each generation
+			- end_generation_times: Cumulative time at end of each generation
+			- start_generation_indices: Index where each generation starts
+			- end_generation_indices: Index where each generation ends
+	"""
+	time = read_stacked_columns(cell_paths, 'Main', 'time').reshape(-1)
+
+	# Generation boundaries come from each generation's own row count and
+	# recorded timestamps, so they stay exact when timesteps are not 1 s
+	# (the sim shortens a timestep whenever a process requires it):
+	rows_per_generation = read_stacked_columns(
+		cell_paths, 'Main', 'time',
+		fun=lambda x: np.array([[x.shape[0]]])).reshape(-1).astype(int)
+	start_generation_indices = np.concatenate(
+		([0], np.cumsum(rows_per_generation)[:-1]))
+	end_generation_indices = start_generation_indices + rows_per_generation - 1
+	end_generation_times = time[end_generation_indices]
+	doubling_times = end_generation_times - time[start_generation_indices]
+
+	return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
+
+def count_replisomes_formed_and_removed(cell_path: str) -> Tuple[np.ndarray, np.ndarray]:
+	"""
+	Counts the replisomes formed and removed at each timestep of one cell, from
+	the ReplicationData listener's fork_unique_index (the unique index of each
+	active replisome, NaN-padded). Comparing which replisomes exist at
+	successive timesteps counts initiation and termination separately, even
+	when both happen in the same timestep, where the net change in the
+	active_replisome count would cancel them out. The first timestep has no
+	events, since the cell inherited those replisomes.
+
+	Args:
+		cell_path: path to the cell (should contain a simOut/ subdirectory)
+
+	Returns:
+		tuple: (replisomes formed, replisomes removed) at each timestep
+	"""
+	fork_indices = TableReader(
+		os.path.join(cell_path, 'simOut', 'ReplicationData')).readColumn(
+		'fork_unique_index', squeeze=False)
+	forks_by_step = [set(row[~np.isnan(row)].astype(np.int64))
+		for row in fork_indices]
+	formed = np.zeros(len(forks_by_step))
+	removed = np.zeros(len(forks_by_step))
+	for i in range(1, len(forks_by_step)):
+		formed[i] = len(forks_by_step[i] - forks_by_step[i - 1])
+		removed[i] = len(forks_by_step[i - 1] - forks_by_step[i])
+	return formed, removed
+
 def stacked_cell_identification(cell_paths: np.ndarray, table: str, column: str,
 		remove_first: bool = False, ignore_exception: bool = False,
 		) -> np.ndarray:
