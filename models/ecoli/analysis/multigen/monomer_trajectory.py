@@ -67,8 +67,7 @@ from wholecell.utils import units
 # USER INPUTS:
 
 # List of proteins to be plotted (with or without compartment tags):
-PLOT_MONOMERS = ["MONOMER0-4539", "MONOMER0-4538", "EG10504-MONOMER",
-                 "BAES-MONOMER[i]", "BAER-MONOMER[c]"]
+PLOT_MONOMERS = ["PD00423[c]", "EG10504-MONOMER"]
 
 # Specify the # of timesteps at the start of each generation where lines can be
 # truncated in the events panel to avoid having large spikes throw off the

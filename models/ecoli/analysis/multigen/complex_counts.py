@@ -37,7 +37,7 @@ from wholecell.io.tablereader import TableReader
 # USER INPUTS:
 
 # List complexes you would like to plot here (with or without compartment tags):
-PLOT_COMPLEXES = ["APORNAP-CPLX"]
+PLOT_COMPLEXES = ["APORNAP-CPLX", "CPLX0-3953", "CPLX0-2361"]
 
 # Specify the # of timesteps at the start of each generation where lines can be
 # truncated in the events panel to avoid having large spikes throw off the
