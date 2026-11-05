@@ -794,7 +794,11 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 		basal_prob, _= sim_data.process.transcription.synth_prob_from_ppgpp(
 			ppgpp_conc, sim_data.process.replication.get_average_copy_number)
 		ppgpp_scale = basal_prob[TU_index]
-		ppgpp_scale[ppgpp_scale == 0] = 1  # Use original delta prob if no ppGpp basal prob
+		# Delta prob is only an absolute probability change for TUs without
+		# basal prob. For other TUs, it is relative to basal prob, so a scale
+		# of 1 would overexpress them.
+		no_basal_prob = sim_data.process.transcription_regulation.basal_prob[TU_index] == 0
+		ppgpp_scale[(ppgpp_scale == 0) & no_basal_prob] = 1
 	else:
 		basal_prob = sim_data.process.transcription_regulation.basal_prob.copy()
 		ppgpp_scale = 1

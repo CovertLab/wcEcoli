@@ -43,6 +43,7 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 		# Initialize matrices used to calculate synthesis probabilities
 		self.basal_prob = sim_data.process.transcription_regulation.basal_prob.copy()
+		self.no_basal_prob = self.basal_prob == 0
 		if self.trna_attenuation:
 			self.attenuated_rna_indices = sim_data.process.transcription.attenuated_rna_indices
 			self.attenuation_adjustments = sim_data.process.transcription.attenuation_basal_prob_adjustments
@@ -120,7 +121,10 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
 				self.fracActiveRnap = self.get_rnap_active_fraction_from_ppGpp(ppgpp_conc)
 				ppgpp_scale = basal_prob[TU_index]
-				ppgpp_scale[ppgpp_scale == 0] = 1  # Use original delta prob if no ppGpp basal prob
+				# Delta prob is only an absolute probability change for TUs
+				# without basal prob. For other TUs, it is relative to basal
+				# prob, so a scale of 1 would overexpress them.
+				ppgpp_scale[(ppgpp_scale == 0) & self.no_basal_prob[TU_index]] = 1
 			else:
 				basal_prob = self.basal_prob
 				self.fracActiveRnap = self.fracActiveRnapDict[current_media_id]
