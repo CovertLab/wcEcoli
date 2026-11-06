@@ -1,7 +1,11 @@
 """
 This plot visualizes the counts of a specified complex over time, along with:
 - Free monomer subunit availability
-- Complexation events that produce or consume the complex
+- Complexation events that produce or consume the complex. Each legend entry
+  gives the line's average |events| per timestep ("avg. X/step"), leaving out
+  the first steps of each generation (which may be truncated so they do not
+  throw off the y-axis from the typical average range). Equilibrium lines
+  are net events per step, so they can go both ways.
 - Counts within parent complexes and unique molecules (ribosomes, RNAPs, etc.)
 
 Supported complex types:
@@ -12,43 +16,64 @@ Supported complex types:
 In total, there are 1131 unique complexation complexes, 39 unique equilibrium
 complexes, and 18 unique two component system complexes.
 """
+import html
 import pickle
 import os
+import re
 from matplotlib import pyplot as plt
 import numpy as np
-import scipy.optimize
 from models.ecoli.analysis import multigenAnalysisPlot
-from wholecell.analysis.analysis_tools import (exportFigure,
-         read_stacked_bulk_molecules, read_stacked_columns)
+from models.ecoli.analysis.complex_membership_helpers import (
+    build_tcs_reaction_event_estimates, check_validity_and_get_compartment,
+    ComplexNetwork, format_parent_path_sentence, is_a_replisome_subunit,
+    is_a_ribosome_subunit, is_a_TF, is_an_RNAP_subunit, replisome_subunit_stoich,
+    tf_index)
+from wholecell.analysis.analysis_tools import (count_replisomes_formed_and_removed,
+    exportFigure, extract_doubling_times, get_first_daughter_lineage,
+    read_stacked_bulk_molecules, read_stacked_columns)
+from wholecell.analysis.plotting_tools import format_event_lines
 from wholecell.io.tablereader import TableReader
 
+# USER INPUTS:
+
 # List complexes you would like to plot here (with or without compartment tags):
-PLOT_COMPLEXES = ["APORNAP-CPLX"]
+PLOT_COMPLEXES = ["APORNAP-CPLX", "CPLX0-3953", "CPLX0-2361"]
+
+# Specify the # of timesteps at the start of each generation where lines can be
+# truncated in the events panel to avoid having large spikes throw off the
+# y axis. The first generation starts with no equilibrium or TCS complexes
+# (initialization only forms complexation complexes), so those reactions form
+# a significant number of molecules in its first steps after initialization to
+# hit steady state. Later generations inherit a count level closer to steady
+# state, so their first steps only spike a few times above the usual, but can
+# still be large relative to the average activity of these reactions (see
+# the truncating logic in the code for more details):
+N_INITIAL_STEPS_TO_CLIP = 5
+
+# END USER INPUTS
+
+def get_clean_common_name(sim_data, molecule_id):
+    """
+    Get a molecule's common name for use in plot text, without HTML entities
+    or tags (i.e. "&beta;", "<i>sn</i>").
+
+    Args:
+        sim_data: simulation data
+        molecule_id: ID of the molecule (with or without compartment tag)
+    Returns:
+        str or None: the common name, or None if there is none (some
+        equilibrium and TCS complexes only have a note about the reaction that
+        makes them in place of a name, e.g. "Reaction required to produce 1CS
+        TF ...", so those are left out too)
+    """
+    base_id = molecule_id.split('[')[0]
+    name = sim_data.common_names.get_common_name(base_id)
+    name = re.sub(r'<[^>]+>', '', html.unescape(name))
+    if name == base_id or name.startswith('Reaction required'):
+        return None
+    return name
 
 class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
-    def check_validity_and_get_compartment(self, sim_data, molecule_list):
-        """
-        Validate molecule IDs and add compartment tags.
-
-        Args:
-            sim_data: Simulation data object
-            molecule_list: List of molecule IDs (with or without compartment tags)
-
-        Returns:
-            list: Valid molecule IDs with compartment tags
-        """
-        revised_molecule_list = []
-        for molecule in molecule_list:
-            if "[" in molecule:
-                molecule = molecule[:-3]  # Remove compartment
-            if sim_data.getter.is_valid_molecule(molecule):
-                revised_name = molecule + sim_data.getter.get_compartment_tag(molecule)
-                revised_molecule_list.append(revised_name)
-            else:
-                print(f"{molecule} is not a valid molecule in the simulation.")
-
-        return revised_molecule_list
-
     def check_complex_validity(self, sim_data, molecule_list):
         """
         Verify that molecules are valid complexes and determine their types.
@@ -61,20 +86,21 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 - complex_types: Dict mapping complex IDs to their types
         """
         # First, check validity of molecule IDs and get compartment tags:
-        revised_molecule_list = self.check_validity_and_get_compartment(
+        revised_molecule_list = check_validity_and_get_compartment(
                                     sim_data, molecule_list)
 
         # Next, check that the molecules are valid complexes and determine their types:
-        all_complexes = self.complexIDs + self.eqComplexIDs + self.tcsComplexIDs
+        network = self.complex_network
+        all_complexes = network.complex_ids + network.eq_complex_ids + network.tcs_complex_ids
         valid_complexes = []
         complex_types = {}
 
         for molecule in revised_molecule_list:
             if molecule in all_complexes:
                 valid_complexes.append(molecule)
-                if molecule in self.complexIDs:
+                if molecule in network.complex_ids:
                     complex_types[molecule] = "complexation"
-                elif molecule in self.eqComplexIDs:
+                elif molecule in network.eq_complex_ids:
                     complex_types[molecule] = "equilibrium"
                 else:
                     complex_types[molecule] = "two component system"
@@ -84,36 +110,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                       f"be plotted.")
 
         return valid_complexes, complex_types
-
-    def extract_doubling_times(self, cell_paths):
-        """
-        Extract time data and generation boundaries from simulation output.
-
-        Args:
-            cell_paths: List of paths to cell simulation directories
-        Returns:
-            tuple: (time, doubling_times, end_generation_times,
-                    start_generation_indices, end_generation_indices)
-                - time: Array of simulation timepoints
-                - doubling_times: Duration of each generation
-                - end_generation_times: Cumulative time at end of each generation
-                - start_generation_indices: Index where each generation starts
-                - end_generation_indices: Index where each generation ends
-        """
-        time = read_stacked_columns(cell_paths, 'Main', 'time').squeeze()
-
-        doubling_times = read_stacked_columns(
-            cell_paths, 'Main', 'time',
-            fun=lambda x: (x[-1] - x[0])).squeeze().astype(int)
-
-        end_generation_times = np.cumsum(doubling_times) + time[0]
-        start_generation_indices = np.searchsorted(
-            time, end_generation_times[:-1], side='left').astype(int)
-        start_generation_indices = np.insert(start_generation_indices, 0, 0) + np.arange(
-            len(doubling_times))
-        end_generation_indices = start_generation_indices + doubling_times
-
-        return time, doubling_times, end_generation_times, start_generation_indices, end_generation_indices
 
     def determine_complex_makeup(self, complex_id, complex_type):
         """
@@ -139,11 +135,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         """
         # Determine the makeup of the complex based on its type:
         if complex_type == 'complexation':
-            makeup = self.c2ct[complex_id]
+            makeup = self.complex_network.c2ct[complex_id]
         elif complex_type == 'equilibrium':
-            makeup = self.eq_c2ct[complex_id]
+            makeup = self.complex_network.eq_c2ct[complex_id]
         elif complex_type == 'two component system':
-            makeup = self.tcs_c2ct[complex_id]
+            makeup = self.complex_network.tcs_c2ct[complex_id]
         else:
             makeup = "unknown"
 
@@ -179,11 +175,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             """
             # Select the appropriate molecule-to-parent-complex dictionary:
             if molecule_type == 'complex':
-                m2pc = self.c_m2pc_dict  # Complexation process
+                m2pc = self.complex_network.c_m2pc_dict  # Complexation process
             elif molecule_type == 'eq_complex':
-                m2pc = self.eq_m2pc_dict  # Equilibrium process
+                m2pc = self.complex_network.eq_m2pc_dict  # Equilibrium process
             elif molecule_type == 'two component system':
-                m2pc = self.tcs_m2pc_dict  # Two-component system process
+                m2pc = self.complex_network.tcs_m2pc_dict  # Two-component system process
             else:
                 return {}
 
@@ -197,27 +193,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     subunits[mol] = (np.negative(stoich), reaction_id)
 
             return subunits
-
-        def determine_molecule_type(molecule_id):
-            """
-            Classify a molecule as monomer, complex, equilibrium complex,
-            or two-component system.
-
-            Args:
-                molecule_id: The molecule to classify
-            Returns:
-                str: 'monomer', 'complex', 'eq_complex', 'two component system', or 'unknown'
-            """
-            if molecule_id in self.monomerIDs:
-                return 'monomer'
-            elif molecule_id in self.complexIDs:
-                return 'complex'
-            elif molecule_id in self.eqComplexIDs:
-                return 'eq_complex'
-            elif molecule_id in self.tcsComplexIDs:
-                return 'two component system'
-            else:
-                return 'unknown'
 
         def explore_molecule(molecule_id, current_path, current_stoich, parent_stoich,
                              parent_reaction):
@@ -235,9 +210,10 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             parent (the molecule one level up in the path)
                 parent_reaction: Reaction ID that produces the parent from this molecule
             """
-            mol_type = determine_molecule_type(molecule_id)
+            mol_type = self.complex_network.determine_molecule_type(molecule_id)
 
-            # Skip molecules that aren't in our database
+            # Skip molecules that are not monomers or complexes, e.g. rRNAs
+            # in the 30S/50S, metabolite ligands in equilibrium complexes:
             if mol_type == 'unknown':
                 print(f"  → Skipping {molecule_id} (not a monomer or complex)")
                 return
@@ -281,7 +257,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         monomer_paths = {}
 
         # Determine what type of complex is being analyzed:
-        complex_type = determine_molecule_type(complex_id)
+        complex_type = self.complex_network.determine_molecule_type(complex_id)
 
         if complex_type == 'unknown':
             print(f"Warning: {complex_id} is not a valid complex")
@@ -323,7 +299,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Add all molecules in the path with their stoichiometries
         # Each entry shows how many copies are needed at that assembly step
         for molecule_id, stoich, mol_type, reaction_id in path:
-            path_parts.append(f"{stoich} {molecule_id}")
+            path_parts.append(f"{stoich:g} {molecule_id}")
 
         # Add the final target complex (always 1 copy at the end of the path)
         path_parts.append(f"1 {complex_id}")
@@ -338,7 +314,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Construct the final sentence:
         sentence = (f"{monomer_id} counts within {complex_id}, "
-                    f"{total_stoich} per\n(via {path_string})")
+                    f"{total_stoich:g} per\n(via {path_string})")
 
         return sentence
 
@@ -377,887 +353,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return monomer_paths, descriptions
 
-    def find_downstream_complexes_with_paths(self, molecule_id):
-        """
-        Find all parent complexes that contain the molecule and trace assembly
-        paths. Note: some complexes may have intermediate complexes between the
-        base monomers and the final "grandparent" complex.
-
-        Args:
-            molecule_id: The molecule (monomer or complex) to search for
-        Returns:
-            dict: {parent_complex_id: [{
-                'path': [(molecule_id, stoich, type, reaction_id), ...],
-                        # Ordered from starting molecule → intermediate → parent complex
-                'total_stoich': int  # Total copies of starting molecule per parent complex
-            }]}
-        """
-        parent_complexes = {}
-
-        def get_parent_complexes(molecule_id):
-            """
-            Get all complexes that directly contain this molecule as a subunit.
-
-            Args:
-                molecule_id: The molecule to find parents for
-            Returns:
-                dict: {parent_id: (parent_type, stoichiometry, reaction_id)}
-                    Where stoichiometry is positive (representing consumption of molecule_id)
-            """
-            parents = {}
-
-            # Check complexation complexes (irreversible assembly)
-            if molecule_id in self.c_m2pc_dict:
-                for parent_id in self.c_m2pc_dict[molecule_id].keys():
-                    stoich = self.c_m2pc_dict[molecule_id][parent_id][1]['stoichiometry']
-                    reaction_id = self.c_m2pc_dict[molecule_id][parent_id][0]['reaction_id']
-                    parents[parent_id] = ('complex', np.negative(stoich), reaction_id)
-
-            # Check equilibrium complexes (reversible ligand binding)
-            if molecule_id in self.eq_m2pc_dict:
-                for parent_id in self.eq_m2pc_dict[molecule_id].keys():
-                    stoich = self.eq_m2pc_dict[molecule_id][parent_id][1]['stoichiometry']
-                    reaction_id = self.eq_m2pc_dict[molecule_id][parent_id][0]['reaction_id']
-                    parents[parent_id] = ('eq_complex', np.negative(stoich), reaction_id)
-
-            # Check two-component system complexes (phosphotransfer reactions)
-            if molecule_id in self.tcs_m2pc_dict:
-                for parent_id in self.tcs_m2pc_dict[molecule_id].keys():
-                    stoich = self.tcs_m2pc_dict[molecule_id][parent_id][1]['stoichiometry']
-                    reaction_id = self.tcs_m2pc_dict[molecule_id][parent_id][0]['reaction_id']
-                    parents[parent_id] = ('two component system', np.negative(stoich), reaction_id)
-
-            return parents
-
-        def determine_molecule_type(mol_id):
-            if mol_id in self.monomerIDs:
-                return 'monomer'
-            elif mol_id in self.complexIDs:
-                return 'complex'
-            elif mol_id in self.eqComplexIDs:
-                return 'eq_complex'
-            elif mol_id in self.tcsComplexIDs:
-                return 'two component system'
-            else:
-                return 'unknown'
-
-        def explore_parents(current_molecule, current_path, current_stoich, is_start=False):
-            """
-            Recursively explore parent complexes, building paths upward in the hierarchy.
-
-            Args:
-                current_molecule: Current molecule being explored
-                current_path: Path built so far, as list of (molecule_id, stoich, type, reaction_id)
-                             Ordered from starting molecule → current molecule
-                current_stoich: Cumulative stoichiometry - how many copies of the starting
-                               molecule are needed per current molecule
-                is_start: True if this is the starting molecule (to avoid saving it as its own parent)
-            """
-            mol_type = determine_molecule_type(current_molecule)
-
-            # Skip molecules not in our database
-            if mol_type == 'unknown':
-                print(f"  → Skipping {current_molecule} (not a monomer or complex)")
-                return
-
-            # Get all complexes that directly use this molecule as a subunit
-            parents = get_parent_complexes(current_molecule)
-
-            # BASE CASE: No parents found (the molecule is a top-level complex)
-            if not parents:
-                # Only save if this isn't the starting molecule
-                if not is_start:
-                    if current_molecule not in parent_complexes:
-                        parent_complexes[current_molecule] = []
-
-                    # Complete the path by adding the terminal complex
-                    complete_path = current_path + [(current_molecule, 1, mol_type, None)]
-                    parent_complexes[current_molecule].append({
-                        'path': complete_path,
-                        'total_stoich': current_stoich
-                    })
-                return
-
-            # RECURSIVE CASE: Explore each parent of the molecule:
-            for parent_id, (parent_type, stoich, reaction_id) in parents.items():
-                if parent_id not in parent_complexes:
-                    parent_complexes[parent_id] = []
-
-                # Build complete path to this parent
-                path_to_parent = current_path + [
-                    (current_molecule, stoich, mol_type, reaction_id),
-                    (parent_id, 1, parent_type, None)]
-
-                # Save this parent with its complete path
-                parent_complexes[parent_id].append({
-                    'path': path_to_parent,
-                    'total_stoich': current_stoich * stoich})
-
-                # Continue exploring to see if this parent is itself a subunit
-                # of other complexes:
-                new_path = current_path + [(current_molecule, stoich, mol_type, reaction_id)]
-                new_stoich = current_stoich * stoich
-
-                # Recursively explore the parent:
-                explore_parents(parent_id, new_path, new_stoich, is_start=False)
-
-        # Verify the starting molecule is valid:
-        mol_type = determine_molecule_type(molecule_id)
-
-        if mol_type == 'unknown':
-            print(f"Warning: {molecule_id} is not a valid molecule")
-            return {}
-
-        # Start exploration from the given molecule
-        explore_parents(molecule_id, [], 1, is_start=True)
-
-        return parent_complexes
-
-    def format_parent_path_sentence(self, molecule_id, parent_complex_id, path_info):
-        """
-        Format a sentence describing how a molecule appears in a parent complex.
-
-        Args:
-            molecule_id: The starting molecule (monomer or complex)
-            parent_complex_id: The parent complex
-            path_info: Dictionary with 'path' and 'total_stoich'
-        Returns:
-            str: Formatted sentence
-        """
-        path = path_info['path']
-        total_stoich = path_info['total_stoich']
-        path_parts = []
-
-        # Add all steps in the path with their stoichiometries:
-        for mol_id, stoich, mol_type, reaction_id in path:
-            path_parts.append(f"{abs(stoich)} {mol_id}")
-
-        # Join with line breaks every 2 arrows to prevent very long lines:
-        path_string_parts = []
-        for i in range(0, len(path_parts), 2):
-            chunk = " → ".join(path_parts[i:i + 2])
-            path_string_parts.append(chunk)
-        path_string = " →\n".join(path_string_parts)
-
-        sentence = (f"{molecule_id} counts within {parent_complex_id}, "
-                    f"\n{abs(total_stoich)} per (via {path_string})")
-
-        return sentence
-
-    def analyze_molecule_parents(self, molecule_id):
-        """
-        Main function to analyze what parent complexes contain a molecule.
-
-        Args:
-            molecule_id: The molecule (monomer or complex) to analyze
-        Returns:
-            dict: Dictionary of parent complexes with their paths
-        """
-        print(f"\nAnalyzing parent complexes for: {molecule_id}\n")
-        parent_complexes = self.find_downstream_complexes_with_paths(molecule_id)
-
-        # Filter out cases where the molecule is its own parent (no actual parents):
-        filtered_complexes = {k: v for k, v in parent_complexes.items() if k != molecule_id}
-
-        descriptions = []
-        for parent_id, path_list in filtered_complexes.items():
-            for path_info in path_list:
-                sentence = self.format_parent_path_sentence(
-                    molecule_id, parent_id, path_info
-                )
-                descriptions.append(sentence)
-
-        if not descriptions:
-            print(f"No parent complexes found for {molecule_id}")
-        else:
-            print(f"Found {len(filtered_complexes)} parent complex(es):\n")
-            for desc in descriptions:
-                print(desc)
-                print()
-
-        return filtered_complexes, descriptions
-
     # Build the complexation parent and downstream molecule to complex dictionaries:
-    def build_complexation_dictionaries(self, sim_data):
-        """
-        Build dictionaries mapping molecules to complexation complexes they form.
-
-        Args:
-            sim_data: Simulation data object
-        Returns:
-            tuple: (molecules_to_parent_complexes_dict,
-                    molecules_to_all_downstream_complexes_dict,
-                    complex_to_complex_type)
-
-            - molecules_to_parent_complexes_dict: {subunit_id: {complex_id: [
-                  {'reaction_id': str},
-                  {'stoichiometry': int},  # Negative value (consumed)
-                  {'stoich_unknown': bool},
-                  {'complex_type': 'homogeneous' or 'heterogeneous'}]}}
-            - molecules_to_all_downstream_complexes_dict: Same structure but
-            maps from complex to base monomers (bypassing intermediate complexes)
-            - complex_to_complex_type: {complex_id: 'homogeneous' or 'heterogeneous'}
-        """
-        molecule_names = sim_data.process.complexation.molecule_names
-        subunit_names = sim_data.process.complexation.subunit_names
-        rxn_ids = sim_data.process.complexation.ids_reactions
-        rsu = sim_data.process.complexation.reaction_stoichiometry_unknown
-        sm = sim_data.process.complexation.stoich_matrix()
-        smm = sim_data.process.complexation.stoich_matrix_monomers()
-
-        molecules_to_parent_complexes_dict = {}
-        molecules_to_all_downstream_complexes_dict = {}
-        complex_to_complex_type = {}
-
-        # Generate dictionary mapping molecules to direct parent complexes they form:
-        for subunit in subunit_names:
-            # Find the matrix index where this subunit is as a molecule:
-            subunit_index = molecule_names.index(subunit)
-
-            # Find the indices for reactions the subunit is a reactant in:
-            reaction_indices = np.where(sm[subunit_index,:] < 0)[0]
-
-            # For each reaction index, find the complex(es) that is(are) formed:
-            parent_complexes = {}
-            for rxn_idx in reaction_indices:
-                # Initialize variables to hold info about the complex:
-                complex_information = []
-                stoich = {} # NOTE: this will be the subunit's stoichiometry!
-                stoich_known = {}
-                complex_type = {}
-                reaction_name = {}
-
-                # Find the complex formed in this reaction
-                # (NOTE: each reaction forms one complexation complex):
-                complex_index = np.where(sm[:, rxn_idx] > 0)[0]
-                complex_name = molecule_names[complex_index[0]]
-                cplx_idx = self.complexIDs.index(complex_name)
-
-                # Find the number of unique subunits in this complex reaction:
-                num_unique_subunits = len(np.where(smm[:, cplx_idx] < 0)[0])
-                if num_unique_subunits > 1:
-                    cplx_type = 'heterogeneous'
-                else:
-                    cplx_type = 'homogeneous'
-                # Save the complex type in a separate dict for easy access later:
-                complex_to_complex_type[complex_name] = cplx_type
-
-                # Add complex information to lists
-                reaction_name['reaction_id'] = rxn_ids[rxn_idx]
-                stoich['stoichiometry'] = sm[subunit_index, rxn_idx]
-                stoich_known['stoich_unknown'] = rsu[rxn_idx]
-                complex_type['complex_type'] = cplx_type
-                complex_information.append(reaction_name)
-                complex_information.append(stoich)
-                complex_information.append(stoich_known)
-                complex_information.append(complex_type)
-
-                # Append the complex name and stoich as a dictionary entry
-                parent_complexes[complex_name] = complex_information
-
-            molecules_to_parent_complexes_dict[subunit] = parent_complexes
-
-        # Make a dictionary mapping between molecules to all downstream complexes
-        # they form, both directly and indirectly (via another complex):
-        for subunit in subunit_names:
-            # Find the index in the matrix where this subunit is as a reactant:
-            subunit_index = molecule_names.index(subunit)
-
-            # Find the indices of complexes containing the subunit:
-            complex_indices = np.where(smm[subunit_index, :] < 0)[0]
-
-            downstream_complexes = {}
-            for complex_idx in complex_indices:
-                # Find the complex's name:
-                complex_name = self.complexIDs[complex_idx]
-
-                # Obtain the index of the complex within molecule_names:
-                cplx_idx = molecule_names.index(complex_name)
-
-                # Use the stoichMatrix() to find the reaction index:
-                reaction_idx = np.where(sm[cplx_idx, :] > 0)[0]
-
-                # Initialize variables to hold info about the complex:
-                downstream_complex_information = []
-                stoich = {}
-                stoich_known = {}
-                complex_type = {}
-                reaction_name = {}
-
-                # Add complex information to lists:
-                reaction_name['reaction_id'] = rxn_ids[reaction_idx[0]]
-                stoich['stoichiometry'] = smm[subunit_index, complex_idx]
-                stoich_known['stoich_unknown'] = rsu[reaction_idx[0]]
-                complex_type['complex_type'] = complex_to_complex_type[complex_name]
-                downstream_complex_information.append(reaction_name)
-                downstream_complex_information.append(stoich)
-                downstream_complex_information.append(stoich_known)
-                downstream_complex_information.append(complex_type)
-
-                # Append the complex name and stoich as a dictionary entry
-                downstream_complexes[complex_name] = downstream_complex_information
-
-            molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
-
-        return (molecules_to_parent_complexes_dict,
-                molecules_to_all_downstream_complexes_dict,
-                complex_to_complex_type)
-
-
-    def build_equilibrium_dictionaries(self, sim_data):
-        """
-        Build dictionaries mapping molecules to equilibirum complexation
-        complexes they form. Note: complexation complexes can be subunits of
-        equilibrium complexes.
-
-        Args:
-            sim_data: Simulation data object
-        Returns:
-            tuple: (molecules_to_parent_complexes_dict,
-                    molecules_to_all_downstream_complexes_dict,
-                    complex_to_complex_type)
-
-            - molecules_to_parent_complexes_dict: {subunit_id: {complex_id: [
-                  {'reaction_id': str},
-                  {'stoichiometry': int},  # Negative value (consumed)
-                  {'stoich_unknown': bool},
-                  {'complex_type': 'homogeneous' or 'heterogeneous'}]}}
-            - molecules_to_all_downstream_complexes_dict: Same structure but
-            maps from complex to base monomers (bypassing intermediate complexes)
-            - complex_to_complex_type: {complex_id: 'homogeneous' or 'heterogeneous'}
-        """
-        molecule_names = sim_data.process.equilibrium.molecule_names
-        rxn_ids = sim_data.process.equilibrium.rxn_ids
-        rsu = sim_data.process.equilibrium.reaction_stoichiometry_unknown
-        sm = sim_data.process.equilibrium.stoich_matrix()
-        smm = sim_data.process.equilibrium.stoich_matrix_monomers()
-
-        c_molecule_names = sim_data.process.complexation.molecule_names
-        c_smm = sim_data.process.complexation.stoich_matrix_monomers()
-
-        molecules_to_parent_complexes_dict = {}
-        molecules_to_all_downstream_complexes_dict = {}
-        complex_to_complex_type = {}
-
-        # Generate dictionary mapping equilibrium molecules to the direct parent
-        # complexes they form:
-        for subunit in molecule_names:
-            # Find the matrix index where this subunit is as a molecule:
-            subunit_index = molecule_names.index(subunit)
-
-            # Find the indices for reactions the subunit is a reactant in:
-            reaction_indices = np.where(sm[subunit_index,:] < 0)[0]
-
-            if len(reaction_indices) == 0:
-                # skip molecules that do not form any complexes
-                continue
-
-            # For each reaction index, find the complex(es) that is(are) formed:
-            parent_complexes = {}
-            for rxn_idx in reaction_indices:
-                # Initialize variables to hold info about the complex:
-                complex_information = []
-                stoich = {} # NOTE: this will be the subunit's stoichiometry!
-                stoich_known = {}
-                complex_type = {}
-                reaction_name = {}
-
-                # Find the complex formed in the reaction (each reaction forms
-                # one equilibrium complex):
-                complex_index = np.where(sm[:, rxn_idx] > 0)[0]
-                complex_name = molecule_names[complex_index[0]]
-                cplx_idx = self.eqComplexIDs.index(complex_name)
-
-                # Find the number of unique monomer subunits in the complex
-                # (i.e. not counting metabolite ligands):
-                unique_subunits_in_complex = np.where(smm[:, cplx_idx] < 0)[0]
-                subunit_list = []
-                for idx in unique_subunits_in_complex:
-                    subunit_name = molecule_names[idx]
-                    if subunit_name in self.monomerIDs:
-                        if subunit_name not in subunit_list:
-                            subunit_list.append(subunit_name)
-                    # Check if the reactant is an eq complex:
-                    if subunit_name in self.eqComplexIDs:
-                        # Find the index of the eq complex in the molecule names list:
-                        eq_complex_index = molecule_names.index(subunit_name)
-                        # Append the index to the unique subunits list (as it
-                        # could also be a complexation complex):
-                        if eq_complex_index not in unique_subunits_in_complex:
-                            unique_subunits_in_complex = (
-                                np.append(unique_subunits_in_complex, eq_complex_index))
-                    # Check if the reactant is a complexation complex:
-                    elif subunit_name in self.complexIDs:
-                        # See how many unique monomer subunits the complex has:
-                        complexation_complex_index = self.complexIDs.index(subunit_name)
-                        complexation_unique_subunits = (
-                            np.where(c_smm[:, complexation_complex_index] < 0))[0]
-                        # Add the unique monomer subunits of the complexation
-                        # complex to the list of unique subunits in the eq complex:
-                        for idx in complexation_unique_subunits:
-                            c_su_name = c_molecule_names[idx]
-                            if c_su_name not in subunit_list:
-                                subunit_list.append(c_su_name)
-                    # If the reactant is a metabolite ligand, skip it:
-                    else:
-                        continue
-
-                num_unique_subunits = len(subunit_list)
-                if num_unique_subunits > 1:
-                    cplx_type = 'heterogeneous'
-                else:
-                    cplx_type = 'homogeneous'
-                complex_to_complex_type[complex_name] = cplx_type
-
-                # Add info about the complex to the parent complex info lists:
-                reaction_name['reaction_id'] = rxn_ids[rxn_idx]
-                stoich['stoichiometry'] = sm[subunit_index, rxn_idx]
-                stoich_known['stoich_unknown'] = rsu[rxn_idx]
-                complex_type['complex_type'] = cplx_type
-                complex_information.append(reaction_name)
-                complex_information.append(stoich)
-                complex_information.append(stoich_known)
-                complex_information.append(complex_type)
-
-                # Append the complex name and stoich as a dictionary entry
-                parent_complexes[complex_name] = complex_information
-
-            molecules_to_parent_complexes_dict[subunit] = parent_complexes
-
-        # Make a dictionary mapping between molecules to all downstream complexes
-        # they form, both directly and indirectly (via another complex):
-        for subunit in molecule_names:
-            # Find the index of this subunit in the matrix:
-            subunit_index = molecule_names.index(subunit)
-
-            # Find the indices of complexes containing the subunit:
-            complex_indices = np.where(smm[subunit_index, :] < 0)[0]
-
-            if len(complex_indices) == 0:
-                # skip molecules that form no downsteam complexes
-                continue
-
-            downstream_complexes = {}
-            for complex_idx in complex_indices:
-                # Find the complex's name:
-                complex_name = self.eqComplexIDs[complex_idx]
-
-                # Obtain the index of the complex within molecule_names:
-                cplx_idx = molecule_names.index(complex_name)
-
-                # Find the reaction index:
-                reaction_idx = np.where(sm[cplx_idx, :] > 0)[0]
-
-                # Initialize variables to hold info about the complex:
-                downstream_complex_information = []
-                stoich = {}
-                stoich_known = {}
-                complex_type = {}
-                reaction_name = {}
-
-                # Add complex information to lists:
-                reaction_name['reaction_id'] = rxn_ids[reaction_idx[0]]
-                stoich['stoichiometry'] = smm[subunit_index, complex_idx]
-                stoich_known['stoich_unknown'] = rsu[reaction_idx[0]]
-                complex_type['complex_type'] = complex_to_complex_type[complex_name]
-                downstream_complex_information.append(reaction_name)
-                downstream_complex_information.append(stoich)
-                downstream_complex_information.append(stoich_known)
-                downstream_complex_information.append(complex_type)
-
-                # Append the complex name and stoich as a dictionary entry
-                downstream_complexes[complex_name] = downstream_complex_information
-
-            molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
-
-        return (molecules_to_parent_complexes_dict,
-                molecules_to_all_downstream_complexes_dict,
-                complex_to_complex_type)
-
-    def build_tcs_dictionaries(self, sim_data):
-        """
-        Build dictionaries mapping molecules to two component system (TCS) complexes
-        they form. Note: complexation and equilibrium complexes can be subunits
-        of TCS complexes.
-
-        Args:
-            sim_data: Simulation data object
-        Returns:
-            tuple: (molecules_to_parent_complexes_via_lbptrs,
-                molecules_to_parent_complexes_via_ptrs,
-                complexes_to_reactants_via_dephosphorylation_reactions,
-                molecules_to_all_downstream_complexes_dict,
-                complex_to_complex_type)
-            - read the descriptions in the function for details on the structure
-                of molecules_to_parent_complexes_via_lbptrs,
-                molecules_to_parent_complexes_via_ptrs,
-                complexes_to_reactants_via_dephosphorylation_reactions
-            - molecules_to_all_downstream_complexes_dict: Same structure but
-                maps from complex to base monomers (bypassing intermediate complexes)
-            - complex_to_complex_type: {complex_id: 'PHOSPHO-HK' or 'PHOSPHO-RR'}
-        """
-        molecule_names = list(sim_data.process.two_component_system.molecule_names)
-        modified_molecules = list(sim_data.process.two_component_system.modified_molecules)
-        complex_ids = list(sim_data.process.two_component_system.complex_to_monomer.keys())
-        molecule_types = sim_data.process.two_component_system.molecule_types
-        rxn_ids = sim_data.process.two_component_system.rxn_ids
-        sm = sim_data.process.two_component_system.stoich_matrix()
-        smm = sim_data.process.two_component_system.stoich_matrix_monomers()
-        molecules_to_skip = ["ATP[c]", "ADP[c]", "Pi[c]", "WATER[c]", "PROTON[c]"]
-        pairings = {"RR": "PHOSPHO-RR", "PHOSPHO-RR": "RR", "HK": "PHOSPHO-HK",
-                    "PHOSPHO-HK": "HK", "HK-LIGAND": "PHOSPHO-HK-LIGAND",
-                    "PHOSPHO-HK-LIGAND": "HK-LIGAND"}
-
-        molecules_to_all_downstream_complexes_dict = {}
-        complex_to_complex_type = {}
-
-        # NOTE: for positively oriented TCS systems, a subunit can form a TCS
-        # complex via BOTH a POS-LIGAND-BOUND-HK-PHOSPHOTRANSFER reaction AND
-        # a POS-HK-PHOSPHOTRANSFER reaction! Thus, two dictionaries need to be
-        # generated to avoid overwriting previous dictionary entries!
-
-        # Dictionary that maps non-phosphorylated subunits to the TCS complexes
-        # they form via ligand-bound HK phosphotransfer reactions:
-        molecules_to_parent_complexes_via_lbptrs = {}
-
-        # Dictionary that maps non-phosphorylated subunits to the TCS complexes they
-        # form via ligand-free HK phosphotransfer reactions:
-        molecules_to_parent_complexes_via_ptrs = {}
-
-        # Also need to model dephosphorylation reactions, where the
-        # phosphorylated complex (HK or RR) is the reactant:
-        complexes_to_reactants_via_dephosphorylation_reactions = {}
-
-        # Generate mapping from molecules to direct parent complexes they form:
-        for subunit in molecule_names:
-            # If the molecule is a TCS complex or not a complex or monomer, skip it:
-            if subunit in molecules_to_skip or subunit in complex_ids:
-                continue
-
-            # Find the matrix index where this subunit is as a molecule:
-            subunit_index = molecule_names.index(subunit)
-            reactant_type = molecule_types[molecule_names.index(subunit)]
-            compliment = pairings[reactant_type]
-
-            # Find the reaction index within the stoich matrix:
-            reaction_indices = np.where(sm[subunit_index, :] < 0)[0]
-
-            # For each reaction index, find the product(s) that is(are) formed:
-            parent_complexes_lbptrs = {}
-            parent_complexes_ptrs = {}
-            for rxn_idx in reaction_indices:
-                # Initialize data structures to hold product information
-                product_information = []
-                stoich = {} # NOTE: this will be the subunit's stoichiometry!
-                stoich_known = {}
-                product_type = {}
-                reaction_name = {}
-
-                # Determine if this is a ligand-bound or ligand-free HK phosphotransfer reaction:
-                rxn_id = rxn_ids[rxn_idx]
-                if "BOUND" in rxn_id:
-                    parent_dict_to_use = parent_complexes_lbptrs
-                else:
-                    parent_dict_to_use = parent_complexes_ptrs
-
-                # Find the products formed in this reaction:
-                product_indices = np.where(sm[:, rxn_idx] > 0)[0]
-
-                # TCS reactions can have multiple products, so they need to be filtered:
-                for product_index in product_indices:
-                    product_name = molecule_names[product_index]
-
-                    # Since there are multiple products, determine which product
-                    # is the compliment of the specific reactant subunit:
-                    pdt_type = molecule_types[molecule_names.index(product_name)]
-                    if pdt_type != compliment:
-                        continue
-                    else:
-                        # Save the complex type in a separate dict for easy access later:
-                        complex_to_complex_type[product_name] = pdt_type
-
-                        # Add product's information to lists:
-                        reaction_name['reaction_id'] = rxn_id
-                        stoich['stoichiometry'] = sm[subunit_index, rxn_idx]
-                        stoich_known['stoich_unknown'] = 'not applicable'
-                        product_type['complex_type'] = pdt_type
-                        product_information.append(reaction_name)
-                        product_information.append(stoich)
-                        product_information.append(stoich_known)
-                        product_information.append(product_type)
-
-                        # Append the product name and stoich as a dictionary entry
-                        parent_dict_to_use[product_name] = product_information
-
-                molecules_to_parent_complexes_via_lbptrs[subunit] = parent_complexes_lbptrs
-                molecules_to_parent_complexes_via_ptrs[subunit] = parent_complexes_ptrs
-
-        # Make a modified version that specifically handles dephosphorylation
-        # reactions where phosphorylated TCS complexes are reactants:
-        for subunit in complex_ids:
-            # Find the matrix index where this subunit is as a molecule:
-            subunit_index = molecule_names.index(subunit)
-
-            # Find the reaction index within the stoich matrix:
-            reaction_indices = np.where(sm[subunit_index, :] < 0)[0]
-
-            # Find the type of the reactant complex:
-            reactant_type = molecule_types[molecule_names.index(subunit)]
-            compliment = pairings[reactant_type]
-
-            # For each reaction index, find the complex(es) that is(are) formed:
-            products = {}
-            for rxn_idx in reaction_indices:
-                # Initialize data structures to hold product information
-                product_information = []
-                stoich = {}  # NOTE: this will be the complexes's stoichiometry!
-                stoich_known = {}
-                product_type = {} # NOTE: this is really the subunit type
-                reaction_name = {}
-
-                # Find the products formed in this reaction:
-                product_indices = np.where(sm[:, rxn_idx] > 0)[0]
-
-                # TCS reactions can have multiple products, so they need to be filtered:
-                for product_index in product_indices:
-                    product_name = molecule_names[product_index]
-
-                    # Since there are multiple products, determine which product
-                    # is the compliment of the specific reactant subunit:
-                    pdt_type = molecule_types[molecule_names.index(product_name)]
-                    if pdt_type != compliment:
-                        continue
-                    else:
-                        # Add product's information to lists:
-                        reaction_name['reaction_id'] = rxn_ids[rxn_idx]
-                        stoich['stoichiometry'] = sm[subunit_index, rxn_idx]
-                        stoich_known['stoich_unknown'] = 'not applicable'
-                        product_type['complex_type'] = \
-                            (molecule_types[molecule_names.index(product_name)])
-                        product_information.append(reaction_name)
-                        product_information.append(stoich)
-                        product_information.append(stoich_known)
-                        product_information.append(product_type)
-
-                        # Append the product name and stoich as a dictionary entry
-                        products[product_name] = product_information
-
-                complexes_to_reactants_via_dephosphorylation_reactions[subunit] = products
-
-        # Make a dictionary mapping relevant reactants to the phosphorylated
-        # TCS products they form:
-        for subunit in modified_molecules:
-            # If the molecule is not a complex or monomer, skip it:
-            if subunit in molecules_to_skip:
-                continue
-
-            # Find the matrix index where this subunit is as a molecule:
-            subunit_index = modified_molecules.index(subunit)
-
-            # Find the indices of complexes containing the subunit:
-            complex_indices = np.where(smm[subunit_index, :] < 0)[0]
-
-            if len(complex_indices) == 0:
-                # skip molecules that are not base subunits of a TCS complex
-                continue
-
-            downstream_complexes = {}
-            for complex_idx in complex_indices:
-                # Find the complex's name:
-                complex_name = complex_ids[complex_idx]
-
-                # Obtain the index of the complex within self.molecule_names:
-                cplx_idx_molecule = molecule_names.index(complex_name)
-
-                # Use the stoichMatrix() to find the reaction index:
-                reaction_idx = np.where(sm[cplx_idx_molecule, :] > 0)[0]
-
-                # Initialize data structures to hold info about the complex:
-                downstream_complex_information = []
-                stoich = {}
-                stoich_known = {}
-                complex_type = {}
-                reaction_name = {}
-
-                # Add complex information to lists:
-                reaction_name['reaction_id'] = rxn_ids[reaction_idx[0]]
-                stoich['stoichiometry'] = smm[subunit_index, complex_idx]
-                stoich_known['stoich_unknown'] = "not applicable"
-                complex_type['complex_type'] = (
-                    molecule_types)[molecule_names.index(complex_name)]
-                downstream_complex_information.append(reaction_name)
-                downstream_complex_information.append(stoich)
-                downstream_complex_information.append(stoich_known)
-                downstream_complex_information.append(complex_type)
-
-                # Append the complex name and stoich as a dictionary entry
-                downstream_complexes[complex_name] = downstream_complex_information
-
-            molecules_to_all_downstream_complexes_dict[subunit] = downstream_complexes
-
-        return (molecules_to_parent_complexes_via_lbptrs,
-                molecules_to_parent_complexes_via_ptrs,
-                complexes_to_reactants_via_dephosphorylation_reactions,
-                molecules_to_all_downstream_complexes_dict,
-                complex_to_complex_type)
-
-    def build_tcs_reaction_event_estimates(self, sim_data, cell_paths):
-        """
-        Estimate reaction fluxes from TCS molecule changes using non-negative
-        least squares.
-
-        NOTE: there could technically be many possible reaction flux solutions
-        that could product a fit similar to molecule_changes, but the nnl method
-        will optimize for the sparset solution involving the least number
-        of reactions total to hit the desired molecule changes. This is a
-        reasonable assumption to make given the small number of reactions and
-        given that molecule_changes are already weighted by the rates of reaction.
-
-        If this does not appear to be working well because the reaction rates
-        change or something, it might be best to try a different method.
-
-        Args:
-            molecule_changes: (n_molecules,) array of molecule count changes
-            from the ODE integration
-        Returns:
-            reaction_fluxes: (n_reactions,) array of ESTIMATED reaction counts
-        """
-        # Extract the molecule changes for each TCS molecule across the cell paths:
-        all_molecule_changes = read_stacked_columns(
-            cell_paths, 'TwoComponentSystems', 'moleculeChanges')
-        sm = sim_data.process.two_component_system.stoich_matrix()
-        n_timesteps = all_molecule_changes.shape[0]
-        n_reactions = sm.shape[1]
-
-        # Estimate the reaction fluxes for each step using non-negative least squares:
-        estimated_reaction_fluxes = np.zeros((n_timesteps, n_reactions))
-
-        for i in range(n_timesteps):
-            reaction_fluxes, residual = scipy.optimize.nnls(sm, all_molecule_changes[i])
-            estimated_reaction_fluxes[i] = np.round(reaction_fluxes).astype(int)
-
-            # Print a warning if the fit was not good::
-            reconstructed = sm.dot(estimated_reaction_fluxes[i])
-            max_error = np.max(np.abs(reconstructed - all_molecule_changes[i]))
-
-            if max_error > 0.5:
-                print(f"Warning: reaction flux reconstruction error (t={i}) = {max_error}")
-                print(f"Residual from NNLS: {residual}")
-
-        return estimated_reaction_fluxes
-
-    def find_extra_tcs_reactions(self, molecule, complex, rxns_plotted):
-        """
-        Since some of TCS complexes can be formed by two different types of
-        reactions via the same reactant, this function checks whether the TCS
-        complex being plotted can also be formed via the other reaction type,
-        and if so, plots the events for that reaction as well (if they have not
-         already been plotted).
-
-        This is important for accurately interpreting the events plot since it
-        shows the total events for all reactions that form the complex, and if
-        one of the reactions is skipped, then the events will be undercounted
-        and the plot will be misleading.
-        """
-        reaction_IDs = []
-
-        # Check if the reaction events for the TCS complex via the ligand-free
-        # phosphotransfer reactions have already been plotted:
-        if molecule in self.tcs_m2pc_via_ptrs_dict.keys():
-            alt_parent_complex_info = self.tcs_m2pc_via_ptrs_dict[molecule]
-            if complex in alt_parent_complex_info.keys():
-                alt_rxn_id = alt_parent_complex_info[complex][0]['reaction_id']
-                if alt_rxn_id not in rxns_plotted:
-                    reaction_IDs.append(alt_rxn_id)
-
-        # Check if the reaction events for the TCS complex via the ligand-bound
-        # phosphotransfer reactions have already been plotted:
-        if molecule in self.tcs_m2pc_via_lbptrs_dict.keys():
-            alt_parent_complex_info = self.tcs_m2pc_via_lbptrs_dict[molecule]
-            if complex in alt_parent_complex_info.keys():
-                alt_rxn_id = alt_parent_complex_info[complex][0]['reaction_id']
-                if alt_rxn_id not in rxns_plotted:
-                    reaction_IDs.append(alt_rxn_id)
-
-        return reaction_IDs
-
-    def is_a_TF(self, sim_data, molecule):
-        """
-        Determine whether a molecule is a TF.
-        Args:
-            sim_data: simulation data object
-            molecule: molecule ID to check
-        Returns:
-            list: TF ID that match the molecule (if applicable),
-            but returns an empty list if no match is found.
-
-        """
-        # Get the TF IDs:
-        tfs = sim_data.process.transcription_regulation.tf_ids
-        tf_ids = [tf_id + f'[{sim_data.getter.get_compartment(tf_id)[0]}]'
-                          for tf_id in tfs]
-
-        # Determine if the complex is a TF:
-        TF_id_match = [tf_id for tf_id in tf_ids if molecule == tf_id]
-
-        if TF_id_match != []:
-            print(f"{molecule} is a TF.")
-
-        return TF_id_match
-
-    def tf_index(self, sim_data, molecule):
-        """
-        Get the index of a TF in the list of TFs.
-        Args:
-            sim_data: simulation data object
-            molecule: molecule ID to check
-
-        Returns:
-            int: index of the TF in the list of TFs
-        """
-        # Get the TF IDs:
-        tfs = sim_data.process.transcription_regulation.tf_ids
-        tf_ids = [tf_id + f'[{sim_data.getter.get_compartment(tf_id)[0]}]'
-                          for tf_id in tfs]
-
-        # Find the index of the TF in the TF list:
-        tf_index = tf_ids.index(molecule)
-
-        return tf_index
-
-    def is_a_ribosome_subunit(self, sim_data, molecule):
-        """
-        Determine whether a molecule is a ribosome subunit.
-        Args:
-            sim_data: simulation data object
-            molecule: molecule ID to check
-        Returns:
-            list: ribosome subunit ID that matches the molecule (if applicable)
-        """
-        # Get the 30s ribosome subunit IDs:
-        ribosome30s_subunits = sim_data.process.complexation.get_monomers(
-            sim_data.molecule_ids.s30_full_complex)
-        ribosome30s_subunit_ids = ribosome30s_subunits["subunitIds"].tolist()
-
-        # Get the 50s ribosome subunit IDs:
-        ribosome50s_subunits = sim_data.process.complexation.get_monomers(
-            sim_data.molecule_ids.s50_full_complex)
-        ribosome50s_subunit_ids = ribosome50s_subunits["subunitIds"].tolist()
-
-        ribosome_subunits = (ribosome30s_subunit_ids + ribosome50s_subunit_ids
-                             + ["CPLX0-3956[c]","CPLX0-3955[c]"]
-                             + [sim_data.molecule_ids.s30_full_complex]
-                             + [sim_data.molecule_ids.s50_full_complex])
-
-        # Determine if the complex is a ribosome subunit:
-        ribosome_subunit_id_match = [subunit_id for subunit_id in
-                                     ribosome_subunits if molecule == subunit_id]
-
-        if ribosome_subunit_id_match != []:
-            print(f"{molecule} is a ribosome subunit.")
-
-        return ribosome_subunit_id_match
-
     def get_ribosome_subunit_counts(self, cell_paths):
         """
         Extract ribosome subunit counts from simulation data.
@@ -1298,34 +394,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         return (total_active_ribosome_counts,
                 total_ribosome_initiation_events, total_ribosome_termination_events)
-
-    def is_an_RNAP_subunit(self, sim_data, molecule):
-        """
-        Determine whether a molecule is an RNAP subunit.
-        Args:
-            sim_data: simulation data object
-            molecule: molecule ID to check
-        Returns:
-            list: RNAP subunit ID that match the molecule (if applicable)
-        """
-        # Get the RNAP subunit IDs:
-        rnap_subunits = sim_data.process.complexation.get_monomers(
-            sim_data.molecule_ids.full_RNAP)
-        rnap_subunit_ids = rnap_subunits["subunitIds"].tolist()
-
-        # Determine if the complex is an RNAP subunit:
-        rnap_subunit_id_match = [subunit_id for subunit_id in
-                                 rnap_subunit_ids if molecule == subunit_id]
-
-        if rnap_subunit_id_match != []:
-            print(f"{molecule} is an RNAP subunit.")
-
-        # Check if the molecule is the inactive RNAP complex:
-        if molecule == "APORNAP-CPLX[c]":
-            rnap_subunit_id_match += ["APORNAP-CPLX[c]"]
-            print(f"{molecule} is the inactive RNAP complex.")
-
-        return rnap_subunit_id_match
 
     def get_rnap_subunit_counts(self, metadata, cell_paths):
         """
@@ -1397,29 +465,6 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 total_activation_events, total_inactivation_events)
 
 
-    def is_a_replisome_subunit(self, sim_data, molecule):
-        """
-        Determine whether a molecule is an RNAP subunit.
-        Args:
-            sim_data: simulation data object
-            molecule: molecule ID to check
-        Returns:
-            list: replisome subunit ID that match the molecule (if applicable)
-        """
-        # Get the replisome subunit IDs:
-        replisome_trimer_subunits = sim_data.molecule_groups.replisome_trimer_subunits
-        replisome_monomer_subunits = sim_data.molecule_groups.replisome_monomer_subunits
-        replisome_subunit_ids = replisome_trimer_subunits + replisome_monomer_subunits
-
-        # Determine if the complex is a replisome subunit:
-        replisome_subunit_id_match = [subunit_id for subunit_id in
-                replisome_subunit_ids if molecule == subunit_id]
-
-        if replisome_subunit_id_match != []:
-            print(f"{molecule} is a replisome subunit.")
-
-        return replisome_subunit_id_match
-
     def get_replisome_subunit_counts(self, sim_data, cell_paths, molecule):
         """
         Extract replisome subunit counts and events from simulation data.
@@ -1445,46 +490,36 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 "uniqueMoleculeCounts")[:, replisome_idx]
             replisome_counts.append(active_replisome_counts)
 
-            # Find the replisome complexation events by subtracting the counts
-            # of the previous time step from the current time step:
-            replisome_complexation_events = np.diff(active_replisome_counts, prepend=0)
-
-            # Delete all negative values (which correspond to replisomes
-            # deleting from the simulations):
-            replisome_complexation_events[replisome_complexation_events < 0] = 0
-            replisome_events.append(replisome_complexation_events)
+            # Replisome assembly events are the replisomes formed in each step
+            # (see count_replisomes_formed_and_removed), so inherited
+            # replisomes are not counted as assembly at each generation start
+            # and terminations in the same step can't cancel them out:
+            replisomes_formed, _ = count_replisomes_formed_and_removed(sim_dir)
+            replisome_events.append(replisomes_formed)
 
         # Concatenate the replisome counts and events from each simulation into one array:
         replisome_counts = np.concatenate(replisome_counts)
         replisome_events = np.concatenate(replisome_events)
 
-        # Get the replisome subunit IDs:
-        replisome_trimer_subunits = sim_data.molecule_groups.replisome_trimer_subunits
-        replisome_monomer_subunits = sim_data.molecule_groups.replisome_monomer_subunits
-        replisome_subunit_ids = replisome_trimer_subunits + replisome_monomer_subunits
-
-        # Generate the replisome stoichiometry matrix:
-        replisome_stoich = np.hstack(
-            (3 * np.ones(len(replisome_trimer_subunits)),
-             np.ones(len(replisome_monomer_subunits))))
-
-        # Find the index of the molecule within the replisome subunit list:
-        replisome_subunit_index = replisome_subunit_ids.index(molecule)
-
-        # Determine the stoich of the molecule within the replisome complex and
-        # the counts of the molecule in active replisomes at each moment:
-        replisome_subunit_stoich = replisome_stoich[replisome_subunit_index]
-
-        return replisome_subunit_stoich, replisome_counts, replisome_events
+        return (replisome_subunit_stoich(sim_data, molecule),
+                replisome_counts, replisome_events)
 
 
     def do_plot(self, seedOutDir, plotOutDir, plotOutFileName, simDataFile,
                 validationDataFile, metadata):
         with open(simDataFile, 'rb') as f:
             sim_data = pickle.load(f)
-        cell_paths = self.ap.get_cells()
+        # Only the first-daughter lineage is plotted:
+        cell_paths = get_first_daughter_lineage(self.ap.get_cells())
         sim_dir = cell_paths[0]
         simOutDir = os.path.join(sim_dir, 'simOut')
+
+        # Check if replication sequestered replisome subunits. With mechanistic
+        # replisome off (the default setting), chromosome replication never
+        # removes replisome subunits from the bulk pool, so active replisomes
+        # contain no real subunits. If it is on, then subunits are pulled from
+        # bullk to generate replilsomes in the unique molecule space.
+        mechanistic_replisome = metadata.get('mechanistic_replisome', False)
 
         # Extract protein indexes for each monomer:
         monomer_counts_reader = TableReader(
@@ -1493,8 +528,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             enumerate(monomer_counts_reader.readAttribute(
                                 'monomerIds'))}
 
-        # Extract the monomer IDs:
-        self.monomerIDs = monomer_counts_reader.readAttribute("monomerIds")
+        # Map each monomer to its gene's common name (e.g. dnaE) for the
+        # subunit availability legend:
+        monomer_data = sim_data.process.translation.monomer_data
+        monomer_to_gene_name = {
+            monomer: get_clean_common_name(sim_data, cistron)
+            for monomer, cistron in zip(monomer_data['id'], monomer_data['cistron_id'])}
 
         # Extract the free monomer counts:
         free_monomer_counts = read_stacked_columns(
@@ -1502,45 +541,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
         # Extract the doubling times:
         (time, doubling_times, end_generation_times, start_generation_indices,
-         end_generation_indices) = self.extract_doubling_times(cell_paths)
+         end_generation_indices) = extract_doubling_times(cell_paths)
 
-        # Extract the IDs of the three types of complexes:
-        self.complexIDs = sim_data.process.complexation.ids_complexes
-        self.eqComplexIDs = sim_data.process.equilibrium.ids_complexes
-        self.tcsComplexIDs = list(sim_data.process.two_component_system.complex_to_monomer.keys())
-
-        # Generate the complexation molecules to parent complexes
-        # and molecules to all downstream complexes dictionaries:
-        self.c_m2pc_dict, self.c_m2adc_dict, self.c2ct = (
-            self.build_complexation_dictionaries(sim_data))
-
-        # Warning: these will not unpack subunits to monomers if the subunit
-        # is a complexation complex!
-        self.eq_m2pc_dict, self.eq_m2adc_dict, self.eq_c2ct = (
-            self.build_equilibrium_dictionaries(sim_data))
-
-        # Warning: these will not unpack subunits to baseline monomers if the
-        # subunit is a complexation or equilibrium complex!
-        (self.tcs_m2pc_via_lbptrs_dict, self.tcs_m2pc_via_ptrs_dict,
-         self.tcs_c2m_via_dprs_dict, self.tcs_m2adc_dict, self.tcs_c2ct)\
-            = self.build_tcs_dictionaries(sim_data)
-
-        # Define a TCS molecules to parent complexes dictionary to be used in
-        # other functions, given that intermediate complex stoich is always 1:1:
-        self.tcs_m2pc_dict = {}
-        for molecule in set(list(self.tcs_m2pc_via_lbptrs_dict.keys()) + list(
-                self.tcs_m2pc_via_ptrs_dict.keys())):
-            self.tcs_m2pc_dict[molecule] = {}
-
-            if molecule in self.tcs_m2pc_via_lbptrs_dict:
-                self.tcs_m2pc_dict[molecule].update(self.tcs_m2pc_via_lbptrs_dict[molecule])
-
-            if molecule in self.tcs_m2pc_via_ptrs_dict:
-                self.tcs_m2pc_dict[molecule].update(self.tcs_m2pc_via_ptrs_dict[molecule])
+        # Build the molecule to parent complex dictionaries of the three types
+        # of complexes:
+        self.complex_network = ComplexNetwork(sim_data)
 
         # Estimate the TCS reaction events:
-        self.tcs_reaction_events = (
-            self.build_tcs_reaction_event_estimates(sim_data, cell_paths))
+        self.tcs_reaction_events, _ = build_tcs_reaction_event_estimates(
+            sim_data, read_stacked_columns(
+                cell_paths, 'TwoComponentSystems', 'moleculeChanges'))
 
         # Check that all the valid inputs are indeed valid and complexes:
         valid_complexes, complex_type_dict = (
@@ -1549,11 +559,45 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
         # Generate a plot for each complex:
         for complex_id in valid_complexes:
             # Extract the upstream monomers and sentences describing their paths:
-            upstream_monomers, upstream_monomer_paths = self.analyze_complex(complex_id)
+            upstream_monomers, _ = self.analyze_complex(complex_id)
+
+            # Keep each distinct path from a monomer into the complex only. As
+            # of 10/24/2026, CPLX0-3803 is the only complex with more than one
+            # path for a monomer: EG11413-MONOMER and EG11414-MONOMER are in it
+            # both via CPLX0-7910 directly, and via CPLX0-3801 (and each route
+            # contributes its own copies of the monomers). Currently CPLX0-3803
+            # never actually forms because its DnaX subunit (EG10245-MONOMER)
+            # is never made (since translation.py only translates the first
+            # protein listed for each cistron and dnaX lists the frameshift
+            # product first):
+            unique_upstream_paths = {}
+            for monomer, path_list in upstream_monomers.items():
+                unique_paths = []
+                for path_info in path_list:
+                    if not any(path_info['path'] == unique_path['path']
+                               and path_info['total_stoich'] == unique_path['total_stoich']
+                               for unique_path in unique_paths):
+                        unique_paths.append(path_info)
+                unique_upstream_paths[monomer] = unique_paths
+            upstream_path_pairs = [
+                (monomer, path_info)
+                for monomer, path_list in unique_upstream_paths.items()
+                for path_info in path_list]
 
             # Extract all downstream complexes the complex is a subunit of:
-            downstream_complexes, downstream_complex_paths = (
-                self.analyze_molecule_parents(complex_id))
+            downstream_complexes, _ = self.complex_network.analyze_molecule_parents(complex_id)
+
+            unique_downstream_paths = downstream_complexes
+            parent_path_pairs = [
+                (parent_complex, path_info)
+                for parent_complex, path_list in unique_downstream_paths.items()
+                for path_info in path_list]
+
+            # Copies of the complex per parent complex, summed over all
+            # distinct paths:
+            parent_total_stoich = {
+                parent_complex: sum(path_info['total_stoich'] for path_info in path_list)
+                for parent_complex, path_list in unique_downstream_paths.items()}
 
             # Determine the complex type (complexation vs. equilibrium vs. TCS):
             complex_type = complex_type_dict[complex_id]
@@ -1570,7 +614,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             total_counts = complex_counts.copy().astype(float)
 
             # Generate the plots:
-            if self.is_a_ribosome_subunit(sim_data, complex_id) == []:
+            if is_a_ribosome_subunit(sim_data, complex_id) == []:
                 # Normal plot size for non-ribosome related complexes:
                 fig, (ax1, ax2, ax3) = (
                     plt.subplots(3, 1, sharex=True, figsize=(10, 6)))
@@ -1585,51 +629,47 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             ax1.plot(time, complex_counts, color='lightseagreen',
                      label=f'{complex_id} free complex counts', linewidth=.75, alpha=0.75)
 
-            # Also plot the counts of each base monomer within the complex:
-            monomer_ids = list(upstream_monomers.keys())
+            # Also plot the counts of each base monomer within the complex
+            # (plot one line per distinct path, labeled with that path):
+            for monomer, path_list in unique_upstream_paths.items():
+                for path_num, path_info in enumerate(path_list, 1):
+                    path = self.format_monomer_path_sentence(
+                        monomer, complex_id, path_info)
+                    if len(path_list) > 1:
+                        path += f'\n[Path {path_num} of {len(path_list)}]'
+                    monomer_counts = complex_counts * path_info['total_stoich']
 
-            # If there happens to be a situation where there are more than one
-            # path per monomer, then the lengths of monomer_ids and
-            # upstream_monomer_paths will not match.
-            assert len(monomer_ids) == len(upstream_monomer_paths), \
-                (f"Length mismatch: {len(monomer_ids)} monomers but "
-                 f"{len(upstream_monomer_paths)} paths")
-
-            for i in range(len(monomer_ids)):
-                monomer = monomer_ids[i]
-                path = upstream_monomer_paths[i]
-                # Note: 0 just indexes to the value of an array that holds the
-                # "total_stoich" dictionary, and is not related to index i here.
-                total_stoich = upstream_monomers[monomer][0]['total_stoich']
-                monomer_counts = complex_counts * total_stoich
-
-                # Plot the counts within the complex itself:
-                ax1.plot(time, monomer_counts, alpha=1,
-                         label=path,
-                         linewidth=1, linestyle=":")
+                    # Plot the counts within the complex itself:
+                    ax1.plot(time, monomer_counts, alpha=1,
+                             label=path,
+                             linewidth=1, linestyle=":")
 
                 # Second, plot the free monomer subunits on the available free
                 # monomer subunit counts plot:
                 protein_idx = monomer_idx_dict[monomer]
                 protein_FMC = free_monomer_counts[:, protein_idx]
+                gene_name = monomer_to_gene_name.get(monomer)
                 ax2.plot(time, protein_FMC, alpha=0.75,
-                         label=f'{monomer}', linewidth=0.75)
+                         label=f'{monomer}' + (f' ({gene_name})' if gene_name else ''),
+                         linewidth=0.75)
 
             # Add the parent complexes to the complex counts plot as well:
-            complexes = list(downstream_complexes.keys())
-            for i in range(len(complexes)):
-                parent_complex = complexes[i]
-                path = downstream_complex_paths[i]
-                # Note: 0 just indexes to the value of an array that holds the
-                # "total_stoich" dictionary, and is not related to index i here.
-                total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+            # (one line per distinct path, labeled with that path):
+            complexes = list(unique_downstream_paths.keys())
+            for parent_complex, path_list in unique_downstream_paths.items():
                 parent_complex_free_counts = (
                     read_stacked_bulk_molecules(cell_paths, [parent_complex]))[0]
-                parent_complex_counts = parent_complex_free_counts * total_stoich
-                ax1.plot(time, parent_complex_counts, alpha=0.5,
-                         label=path,
-                         linewidth=0.75, linestyle="-.")
-                total_counts += parent_complex_counts
+                for path_num, path_info in enumerate(path_list, 1):
+                    total_stoich = path_info['total_stoich']
+                    path = format_parent_path_sentence(
+                        complex_id, parent_complex, path_info)
+                    if len(path_list) > 1:
+                        path += f'\n[Path {path_num} of {len(path_list)}]'
+                    parent_complex_counts = parent_complex_free_counts * total_stoich
+                    ax1.plot(time, parent_complex_counts, alpha=0.5,
+                             label=path,
+                             linewidth=0.75, linestyle="-.")
+                    total_counts += parent_complex_counts
 
             # Third, add a plot of the complexation events over time:
             rxns_plotted = []
@@ -1641,16 +681,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             tcs_rxn_ids = sim_data.process.two_component_system.rxn_ids
 
             # Plot the reactions that generate the complex:
-            for i in range(len(monomer_ids)):
-                monomer = monomer_ids[i]
-                # Find the reaction that makes the complex from this monomer:
-                rxn_id = upstream_monomers[monomer][0]['path'][-1][3]
+            for monomer, path_info in upstream_path_pairs:
+                # Find the reaction that makes the complex from this monomer
+                # (the last step of each distinct path):
+                rxn_id = path_info['path'][-1][3]
                 if rxn_id in rxns_plotted:
                     continue # skip if the reacion has been plotted
                 else:
                     rxns_plotted.append(rxn_id)
                 rxn_stoich = 1 # always 1 for complex formation
-                name = f'{rxn_id} \n(generates {rxn_stoich} {complex_id})'
+                name = f'{rxn_id} \n(generates {rxn_stoich:g} {complex_id})'
 
                 # Plot the reaction events based on the type of complex:
                 if complex_type == "complexation":
@@ -1662,7 +702,11 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     rxn_idx = equilibrium_rxn_ids.index(rxn_id)
                     rxn_events = read_stacked_columns(cell_paths,
                         'EquilibriumListener', "complexationEvents")[:, rxn_idx]
-                    ax3.plot(time, rxn_events, alpha=0.5, label=name, linewidth=0.75)
+                    # Equilibrium events are net per step, so the same line
+                    # generates (formation) or dissociates the complex:
+                    ax3.plot(time, rxn_events, alpha=0.5, linewidth=0.75,
+                             label=f'{rxn_id} net events\n(generates/dissociates '
+                                   f'{rxn_stoich:g} {complex_id})')
                 else: # TCS reactions
                     rxn_idx = tcs_rxn_ids.index(rxn_id)
                     rxn_events = self.tcs_reaction_events[:, rxn_idx]
@@ -1673,7 +717,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     # Also check if the complex is made from a different TCS
                     # reaction by the same base monomer:
                     if "POS" in rxn_id:
-                        reaction_IDs = (self.find_extra_tcs_reactions(
+                        reaction_IDs = (self.complex_network.find_extra_tcs_reactions(
                             monomer, complex_id, rxns_plotted))
                         for reaction_ID in reaction_IDs:
                             print(f"Plotting extra reaction {reaction_ID} for "
@@ -1688,8 +732,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                     # Lastly, if there is a TCS reaction in the mix, check if
                     # the complex itself is consumed by any TCS reactions:
-                    if complex_id in self.tcs_c2m_via_dprs_dict.keys():
-                        subunit_complex_info = self.tcs_c2m_via_dprs_dict[complex_id]
+                    if complex_id in self.complex_network.tcs_c2m_via_dprs_dict.keys():
+                        subunit_complex_info = self.complex_network.tcs_c2m_via_dprs_dict[complex_id]
                         for subunit_complex in subunit_complex_info:
                             # Extract the reverse reaction reactant's information:
                             subunit_complex_dict = subunit_complex_info[subunit_complex]
@@ -1709,15 +753,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
             # Next, Find the reactions that consume the complex as a subunit
             # of a larger complex, and plot those as well:
-            for i in range(len(complexes)):
-                parent_complex = complexes[i]
-                rxn_id = downstream_complexes[parent_complex][0]['path'][0][3]
+            # (the first step of each distinct path):
+            for parent_complex, path_info in parent_path_pairs:
+                rxn_id = path_info['path'][0][3]
                 if rxn_id in consumption_rxns_plotted or rxn_id in rxns_plotted:
                     continue # skip if the reacion has been plotted
                 else:
                     consumption_rxns_plotted.append(rxn_id)
-                rxn_stoich = downstream_complexes[parent_complex][0]['path'][0][1]
-                name = f'{rxn_id} \n(consumes {rxn_stoich} {complex_id})'
+                rxn_stoich = path_info['path'][0][1]
+                name = f'{rxn_id} \n(consumes {rxn_stoich:g} {complex_id})'
 
                 if rxn_id in complexation_rxn_ids:
                     rxn_idx = complexation_rxn_ids.index(rxn_id)
@@ -1730,8 +774,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     rxn_idx = equilibrium_rxn_ids.index(rxn_id)
                     rxn_events = read_stacked_columns(cell_paths,
                         'EquilibriumListener', "complexationEvents")[:, rxn_idx]
-                    ax3.plot(time, np.negative(rxn_events),
-                             alpha=0.5, label=name, linewidth=0.75)
+                    # Equilibrium events are net per step, so the same line
+                    # consumes (parent formation) or releases (dissociation):
+                    ax3.plot(time, np.negative(rxn_events), alpha=0.5,
+                             linewidth=0.75,
+                             label=f'{rxn_id} net events\n(consumes/releases '
+                                   f'{rxn_stoich:g} {complex_id})')
 
                 else:
                     rxn_idx = tcs_rxn_ids.index(rxn_id)
@@ -1743,7 +791,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                     # Also check if the parent is made from a different TCS
                     # reaction by the same base complex:
                     if "POS" in rxn_id:
-                        reaction_IDs = self.find_extra_tcs_reactions(
+                        reaction_IDs = self.complex_network.find_extra_tcs_reactions(
                             complex_id, parent_complex, consumption_rxns_plotted)
                         for reaction_ID in reaction_IDs:
                             # Plot the reaction events based on the type of complex:
@@ -1754,8 +802,8 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                             f'{reaction_ID} \n estimated events (consumes 1 {complex_id})', linewidth=0.75)
 
                     # Lastly, check if the parent dephosphorylates to the complex:
-                    if parent_complex in self.tcs_c2m_via_dprs_dict.keys():
-                        subunit_complex_info = self.tcs_c2m_via_dprs_dict[parent_complex]
+                    if parent_complex in self.complex_network.tcs_c2m_via_dprs_dict.keys():
+                        subunit_complex_info = self.complex_network.tcs_c2m_via_dprs_dict[parent_complex]
                         if complex_id in subunit_complex_info.keys():
                             subunit_complex_dict = subunit_complex_info[complex_id]
                             rxn_id = subunit_complex_dict[0]['reaction_id']
@@ -1772,9 +820,9 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # involved in any special events that should be plotted:
 
             # Check if the complex is a TF:
-            if self.is_a_TF(sim_data, complex_id) != []:
+            if is_a_TF(sim_data, complex_id) != []:
                 # If the complex is a TF, plot its bound counts and binding/unbinding events:
-                tf_idx = self.tf_index(sim_data, complex_id)
+                tf_idx = tf_index(sim_data, complex_id)
                 tf_counts = read_stacked_columns(cell_paths,'RnaSynthProb',
                                                 "nActualBound")[:,tf_idx]
                 tfs_unbound = read_stacked_columns(cell_paths,'RnaSynthProb',
@@ -1783,7 +831,16 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                          label=f'transcription unit bound\n {complex_id} '
                                f'transcription factors',
                          linewidth=0.75, alpha=0.75)
-                ax3.plot(time, (tf_counts * -1), color='lightcoral',
+                # nActualBound is TF occupancy at the end of each step, which
+                # works as binding events because TfUnbinding releases every
+                # bound TF at the start of each step. The exception is the
+                # first row/timestep of each generation, which is the initial state
+                # inherited from the parent cell (with no matching unbinding
+                # row), so those rows are set to 0 to avoid a fake drop at
+                # every generation start:
+                tf_binding = tf_counts.astype(float)
+                tf_binding[start_generation_indices] = 0
+                ax3.plot(time, (tf_binding * -1), color='lightcoral',
                          label=f'{complex_id} Transcription factor\nbinding events',
                          linewidth=0.75, alpha=0.75)
                 ax3.plot(time, tfs_unbound, color='purple',
@@ -1792,26 +849,37 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 total_counts += tf_counts
 
             # Check if the complex is a replisome subunit:
-            if self.is_a_replisome_subunit(sim_data, complex_id) != []:
+            if is_a_replisome_subunit(sim_data, complex_id) != []:
                 # If the complex is a replisome subunit, plot its counts within
                 # active replisomes and the replisome assembly events that consume it:
                 replisome_stoich, replisome_counts, replisome_events = (
                     self.get_replisome_subunit_counts(sim_data, cell_paths, complex_id))
                 subunit_counts_within_replisomes = (
                         replisome_counts * replisome_stoich)
-                ax1.plot(time, subunit_counts_within_replisomes, color='gold',
-                         label=f'{complex_id} counts within active replisomes, '
-                               f'{replisome_stoich} per',
-                         linewidth=0.75, alpha=0.75, linestyle="--")
-                ax3.plot(time, np.negative(replisome_events), color='gold',
-                         label=f'Active replisome assebly events\n(consumes '
-                               f'{replisome_stoich} {complex_id})',
-                         linewidth=0.75, alpha=0.75)
-                # Add the replisome subunit counts to the total counts of the complex:
-                total_counts += (subunit_counts_within_replisomes)
+                if mechanistic_replisome:
+                    ax1.plot(time, subunit_counts_within_replisomes, color='gold',
+                             label=f'{complex_id} counts within active replisomes, '
+                                   f'{replisome_stoich:g} per',
+                             linewidth=0.75, alpha=0.75, linestyle="--")
+                    ax3.plot(time, np.negative(replisome_events), color='gold',
+                             label=f'Active replisome assembly events\n(consumes '
+                                   f'{replisome_stoich:g} {complex_id})',
+                             linewidth=0.75, alpha=0.75)
+                    # Add the replisome subunit counts to the total counts of the complex:
+                    total_counts += (subunit_counts_within_replisomes)
+                else:
+                    # Not real protein: not added to the total counts, and
+                    # replisome assembly never consumes the free complex
+                    ax1.plot(time, subunit_counts_within_replisomes, color='gold',
+                             label=f'# of {complex_id} chromosome replication\n'
+                                   f'assumes are available to make active\n'
+                                   f'replisomes, but mechanistic_replisome is\n'
+                                   f'off so they are never actually removed\n'
+                                   f'from bulk ({replisome_stoich:g} per)',
+                             linewidth=0.75, alpha=0.75, linestyle=":")
 
             # Check if the complex is an inactive RNAP (1:1 ratio):
-            if self.is_an_RNAP_subunit(sim_data, complex_id) != []:
+            if is_an_RNAP_subunit(sim_data, complex_id) != []:
                 rnap_counts, rnap_activation_events, rnap_deactivation_events = (
                     self.get_rnap_subunit_counts(metadata, cell_paths))
                 ax1.plot(time, rnap_counts, color='gold',
@@ -1826,7 +894,7 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 total_counts += rnap_counts
 
             # Check if the complex is a ribosome subunit (1:1 ratio):
-            if self.is_a_ribosome_subunit(sim_data, complex_id) != []:
+            if is_a_ribosome_subunit(sim_data, complex_id) != []:
                 ribosome_counts, ribosome_initiation_events, ribosome_termination_events = (
                     self.get_ribosome_subunit_counts(cell_paths))
                 ax1.plot(time, ribosome_counts, color='gold',
@@ -1843,41 +911,52 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
             # Parent complex checks:
             for i in range(len(complexes)):
                 parent_complex = complexes[i]
-                if self.is_a_replisome_subunit(sim_data, parent_complex) != []:
+                if is_a_replisome_subunit(sim_data, parent_complex) != []:
                     replisome_stoich, replisome_counts, _ = (
                         self.get_replisome_subunit_counts(
                             sim_data, cell_paths, parent_complex))
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the replisome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the replisome:
                     subunit_counts = replisome_counts * total_stoich * replisome_stoich
+                    if mechanistic_replisome:
+                        ax1.plot(time, subunit_counts, color='gold',
+                                 label=f'{complex_id} counts within active replisomes,'
+                                       f'\n{replisome_stoich*total_stoich:g} per '
+                                       f'(via {parent_complex})',
+                                 linewidth=0.75, alpha=0.75, linestyle="--")
 
-                    ax1.plot(time, subunit_counts, color='gold',
-                             label=f'{complex_id} counts within active replisomes,'
-                                   f'\n{replisome_stoich*total_stoich} per '
-                                   f'(via {parent_complex})',
-                             linewidth=0.75, alpha=0.75, linestyle="--")
+                        # Add the replisome counts to the total counts of the complex:
+                        total_counts += subunit_counts
+                    else:
+                        # monomers are not actually used to create replisomes
+                        # and mechanistic replisome assumes they are unlimited:
+                        ax1.plot(time, subunit_counts, color='gold',
+                                 label=f'# of {complex_id} chromosome replication\n'
+                                       f'assumes are available to make active\n'
+                                       f'replisomes, but mechanistic_replisome is\n'
+                                       f'off so they are never actually removed\n'
+                                       f'from bulk ({replisome_stoich*total_stoich:g} '
+                                       f'per, via {parent_complex})',
+                                 linewidth=0.75, alpha=0.75, linestyle=":")
 
-                    # Add the replisome counts to the total counts of the complex:
-                    total_counts += subunit_counts
-
-                if self.is_a_TF(sim_data, parent_complex) != []:
-                    tf_idx = self.tf_index(sim_data, parent_complex)
+                if is_a_TF(sim_data, parent_complex) != []:
+                    tf_idx = tf_index(sim_data, parent_complex)
                     tf_counts = read_stacked_columns(cell_paths,
                         'RnaSynthProb',"nActualBound")[:,tf_idx]
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the TF counts by the stoich of the complex to
                     # the parent complex:
                     subunit_counts = tf_counts * total_stoich
                     ax1.plot(time, subunit_counts, color='lightcoral',
-                             label=f'transcription unit bound {complex_id} transcription'
-                                   f' factors,\n {total_stoich} per (via {parent_complex})',
+                             label=f'bound {complex_id} transcription'
+                                   f' factors,\n {total_stoich:g} per (via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
                     # Add the TF counts to the total counts of the complex:
@@ -1885,12 +964,12 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                 # No need to check RNAPs, they only have monomer subunits.
 
-                if self.is_a_ribosome_subunit(sim_data, parent_complex) != []:
+                if is_a_ribosome_subunit(sim_data, parent_complex) != []:
                     ribosome_counts, _, _ = (
                         self.get_ribosome_subunit_counts(cell_paths))
 
                     # Get the stoich of the parent complex to the complex of interest:
-                    total_stoich = downstream_complexes[parent_complex][0]['total_stoich']
+                    total_stoich = parent_total_stoich[parent_complex]
 
                     # Multiply the ribosome subunit counts by the stoich of
                     # the parent complex and the stoich of the parent complex in the ribosome:
@@ -1898,31 +977,95 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 
                     ax1.plot(time, subunit_counts, color='gold',
                              label=f'{complex_id} counts within active ribosomes,'
-                                   f'\n{total_stoich} per (via {parent_complex})',
+                                   f'\n{total_stoich:g} per (via {parent_complex})',
                              linewidth=0.75, alpha=0.75, linestyle="--")
 
                     # Add the ribosome counts to the total counts of the complex:
                     total_counts += subunit_counts
 
 
-            # Plot the total theoretical complex counts:
-            ax1.plot(time, total_counts, color='black',
-                     label=f'Theoretical total {complex_id} counts\n(free complex '
-                           f'counts + counts within parent complexes)',
-                     linewidth=.25, alpha=1)
+            # Plot the total theoretical complex counts behind the other lines
+            # (so a free count that flips every step doesn't get covered).
+            # If the total equals the free count at every step, keep the
+            # legend entry but don't draw it on top of the free line:
+            if np.array_equal(total_counts, complex_counts):
+                ax1.plot([], [], color='black',
+                         label=f'Theoretical total {complex_id} counts\n(not '
+                               f'drawn here since free = total '
+                               f'complex counts at every step)',
+                         linewidth=.25, alpha=1)
+            else:
+                ax1.plot(time, total_counts, color='black',
+                         label=f'Theoretical total {complex_id} counts\n(free complex '
+                               f'counts + counts within parent complexes)',
+                         linewidth=.25, alpha=1, zorder=0)
 
             # Set the axes and legends :
             ax1.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
             ax1.set_ylabel("Complex Counts")
+
+            # Create stats above the counts panel ("in other complexes" is
+            # everything in the theoretical total that is not free):
+            in_other_complexes = total_counts - complex_counts
             ax1.set_title(
-                f"Complex counts for the {complex_makeup} {complex_type} complex "
-                f"{complex_id}\n Sim ID: {metadata['description']}", fontsize=6)
-            ax2.set_ylabel(f"Free Monomer \nSubunit Availability")
+                f"Mean counts - Total: {np.mean(total_counts):.1f} | "
+                f"Free: {np.mean(complex_counts):.1f} | "
+                f"In other complexes: {np.mean(in_other_complexes):.1f} | "
+                f"Median counts - Total: {np.median(total_counts):.1f} | "
+                f"Free: {np.median(complex_counts):.1f} | "
+                f"In other complexes: {np.median(in_other_complexes):.1f}",
+                fontsize=7)
+
+            # Format the title a bold line drawn separately above grey subtitle
+            # lines. The titles for the TCS role labels are built from
+            # build_tcs_dictionaries (and this assumes only the phosphorylated
+            # forms are TCS complexes themselves):
+            tcs_role_names = {
+                "PHOSPHO-RR": "TCS phosphorylated response regulator",
+                "PHOSPHO-HK": "TCS phosphorylated histidine kinase",
+                "PHOSPHO-HK-LIGAND": "TCS phosphorylated ligand-bound histidine kinase",
+            }
+            if complex_makeup in tcs_role_names:
+                classification = tcs_role_names[complex_makeup]
+            else:
+                classification = f"{complex_makeup} {complex_type} complex"
+            tf_type = sim_data.process.transcription_regulation.tf_to_tf_type.get(
+                complex_id.split('[')[0])
+            if tf_type is not None:
+                classification += f" | {tf_type} transcription factor"
+            common_name = get_clean_common_name(sim_data, complex_id)
+            if common_name:
+                classification += f" | {common_name}"
+            fig_height = fig.get_figheight()
+            fig.text(0.4, 1 - 0.024 / fig_height,
+                     f"Count trajectory for {complex_id}",
+                     fontsize=10, fontweight='bold', ha='center', va='top')
+            fig.suptitle(
+                f"{classification[0].upper() + classification[1:]}\n"
+                f"Sim ID: {metadata['description']} | "
+                f"variant {metadata.get('variant', '?')} {metadata.get('variant_index', '')} | "
+                f"seed {int(metadata.get('seed', 0))} | {len(cell_paths)} gen(s)",
+                fontsize=9, x=0.4, y=1 - 0.288 / fig_height, color='grey')
+            ax2.set_ylabel("Free Monomer \nSubunit Availability")
             ax2.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
+
+            # In the first generation, equilibrium (1CS ligand binding) and TCS
+            # reactions do not execute during initialization to create
+            # complexes for the initial state the way complexation complexes
+            # do, so there are usually large spikes for these molecules at the
+            # start. Later generations can also have smaller spikes as these
+            # reactions relax after division (i.e. a +/- pair at the 3rd and
+            # 4th steps). To avoid obscuring the y axis on the events graph
+            # from these changes, these large spikes are truncated and labeled
+            # instead:
+            ordered_event_lines = format_event_lines(
+                ax3, time, start_generation_indices, N_INITIAL_STEPS_TO_CLIP)
+            ax3.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
 
             ax3.set_xlabel("Time (s)")
             ax3.set_ylabel("Free Complex\nReaction Events")
-            ax3.legend(fontsize=5, loc="center left", bbox_to_anchor=(1, 0.5))
+            ax3.legend(handles=ordered_event_lines, fontsize=5, loc="center left",
+                       bbox_to_anchor=(1, 0.5))
 
             # Add vertical lines for the end of each generation:
             for i in range(len(end_generation_times)):
@@ -1932,12 +1075,15 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
                 ax2.axvline(x=dt, linestyle='--', color="yellowgreen", alpha=a)
                 ax3.axvline(x=dt, linestyle='--', color="yellowgreen", alpha=a)
 
-            if self.is_a_ribosome_subunit(sim_data, complex_id) == []:
+            if is_a_ribosome_subunit(sim_data, complex_id) == []:
                 plt.tight_layout()
+            # Leave room at the top for the two title blocks:
+            plt.subplots_adjust(top=1 - 0.95 / fig_height)
 
             # Save the plot:
             file_name = plotOutFileName + "_" + complex_id
-            exportFigure(plt, plotOutDir, file_name, metadata)
+            exportFigure(plt, plotOutDir, file_name, metadata, dpi=300)
+            plt.close()
 
 
 if __name__ == '__main__':
