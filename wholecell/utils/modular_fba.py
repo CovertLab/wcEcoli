@@ -6,6 +6,9 @@ import numpy as np
 from wholecell.utils._netflow._base import NetworkFlowProblemBase
 
 NUMERICAL_ZERO = 1e-20
+# Largest amount by which a target can be both over and under because of solver
+# tolerances before the solution is treated as an error
+MAX_OVER_AND_UNDER_TARGET = 1e-6
 
 # can add additional solvers to have more options but need to implement NetworkFlow wrapper
 S_CPLEX_QUAD = "cplex-quad"
@@ -57,6 +60,25 @@ else:
 
 class FBAError(Exception):
 	pass
+
+
+def check_over_and_under_target(relax_up, relax_down, target_id):
+	"""
+	A value cannot be both over and under its target, so at least one of the
+	two relaxation fluxes should be zero. Small amounts on both sides come from
+	solver tolerances and are reported. These values are only used for reporting
+	objective values, not for the simulation state.
+
+	Raises:
+		FBAError: if both relaxation fluxes exceed MAX_OVER_AND_UNDER_TARGET
+	"""
+	amount = min(relax_up, relax_down)
+	if amount > MAX_OVER_AND_UNDER_TARGET:
+		raise FBAError('{} is over ({}) and under ({}) its target.'.format(
+			target_id, relax_down, relax_up))
+	if amount > NUMERICAL_ZERO:
+		print('Warning: {} is over ({}) and under ({}) its target.'.format(
+			target_id, relax_down, relax_up))
 
 
 class AlreadyExistsError(FBAError):
@@ -1282,7 +1304,7 @@ class FluxBalanceAnalysis(object):
 
 				relax = relaxUp + relaxDown
 
-				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
+				check_over_and_under_target(relaxUp, relaxDown, moleculeID)
 
 			values[idx] = relax
 		return values
@@ -1389,7 +1411,7 @@ class FluxBalanceAnalysis(object):
 
 				relax = relaxUp + relaxDown + self.kinetic_objective_weight_in_range * (below_in_range + above_in_range)
 
-				assert relaxUp <= NUMERICAL_ZERO or relaxDown <= NUMERICAL_ZERO
+				check_over_and_under_target(relaxUp, relaxDown, reactionID)
 
 			values[idx] = relax
 		return values
