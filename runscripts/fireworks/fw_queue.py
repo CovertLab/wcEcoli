@@ -30,6 +30,11 @@ Workflow options:
 		arbitrarily-chosen transcription factor condition when adjusting gene
 		expression levels, leaving the others at their input levels, for faster
 		Parca debugging; do not use this for an actual simulation
+	PARCA_QUEUE (str, ""): if set, the SLURM partition for the CalculateSimData
+		job, overriding the partition in my_qadapter.yaml for that job only
+	PARCA_CONSTRAINT (str, ""): if set, the SLURM constraint for the
+		CalculateSimData job only, such as CPU_GEN:GEN to fit on a specific CPU
+		generation; requires launching with qlaunch -r, as run_qlaunch.py does
 	COMPRESS_OUTPUT (int, "0"): if nonzero, outputs will be compressed (.bz2)
 	RUN_AGGREGATE_ANALYSIS (int, "1"): if nonzero, all analyses (aggregate and
 		single gen) are run on simulation output
@@ -333,6 +338,8 @@ PLOTS = get_environment("PLOTS", "").split()
 CACHED_SIM_DATA = bool(int(get_environment("CACHED_SIM_DATA", "0")))
 PARALLEL_PARCA = bool(int(get_environment("PARALLEL_PARCA", "0")))
 DEBUG_PARCA = bool(int(get_environment("DEBUG_PARCA", "0")))
+PARCA_QUEUE = get_environment("PARCA_QUEUE", "")
+PARCA_CONSTRAINT = get_environment("PARCA_CONSTRAINT", "")
 DISABLE_RIBOSOME_CAPACITY_FITTING = bool(int(get_environment("DISABLE_RIBOSOME_CAPACITY_FITTING", "0")))
 DISABLE_RNAPOLY_CAPACITY_FITTING = bool(int(get_environment("DISABLE_RNAPOLY_CAPACITY_FITTING", "0")))
 BUILD_CAUSALITY_NETWORK = bool(int(get_environment("BUILD_CAUSALITY_NETWORK", "0")))
@@ -559,6 +566,10 @@ class WorkflowBuilder:
 			parents=fw_init_raw_data,
 			cpus=cpusForParca,
 			priority=12)
+		if PARCA_QUEUE:
+			fw_calculate_sim_data.spec['_queueadapter']['queue'] = PARCA_QUEUE
+		if PARCA_CONSTRAINT:
+			fw_calculate_sim_data.spec['_queueadapter']['constraint'] = PARCA_CONSTRAINT
 
 		# Raw KB compression
 		fw_raw_data_compression = None
