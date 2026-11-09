@@ -1,4 +1,13 @@
 """
+# TODO (mia): for the mRNA count plot, add each TU as a separate line, and
+have each's avg count + STD in the legend with it. have its basal synth prob
+ and avg. synth prob in either the legend or the title too. for the mRNA itself,
+include the avg. full, partial, and total count breakdown. you could do the
+same on the plot for each TU too since we track that, but might be too much
+info on one. could make each TU its own color and have each state a different
+linestyle? but total might overalapp all the time with one of those two idk.
+
+
 Multigen analysis plot for tracking monomer counts and their trajectories over time.
 
 Multigeneration analysis for analyzing monomer counts and their trajectories
