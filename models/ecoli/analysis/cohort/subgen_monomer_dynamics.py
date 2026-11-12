@@ -23,14 +23,19 @@ Gene sets, all plotted in one run, with the set name in every output filename:
               Definition-5 mean, from the extraction cache, over the first
               N_SEEDS_TO_PLOT strict-successful seeds.
 
-Writes, per gene set per plotted seed:
-  <plotOutFileName>_{monomer,mRNA}_<set>_seed<SSSSSS>.pdf       generation axis
-  <plotOutFileName>_{monomer,mRNA}_<set>_time_seed<SSSSSS>.pdf  minutes axis
-  <plotOutFileName>_traces_<set>_seed<SSSSSS>.tsv               plotted traces
-  <plotOutFileName>_run_metadata.json                           provenance
+Every gene gets its own single-panel figure. 
 
-The generation-axis filenames are unchanged from before the minutes axis was
-added, so existing outputs regenerate under exactly the same names.
+Writes everything under plotOut/<plotOutFileName>/, one folder per gene set,
+seed and plot type, so a set's hundreds of per-gene figures stay browsable:
+  run_metadata.json                                  provenance
+  <set>/seed<SSSSSS>/traces.tsv                      plotted traces
+  <set>/seed<SSSSSS>/{monomer,mRNA}_generation/<gene>.pdf   generation axis
+  <set>/seed<SSSSSS>/{monomer,mRNA}_time/<gene>.pdf         minutes axis
+exportFigure also puts low_res_plots/ and svg_plots/ copies in each plot-type
+folder.
+
+The trace TSV carries both molecule types, so every figure this script draws
+can be redrawn downstream without simOut.
 
 Definition 5 always means the CI form (sc.classify_def5_ci). The `subgen_top`
 set and curated10's coverage-based seed ranking both read subgen_extract.py's
@@ -44,6 +49,7 @@ within-generation trace; only gene SELECTION and seed RANKING are cached.
 import csv
 import os
 import pickle
+import re
 
 import numpy as np
 import matplotlib
@@ -65,12 +71,30 @@ PANEL = 'anaerobic'
 PANEL_CURATED = 'curated10'
 SEEDS_CURATED10 = None
 N_SEEDS_CURATED10 = 3
-CURATED10_COLS = 5
-SET_COLS = {PANEL_CURATED: CURATED10_COLS}
+FIG_SIZE_PER_GENE = (16, 6)  # inches, one gene per figure
+MAX_GEN_XTICKS = 12  # cap on generation-axis tick labels
 X_AXES = ('generation', 'time')
 SHADE_ZERO = True
 ZERO_SHADE_ALPHA = 0.15
 WRITE_TRACE_TSV = True
+
+
+def _gene_slugs(names):
+	"""Filename-safe, collision-free stems, one per gene, in panel order.
+
+	The curated panels hold clean symbols, but subgen_top's names come from the
+	extraction's gene_ids, which carry no such guarantee; a slug that collided
+	would silently overwrite another gene's figure, so duplicates fall back to
+	the column index.
+	"""
+	slugs, seen = [], set()
+	for i, name in enumerate(names):
+		slug = re.sub(r'[^A-Za-z0-9._-]', '_', str(name))
+		if slug in seen:
+			slug = '%s_%d' % (slug, i)
+		seen.add(slug)
+		slugs.append(slug)
+	return slugs
 
 
 class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
@@ -98,6 +122,11 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		if subgen_set is not None:
 			gene_sets.append(subgen_set)
 
+		# All outputs go under one folder; the extraction cache this script
+		# READS stays in plotOutDir.
+		out_root = os.path.join(plotOutDir, plotOutFileName)
+		os.makedirs(out_root, exist_ok=True)
+
 		plotted = {}
 		for set_name, names, cistron_ids, monomer_ids, seeds in gene_sets:
 			if not len(seeds):
@@ -107,7 +136,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			print('[%s] %d genes over seeds %s: %s'
 				% (set_name, len(names),
 					', '.join(str(s) for s in seeds), ', '.join(names)))
-			self._plot_gene_set(plotOutDir, plotOutFileName, metadata,
+			self._plot_gene_set(out_root, metadata,
 				set_name, names, cistron_ids, monomer_ids, seeds)
 			plotted[set_name] = {
 				'n_genes': len(names),
@@ -117,7 +146,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 		sim_metadata_path, sim_metadata = sc.load_sim_metadata(variantDir)
 		sc.write_run_metadata(
-			os.path.join(plotOutDir, plotOutFileName + '_run_metadata.json'),
+			os.path.join(out_root, 'run_metadata.json'),
 			'subgen_monomer_dynamics.py',
 			{
 				'ignore_first_n_gens': IGNORE_FIRST_N_GENS,
@@ -126,6 +155,9 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				'n_subgen_to_plot': N_SUBGEN_TO_PLOT,
 				'n_seeds_curated10': N_SEEDS_CURATED10,
 				'panels': [PANEL, PANEL_CURATED],
+				'one_fig_per_gene': True,
+				'fig_size_per_gene': list(FIG_SIZE_PER_GENE),
+				'max_gen_xticks': MAX_GEN_XTICKS,
 				},
 			sim_metadata_path=sim_metadata_path,
 			sim_metadata=sim_metadata,
@@ -278,7 +310,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 
 	# plotting
 
-	def _plot_gene_set(self, plotOutDir, plotOutFileName, metadata, set_name,
+	def _plot_gene_set(self, out_root, metadata, set_name,
 			names, cistron_ids, monomer_ids, seeds):
 		probe = self.ap.get_cells(
 			seed=[seeds[0]],
@@ -292,7 +324,8 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 		# Map the chosen genes into the listener subcolumns (from a real cell).
 		mRNA_indices, monomer_indices = self._index_maps(
 			probe[0], cistron_ids, monomer_ids)
-		cols = SET_COLS.get(set_name)
+		# One figure per gene, so the gene name goes in the filename.
+		slugs = _gene_slugs(names)
 
 		for seed in seeds:
 			cell_paths_per_seed = self.ap.get_cells(
@@ -301,6 +334,7 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 				seed=[seed], only_successful=True)
 			if len(cell_paths_per_seed) == 0:
 				continue
+			seed_dir = os.path.join(out_root, set_name, 'seed%06d' % seed)
 
 			monomer_counts = read_stacked_columns(
 				cell_paths_per_seed, 'MonomerCounts', 'monomerCounts'
@@ -316,14 +350,13 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 					(monomer_counts, 'monomer'), (cistron_counts, 'mRNA')):
 				for x_axis in X_AXES:
 					self._plot_counts_dynamics(
-						plotOutDir, plotOutFileName, metadata, set_name, counts,
-						names, molecule_type, time, start_generation_indices,
-						end_generation_indices, seed, x_axis, cols)
+						seed_dir, metadata, counts, names, slugs,
+						molecule_type, time, start_generation_indices,
+						end_generation_indices, x_axis)
 
 			if WRITE_TRACE_TSV:
 				self._write_trace_tsv(
-					plotOutDir, plotOutFileName, set_name, seed, names,
-					monomer_counts, time, cell_paths_per_seed,
+					seed_dir, names, monomer_counts, cistron_counts, time, cell_paths_per_seed,
 					start_generation_indices, end_generation_indices)
 
 	def _index_maps(self, cell_path, cistron_ids, monomer_ids):
@@ -372,95 +405,87 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			ax.axvspan(x[start], x[end], color=sc.MUTED,
 				alpha=ZERO_SHADE_ALPHA, linewidth=0, zorder=0)
 
-	def _plot_counts_dynamics(self, plotOutDir, plotOutFileName, metadata,
-			set_name, counts, names, molecule_type, time,
-			start_generation_indices, end_generation_indices, seed, x_axis,
-			cols=None):
-		num_groups = len(names)
-		if cols is None:
-			cols = min(num_groups, 4)  # Number of columns for the grid
-		cols = min(cols, num_groups)
-		rows = (num_groups + cols - 1) // cols  # Calculate the number of rows
-		fig_width = cols * 10
-		fig_height = fig_width / 2
-		fig, axes = plt.subplots(
-			nrows=rows, ncols=cols, figsize=(fig_width, fig_height),
-			sharex=False)
-		axes = np.atleast_1d(axes).flatten()
+	def _plot_counts_dynamics(self, seed_dir, metadata, counts, names, slugs,
+			molecule_type, time, start_generation_indices,
+			end_generation_indices, x_axis):
+		"""One single-panel figure per gene.
 
-		for i, ax in enumerate(axes):
-			if i >= num_groups:
-				continue
-			interest_counts = counts[:, i]
-			gen_number = 0
-			# Iterate over each generation and plot the segment separately, so
-			# the lines stay disconnected across divisions.
-			for start_idx, end_idx in zip(
-					start_generation_indices, end_generation_indices):
-				# end_idx + 1 to include the last point of the generation
-				gen_time = time[start_idx:end_idx + 1]
-				gen_counts = interest_counts[start_idx:end_idx + 1]
-				if len(gen_time) < 2:
-					gen_number += 1
-					continue
-				if x_axis == 'generation':
-					duration = gen_time[-1] - gen_time[0]
-					x = gen_number + (gen_time - gen_time[0]) / duration
-				else:
-					x = (gen_time - time[0]) / 60.
-				ax.plot(x, gen_counts, color=COLOR_LINE, linewidth=6)
-				if SHADE_ZERO:
-					self._shade_zero_runs(ax, x, gen_counts)
+		A grid packed the whole set into one figure, which left each gene a
+		panel too narrow for its axis labels. Each gene now gets the full
+		canvas.
+		"""
+		fig_dir = os.path.join(seed_dir, '%s_%s' % (molecule_type, x_axis))
+		for i, name in enumerate(names):
+			fig, ax = plt.subplots(figsize=FIG_SIZE_PER_GENE)
+			self._draw_gene_trace(
+				ax, counts[:, i], time, start_generation_indices,
+				end_generation_indices, name, molecule_type, x_axis)
+			plt.tight_layout()
+			exportFigure(plt, fig_dir, slugs[i], metadata)
+			plt.close(fig)
+
+	def _draw_gene_trace(self, ax, interest_counts, time,
+			start_generation_indices, end_generation_indices, name,
+			molecule_type, x_axis):
+		gen_number = 0
+		# Iterate over each generation and plot the segment separately, so
+		# the lines stay disconnected across divisions.
+		for start_idx, end_idx in zip(
+				start_generation_indices, end_generation_indices):
+			# end_idx + 1 to include the last point of the generation
+			gen_time = time[start_idx:end_idx + 1]
+			gen_counts = interest_counts[start_idx:end_idx + 1]
+			if len(gen_time) < 2:
 				gen_number += 1
-
-			ax.set_ylabel('%s counts' % molecule_type, fontsize=30)
-			ax.set_title(names[i], fontsize=30)
-			ax.tick_params(axis='x', labelsize=30)
-			ax.tick_params(axis='y', labelsize=30)
-			ax.spines['right'].set_visible(False)
-			ax.spines['top'].set_visible(False)
-
+				continue
 			if x_axis == 'generation':
-				ax.set_xlabel('Generation number', fontsize=30)
-				max_gen = len(start_generation_indices)
-				ax.set_xticks(range(max_gen + 1))
-				# Set limit from 0 to the total number of generations
-				ax.set_xlim(0, max_gen)
+				duration = gen_time[-1] - gen_time[0]
+				x = gen_number + (gen_time - gen_time[0]) / duration
 			else:
-				ax.set_xlabel('Time (min)', fontsize=30)
-				# Minutes on a MINUTES axis: this is the correct form of the
-				# line removed from the generation axis above, not a regression.
-				for end_idx in end_generation_indices[:-1]:
-					ax.axvline((time[end_idx] - time[0]) / 60.,
-						color=sc.GRID, linewidth=2, zorder=0)
+				x = (gen_time - time[0]) / 60.
+			ax.plot(x, gen_counts, color=COLOR_LINE, linewidth=6)
+			if SHADE_ZERO:
+				self._shade_zero_runs(ax, x, gen_counts)
+			gen_number += 1
 
-		# Remove any empty subplots
-		for i in range(num_groups, rows * cols):
-			fig.delaxes(axes[i])
+		ax.set_ylabel('%s counts' % molecule_type, fontsize=30)
+		ax.set_title(name, fontsize=30)
+		ax.tick_params(axis='x', labelsize=30)
+		ax.tick_params(axis='y', labelsize=30)
+		ax.spines['right'].set_visible(False)
+		ax.spines['top'].set_visible(False)
 
-		plt.tight_layout()
-		# The generation axis keeps its historical filename (no infix), so
-		# existing outputs regenerate under the same names.
-		infix = '' if x_axis == 'generation' else '_time'
-		exportFigure(plt, plotOutDir,
-			plotOutFileName + '_%s_%s%s_seed%06d' % (
-				molecule_type, set_name, infix, seed),
-			metadata)
-		plt.close('all')
+		if x_axis == 'generation':
+			ax.set_xlabel('Generation number', fontsize=30)
+			max_gen = len(start_generation_indices)
+			# A tick per generation collides at this font size once the window
+			# is more than a handful of generations wide, so thin them to at
+			# most MAX_GEN_XTICKS. Unit width still means one generation.
+			step = max(1, -(-(max_gen + 1) // MAX_GEN_XTICKS))
+			ax.set_xticks(range(0, max_gen + 1, step))
+			# Set limit from 0 to the total number of generations
+			ax.set_xlim(0, max_gen)
+		else:
+			ax.set_xlabel('Time (min)', fontsize=30)
+			# Minutes on a MINUTES axis: this is the correct form of the
+			# line removed from the generation axis above, not a regression.
+			for end_idx in end_generation_indices[:-1]:
+				ax.axvline((time[end_idx] - time[0]) / 60.,
+					color=sc.GRID, linewidth=2, zorder=0)
 
-	def _write_trace_tsv(self, plotOutDir, plotOutFileName, set_name, seed,
-			names, monomer_counts, time, cell_paths,
-			start_generation_indices, end_generation_indices):
-		"""Dump the plotted monomer traces, so both figures can be redrawn
-		locally without simOut.
+	def _write_trace_tsv(self, seed_dir, names, monomer_counts, cistron_counts,
+			time, cell_paths, start_generation_indices, end_generation_indices):
+		"""Dump the plotted traces, so every figure can be redrawn locally
+		without simOut.
 
 		One row per timestep: the absolute generation number, absolute time in
 		seconds, minutes rebased to the first plotted generation, the
 		within-generation fraction (the generation axis's x, minus the integer
-		part), then one column per gene.
+		part), then a <gene>_monomer column per gene followed by a <gene>_mRNA
+		column per gene, in both cases in panel order.
 		"""
-		path = os.path.join(plotOutDir, plotOutFileName
-			+ '_traces_%s_seed%06d.tsv' % (set_name, seed))
+		os.makedirs(seed_dir, exist_ok=True)
+		path = os.path.join(seed_dir, 'traces.tsv')
 		n_rows = len(time)
 		generation = np.full(n_rows, -1, dtype=int)
 		gen_fraction = np.zeros(n_rows)
@@ -477,14 +502,16 @@ class Plot(cohortAnalysisPlot.CohortAnalysisPlot):
 			writer = csv.writer(f, delimiter='\t')
 			writer.writerow(
 				['generation', 'time_s', 'time_min', 'gen_fraction']
-				+ list(names))
+				+ ['%s_monomer' % n for n in names]
+				+ ['%s_mRNA' % n for n in names])
 			for r in range(n_rows):
 				writer.writerow([
 					generation[r],
 					'%.3f' % time[r],
 					'%.5f' % ((time[r] - t0) / 60.),
 					'%.6f' % gen_fraction[r],
-					] + [int(v) for v in monomer_counts[r]])
+					] + [int(v) for v in monomer_counts[r]]
+					+ [int(v) for v in cistron_counts[r]])
 		print('  wrote %s' % path)
 
 
