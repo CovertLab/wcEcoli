@@ -44,8 +44,8 @@ def _constants():
 	return constants
 
 
-# Shared constants 
-IGNORE_FIRST_N_GENS = 8
+# Shared constants set when running analysis scripts 
+IGNORE_FIRST_N_GENS = int(os.environ.get('SUBGEN_IGNORE_FIRST_N_GENS', 8))
 N_SEEDS = 128
 SEED_RANGE = np.arange(0, N_SEEDS)
 MAX_DOUBLING_MIN = 180.0 # mins
