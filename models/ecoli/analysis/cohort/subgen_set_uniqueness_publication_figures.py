@@ -24,9 +24,10 @@ its panel label so a file can be matched to its slot on the slide:
   Panel F -- fig3F_gene_frequency: distribution over subgenerational genes of
       the percentage of cells expressing each gene. Two variants also include
       the possibly-subgen genes (CI includes 1): pooled in the same color
-      (fig3F_gene_frequency_with_possibly), and stacked on the subgen genes in
-      their own color (fig3F_gene_frequency_with_possibly_split). All three
-      share the same bins over the subgen range. The variants are drawn only
+      (fig3F_gene_frequency_with_possibly), and as their own translucent,
+      outlined teal distribution overlaid on the subgen one
+      (fig3F_gene_frequency_with_possibly_overlay). All three share the same
+      bins over the subgen range. The variants are drawn only
       when --category is subgen.
 
 Panel G (protein memory) is drawn by subgen_protein_memory.py, which needs the
@@ -301,14 +302,14 @@ def _frequency_bins(pct_subgen, pct_all, n_bins=40):
 	return np.concatenate([edges, edges[-1] + width * np.arange(1, n_extra + 1)])
 
 
-def figure_gene_frequency(B, out_dir, B_possibly=None, split=False):
+def figure_gene_frequency(B, out_dir, B_possibly=None, overlay=False):
 	"""Plot the distribution over genes of the % of cells expressing each gene.
 
 	With B_possibly=None, plot the subgen genes alone (fig3F_gene_frequency).
 	Otherwise also include the possibly-subgen genes, either pooled with the
 	subgen genes in one color (fig3F_gene_frequency_with_possibly) or, with
-	split=True, stacked on top of them in their own color
-	(fig3F_gene_frequency_with_possibly_split).
+	overlay=True, as their own translucent, outlined distribution drawn over
+	the subgen one (fig3F_gene_frequency_with_possibly_overlay).
 	"""
 	pct = 100.0 * B.sum(axis=1) / B.shape[1]
 	fig, ax = plt.subplots(figsize=(5.6, 4.0))
@@ -322,14 +323,30 @@ def figure_gene_frequency(B, out_dir, B_possibly=None, split=False):
 		pct_possibly = 100.0 * B_possibly.sum(axis=1) / B_possibly.shape[1]
 		pct_all = np.concatenate([pct, pct_possibly])
 		bins = _frequency_bins(pct, pct_all)
-		if split:
-			name = 'fig3F_gene_frequency_with_possibly_split'
-			ax.hist([pct, pct_possibly], bins=bins, stacked=True,
-				color=[ACCENT, sc.PALETTE['possibly_subgen']],
-				edgecolor='white', linewidth=0.4,
-				label=['Subgen (n = {:,})'.format(pct.size),
-					'Possibly subgen (n = {:,})'.format(pct_possibly.size)])
-			ax.legend(frameon=False, fontsize=10.5, loc='upper right')
+		if overlay:
+			# Possibly-subgen bars sit over the subgen bars from the same
+			# baseline: a translucent fill plus a solid outline keeps both
+			# distributions readable where they share bins.
+			name = 'fig3F_gene_frequency_with_possibly_overlay'
+			teal = sc.PALETTE['possibly_subgen']
+			# Start the possibly-subgen bins at its first occupied bin so the
+			# step outline does not trace the x-axis through empty bins.
+			first = max(np.searchsorted(bins, pct_possibly.min(), 'right') - 1, 0)
+			bins_possibly = bins[first:]
+			ax.hist(pct, bins=bins, color=ACCENT, edgecolor='white',
+				linewidth=0.4, zorder=2)
+			ax.hist(pct_possibly, bins=bins_possibly, color=teal, alpha=0.55,
+				edgecolor='none', zorder=3)
+			ax.hist(pct_possibly, bins=bins_possibly, histtype='step',
+				color=teal, linewidth=1.6, zorder=4)
+			ax.legend(handles=[
+				Patch(facecolor=ACCENT,
+					label='Subgen (n = {:,})'.format(pct.size)),
+				Patch(facecolor=matplotlib.colors.to_rgba(teal, 0.55),
+					edgecolor=teal, linewidth=1.6,
+					label='Possibly subgen (n = {:,})'.format(
+						pct_possibly.size))],
+				frameon=False, fontsize=10.5, loc='upper right')
 		else:
 			name = 'fig3F_gene_frequency_with_possibly'
 			ax.hist(pct_all, bins=bins, color=ACCENT, edgecolor='white',
@@ -474,8 +491,8 @@ def main():
 			'possibly_subgen')
 		B_possibly, _ = subset_to_subgen(M, row_ids, p_gene_ids, p_cistron_ids)
 		if B_possibly.shape[0]:
-			for split in (False, True):
-				figure_gene_frequency(B, args.output_dir, B_possibly, split)
+			for overlay in (False, True):
+				figure_gene_frequency(B, args.output_dir, B_possibly, overlay)
 
 	# Panel B. Canonical, order-independent column order for reproducible
 	# sampling: the zero-padded `seed%06d_gen%03d` labels sort lexicographically
