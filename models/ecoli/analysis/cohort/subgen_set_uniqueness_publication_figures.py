@@ -21,9 +21,13 @@ its panel label so a file can be matched to its slot on the slide:
       callouts at 1, 10 and 100 cells and at the full population.
   Panel E -- fig3E_jaccard: distribution of pairwise Jaccard similarity over all
       cell pairs, with a dashed mean line (mean, SD in the legend).
-  Panel ? -- fig3_unlabeled_gene_frequency: distribution over subgenerational
-      genes of the percentage of cells expressing each gene (the panel marked
-      "?" on the slide).
+  Panel F -- fig3F_gene_frequency: distribution over subgenerational genes of
+      the percentage of cells expressing each gene. Two variants also include
+      the possibly-subgen genes (CI includes 1): pooled in the same color
+      (fig3F_gene_frequency_with_possibly), and stacked on the subgen genes in
+      their own color (fig3F_gene_frequency_with_possibly_split). All three
+      share the same bins over the subgen range. The variants are drawn only
+      when --category is subgen.
 
 Panel G (protein memory) is drawn by subgen_protein_memory.py, which needs the
 per-cell protein-absence extraction rather than the binary matrix used here.
@@ -286,20 +290,58 @@ def figure_accumulation(B, out_dir, x_break=250):
 		n_total, acc[-1], n_observed))
 
 
-# Figure 3, unlabeled "?" panel -- how many cells express each subgen gene.
-def figure_gene_frequency(B, out_dir):
-	"""Plot the distribution over subgen genes of the % of cells expressing it."""
+# Figure 3F -- how many cells express each subgen gene.
+def _frequency_bins(pct_subgen, pct_all, n_bins=40):
+	"""Return histogram bin edges: n_bins equal bins spanning the subgen genes
+	(the original panel F binning), extended at the same width to cover pct_all,
+	so every panel-F variant shares identical bars over the subgen range."""
+	edges = np.linspace(pct_subgen.min(), pct_subgen.max(), n_bins + 1)
+	width = edges[1] - edges[0]
+	n_extra = max(int(np.ceil((pct_all.max() - edges[-1]) / width)), 0)
+	return np.concatenate([edges, edges[-1] + width * np.arange(1, n_extra + 1)])
+
+
+def figure_gene_frequency(B, out_dir, B_possibly=None, split=False):
+	"""Plot the distribution over genes of the % of cells expressing each gene.
+
+	With B_possibly=None, plot the subgen genes alone (fig3F_gene_frequency).
+	Otherwise also include the possibly-subgen genes, either pooled with the
+	subgen genes in one color (fig3F_gene_frequency_with_possibly) or, with
+	split=True, stacked on top of them in their own color
+	(fig3F_gene_frequency_with_possibly_split).
+	"""
 	pct = 100.0 * B.sum(axis=1) / B.shape[1]
 	fig, ax = plt.subplots(figsize=(5.6, 4.0))
-	ax.hist(pct, bins=40, color=ACCENT, edgecolor='white', linewidth=0.4)
+	if B_possibly is None:
+		name = 'fig3F_gene_frequency'
+		ax.hist(pct, bins=_frequency_bins(pct, pct), color=ACCENT,
+			edgecolor='white', linewidth=0.4)
+		ax.set_ylabel('Number of subgen genes')
+		pct_all = pct
+	else:
+		pct_possibly = 100.0 * B_possibly.sum(axis=1) / B_possibly.shape[1]
+		pct_all = np.concatenate([pct, pct_possibly])
+		bins = _frequency_bins(pct, pct_all)
+		if split:
+			name = 'fig3F_gene_frequency_with_possibly_split'
+			ax.hist([pct, pct_possibly], bins=bins, stacked=True,
+				color=[ACCENT, sc.PALETTE['possibly_subgen']],
+				edgecolor='white', linewidth=0.4,
+				label=['Subgen (n = {:,})'.format(pct.size),
+					'Possibly subgen (n = {:,})'.format(pct_possibly.size)])
+			ax.legend(frameon=False, fontsize=10.5, loc='upper right')
+		else:
+			name = 'fig3F_gene_frequency_with_possibly'
+			ax.hist(pct_all, bins=bins, color=ACCENT, edgecolor='white',
+				linewidth=0.4)
+		ax.set_ylabel('Number of genes')
 	ax.set_xlim(left=0)
 	ax.set_xlabel('Cells expressing the gene (%)')
-	ax.set_ylabel('Number of subgen genes')
 	_despine(ax)
 	ax.yaxis.set_major_formatter(COMMA)
-	_save(fig, out_dir, 'fig3_unlabeled_gene_frequency', dpi=300)
-	print('fig3_unlabeled_gene_frequency: %d genes, %% cells expressing min %.1f'
-		' median %.1f max %.1f' % (pct.size, pct.min(), np.median(pct), pct.max()))
+	_save(fig, out_dir, name, dpi=300)
+	print('%s: %d genes, %% cells expressing min %.1f median %.1f max %.1f'
+		% (name, pct_all.size, pct_all.min(), np.median(pct_all), pct_all.max()))
 
 
 # Figure 3E -- pairwise Jaccard similarity of cell pairs.
@@ -424,7 +466,16 @@ def main():
 	figure_count_distribution(B, n_cells_total, args.output_dir)  # panel C
 	figure_accumulation(B, args.output_dir)                       # panel D
 	figure_jaccard(B, args.output_dir)                            # panel E
-	figure_gene_frequency(B, args.output_dir)                     # panel ?
+	figure_gene_frequency(B, args.output_dir)                     # panel F
+
+	# Panel F variants that add the possibly-subgen genes (CI includes 1).
+	if args.category == 'subgen':
+		p_gene_ids, p_cistron_ids = load_subgen_ids(args.pergene,
+			'possibly_subgen')
+		B_possibly, _ = subset_to_subgen(M, row_ids, p_gene_ids, p_cistron_ids)
+		if B_possibly.shape[0]:
+			for split in (False, True):
+				figure_gene_frequency(B, args.output_dir, B_possibly, split)
 
 	# Panel B. Canonical, order-independent column order for reproducible
 	# sampling: the zero-padded `seed%06d_gen%03d` labels sort lexicographically
