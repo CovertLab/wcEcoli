@@ -49,11 +49,24 @@ from models.ecoli.sim.variants.new_gene_internal_shift import (
 # analysed (decision D3). Candidates differ in whether the gfp transcription
 # unit is flagged overcrowded, which is what produces the attenuation
 # artifacts in the proteome scatter.
+# A ladder in RBS strength at a fixed promoter, plus one stronger promoter.
+# RBS is the axis that sets ribosomes per mRNA, which is the only quantity
+# directional mRNA decay can change for a monocistronic gene like gfp (its
+# single cistron starts at position 0, so the degradation front clears it in
+# the first timestep and only ribosome protection remains). Varying RBS
+# therefore varies the size of the effect under test, while index 1 holds
+# transcription at the same level with no translation at all and so should
+# show no effect: a built-in negative control.
+#
+# Completion, growth and GFP share below are from the 20240502 grid and are
+# indicative only; they move with the current code.
 NEW_GENE_DESIGNS = [
 	(0, 0),         # 0: no GFP control
-	(8, 10),        # 1: high burden without transcription-unit overcrowding
-	(8.66, 5),      # 2: intermediate
-	(9, 5),         # 3: at the RNAP spacing cap
+	(8, 0),         # 1: transcribed, not translated   done 1.00  GFP  0%
+	(8, 1),         # 2: low burden                    done 0.88  GFP  6%
+	(8, 5),         # 3: moderate, fully stable        done 1.00  GFP 25%
+	(8, 10),        # 4: high, some lineages lost      done 0.88  GFP 35%
+	(9, 5),         # 5: highest, most lineages lost   done 0.75  GFP 44%
 ]
 
 assert NEW_GENE_DESIGNS[0] == (0, 0), (

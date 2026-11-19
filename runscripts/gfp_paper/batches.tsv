@@ -1,5 +1,7 @@
 batch_id	purpose	status	n_sims	variant	seeds	generations	sherlock_path	git_commit	sim_data_sha256	cpu_gen	started	finished	notes
-smoke	setup check before production	planned	108	new_gene_design_list	3	12				 		pinned-hardware + listener inventory check
+smoke	setup check before production	planned	108	new_gene_design_list	3	12				 		pinned-hardware + listener inventory check	3 variants (0,3,5) x 3 seeds x 12 gens; listener inventory, seed-matched pre-induction gens, bitwise rerun, crowding-flag drop, resolved insertion coord, disk per generation
+decaytestA	decay comparison arm A: paper branch	planned	1440	new_gene_design_list	10	24							EVALUATION BATCH, not paper data. 6 variants x 10 seeds = 60 lineages (fills 64 parallel slots). Ladder: control, p8/RBS0 (negative control), p8/RBS1, p8/RBS5, p8/RBS10, p9/RBS5
+decaytestB	decay comparison arm B: ng-centralization-local-test	planned	1440	new_gene_design_list	10	24							EVALUATION BATCH, not paper data. Same design as decaytestA, seeds matched. Needs its own ParCa (directional decay + PDR_combo_2020 change sim_data)
 B1	promoter x RBS scan	planned	6000	new_gene_internal_shift	5	24					 	49 variants; +5 extra control seeds
 B1deep	extra seeds on a subset of B1	planned	4320	new_gene_internal_shift	15	24					 	subset chosen from the B1 scan
 W	wildtype, for kcat estimation	planned	773	wildtype	TBC	TBC					 	match 20260302.164308__wildtype_minimal_media exactly; do NOT enlarge
