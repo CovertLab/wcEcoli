@@ -186,3 +186,7 @@ TERMINUS_MIN_FRACTION = 0.90
 #	                dashed reference; the same name with this suffix
 # When D4 is decided, drop one version in every script at once.
 DOUBLING_TIME_PART = 'doubling_time'
+
+# The showcase design for Figure 1 (decision D3): the design whose mean GFP
+# proteome share is nearest this, among designs with surviving lineages.
+SHOWCASE_PROTEOME_SHARE = 0.35

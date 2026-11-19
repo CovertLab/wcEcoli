@@ -88,6 +88,9 @@ TAGS = {
 		'gfp_paper_machinery_traces_median_of_lineages.py',
 		'gfp_paper_growth_vs_ribosome_counts_per_cycle.py',
 		'gfp_paper_active_rnap_ribosome_allocation.py',
+		'gfp_paper_induction_traces_mrna_protein_growth_mass.py',
+		'gfp_paper_proteome_scatter_showcase_vs_no_gfp.py',
+		'gfp_paper_what_decreases_with_gfp_bars.py',
 		],
 	'PAPER': [
 		"adder_sizer.py",

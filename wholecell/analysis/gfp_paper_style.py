@@ -327,6 +327,62 @@ def hatched_legend_handle(label: str = 'some lineages did not complete'):
 		linewidth=0.6, label=label)
 
 
+SHARE_FLOOR = 1e-8
+SHARE_BACKGROUND = '#CDD1CF'     # all other genes: neutral, not control grey
+
+
+def gene_share_scatter(ax, x, y, is_ribosomal_protein, is_rnap, is_new_gene,
+		floor: float = SHARE_FLOOR) -> dict:
+	"""
+	Log-log scatter of each gene's share without (x) and with (y) GFP.
+
+	Shared by the transcriptome (3A) and proteome (1C) panels so they read
+	the same way. Ribosomal proteins, RNAP subunits and GFP are highlighted
+	in their entity colours over the rest in a neutral grey. A share below
+	the floor (usually zero) is drawn on the floor, so gfp, absent without
+	GFP, sits at the left edge; genes at zero in both are omitted.
+
+	Returns:
+		counts for the sidecar: 'shown', 'at_floor', 'omitted'
+	"""
+	x = np.asarray(x, dtype=float)
+	y = np.asarray(y, dtype=float)
+	keep = (x > 0) | (y > 0)
+	at_floor = keep & ((x < floor) | (y < floor))
+	x = np.maximum(x, floor)
+	y = np.maximum(y, floor)
+	ribosomal = np.asarray(is_ribosomal_protein, dtype=bool)
+	rnap = np.asarray(is_rnap, dtype=bool)
+	new = np.asarray(is_new_gene, dtype=bool)
+	ax.plot([floor, 1], [floor, 1], color=INK_MUTED, linestyle=(0, (4, 3)),
+		linewidth=0.8, zorder=1)
+	for label, color, size, mask, z in (
+			('all other genes', SHARE_BACKGROUND, 6,
+				~(ribosomal | rnap | new), 2),
+			('ribosomal proteins', COLORS['ribosome'], 12, ribosomal, 3),
+			('RNA polymerase subunits', COLORS['rnap'], 12, rnap, 3),
+			('GFP', COLORS['gfp'], 30, new, 3)):
+		mask = mask & keep
+		ax.scatter(x[mask], y[mask], s=size, c=color, linewidths=0.3,
+			edgecolors='white', label=label, zorder=z, clip_on=False)
+	exponents = range(int(np.log10(floor)), 1, 2)
+	ticks = [10.0 ** e for e in exponents]
+	labels = ['1' if e == 0 else '$10^{%d}$' % e for e in exponents]
+	ax.set_xscale('log')
+	ax.set_yscale('log')
+	ax.set_xticks(ticks)
+	ax.set_xticklabels(labels)
+	ax.set_yticks(ticks)
+	ax.set_yticklabels(labels)
+	ax.minorticks_off()
+	ax.set_xlim(floor, 1)
+	ax.set_ylim(floor, 1)
+	ax.set_aspect('equal')
+	ax.legend(loc='upper left', handletextpad=0.3)
+	return {'shown': int(keep.sum()), 'at_floor': int(at_floor.sum()),
+		'omitted': int((~keep).sum())}
+
+
 def reference_line(ax, y: float, label: str, horizontal: bool = True):
 	"""A dashed physical limit, labelled at its right-hand end in muted ink."""
 	if horizontal:

@@ -1,9 +1,9 @@
 panel	content	kind	script	batch	status	notes
 1A	Model + insertion schematic	schematic	(svg, drawn by hand)		todo	Wording, remove fitting arrow; insertion site label after D1
-1B	Induction traces (mRNA, protein, growth, mass)	multigen	models/ecoli/analysis/multigen/gfp_paper_induction_traces_mrna_protein_growth_mass.py	B2	todo	Add divergence p-value bar; growth rate; Write growth rate + doubling time versions (README, Conventions)
-1C	Proteome scatter, showcase vs no GFP	variant	models/ecoli/analysis/variant/gfp_paper_proteome_scatter_showcase_vs_no_gfp.py	B2	todo	Attenuation-gene check drives D3
+1B	Induction traces (mRNA, protein, growth, mass)	variant	models/ecoli/analysis/variant/gfp_paper_induction_traces_mrna_protein_growth_mass.py	B2	draft	Add divergence p-value bar; growth rate; Now a variant analysis (needs every lineage + control band); divergence bar from paired_divergence; representative lineage = median relative growth; growth rate + doubling time versions written
+1C	Proteome scatter, showcase vs no GFP	variant	models/ecoli/analysis/variant/gfp_paper_proteome_scatter_showcase_vs_no_gfp.py	B2	draft	Attenuation-gene check drives D3; Mass shares of all monomers; same scatter helper as 3A; sidecar lists largest movers for the attenuation check
 1D	Proteome fold change vs experiment	experimental	(blank until data)	B2	blank	Blank until data
-1E	What decreases with GFP (bars)	variant	models/ecoli/analysis/variant/gfp_paper_what_decreases_with_gfp_bars.py	B2	todo	Concentration, reorder, combined relative version
+1E	What decreases with GFP (bars)	variant	models/ecoli/analysis/variant/gfp_paper_what_decreases_with_gfp_bars.py	B2	draft	Concentration, reorder, combined relative version; Enzymes as concentration (uM, all FBA catalysts); order set by BARS; relative version written; growth rate + doubling time versions written
 2A	Promoter / RBS design schematic	schematic	(svg, drawn by hand)		todo	
 2B	GFP share + growth heatmaps	variant	models/ecoli/analysis/variant/gfp_paper_gfp_share_growth_heatmaps.py	B1	draft	Growth rate relative; Growth rate + doubling time versions written; Growth heatmap uses a neutral ramp (blue = RNAP); designs that lost every lineage = hatched cell with a dash
 2C	Growth vs GFP share (+ experiments)	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_share_experiments.py	B1	draft	Experimental overlay later; Growth rate + doubling time versions written; Fit includes the control (1 at 0%); experiments drawn from runscripts/gfp_paper/data/growth_vs_gfp_share_experiments.tsv when present

@@ -74,7 +74,7 @@ from wholecell.utils import parallelization
 
 # Bump whenever read_cycle changes what a column means, so stale caches are
 # rebuilt rather than silently reused.
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 CACHE_SUBDIR = os.path.join('paper_figures', '_cache')
 REBUILD_ENV = 'GFP_PAPER_REBUILD_CACHE'
 
@@ -562,6 +562,12 @@ def read_cycle(path: str, gene: GeneInfo, machinery: MachineryInfo
 	row['rnap_initiations_per_s'] = rate('RnapData', 'didInitialize')
 
 	row['ppgpp_conc'] = _mean(cell.column('GrowthLimits', 'ppgpp_conc'))
+	row['oric'] = _mean(cell.column('ReplicationData', 'numberOfOric'))
+	# Metabolic enzymes: every FBA catalyst molecule (complexes counted once),
+	# summed, for the total enzyme concentration in Figure 1E.
+	catalysts = cell.column('FBAResults', 'catalyst_counts')
+	row['enzyme_counts'] = (_mean(catalysts.sum(axis=1))
+		if catalysts is not None and catalysts.ndim == 2 else np.nan)
 	row['missing_columns'] = ';'.join(sorted(set(cell.missing)))
 	return row
 
@@ -600,6 +606,8 @@ def add_derived_columns(df: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 		df['total_ribosomes_uM'] = _safe_ratio(df['total_ribosomes'],
 			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
 		df['total_rnap_uM'] = _safe_ratio(df['total_rnap'],
+			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
+		df['enzyme_uM'] = _safe_ratio(df['enzyme_counts'],
 			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
 		df['gfp_rnap_share'] = _safe_ratio(
 			df['rnap_on_gfp'], df['active_rnap'])
@@ -726,7 +734,8 @@ RAW_COLUMNS = (
 	'active_ribosomes', 'active_rnap', 'free_ribosomes', 'ppgpp_conc',
 	'free_rnap', 'rpoc_gene_copies', 'rpoc_transcription_per_s',
 	'rpoc_translation_per_s', 'rpoc_monomers', 'rnap_formed_per_s',
-	'rnap_initiations_per_s', 'cellVolume', 'ribosomes_making_gfp',
+	'rnap_initiations_per_s', 'cellVolume', 'ribosomes_making_gfp', 'oric',
+	'enzyme_counts',
 )
 
 
@@ -1333,60 +1342,110 @@ def pooled_response(events: pd.DataFrame, column: str,
 # --------------------------------------------------------------------------
 # Machinery traces through the run (Figure 2E)
 TRACE_POINTS = 10       # equal fractions of each cell cycle
+# Quantities a trace can follow; each is a per-time-step series in one cell.
+TRACE_SERIES = ('rnap', 'ribosomes', 'gfp_mrna', 'gfp_protein',
+	'growth_rate', 'cell_mass')
+
+
+def _trace_series(cell, name, gene_dict, full_rnap):
+	"""One per-time-step series for a cell, or None if it cannot be read."""
+	if name in ('rnap', 'ribosomes'):
+		names = cell.attribute('UniqueMoleculeCounts', 'uniqueMoleculeIds')
+		bulk_names = cell.attribute('BulkMolecules', 'objectNames')
+		molecule = 'active_RNAP' if name == 'rnap' else 'active_ribosome'
+		i = _index(names, molecule)
+		free = ([full_rnap] if name == 'rnap'
+			else [gene_dict['s30_id'], gene_dict['s50_id']])
+		idx = [_index(bulk_names, m) for m in free]
+		if i is None or None in idx:
+			return None
+		active = cell.column('UniqueMoleculeCounts', 'uniqueMoleculeCounts',
+			indices=[i])[:, 0]
+		bulk = cell.column('BulkMolecules', 'counts', indices=idx)
+		return active + (bulk[:, 0] if name == 'rnap' else bulk.min(axis=1))
+	if name == 'gfp_mrna':
+		counts, ids = _physical_mrna_matrix(cell.path)
+		if counts is None or gene_dict['rna_id'] not in ids:
+			return None
+		return counts[:, ids.index(gene_dict['rna_id'])]
+	if name == 'gfp_protein':
+		m = _index(cell.attribute('MonomerCounts', 'monomerIds'),
+			gene_dict['monomer_id'])
+		return None if m is None else cell.column('MonomerCounts',
+			'monomerCounts', indices=[m])[:, 0]
+	if name == 'growth_rate':
+		values = cell.column('Mass', 'instantaneous_growth_rate')
+		if values is None:
+			return None
+		values = values.astype(float) * SECONDS_PER_HOUR
+		values[0] = np.nan          # recorded before any growth happened
+		return values
+	if name == 'cell_mass':
+		return cell.column('Mass', 'cellMass')
+	raise ValueError('unknown trace series %r' % name)
 
 
 def _cycle_trace(args):
-	"""Mean total RNAP and ribosomes in each tenth of one cell cycle."""
-	path, s30, s50, full_rnap, n_points = args
+	"""Mean of each series in each of n_points fractions of one cycle."""
+	path, gene_dict, full_rnap, n_points, series = args
 	try:
 		cell = _Cell(path)
-		names = cell.attribute('UniqueMoleculeCounts', 'uniqueMoleculeIds')
-		ia, ir = _index(names, 'active_RNAP'), _index(names, 'active_ribosome')
-		bulk_names = cell.attribute('BulkMolecules', 'objectNames')
-		ib = [_index(bulk_names, m) for m in (s30, s50, full_rnap)]
-		if None in (ia, ir) or None in ib:
-			return []
-		unique = cell.column('UniqueMoleculeCounts', 'uniqueMoleculeCounts')
-		bulk = cell.column('BulkMolecules', 'counts', indices=ib)
+		values = {name: _trace_series(cell, name, gene_dict, full_rnap)
+			for name in series}
 	except Exception:                                       # noqa: BLE001
 		return []
-	if unique is None or bulk is None or len(unique) < n_points:
+	lengths = {len(v) for v in values.values() if v is not None}
+	if len(lengths) != 1 or lengths.pop() < n_points:
 		return []
-	rnap = unique[:, ia] + bulk[:, 2]
-	ribosomes = unique[:, ir] + np.minimum(bulk[:, 0], bulk[:, 1])
-	edges = np.linspace(0, len(rnap), n_points + 1).astype(int)
-	return [dict(point=k, rnap=float(rnap[a:b].mean()),
-		ribosomes=float(ribosomes[a:b].mean()))
-		for k, (a, b) in enumerate(zip(edges[:-1], edges[1:]))]
+	n = len(next(v for v in values.values() if v is not None))
+	edges = np.linspace(0, n, n_points + 1).astype(int)
+	rows = []
+	for k, (a, b) in enumerate(zip(edges[:-1], edges[1:])):
+		row = {'point': k}
+		for name, v in values.items():
+			row[name] = (float(np.nanmean(v[a:b])) if v is not None
+				and np.isfinite(v[a:b]).any() else np.nan)
+		rows.append(row)
+	return rows
 
 
 def cycle_traces(data: 'PaperData', variants: Sequence[int],
-		plot_out_dir: str, cpus: int = 1, n_points: int = TRACE_POINTS
-		) -> pd.DataFrame:
+		plot_out_dir: str, cpus: int = 1, n_points: int = TRACE_POINTS,
+		series: Sequence[str] = ('rnap', 'ribosomes')) -> pd.DataFrame:
 	"""
-	Total RNAP and total ribosomes through every generation of each lineage,
-	as the mean over each of n_points equal fractions of the cell cycle.
+	Chosen quantities through every generation of each lineage, as the mean
+	over each of n_points equal fractions of the cell cycle.
 
-	Totals are active plus free, as in the scalar tables. Every generation is
-	included, not just the analysis window, since the traces show the run from
-	the wildtype generations through induction. Columns: variant, seed,
-	generation, point, x (generation + fraction of the cycle at the bin
-	centre), rnap, ribosomes. Cached per variant.
+	Splitting each cycle into equal fractions lines lineages up generation
+	by generation even though their cycles differ in length. RNAP and
+	ribosomes are totals (active plus free), as in the scalar tables; gfp
+	mRNA is the physical count; growth rate is per hour. Every generation is
+	included, not just the analysis window.
+
+	Returns:
+		columns variant, seed, generation, point, x (generation + fraction of
+		the cycle at the bin centre), and one per series. Cached per
+		(variant, series, n_points).
 	"""
-	gene = data.gene
-	machinery = data.machinery
-	if machinery is None:
+	unknown = set(series) - set(TRACE_SERIES)
+	if unknown:
+		raise ValueError('unknown trace series %s; expected %s'
+			% (sorted(unknown), TRACE_SERIES))
+	if data.machinery is None:
 		raise ValueError('PaperData has no machinery ids')
+	gene_dict = asdict(data.gene)
 	cache_dir = os.path.join(plot_out_dir, CACHE_SUBDIR)
 	os.makedirs(cache_dir, exist_ok=True)
+	tag = '%d_%s' % (n_points, '-'.join(series))
 	frames = []
 	for variant in variants:
 		rows = data.cycles[data.cycles['variant'] == variant].sort_values(
 			['seed', 'generation'])
-		cache = os.path.join(cache_dir, 'traces_%06d.csv' % variant)
+		cache = os.path.join(cache_dir, 'traces_%s_%06d.csv' % (tag, variant))
 		stamp = cache[:-4] + '.json'
 		key = json.loads(json.dumps({'version': CACHE_VERSION,
-			'n_points': n_points, 'paths': list(rows['path'])}))
+			'n_points': n_points, 'series': list(series),
+			'paths': list(rows['path'])}))
 		frame = None
 		if (os.path.exists(cache) and os.path.exists(stamp)
 				and not os.environ.get(REBUILD_ENV)):
@@ -1394,8 +1453,8 @@ def cycle_traces(data: 'PaperData', variants: Sequence[int],
 				if json.load(f) == key:
 					frame = pd.read_csv(cache)
 		if frame is None:
-			jobs = [(p, gene.s30_id, gene.s50_id, machinery.full_rnap_id,
-				n_points) for p in rows['path']]
+			jobs = [(p, gene_dict, data.machinery.full_rnap_id, n_points,
+				tuple(series)) for p in rows['path']]
 			if cpus > 1 and len(jobs) > 1:
 				pool = parallelization.pool(min(cpus, len(jobs)))
 				results = pool.map(_cycle_trace, jobs)
@@ -1408,7 +1467,7 @@ def cycle_traces(data: 'PaperData', variants: Sequence[int],
 				**r) for seed, gen, trace in zip(rows['seed'],
 				rows['generation'], results) for r in trace]
 			frame = pd.DataFrame(records, columns=['variant', 'seed',
-				'generation', 'x', 'point', 'rnap', 'ribosomes'])
+				'generation', 'x', 'point'] + list(series))
 			suffix = '.%d.tmp' % os.getpid()
 			frame.to_csv(cache + suffix, index=False)
 			with open(stamp + suffix, 'w') as f:

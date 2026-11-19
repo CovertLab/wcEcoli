@@ -62,7 +62,7 @@ A ratio panel (high GFP / no GFP) takes the doubling-time ratio instead,
 which reads above 1. Keep the selection, survivors, window and style of the
 two versions identical, so the only difference is the metric; draw both from
 one helper rather than two copies of the plotting code. Written examples:
-3C (`_growth` / `_doubling_time`), 3H, 5H. When D4 is decided, delete one
+1B, 1E, 2B, 2C, 2F, 3C (`_growth` / `_doubling_time`), 3H, 5H. When D4 is decided, delete one
 version from every script in one change. Cooper-Helmstetter (5B) uses the
 doubling time regardless, because the formula needs the period.
 
