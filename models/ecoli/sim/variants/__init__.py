@@ -18,6 +18,7 @@ variants = [
 	'new_gene_burden_ladder',
 	'new_gene_burden_ladder_frozen',
 	'new_gene_burden_ladder_rich',
+	'new_gene_design_list',
 	'new_gene_internal_shift',
 	'new_gene_internal_shift_with_kcat',
 	'new_gene_phased_internal_shift',

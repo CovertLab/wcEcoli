@@ -1,0 +1,8 @@
+batch_id	purpose	status	n_sims	variant	seeds	generations	sherlock_path	git_commit	sim_data_sha256	cpu_gen	started	finished	notes
+smoke	setup check before production	planned	108	new_gene_design_list	3	12				 		pinned-hardware + listener inventory check
+B1	promoter x RBS scan	planned	6000	new_gene_internal_shift	5	24					 	49 variants; +5 extra control seeds
+B1deep	extra seeds on a subset of B1	planned	4320	new_gene_internal_shift	15	24					 	subset chosen from the B1 scan
+W	wildtype, for kcat estimation	planned	773	wildtype	TBC	TBC					 	match 20260302.164308__wildtype_minimal_media exactly; do NOT enlarge
+B2	focus designs, many seeds	planned	5760	new_gene_design_list	60	24					 	control must share seed numbers
+M1	wildtype + forced enzyme reduction	planned	1800	kcat_estimate_scale	8	TBC					 	needs the kcat table from W
+M2	GFP +/- kcat constraints	planned	6000	new_gene_internal_shift_with_kcat	TBC	24					 	needs kcat table + below-the-line set from B2
