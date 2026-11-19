@@ -5,7 +5,7 @@ SimulationData for the Complexation process
 import numpy as np
 from wholecell.utils import units
 from wholecell.utils.mc_complexation import mccBuildMatrices
-
+import pandas as pd
 
 class ComplexationError(Exception):
 	pass
@@ -80,9 +80,9 @@ class Complexation(object):
 		self.rates = np.full((reaction_index, ),
 			sim_data.constants.complexation_rate.asNumber(1/units.s))
 
-		self._stoich_matrix_I = np.array(stoichMatrixI)
-		self._stoich_matrix_J = np.array(stoichMatrixJ)
-		self._stoich_matrix_V = np.array(stoichMatrixV)
+		self._stoich_matrix_I = np.array(stoichMatrixI) # values contain indexes that correspond to values in self.molecule_names,
+		self._stoich_matrix_J = np.array(stoichMatrixJ) # values contain indexes that correspond to values in self.ids_reactions,
+		self._stoich_matrix_V = np.array(stoichMatrixV) # values correspond to the stoichiometric coefficient[i] of the nonzero molecule(s) values in self._stoich_matrix_I[i] in the reaction in self._stoich_matrix_J[i]
 		self._stoich_matrix_mass = np.array(stoichMatrixMass)
 
 		self.molecule_names = molecules
@@ -94,9 +94,9 @@ class Complexation(object):
 
 		# Create sparse matrix for monomer to complex stoichiometry
 		i, j, v, shape = self._buildStoichMatrixMonomers()
-		self._stoichMatrixMonomersI = i
-		self._stoichMatrixMonomersJ = j
-		self._stoichMatrixMonomersV = v
+		self._stoichMatrixMonomersI = i # values contain indexes that correspond to values in self.molecule_names,
+		self._stoichMatrixMonomersJ = j # values contain indexes that correspond to values in self.ids_complexes,
+		self._stoichMatrixMonomersV = v # values correspond to the stoichiometric coefficient[i] of the nonzero molecule(s) values in self._stoichMatrixMonomersI[i] in the complex in self._stoichMatrixMonomersJ[i]
 		self._stoichMatrixMonomersShape = shape
 
 		# Mass balance matrix
@@ -227,3 +227,14 @@ class Complexation(object):
 					else:
 						total[j] = x[j]*(np.absolute(val))
 		return total
+
+	def _view_matrix_with_row_and_col_names(self, rows, cols, matrix):
+		"""
+		Returns stoichiometry matrix as DataFrame with row and column labels.
+
+		NOTE:
+			for self.stoich_matrix(): rows=self.molecule_names, cols=self.ids_reactions
+			for self.stoich_matrix_monomers(): rows=self.molecule_names, cols=self.ids_complexes
+			for self.mass_matrix(): rows=self.molecule_names, cols=self.ids_reactions
+		"""
+		return pd.DataFrame(matrix, index=rows, columns=cols)

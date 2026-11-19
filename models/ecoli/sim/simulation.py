@@ -39,6 +39,7 @@ from models.ecoli.listeners.monomer_counts import MonomerCounts
 from models.ecoli.listeners.RNA_counts import RNACounts
 from models.ecoli.listeners.complexation_listener import ComplexationListener
 from models.ecoli.listeners.equilibrium_listener import EquilibriumListener
+from models.ecoli.listeners.two_component_system_listener import TwoComponentSystems
 from models.ecoli.listeners.dna_supercoiling import DnaSupercoiling
 from models.ecoli.listeners.rna_maturation_listener import RnaMaturationListener
 
@@ -111,6 +112,7 @@ class EcoliSimulation(Simulation):
 		RNACounts,
 		ComplexationListener,
 		EquilibriumListener,
+		TwoComponentSystems,
 		DnaSupercoiling,
 		RnaMaturationListener,
 		)

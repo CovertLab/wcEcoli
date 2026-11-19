@@ -25,8 +25,8 @@
 #   cd ~/dev/wcEcoli
 #   pyenv virtualenv 3.11.3 wcEcoli3 && pyenv local wcEcoli3
 #
-## Upgrade this virtual environment's installers:
-#   pip install --upgrade pip setuptools virtualenv virtualenvwrapper virtualenv-clone wheel
+## Upgrade this virtual environment's pip installer:
+#   pip install --upgrade pip
 #
 ## Install numpy (if it's the first time) then all the packages listed in this file (see
 ## docs/create-pyenv.md about whether to create a `~/.numpy-site.cfg` file and add
@@ -39,6 +39,8 @@
 #   python -c "import numpy as np; np.show_config()"
 #   runscripts/debug/numpy_benchmark.py
 #   python -c "import scipy; scipy.__config__.show()"
+#   python -c "import aesara; print(aesara.config.blas.ldflags)"
+#   python runscripts/debug/summarize_environment.py
 #   OPENBLAS_NUM_THREADS=1 python -m wholecell.tests.utils.test_library_performance
 #
 ## Build the Cython code:
@@ -46,7 +48,7 @@
 
 # Installers
 pip>=23.1
-setuptools>=67.6.1
+setuptools==73.0.1  # setuptools>=74.0.0 breaks aesara (via distutils changes?)
 virtualenv>=20.21.0
 virtualenv-clone>=0.5.7
 virtualenvwrapper>=4.8.4

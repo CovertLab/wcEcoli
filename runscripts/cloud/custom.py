@@ -125,7 +125,8 @@ class CustomWorkflow(WorkflowCLI):
 		# the owner_id, timestamp arg, and description arg match.
 		setattr(args, 'storage_basename', 'WCM')
 
-		self.DOCKER_IMAGE = f'gcr.io/{gcp.project()}/{owner_id}-wcm-code'
+		region = gcp.gcloud_get_config('compute/region')
+		self.DOCKER_IMAGE = f'{region}-docker.pkg.dev/{gcp.project()}/wcm/{owner_id}-wcm-code'
 		super().run(args)
 
 

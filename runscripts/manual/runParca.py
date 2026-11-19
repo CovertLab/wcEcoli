@@ -72,6 +72,7 @@ class RunParca(scriptBase.ScriptBase):
 			'description': args.description,
 			'operons': args.operons,
 			'new_genes': args.new_genes,
+			'protein_degradation_combo': args.protein_degradation_combo,
 			'remove_rrna_operons': args.remove_rrna_operons,
 			'remove_rrff': args.remove_rrff,
 			'stable_rrna': args.stable_rrna,

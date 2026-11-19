@@ -5,7 +5,7 @@
 #
 #     > docker build -f cloud/docker/runtime/Dockerfile -t ${USER}-wcm-runtime .
 #
-# (To build using the Cloud Build service and store in the Container Registry,
+# (To build using the Cloud Build service and store in an Artifact Registry,
 # run `cloud/build.sh`.)
 #
 # Add option `--build-arg from=ABC` to build from a different base image "ABC"
@@ -53,10 +53,10 @@ ARG NO_AVX2=0
 ENV NO_AVX2="$NO_AVX2"
 
 # Install OpenBLAS for numpy, scipy, and Aesara.
-ENV OPENBLAS_LABEL=v0.3.23
+ENV OPENBLAS_LABEL=v0.3.27
 RUN if [ -f ~/.numpy-site.cfg ]; then \
     (mkdir -p openblas && cd openblas \
-    && curl -SL https://github.com/xianyi/OpenBLAS/archive/${OPENBLAS_LABEL}.tar.gz | tar -xz \
+    && curl -SL https://github.com/OpenMathLib/OpenBLAS/archive/${OPENBLAS_LABEL}.tar.gz | tar -xz \
     && cd OpenBLAS* \
     && echo "Compiling OpenBLAS ${OPENBLAS_LABEL} with NO_AVX2=${NO_AVX2}" \
     && make "NO_AVX2=${NO_AVX2}" FC=gfortran \

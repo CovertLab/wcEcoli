@@ -43,8 +43,8 @@ Docker mechanics.
 
    ```shell script
    cloud/build.sh
-   docker pull gcr.io/${PROJECT}/${USER}-wcm-code
-   docker run --name=wcm -it --rm gcr.io/${PROJECT}/${USER}-wcm-code
+   docker pull ${REGION}-docker.pkg.dev/${PROJECT}/wcm/${USER}-wcm-code
+   docker run --name=wcm -it --rm ${REGION}-docker.pkg.dev/${PROJECT}/wcm/${USER}-wcm-code
    ```
 
    **NOTE:** It's better to build the Docker Image on Linux (e.g. in Google Cloud
@@ -52,7 +52,7 @@ Docker mechanics.
    a Docker bug by disabling AVX2 instructions in OpenBLAS. That change somehow
    makes the computation produce different results and run a little slower.
    An Image built on Linux won't have the AVX2 workaround and yet it runs fine on macOS.
-   See [xianyi/OpenBLAS#2244](https://github.com/xianyi/OpenBLAS/issues/2244#issuecomment-696510557).
+   See [OpenMathLib/OpenBLAS#2244](https://github.com/OpenMathLib/OpenBLAS/issues/2244#issuecomment-696510557).
 
    Once you have a Docker Image, you can run the model's Python programs inside the Container.
    (PyCharm Pro should support debugging into a Docker Container but we haven't tested that.)

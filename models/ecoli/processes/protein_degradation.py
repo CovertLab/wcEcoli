@@ -30,6 +30,7 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.metabolites = None
 		self.h2o = None
 		self.proteins = None
+		self.complexes = None
 
 		super(ProteinDegradation, self).__init__()
 
@@ -62,10 +63,21 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		self.h2o = self.bulkMoleculeView(sim_data.molecule_ids.water)
 		self.proteins = self.bulkMoleculesView(proteinIds)
 
+		# Complex view for future use
+		# TODO: integrate complexes into degradation
+		complexIds = np.array(sim_data.process.complexation.ids_complexes)
+		self.complexes = self.bulkMoleculesView(complexIds)
+
+		# Add the IDs for proteins and complexes to self:
+		self.protein_IDs = proteinIds
+		self.complex_IDs = complexIds
+
+		# Obtain Avogadro's number for conversion of counts to molar concentration:
+		self.n_avogadro = sim_data.constants.n_avogadro.asNumber(units.mol ** -1)
+
 		self.bulkMoleculesRequestPriorityIs(REQUEST_PRIORITY_DEGRADATION)
 
 	def calculateRequest(self):
-
 		# Determine how many proteins to degrade based on the degradation rates and counts of each protein
 		nProteinsToDegrade = np.fmin(
 			self.randomState.poisson(self._proteinDegRates() * self.proteins.total_counts()),
@@ -89,7 +101,14 @@ class ProteinDegradation(wholecell.processes.process.Process):
 			self.proteinDegSMatrix,
 			self.proteins.counts()
 			))
+
+		# Record how many monomers were calculated to degrade:
+		counts_degraded = self.proteins.counts()
+		self.writeToListener("MonomerCounts", "monomersDegraded", counts_degraded)
+
+		# Reset the degraded protein counts:
 		self.proteins.countsIs(0)
+
 
 	def _proteinDegRates(self):
 		return self.rawDegRate * self.timeStepSec()

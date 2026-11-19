@@ -63,7 +63,11 @@ class Complexation(wholecell.processes.process.Process):
 		updatedMoleculeCounts = result['outcome']
 		events = result['occurrences']
 
+		# Update the counts of the molecules returned to the bulkMolecules container:
 		self.molecules.countsIs(updatedMoleculeCounts)
 
 		# Write outputs to listeners
-		self.writeToListener("ComplexationListener", "complexationEvents", events)
+		self.writeToListener("ComplexationListener",
+							 "complexationEvents", events)
+
+

@@ -119,9 +119,10 @@ Also see [Borealis: How to run a workflow](https://github.com/CovertLab/borealis
    Cloud Firetasks that start running after you build an Image will "pull" it and use it,
    even Firetasks that were already queued to run. You can do this to update your code
    then use `lpad` commands to restart failed tasks and resume paused tasks.  
-   The full Docker Image path is `gcr.io/$PROJECT/$USER-wcm-code`, where
-   `$PROJECT` is the Google Cloud project name and `$USER` is your local username.
-   You can also "pull" this Image and run it locally.
+   The full Docker Image path is `${REGION}-docker.pkg.dev/${PROJECT}/wcm/${USER}-wcm-code`,
+   where `$REGION` is Artifact Registry region (we usually use `us-west1`),
+   `$PROJECT` is the Google Cloud project name, and `$USER` is your local username.
+   You can also `pull` this Image with Docker to run it locally.
 
 1. Open an ssh tunnel to the project's MongoDB "LaunchPad" server in Google Compute Engine:
 

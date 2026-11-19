@@ -44,6 +44,10 @@ class TfUnbinding(wholecell.processes.process.Process):
 	def evolveState(self):
 		# If there are no promoters, return immediately
 		if self.promoters.total_count() == 0:
+
+			# Write zeros to avoid stale values in the listener
+			self.writeToListener("RnaSynthProb", "nActualUnbound",
+								 np.zeros(len(self.tf_ids), dtype=int))
 			return
 
 		# Get attributes of all promoters
@@ -56,6 +60,9 @@ class TfUnbinding(wholecell.processes.process.Process):
 		# transcription factors
 		for tf_idx, tf_id in enumerate(self.tf_ids):
 			self.active_tf_view[tf_id].countInc(n_bound_TF[tf_idx])
+
+		# Save the # of TFs that were unbound and returned to the bulk counts:
+		self.writeToListener("RnaSynthProb", "nActualUnbound", n_bound_TF)
 
 		# Reset bound_TF attribute of promoters
 		self.promoters.attrIs(bound_TF=np.zeros_like(bound_TF))

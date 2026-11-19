@@ -1,6 +1,6 @@
 #!/bin/sh
 # Use Google Cloud Build servers to build layered WCM Docker Images and store
-# them in the Google Container Registry.
+# them in a Google Artifact Registry in the current region.
 #
 # ASSUMES: The current working dir is the wcEcoli/ project root.
 

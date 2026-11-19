@@ -88,6 +88,20 @@ class TfBinding(wholecell.processes.process.Process):
 	def evolveState(self):
 		# If there are no promoters, return immediately
 		if self.promoters.total_count() == 0:
+			# Write zeros to avoid stale values in the listeners:
+			self.writeToListener(
+				"RnaSynthProb", "pPromoterBound",
+				np.zeros(self.n_TF, dtype=np.float64))
+			self.writeToListener(
+				"RnaSynthProb", "nPromoterBound",
+				np.zeros(self.n_TF, dtype=np.float64))
+			self.writeToListener(
+				"RnaSynthProb", "n_available_promoters",
+				np.zeros(self.n_TF, dtype=np.float64))
+			self.writeToListener(
+				"RnaSynthProb", "n_bound_TF_per_TU",
+				np.zeros((self.n_TU, self.n_TF), dtype=np.int16))
+
 			return
 
 		# Get attributes of all promoters
@@ -102,7 +116,6 @@ class TfBinding(wholecell.processes.process.Process):
 		# Create vectors for storing values
 		pPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
 		nPromotersBound = np.zeros(self.n_TF, dtype=np.float64)
-		nActualBound = np.zeros(self.n_TF, dtype=np.float64)
 		n_promoters = np.zeros(self.n_TF, dtype=np.float64)
 		n_bound_TF_per_TU = np.zeros((self.n_TU, self.n_TF), dtype=np.int16)
 
@@ -169,7 +182,6 @@ class TfBinding(wholecell.processes.process.Process):
 			# Record values
 			pPromotersBound[tf_idx] = pPromoterBound
 			nPromotersBound[tf_idx] = n_to_bind
-			nActualBound[tf_idx] = bound_locs.sum()
 
 		delta_TF = bound_TF_new.astype(np.int8) - bound_TF.astype(np.int8)
 		mass_diffs = delta_TF.dot(self.active_tf_masses)
@@ -181,9 +193,11 @@ class TfBinding(wholecell.processes.process.Process):
 		self.promoters.add_submass_by_array(mass_diffs)
 
 		# Write values to listeners
-		self.writeToListener("RnaSynthProb", "pPromoterBound", pPromotersBound)
-		self.writeToListener("RnaSynthProb", "nPromoterBound", nPromotersBound)
-		self.writeToListener("RnaSynthProb", "nActualBound", nActualBound)
-		self.writeToListener("RnaSynthProb", "n_available_promoters", n_promoters)
+		self.writeToListener(
+			"RnaSynthProb", "pPromoterBound", pPromotersBound)
+		self.writeToListener(
+			"RnaSynthProb", "nPromoterBound", nPromotersBound)
+		self.writeToListener(
+			"RnaSynthProb", "n_available_promoters", n_promoters)
 		self.writeToListener(
 			"RnaSynthProb", "n_bound_TF_per_TU", n_bound_TF_per_TU)

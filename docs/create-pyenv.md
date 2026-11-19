@@ -6,7 +6,7 @@ Before you begin all the steps below to install the Python runtime for the Whole
 
 The script `cloud/build-containers-locally.sh` will build a Docker Image on
 your computer if you have Docker Engine or Docker Desktop installed.
-The script `cloud/build.sh` will do the same using Google Container Registry if
+The script `cloud/build.sh` will do the same using Google Artifact Registry if
 you have a Google Cloud project set up.
 
 Either way, you can run the Whole Cell Model (WCM) in a Docker Container, isolated from your computer's operating system, Python versions, binary libraries, and everything else installed.
@@ -58,8 +58,11 @@ This page goes through the Python environment setup steps in more detail and wit
    **On macOS**
 
    ```bash
-   brew install glpk openssl readline swig suite-sparse xz
+   brew install cmake glpk openssl readline swig suite-sparse xz
    ```
+
+   Use the `cmake` native package rather than the `cmake` pip, which can't build
+   `osqp` and `qdldl`.
 
    **On Ubuntu**
 
@@ -97,7 +100,7 @@ This page goes through the Python environment setup steps in more detail and wit
        . "${PI_HOME}/etc/bash_profile"
    fi
 
-   module load git/2.27.0 git-lfs/2.11.
+   module load git/2.45.1 git-lfs/2.11.
    module load wcEcoli/python3
 
    export PYENV_ROOT="${PI_HOME}/pyenv"

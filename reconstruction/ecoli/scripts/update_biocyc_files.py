@@ -14,7 +14,7 @@ import time
 from wholecell.utils.filepath import ROOT_PATH
 
 BASE_API_URL = 'https://websvc.biocyc.org/wc-get?type='
-BASE_API_URL_PREVIEW = 'https://brg-preview.ai.sri.com/wc-get?type='
+BASE_API_URL_PREVIEW = 'https://brg-preview.ai.sri.com/wc-get?orgid=ECOLI&type='
 BIOCYC_FILE_IDS = [
     'complexation_reactions',
     'dna_sites',
@@ -26,6 +26,7 @@ BIOCYC_FILE_IDS = [
     'rnas',
     'transcription_units',
     'trna_charging_reactions',
+    'gene_fragments',
     ]
 FLAT_DIR = os.path.join(ROOT_PATH, 'reconstruction', 'ecoli', 'flat')
 OK_STATUS_CODE = 200
@@ -40,7 +41,10 @@ def update_biocyc_files(preview=False):
 
     # Get files from BioCyc webservices
     for file_id in BIOCYC_FILE_IDS:
-        response = requests.get(base_url + file_id)
+        if preview:
+            response = requests.get(base_url + file_id, auth=('<USERNAME>', '<PASSWORD>')) # TODO: fill this in when running script, do not commit to GitHub
+        else:
+            response = requests.get(base_url + file_id)
         response.raise_for_status()
 
         file_id_to_text[file_id] = response.text

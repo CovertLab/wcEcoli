@@ -26,6 +26,7 @@ class ParcaTask(FiretaskBase):
 	optional_params = [
 		'operons',
 		'new_genes',
+		'protein_degradation_combo',
 		'load_intermediate',
 		'save_intermediates',
 		'intermediates_directory',
@@ -58,6 +59,7 @@ class ParcaTask(FiretaskBase):
 			InitRawDataTask(
 				operons=self.get('operons'),
 				new_genes=self.get('new_genes'),
+				protein_degradation_combo=self.get('protein_degradation_combo'),
 				remove_rrna_operons=self.get('remove_rrna_operons', False),
 				remove_rrff=self.get('remove_rrff', False),
 				stable_rrna=self.get('stable_rrna', False),

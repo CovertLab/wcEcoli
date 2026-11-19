@@ -268,3 +268,123 @@ def  heatmap(obj, ax, mask, data, completion_data, xticklabels, yticklabels,
 	ax.set_xlabel(xlabel, fontsize=ax_font_size)
 	ax.set_ylabel(ylabel, fontsize=ax_font_size)
 	ax.set_title(title, fontsize=title_font_size)
+
+def _clip_initial_event_spikes(ax, event_lines, time, start_generation_indices,
+		n_initial_steps, initial_rows):
+	"""
+	If any value in the first n_initial_steps steps of a generation is more
+	than 1.5x beyond the y range of all other steps (plus 10% padding), limits
+	the y axis to that range and labels each value outside it at the axis edge
+	in its line's color. See format_event_lines().
+	"""
+	# Clipping needs both initial rows and rows outside them (none when
+	# n_initial_steps is 0 or the generations are that short):
+	if not event_lines or not 0 < len(initial_rows) < len(time):
+		return
+
+	rest_mask = np.ones(len(time), bool)
+	rest_mask[initial_rows] = False
+	all_rest = np.concatenate(
+		[np.asarray(line.get_ydata(), float)[rest_mask] for line in event_lines])
+	y_low, y_high = min(all_rest.min(), 0), max(all_rest.max(), 0)
+	pad = 0.1 * max(y_high - y_low, 1)
+	y_low, y_high = y_low - pad, y_high + pad
+
+	# Largest and smallest event of each line at the start of each generation:
+	peaks = []
+	for line in event_lines:
+		y_all = np.asarray(line.get_ydata(), float)
+		for gen_idx, start_idx in enumerate(start_generation_indices):
+			rows = initial_rows[(initial_rows >= start_idx)
+				& (initial_rows < start_idx + n_initial_steps)]
+			for i in {rows[np.argmax(y_all[rows])], rows[np.argmin(y_all[rows])]}:
+				peaks.append((y_all[i], time[i], line.get_color(), gen_idx))
+
+	# Only clip if some value dwarfs the rest of the panel, then label every
+	# value that falls outside the new y range:
+	if any(value < 1.5 * y_low or value > 1.5 * y_high
+			for value, _, _, _ in peaks):
+		ax.set_ylim(y_low, y_high)
+		n_stacked = {}
+		for value, x, color, gen_idx in sorted(peaks, key=lambda c: -abs(c[0])):
+			if y_low <= value <= y_high:
+				continue
+			below = value < y_low
+			# Stack labels from the same generation start:
+			n = n_stacked.get((gen_idx, below), 0)
+			n_stacked[(gen_idx, below)] = n + 1
+			ax.annotate(f'{value:.0f}', xy=(x, y_low if below else y_high),
+				xytext=(4, (3 + 7 * n) * (1 if below else -1)),
+				textcoords='offset points', color=color, fontsize=6,
+				ha='left', va='bottom' if below else 'top')
+
+def format_event_lines(ax, time, start_generation_indices, n_initial_steps):
+	"""
+	Formats the lines of a panel showing reaction events per timestep over a
+	lineage:
+	- Each label gets the line's average |events| per timestep ("avg. X/step"),
+	  leaving out the first n_initial_steps steps of each generation, inside
+	  the parentheses on its second line when it has them, otherwise at the end.
+	- The most active lines are drawn underneath the rest, so sparse events stay
+	  visible.
+	- Spikes in the first steps of each generation are clipped and labeled if
+	  they dwarf the rest of the panel (see _clip_initial_event_spikes).
+	- No line is drawn along 0 where an event does not happen, so the panel is
+	  less crowded (every nonzero event is still drawn up from 0).
+
+	Args:
+		ax: Axes object with the event lines plotted (lines that do not have one
+			value per timepoint, such as empty legend-only lines, are ignored)
+		time: Array of simulation timepoints
+		start_generation_indices: Index where each generation starts
+		n_initial_steps: number of timesteps at the start of each generation
+			that can be clipped and are left out of the averages
+
+	Returns:
+		list: the event lines with the most active first, for the legend
+	"""
+	event_lines = [line for line in ax.get_lines()
+		if len(line.get_ydata()) == len(time)]
+	# Rows that may be clipped in the first steps of each generation:
+	initial_rows = np.unique(np.minimum(
+		start_generation_indices[:, None] + np.arange(n_initial_steps),
+		len(time) - 1))
+	average_mask = np.ones(len(time), bool)
+	average_mask[initial_rows] = False
+
+	event_activity = {}
+	for line in event_lines:
+		y = np.abs(np.asarray(line.get_ydata(), float))[average_mask]
+		activity = y.mean() if y.size else 0.
+		event_activity[line] = activity
+		average_str = f'{activity:.0f}' if activity >= 100 else f'{activity:.2g}'
+		first_line, newline, rest = line.get_label().partition('\n')
+		if rest.startswith('(estimated, '):
+			rest = rest.replace('(estimated, ', f'(estimated avg. {average_str}/step, ', 1)
+			line.set_label(f'{first_line.rstrip()}{newline}{rest.strip()}')
+		elif '(' in rest:
+			rest = rest.replace('(', f'(avg. {average_str}/step, ', 1)
+			line.set_label(f'{first_line.rstrip()}{newline}{rest.strip()}')
+		else:
+			line.set_label(f'{line.get_label()} (avg. {average_str}/step)')
+
+	ordered_event_lines = sorted(event_lines, key=lambda line: -event_activity[line])
+	for rank, line in enumerate(ordered_event_lines):
+		line.set_zorder(2 + rank / len(ordered_event_lines))
+		# Thin lines overlap less, so dense event traces keep their own color
+		# instead of blending into each other:
+		line.set_linewidth(0.4)
+		line.set_alpha(0.85)
+
+	_clip_initial_event_spikes(ax, event_lines, time, start_generation_indices,
+		n_initial_steps, initial_rows)
+
+	for line in ordered_event_lines:
+		y = np.asarray(line.get_ydata(), float).copy()
+		keep = y != 0
+		keep[1:] |= keep[:-1].copy()
+		keep[:-1] |= (y[1:] != 0)
+		y[~keep] = np.nan
+		line.set_ydata(y)
+
+	return ordered_event_lines

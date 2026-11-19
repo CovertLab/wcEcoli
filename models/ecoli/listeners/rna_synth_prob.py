@@ -60,6 +60,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		self.nPromoterBound = np.zeros(self.n_TF, np.float64)
 		self.nActualBound = np.zeros(self.n_TF, np.float64)
 		self.n_available_promoters = np.zeros(self.n_TF, np.float64)
+		self.nActualUnbound = np.zeros(self.n_TF, np.float64)
 
 		# These arrays gets flattened at tableAppend(). Resulting array should
 		# be reshaped before use.
@@ -77,6 +78,10 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 		TU_indexes, all_coordinates, all_domains, bound_TFs = promoters.attrs(
 			"TU_index", "coordinates", "domain_index", "bound_TF"
 			)
+
+		# TFs currently bound to transcription units/promoters at this timestep:
+		self.nActualBound = bound_TFs.sum(axis=0, dtype=np.float64)
+
 		genes = self.uniqueMolecules.container.objectsInCollection('gene')
 		cistron_indexes = genes.attr("cistron_index")
 
@@ -129,6 +134,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			'nPromoterBound': 'tf_ids',
 			'nActualBound': 'tf_ids',
 			'n_available_promoters': 'tf_ids',
+			'nActualUnbound': 'tf_ids',
 			'n_bound_TF_per_TU': 'rnaIds',
 			'n_bound_TF_per_cistron': 'cistron_ids'
 			}
@@ -170,6 +176,7 @@ class RnaSynthProb(wholecell.listeners.listener.Listener):
 			nPromoterBound = self.nPromoterBound,
 			nActualBound = self.nActualBound,
 			n_available_promoters = self.n_available_promoters,
+			nActualUnbound = self.nActualUnbound,
 			n_bound_TF_per_TU = self.n_bound_TF_per_TU,
 			n_bound_TF_per_cistron = self.n_bound_TF_per_cistron,
 			bound_TF_indexes = self.bound_TF_indexes,

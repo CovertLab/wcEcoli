@@ -33,7 +33,7 @@ from runscripts.cloud.util.workflow import (DEFAULT_LPAD_YAML,
 
 
 # ':latest' -- "You keep using that word. I do not think it means what you think it means."
-DOCKER_IMAGE = 'gcr.io/{}/{}-wcm-code'
+DOCKER_IMAGE = '{}-docker.pkg.dev/{}/wcm/{}-wcm-code'
 
 GCE_VM_MACHINE_TYPE = workflow_cli.GCE_VM_MACHINE_TYPE
 
@@ -53,7 +53,8 @@ class WcmWorkflow(Workflow):
 			description=description)
 
 		self.timestamp = timestamp
-		self.image = DOCKER_IMAGE.format(gcp.project(), owner_id)
+		region = gcp.gcloud_get_config('compute/region')
+		self.image = DOCKER_IMAGE.format(region, gcp.project(), owner_id)
 
 		subdir = Workflow.timestamped_description(timestamp, description)
 		self.storage_prefix = pp.join(
