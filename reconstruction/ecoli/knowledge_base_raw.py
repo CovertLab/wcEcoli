@@ -305,7 +305,8 @@ class KnowledgeBaseEcoli(object):
 
 			self.genome_sequence = (self.genome_sequence[:insert_pos]
 				+ insertion_sequence + self.genome_sequence[insert_pos:])
-			assert self.genome_sequence[insert_pos:(insert_end + 1)] == insertion_sequence
+			assert (self.genome_sequence[insert_pos:insert_end]
+				== insertion_sequence)
 
 			self.added_data = self.new_gene_added_data
 			self._join_data()
@@ -540,8 +541,12 @@ class KnowledgeBaseEcoli(object):
 		# feature's right end, so len(spans) + 1 iterations is a safe bound.
 		requested_pos = insert_pos
 		for _ in range(len(spans) + 1):
+			# The insert goes immediately after 1-indexed base insert_pos, so a
+			# feature is split only when that point falls strictly inside it.
+			# insert_pos == right places the insert just past the feature's last
+			# base, which leaves the feature intact.
 			conflicts = [
-				right for left, right in spans if left < insert_pos <= right]
+				right for left, right in spans if left <= insert_pos < right]
 			if not conflicts:
 				break
 			# Change insertion location to after conflicts
@@ -571,9 +576,12 @@ class KnowledgeBaseEcoli(object):
 		for row in data:
 			left = row['left_end_pos']
 			right = row['right_end_pos']
+			# Shift only features that lie entirely after the insertion point.
+			# A feature with left == insert_pos begins at or before that point,
+			# so its coordinates are unchanged by the splice.
 			if ((left is not None and left != '')
 					and (right is not None and right != '')
-					and left >= insert_pos):
+					and left > insert_pos):
 				row.update({'left_end_pos': left + insert_len})
 				row.update({'right_end_pos': right + insert_len})
 
@@ -598,8 +606,11 @@ class KnowledgeBaseEcoli(object):
 				== new_genes_data[i]['right_end_pos'] + 1), (
 				"gaps in new gene insertions are not supported at this time")
 
+		# New gene coordinates are 1-indexed (the first base of the insert is at
+		# relative position 1), so the last gene's right_end_pos is already the
+		# total length of the insertion. See CovertLab/vEcoli#306.
 		insert_end = new_genes_data[-1]['right_end_pos'] + insert_pos
-		insert_len = insert_end - insert_pos + 1
+		insert_len = insert_end - insert_pos
 
 		# Update global positions of original genes
 		self._update_global_coordinates(genes_data, insert_pos, insert_len)
@@ -637,8 +648,8 @@ class KnowledgeBaseEcoli(object):
 
 		insertion_seq = Seq.Seq('')
 		new_genes_data = sorted(new_genes_data, key=lambda d: d['left_end_pos'])
-		assert new_genes_data[0]['left_end_pos'] == 0, (
-			'first gene in new sequence must start at relative coordinate 0')
+		assert new_genes_data[0]['left_end_pos'] == 1, (
+			'first gene in new sequence must start at relative coordinate 1')
 
 		for gene in new_genes_data:
 			if gene['direction'] == "+":

@@ -8,6 +8,10 @@ import numpy as np
 
 import wholecell.processes.process
 from wholecell.utils import units
+
+# Nucleotides per codon, for converting the ribosome footprint (tabulated in
+# nucleotides) into the amino-acid units the elongation rate is expressed in.
+NT_PER_CODON = 3
 from wholecell.utils.fitting import normalize
 
 
@@ -34,8 +38,14 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.cistron_start_end_pos_in_tu = sim_data.process.transcription.cistron_start_end_pos_in_tu
 		self.tu_ids = sim_data.process.transcription.rna_data['id']
 		self.n_TUs = len(self.tu_ids)
-		self.active_ribosome_footprint_size = \
-			sim_data.process.translation.active_ribosome_footprint_size
+		# The ribosome footprint is tabulated in nucleotides, but the ribosome
+		# elongation rate is in amino acids per second, so the footprint must be
+		# expressed in codons before the two are combined. Dividing aa/s by a
+		# footprint in nucleotides understates how many ribosomes an mRNA can
+		# carry by a factor of NT_PER_CODON. See CovertLab/vEcoli#306.
+		self.active_ribosome_footprint_codons = (
+			sim_data.process.translation.active_ribosome_footprint_size.asNumber(
+				units.nt) / NT_PER_CODON)
 
 		# Get mapping from cistrons to protein monomers and TUs
 		self.cistron_to_monomer_mapping = sim_data.relation.cistron_to_monomer_mapping
@@ -152,9 +162,12 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		# Cap the initiation probabilities at the maximum level physically
 		# allowed from the known ribosome footprint sizes based on the
 		# number of mRNAs
-		max_p = (self.ribosomeElongationRate / self.active_ribosome_footprint_size
-			* (units.s) * self.timeStepSec() / 
-			n_ribosomes_to_activate).asNumber()
+		# Dimensionless: (aa/s) * s / (aa per footprint) is the number of
+		# footprints one ribosome clears in a time step, shared out over the
+		# ribosomes being activated.
+		max_p = (self.ribosomeElongationRate * self.timeStepSec()
+			/ self.active_ribosome_footprint_codons
+			/ n_ribosomes_to_activate)
 		max_p_per_protein = max_p*cistron_counts[self.cistron_to_monomer_mapping]
 		self.writeToListener("RibosomeData", "max_p", max_p)
 		self.writeToListener(
@@ -186,19 +199,17 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 				max_init_prob = protein_init_prob[is_overcrowded][max_index]
 				associated_cistron_counts = cistron_counts[
 					self.cistron_to_monomer_mapping][is_overcrowded][max_index]
-				n_ribosomes_to_activate = np.int64((
-					self.ribosomeElongationRate
-					/ self.active_ribosome_footprint_size
-					* (units.s) * self.timeStepSec() / max_init_prob
-					* associated_cistron_counts).asNumber())
+				n_ribosomes_to_activate = np.int64(
+					self.ribosomeElongationRate * self.timeStepSec()
+					/ self.active_ribosome_footprint_codons / max_init_prob
+					* associated_cistron_counts)
 
 				# Update maximum probabilities based on new number of activated
 				# ribosomes.
 				max_p = (
-					self.ribosomeElongationRate
-					/ self.active_ribosome_footprint_size
-					* (units.s) * self.timeStepSec()
-					/ n_ribosomes_to_activate).asNumber()
+					self.ribosomeElongationRate * self.timeStepSec()
+					/ self.active_ribosome_footprint_codons
+					/ n_ribosomes_to_activate)
 				max_p_per_protein = max_p * cistron_counts[self.cistron_to_monomer_mapping]
 				is_overcrowded = (protein_init_prob > max_p_per_protein)
 				assert is_overcrowded.sum() == 0 # We expect no overcrowding
