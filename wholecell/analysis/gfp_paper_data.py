@@ -74,7 +74,7 @@ from wholecell.utils import parallelization
 
 # Bump whenever read_cycle changes what a column means, so stale caches are
 # rebuilt rather than silently reused.
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 CACHE_SUBDIR = os.path.join('paper_figures', '_cache')
 REBUILD_ENV = 'GFP_PAPER_REBUILD_CACHE'
 
@@ -415,7 +415,7 @@ def read_cycle(path: str, gene: GeneInfo, machinery: MachineryInfo
 	row['growth_rate_per_h'] = (_mean(growth[1:]) * SECONDS_PER_HOUR
 		if growth is not None and growth.size > 1 else np.nan)
 	for name in ('cellMass', 'dryMass', 'proteinMass', 'mRnaMass',
-			'rRnaMass'):
+			'rRnaMass', 'cellVolume'):
 		row[name] = _mean(cell.column('Mass', name))
 
 	# GFP protein
@@ -488,6 +488,13 @@ def read_cycle(path: str, gene: GeneInfo, machinery: MachineryInfo
 	ribo_crowded = cell.column('RibosomeData', 'mRNA_is_overcrowded')
 	ribo_monomer = _index(cell.attribute('RibosomeData', 'monomerIds'),
 		gene.monomer_id)
+	# Every active ribosome counted by the protein it is making. Unlike the
+	# mRNA-attached count above, this includes ribosomes finishing on gfp
+	# mRNAs that have left the mRNA list, so it sums to the active ribosome
+	# count across monomers and is the basis of the GFP ribosome share.
+	row['ribosomes_making_gfp'] = (_mean(cell.column('RibosomeData',
+		'n_ribosomes_per_transcript', indices=[ribo_monomer]))
+		if ribo_monomer is not None else np.nan)
 	row['gfp_ribosome_overcrowded_frac'] = (
 		_mean(ribo_crowded[:, ribo_monomer])
 		if ribo_crowded is not None and ribo_monomer is not None else np.nan)
@@ -588,7 +595,12 @@ def add_derived_columns(df: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 		df['rnap_spacing_nt'] = _safe_ratio(
 			gene.length_nt, df['rnap_per_gfp_copy'])
 		df['gfp_ribosome_share'] = _safe_ratio(
-			df['ribosomes_on_gfp'], df['active_ribosomes'])
+			df['ribosomes_making_gfp'], df['active_ribosomes'])
+		# Concentrations in micromolar: count / (Avogadro x volume)
+		df['total_ribosomes_uM'] = _safe_ratio(df['total_ribosomes'],
+			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
+		df['total_rnap_uM'] = _safe_ratio(df['total_rnap'],
+			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
 		df['gfp_rnap_share'] = _safe_ratio(
 			df['rnap_on_gfp'], df['active_rnap'])
 		# The RNAP share gfp would hold if every copy were packed footprint to
@@ -714,7 +726,7 @@ RAW_COLUMNS = (
 	'active_ribosomes', 'active_rnap', 'free_ribosomes', 'ppgpp_conc',
 	'free_rnap', 'rpoc_gene_copies', 'rpoc_transcription_per_s',
 	'rpoc_translation_per_s', 'rpoc_monomers', 'rnap_formed_per_s',
-	'rnap_initiations_per_s',
+	'rnap_initiations_per_s', 'cellVolume', 'ribosomes_making_gfp',
 )
 
 
@@ -856,6 +868,13 @@ VECTOR_KINDS = {
 	'gene_copies': ('RnaSynthProb', 'gene_copy_number', 'gene_ids'),
 	# protein copies per monomer
 	'monomers': ('MonomerCounts', 'monomerCounts', 'monomerIds'),
+	# RNAP on each mRNA transcription unit: transcripts still being made
+	'rnap_mrna_tu': ('RNACounts', None, 'mRNA_ids'),
+	# RNAP on each rRNA operon
+	'rnap_rrna_tu': ('RNACounts', 'partial_rRNA_counts', 'rRNA_ids'),
+	# active ribosomes by the protein they are making
+	'ribosomes_monomer': ('RibosomeData', 'n_ribosomes_per_transcript',
+		'monomerIds'),
 	# promoter copies per transcription unit (TU-indexed dosage)
 	'promoter_copies': ('RnaSynthProb', 'promoter_copy_number', 'rnaIds'),
 	# limiting-subunit credit for one complex; `extra` is its subunits
@@ -870,6 +889,15 @@ def _read_vector(args):
 	try:
 		if kind == 'mrna_tu':
 			values, ids = _physical_mrna_matrix(path)
+		elif kind == 'rnap_mrna_tu':
+			cell = _Cell(path)
+			reader = cell.reader('RNACounts')
+			name = next((n for n in ('rnap_engaged_mRNA_counts',
+				'partial_mRNA_counts') if reader is not None
+				and n in reader.columnNames()), None)
+			values = None if name is None else reader.readColumn(name)
+			ids = cell.attribute('RNACounts', 'mRNA_ids')
+			ids = None if ids is None else list(ids)
 		elif kind == 'limiting':
 			return _limiting_credit(path, *extra)
 		else:
@@ -1300,6 +1328,95 @@ def pooled_response(events: pd.DataFrame, column: str,
 			n_lineages=int(lineages.size)))
 	return pd.DataFrame(out).sort_values('mid').reset_index(drop=True)
 
+
+
+# --------------------------------------------------------------------------
+# Machinery traces through the run (Figure 2E)
+TRACE_POINTS = 10       # equal fractions of each cell cycle
+
+
+def _cycle_trace(args):
+	"""Mean total RNAP and ribosomes in each tenth of one cell cycle."""
+	path, s30, s50, full_rnap, n_points = args
+	try:
+		cell = _Cell(path)
+		names = cell.attribute('UniqueMoleculeCounts', 'uniqueMoleculeIds')
+		ia, ir = _index(names, 'active_RNAP'), _index(names, 'active_ribosome')
+		bulk_names = cell.attribute('BulkMolecules', 'objectNames')
+		ib = [_index(bulk_names, m) for m in (s30, s50, full_rnap)]
+		if None in (ia, ir) or None in ib:
+			return []
+		unique = cell.column('UniqueMoleculeCounts', 'uniqueMoleculeCounts')
+		bulk = cell.column('BulkMolecules', 'counts', indices=ib)
+	except Exception:                                       # noqa: BLE001
+		return []
+	if unique is None or bulk is None or len(unique) < n_points:
+		return []
+	rnap = unique[:, ia] + bulk[:, 2]
+	ribosomes = unique[:, ir] + np.minimum(bulk[:, 0], bulk[:, 1])
+	edges = np.linspace(0, len(rnap), n_points + 1).astype(int)
+	return [dict(point=k, rnap=float(rnap[a:b].mean()),
+		ribosomes=float(ribosomes[a:b].mean()))
+		for k, (a, b) in enumerate(zip(edges[:-1], edges[1:]))]
+
+
+def cycle_traces(data: 'PaperData', variants: Sequence[int],
+		plot_out_dir: str, cpus: int = 1, n_points: int = TRACE_POINTS
+		) -> pd.DataFrame:
+	"""
+	Total RNAP and total ribosomes through every generation of each lineage,
+	as the mean over each of n_points equal fractions of the cell cycle.
+
+	Totals are active plus free, as in the scalar tables. Every generation is
+	included, not just the analysis window, since the traces show the run from
+	the wildtype generations through induction. Columns: variant, seed,
+	generation, point, x (generation + fraction of the cycle at the bin
+	centre), rnap, ribosomes. Cached per variant.
+	"""
+	gene = data.gene
+	machinery = data.machinery
+	if machinery is None:
+		raise ValueError('PaperData has no machinery ids')
+	cache_dir = os.path.join(plot_out_dir, CACHE_SUBDIR)
+	os.makedirs(cache_dir, exist_ok=True)
+	frames = []
+	for variant in variants:
+		rows = data.cycles[data.cycles['variant'] == variant].sort_values(
+			['seed', 'generation'])
+		cache = os.path.join(cache_dir, 'traces_%06d.csv' % variant)
+		stamp = cache[:-4] + '.json'
+		key = json.loads(json.dumps({'version': CACHE_VERSION,
+			'n_points': n_points, 'paths': list(rows['path'])}))
+		frame = None
+		if (os.path.exists(cache) and os.path.exists(stamp)
+				and not os.environ.get(REBUILD_ENV)):
+			with open(stamp) as f:
+				if json.load(f) == key:
+					frame = pd.read_csv(cache)
+		if frame is None:
+			jobs = [(p, gene.s30_id, gene.s50_id, machinery.full_rnap_id,
+				n_points) for p in rows['path']]
+			if cpus > 1 and len(jobs) > 1:
+				pool = parallelization.pool(min(cpus, len(jobs)))
+				results = pool.map(_cycle_trace, jobs)
+				pool.close()
+				pool.join()
+			else:
+				results = [_cycle_trace(j) for j in jobs]
+			records = [dict(variant=variant, seed=int(seed),
+				generation=int(gen), x=gen + (r['point'] + 0.5) / n_points,
+				**r) for seed, gen, trace in zip(rows['seed'],
+				rows['generation'], results) for r in trace]
+			frame = pd.DataFrame(records, columns=['variant', 'seed',
+				'generation', 'x', 'point', 'rnap', 'ribosomes'])
+			suffix = '.%d.tmp' % os.getpid()
+			frame.to_csv(cache + suffix, index=False)
+			with open(stamp + suffix, 'w') as f:
+				json.dump(key, f)
+			os.replace(stamp + suffix, stamp)
+			os.replace(cache + suffix, cache)
+		frames.append(frame)
+	return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 # --------------------------------------------------------------------------

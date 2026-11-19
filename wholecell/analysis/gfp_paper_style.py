@@ -57,6 +57,12 @@ COLORS: Dict[str, str] = {
 GFP_RAMP: Sequence[str] = (
 	'#B8E6D4', '#6CCBA8', '#009E73', '#00704F', '#00402D')
 
+# Growth (rate or doubling time) is a magnitude with no entity of its own, so
+# it gets a neutral ramp, light to ink. Blue would read as RNAP and green as
+# GFP, both of which already mean something in every figure.
+GROWTH_RAMP: Sequence[str] = (
+	'#EEF0EF', '#C9CECC', '#97A09C', '#5F6965', '#2C3431')
+
 # Ink, for all text and axes. Series colour never carries text.
 INK = '#18201D'
 INK_MUTED = '#5A6661'
@@ -223,6 +229,102 @@ def ratio_bars(ax, labels: Sequence[str], means, ci95, colors,
 	top = np.nanmax(np.append(means + np.nan_to_num(ci95), reference))
 	ax.set_ylim(0, max(1.1 * reference, 1.12 * top))
 	return x
+
+
+def ramp_cmap(colors: Sequence[str], reverse: bool = False):
+	"""A continuous colormap through the given ramp steps."""
+	from matplotlib.colors import LinearSegmentedColormap
+	steps = list(colors)[::-1] if reverse else list(colors)
+	return LinearSegmentedColormap.from_list('paper_ramp', steps)
+
+
+def design_heatmap(ax, designs, column: str, cmap, vmin: float, vmax: float,
+		fmt=None, colorbar_label: Optional[str] = None, annotate: bool = True,
+		colorbar: bool = True):
+	"""
+	Promoter x RBS heatmap of one design-table column.
+
+	Rows are RBS strengths (strongest at the top), columns promoter
+	strengths, induced designs only. Cells of designs that lost lineages are
+	hatched, the heatmap's form of the hollow marker; a design that was run
+	but lost every lineage is a hatched empty cell marked with a dash, and
+	designs not run are left blank. Values are written in ink that stays
+	legible on the cell.
+
+	Returns:
+		(promoters, RBS values, whether any hatched cell was drawn)
+
+	Args:
+		ax: axes
+		designs: design table (gfp_paper_data.design_table)
+		column: the value to show
+		cmap: colormap; vmin, vmax its limits
+		fmt: value -> label for the cell text, or None for '%.2g'
+		colorbar_label: label for the colourbar
+		annotate: write each cell's value
+		colorbar: draw a colourbar beside the axes
+	"""
+	from matplotlib.colors import Normalize, to_rgb
+	from matplotlib.patches import Rectangle
+	from wholecell.analysis import gfp_paper_constants
+	induced = designs[designs['promoter'] > 0]
+	promoters = sorted(induced['promoter'].unique())
+	rbs_values = sorted(induced['rbs'].unique())
+	norm = Normalize(vmin=vmin, vmax=vmax, clip=True)
+	fmt = fmt or (lambda v: '%.2g' % v)
+	any_hatched = False
+	for _, row in induced.iterrows():
+		value = row[column]
+		i, j = promoters.index(row['promoter']), rbs_values.index(row['rbs'])
+		if not np.isfinite(value):
+			ax.add_patch(Rectangle((i - 0.46, j - 0.46), 0.92, 0.92,
+				facecolor='white', edgecolor=INK_MUTED, linewidth=0.6,
+				hatch='////'))
+			if annotate:
+				ax.text(i, j, '\u2013', ha='center', va='center',
+					fontsize=FONT_SIZES['annotation'], color=INK_MUTED)
+			any_hatched = True
+			continue
+		any_hatched = any_hatched or bool(row['failed'])
+		face = cmap(norm(value))
+		ax.add_patch(Rectangle((i - 0.46, j - 0.46), 0.92, 0.92,
+			facecolor=face, edgecolor='white', linewidth=0.6,
+			hatch='////' if row['failed'] else None))
+		if annotate:
+			r, g, b = to_rgb(face)
+			light = 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.5
+			ax.text(i, j, fmt(value), ha='center', va='center',
+				fontsize=FONT_SIZES['annotation'],
+				color=INK if light else 'white')
+	ax.set_xlim(-0.5, len(promoters) - 0.5)
+	ax.set_ylim(-0.5, len(rbs_values) - 0.5)
+	ax.set_xticks(range(len(promoters)))
+	ax.set_xticklabels([gfp_paper_constants.promoter_label(p)
+		for p in promoters])
+	ax.set_yticks(range(len(rbs_values)))
+	ax.set_yticklabels(['%g' % r for r in rbs_values])
+	ax.set_xlabel('promoter strength')
+	ax.set_ylabel('RBS strength')
+	ax.tick_params(length=0)
+	for spine in ax.spines.values():
+		spine.set_visible(False)
+	if colorbar:
+		import matplotlib.pyplot as plt
+		from matplotlib.cm import ScalarMappable
+		bar = plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax,
+			fraction=0.05, pad=0.04)
+		bar.outline.set_visible(False)  # type: ignore[operator]
+		bar.ax.tick_params(length=2)
+		if colorbar_label:
+			bar.set_label(colorbar_label)
+	return promoters, rbs_values, any_hatched
+
+
+def hatched_legend_handle(label: str = 'some lineages did not complete'):
+	"""A hatched swatch, the heatmap form of failed_legend_handle."""
+	from matplotlib.patches import Patch
+	return Patch(facecolor='white', edgecolor=INK_MUTED, hatch='////',
+		linewidth=0.6, label=label)
 
 
 def reference_line(ax, y: float, label: str, horizontal: bool = True):

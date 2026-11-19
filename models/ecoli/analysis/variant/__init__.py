@@ -82,6 +82,12 @@ TAGS = {
 		'gfp_paper_limiting_step_for_machinery.py',
 		'gfp_paper_rpoc_steps_copies_protein.py',
 		'gfp_paper_cell_wide_capacity_bars.py',
+		'gfp_paper_gfp_share_growth_heatmaps.py',
+		'gfp_paper_growth_vs_gfp_share_experiments.py',
+		'gfp_paper_ribosomes_rnap_vs_gfp_share.py',
+		'gfp_paper_machinery_traces_median_of_lineages.py',
+		'gfp_paper_growth_vs_ribosome_counts_per_cycle.py',
+		'gfp_paper_active_rnap_ribosome_allocation.py',
 		],
 	'PAPER': [
 		"adder_sizer.py",

@@ -4,8 +4,8 @@ gfp, against GFP's share of the proteome.
 
 # Figure 3G
 
-One pair of points per design: the share of active ribosomes on gfp mRNAs
-(ribosome colour) and the share of active RNAPs transcribing gfp (RNAP
+One pair of points per design: the share of active ribosomes making GFP
+(RibosomeData n_ribosomes_per_transcript; ribosome colour) and the share of active RNAPs transcribing gfp (RNAP
 colour), window means over surviving lineages. Hollow points are designs where
 some lineages failed.
 
@@ -74,7 +74,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			script=__file__, batch=inputDir, sim_data_path=simDataFile,
 			n=len(variants),
 			notes='Shares are window means over surviving lineages: ribosomes'
-				' on gfp / active ribosomes and RNAPs on gfp / active RNAP.'
+				' making GFP / active ribosomes and RNAPs on gfp / active'
+				' RNAP.'
 				' Proteome share is GFP mass / protein mass. Designs with no'
 				' surviving lineage are omitted: %s.'
 				% gfp_paper_data.lost_designs(data.designs[

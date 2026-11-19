@@ -90,13 +90,19 @@ class TestRatios(unittest.TestCase):
 			[200.0], 'gfp_protein_mass_fg': [10.0], 'proteinMass': [100.0],
 			'gfp_mrna': [50.0], 'all_mrna': [5000.0],
 			'ribosomes_on_gfp': [400.0], 'rnap_on_gfp': [20.0],
-			'gfp_promoter_copies': [2.0], 'active_rnap': [800.0]})
+			'gfp_promoter_copies': [2.0], 'active_rnap': [800.0],
+			'ribosomes_making_gfp': [410.0], 'free_rnap': [200.0],
+			'cellVolume': [1.0]})
 		out = D.add_derived_columns(df, GENE).iloc[0]
 		self.assertAlmostEqual(out['ribosomes_per_gfp_mrna'], 8.0)
 		self.assertAlmostEqual(out['ribosome_spacing_nt'], 90.0)
 		self.assertAlmostEqual(out['ribosome_ceiling_per_gfp_mrna'], 24.0)
 		self.assertAlmostEqual(out['rnap_spacing_nt'], 72.0)
-		self.assertAlmostEqual(out['gfp_ribosome_share'], 0.4)
+		# the share counts ribosomes by the protein they make, not by mRNA
+		self.assertAlmostEqual(out['gfp_ribosome_share'], 0.41)
+		self.assertAlmostEqual(out['total_rnap'], 1000.0)
+		# 1,000 molecules in 1 fL is 1000 / (6.022e23 x 1e-15 L) M = 1.66 uM
+		self.assertAlmostEqual(out['total_rnap_uM'], 1.6605, places=3)
 		self.assertAlmostEqual(out['gfp_rnap_share'], 0.025)
 		self.assertAlmostEqual(out['gfp_rnap_share_at_spacing_limit'],
 			720 / 50 * 2 / 800)

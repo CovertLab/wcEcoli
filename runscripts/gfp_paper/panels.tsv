@@ -5,12 +5,12 @@ panel	content	kind	script	batch	status	notes
 1D	Proteome fold change vs experiment	experimental	(blank until data)	B2	blank	Blank until data
 1E	What decreases with GFP (bars)	variant	models/ecoli/analysis/variant/gfp_paper_what_decreases_with_gfp_bars.py	B2	todo	Concentration, reorder, combined relative version
 2A	Promoter / RBS design schematic	schematic	(svg, drawn by hand)		todo	
-2B	GFP share + growth heatmaps	variant	models/ecoli/analysis/variant/gfp_paper_gfp_share_growth_heatmaps.py	B1	todo	Growth rate relative; Write growth rate + doubling time versions (README, Conventions)
-2C	Growth vs GFP share (+ experiments)	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_share_experiments.py	B1	todo	Experimental overlay later; Write growth rate + doubling time versions (README, Conventions)
-2D	Ribosomes, RNAP vs GFP share	variant	models/ecoli/analysis/variant/gfp_paper_ribosomes_rnap_vs_gfp_share.py	B1	todo	Counts or concentration (see flags)
-2E	Machinery traces, median of lineages	multigen	models/ecoli/analysis/multigen/gfp_paper_machinery_traces_median_of_lineages.py	B2	todo	Caption says "single cell traces"
-2F	Growth vs ribosome counts per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_ribosome_counts_per_cycle.py	B2	todo	Doubling time → growth rate; Write growth rate + doubling time versions (README, Conventions)
-2G	Active RNAP / ribosome allocation	variant	models/ecoli/analysis/variant/gfp_paper_active_rnap_ribosome_allocation.py	B2	todo	
+2B	GFP share + growth heatmaps	variant	models/ecoli/analysis/variant/gfp_paper_gfp_share_growth_heatmaps.py	B1	draft	Growth rate relative; Growth rate + doubling time versions written; Growth heatmap uses a neutral ramp (blue = RNAP); designs that lost every lineage = hatched cell with a dash
+2C	Growth vs GFP share (+ experiments)	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_share_experiments.py	B1	draft	Experimental overlay later; Growth rate + doubling time versions written; Fit includes the control (1 at 0%); experiments drawn from runscripts/gfp_paper/data/growth_vs_gfp_share_experiments.tsv when present
+2D	Ribosomes, RNAP vs GFP share	variant	models/ecoli/analysis/variant/gfp_paper_ribosomes_rnap_vs_gfp_share.py	B1	draft	Counts or concentration (see flags); Counts (plain) + concentration (uM) versions; scatter only, no line joining designs
+2E	Machinery traces, median of lineages	variant	models/ecoli/analysis/variant/gfp_paper_machinery_traces_median_of_lineages.py	B2	draft	Caption says "single cell traces"; Now a variant analysis (median across lineages needs all lineages); 10 within-cycle bins per generation
+2F	Growth vs ribosome counts per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_ribosome_counts_per_cycle.py	B2	draft	Doubling time → growth rate; Growth rate + doubling time versions written; Designs = control + nearest 14% / 35% (same as Fig 5); growth rate + doubling time versions written
+2G	Active RNAP / ribosome allocation	variant	models/ecoli/analysis/variant/gfp_paper_active_rnap_ribosome_allocation.py	B2	draft	Ribosome shares from n_ribosomes_per_transcript (sum to active ribosomes)
 2H	Machinery loop schematic	schematic	(svg, drawn by hand)		todo	
 3A	Transcriptome scatter	variant	models/ecoli/analysis/variant/gfp_paper_transcriptome_scatter.py	B2	draft	Design = nearest to 35% GFP proteome share among designs with survivors
 3B	Transcriptome vs experiment	experimental	(blank until data)	B2	blank	Blank until data

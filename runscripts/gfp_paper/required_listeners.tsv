@@ -7,7 +7,7 @@ Mass	mRnaMass	3A 3C	denominator for GFP transcriptome share
 Mass	rRnaMass	2G 5E
 Mass	tRnaMass	4G
 Mass	instantaneous_growth_rate	1B 2B 2C 2F 3H 4E 4F 6D	the paper's growth metric; see D4
-Mass	cellVolume	4B 4C	concentrations
+Mass	cellVolume	2D 4B 4C	concentrations
 Mass	dnaMass	5A
 MonomerCounts	monomerCounts	1C 1E 3A 4A 4B 5D 5F 5G	GFP, rpoABC, ribosomal proteins, enzymes
 RNACounts	mRNA_counts	3A 3C 3F 6C	DENOMINATOR CHANGES under directional decay: excludes decaying copies
@@ -35,7 +35,7 @@ RnapData	active_rnap_coordinates	3D supplement	NaN-padded positions of every act
 RnapData	active_rnap_domain_indexes	3D supplement	chromosome domain per RNAP, for per-copy occupancy
 RibosomeData	effectiveElongationRate	2E 4G	drops under burden; sets the crowding cap
 RibosomeData	actualElongations	2G 4G
-RibosomeData	n_ribosomes_on_each_mRNA	3E 3F 3G	numerator for ribosomes per gfp mRNA
+RibosomeData	n_ribosomes_on_each_mRNA	3E 3F	numerator for ribosomes per gfp mRNA
 RibosomeData	mRNA_TU_index	3E 3F 3G	pairs with the above
 RibosomeData	max_p	3E	ribosome crowding cap; CHANGES ~3x with the footprint fix
 RibosomeData	max_p_per_protein	3E
@@ -57,3 +57,4 @@ TranscriptElongationListener	countNTPsUSed	2G
 TranscriptElongationListener	countRnaCistronSynthesized	3C optional	decay branch only; completed transcripts per cistron, excluding attenuated
 RnapData	didInitialize	5H	transcription budget, all RNAP initiations
 ComplexationListener	complexationEvents	5H	RNAP formed; reaction-indexed by the reactionIDs attribute, not complexIDs
+RibosomeData	n_ribosomes_per_transcript	2G 3G 3H	active ribosomes by the protein they are making; sums to active ribosomes
