@@ -91,9 +91,8 @@ class Metabolism(object):
 			'smoothed_max': raw_data.kcat_estimates.kcat_estimates_smoothed_max,
 			'smoothed_max_buffered': raw_data.kcat_estimates.kcat_estimates_smoothed_max_buffered,
 			# v2 estimators (top-K gap, short-window smoothed_max, drop_top_20).
-			# These load empty dicts until placeholder TSVs in
-			# reconstruction/ecoli/flat/kcat_estimates/ are replaced with real
-			# data from kcat_estimates_v2_to_tsv.py.
+			# Populated by kcat_estimates_v2_to_tsv.py; each TSV carries a
+			# provenance header naming the run it was estimated from.
 			'v2_gap':         raw_data.kcat_estimates.kcat_estimates_v2_gap,
 			'v2_smoothed_max': raw_data.kcat_estimates.kcat_estimates_v2_smoothed_max,
 			'v2_drop_top_20': raw_data.kcat_estimates.kcat_estimates_v2_drop_top_20,

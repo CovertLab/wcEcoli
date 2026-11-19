@@ -515,18 +515,34 @@ class KnowledgeBaseEcoli(object):
 			'each noncontiguous insertion should be in its own directory')
 		insert_pos = insert_loc_data[0]['insertion_pos']
 
+		# Validate before use. The splice is a plain Python slice, so a
+		# negative position silently wraps to the far end of the chromosome
+		# and then shifts every feature in the model, because every feature
+		# compares as lying after it.
+		if isinstance(insert_pos, bool) or not isinstance(insert_pos, int):
+			raise TypeError(
+				'insertion_pos must be an integer, got %r (%s)'
+				% (insert_pos, type(insert_pos).__name__))
+		if not 1 <= insert_pos <= len(self.genome_sequence):
+			raise ValueError(
+				'insertion_pos %d is outside the genome, which has %d bases.'
+				' The position is 1-indexed and the insert is placed'
+				' immediately after that base.'
+				% (insert_pos, len(self.genome_sequence)))
+
 		# Check transcription units AND genes. This used to be either/or, so
 		# whenever transcription unit data was loaded (the normal case) genes
 		# were never examined -- and 104 genes overlap no transcription unit
 		# at all, including the essential yidC.
 		data_to_check = list(tu_data) + list(genes_data)
 
-		# Add important DNA sites to the list of locations to check
-		# TODO: Check for other DNA sites if we include any in the future
-		sites_data_to_check = [
-			site for site in dna_sites_data if site['common_name'] == 'oriC' or
-			site['common_name'] == 'TerC']
-		data_to_check += sites_data_to_check
+		# Check every DNA site, not only oriC and TerC. Each site's
+		# coordinates are shifted by the insertion, so a site the search does
+		# not know about can be split by the insert while its record is left
+		# claiming the original span. Transcription factor binding sites are
+		# the common case: there are thousands of them and they are small, so
+		# landing inside one is easy and silent.
+		data_to_check += list(dna_sites_data)
 
 		spans = [
 			(row['left_end_pos'], row['right_end_pos'])
@@ -559,6 +575,21 @@ class KnowledgeBaseEcoli(object):
 		assert insert_pos <= len(self.genome_sequence), (
 			f'Resolved new gene insertion location {insert_pos} is past the'
 			f' end of the genome (requested {requested_pos}).')
+
+		# Record where the insert actually went. The search moves the position
+		# past any feature it would split, so the resolved coordinate can
+		# differ from the one in insertion_location.tsv by several kb. Anyone
+		# labelling a figure or computing gene dosage needs the resolved
+		# value, not the requested one.
+		self.new_gene_requested_insertion_pos = requested_pos
+		self.new_gene_insertion_pos = insert_pos
+		if insert_pos != requested_pos:
+			warnings.warn(
+				'New gene insertion moved from the requested position'
+				f' {requested_pos} to {insert_pos} ({insert_pos - requested_pos}'
+				' bp) to avoid splitting an annotated feature. Use'
+				' sim_data.new_gene_insertion_pos, not insertion_location.tsv,'
+				' for the coordinate the model used.')
 
 		return insert_pos
 
@@ -651,18 +682,22 @@ class KnowledgeBaseEcoli(object):
 		assert new_genes_data[0]['left_end_pos'] == 1, (
 			'first gene in new sequence must start at relative coordinate 1')
 
+		sequence_by_id = {row['id']: row['gene_seq'] for row in seq_data}
+
 		for gene in new_genes_data:
+			# Name the gene when its sequence is missing. Forgetting a row in
+			# gene_sequences.tsv is easy with a multi-gene insert, and the
+			# previous form failed with a bare TypeError from inside the
+			# knowledge base instead of saying which gene was unmatched.
+			if gene['id'] not in sequence_by_id:
+				raise ValueError(
+					"%s is listed in genes.tsv but has no row in"
+					" gene_sequences.tsv for this new gene directory"
+					% gene['id'])
+			seq_addition = Seq.Seq(sequence_by_id[gene['id']])
 			if gene['direction'] == "+":
-				seq_row = next((
-					row for row in seq_data if row['id'] == gene['id']), None)
-				seq_string = seq_row['gene_seq']
-				seq_addition = Seq.Seq(seq_string)
 				insertion_seq += seq_addition
 			else:
-				seq_row = next((
-					row for row in seq_data if row['id'] == gene['id']), None)
-				seq_string = seq_row['gene_seq']
-				seq_addition = Seq.Seq(seq_string)
 				insertion_seq += seq_addition.reverse_complement()
 
 			assert (len(seq_addition) == (

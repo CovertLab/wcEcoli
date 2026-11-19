@@ -63,8 +63,18 @@ class Plot(multigenAnalysisPlot.MultigenAnalysisPlot):
 		rrna_of = dict(zip(cistron_data['id'], cistron_data['is_rRNA']))
 		new_of = dict(zip(cistron_data['id'], cistron_data['is_new_gene']))
 
+		# Missing cistrons become NaN, not 0. Replication coordinate 0 is
+		# oriC, so defaulting to 0 would silently place any cistron that is
+		# in the listener but not in this sim_data at the origin, where it
+		# gets the highest predicted copy number and biases the
+		# origin-proximal end of the curve.
 		coords = np.array(
-			[coord_of.get(c, 0) for c in cistron_ids], dtype=float)
+			[coord_of.get(c, np.nan) for c in cistron_ids], dtype=float)
+		n_unmatched = int(np.isnan(coords).sum())
+		if n_unmatched:
+			print('%d of %d cistrons are absent from this sim_data and are'
+				' excluded; this usually means the listener and sim_data come'
+				' from different runs.' % (n_unmatched, coords.size))
 		arm = np.where(
 			coords >= 0,
 			replication.replichore_lengths[0],

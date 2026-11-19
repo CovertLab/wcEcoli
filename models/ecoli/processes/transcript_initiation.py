@@ -28,7 +28,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 
 	def initialize(self, sim, sim_data):
 		# print("Running transcript initiation initialization")
-		self.counter = 0
 		super(TranscriptInitiation, self).initialize(sim, sim_data)
 
 		# Sim options
@@ -110,9 +109,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			sim_data.process.transcription, 'frozen_expectation_tau', None)
 		self.get_rnap_active_fraction_from_ppGpp = sim_data.process.transcription.get_rnap_active_fraction_from_ppGpp
 
-		# import ipdb
-		# ipdb.set_trace()
-
 	def calculateRequest(self):
 		# Get all inactive RNA polymerases
 		self.inactive_RNAPs.requestAll()
@@ -152,16 +148,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				ppgpp_scale = 1
 
 			self.basal_prob_updated = basal_prob.copy()
-
-			# print("basal_prob_orig: ", self.basal_prob_orig[[2923, 2780, 2695, 3265]])
-			# print("basal_prob_synth_prob: ", self.basal_prob_synth_prob[[2923, 2780, 2695, 3265]])
-			# print("basal_prob_attenuation: ", self.basal_prob_attenuation[[2923, 2780, 2695, 3265]])
-			# print("basal_prob_updated: ", self.basal_prob_updated[[2923, 2780, 2695, 3265]])
-
-			if self.basal_prob[-1] > 0 and self.counter == 0:
-				self.counter += 1
-				# import ipdb
-				# ipdb.set_trace()
 
 			# Calculate probabilities of the RNAP binding to each promoter
 			self.promoter_init_probs = (basal_prob[TU_index] + ppgpp_scale *
@@ -282,22 +268,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		self.writeToListener("RnaSynthProb", "max_p", max_p)
 		is_overcrowded = (self.promoter_init_probs > max_p)
 
-		TU_of_interest_list = ["TU3[c]", "TU00285[c]", "TU00178[c]", "NG001_RNA[c]"]
-		TU_of_interest_list = ["TU3[c]", "TU00285[c]", "TU00178[c]"]
-		# TU_index_dict = {TU_id: np.where(self.TU_ids == TU_id)[0][0] for TU_id in TU_of_interest_list}
-		TU_of_interest_idx = [np.where(self.TU_ids == TU_id)[0][0] for TU_id in TU_of_interest_list]
-		TU_of_interest_dict = {TU_id: np.where(self.TU_ids == TU_id)[0][0] for TU_id in TU_of_interest_list}
-		# figure out which promoter is associated with each TU of interest
-		promoter_idx_of_interest = np.where(np.isin(TU_index, TU_of_interest_idx))[0]
-		promoter_of_interest_dict = {TU_id: np.where(np.isin(TU_index, TU_of_interest_dict[TU_id]))[0] for TU_id in TU_of_interest_list}
-
-		iter_counter = 0
-		promoter_init_probs_dict = {}
-		promoter_init_probs_dict[0] = self.promoter_init_probs[promoter_idx_of_interest].copy()
-
-		tu_init_probs_dict = {}
-		tu_init_probs_dict[0] = TU_to_promoter.dot(self.promoter_init_probs)[TU_of_interest_idx].copy()
-
 		while np.any(self.promoter_init_probs > max_p):
 			self.promoter_init_probs[is_overcrowded] = max_p
 			scale_the_rest_by = (
@@ -308,23 +278,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.promoter_init_probs[~is_overcrowded] *= scale_the_rest_by
 			is_overcrowded |= (self.promoter_init_probs > max_p)
 
-			iter_counter += 1
-			promoter_init_probs_dict[iter_counter] = self.promoter_init_probs[promoter_idx_of_interest].copy()
-			tu_init_probs_dict[iter_counter] = TU_to_promoter.dot(self.promoter_init_probs)[TU_of_interest_idx].copy()
-
-		# if iter_counter > 0:
-		# 	max_p_of_interest = max_p.copy()
-		# 	# print("\nNumber of transcript initiation crowding renormalizations: ", iter_counter)
-		# 	# print("Scale factor: ", scale_the_rest_by)
-		# 	# print("Max p: ", max_p)
-		# 	# print("TU Init probs dict: ", tu_init_probs_dict)
-		# 	# print("\n")
-		# 	# if tu_init_probs_dict[0][3] > 0: # only if NG001_RNA[c] (gfp) is being transcribed
-		# 	# 	import ipdb
-		# 	# 	ipdb.set_trace()
-		# else:
-		# 	# print("TU Init probs dict: ", tu_init_probs_dict)
-
 		# Compute actual synthesis probabilities of each transcription unit
 		actual_TU_synth_probs = TU_to_promoter.dot(self.promoter_init_probs)
 		tu_is_overcrowded = TU_to_promoter.dot(is_overcrowded).astype(bool)
@@ -332,9 +285,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			"RnaSynthProb", "actual_rna_synth_prob", actual_TU_synth_probs)
 		self.writeToListener(
 			"RnaSynthProb", "tu_is_overcrowded", tu_is_overcrowded)
-
-		# import ipdb
-		# ipdb.set_trace()
 
 		# Sample a multinomial distribution of initiation probabilities to
 		# determine what promoters are initialized

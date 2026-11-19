@@ -89,6 +89,95 @@ class TestNewGeneFlatFiles(unittest.TestCase):
 						lengths[gene['id']]))
 
 
+class TestInsertionPositionValidation(unittest.TestCase):
+	"""
+	The guards on insertion_pos, exercised without building a genome.
+
+	_update_gene_insertion_location only touches a handful of attributes, so
+	a stub carrying those is enough and keeps these tests fast.
+	"""
+
+	class _Stub:
+		"""Minimal stand-in for the knowledge base."""
+
+		def __init__(self, insert_pos, genome_length=1000):
+			self.genes = []
+			self.transcription_units = []
+			self.dna_sites = []
+			self.genome_sequence = 'A' * genome_length
+			store = type('Store', (), {})()
+			store.insertion_location = [{'insertion_pos': insert_pos}]
+			self.new_gene_data = type('Store', (), {})()
+			self.new_gene_data.stub = store
+
+		_update_gene_insertion_location = (
+			KnowledgeBaseEcoli._update_gene_insertion_location)
+
+	def _resolve(self, insert_pos, genome_length=1000):
+		stub = self._Stub(insert_pos, genome_length)
+		return stub._update_gene_insertion_location('new_gene_data.stub.')
+
+	def test_valid_position_passes_through(self):
+		"""With nothing to collide with, the request is honoured."""
+		self.assertEqual(self._resolve(500), 500)
+
+	def test_negative_position_is_rejected(self):
+		"""
+		A negative position would splice near the end of the chromosome via
+		Python's slice semantics and shift every feature, silently.
+		"""
+		with self.assertRaises(ValueError):
+			self._resolve(-5)
+
+	def test_zero_is_rejected(self):
+		"""Coordinates are 1-indexed, so 0 is not a position."""
+		with self.assertRaises(ValueError):
+			self._resolve(0)
+
+	def test_position_past_the_genome_is_rejected(self):
+		with self.assertRaises(ValueError):
+			self._resolve(5000, genome_length=1000)
+
+	def test_non_integer_is_rejected(self):
+		for bad in (12.5, '500', None, True):
+			with self.assertRaises((TypeError, ValueError)):
+				self._resolve(bad)
+
+	def test_resolved_position_is_recorded(self):
+		stub = self._Stub(500)
+		stub._update_gene_insertion_location('new_gene_data.stub.')
+		self.assertEqual(stub.new_gene_insertion_pos, 500)
+		self.assertEqual(stub.new_gene_requested_insertion_pos, 500)
+
+	def test_move_is_recorded_and_warned(self):
+		"""
+		A request landing inside a feature is moved past it, and that has to
+		be visible: the resolved coordinate is what the model used.
+		"""
+		stub = self._Stub(500)
+		stub.genes = [{'left_end_pos': 400, 'right_end_pos': 600}]
+		with self.assertWarns(UserWarning):
+			resolved = stub._update_gene_insertion_location(
+				'new_gene_data.stub.')
+		self.assertEqual(resolved, 601)
+		self.assertEqual(stub.new_gene_insertion_pos, 601)
+		self.assertEqual(stub.new_gene_requested_insertion_pos, 500)
+
+	def test_dna_sites_are_protected(self):
+		"""
+		Every DNA site is checked, not only oriC and TerC: a site the search
+		ignores is split by the insert while its record still claims the
+		original span.
+		"""
+		stub = self._Stub(500)
+		stub.dna_sites = [{'left_end_pos': 450, 'right_end_pos': 520,
+			'common_name': 'some TF binding site'}]
+		with self.assertWarns(UserWarning):
+			resolved = stub._update_gene_insertion_location(
+				'new_gene_data.stub.')
+		self.assertEqual(resolved, 521)
+
+
 class TestNewGeneInsertion(unittest.TestCase):
 	"""Checks on the genome the knowledge base actually builds."""
 

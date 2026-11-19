@@ -35,15 +35,10 @@ VARIANT_CONTROL_COLOR = poster_colors["light_gray"]
 VARIANT_A_COLOR = poster_colors["poster_blue"]
 VARIANT_B_COLOR = poster_colors["poster_light_blue"]
 
-# FOR SHERLOCK
 VARIANT_INDEX_CONTROL = 0
 VARIANT_INDEX_A = 1
 VARIANT_INDEX_B = 2 # Optional, set to -1 if only one variant is desired
 
-# # FOR LOCAL DEVELOPMENT
-# VARIANT_INDEX_CONTROL = 0
-# VARIANT_INDEX_A = 21
-# VARIANT_INDEX_B = 20 # Optional, set to -1 if only one variant is desired
 
 N_SEEDS = 50
 

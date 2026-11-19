@@ -5,8 +5,6 @@ option was enabled.
 """
 
 import numpy as np
-from Bio.Data.IUPACData import avg_ambiguous_dna_weights
-from fontTools.merge.util import avg_int
 from matplotlib import pyplot as plt
 from unum.units import fg
 

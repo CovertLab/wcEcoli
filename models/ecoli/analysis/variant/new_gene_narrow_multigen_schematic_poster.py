@@ -84,13 +84,9 @@ RRNA_GEN_TO_COLOR = {
 	10: poster_colors["poster_red"]
 }
 
-# FOR SHERLOCK
 VARIANT_INDEX_A = 1
 VARIANT_INDEX_B = -1 # Optional, set to -1 if only one variant is desired
 
-# # FOR LOCAL DEVELOPMENT
-# VARIANT_INDEX_A = 21
-# VARIANT_INDEX_B = -1 # Optional, set to -1 if only one variant is desired
 
 std_linewidth = 3
 

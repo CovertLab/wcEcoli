@@ -70,13 +70,9 @@ GEN_TO_COLOR = {
 
 VARIANT_B_COLOR = poster_colors["light_gray"]
 
-# FOR SHERLOCK
 VARIANT_INDEX_A = 4
 VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
 
-# # FOR LOCAL DEVELOPMENT
-# VARIANT_INDEX_A = 21
-# VARIANT_INDEX_B = 0 # Optional, set to -1 if only one variant is desired
 
 class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 	def do_plot(self, inputDir, plotOutDir, plotOutFileName, simDataFile,

@@ -95,7 +95,6 @@ Count number of sims that reach this generation (remember index 7
 corresponds to generation 8)
 """
 COUNT_INDEX = 23
-# COUNT_INDEX = 2 ### TODO: revert back after developing plot locally
 
 """
 Plot data from generations [MIN_CELL_INDEX, MAX_CELL_INDEX)
@@ -103,8 +102,6 @@ Note that early generations may not be representative of dynamics
 due to how they are initialized
 """
 MIN_CELL_INDEX = 16
-# # MIN_CELL_INDEX = 1 ### TODO: revert back after developing plot locally
-# MIN_CELL_INDEX = 0
 MAX_CELL_INDEX = 24
 
 """
@@ -2372,7 +2369,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 						f" plotting.")
 			fig.tight_layout()
 			exportFigure(plt, plotOutDir,
-				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}") ## TODO: Revert back after running new plots on Sherlock sims
+				f"00_new_gene_exp_trl_eff_dashboard{plot_suffix}")
 			plt.close("all")
 
 		else: # individual plots
