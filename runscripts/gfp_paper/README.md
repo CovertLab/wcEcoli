@@ -44,9 +44,27 @@ from `gfp_paper_constants`, never a local constant.
 `gfp_paper_style.design_scatter`. The survivor count goes in the panel
 metadata, because a hollow point averages only the lineages that survived.
 
-**Growth is reported as growth rate relative to the seed-matched no-GFP
-control**, not doubling time, except where a formula needs the period
-(Cooper-Helmstetter).
+**Every panel that plots growth is written in two versions** until decision
+D4 (growth rate or doubling time) is made, both from the same data:
+
+- *growth rate*, relative to the seed-matched no-GFP control (cycle or
+  lineage growth rate over that seed's control lineage window mean, from
+  `gfp_paper_data`'s `relative_growth_rate` or `seed_matched_ratio`). This
+  is the panel's plain name, e.g. `Figure_3H_<content>`.
+- *doubling time*, absolute, in minutes (`doubling_time_min`), with the
+  no-GFP control's mean as a dashed reference line and a log axis where the
+  range spans more than about 2x. Same name plus the suffix
+  `gfp_paper_constants.DOUBLING_TIME_PART`, i.e.
+  `style.panel_name(__file__, C.DOUBLING_TIME_PART)` ->
+  `Figure_3H_<content>_doubling_time`.
+
+A ratio panel (high GFP / no GFP) takes the doubling-time ratio instead,
+which reads above 1. Keep the selection, survivors, window and style of the
+two versions identical, so the only difference is the metric; draw both from
+one helper rather than two copies of the plotting code. Written examples:
+3C (`_growth` / `_doubling_time`), 3H, 5H. When D4 is decided, delete one
+version from every script in one change. Cooper-Helmstetter (5B) uses the
+doubling time regardless, because the formula needs the period.
 
 ## Running
 

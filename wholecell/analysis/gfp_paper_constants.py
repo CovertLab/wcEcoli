@@ -177,3 +177,12 @@ EVENT_BOOTSTRAP = 2000
 # Terminus reference genes (5D control, 5E reference row): transcription
 # units beyond this replichore fraction, excluding machinery and the insert.
 TERMINUS_MIN_FRACTION = 0.90
+
+# Growth metric. Decision D4 (growth rate or doubling time) is still open, so
+# every panel that plots growth writes both versions from the same data:
+#	growth rate     relative to the seed-matched no-GFP control; the panel's
+#	                plain name
+#	doubling time   absolute, in minutes, with the no-GFP control's mean as a
+#	                dashed reference; the same name with this suffix
+# When D4 is decided, drop one version in every script at once.
+DOUBLING_TIME_PART = 'doubling_time'

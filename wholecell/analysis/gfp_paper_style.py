@@ -122,7 +122,8 @@ def promoter_axis(ax, factors: Sequence[float], label: str = 'promoter strength'
 	ax.set_xlabel(label)
 
 
-def log_axis(ax, which: str, lo: float, hi: float, data=None):
+def log_axis(ax, which: str, lo: float, hi: float, data=None,
+		ticks: Optional[Sequence[float]] = None):
 	"""
 	A log axis with plain-number ticks on a 1-3-10 series.
 
@@ -135,6 +136,8 @@ def log_axis(ax, which: str, lo: float, hi: float, data=None):
 		which: 'x' or 'y'
 		lo, hi: default limits
 		data: values plotted on this axis, used only to widen the range
+		ticks: tick values to use instead of the 1-3-10 series, for ranges
+			narrower than a decade or two
 	"""
 	from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
 	if data is not None:
@@ -143,8 +146,9 @@ def log_axis(ax, which: str, lo: float, hi: float, data=None):
 		if values.size:
 			lo = min(lo, values.min() / 1.3)
 			hi = max(hi, values.max() * 1.3)
-	ticks = [m * 10.0 ** e for e in range(int(np.floor(np.log10(lo))) - 1,
-		int(np.ceil(np.log10(hi))) + 1) for m in (1, 3)]
+	if ticks is None:
+		ticks = [m * 10.0 ** e for e in range(int(np.floor(np.log10(lo))) - 1,
+			int(np.ceil(np.log10(hi))) + 1) for m in (1, 3)]
 	ticks = [t for t in ticks if lo <= t <= hi]
 	axis = ax.xaxis if which == 'x' else ax.yaxis
 	(ax.set_xscale if which == 'x' else ax.set_yscale)('log')

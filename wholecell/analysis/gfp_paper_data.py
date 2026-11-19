@@ -794,6 +794,16 @@ def seed_matched_ratio(lineages: pd.DataFrame, variant: int, column: str,
 		per_seed=ratios, n=n)
 
 
+def _ci95(values) -> float:
+	"""t-based 95% CI half-width of a mean, NaN for fewer than two values."""
+	from scipy import stats
+	values = np.asarray(values, dtype=float)
+	if values.size < 2:
+		return np.nan
+	return float(stats.t.ppf(0.975, values.size - 1) * values.std(ddof=1)
+		/ np.sqrt(values.size))
+
+
 def design_table(lineages: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 	"""
 	One row per design: means over surviving lineages, with a 95% CI on
@@ -801,7 +811,6 @@ def design_table(lineages: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 
 	Ratios are again recomputed from mean raw quantities.
 	"""
-	from scipy import stats
 	rows = []
 	for (variant, promoter, rbs), group in lineages.groupby(
 			['variant', 'promoter', 'rbs']):
@@ -814,12 +823,11 @@ def design_table(lineages: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 		rel = alive['relative_growth_rate'].dropna().values
 		row['relative_growth_rate'] = float(np.mean(rel)) if rel.size else (
 			np.nan)
-		if rel.size > 1:
-			half = stats.t.ppf(0.975, rel.size - 1) * rel.std(ddof=1) / (
-				np.sqrt(rel.size))
-			row['relative_growth_rate_ci95'] = float(half)
-		else:
-			row['relative_growth_rate_ci95'] = np.nan
+		row['relative_growth_rate_ci95'] = _ci95(rel)
+		# The doubling-time versions of growth panels (DOUBLING_TIME_PART)
+		# show absolute minutes, so their interval is across lineages too.
+		row['doubling_time_min_ci95'] = _ci95(
+			alive['doubling_time_min'].dropna().values)
 		rows.append(row)
 	designs = add_derived_columns(pd.DataFrame(rows), gene)
 	designs['failed'] = designs['n_lineages_survived'] < designs[

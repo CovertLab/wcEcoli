@@ -4,14 +4,17 @@ translate it (RBS 0), across promoter strengths.
 
 # Figure 3C
 
-Split into two files, as the storyboard review asked:
-	..._mrna     gfp mRNA copies per cell (physical count, window mean)
-	..._growth   growth rate relative to the seed-matched no-GFP control,
-				 mean over surviving lineages with a 95% CI
+Split into two panels, as the storyboard review asked, with the growth half
+in both versions while decision D4 is open:
+	..._mrna            gfp mRNA copies per cell (physical count, window mean)
+	..._growth          growth rate relative to the seed-matched no-GFP
+	                    control, mean over surviving lineages with a 95% CI
+	..._doubling_time   doubling time in minutes, mean over surviving
+	                    lineages with a 95% CI; dashed line at the control
 
 The supporting claim: promoter strength raises gfp mRNA up to the RNAP
 spacing cap, and transcription alone carries no growth cost however much mRNA
-it makes. The dashed line in the growth half is the control (1).
+it makes. The dashed line in each growth version is the control.
 
 Bars use the pale GFP step, the colour reserved for RBS 0 across the paper.
 """
@@ -20,6 +23,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from models.ecoli.analysis import variantAnalysisPlot
+from wholecell.analysis import gfp_paper_constants as C
 from wholecell.analysis import gfp_paper_data
 from wholecell.analysis import gfp_paper_style as style
 
@@ -73,6 +77,30 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				' the seed-matched control lineage; bars are the mean over'
 				' surviving lineages, error bars a t-based 95%% CI. Omitted'
 				' (no survivors): %s.' % (RBS, lost), **provenance)
+
+		# doubling time, the alternative growth metric (DOUBLING_TIME_PART)
+		control = data.designs[data.designs['variant']
+			== gfp_paper_data.CONTROL_VARIANT]['doubling_time_min']
+		reference = float(control.iloc[0]) if len(control) else np.nan
+		fig, ax = plt.subplots(figsize=style.panel_size('single', 1.1, 0.5))
+		self._bars(ax, designs, designs['doubling_time_min'],
+			error=designs['doubling_time_min_ci95'])
+		if np.isfinite(reference):
+			ax.axhline(reference, color=style.INK_MUTED,
+				linestyle=(0, (4, 3)), linewidth=0.8, zorder=1)
+		style.promoter_axis(ax, designs['promoter'])
+		ax.set_ylim(0, float(np.nanmax(np.append(designs['doubling_time_min']
+			+ designs['doubling_time_min_ci95'].fillna(0), reference)))
+			* 1.15)
+		ax.set_ylabel('doubling time (min)')
+		style.save_panel(fig, plotOutDir,
+			style.panel_name(__file__, C.DOUBLING_TIME_PART), script=__file__,
+			batch=inputDir, sim_data_path=simDataFile, n=len(variants),
+			notes='RBS %g designs. Window-mean doubling time per lineage;'
+				' bars are the mean over surviving lineages, error bars a'
+				' t-based 95%% CI. Dashed line: no-GFP control mean, %.2f'
+				' min. Omitted (no survivors): %s.' % (RBS, reference, lost),
+			**provenance)
 
 	@staticmethod
 	def _bars(ax, designs, heights, error=None):

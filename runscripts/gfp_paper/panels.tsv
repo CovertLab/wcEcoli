@@ -1,32 +1,32 @@
 panel	content	kind	script	batch	status	notes
 1A	Model + insertion schematic	schematic	(svg, drawn by hand)		todo	Wording, remove fitting arrow; insertion site label after D1
-1B	Induction traces (mRNA, protein, growth, mass)	multigen	models/ecoli/analysis/multigen/gfp_paper_induction_traces_mrna_protein_growth_mass.py	B2	todo	Add divergence p-value bar; growth rate
+1B	Induction traces (mRNA, protein, growth, mass)	multigen	models/ecoli/analysis/multigen/gfp_paper_induction_traces_mrna_protein_growth_mass.py	B2	todo	Add divergence p-value bar; growth rate; Write growth rate + doubling time versions (README, Conventions)
 1C	Proteome scatter, showcase vs no GFP	variant	models/ecoli/analysis/variant/gfp_paper_proteome_scatter_showcase_vs_no_gfp.py	B2	todo	Attenuation-gene check drives D3
 1D	Proteome fold change vs experiment	experimental	(blank until data)	B2	blank	Blank until data
 1E	What decreases with GFP (bars)	variant	models/ecoli/analysis/variant/gfp_paper_what_decreases_with_gfp_bars.py	B2	todo	Concentration, reorder, combined relative version
 2A	Promoter / RBS design schematic	schematic	(svg, drawn by hand)		todo	
-2B	GFP share + growth heatmaps	variant	models/ecoli/analysis/variant/gfp_paper_gfp_share_growth_heatmaps.py	B1	todo	Growth rate relative
-2C	Growth vs GFP share (+ experiments)	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_share_experiments.py	B1	todo	Experimental overlay later
+2B	GFP share + growth heatmaps	variant	models/ecoli/analysis/variant/gfp_paper_gfp_share_growth_heatmaps.py	B1	todo	Growth rate relative; Write growth rate + doubling time versions (README, Conventions)
+2C	Growth vs GFP share (+ experiments)	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_share_experiments.py	B1	todo	Experimental overlay later; Write growth rate + doubling time versions (README, Conventions)
 2D	Ribosomes, RNAP vs GFP share	variant	models/ecoli/analysis/variant/gfp_paper_ribosomes_rnap_vs_gfp_share.py	B1	todo	Counts or concentration (see flags)
 2E	Machinery traces, median of lineages	multigen	models/ecoli/analysis/multigen/gfp_paper_machinery_traces_median_of_lineages.py	B2	todo	Caption says "single cell traces"
-2F	Growth vs ribosome counts per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_ribosome_counts_per_cycle.py	B2	todo	Doubling time → growth rate
+2F	Growth vs ribosome counts per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_ribosome_counts_per_cycle.py	B2	todo	Doubling time → growth rate; Write growth rate + doubling time versions (README, Conventions)
 2G	Active RNAP / ribosome allocation	variant	models/ecoli/analysis/variant/gfp_paper_active_rnap_ribosome_allocation.py	B2	todo	
 2H	Machinery loop schematic	schematic	(svg, drawn by hand)		todo	
 3A	Transcriptome scatter	variant	models/ecoli/analysis/variant/gfp_paper_transcriptome_scatter.py	B2	draft	Design = nearest to 35% GFP proteome share among designs with survivors
 3B	Transcriptome vs experiment	experimental	(blank until data)	B2	blank	Blank until data
-3C	gfp mRNA + growth, RBS 0	variant	models/ecoli/analysis/variant/gfp_paper_gfp_mrna_growth_rbs_0.py	B1	draft	Mock up split into two
+3C	gfp mRNA + growth, RBS 0	variant	models/ecoli/analysis/variant/gfp_paper_gfp_mrna_growth_rbs_0.py	B1	draft	Mock up split into two; Growth rate + doubling time versions written
 3D	RNAP spacing on gfp	variant	models/ecoli/analysis/variant/gfp_paper_rnap_spacing_on_gfp.py	B1	draft	
 3E	Ribosome spacing	variant	models/ecoli/analysis/variant/gfp_paper_ribosome_spacing.py	B1	draft	Footprint fix changes the reference line
 3F	Ribosomes per gfp mRNA vs pool ceiling	variant	models/ecoli/analysis/variant/gfp_paper_ribosomes_per_gfp_mrna_vs_pool_ceiling.py	B1	draft	Footprint fix: "mRNA full" moves 3×
 3G	Share of active RNAP vs ribosomes	variant	models/ecoli/analysis/variant/gfp_paper_share_of_active_rnap_vs_ribosomes.py	B1	draft	Band replaced by a per-design spacing-limit mark (copies and active RNAP move with burden)
-3H	Growth vs GFP ribosome share per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py	B2	draft	Many more seeds now; growth rate; y = per-cycle growth relative to seed-matched control (D4); colours ordered by burden
+3H	Growth vs GFP ribosome share per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py	B2	draft	Many more seeds now; growth rate; y = per-cycle growth relative to seed-matched control (D4); colours ordered by burden; Growth rate + doubling time versions written
 3I	Transcription capped / translation open schematic	schematic	(svg, drawn by hand)		todo	
 4A	Enzyme proteome scatter	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_proteome_scatter.py	B2	todo	
 4B	Enzyme concentration histogram	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_concentration_histogram.py	B2	todo	
 4C	Flux per growth vs enzyme concentration	variant	models/ecoli/analysis/variant/gfp_paper_flux_per_growth_vs_enzyme_concentration.py	B1	todo	
 4D	kcat ceiling schematic	schematic	(svg, drawn by hand)		todo	
-4E	Wildtype forced reduction → growth	variant	models/ecoli/analysis/variant/gfp_paper_wildtype_forced_reduction_growth.py	M1	todo	
-4F	GFP ± kcat constraints	variant	models/ecoli/analysis/variant/gfp_paper_gfp_kcat_constraints.py	M2	todo	
+4E	Wildtype forced reduction → growth	variant	models/ecoli/analysis/variant/gfp_paper_wildtype_forced_reduction_growth.py	M1	todo	Write growth rate + doubling time versions (README, Conventions)
+4F	GFP ± kcat constraints	variant	models/ecoli/analysis/variant/gfp_paper_gfp_kcat_constraints.py	M2	todo	Write growth rate + doubling time versions (README, Conventions)
 4G	Supply capacity vs translational demand	variant	models/ecoli/analysis/variant/gfp_paper_supply_capacity_vs_translational_demand.py	B1 / M2	todo	
 4H	ppGpp vs growth, kcat tightening vs GFP	variant	models/ecoli/analysis/variant/gfp_paper_ppgpp_vs_growth_kcat_tightening_vs_gfp.py	M1 + B1	todo	
 4I	Amino acid pool schematic	schematic	(svg, drawn by hand)		todo	Redo to match other schematics
@@ -37,9 +37,9 @@ panel	content	kind	script	batch	status	notes
 5E	Dosage loss by gene group	variant	models/ecoli/analysis/variant/gfp_paper_dosage_loss_by_gene_group.py	B2	draft	GFP construct row moves with site; Baseline = no-GFP control (storyboard used the transcription-only design); terminus set excludes machinery
 5F	Limiting step for machinery	variant	models/ecoli/analysis/variant/gfp_paper_limiting_step_for_machinery.py	B2	draft	Ties for limiting split equally (storyboard credited ties to the first-listed subunit, biasing toward protein)
 5G	rpoC steps (copies → protein)	variant	models/ecoli/analysis/variant/gfp_paper_rpoc_steps_copies_protein.py	B2	draft	
-5H	Cell-wide capacity bars	variant	models/ecoli/analysis/variant/gfp_paper_cell_wide_capacity_bars.py	B2	draft	Last bar relabelled growth rate (it is the specific rate)
+5H	Cell-wide capacity bars	variant	models/ecoli/analysis/variant/gfp_paper_cell_wide_capacity_bars.py	B2	draft	Last bar relabelled growth rate (it is the specific rate); Growth rate + doubling time versions written
 5I	rpoC feedback schematic	schematic	(svg, drawn by hand)		todo	
-6A	Multi-trace induction timeline	multigen	models/ecoli/analysis/multigen/gfp_paper_multi_trace_induction_timeline.py	B2	todo	
+6A	Multi-trace induction timeline	multigen	models/ecoli/analysis/multigen/gfp_paper_multi_trace_induction_timeline.py	B2	todo	If a growth track is shown, write growth rate + doubling time versions (README)
 6B	Causal chain schematic	schematic	(svg, drawn by hand)		todo	
 6C	Loop stabilisation (shares over gens)	variant	models/ecoli/analysis/variant/gfp_paper_loop_stabilisation_shares_over_gens.py	B2	todo	
-6D	GFP made per cell per hour	variant	models/ecoli/analysis/variant/gfp_paper_gfp_made_per_cell_per_hour.py	B1	todo	
+6D	GFP made per cell per hour	variant	models/ecoli/analysis/variant/gfp_paper_gfp_made_per_cell_per_hour.py	B1	todo	Write growth rate + doubling time versions (README, Conventions)
