@@ -76,6 +76,12 @@ TAGS = {
 		'gfp_paper_ribosomes_per_gfp_mrna_vs_pool_ceiling.py',
 		'gfp_paper_share_of_active_rnap_vs_ribosomes.py',
 		'gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py',
+		'gfp_paper_copies_vs_replichore_position_cooper_helmste.py',
+		'gfp_paper_rpoc_event_anchored_response.py',
+		'gfp_paper_dosage_loss_by_gene_group.py',
+		'gfp_paper_limiting_step_for_machinery.py',
+		'gfp_paper_rpoc_steps_copies_protein.py',
+		'gfp_paper_cell_wide_capacity_bars.py',
 		],
 	'PAPER': [
 		"adder_sizer.py",

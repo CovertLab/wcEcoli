@@ -24,8 +24,8 @@ RnaSynthProb	target_rna_synth_prob	3E	requested versus actual initiation
 RnaSynthProb	actual_rna_synth_prob	3E 3D
 RnaSynthProb	max_p	3D 3E	RNAP spacing cap
 RnaSynthProb	tu_is_overcrowded	3D 3E	drives the D3 artifact check
-RnaSynthProb	promoter_copy_number	3D 5B 5E	gene dosage
-RnaSynthProb	gene_copy_number	5B 5C 5E
+RnaSynthProb	promoter_copy_number	3D 5E	gene dosage
+RnaSynthProb	gene_copy_number	5B 5C 5D 5G
 RnaSynthProb	basal_prob_ppgpp_synth_prob	5D	rpoC event-anchored analysis
 RnaSynthProb	basal_prob_orig	5D
 RnaSynthProb	basal_prob_updated	5D
@@ -43,7 +43,7 @@ RibosomeData	mRNA_is_overcrowded	3E	should fire far less after the footprint fix
 RibosomeData	actual_prob_translation_per_transcript	3E
 RibosomeData	target_prob_translation_per_transcript	3E
 RibosomeData	ribosome_init_event_per_monomer	5G 6C
-BulkMolecules	counts	3F	free 30S and 50S, for total ribosomes (the pool ceiling); read for two columns only
+BulkMolecules	counts	3F 5F 5H	free 30S/50S (pool ceiling), free RNAP (total RNAP), free complex subunits (limiting step); read by subcolumn
 UniqueMoleculeCounts	uniqueMoleculeCounts	2D 2E 2F 3G 5A	active_ribosome, active_RNAP, full_chromosome, oriC
 ReplicationData	criticalMassPerOriC	5A 5B
 ReplicationData	criticalInitiationMass	5A
@@ -55,3 +55,5 @@ FBAResults	catalyst_counts	4C 4D
 EnzymeKinetics	countsToMolar	4B 4C	enzyme concentrations
 TranscriptElongationListener	countNTPsUSed	2G
 TranscriptElongationListener	countRnaCistronSynthesized	3C optional	decay branch only; completed transcripts per cistron, excluding attenuated
+RnapData	didInitialize	5H	transcription budget, all RNAP initiations
+ComplexationListener	complexationEvents	5H	RNAP formed; reaction-indexed by the reactionIDs attribute, not complexIDs

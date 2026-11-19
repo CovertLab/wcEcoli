@@ -153,3 +153,27 @@ RBS_LINES_RIBOSOME: Sequence[float] = (1, 5, 10)              # 3E, 3F
 # Figure 3A compares the control's transcriptome with the design whose mean
 # GFP proteome share is closest to this, among designs with survivors.
 TRANSCRIPTOME_TARGET_PROTEOME_SHARE = 0.35
+
+# Figure 5A shows one lineage from four wildtype generations before induction
+# to the end of the run, so the pre-induction rhythm is visible for contrast.
+REPLICATION_TIMELINE_FIRST_GEN = NEW_GENE_INDUCTION_GEN - 4
+REPLICATION_TIMELINE_LAST_GEN = ANALYSIS_LAST_GEN
+
+# Figure 5: "GFP 14%" and "GFP 35%" are the designs whose mean GFP proteome
+# share is nearest these, among designs with surviving lineages.
+FIG5_PROTEOME_SHARES: Sequence[float] = (0.14, 0.35)
+
+# Figure 5D windows around each replication initiation, in minutes. The pre
+# window ends 0.3 min before the event and each post window starts 0.3 min
+# after it, so the time step of the event itself is never in a window. A
+# window counts only if it lies within the same cell cycle and spans at least
+# EVENT_MIN_STEPS time steps.
+EVENT_PRE_WINDOW_MIN: Tuple[float, float] = (-2.33, -0.3)
+EVENT_POST_WINDOWS_MIN: Sequence[Tuple[float, float]] = (
+	(0.3, 2), (2, 5), (5, 10), (10, 15))
+EVENT_MIN_STEPS = 30
+EVENT_BOOTSTRAP = 2000
+
+# Terminus reference genes (5D control, 5E reference row): transcription
+# units beyond this replichore fraction, excluding machinery and the insert.
+TERMINUS_MIN_FRACTION = 0.90

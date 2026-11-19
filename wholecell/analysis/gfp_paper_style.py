@@ -193,6 +193,34 @@ def legend_with_failed(ax, any_failed: bool, **kwargs):
 	return ax.legend(handles, labels, **kwargs)
 
 
+def ratio_bars(ax, labels: Sequence[str], means, ci95, colors,
+		reference: float = 1.0, decimals: int = 2):
+	"""
+	Vertical bars of a ratio to the control, with 95% CIs, the value written
+	above each bar in ink, and a dashed line at `reference` (no change).
+	"""
+	x = np.arange(len(labels))
+	means = np.asarray(means, dtype=float)
+	ci95 = np.asarray(ci95, dtype=float)
+	ax.bar(x, means, width=0.55, color=colors, zorder=2)
+	ok = np.isfinite(ci95)
+	if ok.any():
+		ax.errorbar(x[ok], means[ok], yerr=ci95[ok], fmt='none',
+			ecolor=INK, elinewidth=0.7, capsize=1.5, zorder=3)
+	for xi, m, c in zip(x, means, np.where(ok, ci95, 0)):
+		if np.isfinite(m):
+			ax.annotate('%.*f' % (decimals, m), xy=(xi, m + c),
+				xytext=(0, 2), textcoords='offset points', ha='center',
+				va='bottom', fontsize=FONT_SIZES['annotation'], color=INK)
+	ax.axhline(reference, color=INK_MUTED, linestyle=(0, (4, 3)),
+		linewidth=0.8, zorder=1)
+	ax.set_xticks(x)
+	ax.set_xticklabels(labels)
+	top = np.nanmax(np.append(means + np.nan_to_num(ci95), reference))
+	ax.set_ylim(0, max(1.1 * reference, 1.12 * top))
+	return x
+
+
 def reference_line(ax, y: float, label: str, horizontal: bool = True):
 	"""A dashed physical limit, labelled at its right-hand end in muted ink."""
 	if horizontal:

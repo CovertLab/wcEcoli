@@ -62,6 +62,11 @@ ACTIVE = [
 ]
 
 TAGS = {
+	# GFP burden paper panels (runscripts/gfp_paper/panels.tsv). Not in
+	# ACTIVE: they expect a new gene induction batch.
+	'GFP_PAPER': [
+		'gfp_paper_replication_timeline_one_lineage.py',
+		],
 	'ACTIVE': ACTIVE,   # all active analyses in this category
 	'CORE': [           # the default list to run in development
 		"aa_conc.py",

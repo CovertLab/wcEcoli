@@ -59,7 +59,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 
 		with open(simDataFile, 'rb') as f:
 			sim_data = pickle.load(f)
-		genes = gfp_paper_data.cistron_profiles(inputDir, sim_data, data,
+		genes = gfp_paper_data.cistron_profiles(sim_data, data,
 			[control, design], plotOutDir, self.cpus)
 		shares = genes[[control, design]] / genes[[control, design]].sum()
 		x, y = shares[control].values, shares[design].values

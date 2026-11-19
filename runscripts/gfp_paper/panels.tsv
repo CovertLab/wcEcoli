@@ -30,14 +30,14 @@ panel	content	kind	script	batch	status	notes
 4G	Supply capacity vs translational demand	variant	models/ecoli/analysis/variant/gfp_paper_supply_capacity_vs_translational_demand.py	B1 / M2	todo	
 4H	ppGpp vs growth, kcat tightening vs GFP	variant	models/ecoli/analysis/variant/gfp_paper_ppgpp_vs_growth_kcat_tightening_vs_gfp.py	M1 + B1	todo	
 4I	Amino acid pool schematic	schematic	(svg, drawn by hand)		todo	Redo to match other schematics
-5A	Replication timeline, one lineage	multigen	models/ecoli/analysis/multigen/gfp_paper_replication_timeline_one_lineage.py	B2	todo	
-5B	Copies vs replichore position, Cooper–Helmstetter	variant	models/ecoli/analysis/variant/gfp_paper_copies_vs_replichore_position_cooper_helmste.py	B2	todo	Changes with insertion site
+5A	Replication timeline, one lineage	multigen	models/ecoli/analysis/multigen/gfp_paper_replication_timeline_one_lineage.py	B2	draft	One file per lineage in Figure_5A_lineages/; pick the representative
+5B	Copies vs replichore position, Cooper–Helmstetter	variant	models/ecoli/analysis/variant/gfp_paper_copies_vs_replichore_position_cooper_helmste.py	B2	draft	Changes with insertion site
 5C	Chromosome map	schematic	(svg, drawn by hand)	sim_data	todo	gfp position after D1
-5D	rpoC event-anchored response	variant	models/ecoli/analysis/variant/gfp_paper_rpoc_event_anchored_response.py	B2	todo	Pool events across lineages
-5E	Dosage loss by gene group	variant	models/ecoli/analysis/variant/gfp_paper_dosage_loss_by_gene_group.py	B2	todo	GFP construct row moves with site
-5F	Limiting step for machinery	variant	models/ecoli/analysis/variant/gfp_paper_limiting_step_for_machinery.py	B2	todo	
-5G	rpoC steps (copies → protein)	variant	models/ecoli/analysis/variant/gfp_paper_rpoc_steps_copies_protein.py	B2	todo	
-5H	Cell-wide capacity bars	variant	models/ecoli/analysis/variant/gfp_paper_cell_wide_capacity_bars.py	B2	todo	
+5D	rpoC event-anchored response	variant	models/ecoli/analysis/variant/gfp_paper_rpoc_event_anchored_response.py	B2	draft	Pool events across lineages; Pooled estimator for all four lines, bootstrap CI over lineages; raw translation rate (storyboard used a share)
+5E	Dosage loss by gene group	variant	models/ecoli/analysis/variant/gfp_paper_dosage_loss_by_gene_group.py	B2	draft	GFP construct row moves with site; Baseline = no-GFP control (storyboard used the transcription-only design); terminus set excludes machinery
+5F	Limiting step for machinery	variant	models/ecoli/analysis/variant/gfp_paper_limiting_step_for_machinery.py	B2	draft	Ties for limiting split equally (storyboard credited ties to the first-listed subunit, biasing toward protein)
+5G	rpoC steps (copies → protein)	variant	models/ecoli/analysis/variant/gfp_paper_rpoc_steps_copies_protein.py	B2	draft	
+5H	Cell-wide capacity bars	variant	models/ecoli/analysis/variant/gfp_paper_cell_wide_capacity_bars.py	B2	draft	Last bar relabelled growth rate (it is the specific rate)
 5I	rpoC feedback schematic	schematic	(svg, drawn by hand)		todo	
 6A	Multi-trace induction timeline	multigen	models/ecoli/analysis/multigen/gfp_paper_multi_trace_induction_timeline.py	B2	todo	
 6B	Causal chain schematic	schematic	(svg, drawn by hand)		todo	

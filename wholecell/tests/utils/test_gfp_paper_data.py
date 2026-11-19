@@ -189,3 +189,57 @@ class TestRbsColour(unittest.TestCase):
 
 if __name__ == '__main__':
 	unittest.main()
+
+
+class TestFigure5Helpers(unittest.TestCase):
+	def test_ties_split_credit(self):
+		# step 1: protein 0, rRNA 0 (tie); step 2: rRNA alone limits;
+		# step 3: protein alone (needs 2 copies, has 2 -> 1 per copy)
+		free = np.array([[0, 0], [5, 1], [2, 3]])
+		credit, tied = D.split_limiting_credit(free, [2, 1])
+		np.testing.assert_allclose(credit, [(0.5 + 0 + 1) / 3,
+			(0.5 + 1 + 0) / 3])
+		self.assertAlmostEqual(tied, 1 / 3)
+		self.assertAlmostEqual(credit.sum(), 1.0)
+
+	def test_replichore_fraction(self):
+		class Stub:
+			pass
+		sim = Stub()
+		sim.process = Stub()
+		sim.process.replication = Stub()
+		sim.process.replication.replichore_lengths = (100, 50)
+		np.testing.assert_allclose(D.replichore_fraction(sim,
+			[0, 50, 100, -25, -50]), [0, 0.5, 1, 0.5, 1])
+
+	def test_seed_matched_ratio_skips_unmatched_and_dead(self):
+		lineages = pd.DataFrame({'variant': [0, 0, 5, 5, 5],
+			'seed': [0, 1, 0, 1, 2], 'survived': [True, True, True, False,
+			True], 'x': [2.0, 4.0, 1.0, 1.0, 9.0]})
+		r = D.seed_matched_ratio(lineages, 5, 'x')
+		self.assertEqual(r['n'], 1)           # seed 1 died, seed 2 unmatched
+		self.assertAlmostEqual(r['mean'], 0.5)
+
+	def test_nearest_design(self):
+		designs = pd.DataFrame({'variant': [0, 1, 2, 3], 'promoter':
+			[0, 8, 8, 9], 'n_lineages_survived': [5, 5, 5, 0],
+			'gfp_proteome_share': [0.0, 0.10, 0.30, 0.35]})
+		self.assertEqual(D.nearest_design(designs, 0.35)['variant'], 2)
+		self.assertEqual(D.nearest_design(designs, 0.0)['variant'], 1)
+
+	def test_pooled_response(self):
+		rows = []
+		for seed in (0, 1):
+			for event in (0, 1):
+				rows.append(dict(seed=seed, generation=16, event=event,
+					window='pre', window_lo=-2, window_hi=0, n_steps=100,
+					x=1.0))
+				rows.append(dict(seed=seed, generation=16, event=event,
+					window='post_0_2', window_lo=0, window_hi=2,
+					n_steps=50, x=1.0 + seed))
+		r = D.pooled_response(pd.DataFrame(rows), 'x', n_boot=200).iloc[0]
+		# pre rate 4/400; post rate (2 + 4)/200 -> ratio 3
+		self.assertAlmostEqual(r['ratio'], 3.0)
+		self.assertEqual(r['n_events'], 4)
+		self.assertLessEqual(r['lo'], r['ratio'])
+		self.assertGreaterEqual(r['hi'], r['ratio'])

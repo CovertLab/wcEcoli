@@ -74,7 +74,7 @@ from wholecell.utils import parallelization
 
 # Bump whenever read_cycle changes what a column means, so stale caches are
 # rebuilt rather than silently reused.
-CACHE_VERSION = 1
+CACHE_VERSION = 2
 CACHE_SUBDIR = os.path.join('paper_figures', '_cache')
 REBUILD_ENV = 'GFP_PAPER_REBUILD_CACHE'
 
@@ -152,6 +152,93 @@ def gene_info(sim_data) -> GeneInfo:
 		s30_id=sim_data.molecule_ids.s30_full_complex,
 		s50_id=sim_data.molecule_ids.s50_full_complex,
 	)
+
+
+@dataclass(frozen=True)
+class MachineryInfo:
+	"""
+	Ids for the host machinery Figure 5 follows, each in the index space of
+	the listener that reports it.
+	"""
+	rpoc_gene_id: str               # RnaSynthProb gene_ids (gene copies)
+	rpoc_cistron_id: str            # RnapData cistron_ids (transcription)
+	rpoc_monomer_id: str            # MonomerCounts / RibosomeData monomerIds
+	full_rnap_id: str               # free RNAP in BulkMolecules
+	rnap_formation_reactions: Tuple[str, ...]   # complexation reaction ids
+	# (label, complex id, subunit ids, stoichiometry) for limiting-subunit
+	# analysis; subunits include rRNAs for the ribosomal subunits
+	complexes: Tuple[Tuple[str, str, Tuple[str, ...], Tuple[float, ...]], ...]
+
+
+RPOC_MONOMER_ID = 'RPOC-MONOMER[c]'
+
+
+def machinery_info(sim_data) -> MachineryInfo:
+	"""Read the machinery ids from sim_data, checking each exists."""
+	translation = sim_data.process.translation
+	transcription = sim_data.process.transcription
+	complexation = sim_data.process.complexation
+	full_rnap = sim_data.molecule_ids.full_RNAP
+
+	rnap = complexation.get_monomers(full_rnap)
+	if RPOC_MONOMER_ID not in list(rnap['subunitIds']):
+		raise ValueError('%s is not a subunit of %s; the RNAP subunit ids'
+			' have changed' % (RPOC_MONOMER_ID, full_rnap))
+	monomers = list(translation.monomer_data['id'])
+	cistron = translation.monomer_data['cistron_id'][
+		monomers.index(RPOC_MONOMER_ID)]
+	cistrons = list(transcription.cistron_data['id'])
+	gene_id = transcription.cistron_data['gene_id'][cistrons.index(cistron)]
+
+	stoich = complexation.stoich_matrix()
+	row = list(complexation.molecule_names).index(full_rnap)
+	reactions = tuple(complexation.ids_reactions[i]
+		for i in np.where(stoich[row, :] > 0)[0])
+	if not reactions:
+		raise ValueError('no complexation reaction produces %s' % full_rnap)
+
+	complexes = []
+	for label, complex_id in (('30S', sim_data.molecule_ids.s30_full_complex),
+			('50S', sim_data.molecule_ids.s50_full_complex),
+			('RNAP', full_rnap)):
+		parts = complexation.get_monomers(complex_id)
+		complexes.append((label, complex_id,
+			tuple(str(x) for x in parts['subunitIds']),
+			tuple(float(x) for x in parts['subunitStoich'])))
+	return MachineryInfo(rpoc_gene_id=str(gene_id),
+		rpoc_cistron_id=str(cistron), rpoc_monomer_id=RPOC_MONOMER_ID,
+		full_rnap_id=full_rnap, rnap_formation_reactions=reactions,
+		complexes=tuple(complexes))
+
+
+def replichore_fraction(sim_data, coords) -> np.ndarray:
+	"""
+	Position along the replichore, 0 at oriC and 1 at terC, for chromosome
+	coordinates relative to oriC (as in replication_coordinate).
+
+	Each arm is normalised by its own length, as Cooper-Helmstetter
+	(replication.get_average_copy_number) does.
+	"""
+	right, left = sim_data.process.replication.replichore_lengths
+	coords = np.asarray(coords, dtype=float)
+	return np.where(coords >= 0, coords / right, -coords / left)
+
+
+def nearest_design(designs: pd.DataFrame, share: float) -> pd.Series:
+	"""
+	The induced design with survivors whose mean GFP proteome share is
+	closest to `share`, so "GFP 35%" means the same design in every panel.
+
+	Raises:
+		ValueError: if no induced design has a surviving lineage.
+	"""
+	candidates = designs[(designs['promoter'] > 0)
+		& (designs['n_lineages_survived'] > 0)
+		& np.isfinite(designs['gfp_proteome_share'])]
+	if candidates.empty:
+		raise ValueError('no induced design has a surviving lineage')
+	gap = (candidates['gfp_proteome_share'] - share).abs()
+	return candidates.loc[gap.idxmin()]
 
 
 # --------------------------------------------------------------------------
@@ -267,12 +354,21 @@ class _Cell:
 				self._readers[listener] = None
 		return self._readers[listener]
 
-	def column(self, listener, name):
-		"""The column, or None (recorded in `missing`) if it is absent."""
+	def column(self, listener, name, indices=None):
+		"""
+		The column, or None (recorded in `missing`) if it is absent.
+
+		`indices` reads only those subcolumns, which matters for wide columns
+		such as BulkMolecules counts, where reading every molecule to use two
+		dominates the cost of a cycle.
+		"""
 		reader = self.reader(listener)
 		if reader is None or name not in reader.columnNames():
 			self.missing.append('%s/%s' % (listener, name))
 			return None
+		if indices is not None:
+			return reader.readColumn(name, indices=np.asarray(indices),
+				squeeze=False)
 		return reader.readColumn(name)
 
 	def attribute(self, listener, name):
@@ -295,7 +391,8 @@ def _index(ids, wanted) -> Optional[int]:
 	return ids.index(wanted) if wanted in ids else None
 
 
-def read_cycle(path: str, gene: GeneInfo) -> Dict[str, object]:
+def read_cycle(path: str, gene: GeneInfo, machinery: MachineryInfo
+		) -> Dict[str, object]:
 	"""
 	Time means of the raw quantities for one cell cycle.
 
@@ -307,8 +404,9 @@ def read_cycle(path: str, gene: GeneInfo) -> Dict[str, object]:
 
 	time = cell.column('Main', 'time')
 	row['n_steps'] = 0 if time is None else int(time.size)
-	row['doubling_time_min'] = (float(time[-1] - time[0]) / 60.0
+	doubling_time_min = (float(time[-1] - time[0]) / 60.0
 		if time is not None and time.size > 1 else np.nan)
+	row['doubling_time_min'] = doubling_time_min
 	row['divided'] = os.path.exists(
 		os.path.join(path, 'Daughter1_inherited_state.cPickle'))
 
@@ -404,13 +502,57 @@ def read_cycle(path: str, gene: GeneInfo) -> Dict[str, object]:
 		i = _index(names, molecule)
 		row[key] = (_mean(counts[:, i])
 			if counts is not None and i is not None else np.nan)
-	bulk = cell.column('BulkMolecules', 'counts')
 	bulk_names = cell.attribute('BulkMolecules', 'objectNames')
-	i30, i50 = _index(bulk_names, gene.s30_id), _index(bulk_names, gene.s50_id)
-	row['free_ribosomes'] = (
-		_mean(np.minimum(bulk[:, i30], bulk[:, i50]))
-		if bulk is not None and i30 is not None and i50 is not None
+	wanted = [_index(bulk_names, m) for m in (gene.s30_id, gene.s50_id,
+		machinery.full_rnap_id)]
+	bulk = (cell.column('BulkMolecules', 'counts', indices=wanted)
+		if None not in wanted else None)
+	row['free_ribosomes'] = (_mean(np.minimum(bulk[:, 0], bulk[:, 1]))
+		if bulk is not None else np.nan)
+	row['free_rnap'] = _mean(bulk[:, 2]) if bulk is not None else np.nan
+
+	# rpoC and RNAP capacity (Figure 5G, 5H). Event counts become rates per
+	# second over the cycle, so cycles of different length compare.
+	seconds = doubling_time_min * 60.0
+
+	def rate(listener, column, ids_attribute=None, wanted_id=None,
+			ids_list=None):
+		if ids_attribute is not None:
+			i = _index(cell.attribute(listener, ids_attribute), wanted_id)
+			if i is None:
+				return np.nan
+			values = cell.column(listener, column, indices=[i])
+		elif ids_list is not None:
+			ids = cell.attribute(listener, 'reactionIDs')
+			idx = [_index(ids, r) for r in ids_list]
+			if ids is None or None in idx:
+				return np.nan
+			values = cell.column(listener, column, indices=idx)
+		else:
+			values = cell.column(listener, column)
+		if values is None or not np.isfinite(seconds) or seconds <= 0:
+			return np.nan
+		return float(np.nansum(values)) / seconds
+
+	g_rpoc = _index(cell.attribute('RnaSynthProb', 'gene_ids'),
+		machinery.rpoc_gene_id)
+	row['rpoc_gene_copies'] = (_mean(cell.column('RnaSynthProb',
+		'gene_copy_number', indices=[g_rpoc])) if g_rpoc is not None
 		else np.nan)
+	row['rpoc_transcription_per_s'] = rate('RnapData',
+		'rna_init_event_per_cistron', 'cistron_ids', machinery.rpoc_cistron_id)
+	row['rpoc_translation_per_s'] = rate('RibosomeData',
+		'ribosome_init_event_per_monomer', 'monomerIds',
+		machinery.rpoc_monomer_id)
+	m_rpoc = _index(cell.attribute('MonomerCounts', 'monomerIds'),
+		machinery.rpoc_monomer_id)
+	row['rpoc_monomers'] = (_mean(monomers[:, m_rpoc])
+		if monomers is not None and m_rpoc is not None else np.nan)
+	# complexationEvents is indexed by the listener's reactionIDs, which is
+	# not the order of its complexIDs attribute; resolve by reaction id.
+	row['rnap_formed_per_s'] = rate('ComplexationListener',
+		'complexationEvents', ids_list=machinery.rnap_formation_reactions)
+	row['rnap_initiations_per_s'] = rate('RnapData', 'didInitialize')
 
 	row['ppgpp_conc'] = _mean(cell.column('GrowthLimits', 'ppgpp_conc'))
 	row['missing_columns'] = ';'.join(sorted(set(cell.missing)))
@@ -431,6 +573,7 @@ def add_derived_columns(df: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 			df[name] = np.nan
 	with np.errstate(divide='ignore', invalid='ignore'):
 		df['total_ribosomes'] = df['active_ribosomes'] + df['free_ribosomes']
+		df['total_rnap'] = df['active_rnap'] + df['free_rnap']
 		df['gfp_proteome_share'] = df['gfp_protein_mass_fg'] / df[
 			'proteinMass']
 		df['gfp_mrna_share'] = df['gfp_mrna'] / df['all_mrna']
@@ -469,9 +612,10 @@ def _safe_ratio(numerator, denominator):
 # --------------------------------------------------------------------------
 # The three tables
 def _read_one(args):
-	path, gene_dict = args
+	path, gene_dict, machinery_dict = args
 	try:
-		return read_cycle(path, GeneInfo(**gene_dict))
+		return read_cycle(path, GeneInfo(**gene_dict),
+			MachineryInfo(**machinery_dict))
 	except Exception as e:                                  # noqa: BLE001
 		return {'read_error': '%s: %s' % (type(e).__name__, e)}
 
@@ -487,11 +631,15 @@ def cycle_table(batch_dir: str, sim_data, metadata: dict, plot_out_dir: str,
 	only reads the new ones. Set GFP_PAPER_REBUILD_CACHE=1 to re-read all.
 	"""
 	gene = gene_info(sim_data)
+	machinery = machinery_info(sim_data)
 	cache_dir = os.path.join(plot_out_dir, CACHE_SUBDIR)
 	os.makedirs(cache_dir, exist_ok=True)
 	cache_path = os.path.join(cache_dir, 'cycles.csv')
 	stamp_path = os.path.join(cache_dir, 'cycles.json')
-	stamp = {'cache_version': CACHE_VERSION, 'gene': asdict(gene)}
+	# Round-tripped through JSON so tuples compare equal to the lists a
+	# stored stamp reads back as.
+	stamp = json.loads(json.dumps({'cache_version': CACHE_VERSION,
+		'gene': asdict(gene), 'machinery': asdict(machinery)}))
 
 	cached = pd.DataFrame()
 	if os.path.exists(cache_path) and not os.environ.get(REBUILD_ENV):
@@ -507,7 +655,8 @@ def cycle_table(batch_dir: str, sim_data, metadata: dict, plot_out_dir: str,
 	todo = [c for c in cells if c[3] not in done]
 	if todo:
 		pool_size = max(1, min(cpus, len(todo)))
-		jobs = [(path, asdict(gene)) for _, _, _, path in todo]
+		jobs = [(path, asdict(gene), asdict(machinery))
+			for _, _, _, path in todo]
 		if pool_size > 1:
 			pool = parallelization.pool(pool_size)
 			rows = pool.map(_read_one, jobs)
@@ -563,6 +712,9 @@ RAW_COLUMNS = (
 	'gfp_actual_synth_prob', 'gfp_target_synth_prob', 'ribosomes_on_gfp',
 	'ribosomes_on_mrna', 'gfp_ribosome_overcrowded_frac', 'elongation_rate',
 	'active_ribosomes', 'active_rnap', 'free_ribosomes', 'ppgpp_conc',
+	'free_rnap', 'rpoc_gene_copies', 'rpoc_transcription_per_s',
+	'rpoc_translation_per_s', 'rpoc_monomers', 'rnap_formed_per_s',
+	'rnap_initiations_per_s',
 )
 
 
@@ -622,6 +774,26 @@ def relative_cycle_growth(cycles: pd.DataFrame, lineages: pd.DataFrame
 		cycles['seed'].map(control)), index=cycles.index)
 
 
+def seed_matched_ratio(lineages: pd.DataFrame, variant: int, column: str,
+		baseline: int = CONTROL_VARIANT) -> dict:
+	"""
+	A lineage quantity in one design over the same seed's baseline lineage.
+
+	Only surviving design lineages with a baseline lineage are used. Returns
+	the mean ratio, a t-based 95% CI half-width, the per-seed ratios and n.
+	"""
+	from scipy import stats
+	base = lineages[lineages['variant'] == baseline].set_index('seed')[column]
+	rows = lineages[(lineages['variant'] == variant) & lineages['survived']]
+	ratios = pd.Series(_safe_ratio(rows[column].values,
+		rows['seed'].map(base).values), index=rows['seed'].values).dropna()
+	n = int(ratios.size)
+	half = (float(stats.t.ppf(0.975, n - 1) * ratios.std(ddof=1) / np.sqrt(n))
+		if n > 1 else np.nan)
+	return dict(mean=float(ratios.mean()) if n else np.nan, ci95=half,
+		per_seed=ratios, n=n)
+
+
 def design_table(lineages: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 	"""
 	One row per design: means over surviving lineages, with a 95% CI on
@@ -665,7 +837,45 @@ def lost_designs(designs: pd.DataFrame) -> str:
 
 
 # --------------------------------------------------------------------------
-# Per-gene profiles, for the transcriptome panel
+# Per-gene profiles: one value per gene (or TU, or monomer) per design
+#
+# Each kind names a per-gene listener column and the attribute holding its
+# ids. Readers are module-level so a process pool can pickle them.
+VECTOR_KINDS = {
+	# physical mRNA copies per mRNA transcription unit
+	'mrna_tu': ('RNACounts', None, 'mRNA_ids'),
+	# gene copies (dosage) per gene, the replication-driven quantity
+	'gene_copies': ('RnaSynthProb', 'gene_copy_number', 'gene_ids'),
+	# protein copies per monomer
+	'monomers': ('MonomerCounts', 'monomerCounts', 'monomerIds'),
+	# promoter copies per transcription unit (TU-indexed dosage)
+	'promoter_copies': ('RnaSynthProb', 'promoter_copy_number', 'rnaIds'),
+	# limiting-subunit credit for one complex; `extra` is its subunits
+	'limiting': ('BulkMolecules', 'counts', 'objectNames'),
+}
+
+
+def _read_vector(args):
+	"""(time-mean vector, ids) of one per-gene column for one cycle."""
+	kind, path, extra = args
+	listener, column, id_attribute = VECTOR_KINDS[kind]
+	try:
+		if kind == 'mrna_tu':
+			values, ids = _physical_mrna_matrix(path)
+		elif kind == 'limiting':
+			return _limiting_credit(path, *extra)
+		else:
+			cell = _Cell(path)
+			values = cell.column(listener, column)
+			ids = cell.attribute(listener, id_attribute)
+			ids = None if ids is None else list(ids)
+	except Exception:                                       # noqa: BLE001
+		return None, None
+	if values is None or ids is None or values.size == 0:
+		return None, None
+	return values.astype(float).mean(axis=0), ids
+
+
 def _physical_mrna_matrix(path):
 	"""(time x mRNA TU) physical counts and their ids, or (None, None)."""
 	cell = _Cell(path)
@@ -682,32 +892,116 @@ def _physical_mrna_matrix(path):
 	return total, list(ids)
 
 
-def _cycle_tu_means(path):
-	try:
-		counts, ids = _physical_mrna_matrix(path)
-	except Exception:                                       # noqa: BLE001
-		return None, None
-	if counts is None or counts.size == 0:
-		return None, None
-	return counts.mean(axis=0), ids
+@dataclass
+class VectorProfile:
+	"""A per-gene quantity for one design, kept per lineage for CIs."""
+	ids: List[str]
+	per_lineage: Dict[int, np.ndarray]   # seed -> window-mean vector
+
+	@property
+	def mean(self) -> np.ndarray:
+		"""Mean over surviving lineages (NaN if there are none)."""
+		if not self.per_lineage:
+			return np.full(len(self.ids), np.nan)
+		return np.mean(list(self.per_lineage.values()), axis=0)
 
 
-def cistron_profiles(batch_dir: str, sim_data, data: 'PaperData',
-		variants: Sequence[int], plot_out_dir: str, cpus: int = 1
-		) -> pd.DataFrame:
+def vector_profiles(data: 'PaperData', kind: str, variants: Sequence[int],
+		plot_out_dir: str, cpus: int = 1, extra: Optional[tuple] = None,
+		label: Optional[str] = None) -> Dict[int, VectorProfile]:
+	"""
+	Window means of a per-gene column for each variant, per surviving lineage.
+
+	Every divided window cycle gives a time-mean vector; a lineage's value is
+	the mean of its cycles, and a design's (VectorProfile.mean) is the mean
+	of its surviving lineages, the same rule as the scalar tables. Results
+	are cached per (kind, variant) and rebuilt whenever the set of cycles
+	behind them changes.
+
+	Args:
+		data: the batch's PaperData
+		kind: a key of VECTOR_KINDS
+		variants: variant indices to profile
+		plot_out_dir: the analysis plotOutDir, which holds the cache
+		cpus: processes for reading
+		extra: kind-specific arguments passed to the reader (for 'limiting',
+			the complex's subunit ids and stoichiometry)
+		label: distinguishes caches of one kind with different `extra`
+	"""
+	if kind not in VECTOR_KINDS:
+		raise ValueError('unknown vector kind %r; expected one of %s'
+			% (kind, sorted(VECTOR_KINDS)))
+	window = in_window(data.cycles)
+	alive = data.lineages[data.lineages['survived']]
+	cache_dir = os.path.join(plot_out_dir, CACHE_SUBDIR)
+	os.makedirs(cache_dir, exist_ok=True)
+	out = {}
+	for variant in variants:
+		seeds = set(alive[alive['variant'] == variant]['seed'])
+		rows = window[(window['variant'] == variant)
+			& window['seed'].isin(seeds)].sort_values(['seed', 'generation'])
+		name = kind if label is None else '%s_%s' % (kind, label)
+		key = np.array([str(CACHE_VERSION), name, repr(extra)]
+			+ list(rows['path']))
+		cache = os.path.join(cache_dir, '%s_%06d.npz' % (name, variant))
+		profile = None
+		if os.path.exists(cache) and not os.environ.get(REBUILD_ENV):
+			stored = np.load(cache, allow_pickle=False)
+			if np.array_equal(stored['key'], key):
+				profile = VectorProfile(list(stored['ids']), dict(zip(
+					stored['seeds'].tolist(), stored['values'])))
+		if profile is None:
+			profile = _build_profile(kind, rows, cpus, extra)
+			seeds_arr = np.array(sorted(profile.per_lineage), dtype=int)
+			values = (np.array([profile.per_lineage[s] for s in seeds_arr])
+				if len(seeds_arr) else np.zeros((0, len(profile.ids))))
+			tmp = cache + '.%d.tmp.npz' % os.getpid()
+			np.savez(tmp, key=key, ids=np.array(profile.ids), seeds=seeds_arr,
+				values=values)
+			os.replace(tmp, cache)
+		out[variant] = profile
+	return out
+
+
+def _build_profile(kind, rows, cpus, extra=None) -> VectorProfile:
+	paths = list(rows['path'])
+	jobs = [(kind, p, extra) for p in paths]
+	if cpus > 1 and len(jobs) > 1:
+		pool = parallelization.pool(min(cpus, len(jobs)))
+		results = pool.map(_read_vector, jobs)
+		pool.close()
+		pool.join()
+	else:
+		results = [_read_vector(j) for j in jobs]
+	ids: Optional[List[str]] = None
+	per_seed: Dict[int, list] = {}
+	for seed, (means, cycle_ids) in zip(rows['seed'], results):
+		if means is None:
+			continue
+		if ids is None:
+			ids = cycle_ids
+		elif cycle_ids != ids:
+			raise ValueError('%s ids differ between cycles of one batch'
+				% kind)
+		per_seed.setdefault(int(seed), []).append(means)
+	return VectorProfile(ids or [], {seed: np.mean(v, axis=0)
+		for seed, v in per_seed.items()})
+
+
+def cistron_profiles(sim_data, data: 'PaperData', variants: Sequence[int],
+		plot_out_dir: str, cpus: int = 1) -> pd.DataFrame:
 	"""
 	Mean physical mRNA copies per cistron for each requested variant.
 
-	Each divided window cycle gives a time-mean count per mRNA transcription
-	unit (summing every RNACounts mRNA field, as everywhere else); these are
-	mapped to cistrons through sim_data's cistron-TU matrix, the same mapping
-	the RNACounts listener uses, then averaged over a lineage's window and
-	over surviving lineages.
+	Physical copies per mRNA transcription unit (vector_profiles 'mrna_tu')
+	are mapped to cistrons through sim_data's cistron-TU matrix, the same
+	mapping the RNACounts listener uses. The mapping is linear, so mapping the
+	design mean equals averaging mapped lineages.
 
 	Returns:
 		DataFrame indexed by cistron id with columns: gene_id,
 		is_ribosomal_protein, is_RNAP, is_new_gene, and one column of mean
-		counts per variant. Cached per variant beside the cycle cache.
+		counts per variant.
 	"""
 	transcription = sim_data.process.transcription
 	cistrons = transcription.cistron_data
@@ -721,55 +1015,283 @@ def cistron_profiles(batch_dir: str, sim_data, data: 'PaperData',
 		'is_RNAP': cistrons['is_RNAP'][mrna_cistron],
 		'is_new_gene': cistrons['is_new_gene'][mrna_cistron],
 	}, index=pd.Index(cistrons['id'][mrna_cistron], name='cistron_id'))
+	profiles = vector_profiles(data, 'mrna_tu', variants, plot_out_dir, cpus)
+	for variant, profile in profiles.items():
+		tu = np.zeros(mapping.shape[1])
+		if profile.ids:
+			tu[[rna_index[i] for i in profile.ids]] = profile.mean
+		else:
+			tu[:] = np.nan
+		out[variant] = mapping.dot(tu)
+	return out
 
+
+# --------------------------------------------------------------------------
+# Limiting subunit (Figure 5F)
+TIED = '_tied'          # extra id: share of time steps with a tie for limiting
+
+
+def _limiting_credit(path, subunit_ids, stoich):
+	"""
+	Time-mean share of "limiting" credit per subunit of one complex.
+
+	At each time step the limiting subunits are those with the fewest free
+	copies per copy needed (free / stoichiometry, from BulkMolecules). When
+	several subunits tie, the credit is split equally among them rather than
+	given to whichever comes first in the list: the rRNAs come last, so first-
+	in-list credit would assign every protein-rRNA tie (common at zero) to
+	protein. The share of tied time steps is returned as the extra id TIED.
+	"""
+	cell = _Cell(path)
+	names = cell.attribute('BulkMolecules', 'objectNames')
+	idx = [_index(names, m) for m in subunit_ids]
+	if names is None or None in idx:
+		return None, None
+	free = cell.column('BulkMolecules', 'counts', indices=idx)
+	if free is None or free.size == 0:
+		return None, None
+	credit, tied_share = split_limiting_credit(free, stoich)
+	return np.append(credit, tied_share), list(subunit_ids) + [TIED]
+
+
+def split_limiting_credit(free, stoich) -> Tuple[np.ndarray, float]:
+	"""
+	(time-mean credit per subunit, share of tied time steps).
+
+	Args:
+		free: (time x subunit) free copies
+		stoich: copies of each subunit one complex needs
+	"""
+	per_copy = np.asarray(free, dtype=float) / np.asarray(stoich, dtype=float)
+	tied = per_copy == per_copy.min(axis=1, keepdims=True)
+	n_tied = tied.sum(axis=1, keepdims=True)
+	return (tied / n_tied).mean(axis=0), float(np.mean(n_tied[:, 0] > 1))
+
+
+def is_rrna(molecule_id: str) -> bool:
+	"""Whether a complex subunit is an rRNA rather than a protein."""
+	return 'RRNA' in molecule_id.upper()
+
+
+def limiting_profiles(data: 'PaperData', variants: Sequence[int],
+		plot_out_dir: str, cpus: int = 1) -> Dict[str, Dict[int, VectorProfile]]:
+	"""{complex label: {variant: credit per subunit}} for 30S, 50S and RNAP."""
+	if data.machinery is None:
+		raise ValueError('PaperData has no machinery ids')
+	out = {}
+	for label, _, subunits, stoich in data.machinery.complexes:
+		out[label] = vector_profiles(data, 'limiting', variants,
+			plot_out_dir, cpus, extra=(tuple(subunits), tuple(stoich)),
+			label=label)
+	return out
+
+
+# --------------------------------------------------------------------------
+# Event-anchored responses around replication initiation (Figure 5D)
+EVENT_COLUMNS = ('rpoc_copies', 'rpoc_transcription', 'rpoc_translation',
+	'terminus_transcription')
+
+
+def terminus_tus(sim_data) -> List[str]:
+	"""
+	Transcription units near the terminus, the control for dosage effects:
+	replichore fraction above TERMINUS_MIN_FRACTION, excluding rRNA, RNAP and
+	ribosomal-protein units and any unit carrying the inserted gene.
+	"""
+	rna = sim_data.process.transcription.rna_data
+	transcription = sim_data.process.transcription
+	new_gene_tus = set()
+	cistrons = transcription.cistron_data
+	for cistron in cistrons['id'][cistrons['is_new_gene']]:
+		new_gene_tus.update(transcription.cistron_id_to_rna_indexes(cistron))
+	f = replichore_fraction(sim_data, rna['replication_coordinate'])
+	keep = ((f > C.TERMINUS_MIN_FRACTION) & ~rna['is_rRNA']
+		& ~rna['includes_RNAP'] & ~rna['includes_ribosomal_protein'])
+	return [str(rna['id'][i]) for i in np.where(keep)[0]
+		if i not in new_gene_tus]
+
+
+def _cycle_events(args):
+	"""Per-window sums around every replication initiation in one cycle."""
+	path, machinery_dict, terminus = args
+	machinery = MachineryInfo(**machinery_dict)
+	try:
+		cell = _Cell(path)
+		time = cell.column('Main', 'time')
+		oric = cell.column('ReplicationData', 'numberOfOric')
+		if time is None or oric is None or time.size < 2:
+			return []
+		g = _index(cell.attribute('RnaSynthProb', 'gene_ids'),
+			machinery.rpoc_gene_id)
+		c = _index(cell.attribute('RnapData', 'cistron_ids'),
+			machinery.rpoc_cistron_id)
+		m = _index(cell.attribute('RibosomeData', 'monomerIds'),
+			machinery.rpoc_monomer_id)
+		tus = cell.attribute('RnapData', 'rnaIds')
+		t_idx = [_index(tus, t) for t in terminus]
+		if None in (g, c, m) or tus is None or None in t_idx:
+			return []
+		series = {
+			'rpoc_copies': cell.column('RnaSynthProb', 'gene_copy_number',
+				indices=[g])[:, 0],
+			'rpoc_transcription': cell.column('RnapData',
+				'rna_init_event_per_cistron', indices=[c])[:, 0],
+			'rpoc_translation': cell.column('RibosomeData',
+				'ribosome_init_event_per_monomer', indices=[m])[:, 0],
+			'terminus_transcription': cell.column('RnapData',
+				'rnaInitEvent', indices=t_idx).sum(axis=1),
+		}
+	except Exception:                                       # noqa: BLE001
+		return []
+	rows = []
+	windows = [('pre', C.EVENT_PRE_WINDOW_MIN)] + [
+		('post_%g_%g' % w, w) for w in C.EVENT_POST_WINDOWS_MIN]
+	for event, step in enumerate(np.where(np.diff(oric) > 0)[0] + 1):
+		minutes = (time - time[step]) / 60.0
+		event_rows = []
+		for name, (lo, hi) in windows:
+			inside = (minutes >= lo) & (minutes < hi)
+			n = int(inside.sum())
+			if n < C.EVENT_MIN_STEPS:
+				event_rows = None
+				break
+			row = dict(event=event, window=name, window_lo=lo, window_hi=hi,
+				n_steps=n)
+			for key, values in series.items():
+				row[key] = float(np.sum(values[inside]))
+			event_rows.append(row)
+		if event_rows:       # only events with every window complete
+			rows.extend(event_rows)
+	return rows
+
+
+def initiation_events(data: 'PaperData', sim_data, variants: Sequence[int],
+		plot_out_dir: str, cpus: int = 1) -> pd.DataFrame:
+	"""
+	Window sums around every replication initiation in the analysis window of
+	surviving lineages, one row per (event, window). An event is kept only if
+	its pre window and every post window fall inside its own cell cycle, so
+	all windows of one event come from the same cell.
+
+	Cached per variant; rebuilt when the set of cycles changes.
+	"""
+	if data.machinery is None:
+		raise ValueError('PaperData has no machinery ids')
+	terminus = terminus_tus(sim_data)
 	window = in_window(data.cycles)
 	alive = data.lineages[data.lineages['survived']]
 	cache_dir = os.path.join(plot_out_dir, CACHE_SUBDIR)
 	os.makedirs(cache_dir, exist_ok=True)
+	frames = []
 	for variant in variants:
 		seeds = set(alive[alive['variant'] == variant]['seed'])
 		rows = window[(window['variant'] == variant)
-			& window['seed'].isin(seeds)]
-		paths = sorted(rows['path'])
-		cache = os.path.join(cache_dir, 'cistrons_%06d.npz' % variant)
-		key = np.array([str(CACHE_VERSION)] + paths)
-		profile = None
-		if os.path.exists(cache) and not os.environ.get(REBUILD_ENV):
-			stored = np.load(cache, allow_pickle=False)
-			if np.array_equal(stored['key'], key):
-				profile = stored['profile']
-		if profile is None:
-			profile = _variant_profile(rows, mapping, rna_index, cpus)
-			tmp = cache + '.%d.tmp.npz' % os.getpid()
-			np.savez(tmp, key=key, profile=profile)
-			os.replace(tmp, cache)
-		out[variant] = profile
-	return out
+			& window['seed'].isin(seeds)].sort_values(['seed', 'generation'])
+		cache = os.path.join(cache_dir, 'events_%06d.csv' % variant)
+		stamp = cache[:-4] + '.json'
+		key = json.loads(json.dumps({'version': CACHE_VERSION,
+			'paths': list(rows['path']), 'terminus': terminus,
+			'pre': C.EVENT_PRE_WINDOW_MIN, 'post': C.EVENT_POST_WINDOWS_MIN,
+			'min_steps': C.EVENT_MIN_STEPS}))
+		frame = None
+		if (os.path.exists(cache) and os.path.exists(stamp)
+				and not os.environ.get(REBUILD_ENV)):
+			with open(stamp) as f:
+				if json.load(f) == key:
+					frame = pd.read_csv(cache)
+		if frame is None:
+			jobs = [(p, asdict(data.machinery), terminus)
+				for p in rows['path']]
+			if cpus > 1 and len(jobs) > 1:
+				pool = parallelization.pool(min(cpus, len(jobs)))
+				results = pool.map(_cycle_events, jobs)
+				pool.close()
+				pool.join()
+			else:
+				results = [_cycle_events(j) for j in jobs]
+			records = []
+			for (seed, gen), events in zip(
+					zip(rows['seed'], rows['generation']), results):
+				for r in events:
+					records.append(dict(variant=variant, seed=int(seed),
+						generation=int(gen), **r))
+			frame = pd.DataFrame(records, columns=['variant', 'seed',
+				'generation', 'event', 'window', 'window_lo', 'window_hi',
+				'n_steps'] + list(EVENT_COLUMNS))
+			suffix = '.%d.tmp' % os.getpid()
+			frame.to_csv(cache + suffix, index=False)
+			with open(stamp + suffix, 'w') as f:
+				json.dump(key, f)
+			os.replace(stamp + suffix, stamp)
+			os.replace(cache + suffix, cache)
+		frames.append(frame)
+	return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
-def _variant_profile(rows, mapping, rna_index, cpus):
-	"""Mean over surviving lineages of each lineage's window-mean profile."""
-	paths = list(rows['path'])
-	if not paths:
-		return np.full(mapping.shape[0], np.nan)
-	if cpus > 1 and len(paths) > 1:
-		pool = parallelization.pool(min(cpus, len(paths)))
-		results = pool.map(_cycle_tu_means, paths)
-		pool.close()
-		pool.join()
-	else:
-		results = [_cycle_tu_means(p) for p in paths]
-	per_lineage = {}
-	for seed, (means, ids) in zip(rows['seed'], results):
-		if means is None:
-			continue
-		tu = np.zeros(mapping.shape[1])
-		tu[[rna_index[i] for i in ids]] = means
-		per_lineage.setdefault(seed, []).append(mapping.dot(tu))
-	if not per_lineage:
-		return np.full(mapping.shape[0], np.nan)
-	return np.mean([np.mean(v, axis=0) for v in per_lineage.values()],
-		axis=0)
+def pooled_response(events: pd.DataFrame, column: str,
+		n_boot: int = C.EVENT_BOOTSTRAP, seed: int = 0) -> pd.DataFrame:
+	"""
+	Each post window's pooled rate over the pre window's, with a bootstrap CI.
+
+	Pooling (summed counts over summed time steps across every event) is used
+	for every quantity, events and copies alike, because single events are
+	sparse: rpoC sees well under one transcription event per window, so
+	per-event or per-lineage ratios are dominated by zeros. The CI resamples
+	lineages with replacement, so events from one lineage stay together and
+	the interval reflects lineage-to-lineage variation.
+
+	Returns:
+		one row per post window: window, mid (minutes), ratio, lo, hi,
+		n_events, n_lineages
+	"""
+	rng = np.random.default_rng(seed)
+	pre = events[events['window'] == 'pre']
+	posts = [w for w in events['window'].unique() if w != 'pre']
+	lineages = np.array(sorted(events['seed'].unique()))
+	sums = events.groupby(['window', 'seed'])[[column, 'n_steps']].sum()
+
+	def by_lineage(window):
+		"""(counts, steps) per lineage, zero where a lineage has none."""
+		table = sums.loc[window] if window in sums.index.get_level_values(
+			0) else pd.DataFrame(columns=[column, 'n_steps'])
+		counts = np.array([table[column].get(l, 0.0) for l in lineages],
+			dtype=float)
+		steps = np.array([table['n_steps'].get(l, 0.0) for l in lineages],
+			dtype=float)
+		return counts, steps
+
+	pre_counts, pre_steps = by_lineage('pre')
+	# Each bootstrap draw is a vector of how many times each lineage is
+	# resampled, so every window is resampled with the same lineages.
+	draws = (rng.multinomial(lineages.size, np.full(lineages.size,
+		1 / lineages.size), size=n_boot) if lineages.size > 1
+		else np.zeros((0, lineages.size)))
+
+	def ratio(weights, counts, steps):
+		with np.errstate(divide='ignore', invalid='ignore'):
+			post_rate = (weights @ counts) / (weights @ steps)
+			pre_rate = (weights @ pre_counts) / (weights @ pre_steps)
+			return post_rate / pre_rate
+
+	out = []
+	for window in posts:
+		rows = events[events['window'] == window]
+		counts, steps = by_lineage(window)
+		point = float(ratio(np.ones(lineages.size), counts, steps))
+		boots = np.atleast_1d(ratio(draws, counts, steps)) if len(draws) \
+			else np.array([])
+		boots = boots[np.isfinite(boots)]
+		out.append(dict(window=window,
+			mid=float((rows['window_lo'].iloc[0] + rows['window_hi'].iloc[0])
+				/ 2),
+			ratio=point,
+			lo=float(np.percentile(boots, 2.5)) if boots.size else np.nan,
+			hi=float(np.percentile(boots, 97.5)) if boots.size else np.nan,
+			n_events=int(pre[['seed', 'generation', 'event']]
+				.drop_duplicates().shape[0]),
+			n_lineages=int(lineages.size)))
+	return pd.DataFrame(out).sort_values('mid').reset_index(drop=True)
+
 
 
 # --------------------------------------------------------------------------
@@ -781,6 +1303,7 @@ class PaperData:
 	cycles: pd.DataFrame
 	lineages: pd.DataFrame
 	designs: pd.DataFrame
+	machinery: Optional[MachineryInfo] = None
 
 	def window_cycles(self) -> pd.DataFrame:
 		"""Divided cycles in the analysis window, with relative growth."""
@@ -819,4 +1342,5 @@ def load(batch_dir: str, sim_data_path: str, metadata: dict,
 		warnings.warn('this batch lacks listener columns, so the derived'
 			' quantities that need them are NaN: %s' % ', '.join(
 			sorted(missing)))
-	return PaperData(gene, cycles, lineages, designs)
+	return PaperData(gene, cycles, lineages, designs,
+		machinery_info(sim_data))
