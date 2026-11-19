@@ -35,7 +35,7 @@ import platform
 import subprocess
 import sys
 from datetime import datetime, timezone
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 
@@ -72,6 +72,138 @@ def gfp_ramp(n: int) -> list:
 		return [GFP_RAMP[len(GFP_RAMP) // 2]]
 	idx = np.linspace(0, len(GFP_RAMP) - 1, n)
 	return [GFP_RAMP[int(round(i))] for i in idx]
+
+
+# RBS strength is a magnitude, so it gets the sequential GFP ramp, and each
+# RBS value keeps one colour in every panel (colour follows the entity, not
+# its rank within a panel). The lightest ramp step is too pale for a line on
+# white, so lines use the rest of the ramp; RBS 0 (transcribed, never
+# translated) takes the pale step and is only ever drawn as a fill.
+RBS_ZERO_COLOR = GFP_RAMP[0]
+
+
+def rbs_color(rbs: float, all_rbs: Optional[Sequence[float]] = None) -> str:
+	"""
+	The colour for one RBS strength, fixed across panels.
+
+	Args:
+		rbs: translation efficiency
+		all_rbs: the full set of RBS values in the paper's grid, which fixes
+			each value's place on the ramp; defaults to the grid in
+			gfp_paper_constants
+	"""
+	from matplotlib.colors import LinearSegmentedColormap, to_hex
+	if rbs <= 0:
+		return RBS_ZERO_COLOR
+	if all_rbs is None:
+		from wholecell.analysis import gfp_paper_constants
+		all_rbs = gfp_paper_constants.NEW_GENE_TRANSLATION_EFFICIENCY_VALUES
+	positive = np.log10(sorted(v for v in all_rbs if v > 0))
+	lo, hi = positive[0], positive[-1]
+	position = 0.5 if hi == lo else (np.log10(rbs) - lo) / (hi - lo)
+	ramp = LinearSegmentedColormap.from_list('gfp_lines', GFP_RAMP[1:])
+	return to_hex(ramp(float(np.clip(position, 0, 1))))
+
+
+def promoter_axis(ax, factors: Sequence[float], label: str = 'promoter strength'):
+	"""
+	Promoter strength on the x axis at its true spacing.
+
+	Expression factors are already log10 multipliers, so plotting at the
+	factor itself is a log axis: 8.33 and 8.66 sit a third and two thirds of
+	the way from 8 to 9, as they should.
+	"""
+	from wholecell.analysis import gfp_paper_constants
+	ticks = sorted(set(float(f) for f in factors))
+	ax.set_xticks(ticks)
+	ax.set_xticklabels([gfp_paper_constants.promoter_label(f) for f in ticks])
+	pad = 0.25
+	ax.set_xlim(ticks[0] - pad, ticks[-1] + pad)
+	ax.set_xlabel(label)
+
+
+def log_axis(ax, which: str, lo: float, hi: float, data=None):
+	"""
+	A log axis with plain-number ticks on a 1-3-10 series.
+
+	The range is fixed by the caller so a panel keeps the same scale from one
+	batch to the next, and only widens, never narrows, if the data fall
+	outside it. Ticks read 30, 100, 300 rather than 3x10^1.
+
+	Args:
+		ax: axes
+		which: 'x' or 'y'
+		lo, hi: default limits
+		data: values plotted on this axis, used only to widen the range
+	"""
+	from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
+	if data is not None:
+		values = np.asarray(data, dtype=float)
+		values = values[np.isfinite(values) & (values > 0)]
+		if values.size:
+			lo = min(lo, values.min() / 1.3)
+			hi = max(hi, values.max() * 1.3)
+	ticks = [m * 10.0 ** e for e in range(int(np.floor(np.log10(lo))) - 1,
+		int(np.ceil(np.log10(hi))) + 1) for m in (1, 3)]
+	ticks = [t for t in ticks if lo <= t <= hi]
+	axis = ax.xaxis if which == 'x' else ax.yaxis
+	(ax.set_xscale if which == 'x' else ax.set_yscale)('log')
+	(ax.set_xlim if which == 'x' else ax.set_ylim)(lo, hi)
+	axis.set_major_locator(FixedLocator(ticks))
+	axis.set_minor_locator(NullLocator())
+	axis.set_major_formatter(FuncFormatter(lambda v, _: '{:,g}'.format(v)))
+
+
+def promoter_lines(ax, designs, column: str, rbs_values: Sequence[float]):
+	"""
+	One line per RBS strength through the promoter strengths, for `column`.
+
+	Args:
+		ax: axes, whose x axis should then be set with promoter_axis
+		designs: the design table (gfp_paper_data.design_table), induced
+			designs only
+		column: the quantity on the y axis
+		rbs_values: RBS strengths to draw, in legend order
+
+	Returns:
+		(the rows drawn, whether any of them is a failed design)
+	"""
+	drawn = []
+	for rbs in rbs_values:
+		line = designs[np.isclose(designs['rbs'], rbs)].sort_values('promoter')
+		line = line[np.isfinite(line[column])]
+		if line.empty:
+			continue
+		color = rbs_color(rbs)
+		from wholecell.analysis import gfp_paper_constants
+		ax.plot(line['promoter'], line[column], color=color, zorder=2)
+		design_scatter(ax, line['promoter'], line[column], color,
+			failed=line['failed'], zorder=3,
+			label=gfp_paper_constants.rbs_label(rbs))
+		drawn.append(line)
+	return drawn, any(bool(line['failed'].any()) for line in drawn)
+
+
+def legend_with_failed(ax, any_failed: bool, **kwargs):
+	"""The axes legend, plus the hollow-marker entry when a design failed."""
+	handles, labels = ax.get_legend_handles_labels()
+	if any_failed:
+		handles.append(failed_legend_handle())
+		labels.append(FAILED_LABEL)
+	return ax.legend(handles, labels, **kwargs)
+
+
+def reference_line(ax, y: float, label: str, horizontal: bool = True):
+	"""A dashed physical limit, labelled at its right-hand end in muted ink."""
+	if horizontal:
+		ax.axhline(y, color=INK_MUTED, linestyle=(0, (4, 3)), linewidth=0.8,
+			zorder=1)
+		ax.annotate(label, xy=(1, y), xycoords=('axes fraction', 'data'),
+			xytext=(4, 0), textcoords='offset points', va='center',
+			ha='left', color=INK_MUTED, fontsize=FONT_SIZES['annotation'])
+	else:
+		ax.axvline(y, color=INK_MUTED, linestyle=(0, (4, 3)), linewidth=0.8,
+			zorder=1)
 
 
 # --------------------------------------------------------------------------
@@ -140,10 +272,14 @@ def apply() -> None:
 		'lines.linewidth': 1.2,
 		'lines.markersize': 3.5,
 		'legend.frameon': False,
+		# Constrained layout keeps axis labels inside the figure; a tight
+		# bounding box alone clips a y label taller than its axes.
+		'figure.constrained_layout.use': True,
 		'figure.dpi': 150,
 		'savefig.dpi': 600,
 		'savefig.bbox': 'tight',
 		'savefig.pad_inches': 0.02,
+		'mathtext.default': 'regular',  # exponents in the body font
 		'svg.fonttype': 'none',        # keep SVG text editable
 		'pdf.fonttype': 42,            # embed TrueType, not Type 3
 		'ps.fonttype': 42,
@@ -203,7 +339,7 @@ def failed_legend_handle(color=INK_MUTED):
 # Statistics
 #
 # Fixed before the data exist, so the test is not chosen after seeing a curve.
-def holm_adjust(p_values: Sequence[float]) -> np.ndarray:
+def holm_adjust(p_values: Union[Sequence[float], np.ndarray]) -> np.ndarray:
 	"""
 	Holm-Bonferroni adjusted p-values, in the input order.
 
@@ -313,6 +449,50 @@ def _package_versions() -> Dict[str, str]:
 	return versions
 
 
+PANELS_TSV = os.path.join(filepath.ROOT_PATH, 'runscripts', 'gfp_paper',
+	'panels.tsv')
+SCRIPT_PREFIX = 'gfp_paper_'
+
+
+def panel_name(script: str, part: Optional[str] = None,
+		manifest: str = PANELS_TSV) -> str:
+	"""
+	Output stem for a panel, e.g. 'Figure_3F_ribosomes_per_gfp_mrna'.
+
+	Scripts are named for their content and the figure label is looked up in
+	runscripts/gfp_paper/panels.tsv, so reordering the paper is one manifest
+	edit rather than a rename of every script.
+
+	Args:
+		script: __file__ of the calling analysis
+		part: suffix for scripts that write several files for one panel,
+			such as the two halves of a split panel
+		manifest: path to panels.tsv
+
+	Raises:
+		ValueError: if the script is not in the manifest, or is listed for
+			more than one panel, since then the label would be a guess.
+	"""
+	base = os.path.basename(script)
+	labels = []
+	with open(manifest) as f:
+		header = f.readline().rstrip('\n').split('\t')
+		col_panel, col_script = header.index('panel'), header.index('script')
+		for line in f:
+			fields = line.rstrip('\n').split('\t')
+			if len(fields) > col_script and os.path.basename(
+					fields[col_script]) == base:
+				labels.append(fields[col_panel])
+	if len(labels) != 1:
+		raise ValueError('%s is listed for %s in %s; expected exactly one'
+			' panel' % (base, labels or 'no panel', manifest))
+	stem = os.path.splitext(base)[0]
+	if stem.startswith(SCRIPT_PREFIX):
+		stem = stem[len(SCRIPT_PREFIX):]
+	name = 'Figure_%s_%s' % (labels[0], stem)
+	return name if part is None else '%s_%s' % (name, part)
+
+
 def panel_dir(plot_out_dir: str) -> str:
 	"""
 	The one folder a batch's paper panels are written to.
@@ -354,6 +534,7 @@ def save_panel(fig, plot_out_dir: str, name: str, script: Optional[str] = None,
 	Returns:
 		The directory the files were written to.
 	"""
+	_warn_long_labels(fig, name)
 	out_dir = panel_dir(plot_out_dir)
 	if subdir:
 		out_dir = filepath.makedirs(out_dir, subdir)
@@ -387,6 +568,20 @@ def save_panel(fig, plot_out_dir: str, name: str, script: Optional[str] = None,
 		import matplotlib.pyplot as plt
 		plt.close(fig)
 	return out_dir
+
+
+def _warn_long_labels(fig, name: str) -> None:
+	"""Warn when a y label is longer than its axes, which reads badly."""
+	import warnings
+	fig.canvas.draw()
+	renderer = fig.canvas.get_renderer()
+	for ax in fig.axes:
+		label = ax.yaxis.label
+		if not label.get_text():
+			continue
+		if label.get_window_extent(renderer).height > 1.05 * ax.bbox.height:
+			warnings.warn('%s: y label %r is taller than its axes; shorten it'
+				' or give the panel more height' % (name, label.get_text()))
 
 
 def _sha256(path: str) -> Optional[str]:

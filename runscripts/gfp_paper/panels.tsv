@@ -12,14 +12,14 @@ panel	content	kind	script	batch	status	notes
 2F	Growth vs ribosome counts per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_ribosome_counts_per_cycle.py	B2	todo	Doubling time → growth rate
 2G	Active RNAP / ribosome allocation	variant	models/ecoli/analysis/variant/gfp_paper_active_rnap_ribosome_allocation.py	B2	todo	
 2H	Machinery loop schematic	schematic	(svg, drawn by hand)		todo	
-3A	Transcriptome scatter	variant	models/ecoli/analysis/variant/gfp_paper_transcriptome_scatter.py	B2	todo	
+3A	Transcriptome scatter	variant	models/ecoli/analysis/variant/gfp_paper_transcriptome_scatter.py	B2	draft	Design = nearest to 35% GFP proteome share among designs with survivors
 3B	Transcriptome vs experiment	experimental	(blank until data)	B2	blank	Blank until data
-3C	gfp mRNA + growth, RBS 0	variant	models/ecoli/analysis/variant/gfp_paper_gfp_mrna_growth_rbs_0.py	B1	todo	Mock up split into two
-3D	RNAP spacing on gfp	variant	models/ecoli/analysis/variant/gfp_paper_rnap_spacing_on_gfp.py	B1	todo	
-3E	Ribosome spacing	variant	models/ecoli/analysis/variant/gfp_paper_ribosome_spacing.py	B1	todo	Footprint fix changes the reference line
-3F	Ribosomes per gfp mRNA vs pool ceiling	variant	models/ecoli/analysis/variant/gfp_paper_ribosomes_per_gfp_mrna_vs_pool_ceiling.py	B1	todo	Footprint fix: "mRNA full" moves 3×
-3G	Share of active RNAP vs ribosomes	variant	models/ecoli/analysis/variant/gfp_paper_share_of_active_rnap_vs_ribosomes.py	B1	todo	
-3H	Growth vs GFP ribosome share per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py	B2	todo	Many more seeds now; growth rate
+3C	gfp mRNA + growth, RBS 0	variant	models/ecoli/analysis/variant/gfp_paper_gfp_mrna_growth_rbs_0.py	B1	draft	Mock up split into two
+3D	RNAP spacing on gfp	variant	models/ecoli/analysis/variant/gfp_paper_rnap_spacing_on_gfp.py	B1	draft	
+3E	Ribosome spacing	variant	models/ecoli/analysis/variant/gfp_paper_ribosome_spacing.py	B1	draft	Footprint fix changes the reference line
+3F	Ribosomes per gfp mRNA vs pool ceiling	variant	models/ecoli/analysis/variant/gfp_paper_ribosomes_per_gfp_mrna_vs_pool_ceiling.py	B1	draft	Footprint fix: "mRNA full" moves 3×
+3G	Share of active RNAP vs ribosomes	variant	models/ecoli/analysis/variant/gfp_paper_share_of_active_rnap_vs_ribosomes.py	B1	draft	Band replaced by a per-design spacing-limit mark (copies and active RNAP move with burden)
+3H	Growth vs GFP ribosome share per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py	B2	draft	Many more seeds now; growth rate; y = per-cycle growth relative to seed-matched control (D4); colours ordered by burden
 3I	Transcription capped / translation open schematic	schematic	(svg, drawn by hand)		todo	
 4A	Enzyme proteome scatter	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_proteome_scatter.py	B2	todo	
 4B	Enzyme concentration histogram	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_concentration_histogram.py	B2	todo	

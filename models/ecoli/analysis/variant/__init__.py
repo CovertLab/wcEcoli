@@ -66,6 +66,17 @@ TAGS = {
 	'ENVIRONMENT_SHIFT': [
 		'growth_trajectory',
 		],
+	# GFP burden paper panels (runscripts/gfp_paper/panels.tsv). Not in
+	# ACTIVE: they expect a new gene induction batch and read the whole batch.
+	'GFP_PAPER': [
+		'gfp_paper_transcriptome_scatter.py',
+		'gfp_paper_gfp_mrna_growth_rbs_0.py',
+		'gfp_paper_rnap_spacing_on_gfp.py',
+		'gfp_paper_ribosome_spacing.py',
+		'gfp_paper_ribosomes_per_gfp_mrna_vs_pool_ceiling.py',
+		'gfp_paper_share_of_active_rnap_vs_ribosomes.py',
+		'gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py',
+		],
 	'PAPER': [
 		"adder_sizer.py",
 		"doubling_time_histogram.py",

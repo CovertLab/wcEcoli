@@ -13,7 +13,7 @@ Companion files:
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 # --------------------------------------------------------------------------
 # Simulation design
@@ -51,8 +51,8 @@ NEW_GENE_OPTION = 'egfp'
 
 
 def n_variants(
-		expression_factors: Sequence[float] = None,
-		translation_efficiencies: Sequence[float] = None) -> int:
+		expression_factors: Optional[Sequence[float]] = None,
+		translation_efficiencies: Optional[Sequence[float]] = None) -> int:
 	"""
 	Number of variant indices the grid produces.
 
@@ -119,3 +119,37 @@ def panel_labels() -> List[str]:
 	return ['%d%s' % (figure, chr(ord('A') + i))
 		for figure, count in sorted(FIGURE_PANEL_COUNTS.items())
 		for i in range(count)]
+
+
+# --------------------------------------------------------------------------
+# How designs are named in figures
+#
+# Words for the four promoter strengths the storyboard used. The two grid
+# points added between 8 and 9 have no word yet and are shown as numbers
+# until one is chosen; that is a labelling decision for the paper, not code.
+PROMOTER_LABELS: Dict[float, str] = {
+	7: 'weak', 8: 'medium', 9: 'strong', 10: 'strongest'}
+
+
+def promoter_label(expression_factor: float) -> str:
+	"""Display name for a promoter strength (expression factor)."""
+	for factor, label in PROMOTER_LABELS.items():
+		if abs(expression_factor - factor) < 1e-9:
+			return label
+	return '%g' % expression_factor
+
+
+def rbs_label(translation_efficiency: float) -> str:
+	"""Display name for an RBS strength (translation efficiency)."""
+	return 'RBS %g' % translation_efficiency
+
+
+# RBS strengths drawn as separate lines in the per-promoter panels, as in the
+# locked storyboard. RBS 0 is excluded from the spacing panels because a
+# transcript with no ribosomes has no ribosome spacing.
+RBS_LINES_RNAP_SPACING: Sequence[float] = (0.1, 5, 10)        # 3D
+RBS_LINES_RIBOSOME: Sequence[float] = (1, 5, 10)              # 3E, 3F
+
+# Figure 3A compares the control's transcriptome with the design whose mean
+# GFP proteome share is closest to this, among designs with survivors.
+TRANSCRIPTOME_TARGET_PROTEOME_SHARE = 0.35
