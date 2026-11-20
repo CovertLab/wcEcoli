@@ -96,6 +96,8 @@ TAGS = {
 		'gfp_paper_flux_per_growth_vs_enzyme_concentration.py',
 		'gfp_paper_wildtype_forced_reduction_growth.py',
 		'gfp_paper_supply_capacity_vs_translational_demand.py',
+		'gfp_paper_loop_stabilisation_shares_over_gens.py',
+		'gfp_paper_gfp_made_per_cell_per_hour.py',
 		],
 	'PAPER': [
 		"adder_sizer.py",

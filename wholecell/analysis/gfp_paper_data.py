@@ -74,7 +74,7 @@ from wholecell.utils import parallelization
 
 # Bump whenever read_cycle changes what a column means, so stale caches are
 # rebuilt rather than silently reused.
-CACHE_VERSION = 4
+CACHE_VERSION = 5
 CACHE_SUBDIR = os.path.join('paper_figures', '_cache')
 REBUILD_ENV = 'GFP_PAPER_REBUILD_CACHE'
 
@@ -570,6 +570,11 @@ def read_cycle(path: str, gene: GeneInfo, machinery: MachineryInfo
 	row['rnap_formed_per_s'] = rate('ComplexationListener',
 		'complexationEvents', ids_list=machinery.rnap_formation_reactions)
 	row['rnap_initiations_per_s'] = rate('RnapData', 'didInitialize')
+	# gfp's own initiation rates (Figure 6C, 6D), in each listener's index
+	row['gfp_transcription_per_s'] = rate('RnapData', 'rnaInitEvent',
+		'rnaIds', gene.rna_id)
+	row['gfp_translation_per_s'] = rate('RibosomeData',
+		'ribosome_init_event_per_monomer', 'monomerIds', gene.monomer_id)
 
 	row['ppgpp_conc'] = _mean(cell.column('GrowthLimits', 'ppgpp_conc'))
 	row['oric'] = _mean(cell.column('ReplicationData', 'numberOfOric'))
@@ -623,6 +628,8 @@ def add_derived_columns(df: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 		# on metabolism (Figure 4G), a concentration rate like enzyme supply.
 		df['translation_demand'] = _safe_ratio(
 			df['active_ribosomes'] * df['elongation_rate'], df['cellVolume'])
+		df['gfp_transcription_share'] = _safe_ratio(
+			df['gfp_transcription_per_s'], df['rnap_initiations_per_s'])
 		df['gfp_rnap_share'] = _safe_ratio(
 			df['rnap_on_gfp'], df['active_rnap'])
 		# The RNAP share gfp would hold if every copy were packed footprint to
@@ -749,7 +756,7 @@ RAW_COLUMNS = (
 	'free_rnap', 'rpoc_gene_copies', 'rpoc_transcription_per_s',
 	'rpoc_translation_per_s', 'rpoc_monomers', 'rnap_formed_per_s',
 	'rnap_initiations_per_s', 'cellVolume', 'ribosomes_making_gfp', 'oric',
-	'enzyme_counts',
+	'enzyme_counts', 'gfp_transcription_per_s', 'gfp_translation_per_s',
 )
 # Derived in add_derived_columns from RAW_COLUMNS; listed for readers.
 
@@ -1366,8 +1373,14 @@ def pooled_response(events: pd.DataFrame, column: str,
 # Machinery traces through the run (Figure 2E)
 TRACE_POINTS = 10       # equal fractions of each cell cycle
 # Quantities a trace can follow; each is a per-time-step series in one cell.
+# Instantaneous growth rate (dry-mass growth / dry mass) has bursts of one to
+# two minutes when metabolism refills small-molecule pools: in one 102-step
+# burst small-molecule mass rose ~6x its usual amount while protein mass grew
+# as normal. Per-cycle growth averages these out; traces show a centred
+# rolling median over this many 1 s steps so the bursts do not dominate.
+GROWTH_TRACE_SMOOTH_STEPS = 301
 TRACE_SERIES = ('rnap', 'ribosomes', 'gfp_mrna', 'gfp_protein',
-	'growth_rate', 'cell_mass')
+	'growth_rate', 'cell_mass', 'oric', 'rrna_copies', 'gfp_copies')
 
 
 def _trace_series(cell, name, gene_dict, full_rnap):
@@ -1402,10 +1415,35 @@ def _trace_series(cell, name, gene_dict, full_rnap):
 			return None
 		values = values.astype(float) * SECONDS_PER_HOUR
 		values[0] = np.nan          # recorded before any growth happened
-		return values
+		return pd.Series(values).rolling(GROWTH_TRACE_SMOOTH_STEPS,
+			center=True, min_periods=1).median().values
 	if name == 'cell_mass':
 		return cell.column('Mass', 'cellMass')
+	if name == 'oric':
+		return cell.column('ReplicationData', 'numberOfOric')
+	if name in ('rrna_copies', 'gfp_copies'):
+		ids = cell.attribute('RnaSynthProb', 'rnaIds')
+		if ids is None:
+			return None
+		if name == 'gfp_copies':
+			idx = [_index(ids, gene_dict['rna_id'])]
+		else:
+			# rRNA operons by the naming the RNACounts listener reports them
+			# under; summing their promoter copies gives operon copies.
+			rrna = cell.attribute('RNACounts', 'rRNA_ids')
+			idx = [_index(ids, r) for r in (rrna or [])]
+		if not idx or None in idx:
+			return None
+		return cell.column('RnaSynthProb', 'promoter_copy_number',
+			indices=idx).sum(axis=1)
 	raise ValueError('unknown trace series %r' % name)
+
+
+def trace_series(sim_out: str, name: str, gene: GeneInfo,
+		machinery: MachineryInfo) -> Optional[np.ndarray]:
+	"""One per-time-step series (a TRACE_SERIES name) for a cell."""
+	return _trace_series(_Cell(sim_out), name, asdict(gene),
+		machinery.full_rnap_id)
 
 
 def _cycle_trace(args):
@@ -1426,7 +1464,10 @@ def _cycle_trace(args):
 	for k, (a, b) in enumerate(zip(edges[:-1], edges[1:])):
 		row = {'point': k}
 		for name, v in values.items():
-			row[name] = (float(np.nanmean(v[a:b])) if v is not None
+			# Growth rate is already smoothed; the bin median keeps any
+			# remaining burst from setting the bin. Counts use the bin mean.
+			summary = np.nanmedian if name == 'growth_rate' else np.nanmean
+			row[name] = (float(summary(v[a:b])) if v is not None
 				and np.isfinite(v[a:b]).any() else np.nan)
 		rows.append(row)
 	return rows
@@ -1437,7 +1478,8 @@ def cycle_traces(data: 'PaperData', variants: Sequence[int],
 		series: Sequence[str] = ('rnap', 'ribosomes')) -> pd.DataFrame:
 	"""
 	Chosen quantities through every generation of each lineage, as the mean
-	over each of n_points equal fractions of the cell cycle.
+	over each of n_points equal fractions of the cell cycle (the median
+	for growth rate, itself smoothed over GROWTH_TRACE_SMOOTH_STEPS).
 
 	Splitting each cycle into equal fractions lines lineages up generation
 	by generation even though their cycles differ in length. RNAP and
@@ -1468,6 +1510,7 @@ def cycle_traces(data: 'PaperData', variants: Sequence[int],
 		stamp = cache[:-4] + '.json'
 		key = json.loads(json.dumps({'version': CACHE_VERSION,
 			'n_points': n_points, 'series': list(series),
+			'growth_smooth': GROWTH_TRACE_SMOOTH_STEPS,
 			'paths': list(rows['path'])}))
 		frame = None
 		if (os.path.exists(cache) and os.path.exists(stamp)

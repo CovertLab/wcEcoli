@@ -29,7 +29,7 @@ RnaSynthProb	gene_copy_number	5B 5C 5D 5G
 RnaSynthProb	basal_prob_ppgpp_synth_prob	5D	rpoC event-anchored analysis
 RnaSynthProb	basal_prob_orig	5D
 RnaSynthProb	basal_prob_updated	5D
-RnapData	rnaInitEvent	2G 5D 5G 6C
+RnapData	rnaInitEvent	5D 6C 6D
 RnapData	rna_init_event_per_cistron	3C 5G 6C	per-cistron initiation, 1 s resolution
 RnapData	active_rnap_coordinates	3D supplement	NaN-padded positions of every active RNAP; large but only ~11 MB per generation
 RnapData	active_rnap_domain_indexes	3D supplement	chromosome domain per RNAP, for per-copy occupancy
@@ -42,7 +42,7 @@ RibosomeData	max_p_per_protein	3E
 RibosomeData	mRNA_is_overcrowded	3E	should fire far less after the footprint fix
 RibosomeData	actual_prob_translation_per_transcript	3E
 RibosomeData	target_prob_translation_per_transcript	3E
-RibosomeData	ribosome_init_event_per_monomer	5G 6C
+RibosomeData	ribosome_init_event_per_monomer	5D 5G 6D
 BulkMolecules	counts	3F 5F 5H	free 30S/50S (pool ceiling), free RNAP (total RNAP), free complex subunits (limiting step); read by subcolumn
 UniqueMoleculeCounts	uniqueMoleculeCounts	2D 2E 2F 3G 5A	active_ribosome, active_RNAP, full_chromosome, oriC
 ReplicationData	criticalMassPerOriC	5A 5B

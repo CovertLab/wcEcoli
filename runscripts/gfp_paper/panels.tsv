@@ -39,7 +39,7 @@ panel	content	kind	script	batch	status	notes
 5G	rpoC steps (copies → protein)	variant	models/ecoli/analysis/variant/gfp_paper_rpoc_steps_copies_protein.py	B2	draft	
 5H	Cell-wide capacity bars	variant	models/ecoli/analysis/variant/gfp_paper_cell_wide_capacity_bars.py	B2	draft	Last bar relabelled growth rate (it is the specific rate); Growth rate + doubling time versions written
 5I	rpoC feedback schematic	schematic	(svg, drawn by hand)		todo	
-6A	Multi-trace induction timeline	multigen	models/ecoli/analysis/multigen/gfp_paper_multi_trace_induction_timeline.py	B2	todo	If a growth track is shown, write growth rate + doubling time versions (README)
+6A	Multi-trace induction timeline	multigen	models/ecoli/analysis/multigen/gfp_paper_multi_trace_induction_timeline.py	B2	draft	One file per lineage in Figure_6A_lineages/; each track on its own scale; growth rate + doubling time versions written
 6B	Causal chain schematic	schematic	(svg, drawn by hand)		todo	
-6C	Loop stabilisation (shares over gens)	variant	models/ecoli/analysis/variant/gfp_paper_loop_stabilisation_shares_over_gens.py	B2	todo	
-6D	GFP made per cell per hour	variant	models/ecoli/analysis/variant/gfp_paper_gfp_made_per_cell_per_hour.py	B1	todo	Write growth rate + doubling time versions (README, Conventions)
+6C	Loop stabilisation (shares over gens)	variant	models/ecoli/analysis/variant/gfp_paper_loop_stabilisation_shares_over_gens.py	B2	draft	Showcase design; per-lineage values relative to the induction generation
+6D	GFP made per cell per hour	variant	models/ecoli/analysis/variant/gfp_paper_gfp_made_per_cell_per_hour.py	B1	draft	GFP made = monomers x (growth + degradation), cross-checked against gfp initiations; share x growth fit; one version (no growth axis)

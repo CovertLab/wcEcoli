@@ -66,6 +66,7 @@ TAGS = {
 	# ACTIVE: they expect a new gene induction batch.
 	'GFP_PAPER': [
 		'gfp_paper_replication_timeline_one_lineage.py',
+		'gfp_paper_multi_trace_induction_timeline.py',
 		],
 	'ACTIVE': ACTIVE,   # all active analyses in this category
 	'CORE': [           # the default list to run in development

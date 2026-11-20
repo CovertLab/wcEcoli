@@ -198,3 +198,8 @@ KCAT_ESTIMATOR = 'max'
 # Flux ratios (4C) use reactions carrying at least this flux (mmol/gDCW/h) in
 # both conditions, with the same direction.
 FLUX_FLOOR = 1e-9
+
+# Figure 6A shows one lineage from three wildtype generations before induction
+# through five after, enough to see the loop settle.
+LOOP_TIMELINE_FIRST_GEN = NEW_GENE_INDUCTION_GEN - 3
+LOOP_TIMELINE_LAST_GEN = NEW_GENE_INDUCTION_GEN + 4

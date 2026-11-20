@@ -3,7 +3,8 @@ gfp mRNA, GFP protein, growth and cell mass through induction, every lineage.
 
 # Figure 1B
 
-Four tracks against generation for the showcase design (nearest
+Four tracks against generation (growth rate smoothed as every paper trace
+is, see gfp_paper_data.GROWTH_TRACE_SMOOTH_STEPS) for the showcase design (nearest
 SHOWCASE_PROTEOME_SHARE): one representative lineage in dark green, the other
 lineages in light green, and the no-GFP control as its median and 10th-90th
 percentile band across lineages (growth and mass only; the control has no
