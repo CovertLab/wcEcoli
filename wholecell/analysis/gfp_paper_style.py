@@ -332,13 +332,15 @@ SHARE_BACKGROUND = '#CDD1CF'     # all other genes: neutral, not control grey
 
 
 def gene_share_scatter(ax, x, y, is_ribosomal_protein, is_rnap, is_new_gene,
-		floor: float = SHARE_FLOOR) -> dict:
+		floor: float = SHARE_FLOOR, highlights=None) -> dict:
 	"""
 	Log-log scatter of each gene's share without (x) and with (y) GFP.
 
-	Shared by the transcriptome (3A) and proteome (1C) panels so they read
-	the same way. Ribosomal proteins, RNAP subunits and GFP are highlighted
-	in their entity colours over the rest in a neutral grey. A share below
+	Shared by the transcriptome (3A) and proteome (1C, 4A) panels so they
+	read the same way. Ribosomal proteins, RNAP subunits and GFP are
+	highlighted in their entity colours over the rest in a neutral grey;
+	`highlights`, a list of (label, colour, boolean mask), replaces the
+	ribosomal-protein and RNAP groups (GFP is always highlighted). A share below
 	the floor (usually zero) is drawn on the floor, so gfp, absent without
 	GFP, sits at the left edge; genes at zero in both are omitted.
 
@@ -351,17 +353,24 @@ def gene_share_scatter(ax, x, y, is_ribosomal_protein, is_rnap, is_new_gene,
 	at_floor = keep & ((x < floor) | (y < floor))
 	x = np.maximum(x, floor)
 	y = np.maximum(y, floor)
-	ribosomal = np.asarray(is_ribosomal_protein, dtype=bool)
-	rnap = np.asarray(is_rnap, dtype=bool)
 	new = np.asarray(is_new_gene, dtype=bool)
+	if highlights is None:
+		highlights = [
+			('ribosomal proteins', COLORS['ribosome'],
+				np.asarray(is_ribosomal_protein, dtype=bool)),
+			('RNA polymerase subunits', COLORS['rnap'],
+				np.asarray(is_rnap, dtype=bool))]
+	highlighted = np.zeros(x.shape, dtype=bool)
+	for _, _, mask in highlights:
+		highlighted |= np.asarray(mask, dtype=bool)
 	ax.plot([floor, 1], [floor, 1], color=INK_MUTED, linestyle=(0, (4, 3)),
 		linewidth=0.8, zorder=1)
-	for label, color, size, mask, z in (
-			('all other genes', SHARE_BACKGROUND, 6,
-				~(ribosomal | rnap | new), 2),
-			('ribosomal proteins', COLORS['ribosome'], 12, ribosomal, 3),
-			('RNA polymerase subunits', COLORS['rnap'], 12, rnap, 3),
-			('GFP', COLORS['gfp'], 30, new, 3)):
+	groups = [('all other genes', SHARE_BACKGROUND, 6,
+		~(highlighted | new), 2)]
+	groups += [(label, color, 12, np.asarray(mask, dtype=bool), 3)
+		for label, color, mask in highlights]
+	groups.append(('GFP', COLORS['gfp'], 30, new, 3))
+	for label, color, size, mask, z in groups:
 		mask = mask & keep
 		ax.scatter(x[mask], y[mask], s=size, c=color, linewidths=0.3,
 			edgecolors='white', label=label, zorder=z, clip_on=False)

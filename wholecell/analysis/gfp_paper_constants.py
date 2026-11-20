@@ -190,3 +190,11 @@ DOUBLING_TIME_PART = 'doubling_time'
 # The showcase design for Figure 1 (decision D3): the design whose mean GFP
 # proteome share is nearest this, among designs with surviving lineages.
 SHOWCASE_PROTEOME_SHARE = 0.35
+
+# Figure 4. The metabolic enzymes followed are the catalysts with a kcat
+# estimate under this estimator: the enzymes a kcat bound can act on. It must
+# match the estimator the M1/M2 variants apply.
+KCAT_ESTIMATOR = 'max'
+# Flux ratios (4C) use reactions carrying at least this flux (mmol/gDCW/h) in
+# both conditions, with the same direction.
+FLUX_FLOOR = 1e-9

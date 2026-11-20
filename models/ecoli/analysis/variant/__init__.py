@@ -91,6 +91,11 @@ TAGS = {
 		'gfp_paper_induction_traces_mrna_protein_growth_mass.py',
 		'gfp_paper_proteome_scatter_showcase_vs_no_gfp.py',
 		'gfp_paper_what_decreases_with_gfp_bars.py',
+		'gfp_paper_enzyme_proteome_scatter.py',
+		'gfp_paper_enzyme_concentration_histogram.py',
+		'gfp_paper_flux_per_growth_vs_enzyme_concentration.py',
+		'gfp_paper_wildtype_forced_reduction_growth.py',
+		'gfp_paper_supply_capacity_vs_translational_demand.py',
 		],
 	'PAPER': [
 		"adder_sizer.py",

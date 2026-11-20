@@ -1,7 +1,7 @@
 listener	column	required_by	notes
 Main	time	all	cell cycle boundaries and durations
 Mass	cellMass	1B 2E 5A 6A
-Mass	dryMass	1E 4A
+Mass	dryMass	1E 4A 4C
 Mass	proteinMass	1C 1E 3A 4A 4B	denominator for GFP proteome share
 Mass	mRnaMass	3A 3C	denominator for GFP transcriptome share
 Mass	rRnaMass	2G 5E
@@ -33,7 +33,7 @@ RnapData	rnaInitEvent	2G 5D 5G 6C
 RnapData	rna_init_event_per_cistron	3C 5G 6C	per-cistron initiation, 1 s resolution
 RnapData	active_rnap_coordinates	3D supplement	NaN-padded positions of every active RNAP; large but only ~11 MB per generation
 RnapData	active_rnap_domain_indexes	3D supplement	chromosome domain per RNAP, for per-copy occupancy
-RibosomeData	effectiveElongationRate	2E 4G	drops under burden; sets the crowding cap
+RibosomeData	effectiveElongationRate	2E 4G	drops under burden; sets the crowding cap; translational demand (4G) = active ribosomes x this / volume
 RibosomeData	actualElongations	2G 4G
 RibosomeData	n_ribosomes_on_each_mRNA	3E 3F	numerator for ribosomes per gfp mRNA
 RibosomeData	mRNA_TU_index	3E 3F 3G	pairs with the above
@@ -48,10 +48,10 @@ UniqueMoleculeCounts	uniqueMoleculeCounts	2D 2E 2F 3G 5A	active_ribosome, active
 ReplicationData	criticalMassPerOriC	5A 5B
 ReplicationData	criticalInitiationMass	5A
 ReplicationData	numberOfOric	1E 5A 5B 6A
-GrowthLimits	ppgpp_conc	4H	ppGpp, the stringent response readout
+GrowthLimits	ppgpp_conc	4H	micromolar; ppGpp, the stringent response readout
 FBAResults	reactionFluxes	4C
-FBAResults	base_reaction_fluxes	4C 4G
-FBAResults	catalyst_counts	1E 4C 4D
+FBAResults	base_reaction_fluxes	4C	per g dry weight via Mass dryMass/cellMass and sim_data cell_density
+FBAResults	catalyst_counts	1E 4B 4C 4G	per-catalyst concentration over cell volume
 EnzymeKinetics	countsToMolar	4B 4C	enzyme concentrations
 TranscriptElongationListener	countNTPsUSed	2G
 TranscriptElongationListener	countRnaCistronSynthesized	3C optional	decay branch only; completed transcripts per cistron, excluding attenuated

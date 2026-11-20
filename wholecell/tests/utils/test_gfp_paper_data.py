@@ -52,9 +52,13 @@ class TestDesignDecoding(unittest.TestCase):
 		self.assertEqual(D.design_of('', OLD_GRID, 1011),
 			D.design_of('', OLD_GRID, 11))
 
-	def test_missing_metadata_raises(self):
+	def test_missing_metadata(self):
+		# A new gene variant without its grid recorded cannot be decoded...
 		with self.assertRaises(ValueError):
-			D.design_of('', {'variant': 'something_else'}, 3)
+			D.design_of('', {'variant': 'new_gene_something'}, 3)
+		# ...but a batch with no new gene designs is all no-GFP conditions.
+		self.assertEqual(D.design_of('', {'variant': 'kcat_estimate_scale'},
+			3), (0.0, 0.0))
 
 	def test_design_list_mismatch_raises(self):
 		from models.ecoli.sim.variants.new_gene_design_list import (

@@ -518,8 +518,11 @@ class WorkflowBuilder:
 			"adjust_timestep_for_charging": ADJUST_TIMESTEP_FOR_CHARGING,
 			}
 
-		if VARIANT == 'new_gene_internal_shift':
-			# Record the values used in this variant for analysis scripts
+		if VARIANT in ('new_gene_internal_shift',
+				'new_gene_internal_shift_with_kcat'):
+			# Record the values used in this variant for analysis scripts.
+			# The kcat variant lays out the same grid, so analyses decode
+			# both from these lists.
 			self.metadata.update({
 				"new_gene_expression_factors": NEW_GENE_EXPRESSION_FACTORS,
 				"new_gene_translation_efficiency_values":

@@ -21,14 +21,14 @@ panel	content	kind	script	batch	status	notes
 3G	Share of active RNAP vs ribosomes	variant	models/ecoli/analysis/variant/gfp_paper_share_of_active_rnap_vs_ribosomes.py	B1	draft	Band replaced by a per-design spacing-limit mark (copies and active RNAP move with burden)
 3H	Growth vs GFP ribosome share per cycle	variant	models/ecoli/analysis/variant/gfp_paper_growth_vs_gfp_ribosome_share_per_cycle.py	B2	draft	Many more seeds now; growth rate; y = per-cycle growth relative to seed-matched control (D4); colours ordered by burden; Growth rate + doubling time versions written
 3I	Transcription capped / translation open schematic	schematic	(svg, drawn by hand)		todo	
-4A	Enzyme proteome scatter	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_proteome_scatter.py	B2	todo	
-4B	Enzyme concentration histogram	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_concentration_histogram.py	B2	todo	
-4C	Flux per growth vs enzyme concentration	variant	models/ecoli/analysis/variant/gfp_paper_flux_per_growth_vs_enzyme_concentration.py	B1	todo	
+4A	Enzyme proteome scatter	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_proteome_scatter.py	B2	draft	Highlights subunits of all FBA catalysts ("metabolic enzymes")
+4B	Enzyme concentration histogram	variant	models/ecoli/analysis/variant/gfp_paper_enzyme_concentration_histogram.py	B2	draft	kcat-bounded enzymes = catalysts with a kcat estimate under KCAT_ESTIMATOR (159 with max)
+4C	Flux per growth vs enzyme concentration	variant	models/ecoli/analysis/variant/gfp_paper_flux_per_growth_vs_enzyme_concentration.py	B1	draft	Both series over the kcat-bounded enzymes / all base reactions; fluxes per g dry weight
 4D	kcat ceiling schematic	schematic	(svg, drawn by hand)		todo	
-4E	Wildtype forced reduction → growth	variant	models/ecoli/analysis/variant/gfp_paper_wildtype_forced_reduction_growth.py	M1	todo	Write growth rate + doubling time versions (README, Conventions)
-4F	GFP ± kcat constraints	variant	models/ecoli/analysis/variant/gfp_paper_gfp_kcat_constraints.py	M2	todo	Write growth rate + doubling time versions (README, Conventions)
-4G	Supply capacity vs translational demand	variant	models/ecoli/analysis/variant/gfp_paper_supply_capacity_vs_translational_demand.py	B1 / M2	todo	
-4H	ppGpp vs growth, kcat tightening vs GFP	variant	models/ecoli/analysis/variant/gfp_paper_ppgpp_vs_growth_kcat_tightening_vs_gfp.py	M1 + B1	todo	
+4E	Wildtype forced reduction → growth	variant	models/ecoli/analysis/variant/gfp_paper_wildtype_forced_reduction_growth.py	M1	draft	kcat condition read from each variant sim_data; growth rate + doubling time versions written
+4F	GFP ± kcat constraints	multi-batch	runscripts/gfp_paper/gfp_paper_gfp_kcat_constraints.py	M2	draft	Multi-batch script; arms from variant sim_data; growth rate + doubling time versions written
+4G	Supply capacity vs translational demand	variant	models/ecoli/analysis/variant/gfp_paper_supply_capacity_vs_translational_demand.py	B1 / M2	draft	CLAIM CHECK: like-for-like (per fL) supply and demand fall together (0.75 vs 0.76 at 36%); storyboard gap was enzymes per fL vs ribosomes per cell
+4H	ppGpp vs growth, kcat tightening vs GFP	multi-batch	runscripts/gfp_paper/gfp_paper_ppgpp_vs_growth_kcat_tightening_vs_gfp.py	M1 + B1	draft	Multi-batch script; GFP series excludes any variant run with a kcat bound; growth rate + doubling time versions written
 4I	Amino acid pool schematic	schematic	(svg, drawn by hand)		todo	Redo to match other schematics
 5A	Replication timeline, one lineage	multigen	models/ecoli/analysis/multigen/gfp_paper_replication_timeline_one_lineage.py	B2	draft	One file per lineage in Figure_5A_lineages/; pick the representative
 5B	Copies vs replichore position, Cooper–Helmstetter	variant	models/ecoli/analysis/variant/gfp_paper_copies_vs_replichore_position_cooper_helmste.py	B2	draft	Changes with insertion site

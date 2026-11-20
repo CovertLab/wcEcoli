@@ -267,6 +267,11 @@ def design_of(batch_dir: str, metadata: dict, variant: int
 	if design_index == CONTROL_VARIANT:
 		return 0.0, 0.0
 	name = metadata.get('variant', '')
+	if name == 'new_gene_internal_shift_with_kcat':
+		from models.ecoli.sim.variants.new_gene_internal_shift_with_kcat \
+			import WILDTYPE_CONTROL_INDEX
+		if design_index == WILDTYPE_CONTROL_INDEX:
+			return 0.0, 0.0
 
 	if name == 'new_gene_design_list':
 		from models.ecoli.sim.variants.new_gene_design_list import (
@@ -288,6 +293,11 @@ def design_of(batch_dir: str, metadata: dict, variant: int
 
 	factors = metadata.get('new_gene_expression_factors')
 	efficiencies = metadata.get('new_gene_translation_efficiency_values')
+	if (factors is None or efficiencies is None) and not name.startswith(
+			'new_gene'):
+		# A batch without new gene designs (wildtype, kcat scans): every
+		# variant is a no-GFP condition.
+		return 0.0, 0.0
 	if factors is None or efficiencies is None:
 		raise ValueError('batch metadata has no new gene expression factors'
 			' or translation efficiencies, and variant %r is not a design'
@@ -609,6 +619,10 @@ def add_derived_columns(df: pd.DataFrame, gene: GeneInfo) -> pd.DataFrame:
 			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
 		df['enzyme_uM'] = _safe_ratio(df['enzyme_counts'],
 			AVOGADRO * 1e-15 * df['cellVolume'] * 1e-6)
+		# Amino acids incorporated per second per fL: the translational demand
+		# on metabolism (Figure 4G), a concentration rate like enzyme supply.
+		df['translation_demand'] = _safe_ratio(
+			df['active_ribosomes'] * df['elongation_rate'], df['cellVolume'])
 		df['gfp_rnap_share'] = _safe_ratio(
 			df['rnap_on_gfp'], df['active_rnap'])
 		# The RNAP share gfp would hold if every copy were packed footprint to
@@ -737,6 +751,7 @@ RAW_COLUMNS = (
 	'rnap_initiations_per_s', 'cellVolume', 'ribosomes_making_gfp', 'oric',
 	'enzyme_counts',
 )
+# Derived in add_derived_columns from RAW_COLUMNS; listed for readers.
 
 
 def in_window(cycles: pd.DataFrame, first_gen: int = C.ANALYSIS_FIRST_GEN,
@@ -884,6 +899,12 @@ VECTOR_KINDS = {
 	# active ribosomes by the protein they are making
 	'ribosomes_monomer': ('RibosomeData', 'n_ribosomes_per_transcript',
 		'monomerIds'),
+	# FBA catalysts (enzymes and enzyme complexes), molecules per cell
+	'catalysts': ('FBAResults', 'catalyst_counts', 'catalyst_ids'),
+	# metabolic flux per base reaction, mmol per g dry weight per hour;
+	# `extra` is (cell density in g/L,)
+	'base_fluxes': ('FBAResults', 'base_reaction_fluxes',
+		'base_reaction_ids'),
 	# promoter copies per transcription unit (TU-indexed dosage)
 	'promoter_copies': ('RnaSynthProb', 'promoter_copy_number', 'rnaIds'),
 	# limiting-subunit credit for one complex; `extra` is its subunits
@@ -909,6 +930,8 @@ def _read_vector(args):
 			ids = None if ids is None else list(ids)
 		elif kind == 'limiting':
 			return _limiting_credit(path, *extra)
+		elif kind == 'base_fluxes':
+			return _base_fluxes(path, *extra)
 		else:
 			cell = _Cell(path)
 			values = cell.column(listener, column)
@@ -1479,6 +1502,169 @@ def cycle_traces(data: 'PaperData', variants: Sequence[int],
 
 
 # --------------------------------------------------------------------------
+# Metabolism (Figure 4)
+def _base_fluxes(path, cell_density_g_per_L):
+	"""
+	Time-mean flux per base reaction in mmol per g dry weight per hour.
+
+	The listener records mmol per litre of cell per second; dividing by the
+	dry-mass density (cell density x dry mass / cell mass) and converting
+	seconds to hours puts conditions with different cell composition on the
+	same biomass basis.
+	"""
+	cell = _Cell(path)
+	fluxes = cell.column('FBAResults', 'base_reaction_fluxes')
+	ids = cell.attribute('FBAResults', 'base_reaction_ids')
+	dry = cell.column('Mass', 'dryMass')
+	total = cell.column('Mass', 'cellMass')
+	if fluxes is None or ids is None or dry is None or total is None:
+		return None, None
+	with np.errstate(divide='ignore', invalid='ignore'):
+		dry_density = cell_density_g_per_L * dry / total
+		per_dry = fluxes * SECONDS_PER_HOUR / dry_density[:, None]
+	return np.nanmean(per_dry[1:], axis=0), list(ids)
+
+
+def kcat_enzymes(sim_data, estimator: str = C.KCAT_ESTIMATOR) -> List[str]:
+	"""
+	Catalysts with a kcat estimate under `estimator`, the enzymes a kcat
+	bound can act on. Read from sim_data, or from the flat file for sim_data
+	built before kcat estimates existed.
+	"""
+	metabolism = sim_data.process.metabolism
+	estimates = getattr(metabolism, 'kcat_estimates', {}).get(estimator)
+	if estimates is None:
+		import csv
+		from wholecell.utils import filepath
+		path = os.path.join(filepath.ROOT_PATH, 'reconstruction', 'ecoli',
+			'flat', 'kcat_estimates', 'kcat_estimates_%s.tsv' % estimator)
+		with open(path) as f:
+			rows = csv.DictReader((line for line in f
+				if not line.startswith('#')), delimiter='\t')
+			estimates = {(r['reaction_id'], r['catalyst_id']): float(
+				r['kcat_estimate']) for r in rows
+				if float(r['kcat_estimate']) >= 1.0}
+	return sorted({catalyst for _, catalyst in estimates})
+
+
+def catalyst_monomers(sim_data, catalysts: Sequence[str]) -> List[str]:
+	"""Monomer subunits of the given catalysts (a monomer is its own)."""
+	complexation = sim_data.process.complexation
+	complexes = set(complexation.ids_complexes)
+	out: set = set()
+	for catalyst in catalysts:
+		if catalyst in complexes:
+			out.update(str(m) for m in complexation.get_monomers(catalyst)[
+				'subunitIds'])
+		else:
+			out.add(catalyst)
+	return sorted(out)
+
+
+def catalyst_concentrations(data: 'PaperData', variants: Sequence[int],
+		plot_out_dir: str, cpus: int = 1) -> Dict[int, VectorProfile]:
+	"""
+	Concentration (micromolar) of every FBA catalyst, per surviving lineage.
+
+	Each lineage's window-mean catalyst counts over its window-mean volume.
+	"""
+	counts = vector_profiles(data, 'catalysts', variants, plot_out_dir, cpus)
+	volume = data.lineages.set_index(['variant', 'seed'])['cellVolume']
+	out = {}
+	for variant, profile in counts.items():
+		out[variant] = VectorProfile(profile.ids, {seed: values / (
+			AVOGADRO * 1e-15 * volume[(variant, seed)] * 1e-6)
+			for seed, values in profile.per_lineage.items()})
+	return out
+
+
+def kcat_conditions(batch_dir: str, variants: Sequence[int],
+		plot_out_dir: str) -> pd.DataFrame:
+	"""
+	Whether each variant ran with a kcat bound, and which, read from the
+	variant's own modified sim_data rather than its index, so the panels do
+	not depend on how a variant file lays out its indices.
+
+	Returns:
+		columns variant, bound (bool), estimator, multiplier (NaN when
+		unbound), n_bounds. Cached as kcat_conditions.csv.
+	"""
+	cache = os.path.join(plot_out_dir, CACHE_SUBDIR, 'kcat_conditions.csv')
+	if os.path.exists(cache) and not os.environ.get(REBUILD_ENV):
+		cached = pd.read_csv(cache)
+		if set(variants) <= set(cached['variant']):
+			return cached[cached['variant'].isin(variants)].reset_index(
+				drop=True)
+	rows = []
+	for variant in variants:
+		paths = glob.glob(os.path.join(batch_dir, '*_%06d' % variant, 'kb',
+			'simData_Modified.cPickle'))
+		row = dict(variant=variant, bound=False, estimator=None,
+			multiplier=np.nan, n_bounds=0)
+		if paths:
+			with open(paths[0], 'rb') as f:
+				metabolism = pickle.load(f).process.metabolism
+			selected = getattr(metabolism, 'selected_kcat_estimates', None)
+			if selected:
+				row.update(bound=True, n_bounds=len(selected),
+					estimator=getattr(metabolism, 'kcat_estimate_quantile',
+					None), multiplier=float(getattr(metabolism,
+					'kcat_estimate_multiplier', np.nan)))
+		rows.append(row)
+	frame = pd.DataFrame(rows)
+	os.makedirs(os.path.dirname(cache), exist_ok=True)
+	tmp = cache + '.%d.tmp' % os.getpid()
+	frame.to_csv(tmp, index=False)
+	os.replace(tmp, cache)
+	return frame
+
+
+def enzyme_concentration_ratios(data: 'PaperData', sim_data,
+		variants: Sequence[int], plot_out_dir: str, cpus: int = 1,
+		baseline: int = CONTROL_VARIANT) -> Tuple[pd.DataFrame, List[str]]:
+	"""
+	Concentration of each kcat-bounded enzyme in each variant over the
+	baseline, using design means over surviving lineages.
+
+	Returns:
+		(DataFrame indexed by catalyst id with one ratio column per variant,
+		the catalyst ids used). Enzymes absent from the baseline are dropped.
+	"""
+	enzymes = set(kcat_enzymes(sim_data))
+	profiles = catalyst_concentrations(data, sorted(set(variants)
+		| {baseline}), plot_out_dir, cpus)
+	ids = profiles[baseline].ids
+	keep = [i for i, c in enumerate(ids) if c in enzymes]
+	base = profiles[baseline].mean[keep]
+	ok = base > 0
+	frame = pd.DataFrame(index=pd.Index(np.array(ids)[keep][ok],
+		name='catalyst_id'))
+	for variant in variants:
+		frame[variant] = profiles[variant].mean[keep][ok] / base[ok]
+	return frame, list(frame.index)
+
+
+def monomer_mass_shares(sim_data, profiles: Dict[int, VectorProfile]
+		) -> Tuple[List[str], Dict[int, np.ndarray]]:
+	"""
+	Each monomer's share of total protein mass (count x molecular weight over
+	the sum over monomers), from 'monomers' profiles. Counts include
+	monomers inside complexes.
+	"""
+	from wholecell.utils import units
+	monomers = sim_data.process.translation.monomer_data
+	mw = dict(zip(monomers['id'], monomers['mw'].asNumber(
+		units.g / units.mol)))
+	ids = next(iter(profiles.values())).ids
+	weights = np.array([mw.get(i, np.nan) for i in ids])
+	shares = {}
+	for variant, profile in profiles.items():
+		mass = profile.mean * weights
+		shares[variant] = mass / np.nansum(mass)
+	return ids, shares
+
+
+# --------------------------------------------------------------------------
 # One call for a panel
 @dataclass
 class PaperData:
@@ -1508,6 +1694,19 @@ class PaperData:
 			n_lineages_total=int(len(lineages)),
 			n_lineages_survived=int(lineages['survived'].sum()),
 		)
+
+
+def load_batch(batch_dir: str, cpus: int = 1) -> 'PaperData':
+	"""
+	PaperData for a batch directory alone, for scripts that combine batches.
+
+	Uses the batch's own metadata and sim_data and caches in
+	<batch>/plotOut, the same place its variant analyses cache.
+	"""
+	with open(os.path.join(batch_dir, 'metadata', 'metadata.json')) as f:
+		metadata = json.load(f)
+	return load(batch_dir, os.path.join(batch_dir, 'kb', 'simData.cPickle'),
+		metadata, os.path.join(batch_dir, 'plotOut'), cpus)
 
 
 def load(batch_dir: str, sim_data_path: str, metadata: dict,

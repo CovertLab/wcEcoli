@@ -8,22 +8,55 @@
 # Every panel lands in <batch>/plotOut/paper_figures/ as PNG, PDF and SVG with
 # a JSON provenance sidecar, so one download gets the whole set.
 #
-# STATUS: skeleton. Filled in as the per-panel scripts listed in panels.tsv
-# are written.
+# Panels are listed in panels.tsv; the single-batch ones run through the
+# GFP_PAPER analysis tags, the multi-batch ones (4F, 4H) through their own
+# scripts in this directory.
 
 set -euo pipefail
 
-if [ $# -lt 1 ]; then
-	echo "usage: $0 <batch_dir>    # e.g. \$SCRATCH/wcEcoli_out/<batch>"
+# Usage:
+#   paper_analysis.sh batch <batch_dir> [cpus]
+#       every single-batch panel (variant and multigen GFP_PAPER tags);
+#       panels that do not apply to the batch (for example 4E on a GFP
+#       batch) print why and skip
+#   paper_analysis.sh fig4f <batch_dir> [<batch_dir> ...]
+#       4F, GFP with and without a kcat bound, across one or more batches
+#   paper_analysis.sh fig4h <kcat_batch_dir> <gfp_batch_dir>
+#       4H, ppGpp vs growth, kcat tightening (M1) vs GFP (B1)
+#
+# Run from the repository root with PYTHONPATH set to it. The first panel on
+# a batch builds the shared cache in <batch>/plotOut/paper_figures/_cache/;
+# later panels reuse it.
+
+usage() {
+	sed -n '/^# Usage:/,/^# later panels/p' "$0"
 	exit 1
-fi
-BATCH="$1"
+}
 
-echo "Not yet filled in. See panels.tsv for the scripts still to be written."
-echo "Batch: ${BATCH}"
-exit 1
+[ $# -ge 2 ] || usage
+MODE="$1"
+shift
+export OPENBLAS_NUM_THREADS=1
 
-## Variant analyses:
-#    python runscripts/manual/analysisVariant.py "${BATCH}" -p <script>
-## Multigen analyses:
-#    python runscripts/manual/analysisMultiGen.py "${BATCH}" -p <script>
+case "${MODE}" in
+	batch)
+		BATCH="$1"
+		CPUS="${2:-24}"
+		python runscripts/manual/analysisVariant.py "${BATCH}" \
+			-p GFP_PAPER --cpus "${CPUS}"
+		python runscripts/manual/analysisMultigen.py "${BATCH}" \
+			-p GFP_PAPER --cpus "${CPUS}"
+		;;
+	fig4f)
+		python runscripts/gfp_paper/gfp_paper_gfp_kcat_constraints.py "$@" \
+			--cpus "${CPUS:-24}"
+		;;
+	fig4h)
+		[ $# -eq 2 ] || usage
+		python runscripts/gfp_paper/gfp_paper_ppgpp_vs_growth_kcat_tightening_vs_gfp.py \
+			--kcat-batch "$1" --gfp-batch "$2" --cpus "${CPUS:-24}"
+		;;
+	*)
+		usage
+		;;
+esac
