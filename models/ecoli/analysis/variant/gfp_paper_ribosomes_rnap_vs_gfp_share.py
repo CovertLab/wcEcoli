@@ -76,8 +76,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 					else 'n/a', fmt.format(float(np.nanmin(y)))))
 			shown = designs[np.isfinite(designs[ribosome[0]])]
 			if shown['failed'].any():
-				fig.legend(handles=[style.failed_legend_handle()],
-					loc='lower center', bbox_to_anchor=(0.5, -0.08))
+				style.legend_below(fig, [style.failed_legend_handle()],
+					ncol=1)
 
 			style.save_panel(fig, plotOutDir,
 				style.panel_name(__file__, part), script=__file__,

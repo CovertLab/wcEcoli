@@ -87,8 +87,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			handles.append(style.failed_legend_handle())
 		handles.append(Line2D([], [], color=style.INK_MUTED,
 			linestyle=(0, (4, 3)), label='share × growth fit'))
-		ax.legend(handles=handles, loc='upper center',
-			bbox_to_anchor=(0.5, -0.2), ncol=2)
+		style.legend_below(fig, handles, ncol=2)
 		ax.set_xlim(0, 90)
 		ax.set_ylim(bottom=0)
 		ax.set_xlabel('GFP share of proteome (%)')

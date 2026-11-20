@@ -124,8 +124,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.set_ylabel('share of active %s (%%)' % ('RNA polymerases'
 				if machine == 'RNAP' else 'ribosomes'))
 		handles, legend_labels = left.get_legend_handles_labels()
-		fig.legend(handles, legend_labels, loc='lower center', ncol=2,
-			bbox_to_anchor=(0.5, -0.1))
+		style.legend_below(fig, handles, legend_labels, ncol=2)
 
 		style.save_panel(fig, plotOutDir, style.panel_name(__file__),
 			script=__file__, batch=inputDir, sim_data_path=simDataFile,

@@ -79,8 +79,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			label='GFP %.0f%% of proteome, median of %d lineages' % (
 			PERCENT * high['gfp_proteome_share'],
 			n_lineages.get(int(high['variant']), 0)))]
-		fig.legend(handles=handles, loc='lower center', ncol=1,
-			bbox_to_anchor=(0.5, -0.1))
+		style.legend_below(fig, handles, ncol=1)
 
 		style.save_panel(fig, plotOutDir, style.panel_name(__file__),
 			script=__file__, batch=inputDir, sim_data_path=simDataFile,

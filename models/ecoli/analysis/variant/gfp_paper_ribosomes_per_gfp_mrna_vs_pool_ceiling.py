@@ -93,9 +93,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		if any(line['failed'].any() for line in shown):
 			handles.append(style.failed_legend_handle())
 			labels.append(style.FAILED_LABEL)
-		ax.legend(handles, labels, loc='upper center',
-			bbox_to_anchor=(0.5, -0.22), ncol=2, handletextpad=0.4,
-			columnspacing=1.2)
+		style.legend_below(fig, handles, labels, ncol=2)
 
 		variants = sorted(int(v) for v in designs['variant'])
 		style.save_panel(fig, plotOutDir, style.panel_name(__file__),

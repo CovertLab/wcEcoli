@@ -68,8 +68,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 				fmt=fmt)
 			right.set_title(label)
 			if hatched:
-				fig.legend(handles=[style.hatched_legend_handle()],
-					loc='lower left', bbox_to_anchor=(0.05, -0.06))
+				style.legend_below(fig, [style.hatched_legend_handle()],
+					ncol=1)
 
 			variants = sorted(int(v) for v in designs['variant'])
 			style.save_panel(fig, plotOutDir,

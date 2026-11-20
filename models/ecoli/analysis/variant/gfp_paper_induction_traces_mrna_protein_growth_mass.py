@@ -155,12 +155,11 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		axes[-1].set_xlim(0, C.N_GENERATIONS)
 		axes[-1].set_xticks(range(0, C.N_GENERATIONS + 1, 4))
 		axes[-1].set_xlabel('generation')
-		fig.legend(handles=[
+		style.legend_below(fig, [
 			Line2D([], [], color=REPRESENTATIVE, label='GFP, one lineage'),
 			Line2D([], [], color=OTHERS, label='other GFP lineages'),
 			Patch(facecolor=style.COLORS['control'], alpha=0.4,
-				label='no GFP, median and 10th-90th percentile')],
-			loc='lower center', ncol=3, bbox_to_anchor=(0.5, -0.06))
+				label='no GFP, median and 10th-90th percentile')], ncol=3)
 
 		if test is None:
 			test_note = 'Divergence test not run: fewer than 2 seed pairs.'

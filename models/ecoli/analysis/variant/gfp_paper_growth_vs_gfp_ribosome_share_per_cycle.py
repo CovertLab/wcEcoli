@@ -100,7 +100,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xlabel('GFP share of active ribosomes')
 		ax.set_ylabel(ylabel)
 		style.legend_with_failed(ax, bool(cycles['lineage_failed'].any()),
-			loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=2)
+			below=True)
 
 		on = cycles[cycles['variant'] != gfp_paper_data.CONTROL_VARIANT]
 		if len(on) > 2:

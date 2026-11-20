@@ -118,9 +118,8 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 			ax.locator_params(axis='y', nbins=3)
 		for ax in list(axes.flat)[len(bars):]:
 			ax.set_visible(False)
-		fig.legend(handles=[Patch(color=colors[control], label='no GFP'),
-			Patch(color=colors[design], label=label)], loc='lower center',
-			ncol=2, bbox_to_anchor=(0.5, -0.04))
+		style.legend_below(fig, [Patch(color=colors[control], label='no GFP'),
+			Patch(color=colors[design], label=label)], ncol=2)
 		style.save_panel(fig, plotOutDir, style.panel_name(__file__, part),
 			script=__file__, batch=inputDir, sim_data_path=simDataFile,
 			n=int(alive[alive['variant'] == design].shape[0]),

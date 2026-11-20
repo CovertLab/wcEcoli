@@ -115,8 +115,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		right.set_ylim(0, 100)
 		right.set_ylabel('time holding the RNAP bottleneck (%)')
 		handles, legend_labels = left.get_legend_handles_labels()
-		fig.legend(handles, legend_labels, loc='lower center', ncol=len(
-			variants), bbox_to_anchor=(0.5, -0.08))
+		style.legend_below(fig, handles, legend_labels, ncol=len(variants))
 
 		style.save_panel(fig, plotOutDir, style.panel_name(__file__),
 			script=__file__, batch=inputDir, sim_data_path=simDataFile,

@@ -93,3 +93,26 @@ manifest for the eventual data deposit.
 Skeleton only. `paper_runs.sh` and `paper_analysis.sh` are filled in once the
 ParCa and smoke test have passed; `panels.tsv` lists all 44 panels of the
 locked 2026.11.13 storyboard with their scripts still to be written.
+
+## Assembling figures
+
+```bash
+python runscripts/gfp_paper/assemble_figures.py \
+	--panels <B1>/plotOut/paper_figures <B2>/plotOut/paper_figures ... \
+	[--schematics DIR] [--growth doubling_time] \
+	[--version 2D=concentration --version 1E=relative] \
+	[--lineage 5A=v000003_s000012 --lineage 6A=...]
+```
+
+Writes Figure_N.svg (vector, editable text), Figure_N.png (600 dpi), a JSON
+of which file went where, and figures.pptx (one slide per figure) to
+out/files_for_claude/gfp_paper/figures/<timestamp>/, which git does not
+track. Panel letters only: there are no captions in the repository. PDF is
+written too when cairosvg is installed.
+
+Layout comes from figure_layout.tsv: each panel's box in mm, taken from the
+locked storyboard by make_figure_layout.py and editable by hand. save_panel
+draws every panel at its box size (less a band for the letter), so type
+prints at the sizes set in gfp_paper_style; the assembler reports any panel
+it had to scale, since scaling changes its type size. Hand-drawn schematics
+go in --schematics as Figure_<label>.svg and .png.

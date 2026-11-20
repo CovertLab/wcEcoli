@@ -96,7 +96,7 @@ class Plot(variantAnalysisPlot.VariantAnalysisPlot):
 		ax.set_xlabel('ribosomes per cell')
 		ax.set_ylabel(ylabel)
 		style.legend_with_failed(ax, bool(cycles['lineage_failed'].any()),
-			loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=2)
+			below=True)
 		if len(cycles) > 2:
 			rho, p = stats.spearmanr(cycles['total_ribosomes'], cycles[column])
 			correlation = 'Spearman rho %.3f (p %.2g) over %d cycles' % (

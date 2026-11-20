@@ -194,13 +194,36 @@ def promoter_lines(ax, designs, column: str, rbs_values: Sequence[float]):
 	return drawn, any(bool(line['failed'].any()) for line in drawn)
 
 
-def legend_with_failed(ax, any_failed: bool, **kwargs):
-	"""The axes legend, plus the hollow-marker entry when a design failed."""
+def legend_with_failed(ax, any_failed: bool, below: bool = False,
+		ncol: int = 2, **kwargs):
+	"""
+	The axes legend, plus the hollow-marker entry when a design failed.
+
+	below=True puts it under the plot as a figure legend (legend_below)
+	instead of inside the axes.
+	"""
 	handles, labels = ax.get_legend_handles_labels()
 	if any_failed:
 		handles.append(failed_legend_handle())
 		labels.append(FAILED_LABEL)
+	if below:
+		return legend_below(ax.figure, handles, labels, ncol=ncol)
 	return ax.legend(handles, labels, **kwargs)
+
+
+def legend_below(fig, handles, labels=None, ncol: int = 2):
+	"""
+	A legend centred under the whole panel.
+
+	A figure legend placed 'outside lower center' is one constrained layout
+	makes room for, so it never lands on the x axis label at any panel size;
+	an axes legend pushed below with bbox_to_anchor is not, and collides once
+	the panel is drawn at its print size.
+	"""
+	if labels is None:
+		labels = [h.get_label() for h in handles]
+	return fig.legend(handles, labels, loc='outside lower center',
+		ncol=ncol, handletextpad=0.4, columnspacing=1.2)
 
 
 def ratio_bars(ax, labels: Sequence[str], means, ci95, colors,
@@ -650,6 +673,31 @@ def _package_versions() -> Dict[str, str]:
 
 PANELS_TSV = os.path.join(filepath.ROOT_PATH, 'runscripts', 'gfp_paper',
 	'panels.tsv')
+LAYOUT_TSV = os.path.join(filepath.ROOT_PATH, 'runscripts', 'gfp_paper',
+	'figure_layout.tsv')
+# Height kept free at the top of every layout box for the panel letter, so
+# the letter never sits on the panel's own labels.
+LETTER_BAND_MM = 3.5
+
+
+def layout_content_mm(label: str, layout: str = LAYOUT_TSV
+		) -> Optional[tuple]:
+	"""
+	(width, height) in mm a panel should be drawn at to fill its box in the
+	assembled figure: the box from figure_layout.tsv less the letter band,
+	split evenly when the box holds several parts side by side (3C). None if
+	the panel has no box.
+	"""
+	import csv
+	if not os.path.exists(layout):
+		return None
+	with open(layout) as f:
+		for row in csv.DictReader(f, delimiter='\t'):
+			if row['panel'] == label:
+				parts = [p for p in row.get('parts', '').split(',') if p]
+				return (float(row['w_mm']) / max(1, len(parts)),
+					float(row['h_mm']) - LETTER_BAND_MM)
+	return None
 SCRIPT_PREFIX = 'gfp_paper_'
 
 
@@ -710,7 +758,7 @@ def save_panel(fig, plot_out_dir: str, name: str, script: Optional[str] = None,
 		n: Optional[int] = None, n_lineages_total: Optional[int] = None,
 		n_lineages_survived: Optional[int] = None,
 		notes: Optional[str] = None, subdir: Optional[str] = None,
-		close: bool = True) -> str:
+		close: bool = True, fit_layout: bool = True) -> str:
 	"""
 	Write one panel as PNG, PDF and SVG plus a JSON provenance sidecar.
 
@@ -729,10 +777,20 @@ def save_panel(fig, plot_out_dir: str, name: str, script: Optional[str] = None,
 		notes: anything a reader of the sidecar would need
 		subdir: optional subfolder, for panels with one file per variant/seed
 		close: close the figure afterwards
+		fit_layout: resize the figure to the panel's box in
+			figure_layout.tsv before saving, so the assembled figure shows it
+			at its drawn size and 7 pt type stays 7 pt. Constrained layout
+			rearranges the axes for the new size.
 
 	Returns:
 		The directory the files were written to.
 	"""
+	saved_size_mm = None
+	label = name.split('_')[1] if name.startswith('Figure_') else None
+	box = layout_content_mm(label) if (fit_layout and label) else None
+	if box is not None:
+		fig.set_size_inches(box[0] / MM_PER_INCH, box[1] / MM_PER_INCH)
+		saved_size_mm = [round(box[0], 2), round(box[1], 2)]
 	_warn_long_labels(fig, name)
 	out_dir = panel_dir(plot_out_dir)
 	if subdir:
@@ -754,6 +812,7 @@ def save_panel(fig, plot_out_dir: str, name: str, script: Optional[str] = None,
 		'n': n,
 		'n_lineages_total': n_lineages_total,
 		'n_lineages_survived': n_lineages_survived,
+		'layout_size_mm': saved_size_mm,
 		'git': _git_state(),
 		'packages': _package_versions(),
 		'host': {'node': platform.node(), 'processor': platform.processor(),
