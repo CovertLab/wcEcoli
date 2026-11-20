@@ -282,9 +282,21 @@ def initializeRNA(bulkMolCntr, sim_data, randomState, massCoeff, ppgpp_regulatio
 		rnaExpression[transcription.attenuated_rna_indices] *= readthrough / basal_adjustment
 		rnaExpression /= rnaExpression.sum()
 
+	# Count rRNA and tRNA transcription units by their mature rRNA/tRNA mass,
+	# as the ParCa does when it fits expression (totalCountIdDistributionRNA).
+	# The full precursor mass (spacers and other cistrons included) would give
+	# about 18% fewer rRNAs than the ParCa sized ribosomal proteins for.
+	rna_mws = transcription.rna_data["mw"].asNumber(units.g / units.mol).copy()
+	is_rRNA = transcription.rna_data["is_rRNA"]
+	is_tRNA = transcription.rna_data["is_tRNA"]
+	rna_mws[is_rRNA] = transcription.rna_data["rRNA_mw"][is_rRNA].asNumber(
+		units.g / units.mol)
+	rna_mws[is_tRNA] = transcription.rna_data["tRNA_mw"][is_tRNA].asNumber(
+		units.g / units.mol)
+
 	nRnas = countsFromMassAndExpression(
 		rnaMass.asNumber(units.g),
-		transcription.rna_data["mw"].asNumber(units.g / units.mol),
+		rna_mws,
 		rnaExpression,
 		sim_data.constants.n_avogadro.asNumber(1 / units.mol)
 		)
