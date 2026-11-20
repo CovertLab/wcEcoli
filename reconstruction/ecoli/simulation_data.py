@@ -41,6 +41,12 @@ class SimulationDataEcoli(object):
 		self.operons_on = raw_data.operons_on
 		self.protein_degradation_combo_selection = raw_data.protein_degradation_combo_option
 		self.stable_rrna = raw_data.stable_rrna
+		# Where the new gene was asked to go and where it actually went (the
+		# conflict search can move it). None when no new gene was inserted.
+		self.new_gene_requested_insertion_pos = getattr(raw_data,
+			'new_gene_requested_insertion_pos', None)
+		self.new_gene_insertion_pos = getattr(raw_data,
+			'new_gene_insertion_pos', None)
 
 		self._add_condition_data(raw_data)
 		self.condition = "basal"

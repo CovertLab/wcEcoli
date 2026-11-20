@@ -18,9 +18,26 @@ set -euo pipefail
 NEW_GENES="egfp"
 N_GENS=24
 # Reproducibility: these CPU generations support AVX-512, so NumPy and
-# OpenBLAS take the same code paths on every node. See vEcoli PR #444, and
-# the matching constraint in wholecell/fireworks/templates/my_qadapter.yaml.
+# OpenBLAS take the same code paths on every node. See vEcoli PR #444.
+# Verified bitwise across all four, five CPU models from AMD and Intel
+# (Sherlock job 1, 2026-11-19). Skylake-SP also has AVX-512 but was not tested,
+# so it stays out.
+#
+# The constraint lives in the per-user ~/wcEcoli/my_qadapter.yaml, not in the
+# lab-wide template (wholecell/fireworks/templates/my_qadapter.yaml), so it
+# does not change anyone else's runs. A regenerated qadapter would drop it,
+# so every batch checks for it before submitting anything.
 CPU_CONSTRAINT="CPU_GEN:BGM|CPU_GEN:SIE|CPU_GEN:GEN|CPU_GEN:SPR"
+QADAPTER="${QADAPTER:-${HOME}/wcEcoli/my_qadapter.yaml}"
+
+require_cpu_pin() {
+	if ! grep -Eq "^constraint:[[:space:]]*\"?${CPU_CONSTRAINT//|/\\|}\"?[[:space:]]*$" "${QADAPTER}"; then
+		echo "STOP: ${QADAPTER} does not pin the CPU generations." >&2
+		echo "Expected the line: constraint: \"${CPU_CONSTRAINT}\"" >&2
+		exit 1
+	fi
+}
+require_cpu_pin
 
 echo "Not yet filled in. Blocked on tasks 2.1 (ParCa) and 2.2 (smoke test)."
 echo "New genes: ${NEW_GENES}, generations: ${N_GENS}"
@@ -30,8 +47,8 @@ exit 1
 ## 1. Smoke test -- 108 sims
 #    Checks every listener the panels need is recorded, that seed-matched
 #    pre-induction generations are identical across variants, that a rerun
-#    reproduces bit for bit, and that crowding flags fall after the footprint
-#    fix.
+#    reproduces bit for bit, and how far translation sits below the crowding
+#    cap after the footprint fix. DONE 2026-11-19 (20261119.154823__gfp_smoke).
 
 ## 2. B1 scan -- 49 variants x 5 seeds x 24 gens = 5,880, plus 5 extra control
 #    seeds = 6,000. Expression factors [0, 7, 8, 8.33, 8.66, 9, 10] and

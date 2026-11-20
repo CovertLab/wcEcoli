@@ -44,6 +44,15 @@ DECAY_ONLY = {
 	'countRnaCistronSynthesized',
 }
 
+# Columns that may legitimately be all zero. Crowding flags are zero whenever
+# nothing reaches its spacing cap, which after the ribosome footprint fix is
+# the expected result (the smoke batch peaked at 74% of the cap); headroom is
+# reported in the crowding section instead.
+MAY_BE_ZERO = {
+	('RibosomeData', 'mRNA_is_overcrowded'),
+	('RnaSynthProb', 'tu_is_overcrowded'),
+}
+
 
 class Report:
 	"""Collects check results and decides the exit status."""
@@ -122,6 +131,8 @@ def check_listeners(batch_dir, report):
 			finite = np.asarray(values, dtype=float)
 			finite = finite[np.isfinite(finite)] if finite.size else finite
 			if finite.size == 0 or not np.any(finite != 0):
+				if (listener, column) in MAY_BE_ZERO and finite.size:
+					continue
 				degenerate.append('%s/%s all zero or empty'
 					% (listener, column))
 
@@ -183,34 +194,49 @@ def check_seed_matching(batch_dir, report, induction_gen):
 
 def check_crowding(batch_dir, report, induction_gen):
 	"""
-	The ribosome footprint fix should loosen the crowding cap about 3x.
+	How close translation comes to the ribosome crowding cap.
 
-	Reported rather than asserted, because the right value depends on the
-	designs in the batch; a flag rate close to the pre-fix one would mean
-	the fix did not take effect.
+	Headroom is each mRNA's requested initiation probability over its cap
+	(RibosomeData target_prob_translation_per_transcript / max_p_per_protein),
+	the peak over post-induction time steps: below 1 means nothing was
+	crowded. Reported for the new gene and for any mRNA, with the flag rate
+	alongside. Before the footprint fix the cap sat about three times lower,
+	so headroom here should be about a third of the pre-fix value.
 	"""
 	report.section('Ribosome crowding after the footprint fix')
 	runs = [r for r in sim_dirs(batch_dir) if r[2] >= induction_gen]
 	if not runs:
 		report.note('no post-induction generations', 'skipped')
 		return
-	by_variant = collections.defaultdict(list)
+	stats = collections.defaultdict(lambda: {'flag': [], 'gfp': [], 'any': []})
 	for variant, _, _, path in runs:
 		try:
 			reader = TableReader(os.path.join(path, 'RibosomeData'))
 			flags = reader.readColumn('mRNA_is_overcrowded')
-			by_variant[variant].append(float(np.mean(flags > 0)))
+			target = reader.readColumn('target_prob_translation_per_transcript')
+			cap = reader.readColumn('max_p_per_protein')
+			ids = list(reader.readAttribute('monomerIds'))
 		except Exception:                                   # noqa: BLE001
 			continue
-	if not by_variant:
-		report.note('mRNA_is_overcrowded unreadable', 'skipped')
+		with np.errstate(divide='ignore', invalid='ignore'):
+			load = np.where(cap > 0, target / cap, np.nan)
+		gfp = [i for i, m in enumerate(ids) if m.startswith('NG-')]
+		stats[variant]['flag'].append(float(np.mean(flags > 0)))
+		stats[variant]['any'].append(float(np.nanmax(load)))
+		if gfp:
+			stats[variant]['gfp'].append(float(np.nanmax(load[:, gfp])))
+	if not stats:
+		report.note('crowding columns unreadable', 'skipped')
 		return
-	for variant in sorted(by_variant):
-		rate = float(np.mean(by_variant[variant]))
-		report.note('%s: fraction of mRNAs flagged overcrowded' % variant,
-			'%.4f' % rate)
-	report.note('compare against the pre-fix batch',
-		'the cap should now allow about 3x more ribosomes per mRNA')
+	for variant in sorted(stats):
+		row = stats[variant]
+		report.note('%s: peak load / cap, new gene and any mRNA' % variant,
+			'%s and %.3f; flagged fraction %.4f' % (
+			'%.3f' % max(row['gfp']) if row['gfp'] else 'n/a',
+			max(row['any']), float(np.mean(row['flag']))))
+	peak = max(max(r['any']) for r in stats.values())
+	report.note('highest load / cap in the batch', '%.3f (%s)' % (peak,
+		'nothing crowded' if peak < 1 else 'some mRNAs at the cap'))
 
 
 def check_insertion(batch_dir, report):
@@ -231,6 +257,12 @@ def check_insertion(batch_dir, report):
 		report.check(resolved == requested,
 			'insertion landed where requested',
 			'resolved %s, requested %s' % (resolved, requested))
+		from wholecell.analysis import gfp_paper_constants
+		report.check(requested == gfp_paper_constants.INSERTION_POS,
+			'requested site is the paper\'s (%s)'
+			% gfp_paper_constants.INSERTION_SITE_NAME,
+			'requested %s, paper %s' % (requested,
+			gfp_paper_constants.INSERTION_POS))
 	cistron_data = sim_data.process.transcription.cistron_data.struct_array
 	new_genes = cistron_data[cistron_data['is_new_gene']]['id'].tolist()
 	report.check(bool(new_genes), 'new gene present in sim_data',
