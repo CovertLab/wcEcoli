@@ -34,8 +34,11 @@ class PolypeptideInitiation(wholecell.processes.process.Process):
 		self.cistron_start_end_pos_in_tu = sim_data.process.transcription.cistron_start_end_pos_in_tu
 		self.tu_ids = sim_data.process.transcription.rna_data['id']
 		self.n_TUs = len(self.tu_ids)
-		self.active_ribosome_footprint_size = \
-			sim_data.process.translation.active_ribosome_footprint_size
+		# The footprint is stored in nucleotides, but the crowding limit
+		# below divides it into the ribosome elongation rate in amino acids
+		# per second, so convert it to amino acids (3 nt per codon)
+		self.active_ribosome_footprint_size = (
+			sim_data.process.translation.active_ribosome_footprint_size.asNumber(units.nt) / 3)
 
 		# Get mapping from cistrons to protein monomers and TUs
 		self.cistron_to_monomer_mapping = sim_data.relation.cistron_to_monomer_mapping
