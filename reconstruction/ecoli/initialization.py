@@ -832,6 +832,12 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 		ppgpp_conc = sim_data.growth_rate_parameters.get_ppGpp_conc(doubling_time)
 		basal_prob, _= sim_data.process.transcription.synth_prob_from_ppgpp(
 			ppgpp_conc, sim_data.process.replication.get_average_copy_number)
+		if trna_attenuation:
+			# Use same scaling as TranscriptInitiation: the ppGpp curve gives the
+			# full-transcript probability, so divide by the basal readthrough
+			# to get the initiation probability of attenuated TUs
+			basal_prob[sim_data.process.transcription.attenuated_rna_indices] /= (
+				sim_data.process.transcription.attenuation_readthrough['basal'])
 		ppgpp_scale = basal_prob[TU_index]
 		# Delta prob is only an absolute probability change for TUs without
 		# basal prob. For other TUs, it is relative to basal prob, so a scale
@@ -841,9 +847,8 @@ def initialize_transcription(bulkMolCntr, uniqueMolCntr, sim_data, randomState,
 	else:
 		basal_prob = sim_data.process.transcription_regulation.basal_prob.copy()
 		ppgpp_scale = 1
-
-	if trna_attenuation:
-		basal_prob[sim_data.process.transcription.attenuated_rna_indices] += sim_data.process.transcription.attenuation_basal_prob_adjustments
+		if trna_attenuation:
+			basal_prob[sim_data.process.transcription.attenuated_rna_indices] += sim_data.process.transcription.attenuation_basal_prob_adjustments
 	n_TUs = len(basal_prob)
 	delta_prob_matrix = sim_data.process.transcription_regulation.get_delta_prob_matrix(dense=True, ppgpp=ppgpp_regulation)
 

@@ -48,6 +48,16 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 			self.attenuated_rna_indices = sim_data.process.transcription.attenuated_rna_indices
 			self.attenuation_adjustments = sim_data.process.transcription.attenuation_basal_prob_adjustments
 			self.basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
+			# Expected readthrough in the basal condition, used to scale the
+			# ppGpp-regulated probabilities of attenuated TUs (see
+			# calculateRequest)
+			self.attenuation_basal_readthrough = sim_data.process.transcription.attenuation_readthrough['basal']
+			# Position (nt) where attenuated transcripts stop, used to
+			# estimate how long their RNAPs stay active (see
+			# _calculateActivationProb)
+			self.attenuation_stop_positions = np.array([
+				sim_data.process.transcription.attenuation_location[i]
+				for i in self.attenuated_rna_indices])
 		self.n_TUs = len(self.basal_prob)
 		self.delta_prob_matrix = sim_data.process.transcription_regulation.get_delta_prob_matrix(
 			dense=True, ppgpp=self.ppgpp_regulation)
@@ -118,7 +128,16 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 				ppgpp_conc = self.ppgpp.total_count() * counts_to_molar
 				basal_prob, _ = self.synth_prob(ppgpp_conc, self.copy_number)
 				if self.trna_attenuation:
-					basal_prob[self.attenuated_rna_indices] += self.attenuation_adjustments
+					# The ppGpp curve gives the probability of producing a
+					# full transcript (fit to RNA counts). Divide by the basal
+					# readthrough to get the initiation probability, so that
+					# basal output matches the fit and attenuation changes
+					# output relative to basal. This keeps the ppGpp response
+					# of attenuated TUs; the absolute
+					# attenuation_basal_prob_adjustments are on the scale of
+					# transcription_regulation.basal_prob, not of the
+					# normalized ppGpp curve.
+					basal_prob[self.attenuated_rna_indices] /= self.attenuation_basal_readthrough
 				self.fracActiveRnap = self.get_rnap_active_fraction_from_ppGpp(ppgpp_conc)
 				ppgpp_scale = basal_prob[TU_index]
 				# Delta prob is only an absolute probability change for TUs
@@ -321,6 +340,28 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		allTranscriptionTimes = 1. / rnaPolymeraseElongationRates * rnaLengths
 		timesteps = (1. / (self.timeStepSec() * units.s) * allTranscriptionTimes).asNumber()
 		allTranscriptionTimestepCounts = np.ceil(timesteps)
+		allFractionTimeInactive = 1 - timesteps / allTranscriptionTimestepCounts
+
+		# Attenuated transcripts that stop at the attenuation site release
+		# their RNAP after transcribing only up to that site, not the full TU.
+		# Weight the full and stopped cases by the expected basal readthrough
+		# (the same readthrough used to scale their initiation probabilities)
+		# so that the activation rate is not computed as if every initiation
+		# ran the full TU length.
+		if self.trna_attenuation:
+			idx = self.attenuated_rna_indices
+			readthrough = self.attenuation_basal_readthrough
+			stop_timesteps = (self.attenuation_stop_positions
+				/ (rnaPolymeraseElongationRates[idx].asNumber(units.nt / units.s)
+				* self.timeStepSec()))
+			stop_timestep_counts = np.maximum(np.ceil(stop_timesteps), 1)
+			stop_fraction_inactive = 1 - stop_timesteps / stop_timestep_counts
+			allFractionTimeInactive[idx] = (readthrough * allFractionTimeInactive[idx]
+				+ (1 - readthrough) * stop_fraction_inactive)
+			allTranscriptionTimestepCounts[idx] = (
+				readthrough * allTranscriptionTimestepCounts[idx]
+				+ (1 - readthrough) * stop_timestep_counts)
+
 		averageTranscriptionTimestepCounts = np.dot(
 			synthProb, allTranscriptionTimestepCounts)
 		expectedTerminationRate = 1. / averageTranscriptionTimestepCounts
@@ -337,8 +378,6 @@ class TranscriptInitiation(wholecell.processes.process.Process):
 		RNAP, considering that the "effective" fraction is lower than what the
 		listener sees
 		"""
-		allFractionTimeInactive = 1 - (
-			1. / (self.timeStepSec() * units.s) * allTranscriptionTimes).asNumber() / allTranscriptionTimestepCounts
 		averageFractionTimeInactive = np.dot(allFractionTimeInactive, synthProb)
 		effectiveFracActiveRnap = fracActiveRnap / (1 - averageFractionTimeInactive)
 
