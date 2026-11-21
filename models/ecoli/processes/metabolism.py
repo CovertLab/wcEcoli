@@ -30,6 +30,66 @@ GDCW_BASIS = units.mmol / units.g / units.h
 
 USE_KINETICS = True
 
+# A valid FBA solution never consumes more of a metabolite than is present, so
+# counts below zero after the update come only from solver tolerances and are
+# clipped. A pool overdrawn by more than OVERDRAW_WARNING_FRACTION of its own
+# count (and by more than OVERDRAW_MIN_COUNTS) is reported. If the overdrawn
+# counts summed over all metabolites exceed OVERDRAW_FATAL_FRACTION of all
+# metabolite counts, the solution is treated as invalid. This happens when a
+# GLPK fallback solve returns a solution marked optimal that would empty the
+# small-molecule pools (clipping it set nearly all small molecules to zero and
+# the sim failed later with negative counts in another process).
+# TODO: validate fallback solutions in wholecell/utils/_netflow/nf_glpk.py
+# (check constraint violations, then re-solve with a fresh basis or the primal
+# method, logging each retry) so a numerical solver failure can recover
+# instead of stopping the sim here. A truly infeasible problem would still
+# fail the re-solve.
+OVERDRAW_MIN_COUNTS = 10
+OVERDRAW_WARNING_FRACTION = 1e-3
+OVERDRAW_FATAL_FRACTION = 1e-2
+
+
+class InvalidFBASolutionError(Exception):
+	pass
+
+
+def check_metabolite_overdraw(counts_init, counts_after, names, time):
+	"""
+	Check how far an FBA update would take metabolite counts below zero.
+
+	Args:
+		counts_init (ndarray[float]): metabolite counts before the update
+		counts_after (ndarray[float]): counts after the update, before
+			rounding and clipping at zero
+		names (list[str]): metabolite IDs, same order as the counts
+		time (float): simulation time (s), for the messages
+
+	Raises:
+		InvalidFBASolutionError: if the summed overdraw exceeds
+			OVERDRAW_FATAL_FRACTION of all metabolite counts
+	"""
+	overdraw = np.fmax(-counts_after, 0)
+	reportable = (overdraw > OVERDRAW_MIN_COUNTS) & (
+		overdraw > OVERDRAW_WARNING_FRACTION * counts_init)
+	if not reportable.any():
+		return
+
+	order = np.argsort(-overdraw * reportable)
+	n_reportable = int(reportable.sum())
+	listed = ', '.join(
+		f'{names[i]} ({counts_init[i]:.0f} -> {counts_after[i]:.0f})'
+		for i in order[:min(n_reportable, 10)])
+	total_overdraw = overdraw[reportable].sum()
+	total_counts = counts_init.sum()
+	message = (f'FBA update at t = {time:.0f} s would take {n_reportable}'
+		f' metabolite pools below zero (overdraw {total_overdraw:.3g} of'
+		f' {total_counts:.3g} total counts): {listed}')
+	if total_overdraw > OVERDRAW_FATAL_FRACTION * total_counts:
+		raise InvalidFBASolutionError(message + '. The FBA solution is'
+			' invalid (most likely a failed GLPK fallback solve); clipping'
+			' it at zero would empty these pools.')
+	print(f'Warning: {message}; clipped at zero.')
+
 
 class Metabolism(wholecell.processes.process.Process):
 	""" Metabolism """
@@ -196,9 +256,12 @@ class Metabolism(wholecell.processes.process.Process):
 
 		## Internal molecule changes
 		delta_metabolites = (1 / counts_to_molar) * (CONC_UNITS * fba.getOutputMoleculeLevelsChange())
+		metabolite_counts_after = metabolite_counts_init + delta_metabolites.asNumber()
+		check_metabolite_overdraw(metabolite_counts_init, metabolite_counts_after,
+			self.model.metaboliteNamesFromNutrients, self.time())
 		metabolite_counts_final = np.fmax(stochasticRound(
 			self.randomState,
-			metabolite_counts_init + delta_metabolites.asNumber()
+			metabolite_counts_after
 			), 0).astype(np.int64)
 		self.metabolites.countsIs(metabolite_counts_final)
 
