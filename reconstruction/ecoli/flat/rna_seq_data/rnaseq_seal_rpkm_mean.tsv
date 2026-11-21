@@ -1,3 +1,5 @@
+# TODO: the third column, labeled "M9 Glucose minus AAs" like the first, has the same values as the first column for every gene.
+# Check whether it should hold the "M9 Glucose plus AAs" means (the std table has a "M9 Glucose plus AAs" column), which appear to be missing.
 "Gene"	"M9 Glucose minus AAs"	"N-limited Glucose minus AAs"	"M9 Glucose minus AAs"	"M9 Glycerol plus AAs"	"P-limited Glucose plus AAs"
 "EG10001"	53.0695666667	46.5797333333	53.0695666667	28.7305	32.7309666667
 "EG10002"	135.1277	46.4230666667	135.1277	249.220433333	280.042066667
