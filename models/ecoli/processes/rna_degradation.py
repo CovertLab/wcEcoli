@@ -195,6 +195,10 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# Compute RNA concentrations
 		rna_conc_molar = counts_to_molar * total_RNA_counts
 
+		# ExoRNases are catalysts and are not requested, so evolveState only
+		# sees zero allocated counts for them. Read their counts here instead.
+		self.n_exoRNases = self.exoRNases.total_counts().copy()
+
 		# Get counts of endoRNases
 		endoRNase_counts = self.endoRNases.total_counts().copy()
 		total_kcat_endornase = units.dot(self.Kcat_endoRNases, endoRNase_counts)
@@ -414,7 +418,7 @@ class RnaDegradation(wholecell.processes.process.Process):
 		# 3 NMP + 3 H(+)
 		# Note: Lack of -OH on 3' end of chain
 
-		n_exoRNases = self.exoRNases.counts()
+		n_exoRNases = self.n_exoRNases
 		n_fragment_bases = self.fragment_bases.counts()
 		n_fragment_bases_sum = n_fragment_bases.sum()
 
