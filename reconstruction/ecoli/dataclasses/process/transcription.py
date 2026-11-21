@@ -1022,7 +1022,10 @@ class Transcription(object):
 		self.cistron_expression['basal'] = cistron_expression / cistron_expression.sum()
 
 		# Keep record of cistrons whose expression was corrected
-		self.cistron_data['uses_corrected_seq_counts'][np.array(corrected_indexes)] = True
+		# (dtype=int so an empty list, when every short mRNA has RNA-seq
+		# counts, indexes nothing instead of failing as a float array)
+		self.cistron_data['uses_corrected_seq_counts'][
+			np.array(corrected_indexes, dtype=int)] = True
 
 	def _build_mature_rna_data(self, raw_data, sim_data):
 		"""
