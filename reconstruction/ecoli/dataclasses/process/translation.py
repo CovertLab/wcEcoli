@@ -11,6 +11,49 @@ from wholecell.utils.random import make_elongation_rates
 
 PROCESS_MAX_TIME_STEP = 2.
 
+# The N-end rule gives a protein a 2-minute half-life if its first residue is
+# destabilizing (Arg, Lys, Leu, Phe, Tyr or Trp). The 2-minute N-end rule half-lives
+# come from an engineered test protein with a deliberately exposed N-terminus
+# (Tobias et al. 1991, Science), so they are a fallback for proteins without
+# measurements. EcoCyc/UniProt sometimes mark the initial Met as removed when
+# that's unlikely, which exposes the second residue and can wrongly assign 2
+# minutes to a stable protein. METAP_CLEAVABLE_SECOND_RESIDUES lists the
+# second residues that allow Met removal, so the N-end rule only treats the
+# Met as removed when that's biochemically plausible.
+#
+# Methionine aminopeptidase (MAP) removes the initial Met only when the second
+# residue has a small side chain, and cleavage becomes less efficient as that
+# side chain gets longer (Hirel et al. 1989, PNAS). Val and Thr are the least
+# efficiently cleaved residues in this set (Frottin et al. 2006,
+# Mol Cell Proteomics). This is a strong trend, not an absolute rule, and
+# exceptions are known, but it is used here as the rule for now.
+#
+# A known exception is that pyrE's initial Met is removed despite Lys in
+# position 2, shown by N-terminal sequencing of the purified enzyme
+# (Poulsen et al. 1983, Eur J Biochem). New half-life data (Gupta et al. 2024)
+# suggests that PyrE is significantly more stable, so it is assumed here that
+# the 2-minute N-end rule assigned value is wrong for it even though its
+# premise holds. The initial_methionine_is_cleaved() check gives pyrE a stable
+# half-life by treating its Met as retained.
+#
+# TODO: check UniProt for the other proteins this check changes (infC, priC,
+# casE, aceA, pgpB, deoB) for experimental N-terminal sequencing (to find
+# other exceptions like pyrE).
+METAP_CLEAVABLE_SECOND_RESIDUES = {'G', 'A', 'S', 'C', 'T', 'P', 'V'}
+
+
+def initial_methionine_is_cleaved(protein):
+	"""
+	Returns True if the initial methionine of a protein is removed, for the
+	N-end rule. The annotated cleavage is used only when the second residue is
+	small enough for methionine aminopeptidase (see the citations above). A
+	few annotations mark Met as removed before a large residue (K, R or Y),
+	which would expose a destabilizing N-terminus and give a 2 min half-life
+	to proteins measured as stable (e.g. infC and pyrE).
+	"""
+	return bool(protein['cleavage_of_initial_methionine']
+		and protein['seq'][1] in METAP_CLEAVABLE_SECOND_RESIDUES)
+
 class Translation(object):
 	""" Translation """
 
@@ -180,7 +223,7 @@ class Translation(object):
 					assert seq[0] == 'M'
 					# Set N-end residue as second amino acid if initial methionine
 					# is cleaved
-					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					n_end_residue = seq[initial_methionine_is_cleaved(protein)]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					half_life_source_ID[i] = 'N_end_rule'
 
@@ -204,7 +247,7 @@ class Translation(object):
 					assert seq[0] == 'M'
 					# Set N-end residue as second amino acid if initial methionine
 					# is cleaved
-					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					n_end_residue = seq[initial_methionine_is_cleaved(protein)]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					half_life_source_ID[i] = 'N_end_rule'
 
@@ -228,7 +271,7 @@ class Translation(object):
 					assert seq[0] == 'M'
 					# Set N-end residue as 2nd amino acid if initial methionine
 					# is cleaved:
-					n_end_residue = seq[protein['cleavage_of_initial_methionine']]
+					n_end_residue = seq[initial_methionine_is_cleaved(protein)]
 					deg_rate[i] = n_end_rule_deg_rates[n_end_residue]
 					half_life_source_ID[i] = 'N_end_rule'
 
