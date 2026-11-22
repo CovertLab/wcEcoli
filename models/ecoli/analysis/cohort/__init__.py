@@ -32,6 +32,7 @@ ACTIVE = [
 	"subgen_transcription_prob.py",
 	"subgen_monomer_dynamics.py",
 	"subgen_subsample_mrna_protein_10k.py",
+	"subgen_fano_factor_10k.py",
 	"subgen_cell_health_metrics.py",
 	# "transcriptFrequency.py",
 	# "transcriptionGenomeCoverage.py",
@@ -85,6 +86,7 @@ TAGS = {
 		"subgen_transcription_prob.py",
 		"subgen_monomer_dynamics.py",
 		"subgen_subsample_mrna_protein_10k.py",
+		"subgen_fano_factor_10k.py",
 		"subgen_cell_health_metrics.py",
 		],
 	'TRANSCRIPTION': [
