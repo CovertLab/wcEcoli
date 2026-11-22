@@ -1,3 +1,4 @@
+# TODO: review every removal in this file and check that each still has the effect it was added for under the current model.
 "TF"	"Target"	"_comments"
 "crp"	"cyaA"	"Disabled because of negative feedback in acetate - cyaA -> cAMP -> cAMP-crp"
 "bglJ"	"leuO"	"Remove feedback loop between bglJ <-> leuO"
