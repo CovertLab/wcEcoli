@@ -122,7 +122,10 @@ def resolve(label, part, manifest, dirs, schematics, growth, lineages,
 				glob.glob(os.path.join(d, subdir, base + '_v*.svg'))})
 			if not found:
 				return None, None, base + ' (no lineage files)'
-			chosen = found[0]
+			# A one-lineage panel shows induction, so never default to a no-GFP
+			# control lineage (variant 0) when a GFP lineage exists.
+			induced = [f for f in found if not f.startswith('v000000_')]
+			chosen = (induced or found)[0]
 			notes.append('%s: no --lineage given, used %s of %d' % (label,
 				chosen, len(found)))
 		part = chosen if part is None else '%s_%s' % (chosen, part)

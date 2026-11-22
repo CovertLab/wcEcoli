@@ -104,8 +104,12 @@ def check_listeners(batch_dir, report):
 		report.check(False, 'found any simOut directories',
 			'nothing under %s' % batch_dir)
 		return
-	report.note('simulations found', '%d across %d variants'
-		% (len(runs), len({r[0] for r in runs})))
+	ran = [r for r in runs if os.path.exists(os.path.join(r[3], 'Main',
+		'attributes.json'))]
+	report.note('simulations found', '%d that ran (of %d folders) across %d'
+		' variants; folders without data are descendants of cells that'
+		' failed' % (len(ran), len(runs), len({r[0] for r in runs})))
+	runs = ran or runs
 
 	_, _, _, probe = runs[len(runs) // 2]
 	wanted = read_manifest()
@@ -208,7 +212,8 @@ def check_crowding(batch_dir, report, induction_gen):
 	if not runs:
 		report.note('no post-induction generations', 'skipped')
 		return
-	stats = collections.defaultdict(lambda: {'flag': [], 'gfp': [], 'any': []})
+	stats = collections.defaultdict(lambda: {'cells': 0, 'flagged_cells': 0,
+		'flagged_steps': 0, 'gfp': [], 'any': []})
 	for variant, _, _, path in runs:
 		try:
 			reader = TableReader(os.path.join(path, 'RibosomeData'))
@@ -221,7 +226,13 @@ def check_crowding(batch_dir, report, induction_gen):
 		with np.errstate(divide='ignore', invalid='ignore'):
 			load = np.where(cap > 0, target / cap, np.nan)
 		gfp = [i for i, m in enumerate(ids) if m.startswith('NG-')]
-		stats[variant]['flag'].append(float(np.mean(flags > 0)))
+		# Count time steps with any mRNA flagged: a mean over every mRNA
+		# rounds thousands of flagged steps to zero.
+		steps = int(np.any(flags > 0, axis=1).sum()) if flags.ndim == 2 \
+			else int(np.sum(flags > 0))
+		stats[variant]['cells'] += 1
+		stats[variant]['flagged_cells'] += int(steps > 0)
+		stats[variant]['flagged_steps'] += steps
 		stats[variant]['any'].append(float(np.nanmax(load)))
 		if gfp:
 			stats[variant]['gfp'].append(float(np.nanmax(load[:, gfp])))
@@ -230,10 +241,11 @@ def check_crowding(batch_dir, report, induction_gen):
 		return
 	for variant in sorted(stats):
 		row = stats[variant]
+		gfp_peak = [v for v in row['gfp'] if np.isfinite(v)]
 		report.note('%s: peak load / cap, new gene and any mRNA' % variant,
-			'%s and %.3f; flagged fraction %.4f' % (
-			'%.3f' % max(row['gfp']) if row['gfp'] else 'n/a',
-			max(row['any']), float(np.mean(row['flag']))))
+			'%s and %.3f; %d of %d cells flagged, %d flagged time steps' % (
+			'%.3f' % max(gfp_peak) if gfp_peak else 'n/a', max(row['any']),
+			row['flagged_cells'], row['cells'], row['flagged_steps']))
 	peak = max(max(r['any']) for r in stats.values())
 	report.note('highest load / cap in the batch', '%.3f (%s)' % (peak,
 		'nothing crowded' if peak < 1 else 'some mRNAs at the cap'))

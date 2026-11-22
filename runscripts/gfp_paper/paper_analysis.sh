@@ -44,8 +44,20 @@ case "${MODE}" in
 		CPUS="${2:-24}"
 		python runscripts/manual/analysisVariant.py "${BATCH}" \
 			-p GFP_PAPER --cpus "${CPUS}"
-		python runscripts/manual/analysisMultigen.py "${BATCH}" \
-			-p GFP_PAPER --cpus "${CPUS}"
+		# Multigen panels (5A, 6A) are one file per lineage, and the runner
+		# analyses one variant and seed per call, so run every lineage, in
+		# parallel. Limit with MULTIGEN_VARIANTS="4 5" and/or
+		# MULTIGEN_SEEDS="0 1 2"; by default every variant and seed found.
+		VARIANTS="${MULTIGEN_VARIANTS:-$(ls -d "${BATCH}"/*_[0-9][0-9][0-9][0-9][0-9][0-9] \
+			| sed -E 's/.*_0*([0-9]+)$/\1/' | sort -n | uniq | tr '\n' ' ')}"
+		FIRST_VARIANT_DIR="$(ls -d "${BATCH}"/*_[0-9][0-9][0-9][0-9][0-9][0-9] | head -1)"
+		SEEDS="${MULTIGEN_SEEDS:-$(ls -d "${FIRST_VARIANT_DIR}"/[0-9][0-9][0-9][0-9][0-9][0-9] \
+			| sed -E 's/.*\/0*([0-9]+)$/\1/' | sort -n | tr '\n' ' ')}"
+		echo "Multigen panels for variants: ${VARIANTS}; seeds: ${SEEDS}"
+		for v in ${VARIANTS}; do for s in ${SEEDS}; do echo "$v $s"; done; done \
+			| xargs -P "${CPUS}" -n 2 sh -c 'python runscripts/manual/analysisMultigen.py \
+				"$0" -p GFP_PAPER -v "$1" -s "$2" > /dev/null 2>&1 \
+				|| echo "multigen failed: variant $1 seed $2"' "${BATCH}"
 		;;
 	fig4f)
 		python runscripts/gfp_paper/gfp_paper_gfp_kcat_constraints.py "$@" \
