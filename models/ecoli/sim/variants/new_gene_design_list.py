@@ -45,28 +45,26 @@ from models.ecoli.sim.variants.new_gene_internal_shift import (
 # 10 ** (factor - 1), and translation efficiency is set to the given value.
 # Index 0 is the control and must stay (0, 0).
 #
-# The three induced designs are placeholders until the grid scan has been
-# analysed (decision D3). Candidates differ in whether the gfp transcription
-# unit is flagged overcrowded, which is what produces the attenuation
-# artifacts in the proteome scatter.
-# A ladder in RBS strength at a fixed promoter, plus one stronger promoter.
-# RBS is the axis that sets ribosomes per mRNA, which is the only quantity
-# directional mRNA decay can change for a monocistronic gene like gfp (its
-# single cistron starts at position 0, so the degradation front clears it in
-# the first timestep and only ribosome protection remains). Varying RBS
-# therefore varies the size of the effect under test, while index 1 holds
-# transcription at the same level with no translation at all and so should
-# show no effect: a built-in negative control.
-#
-# Completion, growth and GFP share below are from the 20240502 grid and are
-# indicative only; they move with the current code.
+# Batch B2, the single-design and lineage panels: a ladder of GFP levels at
+# promoter 8, 35 seeds each, so the figures can use whichever designs suit
+# them (each panel takes the design nearest the target share set in
+# gfp_paper_constants). RBS strengths are solved from the curve fitted to the
+# decay-test arm on the adopted code (2026-11-22), GFP share of proteome
+# = 99 x RBS / (17 + RBS) at promoter 8, which matches all three measured
+# points (5.5% at RBS 1, 22.5% at 5, 36.6% at 10). Promoter 8 is where every
+# lineage survived. RBS 1 is kept for the lowest rung because it was measured.
+# Batches record the design each variant ran in its description, and the
+# analysis decodes from that, so editing this list does not break older
+# batches. The decay-test ladder was [(0, 0), (8, 0), (8, 1), (8, 5), (8, 10),
+# (9, 5)].
 NEW_GENE_DESIGNS = [
 	(0, 0),         # 0: no GFP control
-	(8, 0),         # 1: transcribed, not translated   done 1.00  GFP  0%
-	(8, 1),         # 2: low burden                    done 0.88  GFP  6%
-	(8, 5),         # 3: moderate, fully stable        done 1.00  GFP 25%
-	(8, 10),        # 4: high, some lineages lost      done 0.88  GFP 35%
-	(9, 5),         # 5: highest, most lineages lost   done 0.75  GFP 44%
+	(8, 1),         # 1: GFP  ~5% (measured 5.5%)
+	(8, 3),         # 2: GFP ~15%
+	(8, 4.3),       # 3: GFP ~20%
+	(8, 5.7),       # 4: GFP ~25%
+	(8, 7.4),       # 5: GFP ~30%
+	(8, 9.3),       # 6: GFP ~35%
 ]
 
 assert NEW_GENE_DESIGNS[0] == (0, 0), (

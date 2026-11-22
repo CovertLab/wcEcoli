@@ -261,7 +261,10 @@ def design_of(batch_dir: str, metadata: dict, variant: int
 		from the lists the batch recorded in its metadata, never from the
 		module's current lists, which may have changed since the run.
 	- new_gene_design_list: decoded from the variant's own recorded
-		description, cross-checked against NEW_GENE_DESIGNS.
+		description, which is what actually ran. NEW_GENE_DESIGNS is used
+		only when no description was recorded; when the two disagree (the
+		list was edited for a later batch) the recorded design wins, with a
+		warning.
 	"""
 	design_index = variant % 1000
 	if design_index == CONTROL_VARIANT:
@@ -277,18 +280,19 @@ def design_of(batch_dir: str, metadata: dict, variant: int
 		from models.ecoli.sim.variants.new_gene_design_list import (
 			NEW_GENE_DESIGNS)
 		recorded = _recorded_design(batch_dir, variant)
-		if design_index >= len(NEW_GENE_DESIGNS):
-			if recorded is None:
-				raise ValueError('variant %d is outside NEW_GENE_DESIGNS and'
-					' has no recorded description' % variant)
+		current = None
+		if design_index < len(NEW_GENE_DESIGNS):
+			expression, trl_eff = NEW_GENE_DESIGNS[design_index]
+			current = (float(expression), float(trl_eff))
+		if recorded is not None:
+			if current is not None and not np.allclose(recorded, current):
+				warnings.warn('variant %d ran as %s, but NEW_GENE_DESIGNS now'
+					' says %s (edited for a later batch); using what ran'
+					% (variant, recorded, current))
 			return recorded
-		expression, trl_eff = NEW_GENE_DESIGNS[design_index]
-		current = (float(expression), float(trl_eff))
-		if recorded is not None and not np.allclose(recorded, current):
-			raise ValueError(
-				'variant %d was run as %s but NEW_GENE_DESIGNS now says %s;'
-				' the list was edited after this batch ran'
-				% (variant, recorded, current))
+		if current is None:
+			raise ValueError('variant %d is outside NEW_GENE_DESIGNS and'
+				' has no recorded description' % variant)
 		return current
 
 	factors = metadata.get('new_gene_expression_factors')

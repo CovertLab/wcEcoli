@@ -71,8 +71,14 @@ if NEW_GENE_KNOCKOUT_GEN != -1:
 
 # The variant index will be split into an index for each of these lists
 # which are written to simulation metadata for later use in analysis scripts
-NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 9, 10]
-NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [10, 5, 1, 0.1, 0] # Should be descending
+# GFP paper grid (batch B1, wholecell/analysis/gfp_paper_constants): 8.33 and
+# 8.66 split the step from 8 to 9, over which transcription goes from about
+# 0.6 of the RNAP spacing cap to the cap; RBS 7, 3 and 2 fill the range where
+# GFP's share of active ribosomes rises fastest; RBS 20 reaches high GFP shares
+# by translation rather than transcription. Promoter 10 is left out because,
+# like 9, it sits at the RNAP spacing cap. 1 + 5 x 9 = 46 variants.
+NEW_GENE_EXPRESSION_FACTORS = [0, 7, 8, 8.33, 8.66, 9]
+NEW_GENE_TRANSLATION_EFFICIENCY_VALUES = [20, 10, 7, 5, 3, 2, 1, 0.1, 0] # Should be descending
 
 SEPARATOR = len(NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
 assert NEW_GENE_EXPRESSION_FACTORS[0] == 0, (

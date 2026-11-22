@@ -50,9 +50,9 @@ exit 1
 #    reproduces bit for bit, and how far translation sits below the crowding
 #    cap after the footprint fix. DONE 2026-11-19 (20261119.154823__gfp_smoke).
 
-## 2. B1 scan -- 49 variants x 5 seeds x 24 gens = 5,880, plus 5 extra control
-#    seeds = 6,000. Expression factors [0, 7, 8, 8.33, 8.66, 9, 10] and
-#    translation efficiencies [10, 7, 5, 3, 2, 1, 0.1, 0] in
+## 2. B1 scan -- 46 variants x 5 seeds x 24 gens = 5,520. Expression factors
+#    [0, 7, 8, 8.33, 8.66, 9] and translation efficiencies
+#    [20, 10, 7, 5, 3, 2, 1, 0.1, 0] in
 #    models/ecoli/sim/variants/new_gene_internal_shift.py.
 
 ## 3. W wildtype -- match 20260302.164308__wildtype_minimal_media exactly

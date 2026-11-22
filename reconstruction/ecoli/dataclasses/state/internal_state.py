@@ -117,6 +117,12 @@ class InternalState(object):
 		# transcribed.
 		# - can_translate (bool): True if the 5' end of the mRNA molecule is
 		# available for translation. This flag is used only for mRNA molecules.
+		# - is_decaying (bool): True if the mRNA has been targeted for
+		# degradation and is being degraded in the 5' to 3' direction. Only
+		# used if DIRECTIONAL_MRNA_DECAY is True in rna_degradation.py.
+		# - decay_front (64-bit int): Position (in nucleotides from the 5' end)
+		# of the degradation front on a decaying mRNA. Cistrons with start
+		# positions upstream of this front cannot bind new ribosomes.
 		# - RNAP_index (64-bit int): Unique index of the RNA polymerase that is
 		# synthesizing the RNA or have synthesized the mRNA. For fully
 		# transcribed mRNAs that are added at initialization, this attribute
@@ -128,6 +134,8 @@ class InternalState(object):
 			'is_mRNA': '?',
 			'is_full_transcript': '?',
 			'can_translate': '?',
+			'is_decaying': '?',
+			'decay_front': 'i8',
 			'RNAP_index': 'i8',
 			}
 

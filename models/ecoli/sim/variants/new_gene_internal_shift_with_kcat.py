@@ -6,8 +6,13 @@ gene induction from new_gene_internal_shift.
 
 Expected variant indices:
 	0:     control (new gene knockout) + max kcat constraints
-	1-20:  new gene expression/translation combos + max kcat constraints
-	21:    wildtype control (no kcat constraints, no new gene modifications)
+	1-N:   new gene expression/translation combos + max kcat constraints,
+	       N = (number of expression factors - 1) x number of translation
+	       efficiencies in new_gene_internal_shift
+	N + 1: wildtype control (no kcat constraints, no new gene modifications)
+
+The wildtype control's index is derived from the grid size, so changing the
+grid in new_gene_internal_shift cannot make it collide with a GFP design.
 """
 
 from models.ecoli.sim.variants.new_gene_internal_shift import (
@@ -20,20 +25,18 @@ from models.ecoli.sim.variants.new_gene_internal_shift import (
 	CONTROL_OUTPUT,
 )
 
-WILDTYPE_CONTROL_INDEX = 21
-
-# Guard: ensure wildtype control index doesn't collide with GFP grid.
 # GFP indices span 0 to (len(EXPRESSION_FACTORS)-1) * SEPARATOR, where
 # index 0 is control and 1..max_gfp_index cover expression x translation.
+# The wildtype control comes right after them. It was a fixed 21, which fails
+# the moment the grid grows past 20 designs; this module is imported for every
+# simulation (the variant registry loads all variants), so that would have
+# stopped every run, not just this variant's.
 from models.ecoli.sim.variants.new_gene_internal_shift import (
 	NEW_GENE_EXPRESSION_FACTORS as _EXP,
 	NEW_GENE_TRANSLATION_EFFICIENCY_VALUES as _TRL,
 )
 _MAX_GFP_INDEX = (len(_EXP) - 1) * len(_TRL)
-assert WILDTYPE_CONTROL_INDEX > _MAX_GFP_INDEX, (
-	f'WILDTYPE_CONTROL_INDEX ({WILDTYPE_CONTROL_INDEX}) overlaps with '
-	f'GFP variant indices (0-{_MAX_GFP_INDEX}). Increase '
-	f'WILDTYPE_CONTROL_INDEX to > {_MAX_GFP_INDEX}.')
+WILDTYPE_CONTROL_INDEX = _MAX_GFP_INDEX + 1
 
 
 def new_gene_internal_shift_with_kcat(sim_data, index):

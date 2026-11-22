@@ -60,7 +60,7 @@ class TestDesignDecoding(unittest.TestCase):
 		self.assertEqual(D.design_of('', {'variant': 'kcat_estimate_scale'},
 			3), (0.0, 0.0))
 
-	def test_design_list_mismatch_raises(self):
+	def test_design_list_recorded_design_wins(self):
 		from models.ecoli.sim.variants.new_gene_design_list import (
 			NEW_GENE_DESIGNS)
 		with tempfile.TemporaryDirectory() as batch:
@@ -72,8 +72,10 @@ class TestDesignDecoding(unittest.TestCase):
 				f.write('New gene design 3: expression factor %s, translation'
 					' efficiency %s, induced at generation 8'
 					% (expression + 1, trl_eff))
-			with self.assertRaises(ValueError):
-				D.design_of(batch, {'variant': 'new_gene_design_list'}, 3)
+			with self.assertWarns(UserWarning):
+				self.assertEqual(D.design_of(batch,
+					{'variant': 'new_gene_design_list'}, 3),
+					(float(expression + 1), float(trl_eff)))
 			with open(os.path.join(meta, 'description'), 'w') as f:
 				f.write('New gene design 3: expression factor %s, translation'
 					' efficiency %s, induced at generation 8'
@@ -253,3 +255,20 @@ class TestFigure5Helpers(unittest.TestCase):
 		self.assertEqual(r['n_events'], 4)
 		self.assertLessEqual(r['lo'], r['ratio'])
 		self.assertGreaterEqual(r['hi'], r['ratio'])
+
+
+class TestGridAgreement(unittest.TestCase):
+	def test_paper_constants_match_the_variant_that_runs(self):
+		"""The analysis grid must be the grid the B1 variant actually runs."""
+		from models.ecoli.sim.variants import new_gene_internal_shift as N
+		from wholecell.analysis import gfp_paper_constants as C
+		self.assertEqual(C.NEW_GENE_EXPRESSION_FACTORS,
+			N.NEW_GENE_EXPRESSION_FACTORS)
+		self.assertEqual(C.NEW_GENE_TRANSLATION_EFFICIENCY_VALUES,
+			N.NEW_GENE_TRANSLATION_EFFICIENCY_VALUES)
+
+	def test_kcat_variant_wildtype_index_is_past_the_grid(self):
+		from models.ecoli.sim.variants import new_gene_internal_shift_with_kcat
+		from wholecell.analysis import gfp_paper_constants as C
+		self.assertEqual(new_gene_internal_shift_with_kcat.WILDTYPE_CONTROL_INDEX,
+			C.n_variants())

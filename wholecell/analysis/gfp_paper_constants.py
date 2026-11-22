@@ -34,10 +34,18 @@ MAX_CELL_INDEX = ANALYSIS_LAST_GEN + 1
 # file raises 10 ** (factor - 1). The first entry must be 0, which is the
 # no-GFP control. 8.33 and 8.66 split the one step over which transcription
 # initiation goes from roughly 0.6 of the spacing cap to the cap itself.
-NEW_GENE_EXPRESSION_FACTORS: List[float] = [0, 7, 8, 8.33, 8.66, 9, 10]
+# Promoter 10 was dropped (2026-11-22): like 9 it sits at the RNAP spacing cap,
+# so it would have repeated 9. Its budget went to RBS 20.
+# Must match new_gene_internal_shift.py, which is what actually runs; a test
+# checks the two agree.
+NEW_GENE_EXPRESSION_FACTORS: List[float] = [0, 7, 8, 8.33, 8.66, 9]
 # Translation efficiency multipliers (RBS strength), descending as the variant
-# file requires. 0 is transcribed but not translated.
-NEW_GENE_TRANSLATION_EFFICIENCY_VALUES: List[float] = [10, 7, 5, 3, 2, 1, 0.1, 0]
+# file requires. 0 is transcribed but not translated. RBS 20 reaches the same
+# GFP share by translation that higher promoters reach by transcription
+# (promoter 8 / RBS 20 is about promoter 8.33 / RBS 10, ~54%), and shows where
+# the ribosome crowding cap starts to bind.
+NEW_GENE_TRANSLATION_EFFICIENCY_VALUES: List[float] = [
+	20, 10, 7, 5, 3, 2, 1, 0.1, 0]
 
 GRID_SEEDS = 5                            # scan depth; a subset is deepened later
 FOCUS_SEEDS = 60                          # batch B2, single-design panels
@@ -148,7 +156,7 @@ def rbs_label(translation_efficiency: float) -> str:
 # locked storyboard. RBS 0 is excluded from the spacing panels because a
 # transcript with no ribosomes has no ribosome spacing.
 RBS_LINES_RNAP_SPACING: Sequence[float] = (0.1, 5, 10)        # 3D
-RBS_LINES_RIBOSOME: Sequence[float] = (1, 5, 10)              # 3E, 3F
+RBS_LINES_RIBOSOME: Sequence[float] = (1, 5, 10, 20)          # 3E, 3F
 
 # Figure 3A compares the control's transcriptome with the design whose mean
 # GFP proteome share is closest to this, among designs with survivors.
