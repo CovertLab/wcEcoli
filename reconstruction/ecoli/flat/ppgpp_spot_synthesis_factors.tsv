@@ -1,0 +1,27 @@
+# Medium-dependent multiplier on the SpoT ppGpp synthesis rate constant (k_SpoT_ppGpp_synthesis).
+# Murray and Bremer 1996 (J Mol Biol 259:41-57) found that basal ppGpp differences between media come mainly from
+# SpoT synthetase activity (while ppGpp decay stays about the same): in a relA-null strain, SpoT alone gave about
+# 24 pmol/OD460 in glucose minimal medium and about 4 pmol/OD460 in glucose plus amino acids, and the activity changed within about a
+# minute of adding or removing amino acids. The minimal-medium factor sets SpoT-only ppGpp near the relA-null level
+# (24 pmol/OD460, about 46 uM with the conversion in Ahn-Horst et al. 2022) given the model's degradation constant and
+# uncharged-tRNA inhibition. Media not listed use a factor of 1.
+# Minimal-medium factor: with no RelA, steady-state ppGpp = (k_SpoT_syn / k_SpoT_deg) x (1 + sum of uncharged tRNA / KI_SpoT).
+# With k_SpoT_syn = 2.6 1/s and k_SpoT_deg = 0.23 L/umol/s (Ahn-Horst et al. 2022), k_SpoT_syn / k_SpoT_deg = 11.3 uM, and
+# the inhibition term is about 1.58 in basal simulations, so SpoT alone gives 11.3 x 1.58 = about 18 uM.
+# Murray and Bremer's relA-null level is 24 pmol/OD460 x 1.9 uM per pmol/OD460 = about 46 uM, so the factor is 46 / 18 = about 2.6
+# (k_SpoT_syn = 2.6 x 2.6 = 6.76 1/s in minimal medium). The two 2.6 values are unrelated.
+# Rich-medium factor (1): Murray and Bremer's relA-null level in glucose plus amino acids (about 4 pmol/OD460, about 7.6 uM)
+# would suggest a factor below 1 (about 0.4). It is kept at 1 for now: with the curated synthetase KMs, simulated
+# rich-medium ppGpp settles around 16 uM whatever the target doubling time, which matches a 21 min target (15.2 uM)
+# but sits below the 25 min target (20.6 uM). Lower values are untested.
+# TODO: consider updating the rich-medium factor to about 0.4, matching the paper's 6x minimal/rich change, once tRNA synthetase work elsewhere in the model is finalized.
+"media id"	"factor"	"_source"
+"minimal"	2.6	"Murray and Bremer 1996, relA-null basal ppGpp in glucose minimal medium"
+"minimal_plus_amino_acids"	1.0	"Unchanged; with the curated synthetase KMs, rich-medium ppGpp already meets its target"
+"minimal_acetate"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"
+"minimal_succinate"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"
+"minimal_plus_arabinose"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"
+"minimal_plus_cytidine"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"
+"minimal_plus_indole"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"
+"minimal_plus_nitrate"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"
+"minimal_minus_oxygen"	2.6	"No amino acids, so set to the glucose minimal value (Murray and Bremer measured glucose media only)"

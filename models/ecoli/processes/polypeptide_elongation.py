@@ -438,6 +438,22 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 		self.aa_importers = self.process.bulkMoleculesView(metabolism.aa_importer_names)
 		self.aa_exporters = self.process.bulkMoleculesView(metabolism.aa_exporter_names)
 
+	def ppgpp_params_for_media(self):
+		"""
+		ppGpp reaction parameters with the SpoT synthesis rate constant scaled
+		for the current medium (Murray and Bremer 1996: basal ppGpp differences
+		between media come mainly from SpoT synthesis). Media without a listed
+		factor use the unscaled rate constant.
+		"""
+		media_id = self.process._external_states['Environment'].current_media_id
+		factor = self.ppgpp_params['k_SpoT_syn_media_factors'].get(media_id, 1.0)
+		if factor == 1.0:
+			return self.ppgpp_params
+		return {
+			**self.ppgpp_params,
+			'k_SpoT_syn': self.ppgpp_params['k_SpoT_syn'] * factor,
+			}
+
 	def elongation_rate(self):
 		if self.process.ppgpp_regulation and not self.process.disable_ppgpp_elongation_inhibition:
 			cell_mass = self.process.readFromListener("Mass", "cellMass") * units.fg
@@ -597,7 +613,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			delta_metabolites, *_ = ppgpp_metabolite_changes(
 				updated_uncharged_trna_conc, updated_charged_trna_conc, ribosome_conc,
 				f, rela_conc, spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
-				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
+				self.charging_params, self.ppgpp_params_for_media(), self.process.timeStepSec(),
 				request=True, random_state=self.process.randomState,
 			)
 
@@ -673,7 +689,7 @@ class SteadyStateElongationModel(TranslationSupplyElongationModel):
 			delta_metabolites, ppgpp_syn, ppgpp_deg, rela_syn, spot_syn, spot_deg, spot_deg_inhibited = ppgpp_metabolite_changes(
 				uncharged_trna_conc, charged_trna_conc,	ribosome_conc, f, rela_conc,
 				spot_conc, ppgpp_conc, self.counts_to_molar, v_rib,
-				self.charging_params, self.ppgpp_params, self.process.timeStepSec(),
+				self.charging_params, self.ppgpp_params_for_media(), self.process.timeStepSec(),
 				random_state=self.process.randomState, limits=limits,
 				)
 
@@ -778,6 +794,9 @@ def get_ppgpp_params(sim_data) -> Dict[str, Any]:
 		KD_RelA=transcription.KD_RelA.asNumber(CONC_UNITS),
 		k_RelA=constants.k_RelA_ppGpp_synthesis.asNumber(1 / units.s),
 		k_SpoT_syn=constants.k_SpoT_ppGpp_synthesis.asNumber(1 / units.s),
+		# Multiplier on k_SpoT_syn by media ID (unlisted media use 1); sim_data
+		# from before this attribute existed has none
+		k_SpoT_syn_media_factors=getattr(transcription, 'spot_synthesis_media_factors', {}),
 		k_SpoT_deg=constants.k_SpoT_ppGpp_degradation.asNumber(1 / (CONC_UNITS * units.s)),
 		KI_SpoT=transcription.KI_SpoT.asNumber(CONC_UNITS),
 		ppgpp_reaction_stoich=metabolism.ppgpp_reaction_stoich,

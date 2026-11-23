@@ -169,6 +169,12 @@ class Transcription(object):
 		fold_changes[(fold_changes == 0) & (regulation_direction > 0)] = average_positive_fc
 		self.ppgpp_fold_changes = fold_changes
 
+		# Medium-dependent multiplier on SpoT ppGpp synthesis (unlisted media use 1)
+		self.spot_synthesis_media_factors = {
+			row['media id']: float(row['factor'])
+			for row in raw_data.ppgpp_spot_synthesis_factors
+			}
+
 		# Predict growth rate from ppGpp level
 		# Transforms selected for good fit and to keep the growth rate positive
 		# even at high ppGpp concentrations.
