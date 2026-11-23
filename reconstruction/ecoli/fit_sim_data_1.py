@@ -277,12 +277,26 @@ def fit_condition(sim_data, cell_specs, cpus=1, **kwargs):
 		for condition in conditions]
 	apply_updates(fitCondition, args, conditions, cell_specs, cpus)
 
-	for condition_label in sorted(cell_specs):
-		nutrients = sim_data.conditions[condition_label]["nutrients"]
-		if nutrients not in sim_data.translation_supply_rate:
+	for condition_label in media_conditions_first(sim_data, cell_specs):
+		condition = sim_data.conditions[condition_label]
+		nutrients = condition["nutrients"]
+		if len(condition["perturbations"]) == 0 and nutrients not in sim_data.translation_supply_rate:
 			sim_data.translation_supply_rate[nutrients] = cell_specs[condition_label]["translation_aa_supply"]
 
 	return sim_data, cell_specs
+
+def media_conditions_first(sim_data, cell_specs):
+	"""
+	Orders condition labels so that each medium's own condition (e.g.
+	with_aa for minimal_plus_amino_acids) comes before the TF helper
+	conditions (<TF>__active/__inactive) that share its nutrients. The
+	per-nutrient values (e.g. translation supply, RNAP active fraction,
+	elongation rates) are taken from the first unperturbed condition with
+	those nutrients, so they come from the media condition when one exists
+	and from a TF helper condition only for nutrients without one.
+	"""
+	return sorted(cell_specs,
+		key=lambda label: (label not in sim_data.condition_active_tfs, label))
 
 @save_state
 def promoter_binding(sim_data, cell_specs, **kwargs):
@@ -312,7 +326,7 @@ def set_conditions(sim_data, cell_specs, **kwargs):
 	sim_data.process.translation.ribosomeElongationRateDict = {}
 	sim_data.process.translation.ribosomeFractionActiveDict = {}
 
-	for condition_label in sorted(cell_specs):
+	for condition_label in media_conditions_first(sim_data, cell_specs):
 		condition = sim_data.conditions[condition_label]
 		nutrients = condition["nutrients"]
 
