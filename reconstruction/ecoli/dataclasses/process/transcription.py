@@ -331,6 +331,10 @@ class Transcription(object):
 		mRNA_cistron_ids = set(np.array(all_cistron_ids)[is_mRNA])
 
 		# Load cistron half lives
+		# TODO (mia): Chen et al. 2015 fit each lifetime after a delay that
+		# accounts for transcript elongation time, but the Bernstein et al.
+		# 2002 half-lives (most single-cistron mRNA TUs) have no such
+		# correction. Apply the same delay correction to the Bernstein values.
 		cistron_id_to_half_life = {}
 		reported_mRNA_cistron_half_lives = []
 
@@ -1910,6 +1914,17 @@ class Transcription(object):
 			tf_adjustments[condition] = delta[adjusted_mask] / condition_prob[adjusted_mask]
 
 		# Solve least squares fit for expression of each component of RNAP and ribosomes
+		# TODO (mia): look into removing no_oxygen from this fit. acetate and
+		# succinate are not in it, and the anaerobic cell differs in kind
+		# (fermentation, with FNR and ArcA taking over), so sharing one ppGpp
+		# curve lets the anaerobic point pull on basal and with_aa, where it
+		# doesn't belong (and the no_oxygen profile is basal x FNR/ArcA/CRP
+		# fold changes, not anaerobic RNA-seq). Removing the fitted FNR/CRP
+		# repression there can inflate the TF-free point several fold (3.3x
+		# for rpsP/rplS with TF conditions built at the basal doubling time),
+		# which flipped r-protein operons to ppGpp activation and cut rich
+		# ribosomes by about 35%. A two-point fit (with_aa, basal) is exact
+		# for both.
 		self._normalize_ppgpp_expression()  # Need to normalize first to get correct scale
 		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)

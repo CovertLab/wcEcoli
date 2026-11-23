@@ -3178,8 +3178,23 @@ def fitLigandConcentrations(sim_data, cell_specs):
 	cellDensity = sim_data.constants.cell_density
 	pPromoterBound = sim_data.pPromoterBound
 
+	# TODO (mia): re-do the whole Lrp-Leu handling (which TF form(s) the
+	# model has, their fold changes, this fitting and the Kd fit) to account
+	# for free Lrp having its own separate effects (one TF form currently
+	# stands in for two regulons), and check other 1CS TFs (like ArgP, whose
+	# Arg-bound form is also active) for the same problem.
 	for tf in sorted(sim_data.tf_to_active_inactive_conditions):
 		# Skip TFs that are not 1CS or are linked to genotypic perturbations
+		# TODO: many fold changes come from TF knockout vs wild type
+		# experiments, which span P_bound = 0 to the wild-type level in the
+		# experiment's medium, but the ParCa fits them across a partial
+		# binding change for 1CS TFs (e.g. MetJ-SAM 46% bound in basal to 97%
+		# in rich). The fitted per-bound effect (delta_prob) can then come out
+		# too big or too small, depending on how bound the TF was in the
+		# experiment. Building the inactive condition as a knockout would
+		# match these data, but this function skips any TF with a knockout,
+		# so the ligand Kd fit would need another source (e.g. the wild-type
+		# basal and rich cells).
 		if sim_data.process.transcription_regulation.tf_to_tf_type[tf] != "1CS":
 			continue
 		if (len(sim_data.tf_to_active_inactive_conditions[tf]["active genotype perturbations"]) > 0

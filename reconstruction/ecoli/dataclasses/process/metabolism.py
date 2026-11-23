@@ -2261,6 +2261,7 @@ class ConcentrationUpdates(object):
 		self.linked_metabolites = linked_metabolites
 
 		# factor of internal amino acid increase if amino acids present in nutrients
+		# TODO (mia): check if this seemingly arbitrary value is still needed
 		self.molecule_scale_factors = {
 			"L-ALPHA-ALANINE[c]": 2.,
 			"ARG[c]": 2.,

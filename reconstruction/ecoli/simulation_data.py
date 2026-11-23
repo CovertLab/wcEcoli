@@ -146,6 +146,21 @@ class SimulationDataEcoli(object):
 		self.tf_to_fold_change = {}
 		self.tf_to_direction = {}
 
+		# TODO (mia): the NCA file is read second, so its values overwrite the
+		# curated ones for every TF-gene pair in both (about 700 pairs). The
+		# curated values come mostly from single-medium TF knockout vs wild
+		# type microarrays, so test letting the curated value win where both
+		# exist.
+		# TODO (mia): fold_changes_nca.tsv takes each TF's fold change from the
+		# compendium-wide high vs low activity arrays (mean +/- 1 SD in
+		# reconstruction/ecoli/scripts/nca/fold_changes.py), which can pair
+		# arrays from different labs and media. Test computing it from
+		# high vs low activity arrays within the same study wherever a study
+		# has both, rather than reaching across the compendium for the largest
+		# difference.
+		# TODO (mia): the NCA input data (EcoMAC compendium, Carrera et al.
+		# 2014, and the EcoCyc regulation export from about 2020) are dated;
+		# look into pulling updated data and regenerating fold_changes_nca.tsv.
 		for fc_file in ['fold_changes', 'fold_changes_nca']:
 			gene_not_found = set()
 			tf_not_found = set()
