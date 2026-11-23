@@ -326,6 +326,17 @@ class Metabolism(wholecell.processes.process.Process):
 		count_diff = self._sim.processes['PolypeptideElongation'].aa_count_diff
 
 		if len(self.aa_targets):
+			# Add amino acids released by protein degradation to the targets.
+			# The ParCa fits amino acid supply for dilution only and assumes
+			# degradation returns the rest of what translation uses. Without
+			# this, targets follow supply minus charging only, so FBA makes
+			# fewer amino acids by the amount released and the free pool does
+			# not rise.
+			aa_released = self._sim.processes['ProteinDegradation'].aa_released
+			for aa, released in zip(self.aa_names, aa_released):
+				if aa not in self.aa_targets_not_updated:
+					self.aa_targets[aa] += released
+
 			for aa, diff in count_diff.items():
 				if aa in self.aa_targets_not_updated:
 					continue

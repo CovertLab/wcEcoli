@@ -53,6 +53,11 @@ class ProteinDegradation(wholecell.processes.process.Process):
 		# Load protein length
 		self.proteinLengths = sim_data.process.translation.monomer_data['length']
 
+		# Amino acids released each time step (molecule_groups.amino_acids
+		# order), read by Metabolism to add them to the amino acid targets
+		self.aa_idxs = aaIdxs
+		self.aa_released = np.zeros(len(aaIdxs), np.int64)
+
 		# Build S matrix
 		self.proteinDegSMatrix = np.zeros((len(metaboliteIds), len(proteinIds)), np.int64)
 		self.proteinDegSMatrix[aaIdxs, :] = np.transpose(sim_data.process.translation.monomer_data['aa_counts'].asNumber())
@@ -97,10 +102,12 @@ class ProteinDegradation(wholecell.processes.process.Process):
 
 		# Degrade selected proteins, release amino acids from those proteins back into the cell, 
 		# and consume H_2O that is required for the degradation process
-		self.metabolites.countsInc(np.dot(
+		metabolite_changes = np.dot(
 			self.proteinDegSMatrix,
 			self.proteins.counts()
-			))
+			)
+		self.metabolites.countsInc(metabolite_changes)
+		self.aa_released = metabolite_changes[self.aa_idxs]
 
 		# Record how many monomers were calculated to degrade:
 		counts_degraded = self.proteins.counts()
