@@ -1444,6 +1444,13 @@ class Transcription(object):
 						aa = 'MET'
 					trna_kms[aa] = trna_kms.get(aa, []) + [km]
 
+		# Curated synthetase KMs (Dykeman 2025, trna_synthetase_kms.tsv) replace
+		# the averages above for the amino acids they cover
+		for row in raw_data.trna_synthetase_kms:
+			aa = row['amino acid']
+			aa_kms[aa] = [row['KM, amino acid']]
+			trna_kms[aa] = [row['KM, tRNA']]
+
 		# Save average KM values and use the default value if no data is available
 		km_units = units.umol / units.L
 		average_aa_kms = []
@@ -1453,6 +1460,57 @@ class Transcription(object):
 			average_trna_kms.append(np.mean(trna_kms.get(aa_id, sim_data.constants.Km_synthetase_uncharged_trna)).asNumber(km_units))
 		self.aa_kms = km_units * np.array(average_aa_kms)
 		self.trna_kms = km_units * np.array(average_trna_kms)
+
+		# Measured synthetase kcats and optimized copies per cell (Dykeman 2025,
+		# trna_synthetase_kcats.tsv), used by the ParCa charging fit to set
+		# per-synthetase rate constants. Rows follow aa_names_without_tag, with
+		# NaN for amino acids not listed.
+		kcat_rows = {
+			row['amino acid']: row
+			for row in getattr(raw_data, 'trna_synthetase_kcats', [])
+			}
+		copy_growth_rates = [0.41, 0.69, 1.04, 1.73]
+		self.synthetase_kcat_data = {
+			'growth_rates_per_h': np.array(copy_growth_rates),
+			'kcat': np.array([
+				kcat_rows[aa]['kcat'].asNumber(1 / units.s)
+				if aa in kcat_rows else np.nan
+				for aa in aa_names_without_tag
+				]),
+			'copies': np.array([
+				[
+					kcat_rows[aa][f'copies at {mu} per h']
+					if aa in kcat_rows else np.nan
+					for mu in copy_growth_rates
+					]
+				for aa in aa_names_without_tag
+				], dtype=float),
+			}
+		# Measured charging headroom per synthetase (capacity at saturating
+		# substrates over usage; Dykeman 2025, trna_synthetase_headroom.tsv) in
+		# each fitted condition, amino acid order, NaN where not listed. The
+		# ParCa charging fit gives each synthetase at least this margin over
+		# the model's own demand.
+		headroom_rows = {
+			row['amino acid']: row
+			for row in getattr(raw_data, 'trna_synthetase_headroom', [])
+			}
+		self.synthetase_headroom = {
+			condition: np.array([
+				headroom_rows[aa][f'headroom {condition}']
+				if aa in headroom_rows else np.nan
+				for aa in aa_names_without_tag
+				], dtype=float)
+			for condition in ('basal', 'with_aa')
+			} if headroom_rows else None
+		# Per-synthetase charging rate constants (1/s, amino acid order). None
+		# uses the shared constants.synthetase_charging_rate; the ParCa
+		# charging fit sets these.
+		self.synthetase_kcats = None
+		# Inhibition constants of synthetases by their charged tRNA (umol/L,
+		# amino acid order). None means no inhibition; the ParCa charging fit
+		# sets these.
+		self.charged_trna_kis = None
 
 		# Save matrices and related lists of names
 		self._stoich_matrix_i = np.array(stoich_matrix_i)

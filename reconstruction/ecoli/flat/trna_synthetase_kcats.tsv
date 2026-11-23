@@ -1,0 +1,28 @@
+# Turnover numbers and optimized copy numbers of the aminoacyl-tRNA synthetases.
+# Values: Dykeman, E. (2025) An empirical model of aminoacylation kinetics for E. coli class I and II aminoacyl tRNA
+# synthetases. PLoS Comput Biol. https://doi.org/10.1371/journal.pcbi.1013353 (S1 Text, Table I): kcat (curated in vitro
+# consensus) and synthetase copies per cell at growth rates of 0.41, 0.69, 1.04 and 1.73 per hour.
+# The ParCa charging fit (reconstruction/ecoli/fit_trna_charging.py) uses kcat x copies as each synthetase's charging
+# capacity and sets a per-synthetase effective rate constant on the model's own synthetase counts to match it, so
+# expression stays as fit from RNA-seq. For reference, Dykeman's copy numbers are about 3x the model's (2.4-5.5x).
+"amino acid"	"synthetase"	"kcat (1/units.s)"	"copies at 0.41 per h"	"copies at 0.69 per h"	"copies at 1.04 per h"	"copies at 1.73 per h"	"_source"
+"CYS"	"cysRS"	2.9	440	895	1610	3800	"Dykeman 2025, S1 Text Table I"
+"ARG"	"argRS"	20.2	450	857	1540	3400	"Dykeman 2025, S1 Text Table I"
+"VAL"	"valRS"	10.6	1050	2100	3675	8140	"Dykeman 2025, S1 Text Table I"
+"ILE"	"ileRS"	7.2	1140	2240	3945	9000	"Dykeman 2025, S1 Text Table I"
+"LEU"	"leuRS"	11.2	1050	2115	3870	8900	"Dykeman 2025, S1 Text Table I"
+"GLT"	"gluRS"	6.2	1350	2750	4860	10800	"Dykeman 2025, S1 Text Table I"
+"GLN"	"glnRS"	5.8	850	1800	3265	7520	"Dykeman 2025, S1 Text Table I"
+"MET"	"metRS"	10.7	480	1020	1860	4180	"Dykeman 2025, S1 Text Table I"
+"TYR"	"tyrRS"	6.6	500	1030	1840	4265	"Dykeman 2025, S1 Text Table I"
+"TRP"	"trpRS"	3.1	550	1210	2260	5380	"Dykeman 2025, S1 Text Table I"
+"SER"	"serRS"	8.7	780	1640	3030	6800	"Dykeman 2025, S1 Text Table I"
+"THR"	"thrRS"	9.6	800	1600	2890	6510	"Dykeman 2025, S1 Text Table I"
+"PRO"	"proRS"	6.7	790	1530	2750	6400	"Dykeman 2025, S1 Text Table I"
+"HIS"	"hisRS"	9.2	400	800	1450	3330	"Dykeman 2025, S1 Text Table I"
+"L-ASPARTATE"	"aspRS"	12.5	600	1200	2050	4600	"Dykeman 2025, S1 Text Table I"
+"ASN"	"asnRS"	5.8	960	2015	3660	8260	"Dykeman 2025, S1 Text Table I"
+"LYS"	"lysRS"	16.3	890	1450	2575	5690	"Dykeman 2025, S1 Text Table I"
+"L-ALPHA-ALANINE"	"alaRS"	13.2	1000	1800	3260	7300	"Dykeman 2025, S1 Text Table I"
+"GLY"	"glyRS"	24.7	480	930	1660	3650	"Dykeman 2025, S1 Text Table I"
+"PHE"	"pheRS"	7.7	610	1250	2280	5185	"Dykeman 2025, S1 Text Table I"

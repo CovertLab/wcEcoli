@@ -972,8 +972,20 @@ def get_charging_params(
 	elongation_max = (constants.ribosome_elongation_rate_max
 		if variable_elongation else constants.ribosome_elongation_rate_basal)
 
+	# Per-synthetase rate constants (amino acid order) and charged tRNA
+	# inhibition constants when the ParCa charging fit set them
+	# (reconstruction/ecoli/fit_trna_charging.py). sim_data from before these
+	# attributes existed has none.
+	synthetase_kcats = getattr(transcription, 'synthetase_kcats', None)
+	charged_trna_kis = getattr(transcription, 'charged_trna_kis', None)
+
 	return dict(
-		kS=constants.synthetase_charging_rate.asNumber(1 / units.s),
+		kS=(synthetase_kcats.asNumber(1 / units.s)
+			if synthetase_kcats is not None
+			else constants.synthetase_charging_rate.asNumber(1 / units.s)),
+		KI_charged_trna=(charged_trna_kis.asNumber(CONC_UNITS)
+			if charged_trna_kis is not None
+			else None),
 		KMaa=transcription.aa_kms.asNumber(CONC_UNITS),
 		KMtf=transcription.trna_kms.asNumber(CONC_UNITS),
 		krta=constants.Kdissociation_charged_trna_ribosome.asNumber(CONC_UNITS),
@@ -1051,9 +1063,10 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 				dims: 2 * number of amino acids (uncharged tRNA come first, then charged)
 		'''
 		v_charging, dtrna, daa = dcdt_jit(t, c, n_aas_masked, n_aas, mask, 
-			params['kS'], synthetase_conc, params['KMaa'], params['KMtf'],
+			synthetase_rate, synthetase_conc, params['KMaa'], params['KMtf'],
 			f, params['krta'], params['krtf'], params['max_elong_rate'],
-			ribosome_conc, limit_v_rib, aa_rate_limit, v_rib_max)
+			ribosome_conc, limit_v_rib, aa_rate_limit, v_rib_max,
+			charged_trna_ki)
 		if supply is None:
 			v_synthesis = np.zeros(n_aas)
 			v_import = np.zeros(n_aas)
@@ -1081,6 +1094,19 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 	else:
 		mask = params['charging_mask']
 	synthetase_conc = synthetase_conc[mask]
+
+	# Charged tRNA inhibition constants (amino acid order); None means no inhibition
+	charged_trna_ki = params.get('KI_charged_trna')
+	if charged_trna_ki is None:
+		charged_trna_ki = np.full(n_total_aas, np.inf)
+	else:
+		charged_trna_ki = np.asarray(charged_trna_ki, dtype=float)
+
+	# Shared rate constant, or one per synthetase (amino acid order)
+	synthetase_rate = params['kS']
+	if np.ndim(synthetase_rate):
+		synthetase_rate = np.asarray(synthetase_rate, dtype=float)[mask]
+
 	original_uncharged_trna_conc = uncharged_trna_conc[mask]
 	original_charged_trna_conc = charged_trna_conc[mask]
 	original_aa_conc = aa_conc[mask]
@@ -1128,15 +1154,18 @@ def calculate_trna_charging(synthetase_conc, uncharged_trna_conc, charged_trna_c
 def dcdt_jit(t, c, n_aas_masked, n_aas, mask, 
 	kS, synthetase_conc, KMaa, KMtf,
 	f, krta, krtf, max_elong_rate,
-	ribosome_conc, limit_v_rib, aa_rate_limit, v_rib_max
+	ribosome_conc, limit_v_rib, aa_rate_limit, v_rib_max, KI_charged_trna
 ):
 	uncharged_trna_conc = c[:n_aas_masked]
 	charged_trna_conc = c[n_aas_masked:2*n_aas_masked]
 	aa_conc = c[2*n_aas_masked:2*n_aas_masked+n_aas]
 	masked_aa_conc = aa_conc[mask]
 
-	v_charging = (kS * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (KMaa[mask] * KMtf[mask])
-		/ (1 + uncharged_trna_conc/KMtf[mask] + masked_aa_conc/KMaa[mask] + uncharged_trna_conc*masked_aa_conc/KMtf[mask]/KMaa[mask]))
+	# Charged tRNA competes with uncharged tRNA for the synthetase, raising the
+	# apparent tRNA KM (KI_charged_trna of inf gives no inhibition)
+	KMtf_apparent = KMtf[mask] * (1 + charged_trna_conc / KI_charged_trna[mask])
+	v_charging = (kS * synthetase_conc * uncharged_trna_conc * masked_aa_conc / (KMaa[mask] * KMtf_apparent)
+		/ (1 + uncharged_trna_conc/KMtf_apparent + masked_aa_conc/KMaa[mask] + uncharged_trna_conc*masked_aa_conc/KMtf_apparent/KMaa[mask]))
 	numerator_ribosome = 1 + np.sum(f * (krta / charged_trna_conc + uncharged_trna_conc / charged_trna_conc * krta / krtf))
 	v_rib = max_elong_rate * ribosome_conc / numerator_ribosome
 

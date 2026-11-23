@@ -1,0 +1,32 @@
+# Charging headroom of each aminoacyl-tRNA synthetase: capacity (kcat x copies per cell, at saturating substrates) over
+# amino acid usage, from Dykeman, E. (2025) PLoS Comput Biol. https://doi.org/10.1371/journal.pcbi.1013353 (S1 Text,
+# Table I and Tab E), linearly interpolated in growth rate to the basal (0.945 per h) and with_aa (1.66 per h) conditions.
+# Dykeman's usage is sized for post-upshift elongation (about 19 aa/s), so these margins are about 1.09x smaller than
+# against steady-state demand. The ParCa charging fit (reconstruction/ecoli/fit_trna_charging.py) gives each synthetase
+# at least this capacity over the model's own demand.
+# The ParCa fit replaces the Ala margin (alaS) with the median of the other synthetases' margins (about 1.38; the
+# values below are left as published). Dykeman lowered AlaRS turnover to about 10 /s to respect the single-turnover
+# transfer rate (16.4 /s; S1 Text section 3), reports AlaRS as his largest kcat discrepancy (6.6x above in vitro) and
+# notes that the AlaRS kcat or proteomics need revisiting (main text). The 1.14 margin therefore reflects constraints in
+# his fit rather than a measured limit. With 1.14, with_aa Ala was 56-58% uncharged and drove RelA and ppGpp up.
+"amino acid"	"synthetase"	"headroom basal"	"headroom with_aa"
+"CYS"	"cysS"	1.732	1.751
+"ARG"	"argS"	1.290	1.275
+"VAL"	"valS"	1.222	1.212
+"ILE"	"ileS"	1.243	1.257
+"LEU"	"leuS"	1.384	1.392
+"GLT"	"gltX"	1.175	1.162
+"GLN"	"glnS"	1.359	1.369
+"MET"	"metG"	1.886	1.889
+"TYR"	"tyrS"	1.332	1.355
+"TRP"	"trpS"	2.387	2.407
+"SER"	"serS"	1.419	1.419
+"THR"	"thrS"	1.380	1.388
+"PRO"	"proS"	1.298	1.317
+"HIS"	"hisS"	1.852	1.870
+"L-ASPARTATE"	"aspS"	1.297	1.275
+"ASN"	"asnS"	1.512	1.523
+"LYS"	"lysS"	1.604	1.614
+"L-ALPHA-ALANINE"	"alaS"	1.136	1.135
+"GLY"	"glyS"	1.321	1.303
+"PHE"	"pheS"	1.392	1.401

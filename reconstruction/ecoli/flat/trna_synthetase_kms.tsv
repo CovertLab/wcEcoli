@@ -1,0 +1,26 @@
+# Michaelis constants of the aminoacyl-tRNA synthetases for their amino acid and uncharged tRNA substrates.
+# Values: Dykeman E (2025) An empirical model of aminoacylation kinetics for E. coli class I and II aminoacyl tRNA
+# synthetases. PLoS Comput Biol. https://doi.org/10.1371/journal.pcbi.1013353 (S1 Text, Table I).
+# These are a curated consensus of in vitro measurements (outliers removed, checked against a mechanistic model) and
+# replace the plain average of synthetase entries in metabolism_kinetics.tsv. Amino acids not listed keep that average.
+"amino acid"	"synthetase"	"KM, amino acid (units.umol/units.L)"	"KM, tRNA (units.umol/units.L)"	"_source"
+"CYS"	"cysRS"	16.1	1.05	"Dykeman 2025, S1 Text Table I"
+"ARG"	"argRS"	15.1	1.76	"Dykeman 2025, S1 Text Table I"
+"VAL"	"valRS"	42.0	0.41	"Dykeman 2025, S1 Text Table I"
+"ILE"	"ileRS"	5.8	1.18	"Dykeman 2025, S1 Text Table I"
+"LEU"	"leuRS"	15.6	1.17	"Dykeman 2025, S1 Text Table I"
+"GLT"	"gluRS"	72.3	0.27	"Dykeman 2025, S1 Text Table I"
+"GLN"	"glnRS"	188	0.16	"Dykeman 2025, S1 Text Table I"
+"MET"	"metRS"	8.1	0.75	"Dykeman 2025, S1 Text Table I"
+"TYR"	"tyrRS"	14.2	0.46	"Dykeman 2025, S1 Text Table I"
+"TRP"	"trpRS"	11.4	0.29	"Dykeman 2025, S1 Text Table I"
+"SER"	"serRS"	56.0	0.39	"Dykeman 2025, S1 Text Table I"
+"THR"	"thrRS"	24.1	0.72	"Dykeman 2025, S1 Text Table I"
+"PRO"	"proRS"	149	0.48	"Dykeman 2025, S1 Text Table I"
+"HIS"	"hisRS"	7.9	0.41	"Dykeman 2025, S1 Text Table I"
+"L-ASPARTATE"	"aspRS"	38.8	0.47	"Dykeman 2025, S1 Text Table I"
+"ASN"	"asnRS"	34.6	0.52	"Dykeman 2025, S1 Text Table I"
+"LYS"	"lysRS"	8.8	0.94	"Dykeman 2025, S1 Text Table I"
+"L-ALPHA-ALANINE"	"alaRS"	47.1	0.91	"Dykeman 2025, S1 Text Table I"
+"GLY"	"glyRS"	140	0.68	"Dykeman 2025, S1 Text Table I"
+"PHE"	"pheRS"	9.1	0.35	"Dykeman 2025, S1 Text Table I"
