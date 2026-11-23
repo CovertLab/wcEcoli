@@ -710,12 +710,27 @@ class Transcription(object):
 		# Get mask for RNAs with measured deg rates
 		mask_measured_deg_rate = (rna_deg_rates > 0)
 
-		# Set the minimum possible degradation rates of mRNAs to the minimum of
-		# the measured degradation rates of mRNA cistrons
+		# Set the minimum possible degradation rate of each mRNA transcription
+		# unit to the slowest degradation rate among its own cistrons (cistron
+		# half-lives from rna_half_lives.tsv: Chen et al. 2015 and Bernstein et
+		# al. 2002). With a single genome-wide minimum (the most stable mRNA
+		# cistron, shoB at about 91 min), any unit whose cistrons are mostly
+		# carried by faster-decaying units was pushed to that bound: 248 mRNA
+		# units sat at 91 min (now 1), including the relA-only unit TU0-42589
+		# with some RNA-seq inputs (its only cistron is measured at 10.5 min).
+		# This is a prior, not something the data force: a unit is assumed to
+		# be no more stable than its most stable cistron. Units the fit would
+		# make slower stop at this bound, so some cistrons decay a little faster
+		# than measured (66.0% vs 67.1% of cistron half-lives within 10%).
 		min_deg_rates = np.zeros(n_rnas)
 		cistron_deg_rates = self.cistron_data['deg_rate'].asNumber(1/units.s)
 		mRNA_cistron_deg_rates = cistron_deg_rates[self.cistron_data['is_mRNA']]
-		min_deg_rates[is_mRNA] = mRNA_cistron_deg_rates.min()
+		slowest_own_cistron_deg_rate = np.full(n_rnas, np.inf)
+		np.minimum.at(slowest_own_cistron_deg_rate, rna_indexes,
+			cistron_deg_rates[cistron_indexes])
+		no_cistron = ~np.isfinite(slowest_own_cistron_deg_rate)
+		slowest_own_cistron_deg_rate[no_cistron] = mRNA_cistron_deg_rates.min()
+		min_deg_rates[is_mRNA] = slowest_own_cistron_deg_rate[is_mRNA]
 		min_deg_rates = min_deg_rates[~mask_measured_deg_rate]
 
 		# Solve NNLS for unmeasured degredation rates, using the fact that
