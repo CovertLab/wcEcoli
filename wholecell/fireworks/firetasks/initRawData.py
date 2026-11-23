@@ -22,6 +22,8 @@ class InitRawDataTask(FiretaskBase):
 		'stable_rrna',
 		'basal_rnaseq',
 		'basal_doubling_time',
+		'tf_conditions_at_basal_dt',
+		'ppgpp_fit_two_point',
 		]
 
 	def run_task(self, fw_spec):
@@ -43,6 +45,8 @@ class InitRawDataTask(FiretaskBase):
 			stable_rrna=self.get('stable_rrna', False),
 			basal_rnaseq=self.get('basal_rnaseq'),
 			basal_doubling_time=self.get('basal_doubling_time'),
+			tf_conditions_at_basal_dt=self.get('tf_conditions_at_basal_dt', False),
+			ppgpp_fit_two_point=self.get('ppgpp_fit_two_point', False),
 			)
 
 		print(f"{time.ctime()}: Saving raw_data")

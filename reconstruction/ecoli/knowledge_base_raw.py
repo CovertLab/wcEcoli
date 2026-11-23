@@ -195,7 +195,8 @@ class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
 	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off", protein_degradation_combo_option: str=DEFAULT_PROTEIN_DEGRADATION_COMBO,
-			basal_rnaseq: Optional[str] = None, basal_doubling_time: Optional[float] = None):
+			basal_rnaseq: Optional[str] = None, basal_doubling_time: Optional[float] = None,
+			tf_conditions_at_basal_dt: bool = False, ppgpp_fit_two_point: bool = False):
 		"""
 		Args (in addition to the data options above):
 			basal_rnaseq: TSV of basal expression ("Gene" and "TPM" columns,
@@ -205,6 +206,15 @@ class KnowledgeBaseEcoli(object):
 				the default data.
 			basal_doubling_time: basal condition doubling time (min) that
 				replaces the condition_defs.tsv value. None keeps the default.
+			tf_conditions_at_basal_dt: if True, every TF active/inactive
+				condition (<TF>__active, <TF>__inactive) is built at the basal
+				doubling time instead of its medium's doubling time, so the fitted
+				TF effects reflect the fold change and not the growth-rate
+				difference between the two media.
+			ppgpp_fit_two_point: if True, the ppGpp expression fit for RNAP and
+				ribosome components uses only the with_aa and basal conditions
+				(exact for both) instead of a least-squares fit that also
+				includes no_oxygen (acetate and succinate were never used).
 		"""
 		self.operons_on = operons_on
 		self.stable_rrna = stable_rrna
@@ -334,6 +344,12 @@ class KnowledgeBaseEcoli(object):
 
 		self.basal_rnaseq = basal_rnaseq
 		self.basal_doubling_time = basal_doubling_time
+		self.tf_conditions_at_basal_dt = tf_conditions_at_basal_dt
+		self.ppgpp_fit_two_point = ppgpp_fit_two_point
+		if tf_conditions_at_basal_dt:
+			print('TF active/inactive conditions built at the basal doubling time')
+		if ppgpp_fit_two_point:
+			print('Two-point (with_aa, basal) ppGpp expression fit')
 		if basal_rnaseq is not None:
 			self._set_basal_rnaseq(basal_rnaseq)
 		if basal_doubling_time is not None:

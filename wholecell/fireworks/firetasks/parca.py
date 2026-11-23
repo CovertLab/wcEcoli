@@ -29,6 +29,8 @@ class ParcaTask(FiretaskBase):
 		'protein_degradation_combo',
 		'basal_rnaseq',
 		'basal_doubling_time',
+		'tf_conditions_at_basal_dt',
+		'ppgpp_fit_two_point',
 		'load_intermediate',
 		'save_intermediates',
 		'intermediates_directory',
@@ -68,6 +70,8 @@ class ParcaTask(FiretaskBase):
 				stable_rrna=self.get('stable_rrna', False),
 				basal_rnaseq=self.get('basal_rnaseq'),
 				basal_doubling_time=self.get('basal_doubling_time'),
+				tf_conditions_at_basal_dt=self.get('tf_conditions_at_basal_dt', False),
+				ppgpp_fit_two_point=self.get('ppgpp_fit_two_point', False),
 				output=raw_data_file),
 
 			FitSimDataTask(

@@ -1926,12 +1926,16 @@ class Transcription(object):
 		# ribosomes by about 35%. A two-point fit (with_aa, basal) is exact
 		# for both.
 		self._normalize_ppgpp_expression()  # Need to normalize first to get correct scale
-		F = np.array([[1- f_ppgpp_aa, f_ppgpp_aa], [1 - f_ppgpp_basal, f_ppgpp_basal], [1 - f_ppgpp_anaerobic, f_ppgpp_anaerobic]])
+		# The ppgpp_fit_two_point ParCa option drops no_oxygen, so the fit is
+		# exact for with_aa and basal.
+		fit_conditions = [('with_aa', f_ppgpp_aa), ('basal', f_ppgpp_basal)]
+		if not getattr(sim_data, 'ppgpp_fit_two_point', False):
+			fit_conditions.append(('no_oxygen', f_ppgpp_anaerobic))
+		F = np.array([[1 - f, f] for _, f in fit_conditions])
 		Flst = np.linalg.inv(F.T.dot(F)).dot(F.T)
 		expression = np.array([
-			self.rna_expression['with_aa'][adjusted_mask] * np.fmax(0, 1 - tf_adjustments['with_aa']),
-			self.rna_expression['basal'][adjusted_mask] * np.fmax(0, 1 - tf_adjustments['basal']),
-			self.rna_expression['no_oxygen'][adjusted_mask] * np.fmax(0, 1 - tf_adjustments['no_oxygen'])])
+			self.rna_expression[condition][adjusted_mask] * np.fmax(0, 1 - tf_adjustments[condition])
+			for condition, _ in fit_conditions])
 		adjusted_free, adjusted_ppgpp = Flst.dot(expression)
 		self.exp_free[adjusted_mask] = adjusted_free
 		self.exp_ppgpp[adjusted_mask] = adjusted_ppgpp

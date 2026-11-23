@@ -41,6 +41,8 @@ class SimulationDataEcoli(object):
 		self.operons_on = raw_data.operons_on
 		self.protein_degradation_combo_selection = raw_data.protein_degradation_combo_option
 		self.stable_rrna = raw_data.stable_rrna
+		self.tf_conditions_at_basal_dt = getattr(raw_data, 'tf_conditions_at_basal_dt', False)
+		self.ppgpp_fit_two_point = getattr(raw_data, 'ppgpp_fit_two_point', False)
 
 		self._add_condition_data(raw_data)
 		self.condition = "basal"
@@ -290,7 +292,16 @@ class SimulationDataEcoli(object):
 				self.conditions[condition] = {}
 				self.conditions[condition]['nutrients'] = nutrients
 				self.conditions[condition]['perturbations'] = self.tf_to_active_inactive_conditions[tf]['{} genotype perturbations'.format(status)]
-				self.condition_to_doubling_time[condition] = self.nutrient_to_doubling_time.get(nutrients, basal_dt)
+				# With tf_conditions_at_basal_dt, both conditions of a TF are
+				# built at the basal doubling time, so the fitted TF effect
+				# reflects the fold change only. Otherwise each takes its
+				# medium's doubling time, and the fit also sees the change in
+				# gene copy number and in each RNA's share of synthesis between
+				# the two growth rates.
+				if self.tf_conditions_at_basal_dt:
+					self.condition_to_doubling_time[condition] = basal_dt
+				else:
+					self.condition_to_doubling_time[condition] = self.nutrient_to_doubling_time.get(nutrients, basal_dt)
 
 	def calculate_ppgpp_expression(self, condition: str):
 		"""

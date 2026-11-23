@@ -102,6 +102,11 @@ Modeling options:
 		reconstruction/ecoli/flat/rna_seq_data first)
 	BASAL_DOUBLING_TIME (float, ""): if set, the basal condition doubling time
 		in minutes, replacing the condition_defs.tsv value (44)
+	TF_CONDITIONS_AT_BASAL_DT (int, "0"): if nonzero, every TF active/inactive
+		fitting condition is built at the basal doubling time instead of its
+		medium's doubling time
+	TF_PPGPP_FIT_TWO_POINT (int, "0"): if nonzero, the ppGpp expression fit for
+		RNAP and ribosome components uses only with_aa and basal (no no_oxygen)
 	REMOVE_RRNA_OPERONS (int, "0"): if nonzero, remove the seven rRNA operons
 		from the simulation, and express each rRNA as individual transcription
 		units. Does not have any effect if OPERONS is set to "off".
@@ -319,6 +324,8 @@ assert PDR_COMBOS in constants.PROTEIN_DEGRADATION_COMBO_OPTIONS, f'{PDR_COMBOS=
 BASAL_RNASEQ = get_environment("BASAL_RNASEQ", "") or None
 BASAL_DOUBLING_TIME = (float(get_environment("BASAL_DOUBLING_TIME", ""))
 	if get_environment("BASAL_DOUBLING_TIME", "") else None)
+TF_CONDITIONS_AT_BASAL_DT = bool(int(get_environment("TF_CONDITIONS_AT_BASAL_DT", "0")))
+TF_PPGPP_FIT_TWO_POINT = bool(int(get_environment("TF_PPGPP_FIT_TWO_POINT", "0")))
 REMOVE_RRNA_OPERONS = bool(int(get_environment("REMOVE_RRNA_OPERONS", DEFAULT_SIMULATION_KWARGS["remove_rrna_operons"])))
 REMOVE_RRFF = bool(int(get_environment("REMOVE_RRFF", DEFAULT_SIMULATION_KWARGS["remove_rrff"])))
 STABLE_RRNA = bool(int(get_environment("STABLE_RRNA", DEFAULT_SIMULATION_KWARGS["stable_rrna"])))
@@ -486,6 +493,8 @@ class WorkflowBuilder:
 			"pdr_combos": PDR_COMBOS,
 			"basal_rnaseq": BASAL_RNASEQ,
 			"basal_doubling_time": BASAL_DOUBLING_TIME,
+			"tf_conditions_at_basal_dt": TF_CONDITIONS_AT_BASAL_DT,
+			"ppgpp_fit_two_point": TF_PPGPP_FIT_TWO_POINT,
 			"remove_rrna_operons": REMOVE_RRNA_OPERONS,
 			"remove_rrff": REMOVE_RRFF,
 			"stable_rrna": STABLE_RRNA,
@@ -561,6 +570,8 @@ class WorkflowBuilder:
 				stable_rrna=STABLE_RRNA,
 				basal_rnaseq=BASAL_RNASEQ,
 				basal_doubling_time=BASAL_DOUBLING_TIME,
+				tf_conditions_at_basal_dt=TF_CONDITIONS_AT_BASAL_DT,
+				ppgpp_fit_two_point=TF_PPGPP_FIT_TWO_POINT,
 				output=os.path.join(KB_DIRECTORY, constants.SERIALIZED_RAW_DATA)),
 			"InitRawData",
 			priority=12)

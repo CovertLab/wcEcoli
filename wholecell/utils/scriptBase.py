@@ -55,6 +55,8 @@ PARCA_KEYS = (
 	'protein_degradation_combo',
 	'basal_rnaseq',
 	'basal_doubling_time',
+	'tf_conditions_at_basal_dt',
+	'ppgpp_fit_two_point',
 	'cpus',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -422,6 +424,16 @@ class ScriptBase(metaclass=abc.ABCMeta):
 				 ' condition_defs.tsv value (44). With --trna-charging-fitting,'
 				 ' the relA-null ppGpp anchor scales with the target ppGpp at'
 				 ' this doubling time.')
+		self.define_parameter_bool(parser, 'tf_conditions_at_basal_dt', False,
+			help='Build every TF active/inactive fitting condition at the basal'
+				 ' doubling time instead of its medium\'s doubling time, so the'
+				 ' fitted TF effects reflect the fold change and not the'
+				 ' growth-rate difference between the two media.')
+		self.define_parameter_bool(parser, 'ppgpp_fit_two_point', False,
+			help='Fit ppGpp-regulated RNAP and ribosome expression to the'
+				 ' with_aa and basal conditions only (exact for both), instead'
+				 ' of a least-squares fit that also includes no_oxygen '
+				 '(succinate and acetate are never included regardless).')
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,

@@ -75,6 +75,8 @@ class RunParca(scriptBase.ScriptBase):
 			'protein_degradation_combo': args.protein_degradation_combo,
 			'basal_rnaseq': args.basal_rnaseq,
 			'basal_doubling_time': args.basal_doubling_time,
+			'tf_conditions_at_basal_dt': args.tf_conditions_at_basal_dt,
+			'ppgpp_fit_two_point': args.ppgpp_fit_two_point,
 			'remove_rrna_operons': args.remove_rrna_operons,
 			'remove_rrff': args.remove_rrff,
 			'stable_rrna': args.stable_rrna,
