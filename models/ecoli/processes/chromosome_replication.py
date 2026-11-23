@@ -168,6 +168,15 @@ class ChromosomeReplication(wholecell.processes.process.Process):
 		# 2) If mechanistic replisome option is on, there are enough replisome
 		# subunits to assemble two replisomes per existing OriC.
 		# Note that we assume asynchronous initiation does not happen.
+		# If the mechanistic replisome option is on and initiation looks limited
+		# by DnaB subunits, consider restoring the x10 dnaB (EG10236_RNA) expression
+		# adjustment in reconstruction/ecoli/flat/adjustments/rna_expression_adjustments.tsv.
+		# It was added for timely replication in the anaerobic condition and was
+		# removed on 11/21/26, since directional mRNA decay and other small fixes
+		# (such as counting rRNA and tRNA transcription units by mature mass in
+		# initializeRNA) appeared to bring DnaB and DnaE counts to a sufficient
+		# level without it (only tested in minimal and rich media, so it may
+		# still be needed for anaerobic sims).
 		initiate_replication = self.criticalMassPerOriC >= 1.0 and (
 			not self.mechanistic_replisome or (np.all(n_replisome_trimers == 6*n_oriC) and
 			np.all(n_replisome_monomers == 2*n_oriC)))
