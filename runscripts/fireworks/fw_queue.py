@@ -96,6 +96,12 @@ Modeling options:
 	PDR_COMBOS (str, "PDR_combo_2020"): specifies which protein degradation
 		combination to use; options are "PDR_combo_2020", "PDR_combo_2022",
 		"PDR_combo_2025"
+	BASAL_RNASEQ (str, ""): if set, a TSV of basal expression ("Gene" and
+		"TPM" columns) that replaces the basal RNA-seq column, e.g.
+		precise1k_m9_glucose_tpm.tsv (file names are looked up in
+		reconstruction/ecoli/flat/rna_seq_data first)
+	BASAL_DOUBLING_TIME (float, ""): if set, the basal condition doubling time
+		in minutes, replacing the condition_defs.tsv value (44)
 	REMOVE_RRNA_OPERONS (int, "0"): if nonzero, remove the seven rRNA operons
 		from the simulation, and express each rRNA as individual transcription
 		units. Does not have any effect if OPERONS is set to "off".
@@ -307,6 +313,9 @@ assert OPERONS in constants.EXTENDED_OPERON_OPTIONS, f'{OPERONS=} needs to be in
 NEW_GENES = get_environment("NEW_GENES", constants.DEFAULT_NEW_GENES_OPTION)
 PDR_COMBOS = get_environment("PDR_COMBOS", constants.DEFAULT_PROTEIN_DEGRADATION_COMBO)
 assert PDR_COMBOS in constants.PROTEIN_DEGRADATION_COMBO_OPTIONS, f'{PDR_COMBOS=} needs to be in {constants.PROTEIN_DEGRADATION_COMBO_OPTIONS}'
+BASAL_RNASEQ = get_environment("BASAL_RNASEQ", "") or None
+BASAL_DOUBLING_TIME = (float(get_environment("BASAL_DOUBLING_TIME", ""))
+	if get_environment("BASAL_DOUBLING_TIME", "") else None)
 REMOVE_RRNA_OPERONS = bool(int(get_environment("REMOVE_RRNA_OPERONS", DEFAULT_SIMULATION_KWARGS["remove_rrna_operons"])))
 REMOVE_RRFF = bool(int(get_environment("REMOVE_RRFF", DEFAULT_SIMULATION_KWARGS["remove_rrff"])))
 STABLE_RRNA = bool(int(get_environment("STABLE_RRNA", DEFAULT_SIMULATION_KWARGS["stable_rrna"])))
@@ -471,6 +480,8 @@ class WorkflowBuilder:
 			"operons": self.operons,
 			"new_genes": NEW_GENES,
 			"pdr_combos": PDR_COMBOS,
+			"basal_rnaseq": BASAL_RNASEQ,
+			"basal_doubling_time": BASAL_DOUBLING_TIME,
 			"remove_rrna_operons": REMOVE_RRNA_OPERONS,
 			"remove_rrff": REMOVE_RRFF,
 			"stable_rrna": STABLE_RRNA,
@@ -543,6 +554,8 @@ class WorkflowBuilder:
 				remove_rrna_operons=REMOVE_RRNA_OPERONS,
 				remove_rrff=REMOVE_RRFF,
 				stable_rrna=STABLE_RRNA,
+				basal_rnaseq=BASAL_RNASEQ,
+				basal_doubling_time=BASAL_DOUBLING_TIME,
 				output=os.path.join(KB_DIRECTORY, constants.SERIALIZED_RAW_DATA)),
 			"InitRawData",
 			priority=12)

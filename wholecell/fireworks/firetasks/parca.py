@@ -27,6 +27,8 @@ class ParcaTask(FiretaskBase):
 		'operons',
 		'new_genes',
 		'protein_degradation_combo',
+		'basal_rnaseq',
+		'basal_doubling_time',
 		'load_intermediate',
 		'save_intermediates',
 		'intermediates_directory',
@@ -63,6 +65,8 @@ class ParcaTask(FiretaskBase):
 				remove_rrna_operons=self.get('remove_rrna_operons', False),
 				remove_rrff=self.get('remove_rrff', False),
 				stable_rrna=self.get('stable_rrna', False),
+				basal_rnaseq=self.get('basal_rnaseq'),
+				basal_doubling_time=self.get('basal_doubling_time'),
 				output=raw_data_file),
 
 			FitSimDataTask(

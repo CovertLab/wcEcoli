@@ -53,6 +53,8 @@ PARCA_KEYS = (
 	'operons',
 	'new_genes',
 	'protein_degradation_combo',
+	'basal_rnaseq',
+	'basal_doubling_time',
 	'cpus',
 	'variable_elongation_transcription',
 	'variable_elongation_translation',
@@ -408,6 +410,17 @@ class ScriptBase(metaclass=abc.ABCMeta):
 		self.define_parameter_operons(parser)
 		self.define_parameter_new_genes(parser)
 		self.define_parameter_protein_degradation_combo(parser)
+		self.define_option(parser, 'basal_rnaseq', str, default=None,
+			help='TSV of basal expression ("Gene" and "TPM" columns) that'
+				 ' replaces the basal RNA-seq column, e.g.'
+				 ' precise1k_m9_glucose_tpm.tsv (file names are looked up in'
+				 ' reconstruction/ecoli/flat/rna_seq_data first). Default: the'
+				 ' model\'s own RNA-seq data.')
+		self.define_option(parser, 'basal_doubling_time', float, default=None,
+			help='Basal condition doubling time in minutes, replacing the'
+				 ' condition_defs.tsv value (44). With --trna-charging-fitting,'
+				 ' the relA-null ppGpp anchor scales with the target ppGpp at'
+				 ' this doubling time.')
 		self.define_parameter_bool(parser, 'ribosome_fitting', True,
 			help="Fit ribosome expression to protein synthesis demands.")
 		self.define_parameter_bool(parser, 'rnapoly_fitting', True,

@@ -20,6 +20,8 @@ class InitRawDataTask(FiretaskBase):
 		'remove_rrna_operons',
 		'remove_rrff',
 		'stable_rrna',
+		'basal_rnaseq',
+		'basal_doubling_time',
 		]
 
 	def run_task(self, fw_spec):
@@ -39,6 +41,8 @@ class InitRawDataTask(FiretaskBase):
 			remove_rrna_operons=self.get('remove_rrna_operons', False),
 			remove_rrff=self.get('remove_rrff', False),
 			stable_rrna=self.get('stable_rrna', False),
+			basal_rnaseq=self.get('basal_rnaseq'),
+			basal_doubling_time=self.get('basal_doubling_time'),
 			)
 
 		print(f"{time.ctime()}: Saving raw_data")

@@ -4,10 +4,11 @@ Whole-cell knowledge base for Ecoli. Contains all raw, un-fit data processed
 directly from CSV flat files.
 
 """
+import csv
 import io
 import os
 import json
-from typing import List, Dict
+from typing import List, Dict, Optional
 import warnings
 
 from reconstruction.spreadsheets import read_tsv
@@ -16,6 +17,9 @@ from wholecell.utils import units  # used by eval()
 from wholecell.utils.constants import DEFAULT_PROTEIN_DEGRADATION_COMBO
 
 FLAT_DIR = os.path.join(os.path.dirname(__file__), "flat")
+# RNA-seq column replaced by the basal_rnaseq option (the basal condition's
+# expression, sim_data.basal_expression_condition)
+BASAL_RNASEQ_COLUMN = 'M9 Glucose minus AAs'
 LIST_OF_DICT_FILENAMES = [
 	"amino_acid_export_kms.tsv",
 	"amino_acid_export_kms_removed.tsv",
@@ -190,7 +194,18 @@ class DataStore(object):
 class KnowledgeBaseEcoli(object):
 	""" KnowledgeBaseEcoli """
 
-	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off", protein_degradation_combo_option: str=DEFAULT_PROTEIN_DEGRADATION_COMBO):
+	def __init__(self, operons_on: bool, remove_rrna_operons: bool, remove_rrff: bool, stable_rrna: bool, new_genes_option: str="off", protein_degradation_combo_option: str=DEFAULT_PROTEIN_DEGRADATION_COMBO,
+			basal_rnaseq: Optional[str] = None, basal_doubling_time: Optional[float] = None):
+		"""
+		Args (in addition to the data options above):
+			basal_rnaseq: TSV of basal expression ("Gene" and "TPM" columns,
+				one row per gene in the default RNA-seq table) that replaces the
+				basal (M9 Glucose minus AAs) column of the RNA-seq TPM table. A
+				file name is looked up in flat/rna_seq_data first. None keeps
+				the default data.
+			basal_doubling_time: basal condition doubling time (min) that
+				replaces the condition_defs.tsv value. None keeps the default.
+		"""
 		self.operons_on = operons_on
 		self.stable_rrna = stable_rrna
 		self.new_genes_option = new_genes_option
@@ -316,6 +331,48 @@ class KnowledgeBaseEcoli(object):
 
 			self.added_data = self.new_gene_added_data
 			self._join_data()
+
+		self.basal_rnaseq = basal_rnaseq
+		self.basal_doubling_time = basal_doubling_time
+		if basal_rnaseq is not None:
+			self._set_basal_rnaseq(basal_rnaseq)
+		if basal_doubling_time is not None:
+			self._set_basal_doubling_time(basal_doubling_time)
+
+	def _set_basal_rnaseq(self, file_name):
+		"""
+		Replace the basal column of the RNA-seq TPM table with the TPMs in
+		file_name. The file must list every gene in the table, so the
+		expression of the other conditions keeps the same genes.
+		"""
+		path = os.path.join(FLAT_DIR, 'rna_seq_data', file_name)
+		if not os.path.isfile(path):
+			path = file_name
+		with open(path) as f:
+			rows = csv.DictReader(
+				(line for line in f if not line.startswith('#')),
+				delimiter='\t')
+			tpms = {row['Gene']: float(row['TPM']) for row in rows}
+
+		# Same table as RNA_SEQ_ANALYSIS in dataclasses/process/transcription.py
+		table = self.rna_seq_data.rnaseq_rsem_tpm_mean
+		table_genes = {row['Gene'] for row in table}
+		missing = table_genes - set(tpms)
+		extra = set(tpms) - table_genes
+		if missing or extra:
+			raise ValueError(f'{path} must list the same genes as the RNA-seq'
+				f' table: {len(missing)} missing, {len(extra)} not in the table')
+		for row in table:
+			row[BASAL_RNASEQ_COLUMN] = tpms[row['Gene']]
+		print(f'Basal RNA-seq TPMs from {path} ({len(tpms)} genes)')
+
+	def _set_basal_doubling_time(self, doubling_time_min):
+		"""Set the doubling time (min) of the basal condition."""
+		basal = [row for row in self.condition.condition_defs
+			if row['condition'] == 'basal']
+		assert len(basal) == 1
+		basal[0]['doubling time'] = doubling_time_min * units.min
+		print(f'Basal doubling time {doubling_time_min} min')
 
 	def _load_tsv(self, dir_name, file_name):
 		path = self
