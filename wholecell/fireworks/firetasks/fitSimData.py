@@ -35,6 +35,7 @@ class FitSimDataTask(FiretaskBase):
 		"sim_out_dir",
 		'variable_elongation_transcription',
 		'variable_elongation_translation',
+		'trna_charging_fitting',
 	]
 
 	def _get_default(self, key):
@@ -70,6 +71,7 @@ class FitSimDataTask(FiretaskBase):
 			variable_elongation_translation=self._get_default('variable_elongation_translation'),
 			disable_ribosome_capacity_fitting=self['disable_ribosome_capacity_fitting'],
 			disable_rnapoly_capacity_fitting=self['disable_rnapoly_capacity_fitting'],
+			trna_charging_fitting=self.get('trna_charging_fitting', False),
 		)
 
 		sys.setrecursionlimit(4000)  # limit found manually

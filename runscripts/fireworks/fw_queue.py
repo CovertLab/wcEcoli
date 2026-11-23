@@ -110,6 +110,9 @@ Modeling options:
 		rrnD rRNA operon.
 	STABLE_RRNA (int, "0"): if nonzero, the mature rRNA molecules are set to be
 		stable (half-life of 48 hours)
+	TRNA_CHARGING_FITTING (int, "0"): if nonzero, the Parca solves tRNA
+		charging, attenuation and amino acid supply together and fits the
+		ppGpp kinetics to the target ppGpp (fit_trna_charging.py)
 	VARIABLE_ELONGATION_TRANSCRIPTION (int, "1"): if nonzero, use variable
 		transcription elongation rates for each gene
 	VARIABLE_ELONGATION_TRANSLATION (int, "0"): if nonzero, use variable
@@ -347,6 +350,7 @@ PLOTS = get_environment("PLOTS", "").split()
 CACHED_SIM_DATA = bool(int(get_environment("CACHED_SIM_DATA", "0")))
 PARALLEL_PARCA = bool(int(get_environment("PARALLEL_PARCA", "0")))
 DEBUG_PARCA = bool(int(get_environment("DEBUG_PARCA", "0")))
+TRNA_CHARGING_FITTING = bool(int(get_environment("TRNA_CHARGING_FITTING", "0")))
 PARCA_QUEUE = get_environment("PARCA_QUEUE", "")
 PARCA_CONSTRAINT = get_environment("PARCA_CONSTRAINT", "")
 DISABLE_RIBOSOME_CAPACITY_FITTING = bool(int(get_environment("DISABLE_RIBOSOME_CAPACITY_FITTING", "0")))
@@ -485,6 +489,7 @@ class WorkflowBuilder:
 			"remove_rrna_operons": REMOVE_RRNA_OPERONS,
 			"remove_rrff": REMOVE_RRFF,
 			"stable_rrna": STABLE_RRNA,
+			"trna_charging_fitting": TRNA_CHARGING_FITTING,
 			"time": SUBMISSION_TIME,
 			"python": sys.version.splitlines()[0],
 			"total_gens": N_GENS,
@@ -573,6 +578,7 @@ class WorkflowBuilder:
 				debug=DEBUG_PARCA,
 				disable_ribosome_capacity_fitting=DISABLE_RIBOSOME_CAPACITY_FITTING,
 				disable_rnapoly_capacity_fitting=DISABLE_RNAPOLY_CAPACITY_FITTING,
+				trna_charging_fitting=TRNA_CHARGING_FITTING,
 				output_metrics_data=os.path.join(
 					KB_DIRECTORY, constants.SERIALIZED_METRICS_DATA_FILENAME)),
 			name="CalculateSimData",

@@ -1590,22 +1590,56 @@ class Transcription(object):
 		locations = np.ones(len(self.attenuated_rna_indices))
 		self.attenuation_location = {idx: loc for idx, loc in zip(self.attenuated_rna_indices, locations)}
 
-	def calculate_attenuation(self, sim_data, cell_specs):
+	def calculate_attenuation(self, sim_data, cell_specs, charged_fraction=None,
+			volume_from_counts=False):
 		"""
 		Calculate constants for each attenuated gene.
 
-		TODO:
-			Calculate estimated charged tRNA concentration to use instead of all tRNA
+		The simulation sets stop probabilities from charged tRNA
+		concentrations, so the constants here are calibrated on charged tRNA
+		when estimates are given.
+
+		Args:
+			sim_data: SimulationDataEcoli object
+			cell_specs: cell specifications from the fitted conditions
+			charged_fraction (dict[str, ndarray] | None): fraction of tRNA
+				charged for each amino acid (sim_data.molecule_groups.amino_acids
+				order), keyed by media ID. Conditions whose media are not
+				listed (or None) treat all tRNA as charged.
+			volume_from_counts (bool): if True, cell volume comes from the dry
+				mass of the average bulk counts (as in the simulation, where
+				volume follows the mass of every molecule present) instead of
+				the fitted initial dry mass
 		"""
+		aa_from_trna = self.aa_from_trna
+		bulk_dry_mws = None
+		if volume_from_counts:
+			molecule_mws = sim_data.internal_state.bulk_molecules.bulk_data[
+				'mass'].asNumber(units.g / units.mol)
+			water_index = sim_data.submass_name_to_index['water']
+			bulk_dry_mws = molecule_mws.sum(axis=1) - molecule_mws[:, water_index]
+
 		def get_trna_conc(condition):
 			spec = cell_specs[condition]
 			unprocessed_trna_ids = self.rna_data['id'][self.rna_data['includes_tRNA']]
 			unprocessed_counts = spec['bulkAverageContainer'].counts(unprocessed_trna_ids)
 			counts = self.tRNA_cistron_tu_mapping_matrix.dot(unprocessed_counts)
-			volume = (spec['avgCellDryMassInit'] / sim_data.constants.cell_density
+			if bulk_dry_mws is None:
+				dry_mass = spec['avgCellDryMassInit']
+			else:
+				dry_mass = units.g * (
+					spec['bulkAverageContainer'].counts() @ bulk_dry_mws
+					/ sim_data.constants.n_avogadro.asNumber(1 / units.mol))
+			volume = (dry_mass / sim_data.constants.cell_density
 				/ sim_data.mass.cell_dry_mass_fraction)
 			# Order of operations for conc (counts last) is to get units to work well
 			conc = 1 / sim_data.constants.n_avogadro / volume * counts
+
+			# Only charged tRNA blocks attenuation in the simulation
+			if charged_fraction is not None:
+				nutrients = sim_data.conditions[condition]['nutrients']
+				if nutrients in charged_fraction:
+					conc = conc * (aa_from_trna.T @ charged_fraction[nutrients])
 			return conc
 
 		k_units = units.umol / units.L

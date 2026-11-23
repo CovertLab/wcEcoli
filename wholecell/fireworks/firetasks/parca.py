@@ -39,6 +39,7 @@ class ParcaTask(FiretaskBase):
 		'remove_rrna_operons',
 		'remove_rrff',
 		'stable_rrna',
+		'trna_charging_fitting',
 		]
 
 	def _get_default(self, key):
@@ -82,7 +83,8 @@ class ParcaTask(FiretaskBase):
 				variable_elongation_transcription=self._get_default('variable_elongation_transcription'),
 				variable_elongation_translation=self._get_default('variable_elongation_translation'),
 				disable_ribosome_capacity_fitting=not self['ribosome_fitting'],
-				disable_rnapoly_capacity_fitting=not self['rnapoly_fitting']),
+				disable_rnapoly_capacity_fitting=not self['rnapoly_fitting'],
+				trna_charging_fitting=self.get('trna_charging_fitting', False)),
 
 			InitRawValidationDataTask(
 				output=raw_validation_data_file),

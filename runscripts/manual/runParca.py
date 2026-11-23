@@ -78,6 +78,7 @@ class RunParca(scriptBase.ScriptBase):
 			'remove_rrna_operons': args.remove_rrna_operons,
 			'remove_rrff': args.remove_rrff,
 			'stable_rrna': args.stable_rrna,
+			'trna_charging_fitting': args.trna_charging_fitting,
 			'time': args.time,
 			'python': sys.version.splitlines()[0],
 		}
