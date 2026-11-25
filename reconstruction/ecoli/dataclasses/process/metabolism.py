@@ -2261,7 +2261,11 @@ class ConcentrationUpdates(object):
 		self.linked_metabolites = linked_metabolites
 
 		# factor of internal amino acid increase if amino acids present in nutrients
-		# TODO (mia): check if this seemingly arbitrary value is still needed
+		# TODO: check if this x2 value is still needed. The 2x2 kcat solve in
+		# set_mechanistic_supply_constants depends on rich and basal targets
+		# differing: L-ASPARTATE, GLT and GLY use the same enzymes forward and
+		# reverse, so with equal targets their solve is singular, and most
+		# other amino acids get large reverse kcats instead. 
 		self.molecule_scale_factors = {
 			"L-ALPHA-ALANINE[c]": 2.,
 			"ARG[c]": 2.,
